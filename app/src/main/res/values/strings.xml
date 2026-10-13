@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Simple Tasks</string>
+
+    <string name="showcase_title">Simple Tasks</string>
+    <string name="showcase_subtitle">Итерация 01 · дизайн-токены</string>
+    <string name="showcase_section_colors">Базовые цвета</string>
+    <string name="showcase_section_priorities">Приоритеты</string>
+    <string name="showcase_section_preview">Пример карточек</string>
+
+    <string name="token_background">background · фон экрана</string>
+    <string name="token_surface">surface · карточки</string>
+    <string name="token_text_primary">textPrimary · основной текст</string>
+    <string name="token_text_secondary">textSecondary · подписи</string>
+    <string name="token_accent">accent · кнопки, активные элементы</string>
+    <string name="token_overdue">overdue · просрочено</string>
+    <string name="token_divider">divider · разделители</string>
+
+    <string name="priority_high">P1 Высокий</string>
+    <string name="priority_medium">P2 Средний</string>
+    <string name="priority_low">P3 Низкий</string>
+    <string name="priority_none">P0 Без приоритета</string>
+
+    <string name="sample_section_overdue">Просрочено</string>
+    <string name="sample_section_today">Сегодня</string>
+    <string name="sample_task_overdue">Отправить отчёт</string>
+    <string name="sample_task_overdue_meta">Вчера · Работа</string>
+    <string name="sample_task_today">Созвон с командой</string>
+    <string name="sample_task_today_meta">15:00 · Работа</string>
+</resources>

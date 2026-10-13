@@ -205,7 +205,20 @@ app/src/main/java/<applicationId>/
 | applicationId | ✅ `com.prostovasei.simpletasks` (публикация — возможно RuStore, не Google Play) |
 | Базовая палитра | ✅ Нейтральный набор из §1.5 |
 | Текст плашек приоритетов | ✅ Светлая: P1 `#B71C1C`, P2 `#8A4B00` (вместо `#F57F17` — контраст 2.05:1 ниже нормы 4.5:1), P3 `#0D47A1`, P0 `#424242`. Тёмная: P1 `#FFB4AB`, P2 `#FFD180`, P3 `#9CCBFF`, P0 `#BDBDBD`. Все пары ≥ 4.5:1 |
-| CI на GitHub Actions (шаг 10) | ⏳ Ожидает решения PM |
+| CI на GitHub Actions (шаг 10) | ✅ Делаем: APK и скриншоты экранов — артефакты каждой сборки |
+
+### Итог Итерации 01
+
+| Пункт | Как сделано |
+|---|---|
+| Сборка | AGP 9.4.1 (Kotlin встроен в AGP), Gradle 9.7.1, Kotlin 2.4.20, KSP 2.3.12, `compileSdk`/`targetSdk` 37, `minSdk` 29. Версии — в `gradle/libs.versions.toml`, только стабильные и старше двух недель |
+| Библиотеки | Compose BOM 2026.09.00, Material 3, Navigation 2.10.2 (+ kotlinx-serialization), Room 2.8.5, Glance 1.2.0, Hilt 2.60.1, WorkManager 2.12.0 |
+| Токены | `designsystem/tokens` (чистый Kotlin) → `AppTheme` (Compose) и `WidgetColors` (Glance). Доступ в UI: `AppTheme.colors / spacing / shapes / sizes` |
+| Защита токенов | Задача `checkDesignTokens` выполняется перед каждой сборкой (`preBuild`): HEX-цвет, `Color.Red`-подобные константы или `12.dp` вне `designsystem/tokens` останавливают сборку |
+| Тесты | `ColorTokensContrastTest` — контраст всех пар «текст/фон» ≥ 4.5:1; `TokenShowcaseScreenshotTest` — скриншоты витрины в обеих темах (Robolectric + Roborazzi, SDK 36 — Espresso пока не поддерживает 37 в Robolectric) |
+| Debug-подпись | `app/debug.keystore` в репозитории: APK из CI и локальные ставятся поверх друг друга |
+| Пакеты | Созданы только `designsystem`, `widget/theme`, `ui/showcase`; остальные появятся вместе с кодом в своих итерациях |
+| Временный экран | `ui/showcase/TokenShowcaseScreen` — витрина токенов, заменяется экраном «Все» в Итерации 04 |
 
 ### Решения, нужные позже
 
