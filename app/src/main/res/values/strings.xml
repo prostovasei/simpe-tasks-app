@@ -2,6 +2,33 @@
 <resources>
     <string name="app_name">Simple Tasks</string>
 
+    <string name="settings_title">Настройки</string>
+    <string name="settings_import_title">Импорт из TickTick</string>
+    <string name="settings_import_hint">Резервную копию (.csv) можно создать в настройках веб-версии TickTick. Повторный импорт того же файла не создаст дублей.</string>
+    <string name="settings_import_button">Выбрать файл .csv</string>
+    <string name="settings_import_reading">Чтение файла…</string>
+    <string name="settings_import_progress">Импорт: %1$d из %2$d</string>
+    <string name="settings_import_done">Импорт завершён</string>
+    <string name="settings_report_added">Добавлено задач: %d</string>
+    <string name="settings_report_skipped">Пропущено (уже были): %d</string>
+    <string name="settings_report_lists">Создано списков: %d</string>
+    <string name="settings_report_folders">Создано папок: %d</string>
+    <string name="settings_report_checklist">Пунктов чек-листов: %d</string>
+    <string name="settings_report_subtasks">Подзадач связано: %d</string>
+    <string name="settings_report_failed">Строк с ошибками: %d</string>
+    <string name="settings_import_error_format">Это не резервная копия TickTick. Выберите файл .csv, созданный в TickTick.</string>
+    <string name="settings_import_error_read">Не удалось прочитать файл. Попробуйте выбрать его ещё раз.</string>
+    <string name="settings_data_title">Данные</string>
+    <string name="settings_stats_tasks">Задач в базе: %1$d (активных: %2$d)</string>
+    <string name="settings_stats_lists">Списков: %d</string>
+    <string name="settings_clear_button">Очистить все данные</string>
+    <string name="settings_clearing">Удаление…</string>
+    <string name="settings_clear_dialog_title">Удалить все данные?</string>
+    <string name="settings_clear_dialog_text">Все задачи, списки и чек-листы будут удалены без возможности восстановления.</string>
+    <string name="settings_clear_dialog_confirm">Удалить</string>
+    <string name="settings_clear_dialog_cancel">Отмена</string>
+    <string name="settings_cleared">Все данные удалены</string>
+
     <string name="showcase_title">Simple Tasks</string>
     <string name="showcase_subtitle">Итерация 01 · дизайн-токены</string>
     <string name="showcase_section_colors">Базовые цвета</string>

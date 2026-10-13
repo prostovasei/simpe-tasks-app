@@ -19,6 +19,9 @@ object ColorTokens {
     val onAccent = ThemedColor(light = 0xFFFFFFFF, dark = 0xFF0B1A2E)
     val overdue = ThemedColor(light = 0xFFD32F2F, dark = 0xFFFF6B6B)
     val divider = ThemedColor(light = 0xFFD0D7DE, dark = 0xFF30363D)
+
+    /** Опасные действия (удаление). Совпадает с [overdue], но означает другое — отдельная роль. */
+    val danger = ThemedColor(light = 0xFFD32F2F, dark = 0xFFFF6B6B)
 }
 
 /** Цвета плашек приоритетов (SPEC.md §3). Текст подобран с контрастом не ниже 4.5:1. */

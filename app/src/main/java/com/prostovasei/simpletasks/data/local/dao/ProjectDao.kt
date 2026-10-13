@@ -27,6 +27,9 @@ interface ProjectDao {
     @Query("SELECT * FROM projects WHERE id = :id")
     suspend fun getById(id: String): ProjectEntity?
 
+    @Query("SELECT * FROM projects WHERE name = :name AND is_inbox = 0 AND is_deleted = 0 ORDER BY created_at LIMIT 1")
+    suspend fun getActiveByName(name: String): ProjectEntity?
+
     @Query("SELECT * FROM projects WHERE is_inbox = 1 AND is_deleted = 0 ORDER BY created_at LIMIT 1")
     suspend fun getInbox(): ProjectEntity?
 

@@ -59,6 +59,10 @@ android {
             providers.gradleProperty("robolectricRepoUrl").orNull?.let {
                 test.systemProperty("robolectric.dependency.repo.url", it)
             }
+            // Путь к реальной резервной копии TickTick для локальной проверки (в репозиторий файл не попадает).
+            providers.gradleProperty("ticktickCsv").orNull?.let {
+                test.systemProperty("ticktick.csv", it)
+            }
         }
     }
 }
@@ -87,6 +91,7 @@ dependencies {
 
     implementation(libs.androidx.navigation.compose)
     implementation(libs.kotlinx.serialization.core)
+    implementation(libs.kotlinx.serialization.json)
 
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)

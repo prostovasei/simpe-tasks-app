@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "9217bdfaba6e703b61bdb325e71c45da",
+    "identityHash": "4634892ec3815ec2ee9015cacb2b79f1",
     "entities": [
       {
         "tableName": "project_groups",
@@ -149,7 +149,7 @@
       },
       {
         "tableName": "tasks",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `project_id` TEXT NOT NULL, `title` TEXT NOT NULL, `content` TEXT NOT NULL DEFAULT '', `status` INTEGER NOT NULL DEFAULT 0, `priority` INTEGER NOT NULL DEFAULT 0, `due_date` INTEGER DEFAULT NULL, `is_all_day` INTEGER NOT NULL DEFAULT 1, `completed_at` INTEGER DEFAULT NULL, `sort_order` INTEGER NOT NULL DEFAULT 0, `rrule` TEXT DEFAULT NULL, `external_id` TEXT DEFAULT NULL, `is_deleted` INTEGER NOT NULL DEFAULT 0, `created_at` INTEGER NOT NULL, `updated_at` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`project_id`) REFERENCES `projects`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `project_id` TEXT NOT NULL, `title` TEXT NOT NULL, `content` TEXT NOT NULL DEFAULT '', `status` INTEGER NOT NULL DEFAULT 0, `priority` INTEGER NOT NULL DEFAULT 0, `due_date` INTEGER DEFAULT NULL, `start_date` INTEGER DEFAULT NULL, `is_all_day` INTEGER NOT NULL DEFAULT 1, `completed_at` INTEGER DEFAULT NULL, `sort_order` INTEGER NOT NULL DEFAULT 0, `rrule` TEXT DEFAULT NULL, `reminders` TEXT DEFAULT NULL, `parent_id` TEXT DEFAULT NULL, `external_id` TEXT DEFAULT NULL, `source_data` TEXT DEFAULT NULL, `is_deleted` INTEGER NOT NULL DEFAULT 0, `created_at` INTEGER NOT NULL, `updated_at` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`project_id`) REFERENCES `projects`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION , FOREIGN KEY(`parent_id`) REFERENCES `tasks`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
         "fields": [
           {
             "fieldPath": "id",
@@ -197,6 +197,12 @@
             "defaultValue": "NULL"
           },
           {
+            "fieldPath": "startDate",
+            "columnName": "start_date",
+            "affinity": "INTEGER",
+            "defaultValue": "NULL"
+          },
+          {
             "fieldPath": "isAllDay",
             "columnName": "is_all_day",
             "affinity": "INTEGER",
@@ -223,8 +229,26 @@
             "defaultValue": "NULL"
           },
           {
+            "fieldPath": "reminders",
+            "columnName": "reminders",
+            "affinity": "TEXT",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "parentId",
+            "columnName": "parent_id",
+            "affinity": "TEXT",
+            "defaultValue": "NULL"
+          },
+          {
             "fieldPath": "externalId",
             "columnName": "external_id",
+            "affinity": "TEXT",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "sourceData",
+            "columnName": "source_data",
             "affinity": "TEXT",
             "defaultValue": "NULL"
           },
@@ -285,6 +309,15 @@
             ],
             "orders": [],
             "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `idx_tasks_external_id` ON `${TABLE_NAME}` (`external_id`)"
+          },
+          {
+            "name": "idx_tasks_parent",
+            "unique": false,
+            "columnNames": [
+              "parent_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `idx_tasks_parent` ON `${TABLE_NAME}` (`parent_id`)"
           }
         ],
         "foreignKeys": [
@@ -294,6 +327,17 @@
             "onUpdate": "NO ACTION",
             "columns": [
               "project_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "tasks",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "parent_id"
             ],
             "referencedColumns": [
               "id"
@@ -392,7 +436,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '9217bdfaba6e703b61bdb325e71c45da')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '4634892ec3815ec2ee9015cacb2b79f1')"
     ]
   }
 }

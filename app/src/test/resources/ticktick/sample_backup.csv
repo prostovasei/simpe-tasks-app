@@ -1,0 +1,17 @@
+﻿"Date: 2026-10-13+0000"
+"Version: 7.2"
+"Status: 
+0 Normal
+-1 Abandoned 
+2 Completed"
+"Folder Name","List Name","Title","Kind","Tags","Content","Is Check list","Start Date","Due Date","Reminder","Repeat","Priority","Status","Created Time","Completed Time","Order","Timezone","Is All Day","Is Floating","Column Name","Column Order","View Mode","taskId","parentId","projectKind"
+"","Inbox","Весь день во входящих","TEXT","","","N","2026-10-12T17:00:00+0000","2026-10-12T17:00:00+0000","PT0S","","0","0","2026-01-10T05:00:00+0000","","-100","Asia/Krasnoyarsk","true","false","","","list","t-inbox","","TASK"
+"","Работа","Созвон","TEXT","","","N","2026-10-13T03:00:00+0000","2026-10-13T04:00:00+0000","-PT10080M
+PT0S","FREQ=WEEKLY;INTERVAL=2;BYDAY=TU","5","0","2026-01-10T05:00:00+0000","","5","Asia/Krasnoyarsk","false","false","","","list","t-call","","TASK"
+"","Работа","Отчёт","CHECKLIST","","Квартальный▪Собрать данные▫Отправить▫","Y","","","","","0","2","2026-01-10T05:00:00+0000","2026-10-01T10:00:00+0000","1","Asia/Krasnoyarsk","","false","Готово","-5","kanban","t-report","","TASK"
+"Личное","Дом","Купить лампочки","TEXT","","","N","","","","","0","0","2026-01-10T05:00:00+0000","","2","Asia/Krasnoyarsk","","false","","","list","t-bulbs","t-repair","TASK"
+"Личное","Дом","Ремонт","TEXT","","Купить ""молоко"", хлеби - [ ] не чек-лист","N","","","","","0","0","2026-01-10T05:00:00+0000","","1","Asia/Krasnoyarsk","","false","","","list","t-repair","","TASK"
+"","Работа","Отменённая","TEXT","","","N","","2026-10-12T17:00:00+0000","","","0","-1","2026-01-10T05:00:00+0000","2026-10-02T10:00:00+0000","9","Asia/Krasnoyarsk","true","false","","","list","t-abandoned","","TASK"
+"","Заметки","Идея","NOTE","","Текст заметки","N","","","","","0","0","2026-01-10T05:00:00+0000","","","Asia/Krasnoyarsk","","false","","","list","t-note","","NOTE"
+"","Работа","Сломанная дата","TEXT","","","N","","не дата","","","0","0","2026-01-10T05:00:00+0000","","","Asia/Krasnoyarsk","false","false","","","list","t-broken","","TASK"
+"","Inbox","Без даты и признака","TEXT","","","N","","","","","0","0","2026-01-10T05:00:00+0000","","","","","false","","","list","t-nodate","","TASK"

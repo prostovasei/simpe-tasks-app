@@ -32,4 +32,5 @@ data class AppSizes(
     val checkbox: Dp = SizeTokens.CHECKBOX.dp,
     val checkboxStroke: Dp = SizeTokens.CHECKBOX_STROKE.dp,
     val swatch: Dp = SizeTokens.SWATCH.dp,
+    val progressHeight: Dp = SizeTokens.PROGRESS_HEIGHT.dp,
 )

@@ -17,6 +17,9 @@ interface ProjectGroupDao {
     @Query("SELECT * FROM project_groups WHERE id = :id")
     suspend fun getById(id: String): ProjectGroupEntity?
 
+    @Query("SELECT * FROM project_groups WHERE name = :name AND is_deleted = 0 ORDER BY created_at LIMIT 1")
+    suspend fun getActiveByName(name: String): ProjectGroupEntity?
+
     @Query("SELECT COALESCE(MAX(sort_order), -1) + 1 FROM project_groups WHERE is_deleted = 0")
     suspend fun nextSortOrder(): Int
 

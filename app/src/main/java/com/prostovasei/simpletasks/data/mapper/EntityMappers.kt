@@ -23,9 +23,12 @@ internal fun TaskEntity.toDomain() = Task(
     status = TaskStatus.fromValue(status),
     priority = Priority.fromValue(priority),
     due = DueDateCodec.decode(dueDate, isAllDay),
+    start = DueDateCodec.decode(startDate, isAllDay),
     completedAt = completedAt?.let(Instant::ofEpochMilli),
     sortOrder = sortOrder,
     rrule = rrule,
+    reminders = reminders?.split('\n')?.filter { it.isNotBlank() }.orEmpty(),
+    parentId = parentId,
     createdAt = Instant.ofEpochMilli(createdAt),
     updatedAt = Instant.ofEpochMilli(updatedAt),
 )

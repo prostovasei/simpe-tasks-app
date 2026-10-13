@@ -21,17 +21,11 @@ interface TaskRepository {
     /** Создаёт задачу вместе с пунктами чек-листа. Возвращает id задачи. */
     suspend fun createTask(task: NewTask): String
 
-    /**
-     * Создаёт задачу из импорта. Возвращает false, если задача с таким [externalId]
-     * уже импортировалась (в том числе удалённая) — защита от дублей.
-     */
-    suspend fun createImportedTask(task: NewTask, externalId: String): Boolean
-
-    /** Сохраняет редактируемые поля: список, название, описание, приоритет, срок, повтор, порядок. */
+    /** Сохраняет редактируемые поля: список, название, описание, приоритет, срок и начало, повтор, напоминания, родителя, порядок. */
     suspend fun updateTask(task: Task)
 
     suspend fun setCompleted(taskId: String, completed: Boolean)
 
-    /** Мягкое удаление задачи вместе с её чек-листом. */
+    /** Мягкое удаление задачи вместе с её подзадачами и их чек-листами. */
     suspend fun deleteTask(taskId: String)
 }

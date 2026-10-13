@@ -117,28 +117,6 @@ class TaskRepositoryTest : DatabaseTest() {
     }
 
     @Test
-    fun importSkipsDuplicateExternalId() = runTest {
-        val inbox = projects.getInbox().id
-        val task = NewTask(projectId = inbox, title = "Из TickTick", checklist = listOf("Пункт"))
-
-        assertTrue(tasks.createImportedTask(task, externalId = "tt-1"))
-        assertFalse(tasks.createImportedTask(task, externalId = "tt-1"))
-        assertTrue(tasks.createImportedTask(task, externalId = "tt-2"))
-
-        assertEquals(2, tasks.observeInbox().first().size)
-    }
-
-    @Test
-    fun importSkipsTaskDeletedByUser() = runTest {
-        val task = NewTask(projectId = projects.getInbox().id, title = "Из TickTick")
-        tasks.createImportedTask(task, externalId = "tt-1")
-        tasks.deleteTask(tasks.observeInbox().first().single().id)
-
-        assertFalse(tasks.createImportedTask(task, externalId = "tt-1"))
-        assertTrue(tasks.observeInbox().first().isEmpty())
-    }
-
-    @Test
     fun newTasksGoToEndOfProject() = runTest {
         val inbox = projects.getInbox().id
         tasks.createTask(NewTask(projectId = inbox, title = "Первая"))

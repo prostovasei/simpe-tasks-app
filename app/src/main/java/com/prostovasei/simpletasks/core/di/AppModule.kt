@@ -1,15 +1,19 @@
 package com.prostovasei.simpletasks.core.di
 
 import android.content.Context
+import com.prostovasei.simpletasks.core.files.ContentResolverDocumentOpener
+import com.prostovasei.simpletasks.core.files.DocumentOpener
 import com.prostovasei.simpletasks.core.id.IdGenerator
 import com.prostovasei.simpletasks.core.id.UuidIdGenerator
 import com.prostovasei.simpletasks.core.time.SystemTimeProvider
 import com.prostovasei.simpletasks.core.time.TimeProvider
 import com.prostovasei.simpletasks.data.local.db.AppDatabase
 import com.prostovasei.simpletasks.data.repository.RoomChecklistRepository
+import com.prostovasei.simpletasks.data.repository.RoomImportRepository
 import com.prostovasei.simpletasks.data.repository.RoomProjectRepository
 import com.prostovasei.simpletasks.data.repository.RoomTaskRepository
 import com.prostovasei.simpletasks.domain.repository.ChecklistRepository
+import com.prostovasei.simpletasks.domain.repository.ImportRepository
 import com.prostovasei.simpletasks.domain.repository.ProjectRepository
 import com.prostovasei.simpletasks.domain.repository.TaskRepository
 import dagger.Binds
@@ -33,6 +37,10 @@ object CoreModule {
 
     @Provides
     @Singleton
+    fun provideDocumentOpener(@ApplicationContext context: Context): DocumentOpener = ContentResolverDocumentOpener(context)
+
+    @Provides
+    @Singleton
     fun provideDatabase(@ApplicationContext context: Context, time: TimeProvider): AppDatabase =
         AppDatabase.build(context, time)
 }
@@ -48,4 +56,7 @@ abstract class RepositoryModule {
 
     @Binds
     abstract fun bindProjectRepository(impl: RoomProjectRepository): ProjectRepository
+
+    @Binds
+    abstract fun bindImportRepository(impl: RoomImportRepository): ImportRepository
 }

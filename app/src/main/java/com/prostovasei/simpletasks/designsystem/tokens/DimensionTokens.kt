@@ -24,4 +24,5 @@ object SizeTokens {
     const val CHECKBOX = 18
     const val CHECKBOX_STROKE = 2
     const val SWATCH = 32
+    const val PROGRESS_HEIGHT = 6
 }

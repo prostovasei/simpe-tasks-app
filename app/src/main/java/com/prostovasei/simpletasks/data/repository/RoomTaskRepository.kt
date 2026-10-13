@@ -62,25 +62,17 @@ class RoomTaskRepository @Inject constructor(
     override suspend fun createTask(task: NewTask): String {
         val id = ids.newId()
         db.withTransaction {
-            taskDao.insert(newEntity(id, task, externalId = null))
+            taskDao.insert(newEntity(id, task))
             insertChecklist(id, task.checklist)
         }
         return id
     }
 
-    override suspend fun createImportedTask(task: NewTask, externalId: String): Boolean {
-        require(externalId.isNotBlank()) { "externalId не может быть пустым" }
-        val id = ids.newId()
-        return db.withTransaction {
-            val inserted = taskDao.insertOrIgnore(newEntity(id, task, externalId)) != -1L
-            if (inserted) insertChecklist(id, task.checklist)
-            inserted
-        }
-    }
-
     override suspend fun updateTask(task: Task) {
         require(task.title.isNotBlank()) { "Название задачи не может быть пустым" }
         val due = DueDateCodec.encode(task.due)
+        val start = DueDateCodec.encode(task.start)
+        require(task.start == null || start.isAllDay == due.isAllDay) { "Начало и срок должны быть одного типа" }
         taskDao.update(
             id = task.id,
             projectId = task.projectId,
@@ -88,8 +80,11 @@ class RoomTaskRepository @Inject constructor(
             content = task.content,
             priority = task.priority.value,
             dueDate = due.dueDate,
+            startDate = start.dueDate,
             isAllDay = due.isAllDay,
             rrule = task.rrule,
+            reminders = task.reminders.takeIf { it.isNotEmpty() }?.joinToString("\n"),
+            parentId = task.parentId,
             sortOrder = task.sortOrder,
             now = nowMillis(),
         )
@@ -107,12 +102,12 @@ class RoomTaskRepository @Inject constructor(
     override suspend fun deleteTask(taskId: String) {
         val now = nowMillis()
         db.withTransaction {
-            checklistDao.softDeleteByTask(taskId, now)
-            taskDao.softDelete(taskId, now)
+            checklistDao.softDeleteByTaskTree(taskId, now)
+            taskDao.softDeleteWithSubtasks(taskId, now)
         }
     }
 
-    private suspend fun newEntity(id: String, task: NewTask, externalId: String?): TaskEntity {
+    private suspend fun newEntity(id: String, task: NewTask): TaskEntity {
         require(task.title.isNotBlank()) { "Название задачи не может быть пустым" }
         val now = nowMillis()
         val due = DueDateCodec.encode(task.due)
@@ -125,7 +120,6 @@ class RoomTaskRepository @Inject constructor(
             dueDate = due.dueDate,
             isAllDay = due.isAllDay,
             sortOrder = taskDao.nextSortOrder(task.projectId),
-            externalId = externalId,
             createdAt = now,
             updatedAt = now,
         )

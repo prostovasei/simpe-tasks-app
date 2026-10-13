@@ -5,7 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
-import com.prostovasei.simpletasks.ui.showcase.TokenShowcaseScreen
+import com.prostovasei.simpletasks.ui.feature.settings.SettingsRoute
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -15,7 +15,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             AppTheme {
-                TokenShowcaseScreen()
+                // До Итерации 04 (навигация) стартовый экран — «Настройки» с импортом.
+                SettingsRoute()
             }
         }
     }

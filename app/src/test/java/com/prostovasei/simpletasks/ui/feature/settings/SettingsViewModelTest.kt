@@ -1,0 +1,155 @@
+package com.prostovasei.simpletasks.ui.feature.settings
+
+import app.cash.turbine.test
+import com.prostovasei.simpletasks.domain.model.DataStats
+import com.prostovasei.simpletasks.domain.model.ImportProgress
+import com.prostovasei.simpletasks.domain.model.ImportReport
+import com.prostovasei.simpletasks.domain.model.InvalidImportFileException
+import com.prostovasei.simpletasks.domain.repository.ImportRepository
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
+import java.io.IOException
+import java.io.InputStream
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class SettingsViewModelTest {
+
+    private val report = ImportReport(10, 2, 1, 0, 3, 1, 0)
+
+    private class FakeRepository : ImportRepository {
+        val stats = MutableStateFlow(DataStats(0, 0, 1))
+        var importResult: suspend (onProgress: (ImportProgress) -> Unit) -> ImportReport = { error("не задано") }
+        var clearCalls = 0
+        val clearGate = CompletableDeferred<Unit>().apply { complete(Unit) }
+
+        override suspend fun importTickTick(input: InputStream, onProgress: (ImportProgress) -> Unit) = importResult(onProgress)
+        override suspend fun clearAllData() {
+            clearGate.await()
+            clearCalls++
+        }
+        override fun observeStats(): Flow<DataStats> = stats
+    }
+
+    private val repository = FakeRepository()
+    private var openedUri: String? = null
+    private val dispatcher = UnconfinedTestDispatcher()
+
+    private fun viewModel(open: (String) -> InputStream = { openedUri = it; "".byteInputStream() }) =
+        SettingsViewModel(repository, { open(it) }, dispatcher)
+
+    @Before
+    fun setUp() = Dispatchers.setMain(dispatcher)
+
+    @After
+    fun tearDown() = Dispatchers.resetMain()
+
+    @Test
+    fun showsDatabaseStats() = runTest {
+        val vm = viewModel()
+        assertEquals(DataStats(0, 0, 1), vm.state.value.stats)
+        repository.stats.value = DataStats(5, 3, 2)
+        assertEquals(DataStats(5, 3, 2), vm.state.value.stats)
+    }
+
+    @Test
+    fun successfulImportShowsProgressThenReport() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        repository.importResult = { onProgress ->
+            onProgress(ImportProgress(1, 2))
+            gate.await()
+            report
+        }
+        val vm = viewModel()
+
+        vm.onIntent(SettingsIntent.FileSelected("content://backup.csv"))
+        assertEquals("content://backup.csv", openedUri)
+        assertEquals(ImportState.InProgress(1, 2), vm.state.value.import)
+        assertTrue(vm.state.value.isBusy)
+
+        gate.complete(Unit)
+        assertEquals(ImportState.Done(report), vm.state.value.import)
+        assertFalse(vm.state.value.isBusy)
+    }
+
+    @Test
+    fun wrongFileShowsFormatError() = runTest {
+        repository.importResult = { throw InvalidImportFileException("нет заголовка") }
+        val vm = viewModel()
+
+        vm.onIntent(SettingsIntent.FileSelected("content://photo.jpg"))
+
+        assertEquals(ImportState.Failed(ImportFailure.NOT_TICKTICK_FILE), vm.state.value.import)
+    }
+
+    @Test
+    fun unreadableFileShowsReadError() = runTest {
+        val vm = viewModel(open = { throw IOException("нет доступа") })
+
+        vm.onIntent(SettingsIntent.FileSelected("content://gone.csv"))
+
+        assertEquals(ImportState.Failed(ImportFailure.READ_ERROR), vm.state.value.import)
+    }
+
+    @Test
+    fun clearRequiresConfirmation() = runTest {
+        val vm = viewModel()
+
+        vm.onIntent(SettingsIntent.ClearRequested)
+        assertTrue(vm.state.value.showClearConfirmation)
+        assertEquals(0, repository.clearCalls)
+
+        vm.onIntent(SettingsIntent.ClearDismissed)
+        assertFalse(vm.state.value.showClearConfirmation)
+        assertEquals(0, repository.clearCalls)
+    }
+
+    @Test
+    fun confirmedClearWipesDataAndNotifies() = runTest {
+        repository.importResult = { report }
+        val vm = viewModel()
+        vm.onIntent(SettingsIntent.FileSelected("content://backup.csv"))
+
+        vm.effects.test {
+            vm.onIntent(SettingsIntent.ClearRequested)
+            vm.onIntent(SettingsIntent.ClearConfirmed)
+            assertEquals(SettingsEffect.DataCleared, awaitItem())
+        }
+        assertEquals(1, repository.clearCalls)
+        assertEquals(ImportState.Idle, vm.state.value.import)
+        assertFalse(vm.state.value.showClearConfirmation)
+        assertFalse(vm.state.value.isClearing)
+    }
+
+    @Test
+    fun secondImportIsIgnoredWhileBusy() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        var calls = 0
+        repository.importResult = {
+            calls++
+            gate.await()
+            report
+        }
+        val vm = viewModel()
+
+        vm.onIntent(SettingsIntent.FileSelected("content://a.csv"))
+        vm.onIntent(SettingsIntent.FileSelected("content://b.csv"))
+        vm.onIntent(SettingsIntent.ClearRequested)
+
+        assertEquals(1, calls)
+        assertFalse(vm.state.value.showClearConfirmation)
+        gate.complete(Unit)
+    }
+}

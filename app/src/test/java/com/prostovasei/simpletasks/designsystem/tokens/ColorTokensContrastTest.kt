@@ -26,6 +26,7 @@ class ColorTokensContrastTest {
             assertReadable("textPrimary", ColorTokens.textPrimary, base)
             assertReadable("textSecondary", ColorTokens.textSecondary, base)
             assertReadable("overdue", ColorTokens.overdue, base)
+            assertReadable("danger", ColorTokens.danger, base)
         }
     }
 

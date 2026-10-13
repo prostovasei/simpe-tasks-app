@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import com.prostovasei.simpletasks.data.local.entity.DataStatsRow
 import com.prostovasei.simpletasks.data.local.entity.TaskEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -20,6 +21,22 @@ interface TaskDao {
     /** Возвращает -1, если задача с таким external_id уже есть. */
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertOrIgnore(task: TaskEntity): Long
+
+    @Query(
+        """
+        SELECT
+            (SELECT COUNT(*) FROM tasks WHERE is_deleted = 0) AS total_tasks,
+            (SELECT COUNT(*) FROM tasks WHERE is_deleted = 0 AND status = 0) AS active_tasks,
+            (SELECT COUNT(*) FROM projects WHERE is_deleted = 0) AS lists
+        """,
+    )
+    fun observeStats(): Flow<DataStatsRow>
+
+    @Query("SELECT id FROM tasks WHERE external_id = :externalId")
+    suspend fun getIdByExternalId(externalId: String): String?
+
+    @Query("UPDATE tasks SET parent_id = :parentId WHERE id = :id AND parent_id IS NULL")
+    suspend fun linkParent(id: String, parentId: String): Int
 
     @Query("SELECT * FROM tasks WHERE id = :id")
     suspend fun getById(id: String): TaskEntity?
@@ -92,7 +109,8 @@ interface TaskDao {
     @Query(
         """
         UPDATE tasks SET project_id = :projectId, title = :title, content = :content, priority = :priority,
-            due_date = :dueDate, is_all_day = :isAllDay, rrule = :rrule, sort_order = :sortOrder, updated_at = :now
+            due_date = :dueDate, start_date = :startDate, is_all_day = :isAllDay, rrule = :rrule,
+            reminders = :reminders, parent_id = :parentId, sort_order = :sortOrder, updated_at = :now
         WHERE id = :id AND is_deleted = 0
         """,
     )
@@ -103,8 +121,11 @@ interface TaskDao {
         content: String,
         priority: Int,
         dueDate: Long?,
+        startDate: Long?,
         isAllDay: Boolean,
         rrule: String?,
+        reminders: String?,
+        parentId: String?,
         sortOrder: Int,
         now: Long,
     ): Int
@@ -117,8 +138,20 @@ interface TaskDao {
     )
     suspend fun setStatus(id: String, status: Int, completedAt: Long?, now: Long): Int
 
-    @Query("UPDATE tasks SET is_deleted = 1, updated_at = :now WHERE id = :id AND is_deleted = 0")
-    suspend fun softDelete(id: String, now: Long): Int
+    /** Мягко удаляет задачу и всё её поддерево подзадач. */
+    @Query(
+        """
+        UPDATE tasks SET is_deleted = 1, updated_at = :now
+        WHERE is_deleted = 0 AND id IN (
+            WITH RECURSIVE tree(id) AS (
+                SELECT :id
+                UNION SELECT t.id FROM tasks t JOIN tree ON t.parent_id = tree.id
+            )
+            SELECT id FROM tree
+        )
+        """,
+    )
+    suspend fun softDeleteWithSubtasks(id: String, now: Long): Int
 
     @Query("UPDATE tasks SET is_deleted = 1, updated_at = :now WHERE project_id = :projectId AND is_deleted = 0")
     suspend fun softDeleteByProject(projectId: String, now: Long): Int

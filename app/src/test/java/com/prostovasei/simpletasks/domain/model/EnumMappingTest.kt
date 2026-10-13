@@ -20,9 +20,10 @@ class EnumMappingTest {
     }
 
     @Test
-    fun statusTreatsTickTickCompletedAndArchivedAsCompleted() {
+    fun statusMapsTickTickValues() {
         assertEquals(TaskStatus.ACTIVE, TaskStatus.fromValue(0))
         assertEquals(TaskStatus.COMPLETED, TaskStatus.fromValue(1))
         assertEquals(TaskStatus.COMPLETED, TaskStatus.fromValue(2))
+        assertEquals(TaskStatus.ABANDONED, TaskStatus.fromValue(-1))
     }
 }

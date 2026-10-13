@@ -10,9 +10,14 @@ data class Task(
     val status: TaskStatus,
     val priority: Priority,
     val due: TaskDue?,
+    /** Начало интервала «10:00–11:00»; null — у задачи только срок. */
+    val start: TaskDue?,
     val completedAt: Instant?,
     val sortOrder: Int,
     val rrule: String?,
+    /** Напоминания в формате iCalendar относительно срока: «PT0S» — в момент срока, «-P1D» — за день. */
+    val reminders: List<String>,
+    val parentId: String?,
     val createdAt: Instant,
     val updatedAt: Instant,
 ) {

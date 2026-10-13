@@ -51,7 +51,9 @@ abstract class AppDatabase : RoomDatabase() {
  * Выполняется при каждом открытии БД; повторный запуск ничего не меняет.
  */
 class InboxSeed(private val time: TimeProvider) : RoomDatabase.Callback() {
-    override fun onOpen(db: SupportSQLiteDatabase) {
+    override fun onOpen(db: SupportSQLiteDatabase) = seed(db)
+
+    fun seed(db: SupportSQLiteDatabase) {
         val now = time.now().toEpochMilli()
         db.execSQL(
             """
