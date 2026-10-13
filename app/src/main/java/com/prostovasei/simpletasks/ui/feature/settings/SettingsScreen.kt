@@ -34,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.prostovasei.simpletasks.BuildConfig
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.domain.model.DataStats
@@ -61,9 +62,13 @@ fun SettingsScreen(
     onIntent: (SettingsIntent) -> Unit,
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    appVersion: AppVersion = AppVersion.current,
 ) {
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let { onIntent(SettingsIntent.FileSelected(it.toString())) }
+    }
+    val saver = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(CSV_MIME_TYPE)) { uri ->
+        uri?.let { onIntent(SettingsIntent.ExportTo(it.toString())) }
     }
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
@@ -105,6 +110,24 @@ fun SettingsScreen(
 
             HorizontalDivider(color = colors.divider, modifier = Modifier.padding(vertical = spacing.xs))
 
+            SectionTitle(R.string.settings_export_title)
+            Text(
+                text = stringResource(R.string.settings_export_hint),
+                style = MaterialTheme.typography.bodyMedium,
+                color = colors.textSecondary,
+            )
+            OutlinedButton(
+                onClick = { saver.launch(state.backupFileName) },
+                enabled = !state.isBusy,
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.accent),
+                modifier = Modifier.testTag(TAG_EXPORT_BUTTON),
+            ) {
+                Text(stringResource(R.string.settings_export_button))
+            }
+            ExportStatus(state.export)
+
+            HorizontalDivider(color = colors.divider, modifier = Modifier.padding(vertical = spacing.xs))
+
             SectionTitle(R.string.settings_data_title)
             state.stats?.let { stats ->
                 BodyText(stringResource(R.string.settings_stats_tasks, stats.totalTasks, stats.activeTasks))
@@ -118,6 +141,13 @@ fun SettingsScreen(
             ) {
                 Text(stringResource(if (state.isClearing) R.string.settings_clearing else R.string.settings_clear_button))
             }
+
+            Text(
+                text = stringResource(R.string.settings_version, appVersion.name, appVersion.build),
+                style = MaterialTheme.typography.bodySmall,
+                color = colors.textSecondary,
+                modifier = Modifier.padding(top = spacing.lg),
+            )
         }
     }
 
@@ -181,6 +211,20 @@ private fun ImportStatus(import: ImportState) {
 }
 
 @Composable
+private fun ExportStatus(export: ExportState) {
+    when (export) {
+        ExportState.Idle -> Unit
+        ExportState.InProgress -> BodyText(stringResource(R.string.settings_export_in_progress))
+        is ExportState.Done -> BodyText(stringResource(R.string.settings_export_done, export.tasks))
+        ExportState.Failed -> Text(
+            text = stringResource(R.string.settings_export_error),
+            style = MaterialTheme.typography.bodyMedium,
+            color = AppTheme.colors.danger,
+        )
+    }
+}
+
+@Composable
 private fun ImportReportView(report: ImportReport) {
     Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.xxs)) {
         Text(
@@ -221,7 +265,16 @@ private fun BodyText(text: String) {
     Text(text = text, style = MaterialTheme.typography.bodyMedium, color = AppTheme.colors.textPrimary)
 }
 
+/** Версия приложения для подвала экрана; в тестах подменяется, чтобы скриншоты не зависели от номера сборки. */
+data class AppVersion(val name: String, val build: Int) {
+    companion object {
+        val current = AppVersion(BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE)
+    }
+}
+
+private const val CSV_MIME_TYPE = "text/csv"
 const val TAG_IMPORT_BUTTON = "settings_import"
+const val TAG_EXPORT_BUTTON = "settings_export"
 const val TAG_CLEAR_BUTTON = "settings_clear"
 
 internal val previewReport = ImportReport(

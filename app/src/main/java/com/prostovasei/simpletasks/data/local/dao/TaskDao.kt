@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.prostovasei.simpletasks.data.local.entity.DataStatsRow
+import com.prostovasei.simpletasks.data.local.entity.ExportTaskRow
 import com.prostovasei.simpletasks.data.local.entity.TaskEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -31,6 +32,18 @@ interface TaskDao {
         """,
     )
     fun observeStats(): Flow<DataStatsRow>
+
+    @Query(
+        """
+        SELECT t.*, p.name AS list_name, p.is_inbox AS list_is_inbox, g.name AS folder_name
+        FROM tasks t
+        JOIN projects p ON p.id = t.project_id
+        LEFT JOIN project_groups g ON g.id = p.group_id AND g.is_deleted = 0
+        WHERE t.is_deleted = 0
+        ORDER BY p.is_inbox DESC, p.sort_order, p.created_at, t.sort_order, t.created_at
+        """,
+    )
+    suspend fun getAllForExport(): List<ExportTaskRow>
 
     @Query("SELECT id FROM tasks WHERE external_id = :externalId")
     suspend fun getIdByExternalId(externalId: String): String?

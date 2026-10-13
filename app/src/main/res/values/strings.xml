@@ -18,6 +18,13 @@
     <string name="settings_report_failed">Строк с ошибками: %d</string>
     <string name="settings_import_error_format">Это не резервная копия TickTick. Выберите файл .csv, созданный в TickTick.</string>
     <string name="settings_import_error_read">Не удалось прочитать файл. Попробуйте выбрать его ещё раз.</string>
+    <string name="settings_export_title">Резервная копия</string>
+    <string name="settings_export_hint">Сохраняет все задачи в файл формата TickTick. Его можно загрузить обратно в TickTick или в это приложение.</string>
+    <string name="settings_export_button">Сохранить резервную копию</string>
+    <string name="settings_export_in_progress">Сохранение…</string>
+    <string name="settings_export_done">Сохранено задач: %d</string>
+    <string name="settings_export_error">Не удалось сохранить файл. Попробуйте ещё раз.</string>
+    <string name="settings_version">Версия %1$s (сборка %2$d)</string>
     <string name="settings_data_title">Данные</string>
     <string name="settings_stats_tasks">Задач в базе: %1$d (активных: %2$d)</string>
     <string name="settings_stats_lists">Списков: %d</string>

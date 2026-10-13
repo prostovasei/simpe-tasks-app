@@ -20,6 +20,9 @@ interface ChecklistDao {
     @Query("SELECT * FROM checklist_items WHERE task_id = :taskId AND is_deleted = 0 ORDER BY sort_order, created_at")
     fun observeByTask(taskId: String): Flow<List<ChecklistItemEntity>>
 
+    @Query("SELECT * FROM checklist_items WHERE is_deleted = 0 ORDER BY task_id, sort_order, created_at")
+    suspend fun getAllActive(): List<ChecklistItemEntity>
+
     @Query("SELECT id FROM checklist_items WHERE task_id = :taskId AND is_deleted = 0")
     suspend fun getActiveIds(taskId: String): List<String>
 

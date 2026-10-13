@@ -6,10 +6,20 @@ import com.prostovasei.simpletasks.domain.model.ImportReport
 data class SettingsState(
     val stats: DataStats? = null,
     val import: ImportState = ImportState.Idle,
+    val export: ExportState = ExportState.Idle,
+    /** Имя файла, которое пикер предложит при сохранении резервной копии. */
+    val backupFileName: String = "",
     val showClearConfirmation: Boolean = false,
     val isClearing: Boolean = false,
 ) {
-    val isBusy: Boolean get() = import is ImportState.InProgress || isClearing
+    val isBusy: Boolean get() = import is ImportState.InProgress || export is ExportState.InProgress || isClearing
+}
+
+sealed interface ExportState {
+    data object Idle : ExportState
+    data object InProgress : ExportState
+    data class Done(val tasks: Int) : ExportState
+    data object Failed : ExportState
 }
 
 sealed interface ImportState {
@@ -29,6 +39,7 @@ enum class ImportFailure {
 
 sealed interface SettingsIntent {
     data class FileSelected(val uri: String) : SettingsIntent
+    data class ExportTo(val uri: String) : SettingsIntent
     data object ClearRequested : SettingsIntent
     data object ClearConfirmed : SettingsIntent
     data object ClearDismissed : SettingsIntent

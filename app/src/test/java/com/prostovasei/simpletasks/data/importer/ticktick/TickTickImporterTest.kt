@@ -2,7 +2,7 @@ package com.prostovasei.simpletasks.data.importer.ticktick
 
 import com.prostovasei.simpletasks.core.id.UuidIdGenerator
 import com.prostovasei.simpletasks.data.local.db.InboxSeed
-import com.prostovasei.simpletasks.data.repository.RoomImportRepository
+import com.prostovasei.simpletasks.data.repository.RoomBackupRepository
 import com.prostovasei.simpletasks.domain.model.DataStats
 import com.prostovasei.simpletasks.domain.model.ImportProgress
 import com.prostovasei.simpletasks.domain.model.InvalidImportFileException
@@ -20,12 +20,12 @@ import java.time.ZoneId
 
 class TickTickImporterTest : DatabaseTest() {
 
-    private lateinit var importer: RoomImportRepository
+    private lateinit var importer: RoomBackupRepository
 
     @Before
     fun createImporter() {
         time.zone = ZoneId.of("Asia/Krasnoyarsk")
-        importer = RoomImportRepository(db, time, TickTickImporter(db, time, UuidIdGenerator()))
+        importer = RoomBackupRepository(db, time, TickTickImporter(db, time, UuidIdGenerator()), TickTickExporter(db, time))
     }
 
     private fun sample() = javaClass.classLoader!!.getResourceAsStream("ticktick/sample_backup.csv")!!

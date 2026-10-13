@@ -5,7 +5,7 @@ import com.prostovasei.simpletasks.domain.model.DataStats
 import com.prostovasei.simpletasks.domain.model.ImportProgress
 import com.prostovasei.simpletasks.domain.model.ImportReport
 import com.prostovasei.simpletasks.domain.model.InvalidImportFileException
-import com.prostovasei.simpletasks.domain.repository.ImportRepository
+import com.prostovasei.simpletasks.domain.repository.BackupRepository
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -21,21 +21,29 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import com.prostovasei.simpletasks.core.files.DocumentOpener
+import com.prostovasei.simpletasks.testing.FakeTimeProvider
+import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InputStream
+import java.io.OutputStream
+import java.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SettingsViewModelTest {
 
     private val report = ImportReport(10, 2, 1, 0, 3, 1, 0)
 
-    private class FakeRepository : ImportRepository {
+    private class FakeRepository : BackupRepository {
         val stats = MutableStateFlow(DataStats(0, 0, 1))
         var importResult: suspend (onProgress: (ImportProgress) -> Unit) -> ImportReport = { error("не задано") }
         var clearCalls = 0
         val clearGate = CompletableDeferred<Unit>().apply { complete(Unit) }
 
+        var exportResult: suspend () -> Int = { 0 }
+
         override suspend fun importTickTick(input: InputStream, onProgress: (ImportProgress) -> Unit) = importResult(onProgress)
+        override suspend fun exportTickTick(output: OutputStream): Int = exportResult()
         override suspend fun clearAllData() {
             clearGate.await()
             clearCalls++
@@ -47,8 +55,18 @@ class SettingsViewModelTest {
     private var openedUri: String? = null
     private val dispatcher = UnconfinedTestDispatcher()
 
-    private fun viewModel(open: (String) -> InputStream = { openedUri = it; "".byteInputStream() }) =
-        SettingsViewModel(repository, { open(it) }, dispatcher)
+    private fun viewModel(
+        open: (String) -> InputStream = { openedUri = it; "".byteInputStream() },
+        create: (String) -> OutputStream = { ByteArrayOutputStream() },
+    ) = SettingsViewModel(
+        repository,
+        object : DocumentOpener {
+            override fun openInput(uri: String) = open(uri)
+            override fun openOutput(uri: String) = create(uri)
+        },
+        dispatcher,
+        FakeTimeProvider(now = Instant.parse("2026-10-13T12:00:00Z")),
+    )
 
     @Before
     fun setUp() = Dispatchers.setMain(dispatcher)
@@ -131,6 +149,32 @@ class SettingsViewModelTest {
         assertEquals(ImportState.Idle, vm.state.value.import)
         assertFalse(vm.state.value.showClearConfirmation)
         assertFalse(vm.state.value.isClearing)
+    }
+
+    @Test
+    fun suggestsBackupFileNameWithDate() = runTest {
+        assertEquals("simple-tasks-backup-2026-10-13.csv", viewModel().state.value.backupFileName)
+    }
+
+    @Test
+    fun exportWritesFileAndShowsCount() = runTest {
+        repository.exportResult = { 3399 }
+        var createdUri: String? = null
+        val vm = viewModel(create = { createdUri = it; ByteArrayOutputStream() })
+
+        vm.onIntent(SettingsIntent.ExportTo("content://backup-out.csv"))
+
+        assertEquals("content://backup-out.csv", createdUri)
+        assertEquals(ExportState.Done(3399), vm.state.value.export)
+    }
+
+    @Test
+    fun exportWriteErrorIsShown() = runTest {
+        val vm = viewModel(create = { throw IOException("диск полон") })
+
+        vm.onIntent(SettingsIntent.ExportTo("content://backup-out.csv"))
+
+        assertEquals(ExportState.Failed, vm.state.value.export)
     }
 
     @Test

@@ -9,11 +9,11 @@ import com.prostovasei.simpletasks.core.time.SystemTimeProvider
 import com.prostovasei.simpletasks.core.time.TimeProvider
 import com.prostovasei.simpletasks.data.local.db.AppDatabase
 import com.prostovasei.simpletasks.data.repository.RoomChecklistRepository
-import com.prostovasei.simpletasks.data.repository.RoomImportRepository
+import com.prostovasei.simpletasks.data.repository.RoomBackupRepository
 import com.prostovasei.simpletasks.data.repository.RoomProjectRepository
 import com.prostovasei.simpletasks.data.repository.RoomTaskRepository
 import com.prostovasei.simpletasks.domain.repository.ChecklistRepository
-import com.prostovasei.simpletasks.domain.repository.ImportRepository
+import com.prostovasei.simpletasks.domain.repository.BackupRepository
 import com.prostovasei.simpletasks.domain.repository.ProjectRepository
 import com.prostovasei.simpletasks.domain.repository.TaskRepository
 import dagger.Binds
@@ -58,5 +58,5 @@ abstract class RepositoryModule {
     abstract fun bindProjectRepository(impl: RoomProjectRepository): ProjectRepository
 
     @Binds
-    abstract fun bindImportRepository(impl: RoomImportRepository): ImportRepository
+    abstract fun bindBackupRepository(impl: RoomBackupRepository): BackupRepository
 }

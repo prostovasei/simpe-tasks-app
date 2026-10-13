@@ -30,11 +30,17 @@ class SettingsScreenTest {
 
     private fun show(state: SettingsState, darkTheme: Boolean = false) {
         composeRule.setContent {
-            AppTheme(darkTheme = darkTheme) { SettingsScreen(state = state, onIntent = { intents += it }) }
+            AppTheme(darkTheme = darkTheme) {
+                SettingsScreen(state = state, onIntent = { intents += it }, appVersion = AppVersion("0.3.1", 42))
+            }
         }
     }
 
-    private val doneState = SettingsState(stats = DataStats(3399, 145, 12), import = ImportState.Done(previewReport))
+    private val doneState = SettingsState(
+        stats = DataStats(3399, 145, 12),
+        import = ImportState.Done(previewReport),
+        export = ExportState.Done(3399),
+    )
 
     @Test
     fun showsStatsAndImportReport() {
@@ -46,6 +52,21 @@ class SettingsScreenTest {
         composeRule.onNodeWithText("Добавлено задач: 3399").assertExists()
         composeRule.onNodeWithText("Пунктов чек-листов: 1186").assertExists()
         composeRule.onNodeWithText("Подзадач связано: 22").assertExists()
+    }
+
+    @Test
+    fun showsExportResultAndVersion() {
+        show(doneState)
+
+        composeRule.onNodeWithText("Сохранено задач: 3399").assertExists()
+        composeRule.onNodeWithText("Версия 0.3.1 (сборка 42)").assertExists()
+    }
+
+    @Test
+    fun showsExportError() {
+        show(SettingsState(export = ExportState.Failed))
+
+        composeRule.onNodeWithText("Не удалось сохранить файл. Попробуйте ещё раз.").assertExists()
     }
 
     @Test
@@ -74,6 +95,7 @@ class SettingsScreenTest {
 
         composeRule.onNodeWithText("Импорт: 1200 из 3399").assertExists()
         composeRule.onNodeWithTag(TAG_IMPORT_BUTTON).assertIsNotEnabled()
+        composeRule.onNodeWithTag(TAG_EXPORT_BUTTON).assertIsNotEnabled()
         composeRule.onNodeWithTag(TAG_CLEAR_BUTTON).assertIsNotEnabled()
     }
 

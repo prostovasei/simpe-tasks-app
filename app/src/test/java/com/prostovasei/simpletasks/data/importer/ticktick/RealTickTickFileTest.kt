@@ -1,6 +1,6 @@
 package com.prostovasei.simpletasks.data.importer.ticktick
 
-import com.prostovasei.simpletasks.data.repository.RoomImportRepository
+import com.prostovasei.simpletasks.data.repository.RoomBackupRepository
 import com.prostovasei.simpletasks.domain.model.TaskStatus
 import com.prostovasei.simpletasks.testing.DatabaseTest
 import kotlinx.coroutines.flow.first
@@ -20,11 +20,11 @@ class RealTickTickFileTest : DatabaseTest() {
 
     @Test
     fun importsRealBackup() = runTest(timeout = kotlin.time.Duration.parse("2m")) {
-        val path = System.getProperty("ticktick.csv")
-        assumeTrue("Файл не задан (-PticktickCsv)", !path.isNullOrBlank())
+        val path = System.getProperty("ticktick.csv").orEmpty()
+        assumeTrue("Файл не задан (-PticktickCsv)", path.isNotBlank())
         time.now = Instant.parse("2026-10-13T08:00:00Z")
         time.zone = ZoneId.of("Asia/Krasnoyarsk")
-        val repository = RoomImportRepository(db, time, TickTickImporter(db, time, com.prostovasei.simpletasks.core.id.UuidIdGenerator()))
+        val repository = RoomBackupRepository(db, time, TickTickImporter(db, time, com.prostovasei.simpletasks.core.id.UuidIdGenerator()), TickTickExporter(db, time))
 
         val started = System.nanoTime()
         val first = repository.importTickTick(File(path).inputStream())
@@ -46,5 +46,29 @@ class RealTickTickFileTest : DatabaseTest() {
         println("REAL allDayEpochDaySum=${count("SELECT SUM(due_date / 86400000) FROM tasks WHERE is_all_day = 1 AND due_date IS NOT NULL")}")
         println("REAL inbox=${count("SELECT COUNT(*) FROM tasks t JOIN projects p ON p.id = t.project_id WHERE p.is_inbox = 1")}")
         assertEquals(0, second.tasksAdded)
+    }
+
+    @Test
+    fun realBackupSurvivesExportAndReimport() = runTest(timeout = kotlin.time.Duration.parse("2m")) {
+        val path = System.getProperty("ticktick.csv").orEmpty()
+        assumeTrue("Файл не задан (-PticktickCsv)", path.isNotBlank())
+        time.zone = ZoneId.of("Asia/Krasnoyarsk")
+        val ids = com.prostovasei.simpletasks.core.id.UuidIdGenerator()
+        val repository = RoomBackupRepository(db, time, TickTickImporter(db, time, ids), TickTickExporter(db, time))
+
+        repository.importTickTick(File(path).inputStream())
+        val statsBefore = repository.observeStats().first()
+        val exported = java.io.ByteArrayOutputStream()
+        val count = repository.exportTickTick(exported)
+        println("REAL exported=$count bytes=${exported.size()}")
+
+        val original = TickTickCsvParser.parse(File(path).inputStream())
+        val roundTrip = TickTickCsvParser.parse(exported.toByteArray().inputStream())
+        assertSameTasks(original, roundTrip, time.zone)
+
+        repository.clearAllData()
+        val report = repository.importTickTick(exported.toByteArray().inputStream())
+        println("REAL reimport=$report")
+        assertEquals(statsBefore, repository.observeStats().first())
     }
 }

@@ -16,8 +16,10 @@ android {
         applicationId = "com.prostovasei.simpletasks"
         minSdk = 29
         targetSdk = 37
-        versionCode = 1
-        versionName = "0.1.0"
+        // Номер сборки CI растёт с каждым запуском: телефон принимает новый APK как обновление.
+        versionCode = providers.environmentVariable("GITHUB_RUN_NUMBER").orNull?.toIntOrNull() ?: 1
+        // 0.<итерация>.<доработка>: 0.3.1 — Итерация 03b.
+        versionName = "0.3.1"
     }
 
     signingConfigs {
@@ -48,6 +50,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     testOptions {

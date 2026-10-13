@@ -1,6 +1,7 @@
 package com.prostovasei.simpletasks.data.local.entity
 
 import androidx.room.ColumnInfo
+import androidx.room.Embedded
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -62,6 +63,14 @@ data class TaskEntity(
     @ColumnInfo(name = "is_deleted", defaultValue = "0") val isDeleted: Boolean = false,
     @ColumnInfo(name = "created_at") val createdAt: Long,
     @ColumnInfo(name = "updated_at") val updatedAt: Long,
+)
+
+/** Задача со списком и папкой — для выгрузки в CSV. */
+data class ExportTaskRow(
+    @Embedded val task: TaskEntity,
+    @ColumnInfo(name = "list_name") val listName: String,
+    @ColumnInfo(name = "list_is_inbox") val listIsInbox: Boolean,
+    @ColumnInfo(name = "folder_name") val folderName: String?,
 )
 
 /** Сводка по базе для экрана «Настройки». */

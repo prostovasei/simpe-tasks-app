@@ -135,7 +135,7 @@ internal class TickTickImporter @Inject constructor(
         var foldersCreated = 0
 
         suspend fun projectIdFor(listName: String, folderName: String?): String {
-            if (listName.isEmpty() || listName.equals(INBOX_NAME, ignoreCase = true)) return inboxId()
+            if (listName.isEmpty() || listName.equals(TickTickFormat.INBOX, ignoreCase = true)) return inboxId()
             projectIds[listName]?.let { return it }
             val id = projectDao.getActiveByName(listName)?.id ?: run {
                 val groupId = folderName?.let { groupIdFor(it) }
@@ -158,7 +158,7 @@ internal class TickTickImporter @Inject constructor(
         }
 
         private suspend fun inboxId(): String =
-            projectIds.getOrPut(INBOX_NAME) { checkNotNull(projectDao.getInbox()) { "Нет «Входящих»" }.id }
+            projectIds.getOrPut(TickTickFormat.INBOX) { checkNotNull(projectDao.getInbox()) { "Нет «Входящих»" }.id }
 
         private suspend fun groupIdFor(name: String): String {
             groupIds[name]?.let { return it }
@@ -173,9 +173,5 @@ internal class TickTickImporter @Inject constructor(
             groupIds[name] = id
             return id
         }
-    }
-
-    private companion object {
-        const val INBOX_NAME = "Inbox"
     }
 }

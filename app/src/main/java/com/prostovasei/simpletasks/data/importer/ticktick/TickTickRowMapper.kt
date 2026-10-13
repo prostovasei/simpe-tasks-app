@@ -9,7 +9,6 @@ import java.time.Instant
 import java.time.LocalTime
 import java.time.OffsetDateTime
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 
 /** Задача из строки TickTick, приведённая к нашей модели. */
@@ -38,9 +37,6 @@ internal data class ImportedChecklistItem(val title: String, val isDone: Boolean
 
 /** Правила переноса строки TickTick (docs/ARCHITECTURE.md §4.1). */
 internal object TickTickRowMapper {
-    private const val CHECKED = '▪'
-    private const val UNCHECKED = '▫'
-    private val DATE_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssxx")
     private val LINE_BREAK = Regex("\r\n|\r|\n")
 
     /** @param fallbackZone пояс устройства — если у задачи пояс не указан или неизвестен. */
@@ -99,7 +95,7 @@ internal object TickTickRowMapper {
         val text = value.trim()
         if (text.isEmpty()) return null
         return try {
-            OffsetDateTime.parse(text, DATE_FORMAT).toInstant()
+            OffsetDateTime.parse(text, TickTickFormat.DATE_FORMAT).toInstant()
         } catch (_: DateTimeParseException) {
             OffsetDateTime.parse(text).toInstant()
         }
@@ -114,9 +110,9 @@ internal object TickTickRowMapper {
         val items = mutableListOf<ImportedChecklistItem>()
         lines.forEach { line ->
             when {
-                line.startsWith(CHECKED) -> line.drop(1).trim().takeIf { it.isNotEmpty() }
+                line.startsWith(TickTickFormat.CHECKED) -> line.drop(1).trim().takeIf { it.isNotEmpty() }
                     ?.let { items += ImportedChecklistItem(it, isDone = true) }
-                line.startsWith(UNCHECKED) -> line.drop(1).trim().takeIf { it.isNotEmpty() }
+                line.startsWith(TickTickFormat.UNCHECKED) -> line.drop(1).trim().takeIf { it.isNotEmpty() }
                     ?.let { items += ImportedChecklistItem(it, isDone = false) }
                 else -> description += line
             }
