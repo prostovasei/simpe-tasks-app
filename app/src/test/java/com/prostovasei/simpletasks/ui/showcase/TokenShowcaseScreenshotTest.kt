@@ -14,8 +14,7 @@ import org.robolectric.annotation.GraphicsMode
 /** Скриншоты витрины токенов в обеих темах; сохраняются в app/screenshots командой ./gradlew recordRoborazziDebug. */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-// SDK 36: Espresso внутри Compose-тестов пока не поддерживает Android 17 в Robolectric.
-@Config(sdk = [36], qualifiers = "w400dp-h1100dp-xhdpi")
+@Config(qualifiers = "w400dp-h1100dp-xhdpi")
 class TokenShowcaseScreenshotTest {
 
     @get:Rule
