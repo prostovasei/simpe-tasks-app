@@ -1,7 +1,9 @@
 name: Android CI
 
 on:
+  # main собирается при push, остальные ветки — через pull request или вручную (workflow_dispatch).
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
