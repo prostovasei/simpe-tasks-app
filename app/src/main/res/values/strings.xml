@@ -2,6 +2,63 @@
 <resources>
     <string name="app_name">Simple Tasks</string>
 
+    <string name="tab_inbox">Входящие</string>
+    <string name="tab_all">Все</string>
+    <string name="tab_lists">Списки</string>
+    <string name="tab_settings">Настройки</string>
+
+    <string name="day_today">Сегодня</string>
+    <string name="day_tomorrow">Завтра</string>
+    <string name="day_yesterday">Вчера</string>
+    <string name="inbox_list_name">Входящие</string>
+    <string name="meta_separator">\u0020·\u0020</string>
+
+    <string name="task_completed">Задача выполнена</string>
+    <string name="task_undo">Отмена</string>
+
+    <string name="all_title">Все</string>
+    <string name="all_overdue">Просрочено</string>
+    <string name="all_today">Сегодня</string>
+    <string name="all_today_all_day">Весь день</string>
+    <string name="all_today_timed">По времени</string>
+    <string name="all_upcoming">Предстоящие</string>
+    <string name="all_empty">Задач со сроком нет</string>
+
+    <string name="inbox_title">Входящие</string>
+    <string name="inbox_empty">Во «Входящих» пусто</string>
+
+    <string name="lists_title">Списки</string>
+    <string name="lists_new_list">+ Список</string>
+    <string name="lists_new_folder">+ Папка</string>
+    <string name="lists_empty">Списков пока нет</string>
+    <string name="lists_create_list_title">Новый список</string>
+    <string name="lists_create_folder_title">Новая папка</string>
+    <string name="lists_rename_folder_title">Переименовать папку</string>
+    <string name="lists_delete_folder_title">Удалить папку «%s»?</string>
+    <string name="lists_delete_folder_text">Списки из папки останутся и переместятся на верхний уровень.</string>
+    <string name="lists_folder_none">Без папки</string>
+    <string name="lists_folder_menu">Меню папки</string>
+    <string name="lists_expand">Развернуть</string>
+    <string name="lists_collapse">Свернуть</string>
+
+    <string name="project_empty">В списке нет активных задач</string>
+    <string name="project_back">Назад</string>
+    <string name="project_menu">Меню списка</string>
+    <string name="project_rename">Переименовать</string>
+    <string name="project_color">Цвет</string>
+    <string name="project_delete">Удалить</string>
+    <string name="project_rename_title">Переименовать список</string>
+    <string name="project_color_title">Цвет списка</string>
+    <string name="project_no_color">Без цвета</string>
+    <string name="project_delete_title">Удалить список «%s»?</string>
+    <string name="project_delete_text">Задачи и чек-листы этого списка тоже будут удалены.</string>
+
+    <string name="action_create">Создать</string>
+    <string name="action_save">Сохранить</string>
+    <string name="action_cancel">Отмена</string>
+    <string name="action_delete">Удалить</string>
+    <string name="action_rename">Переименовать</string>
+
     <string name="settings_title">Настройки</string>
     <string name="settings_import_title">Импорт из TickTick</string>
     <string name="settings_import_hint">Резервную копию (.csv) можно создать в настройках веб-версии TickTick. Повторный импорт того же файла не создаст дублей.</string>

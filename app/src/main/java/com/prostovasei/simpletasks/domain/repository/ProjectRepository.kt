@@ -7,6 +7,9 @@ import kotlinx.coroutines.flow.Flow
 interface ProjectRepository {
     fun observeProjectTree(): Flow<ProjectTree>
 
+    /** Список по id; null — удалён или не существует. */
+    fun observeProject(projectId: String): Flow<Project?>
+
     suspend fun getInbox(): Project
 
     suspend fun createGroup(name: String): String

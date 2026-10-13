@@ -24,6 +24,16 @@ object ColorTokens {
     val danger = ThemedColor(light = 0xFFD32F2F, dark = 0xFFFF6B6B)
 }
 
+/**
+ * Готовые цвета для списков (выбор в меню «Цвет»). Хранятся в БД как HEX-строка — это данные пользователя,
+ * а набор вариантов — часть дизайн-системы.
+ */
+object ListColorTokens {
+    val presets: List<String> = listOf(
+        "#E5484D", "#F76B15", "#FFC53D", "#46A758", "#12A594", "#3D8BFD", "#8E4EC6", "#D6409F", "#8D8D8D",
+    )
+}
+
 /** Цвета плашек приоритетов (SPEC.md §3). Текст подобран с контрастом не ниже 4.5:1. */
 object PriorityTokens {
     val high = PriorityColorTokens(

@@ -1,0 +1,135 @@
+package com.prostovasei.simpletasks.testing
+
+import com.prostovasei.simpletasks.domain.model.AllScreenTasks
+import com.prostovasei.simpletasks.domain.model.GroupWithProjects
+import com.prostovasei.simpletasks.domain.model.NewTask
+import com.prostovasei.simpletasks.domain.model.Priority
+import com.prostovasei.simpletasks.domain.model.Project
+import com.prostovasei.simpletasks.domain.model.ProjectGroup
+import com.prostovasei.simpletasks.domain.model.ProjectTree
+import com.prostovasei.simpletasks.domain.model.ProjectWithCount
+import com.prostovasei.simpletasks.domain.model.Task
+import com.prostovasei.simpletasks.domain.model.TaskDetails
+import com.prostovasei.simpletasks.domain.model.TaskDue
+import com.prostovasei.simpletasks.domain.model.TaskStatus
+import com.prostovasei.simpletasks.domain.repository.ProjectRepository
+import com.prostovasei.simpletasks.domain.repository.TaskRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
+
+private val EPOCH = Instant.parse("2026-01-01T00:00:00Z")
+
+fun task(
+    id: String,
+    title: String = id,
+    projectId: String = "inbox",
+    due: TaskDue? = null,
+    start: TaskDue? = null,
+    priority: Priority = Priority.NONE,
+    status: TaskStatus = TaskStatus.ACTIVE,
+) = Task(
+    id = id, projectId = projectId, title = title, content = "", status = status, priority = priority, due = due,
+    start = start, completedAt = null, sortOrder = 0, rrule = null, reminders = emptyList(), parentId = null,
+    createdAt = EPOCH, updatedAt = EPOCH,
+)
+
+fun project(id: String, name: String = id, isInbox: Boolean = false, groupId: String? = null, color: String? = null) =
+    Project(id, groupId, name, color, sortOrder = 0, isInbox = isInbox, createdAt = EPOCH, updatedAt = EPOCH)
+
+/** Задачи в памяти; даты сравниваются в UTC. */
+class FakeTaskRepository : TaskRepository {
+    val tasks = MutableStateFlow<List<Task>>(emptyList())
+    val completedCalls = mutableListOf<Pair<String, Boolean>>()
+
+    override fun observeAllScreen(today: LocalDate): Flow<AllScreenTasks> = tasks.map { all ->
+        val active = all.filter { it.status == TaskStatus.ACTIVE && it.due != null }
+        fun TaskDue.date() = when (this) {
+            is TaskDue.AllDay -> date
+            is TaskDue.AtTime -> instant.atZone(ZoneOffset.UTC).toLocalDate()
+        }
+        AllScreenTasks(
+            overdue = active.filter { it.due!!.date() < today },
+            todayAllDay = active.filter { (it.due as? TaskDue.AllDay)?.date == today },
+            todayTimed = active.filter { val due = it.due; due is TaskDue.AtTime && due.date() == today },
+            upcoming = active.filter { it.due!!.date() > today },
+        )
+    }
+
+    override fun observeInbox(): Flow<List<Task>> =
+        tasks.map { all -> all.filter { it.status == TaskStatus.ACTIVE && (it.projectId == "inbox" || it.due == null) } }
+
+    override fun observeProjectTasks(projectId: String): Flow<List<Task>> =
+        tasks.map { all -> all.filter { it.status == TaskStatus.ACTIVE && it.projectId == projectId } }
+
+    override fun observeTaskDetails(taskId: String): Flow<TaskDetails?> =
+        tasks.map { all -> all.firstOrNull { it.id == taskId }?.let { TaskDetails(it, emptyList()) } }
+
+    override suspend fun createTask(task: NewTask): String = error("не используется")
+    override suspend fun updateTask(task: Task) = Unit
+
+    override suspend fun setCompleted(taskId: String, completed: Boolean) {
+        completedCalls += taskId to completed
+        val status = if (completed) TaskStatus.COMPLETED else TaskStatus.ACTIVE
+        tasks.update { all -> all.map { if (it.id == taskId) it.copy(status = status) else it } }
+    }
+
+    override suspend fun deleteTask(taskId: String) {
+        tasks.update { all -> all.filterNot { it.id == taskId } }
+    }
+}
+
+/** Списки и папки в памяти. */
+class FakeProjectRepository : ProjectRepository {
+    val tree = MutableStateFlow(ProjectTree(inbox = ProjectWithCount(project("inbox", "Inbox", isInbox = true), 0), groups = emptyList(), ungrouped = emptyList()))
+    val calls = mutableListOf<String>()
+    private var nextId = 1
+
+    private fun all() = tree.value.let { listOfNotNull(it.inbox) + it.groups.flatMap { g -> g.projects } + it.ungrouped }
+
+    override fun observeProjectTree(): Flow<ProjectTree> = tree
+    override fun observeProject(projectId: String): Flow<Project?> =
+        tree.map { all().firstOrNull { it.project.id == projectId }?.project }
+
+    override suspend fun getInbox(): Project = tree.value.inbox!!.project
+
+    override suspend fun createGroup(name: String): String {
+        val id = "g${nextId++}"
+        calls += "createGroup:$name"
+        tree.update { it.copy(groups = it.groups + GroupWithProjects(ProjectGroup(id, name, 0, EPOCH, EPOCH), emptyList())) }
+        return id
+    }
+
+    override suspend fun renameGroup(groupId: String, name: String) {
+        calls += "renameGroup:$groupId:$name"
+    }
+
+    override suspend fun deleteGroup(groupId: String) {
+        calls += "deleteGroup:$groupId"
+    }
+
+    override suspend fun createProject(name: String, groupId: String?, color: String?): String {
+        val id = "p${nextId++}"
+        calls += "createProject:$name:$groupId"
+        tree.update { it.copy(ungrouped = it.ungrouped + ProjectWithCount(project(id, name, groupId = groupId, color = color), 0)) }
+        return id
+    }
+
+    override suspend fun updateProject(projectId: String, name: String, groupId: String?, color: String?) {
+        calls += "updateProject:$projectId:$name:$groupId:$color"
+        tree.update { t ->
+            t.copy(ungrouped = t.ungrouped.map {
+                if (it.project.id == projectId) it.copy(project = it.project.copy(name = name, groupId = groupId, color = color)) else it
+            })
+        }
+    }
+
+    override suspend fun deleteProject(projectId: String) {
+        calls += "deleteProject:$projectId"
+        tree.update { t -> t.copy(ungrouped = t.ungrouped.filterNot { it.project.id == projectId }) }
+    }
+}

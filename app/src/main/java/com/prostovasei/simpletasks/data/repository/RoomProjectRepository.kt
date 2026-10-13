@@ -14,6 +14,7 @@ import com.prostovasei.simpletasks.domain.repository.ProjectRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
 class RoomProjectRepository @Inject constructor(
@@ -39,6 +40,9 @@ class RoomProjectRepository @Inject constructor(
                 ungrouped = regular.filter { it.project.groupId !in groupIds },
             )
         }.distinctUntilChanged()
+
+    override fun observeProject(projectId: String): Flow<Project?> =
+        projectDao.observeById(projectId).map { it?.toDomain() }.distinctUntilChanged()
 
     override suspend fun getInbox(): Project =
         checkNotNull(projectDao.getInbox()) { "Список «Входящие» должен создаваться при открытии БД" }.toDomain()

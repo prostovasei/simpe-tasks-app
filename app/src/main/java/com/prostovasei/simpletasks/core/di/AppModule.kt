@@ -5,6 +5,8 @@ import com.prostovasei.simpletasks.core.files.ContentResolverDocumentOpener
 import com.prostovasei.simpletasks.core.files.DocumentOpener
 import com.prostovasei.simpletasks.core.id.IdGenerator
 import com.prostovasei.simpletasks.core.id.UuidIdGenerator
+import com.prostovasei.simpletasks.core.time.DayTicker
+import com.prostovasei.simpletasks.core.time.SystemDayTicker
 import com.prostovasei.simpletasks.core.time.SystemTimeProvider
 import com.prostovasei.simpletasks.core.time.TimeProvider
 import com.prostovasei.simpletasks.data.local.db.AppDatabase
@@ -30,6 +32,10 @@ object CoreModule {
     @Provides
     @Singleton
     fun provideTimeProvider(): TimeProvider = SystemTimeProvider()
+
+    @Provides
+    @Singleton
+    fun provideDayTicker(time: TimeProvider): DayTicker = SystemDayTicker(time)
 
     @Provides
     @Singleton

@@ -5,6 +5,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -40,7 +41,7 @@ import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.domain.model.DataStats
 import com.prostovasei.simpletasks.domain.model.ImportReport
 
-/** Экран «Настройки» с ViewModel. До Итерации 04 — стартовый экран приложения. */
+/** Экран «Настройки» с ViewModel. */
 @Composable
 fun SettingsRoute(viewModel: SettingsViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -76,6 +77,7 @@ fun SettingsScreen(
     Scaffold(
         modifier = modifier,
         containerColor = colors.background,
+        contentWindowInsets = WindowInsets(0),
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         Column(

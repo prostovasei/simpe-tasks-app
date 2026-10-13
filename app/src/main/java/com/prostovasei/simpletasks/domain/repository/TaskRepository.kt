@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
 
 interface TaskRepository {
-    /** Секции экрана «Все» относительно дня [today] в текущем часовом поясе. */
+    /** Секции экрана «Все» относительно дня [today] в текущем часовом поясе. Задачи с интервалом — по времени начала. */
     fun observeAllScreen(today: LocalDate): Flow<AllScreenTasks>
 
     /** «Входящие»: задачи системного списка и все задачи без срока (SPEC.md §4.2). */

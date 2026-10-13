@@ -18,8 +18,8 @@ android {
         targetSdk = 37
         // Номер сборки CI растёт с каждым запуском: телефон принимает новый APK как обновление.
         versionCode = providers.environmentVariable("GITHUB_RUN_NUMBER").orNull?.toIntOrNull() ?: 1
-        // 0.<итерация>.<доработка>: 0.3.1 — Итерация 03b.
-        versionName = "0.3.1"
+        // 0.<итерация>.<доработка>: 0.4.0 — Итерация 04.
+        versionName = "0.4.0"
     }
 
     signingConfigs {
@@ -90,6 +90,7 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.material.icons.core)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
     implementation(libs.androidx.navigation.compose)

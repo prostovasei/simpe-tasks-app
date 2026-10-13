@@ -82,7 +82,7 @@ interface TaskDao {
         SELECT * FROM tasks
         WHERE is_deleted = 0 AND status = 0 AND is_all_day = 0
           AND due_date >= :start AND due_date < :end
-        ORDER BY due_date, priority DESC, sort_order, created_at
+        ORDER BY COALESCE(start_date, due_date), priority DESC, sort_order, created_at
         """,
     )
     fun observeTodayTimed(start: Long, end: Long): Flow<List<TaskEntity>>

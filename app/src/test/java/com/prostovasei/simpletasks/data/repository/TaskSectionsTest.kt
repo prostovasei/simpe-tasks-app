@@ -101,6 +101,17 @@ class TaskSectionsTest : DatabaseTest() {
     }
 
     @Test
+    fun intervalsAreOrderedByStartTime() = runTest {
+        val inbox = projects.getInbox().id
+        val long = tasks.createTask(NewTask(projectId = inbox, title = "09:00–12:00", due = at(today, 12)))
+        tasks.updateTask(tasks.observeTaskDetails(long).first()!!.task.copy(start = at(today, 9)))
+        create("11:00", at(today, 11))
+
+        val timed = tasks.observeAllScreen(today).first().todayTimed
+        assertEquals(listOf("09:00–12:00", "11:00"), timed.map { it.title })
+    }
+
+    @Test
     fun sectionsUpdateLiveWhenTaskIsCompleted() = runTest {
         val id = create("Сегодня", TaskDue.AllDay(today))
 
