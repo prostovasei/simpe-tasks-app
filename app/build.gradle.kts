@@ -16,8 +16,10 @@ android {
         applicationId = "com.prostovasei.simpletasks"
         minSdk = 29
         targetSdk = 37
-        // Номер сборки CI растёт с каждым запуском: телефон принимает новый APK как обновление.
-        versionCode = providers.environmentVariable("GITHUB_RUN_NUMBER").orNull?.toIntOrNull() ?: 1
+        // Номер сборки = число коммитов: растёт одинаково в CI и при локальной сборке,
+        // поэтому любой новый APK ставится поверх старого как обновление.
+        versionCode = providers.exec { commandLine("git", "rev-list", "--count", "HEAD"); isIgnoreExitValue = true }
+            .standardOutput.asText.get().trim().toIntOrNull() ?: 1
         // 0.<итерация>.<доработка>: 0.4.0 — Итерация 04.
         versionName = "0.4.0"
     }
@@ -46,6 +48,11 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    packaging {
+        // Сжимать код внутри APK: файл в 2–3 раза меньше, его можно прислать в чат (лимит 30 МБ).
+        dex { useLegacyPackaging = true }
     }
 
     buildFeatures {
