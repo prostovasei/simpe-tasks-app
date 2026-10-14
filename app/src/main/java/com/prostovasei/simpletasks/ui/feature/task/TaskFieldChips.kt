@@ -4,7 +4,12 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
@@ -12,6 +17,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.AlertDialog
@@ -24,6 +30,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import com.prostovasei.simpletasks.R
@@ -32,9 +39,13 @@ import com.prostovasei.simpletasks.designsystem.components.ColorDot
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.designsystem.theme.parseListColor
 import com.prostovasei.simpletasks.domain.model.Priority
+import com.prostovasei.simpletasks.domain.model.Reminders
 import com.prostovasei.simpletasks.domain.model.TaskDue
+import com.prostovasei.simpletasks.domain.model.allDayReminder
+import com.prostovasei.simpletasks.domain.model.parseReminder
 import com.prostovasei.simpletasks.ui.common.DayLabel
 import com.prostovasei.simpletasks.ui.common.DueFormatter
+import com.prostovasei.simpletasks.ui.common.reminderText
 import com.prostovasei.simpletasks.ui.common.repeatSummary
 import java.time.LocalDate
 import java.time.LocalTime
@@ -43,7 +54,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 /**
- * Ряд кнопок свойств задачи (SPEC.md §4.4): Дата, Время, Список, Приоритет, Повтор.
+ * Ряд кнопок свойств задачи (SPEC.md §4.4): Дата, Время, Напоминание, Список, Приоритет, Повтор.
  * Выбор приходит в [onEdit] готовым значением; меню и диалоги — состояние самого экрана.
  */
 @Composable
@@ -52,6 +63,7 @@ fun TaskFieldChips(
     projectId: String,
     priority: Priority,
     rrule: String?,
+    reminders: List<String>,
     projects: List<ProjectOption>,
     today: LocalDate,
     zone: ZoneId,
@@ -66,6 +78,7 @@ fun TaskFieldChips(
     ) {
         DateChip(due, today, zone, onEdit) { dialog = ChipDialog.Date }
         TimeChip(due, today, zone, onEdit) { dialog = ChipDialog.Time }
+        if (due != null) ReminderChip(due, reminders, onEdit)
         ProjectChip(projectId, projects, onEdit)
         PriorityChip(priority, onEdit)
         AppChip(
@@ -132,6 +145,51 @@ private fun TimeChip(due: TaskDue?, today: LocalDate, zone: ZoneId, onEdit: (Fie
     }
 }
 
+/** Напоминания: готовые варианты и уже заданные (например, из TickTick) — с галочками; нажатие включает или выключает. */
+@Composable
+private fun ReminderChip(due: TaskDue, reminders: List<String>, onEdit: (FieldEdit) -> Unit) {
+    var menu by remember { mutableStateOf(false) }
+    val allDay = due is TaskDue.AllDay
+    val first = reminders.firstOrNull()?.let { reminderChipText(it, allDay) }
+    val label = when {
+        first == null -> stringResource(R.string.reminder_none)
+        reminders.size == 1 -> first
+        else -> stringResource(R.string.reminder_more, first, reminders.size - 1)
+    }
+    val options = reminders + Reminders.presets(due).filter { preset -> reminders.none { Reminders.sameMoment(it, preset) } }
+    Box {
+        AppChip(label, selected = reminders.isNotEmpty(), tag = TAG_CHIP_REMINDER, icon = Icons.Default.Notifications) { menu = true }
+        DropdownMenu(expanded = menu, onDismissRequest = { menu = false }, containerColor = AppTheme.colors.surface) {
+            options.forEach { option ->
+                val checked = option in reminders
+                DropdownMenuItem(
+                    text = { Text(reminderText(option, allDay), color = AppTheme.colors.textPrimary) },
+                    leadingIcon = { if (checked) Icon(Icons.Default.Check, null, tint = AppTheme.colors.accent) else Spacer(Modifier.size(AppTheme.sizes.icon)) },
+                    onClick = {
+                        menu = false
+                        onEdit(FieldEdit.SetReminders(if (checked) reminders - option else reminders + option))
+                    },
+                    modifier = Modifier.testTag("$TAG_REMINDER_OPTION:$option"),
+                )
+            }
+            if (reminders.isNotEmpty()) MenuItem(R.string.reminder_none) { menu = false; onEdit(FieldEdit.SetReminders(emptyList())) }
+        }
+    }
+}
+
+/** Короткая подпись для кнопки: «10:00» (в день срока), «В срок», иначе полный текст. */
+@Composable
+private fun reminderChipText(trigger: String, allDay: Boolean): String {
+    val offset = parseReminder(trigger) ?: return trigger
+    if (allDay) {
+        val (daysBefore, minuteOfDay) = allDayReminder(offset)
+        if (daysBefore == 0) return TIME.format(LocalTime.ofSecondOfDay(minuteOfDay * 60L))
+    } else if (offset.isZero) {
+        return stringResource(R.string.reminder_at_due_short)
+    }
+    return reminderText(trigger, allDay)
+}
+
 @Composable
 private fun ProjectChip(projectId: String, projects: List<ProjectOption>, onEdit: (FieldEdit) -> Unit) {
     var menu by remember { mutableStateOf(false) }
@@ -176,17 +234,20 @@ private fun PriorityChip(priority: Priority, onEdit: (FieldEdit) -> Unit) {
 
 /** Кнопка-«чип» в стиле дизайн-системы. */
 @Composable
-fun AppChip(label: String, selected: Boolean, tag: String, onClick: () -> Unit) {
+fun AppChip(label: String, selected: Boolean, tag: String, icon: ImageVector? = null, onClick: () -> Unit) {
     val colors = AppTheme.colors
     FilterChip(
         selected = selected,
         onClick = onClick,
         label = { Text(label) },
+        leadingIcon = icon?.let { { Icon(it, null, modifier = Modifier.size(FilterChipDefaults.IconSize)) } },
         colors = FilterChipDefaults.filterChipColors(
             containerColor = colors.surface,
             labelColor = colors.textPrimary,
             selectedContainerColor = colors.accent,
             selectedLabelColor = colors.onAccent,
+            iconColor = colors.textSecondary,
+            selectedLeadingIconColor = colors.onAccent,
         ),
         modifier = Modifier.testTag(tag),
     )
@@ -245,3 +306,5 @@ const val TAG_CHIP_TIME = "chip_time"
 const val TAG_CHIP_LIST = "chip_list"
 const val TAG_CHIP_PRIORITY = "chip_priority"
 const val TAG_CHIP_REPEAT = "chip_repeat"
+const val TAG_CHIP_REMINDER = "chip_reminder"
+const val TAG_REMINDER_OPTION = "reminder_option"

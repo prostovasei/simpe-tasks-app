@@ -23,12 +23,15 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -48,17 +51,31 @@ import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.domain.model.ChecklistItem
 import com.prostovasei.simpletasks.domain.model.Task
 import com.prostovasei.simpletasks.domain.model.TaskStatus
-import com.prostovasei.simpletasks.ui.common.reminderText
+import com.prostovasei.simpletasks.ui.common.DayNames
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 @Composable
 fun TaskDetailRoute(onClose: () -> Unit, onOpenTask: (String) -> Unit, viewModel: TaskDetailViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val snackbar = remember { SnackbarHostState() }
+    val rescheduled = stringResource(R.string.task_rescheduled)
+    val days = DayNames(stringResource(R.string.day_today), stringResource(R.string.day_tomorrow), stringResource(R.string.day_yesterday))
     LaunchedEffect(viewModel) {
-        viewModel.effects.collect { effect -> if (effect == TaskDetailEffect.Close) onClose() }
+        viewModel.effects.collect { effect ->
+            when (effect) {
+                TaskDetailEffect.Close -> onClose()
+                is TaskDetailEffect.Rescheduled -> launch {
+                    snackbar.currentSnackbarData?.dismiss()
+                    snackbar.showSnackbar(rescheduled.format(days.format(effect.next)))
+                }
+            }
+        }
     }
-    TaskDetailScreen(state, viewModel::onIntent, onClose, onOpenTask)
+    Box {
+        TaskDetailScreen(state, viewModel::onIntent, onClose, onOpenTask)
+        SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter))
+    }
 }
 
 @Composable
@@ -111,6 +128,7 @@ fun TaskDetailScreen(
                 projectId = task.projectId,
                 priority = task.priority,
                 rrule = task.rrule,
+                reminders = task.reminders,
                 projects = state.projects,
                 today = state.today,
                 zone = state.zone,
@@ -125,7 +143,6 @@ fun TaskDetailScreen(
                 singleLine = false,
                 modifier = Modifier.padding(horizontal = spacing.xs).testTag(TAG_DETAIL_CONTENT),
             )
-            if (task.reminders.isNotEmpty()) Reminders(task)
             ChecklistSection(state.checklist, onIntent)
             if (state.subtasks.isNotEmpty()) SubtasksSection(state.subtasks, onIntent, onOpenTask)
             Text(
@@ -184,15 +201,6 @@ private fun SectionTitle(text: String) {
         color = AppTheme.colors.textSecondary,
         modifier = Modifier.padding(start = AppTheme.spacing.md, top = AppTheme.spacing.sm),
     )
-}
-
-@Composable
-private fun Reminders(task: Task) {
-    SectionTitle(stringResource(R.string.detail_reminders))
-    Column(Modifier.padding(horizontal = AppTheme.spacing.md), verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.xxs)) {
-        Text(task.reminders.map { reminderText(it) }.joinToString(", "), color = AppTheme.colors.textPrimary)
-        Text(stringResource(R.string.detail_reminders_hint), style = MaterialTheme.typography.bodySmall, color = AppTheme.colors.textSecondary)
-    }
 }
 
 @Composable

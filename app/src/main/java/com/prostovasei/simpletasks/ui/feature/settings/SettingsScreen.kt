@@ -1,5 +1,12 @@
 package com.prostovasei.simpletasks.ui.feature.settings
 
+import androidx.lifecycle.compose.LifecycleResumeEffect
+import androidx.core.app.NotificationManagerCompat
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import android.provider.Settings
+import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
@@ -54,7 +61,24 @@ fun SettingsRoute(viewModel: SettingsViewModel = hiltViewModel()) {
             }
         }
     }
-    SettingsScreen(state = state, onIntent = viewModel::onIntent, snackbarHostState = snackbar)
+    // Уведомления могли выключить в системе — проверяем при каждом возвращении на экран.
+    val context = LocalContext.current
+    var notificationsOff by remember { mutableStateOf(false) }
+    LifecycleResumeEffect(Unit) {
+        notificationsOff = !NotificationManagerCompat.from(context).areNotificationsEnabled()
+        onPauseOrDispose {}
+    }
+    SettingsScreen(
+        state = state,
+        onIntent = viewModel::onIntent,
+        snackbarHostState = snackbar,
+        notificationsOff = notificationsOff,
+        onEnableNotifications = {
+            context.startActivity(
+                Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName),
+            )
+        },
+    )
 }
 
 @Composable
@@ -64,6 +88,8 @@ fun SettingsScreen(
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     appVersion: AppVersion = AppVersion.current,
+    notificationsOff: Boolean = false,
+    onEnableNotifications: () -> Unit = {},
 ) {
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let { onIntent(SettingsIntent.FileSelected(it.toString())) }
@@ -94,6 +120,19 @@ fun SettingsScreen(
                 fontWeight = FontWeight.Bold,
                 color = colors.textPrimary,
             )
+
+            if (notificationsOff) {
+                SectionTitle(R.string.settings_notifications_title)
+                Text(
+                    text = stringResource(R.string.settings_notifications_off),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colors.overdue,
+                )
+                Button(onClick = onEnableNotifications, modifier = Modifier.testTag(TAG_NOTIFICATIONS_BUTTON)) {
+                    Text(stringResource(R.string.settings_notifications_enable))
+                }
+                HorizontalDivider(color = colors.divider, modifier = Modifier.padding(vertical = spacing.xs))
+            }
 
             SectionTitle(R.string.settings_import_title)
             Text(
@@ -278,6 +317,7 @@ private const val CSV_MIME_TYPE = "text/csv"
 const val TAG_IMPORT_BUTTON = "settings_import"
 const val TAG_EXPORT_BUTTON = "settings_export"
 const val TAG_CLEAR_BUTTON = "settings_clear"
+const val TAG_NOTIFICATIONS_BUTTON = "settings_notifications"
 
 internal val previewReport = ImportReport(
     tasksAdded = 3399,

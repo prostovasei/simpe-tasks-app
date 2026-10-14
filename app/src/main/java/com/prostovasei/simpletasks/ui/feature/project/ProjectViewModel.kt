@@ -28,7 +28,7 @@ class ProjectViewModel @Inject constructor(
 
     /** Аргумент маршрута ProjectDestination(projectId). */
     private val projectId: String = checkNotNull(savedStateHandle["projectId"]) { "Не передан projectId" }
-    private val completion = CompletionTracker(viewModelScope, tasks)
+    private val completion = CompletionTracker(viewModelScope, tasks, time)
     private var closed = false
 
     init {
@@ -64,8 +64,7 @@ class ProjectViewModel @Inject constructor(
 
     override fun onIntent(intent: TaskListIntent) {
         when (intent) {
-            is TaskListIntent.ToggleComplete ->
-                if (completion.toggle(intent.taskId)) sendEffect(TaskListEffect.ShowUndo(intent.taskId))
+            is TaskListIntent.ToggleComplete -> completion.toggle(intent.taskId, intent.recurring) { sendEffect(it) }
             is TaskListIntent.Undo -> completion.undo(intent.taskId)
             is ProjectIntent.OpenDialog -> setState { copy(dialog = intent.dialog) }
             ProjectIntent.DismissDialog -> setState { copy(dialog = ProjectDialog.None) }

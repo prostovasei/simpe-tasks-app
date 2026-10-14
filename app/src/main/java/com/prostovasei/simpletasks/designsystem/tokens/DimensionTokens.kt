@@ -26,6 +26,7 @@ object SizeTokens {
     const val SWATCH = 32
     const val PROGRESS_HEIGHT = 6
     const val LIST_DOT = 10
+    const val META_ICON = 14
     const val COLOR_SWATCH = 40
     const val ICON = 24
     const val CHECKBOX_TOUCH = 40

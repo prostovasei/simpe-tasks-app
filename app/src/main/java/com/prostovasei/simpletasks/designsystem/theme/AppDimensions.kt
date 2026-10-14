@@ -34,6 +34,7 @@ data class AppSizes(
     val swatch: Dp = SizeTokens.SWATCH.dp,
     val progressHeight: Dp = SizeTokens.PROGRESS_HEIGHT.dp,
     val listDot: Dp = SizeTokens.LIST_DOT.dp,
+    val metaIcon: Dp = SizeTokens.META_ICON.dp,
     val colorSwatch: Dp = SizeTokens.COLOR_SWATCH.dp,
     val icon: Dp = SizeTokens.ICON.dp,
     val checkboxTouch: Dp = SizeTokens.CHECKBOX_TOUCH.dp,

@@ -7,9 +7,11 @@ import androidx.compose.ui.res.stringResource
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.domain.model.RepeatFrequency
 import com.prostovasei.simpletasks.domain.model.RepeatRule
+import com.prostovasei.simpletasks.domain.model.allDayReminder
 import com.prostovasei.simpletasks.domain.model.parseReminder
 import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
@@ -49,18 +51,37 @@ fun repeatSummary(rrule: String?): String? {
 /** «пн», «вт»… */
 fun shortDay(day: DayOfWeek): String = day.getDisplayName(TextStyle.SHORT, RU).removeSuffix(".")
 
-/** Напоминание по-русски: «В момент срока», «За 7 дней», «За 1 час». Неизвестный формат — как есть. */
+/**
+ * Напоминание по-русски. Для задачи со временем: «В момент срока», «За 30 минут», «За 1 день».
+ * Для задачи на весь день: «В день срока в 10:00», «За 1 день в 10:00». Неизвестный формат — как есть.
+ */
 @Composable
 @ReadOnlyComposable
-fun reminderText(trigger: String): String {
+fun reminderText(trigger: String, allDay: Boolean = false): String {
     val offset = parseReminder(trigger) ?: return trigger
+    if (allDay) {
+        val (daysBefore, minuteOfDay) = allDayReminder(offset)
+        val time = REMINDER_TIME.format(LocalTime.ofSecondOfDay(minuteOfDay * 60L))
+        return when {
+            daysBefore == 0 -> stringResource(R.string.reminder_on_day, time)
+            daysBefore > 0 -> stringResource(R.string.reminder_before_at, daysAmount(daysBefore), time)
+            else -> stringResource(R.string.reminder_after_at, daysAmount(-daysBefore), time)
+        }
+    }
     if (offset.isZero) return stringResource(R.string.reminder_at_due)
     val minutes = offset.abs().toMinutes().toInt()
     val amount = when {
-        minutes % (7 * 24 * 60) == 0 -> (minutes / (7 * 24 * 60)).let { pluralStringResource(R.plurals.unit_weeks, it, it) }
-        minutes % (24 * 60) == 0 -> (minutes / (24 * 60)).let { pluralStringResource(R.plurals.unit_days, it, it) }
+        minutes % (24 * 60) == 0 -> daysAmount(minutes / (24 * 60))
         minutes % 60 == 0 -> (minutes / 60).let { pluralStringResource(R.plurals.unit_hours, it, it) }
         else -> pluralStringResource(R.plurals.unit_minutes, minutes, minutes)
     }
     return stringResource(if (offset.isNegative) R.string.reminder_before else R.string.reminder_after, amount)
 }
+
+/** «1 неделю», «3 дня». */
+@Composable
+@ReadOnlyComposable
+private fun daysAmount(days: Int): String =
+    if (days % 7 == 0) pluralStringResource(R.plurals.unit_weeks, days / 7, days / 7) else pluralStringResource(R.plurals.unit_days, days, days)
+
+private val REMINDER_TIME: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")

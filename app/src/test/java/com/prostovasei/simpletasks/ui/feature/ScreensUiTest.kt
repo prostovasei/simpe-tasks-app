@@ -67,7 +67,8 @@ class ScreensUiTest {
         color: String? = "#3D8BFD",
         priority: Priority = Priority.NONE,
         completing: Boolean = false,
-    ) = TaskItem(id, title, priority, due, list, color, isInboxList = list == null, isCompleting = completing)
+        recurring: Boolean = false,
+    ) = TaskItem(id, title, priority, due, list, color, isInboxList = list == null, isCompleting = completing, isRecurring = recurring)
 
     private val allState = AllState(
         overdue = listOf(item("o1", "Отправить отчёт", DueText(DayLabel.Yesterday, null), priority = Priority.HIGH)),
@@ -75,7 +76,7 @@ class ScreensUiTest {
             item("d1", "Купить продукты", DueText(DayLabel.Today, null), list = null, color = null, priority = Priority.LOW),
             item("d2", "Оплатить интернет", DueText(DayLabel.Today, null), list = "Дом", color = "#46A758", completing = true),
         ),
-        todayTimed = listOf(item("t1", "Созвон с командой", DueText(DayLabel.Today, "10:00–11:00"), priority = Priority.MEDIUM)),
+        todayTimed = listOf(item("t1", "Созвон с командой", DueText(DayLabel.Today, "10:00–11:00"), priority = Priority.MEDIUM, recurring = true)),
         upcoming = listOf(item("u1", "Записаться к врачу", DueText(DayLabel.Date(LocalDate.of(2026, 10, 20), false), "09:30"), list = "Здоровье", color = "#E5484D")),
         isLoading = false,
     )
@@ -112,7 +113,7 @@ class ScreensUiTest {
     fun tappingCheckboxCompletesTask() {
         show { AllScreen(allState, { intents += it }) }
         composeRule.onNodeWithTag("task:t1:check").performClick()
-        assertEquals(listOf<Any>(TaskListIntent.ToggleComplete("t1")), intents)
+        assertEquals(listOf<Any>(TaskListIntent.ToggleComplete("t1", recurring = true)), intents)
     }
 
     @Test

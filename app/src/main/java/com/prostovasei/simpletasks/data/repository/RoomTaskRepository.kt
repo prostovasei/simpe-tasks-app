@@ -10,10 +10,14 @@ import com.prostovasei.simpletasks.data.local.entity.ChecklistItemEntity
 import com.prostovasei.simpletasks.data.local.entity.TaskEntity
 import com.prostovasei.simpletasks.data.mapper.toDomain
 import com.prostovasei.simpletasks.domain.model.AllScreenTasks
+import com.prostovasei.simpletasks.domain.model.Completion
 import com.prostovasei.simpletasks.domain.model.NewTask
 import com.prostovasei.simpletasks.domain.model.Task
 import com.prostovasei.simpletasks.domain.model.TaskDetails
+import com.prostovasei.simpletasks.domain.model.TaskDue
 import com.prostovasei.simpletasks.domain.model.TaskStatus
+import com.prostovasei.simpletasks.domain.model.nextOccurrence
+import com.prostovasei.simpletasks.domain.model.withDue
 import com.prostovasei.simpletasks.domain.repository.TaskRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -93,6 +97,67 @@ class RoomTaskRepository @Inject constructor(
         )
     }
 
+    override suspend fun getTask(taskId: String): Task? = taskDao.getById(taskId)?.takeUnless { it.isDeleted }?.toDomain()
+
+    override fun observeWithReminders(): Flow<List<Task>> =
+        taskDao.observeWithReminders().map { tasks -> tasks.map { it.toDomain() } }.distinctUntilChanged()
+
+    override suspend fun complete(taskId: String): Completion = db.withTransaction {
+        val entity = taskDao.getById(taskId)?.takeIf { !it.isDeleted && it.status == TaskStatus.ACTIVE.value }
+            ?: return@withTransaction Completion.Done(taskId)
+        val task = entity.toDomain()
+        val next = task.nextOccurrence(time.zone(), time.today())
+        if (next == null) {
+            setCompleted(taskId, completed = true)
+            return@withTransaction Completion.Done(taskId)
+        }
+        val now = nowMillis()
+        // Выполненный раз — отдельная задача со старым сроком и отмеченным чек-листом.
+        val copyId = ids.newId()
+        taskDao.insert(
+            entity.copy(
+                id = copyId,
+                status = TaskStatus.COMPLETED.value,
+                completedAt = now,
+                rrule = null,
+                externalId = null,
+                sourceData = null,
+                createdAt = now,
+                updatedAt = now,
+            ),
+        )
+        val items = checklistDao.getByTask(taskId)
+        checklistDao.insertAll(items.map { it.copy(id = ids.newId(), taskId = copyId, createdAt = now, updatedAt = now) })
+        val checked = items.filter { it.isDone }.map { it.id }
+        checked.forEach { checklistDao.setDone(it, done = false, now = now) }
+        updateTask(next)
+        Completion.Rescheduled(taskId, previous = task, next = next, doneCopyId = copyId, checkedItemIds = checked)
+    }
+
+    override suspend fun undo(completion: Completion) {
+        when (completion) {
+            is Completion.Done -> setCompleted(completion.taskId, completed = false)
+            is Completion.Rescheduled -> db.withTransaction {
+                val now = nowMillis()
+                checklistDao.deleteHardByTask(completion.doneCopyId)
+                taskDao.deleteHard(completion.doneCopyId)
+                updateTask(completion.previous)
+                completion.checkedItemIds.forEach { checklistDao.setDone(it, done = true, now = now) }
+            }
+        }
+    }
+
+    override suspend fun moveToTomorrow(taskId: String) {
+        val task = getTask(taskId) ?: return
+        val zone = time.zone()
+        val tomorrow = time.today().plusDays(1)
+        val newDue = when (val due = task.due) {
+            null, is TaskDue.AllDay -> TaskDue.AllDay(tomorrow)
+            is TaskDue.AtTime -> TaskDue.AtTime(due.instant.atZone(zone).toLocalTime().atDate(tomorrow).atZone(zone).toInstant())
+        }
+        updateTask(task.withDue(newDue))
+    }
+
     override suspend fun setCompleted(taskId: String, completed: Boolean) {
         val now = nowMillis()
         if (completed) {
@@ -124,6 +189,7 @@ class RoomTaskRepository @Inject constructor(
             isAllDay = due.isAllDay,
             sortOrder = taskDao.nextSortOrder(task.projectId),
             rrule = task.rrule?.takeIf { task.due != null },
+            reminders = task.reminders.takeIf { task.due != null && it.isNotEmpty() }?.joinToString("\n"),
             createdAt = now,
             updatedAt = now,
         )

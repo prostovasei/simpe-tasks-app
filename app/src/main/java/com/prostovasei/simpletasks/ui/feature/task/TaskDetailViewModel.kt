@@ -6,12 +6,15 @@ import com.prostovasei.simpletasks.core.di.ApplicationScope
 import com.prostovasei.simpletasks.core.time.DayTicker
 import com.prostovasei.simpletasks.core.time.TimeProvider
 import com.prostovasei.simpletasks.domain.model.ChecklistItem
+import com.prostovasei.simpletasks.domain.model.Completion
 import com.prostovasei.simpletasks.domain.model.Task
 import com.prostovasei.simpletasks.domain.model.TaskStatus
 import com.prostovasei.simpletasks.domain.model.withDue
 import com.prostovasei.simpletasks.domain.repository.ChecklistRepository
 import com.prostovasei.simpletasks.domain.repository.ProjectRepository
 import com.prostovasei.simpletasks.domain.repository.TaskRepository
+import com.prostovasei.simpletasks.ui.common.DueFormatter
+import com.prostovasei.simpletasks.ui.common.DueText
 import com.prostovasei.simpletasks.ui.mvi.MviViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineScope
@@ -55,6 +58,9 @@ sealed interface TaskDetailIntent {
 
 sealed interface TaskDetailEffect {
     data object Close : TaskDetailEffect
+
+    /** Повторяющаяся задача выполнена и перенесена: «Следующий раз: …». */
+    data class Rescheduled(val next: DueText) : TaskDetailEffect
 }
 
 @HiltViewModel
@@ -64,7 +70,7 @@ class TaskDetailViewModel @Inject constructor(
     private val checklist: ChecklistRepository,
     projects: ProjectRepository,
     dayTicker: DayTicker,
-    time: TimeProvider,
+    private val time: TimeProvider,
     @param:ApplicationScope private val appScope: CoroutineScope,
 ) : MviViewModel<TaskDetailState, TaskDetailIntent, TaskDetailEffect>(TaskDetailState(today = time.today(), zone = time.zone())) {
 
@@ -111,12 +117,10 @@ class TaskDetailViewModel @Inject constructor(
                     is FieldEdit.Project -> copy(projectId = edit.projectId)
                     is FieldEdit.SetPriority -> copy(priority = edit.priority)
                     is FieldEdit.Repeat -> copy(rrule = edit.rrule)
+                    is FieldEdit.SetReminders -> copy(reminders = edit.reminders)
                 }
             }
-            TaskDetailIntent.ToggleCompleted -> {
-                val task = currentState.task ?: return
-                appScope.launch { tasks.setCompleted(task.id, completed = task.status == TaskStatus.ACTIVE) }
-            }
+            TaskDetailIntent.ToggleCompleted -> toggleCompleted()
             TaskDetailIntent.RequestDelete -> setState { copy(showDeleteConfirm = true) }
             TaskDetailIntent.DismissDelete -> setState { copy(showDeleteConfirm = false) }
             TaskDetailIntent.ConfirmDelete -> {
@@ -142,7 +146,34 @@ class TaskDetailViewModel @Inject constructor(
             is TaskDetailIntent.DeleteItem -> viewModelScope.launch { checklist.deleteItem(intent.itemId) }
             is TaskDetailIntent.MoveItem -> moveItem(intent.itemId, intent.up)
             is TaskDetailIntent.ToggleSubtask -> currentState.subtasks.firstOrNull { it.id == intent.taskId }?.let { sub ->
-                viewModelScope.launch { tasks.setCompleted(sub.id, completed = sub.status == TaskStatus.ACTIVE) }
+                viewModelScope.launch {
+                    if (sub.status == TaskStatus.ACTIVE) tasks.complete(sub.id) else tasks.setCompleted(sub.id, completed = false)
+                }
+            }
+        }
+    }
+
+    /**
+     * Отметка задачи. Сначала дописывается черновик, потом задача отмечается. Повторяющаяся переезжает
+     * на следующий раз: новый срок сразу показывается на экране, галочка не ставится.
+     */
+    private fun toggleCompleted() {
+        val task = currentState.task ?: return
+        textSaveJob?.cancel()
+        persist()
+        val previous = lastWrite
+        lastWrite = appScope.launch {
+            previous?.join()
+            if (task.status != TaskStatus.ACTIVE) {
+                tasks.setCompleted(task.id, completed = false)
+                return@launch
+            }
+            val result = tasks.complete(task.id)
+            if (result is Completion.Rescheduled) {
+                val next = result.next
+                saved = saved?.copy(due = next.due, start = next.start, rrule = next.rrule, reminders = next.reminders)
+                setState { copy(task = this.task?.copy(due = next.due, start = next.start, rrule = next.rrule, reminders = next.reminders)) }
+                sendEffect(TaskDetailEffect.Rescheduled(DueFormatter.format(next.due, next.start, time.today(), time.zone()) ?: return@launch))
             }
         }
     }
@@ -214,4 +245,4 @@ class TaskDetailViewModel @Inject constructor(
 
 private fun Task.editableEquals(other: Task) =
     title == other.title && content == other.content && projectId == other.projectId && priority == other.priority &&
-        due == other.due && start == other.start && rrule == other.rrule
+        due == other.due && start == other.start && rrule == other.rrule && reminders == other.reminders

@@ -21,6 +21,7 @@ sealed interface FieldEdit {
     data class Project(val projectId: String) : FieldEdit
     data class SetPriority(val priority: Priority) : FieldEdit
     data class Repeat(val rrule: String?) : FieldEdit
+    data class SetReminders(val reminders: List<String>) : FieldEdit
 }
 
 /** Срок → календарная дата в поясе пользователя. */

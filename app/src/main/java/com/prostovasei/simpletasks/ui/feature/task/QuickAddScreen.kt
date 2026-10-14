@@ -124,6 +124,7 @@ fun QuickAddScreen(state: QuickAddState, onIntent: (QuickAddIntent) -> Unit, onC
             projectId = state.projectId,
             priority = state.priority,
             rrule = state.rrule,
+            reminders = state.reminders,
             projects = state.projects,
             today = state.today,
             zone = state.zone,

@@ -146,7 +146,7 @@ class TaskScreensUiTest {
 
     private val detailState = TaskDetailState(
         task = task("t1", title = "Подготовить отчёт", projectId = "work", priority = Priority.HIGH, due = TaskDue.AllDay(today))
-            .copy(content = "Квартальный отчёт для руководства", rrule = "FREQ=MONTHLY;INTERVAL=1;BYMONTHDAY=14", reminders = listOf("PT0S", "-PT10080M")),
+            .copy(content = "Квартальный отчёт для руководства", rrule = "FREQ=MONTHLY;INTERVAL=1;BYMONTHDAY=14", reminders = listOf("P0DT10H0M0S", "-P6DT14H0M0S")),
         checklist = listOf(
             ChecklistItem("i1", "t1", "Собрать данные", isDone = true, sortOrder = 0, createdAt = Instant.EPOCH, updatedAt = Instant.EPOCH),
             ChecklistItem("i2", "t1", "Сверстать таблицу", isDone = false, sortOrder = 1, createdAt = Instant.EPOCH, updatedAt = Instant.EPOCH),
@@ -164,10 +164,46 @@ class TaskScreensUiTest {
         composeRule.onNodeWithText("Подготовить отчёт").assertExists()
         composeRule.onNodeWithTag(TAG_CHIP_DATE).assertTextEquals("Сегодня")
         composeRule.onNodeWithTag(TAG_CHIP_REPEAT).assertTextEquals("Каждый месяц: 14-го")
-        composeRule.onNodeWithText("В момент срока, За 1 неделю").assertExists()
+        composeRule.onNodeWithTag(TAG_CHIP_REMINDER).assertTextEquals("10:00 +1")
         composeRule.onNodeWithText("Собрать данные").assertExists()
         composeRule.onNodeWithText("Запросить цифры у бухгалтерии").assertExists()
         composeRule.onNodeWithText("Создана 1 января 2026").assertExists()
+    }
+
+    @Test
+    fun reminderMenuTogglesOptions() {
+        show { TaskDetailScreen(detailState, { intents += it }, {}, {}) }
+
+        composeRule.onNodeWithTag(TAG_CHIP_REMINDER).performScrollTo().performClick()
+        composeRule.onNodeWithText("За 1 неделю в 10:00").assertExists()
+        composeRule.onNodeWithText("За 1 день в 10:00").performClick()
+        composeRule.onNodeWithTag(TAG_CHIP_REMINDER).performScrollTo().performClick()
+        composeRule.onNodeWithText("Без напоминания").performClick()
+
+        assertEquals(
+            listOf<Any>(
+                TaskDetailIntent.Edit(FieldEdit.SetReminders(listOf("P0DT10H0M0S", "-P6DT14H0M0S", "-P0DT14H0M0S"))),
+                TaskDetailIntent.Edit(FieldEdit.SetReminders(emptyList())),
+            ),
+            intents,
+        )
+    }
+
+    @Test
+    fun quickAddShowsDefaultReminder() {
+        show { QuickAddScreen(quickState, { intents += it }, {}, autoFocus = false) }
+        composeRule.onNodeWithTag(TAG_CHIP_REMINDER).assertTextEquals("В срок")
+
+        composeRule.onNodeWithTag(TAG_CHIP_REMINDER).performScrollTo().performClick()
+        composeRule.onNodeWithTag("$TAG_REMINDER_OPTION:PT0S").assertExists()
+        composeRule.onNodeWithTag("$TAG_REMINDER_OPTION:-PT30M").performClick()
+        assertEquals(listOf<Any>(QuickAddIntent.Edit(FieldEdit.SetReminders(listOf("PT0S", "-PT30M")))), intents)
+    }
+
+    @Test
+    fun noDateNoReminderChip() {
+        show { QuickAddScreen(quickState.copy(due = null), { intents += it }, {}, autoFocus = false) }
+        composeRule.onNodeWithTag(TAG_CHIP_REMINDER).assertDoesNotExist()
     }
 
     @Test

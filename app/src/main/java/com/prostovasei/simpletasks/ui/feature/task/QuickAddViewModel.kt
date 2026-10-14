@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.prostovasei.simpletasks.core.time.TimeProvider
 import com.prostovasei.simpletasks.domain.model.NewTask
 import com.prostovasei.simpletasks.domain.model.Priority
+import com.prostovasei.simpletasks.domain.model.Reminders
 import com.prostovasei.simpletasks.domain.model.TaskDue
 import com.prostovasei.simpletasks.domain.repository.ProjectRepository
 import com.prostovasei.simpletasks.domain.repository.TaskRepository
@@ -23,6 +24,8 @@ data class QuickAddState(
     val priority: Priority = Priority.NONE,
     val due: TaskDue? = null,
     val rrule: String? = null,
+    /** null — напоминание по умолчанию для срока (решение PM: включено у каждой новой задачи со сроком). */
+    val customReminders: List<String>? = null,
     /** null — чек-листа нет; список — поля пунктов (последнее может быть пустым). */
     val checklist: List<String>? = null,
     val projects: List<ProjectOption> = emptyList(),
@@ -31,6 +34,7 @@ data class QuickAddState(
     val isSaving: Boolean = false,
 ) {
     val canSave: Boolean get() = title.isNotBlank() && projectId.isNotEmpty() && !isSaving
+    val reminders: List<String> get() = customReminders ?: Reminders.default(due)
 }
 
 sealed interface QuickAddIntent {
@@ -84,10 +88,16 @@ class QuickAddViewModel @Inject constructor(
             is QuickAddIntent.Content -> setState { copy(content = intent.text) }
             is QuickAddIntent.Edit -> setState {
                 when (val edit = intent.edit) {
-                    is FieldEdit.Due -> copy(due = edit.due, rrule = if (edit.due == null) null else rrule)
+                    is FieldEdit.Due -> copy(
+                        due = edit.due,
+                        rrule = if (edit.due == null) null else rrule,
+                        // Свои напоминания живут, пока не меняется вид срока («весь день» ↔ «со временем»).
+                        customReminders = customReminders.takeIf { edit.due != null && due != null && edit.due::class == due::class },
+                    )
                     is FieldEdit.Project -> copy(projectId = edit.projectId)
                     is FieldEdit.SetPriority -> copy(priority = edit.priority)
                     is FieldEdit.Repeat -> copy(rrule = edit.rrule)
+                    is FieldEdit.SetReminders -> copy(customReminders = edit.reminders)
                 }
             }
             QuickAddIntent.AddChecklist -> setState { copy(checklist = (checklist ?: emptyList()) + "") }
@@ -115,6 +125,7 @@ class QuickAddViewModel @Inject constructor(
                     due = state.due,
                     checklist = state.checklist.orEmpty().map { it.trim() }.filter { it.isNotEmpty() },
                     rrule = state.rrule,
+                    reminders = state.reminders,
                 ),
             )
             sendEffect(QuickAddEffect.Close)

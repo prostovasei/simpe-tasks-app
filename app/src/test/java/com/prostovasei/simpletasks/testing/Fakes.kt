@@ -1,6 +1,8 @@
 package com.prostovasei.simpletasks.testing
 
 import com.prostovasei.simpletasks.domain.model.AllScreenTasks
+import com.prostovasei.simpletasks.domain.model.Completion
+import com.prostovasei.simpletasks.domain.model.nextOccurrence
 import com.prostovasei.simpletasks.domain.model.GroupWithProjects
 import com.prostovasei.simpletasks.domain.model.NewTask
 import com.prostovasei.simpletasks.domain.model.Priority
@@ -42,9 +44,11 @@ fun project(id: String, name: String = id, isInbox: Boolean = false, groupId: St
     Project(id, groupId, name, color, sortOrder = 0, isInbox = isInbox, createdAt = EPOCH, updatedAt = EPOCH)
 
 /** Задачи в памяти; даты сравниваются в UTC. */
-class FakeTaskRepository : TaskRepository {
+class FakeTaskRepository(private val today: LocalDate = LocalDate.of(2026, 10, 14)) : TaskRepository {
     val tasks = MutableStateFlow<List<Task>>(emptyList())
     val completedCalls = mutableListOf<Pair<String, Boolean>>()
+    val undone = mutableListOf<Completion>()
+    val movedToTomorrow = mutableListOf<String>()
 
     override fun observeAllScreen(today: LocalDate): Flow<AllScreenTasks> = tasks.map { all ->
         val active = all.filter { it.status == TaskStatus.ACTIVE && it.due != null }
@@ -77,7 +81,7 @@ class FakeTaskRepository : TaskRepository {
     override suspend fun createTask(task: NewTask): String {
         created += task
         val id = "new${created.size}"
-        tasks.update { it + task(id, title = task.title, projectId = task.projectId, due = task.due, priority = task.priority).copy(content = task.content, rrule = task.rrule) }
+        tasks.update { it + task(id, title = task.title, projectId = task.projectId, due = task.due, priority = task.priority).copy(content = task.content, rrule = task.rrule, reminders = task.reminders) }
         return id
     }
     val updated = mutableListOf<Task>()
@@ -95,6 +99,36 @@ class FakeTaskRepository : TaskRepository {
 
     override suspend fun deleteTask(taskId: String) {
         tasks.update { all -> all.filterNot { it.id == taskId } }
+    }
+
+    override suspend fun getTask(taskId: String): Task? = tasks.value.firstOrNull { it.id == taskId }
+
+    override fun observeWithReminders(): Flow<List<Task>> =
+        tasks.map { all -> all.filter { it.status == TaskStatus.ACTIVE && it.due != null && it.reminders.isNotEmpty() } }
+
+    /** Повтор считается по UTC от [today]. */
+    override suspend fun complete(taskId: String): Completion {
+        val task = getTask(taskId) ?: return Completion.Done(taskId)
+        val next = task.nextOccurrence(ZoneOffset.UTC, today)
+        if (next == null) {
+            setCompleted(taskId, completed = true)
+            return Completion.Done(taskId)
+        }
+        completedCalls += taskId to true
+        tasks.update { all -> all.map { if (it.id == taskId) next else it } }
+        return Completion.Rescheduled(taskId, previous = task, next = next, doneCopyId = "done-$taskId", checkedItemIds = emptyList())
+    }
+
+    override suspend fun undo(completion: Completion) {
+        undone += completion
+        when (completion) {
+            is Completion.Done -> setCompleted(completion.taskId, completed = false)
+            is Completion.Rescheduled -> tasks.update { all -> all.map { if (it.id == completion.taskId) completion.previous else it } }
+        }
+    }
+
+    override suspend fun moveToTomorrow(taskId: String) {
+        movedToTomorrow += taskId
     }
 }
 

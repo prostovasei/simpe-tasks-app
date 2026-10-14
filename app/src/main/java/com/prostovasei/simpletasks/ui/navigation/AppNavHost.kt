@@ -15,6 +15,7 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -49,8 +50,18 @@ enum class Tab(val route: Any, val routeClass: KClass<*>, @param:StringRes val l
 }
 
 @Composable
-fun AppNavHost(navController: NavHostController = rememberNavController()) {
+fun AppNavHost(
+    navController: NavHostController = rememberNavController(),
+    openTaskId: String? = null,
+    onTaskOpened: () -> Unit = {},
+) {
     val backStack by navController.currentBackStackEntryAsState()
+    // Нажатие на уведомление: открыть задачу поверх текущего экрана.
+    LaunchedEffect(openTaskId) {
+        openTaskId ?: return@LaunchedEffect
+        navController.navigate(TaskDetailDestination(openTaskId)) { launchSingleTop = true }
+        onTaskOpened()
+    }
     val destination = backStack?.destination
     val currentTab = Tab.entries.firstOrNull { destination.isOn(it) }
 

@@ -107,6 +107,56 @@ class TaskViewModelsTest {
         assertEquals(TaskDue.AllDay(today), created.due)
         assertEquals("FREQ=WEEKLY;BYDAY=SA", created.rrule)
         assertEquals("Пустой пункт отбрасывается", listOf("Молоко"), created.checklist)
+        assertEquals("Напоминание включено по умолчанию: в день срока в 10:00", listOf("P0DT10H0M0S"), created.reminders)
+    }
+
+    @Test
+    fun quickAddReminderFollowsDue() = runTest(dispatcher) {
+        val vm = quickAdd()
+        assertTrue("Без срока напоминаний нет", vm.state.value.reminders.isEmpty())
+
+        vm.onIntent(QuickAddIntent.Edit(FieldEdit.Due(TaskDue.AllDay(today))))
+        assertEquals(listOf("P0DT10H0M0S"), vm.state.value.reminders)
+        vm.onIntent(QuickAddIntent.Edit(FieldEdit.Due(TaskDue.AtTime(Instant.parse("2026-10-14T15:00:00Z")))))
+        assertEquals(listOf("PT0S"), vm.state.value.reminders)
+
+        vm.onIntent(QuickAddIntent.Edit(FieldEdit.SetReminders(listOf("-PT30M"))))
+        vm.onIntent(QuickAddIntent.Edit(FieldEdit.Due(TaskDue.AtTime(Instant.parse("2026-10-15T15:00:00Z")))))
+        assertEquals("Своё напоминание сохраняется при смене даты", listOf("-PT30M"), vm.state.value.reminders)
+
+        vm.onIntent(QuickAddIntent.Edit(FieldEdit.SetReminders(emptyList())))
+        assertTrue("Можно отключить", vm.state.value.reminders.isEmpty())
+    }
+
+    @Test
+    fun detailRemindersAreSavedImmediately() = runTest(dispatcher) {
+        tasks.tasks.value = listOf(task("t1", due = TaskDue.AllDay(today)))
+        val vm = detail(this)
+        runCurrent()
+        vm.onIntent(TaskDetailIntent.Edit(FieldEdit.SetReminders(listOf("P0DT10H0M0S", "-P0DT14H0M0S"))))
+        runCurrent()
+        assertEquals(listOf("P0DT10H0M0S", "-P0DT14H0M0S"), tasks.updated.last().reminders)
+    }
+
+    @Test
+    fun detailRecurringTaskMovesToNextTime() = runTest(dispatcher) {
+        tasks.tasks.value = listOf(task("t1", due = TaskDue.AllDay(today)).copy(rrule = "FREQ=DAILY"))
+        val vm = detail(this)
+        runCurrent()
+
+        vm.effects.test {
+            vm.onIntent(TaskDetailIntent.ToggleCompleted)
+            runCurrent()
+            val effect = awaitItem() as TaskDetailEffect.Rescheduled
+            assertEquals(com.prostovasei.simpletasks.ui.common.DayLabel.Tomorrow, effect.next.day)
+        }
+        assertEquals(TaskDue.AllDay(today.plusDays(1)), vm.state.value.task!!.due)
+        assertEquals(TaskStatus.ACTIVE, vm.state.value.task!!.status)
+
+        // Следующая правка не возвращает старую дату.
+        vm.onIntent(TaskDetailIntent.Edit(FieldEdit.SetPriority(Priority.HIGH)))
+        runCurrent()
+        assertEquals(TaskDue.AllDay(today.plusDays(1)), tasks.tasks.value.single().due)
     }
 
     @Test

@@ -1,6 +1,8 @@
 package com.prostovasei.simpletasks.data.importer.ticktick
 
+import com.prostovasei.simpletasks.data.mapper.toDomain
 import com.prostovasei.simpletasks.data.repository.RoomBackupRepository
+import com.prostovasei.simpletasks.domain.model.nextOccurrence
 import com.prostovasei.simpletasks.domain.model.TaskStatus
 import com.prostovasei.simpletasks.testing.DatabaseTest
 import kotlinx.coroutines.flow.first
@@ -70,5 +72,37 @@ class RealTickTickFileTest : DatabaseTest() {
         val report = repository.importTickTick(exported.toByteArray().inputStream())
         println("REAL reimport=$report")
         assertEquals(statsBefore, repository.observeStats().first())
+    }
+
+    @Test
+    fun realRepeatsAndRemindersWork() = runTest(timeout = kotlin.time.Duration.parse("2m")) {
+        val path = System.getProperty("ticktick.csv").orEmpty()
+        assumeTrue("Файл не задан (-PticktickCsv)", path.isNotBlank())
+        time.now = Instant.parse("2026-10-14T03:00:00Z")
+        time.zone = ZoneId.of("Asia/Krasnoyarsk")
+        val repository = RoomBackupRepository(db, time, TickTickImporter(db, time, com.prostovasei.simpletasks.core.id.UuidIdGenerator()), TickTickExporter(db, time))
+        repository.importTickTick(File(path).inputStream())
+        val today = time.now().atZone(time.zone).toLocalDate()
+
+        val ids = db.openHelper.readableDatabase.query("SELECT id FROM tasks WHERE is_deleted = 0").use { c ->
+            buildList { while (c.moveToNext()) add(c.getString(0)) }
+        }
+        val tasks = ids.map { checkNotNull(db.taskDao().observeById(it).first()).toDomain() }
+
+        val repeating = tasks.filter { it.status == TaskStatus.ACTIVE && it.rrule != null && it.due != null }
+        val moved = repeating.mapNotNull { t -> t.nextOccurrence(time.zone, today)?.let { t to it } }
+        val ended = repeating.filter { t -> moved.none { it.first.id == t.id } }
+        moved.forEach { (before, after) -> println("REAL repeat ${before.rrule}: ${before.due} -> ${after.due} (${after.rrule})") }
+        ended.forEach { println("REAL repeat ended ${it.rrule}: ${it.due}") }
+        println("REAL repeating=${repeating.size} moved=${moved.size} ended=${ended.size}")
+        assertEquals("Закончиться может только правило с COUNT/UNTIL", emptyList<String>(), ended.mapNotNull { it.rrule }.filterNot { "COUNT=" in it || "UNTIL=" in it })
+
+        val withReminders = tasks.filter { it.reminders.isNotEmpty() && it.due != null }
+        val unreadable = withReminders.flatMap { it.reminders }.filter { com.prostovasei.simpletasks.domain.model.parseReminder(it) == null }
+        println("REAL reminders tasks=${withReminders.size} unreadable=$unreadable")
+        assertEquals(emptyList<String>(), unreadable)
+        val upcoming = tasks.filter { it.status == TaskStatus.ACTIVE }
+            .flatMap { t -> com.prostovasei.simpletasks.domain.model.Reminders.instants(t, time.zone).filter { it > time.now() }.map { it to t.title.length } }
+        println("REAL upcoming reminder moments=${upcoming.size} first=${upcoming.minOfOrNull { it.first }}")
     }
 }

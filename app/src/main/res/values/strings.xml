@@ -132,6 +132,12 @@
     <string name="reminder_at_due">В момент срока</string>
     <string name="reminder_before">За %s</string>
     <string name="reminder_after">Через %s</string>
+    <string name="reminder_on_day">В день срока в %1$s</string>
+    <string name="reminder_before_at">За %1$s в %2$s</string>
+    <string name="reminder_after_at">Через %1$s в %2$s</string>
+    <string name="reminder_none">Без напоминания</string>
+    <string name="reminder_at_due_short">В срок</string>
+    <string name="reminder_more">%1$s +%2$d</string>
     <plurals name="unit_minutes">
         <item quantity="one">%d минуту</item>
         <item quantity="few">%d минуты</item>
@@ -164,8 +170,6 @@
     <string name="detail_checklist">Чек-лист</string>
     <string name="detail_checklist_add">Добавить пункт</string>
     <string name="detail_subtasks">Подзадачи</string>
-    <string name="detail_reminders">Напоминания</string>
-    <string name="detail_reminders_hint">Уведомления заработают в следующей версии.</string>
     <string name="detail_created">Создана %s</string>
     <string name="detail_item_menu">Меню пункта</string>
     <string name="detail_item_up">Выше</string>
@@ -233,4 +237,11 @@
     <string name="sample_task_overdue_meta">Вчера · Работа</string>
     <string name="sample_task_today">Созвон с командой</string>
     <string name="sample_task_today_meta">15:00 · Работа</string>
+    <string name="task_rescheduled">Следующий раз: %1$s</string>
+    <string name="notification_channel">Напоминания</string>
+    <string name="notification_complete">Выполнить</string>
+    <string name="notification_tomorrow">На завтра</string>
+    <string name="settings_notifications_title">Напоминания</string>
+    <string name="settings_notifications_off">Уведомления выключены — напоминания не придут.</string>
+    <string name="settings_notifications_enable">Включить уведомления</string>
 </resources>
