@@ -68,7 +68,8 @@ class ScreensUiTest {
         priority: Priority = Priority.NONE,
         completing: Boolean = false,
         recurring: Boolean = false,
-    ) = TaskItem(id, title, priority, due, list, color, isInboxList = list == null, isCompleting = completing, isRecurring = recurring)
+        ghostOf: String? = null,
+    ) = TaskItem(id, title, priority, due, list, color, isInboxList = list == null, isCompleting = completing, isRecurring = recurring, ghostOf = ghostOf)
 
     private val allState = AllState(
         overdue = listOf(item("o1", "Отправить отчёт", DueText(DayLabel.Yesterday, null), priority = Priority.HIGH)),
@@ -77,7 +78,10 @@ class ScreensUiTest {
             item("d2", "Оплатить интернет", DueText(DayLabel.Today, null), list = "Дом", color = "#46A758", completing = true),
         ),
         todayTimed = listOf(item("t1", "Созвон с командой", DueText(DayLabel.Today, "10:00–11:00"), priority = Priority.MEDIUM, recurring = true)),
-        upcoming = listOf(item("u1", "Записаться к врачу", DueText(DayLabel.Date(LocalDate.of(2026, 10, 20), false), "09:30"), list = "Здоровье", color = "#E5484D")),
+        upcoming = listOf(
+            item("t1@0", "Созвон с командой", DueText(DayLabel.Tomorrow, "10:00–11:00"), recurring = true, ghostOf = "t1"),
+            item("u1", "Записаться к врачу", DueText(DayLabel.Date(LocalDate.of(2026, 10, 20), false), "09:30"), list = "Здоровье", color = "#E5484D"),
+        ),
         isLoading = false,
     )
 
@@ -114,6 +118,15 @@ class ScreensUiTest {
         show { AllScreen(allState, { intents += it }) }
         composeRule.onNodeWithTag("task:t1:check").performClick()
         assertEquals(listOf<Any>(TaskListIntent.ToggleComplete("t1", recurring = true)), intents)
+    }
+
+    @Test
+    fun ghostRepeatHasNoCheckboxAndOpensRealTask() {
+        var opened: String? = null
+        show { AllScreen(allState, { intents += it }, onOpenTask = { opened = it }) }
+        composeRule.onNodeWithTag("task:t1@0:check").assertDoesNotExist()
+        composeRule.onNodeWithTag("task:t1@0").performClick()
+        assertEquals("t1", opened)
     }
 
     @Test

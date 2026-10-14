@@ -111,12 +111,31 @@ class AllViewModelTest {
             assertEquals(DayLabel.Date(LocalDate.of(2026, 10, 16), showYear = false), effect.next!!.day)
         }
         assertTrue("Сегодня задачи больше нет", vm.state.value.todayAllDay.isEmpty())
-        assertEquals(listOf("gym"), vm.state.value.upcoming.map { it.id })
-        assertFalse("Без зачёркивания: задача не выполнена, а перенесена", vm.state.value.upcoming.single().isCompleting)
+        val moved = vm.state.value.upcoming.filterNot { it.isGhost }
+        assertEquals(listOf("gym"), moved.map { it.id })
+        assertFalse("Без зачёркивания: задача не выполнена, а перенесена", moved.single().isCompleting)
 
         vm.onIntent(TaskListIntent.Undo("gym"))
         runCurrent()
         assertEquals(listOf("gym"), vm.state.value.todayAllDay.map { it.id })
+    }
+
+    @Test
+    fun futureRepeatsShownAsGhostsInOrder() = runTest(dispatcher) {
+        tasks.tasks.value = listOf(
+            task("gym", due = TaskDue.AllDay(today)).copy(rrule = "FREQ=WEEKLY;BYDAY=TU"),
+            task("dentist", due = TaskDue.AllDay(today.plusDays(10))),
+        )
+        val vm = viewModel()
+        runCurrent()
+
+        val upcoming = vm.state.value.upcoming
+        assertEquals(listOf("gym@0", "dentist", "gym@1", "gym@2", "gym@3"), upcoming.map { it.id })
+        val ghost = upcoming.first()
+        assertTrue(ghost.isGhost)
+        assertEquals("gym", ghost.taskId)
+        assertEquals(DayLabel.Date(LocalDate.of(2026, 10, 20), showYear = false), ghost.due!!.day)
+        assertEquals("Сама задача — в «Сегодня»", listOf("gym"), vm.state.value.todayAllDay.map { it.id })
     }
 
     @Test

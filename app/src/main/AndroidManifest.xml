@@ -4,6 +4,7 @@
     <!-- Напоминания (Итерация 05b). -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.VIBRATE" />
     <!-- Точное время: на Android 12 — без запроса у пользователя, с Android 13 — разрешение для приложений-напоминалок. -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />

@@ -77,6 +77,7 @@ class AndroidReminderNotifications @Inject constructor(
             .setContentText(text)
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setVibrate(VIBRATION)
             .setAutoCancel(true)
             .setContentIntent(
                 PendingIntent.getActivity(
@@ -102,9 +103,19 @@ class AndroidReminderNotifications @Inject constructor(
             (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
                 ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED)
 
+    /**
+     * Канал «Напоминания» с вибрацией (решение PM: два коротких импульса). Настройки канала Android
+     * менять не даёт, поэтому канал версии 0.6.0 без вибрации удаляется и создаётся новый.
+     */
     private fun ensureChannel() {
-        val channel = NotificationChannel(CHANNEL_ID, context.getString(R.string.notification_channel), NotificationManager.IMPORTANCE_HIGH)
-        context.getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+        val channel = NotificationChannel(CHANNEL_ID, context.getString(R.string.notification_channel), NotificationManager.IMPORTANCE_HIGH).apply {
+            enableVibration(true)
+            vibrationPattern = VIBRATION
+        }
+        context.getSystemService(NotificationManager::class.java).apply {
+            deleteNotificationChannel(OLD_CHANNEL_ID)
+            createNotificationChannel(channel)
+        }
     }
 
     private fun action(taskId: String, action: String, notificationId: Int): PendingIntent = PendingIntent.getBroadcast(
@@ -116,7 +127,11 @@ class AndroidReminderNotifications @Inject constructor(
     )
 
     companion object {
-        const val CHANNEL_ID = "reminders"
+        const val CHANNEL_ID = "reminders_vibrate"
+        private const val OLD_CHANNEL_ID = "reminders"
+
+        /** Пауза, импульс, пауза, импульс (мс). */
+        val VIBRATION = longArrayOf(0, 250, 150, 250)
 
         fun notificationId(taskId: String): Int = taskId.hashCode()
     }

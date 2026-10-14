@@ -13,6 +13,7 @@ import com.prostovasei.simpletasks.ui.common.TaskListEffect
 import com.prostovasei.simpletasks.ui.common.TaskListIntent
 import com.prostovasei.simpletasks.ui.common.keepPending
 import com.prostovasei.simpletasks.ui.common.toItem
+import com.prostovasei.simpletasks.ui.common.upcomingWithRepeats
 import com.prostovasei.simpletasks.ui.mvi.MviViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -39,8 +40,9 @@ class AllViewModel @Inject constructor(
             combine(sections, projects.observeProjectTree(), completion.pending) { (day, all), tree, pending ->
                 val byId = tree.projectsById()
                 val zone = time.zone()
-                pending to listOf(all.overdue, all.todayAllDay, all.todayTimed, all.upcoming)
-                    .map { section -> section.map { it.toItem(byId, day, zone, pending) } }
+                val everything = all.overdue + all.todayAllDay + all.todayTimed + all.upcoming
+                pending to listOf(all.overdue, all.todayAllDay, all.todayTimed).map { section -> section.map { it.toItem(byId, day, zone, pending) } } +
+                    listOf(upcomingWithRepeats(all.upcoming, everything, byId, day, zone, pending))
             }.collect { (pending, fresh) ->
                 setState {
                     val merged = listOf(overdue, todayAllDay, todayTimed, upcoming)

@@ -52,6 +52,9 @@ class AndroidRemindersTest {
         assertEquals("Сегодня, 18:30 · Входящие", shadow.contentText)
         assertEquals(listOf("Выполнить", "На завтра"), posted.actions.map { it.title.toString() })
         assertEquals(AndroidReminderNotifications.CHANNEL_ID, posted.channelId)
+        val channel = notificationManager.getNotificationChannel(AndroidReminderNotifications.CHANNEL_ID)
+        assertTrue("Вибрация включена", channel.shouldVibrate())
+        assertEquals(AndroidReminderNotifications.VIBRATION.toList(), channel.vibrationPattern.toList())
 
         val open = shadowOf(posted.contentIntent).savedIntent
         assertEquals(MainActivity::class.java.name, open.component?.className)

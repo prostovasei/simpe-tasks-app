@@ -50,6 +50,33 @@ object Recurrence {
         return null
     }
 
+    /**
+     * Будущие повторы после [anchor] с датой в промежутке ([after], [until]] — для показа наперёд
+     * (решение PM: ближайшие 30 дней). Учитывает «N раз» и «до даты».
+     */
+    fun upcoming(rrule: String, anchor: TaskDue, zone: ZoneId, after: LocalDate, until: LocalDate): List<TaskDue> {
+        val parts = rrule.trim().removePrefix("RRULE:").split(';').filter { it.isNotBlank() }
+        val count = parts.firstOrNull { it.startsWith("COUNT=") }?.substringAfter('=')?.toIntOrNull()
+        val rule = runCatching {
+            RecurrenceRule(parts.filterNot { it.startsWith("COUNT=") }.joinToString(";"), RecurrenceRule.RfcMode.RFC2445_LAX)
+        }.getOrNull() ?: return emptyList()
+
+        val iterator = rule.iterator(anchor.toDateTime(zone))
+        val result = mutableListOf<TaskDue>()
+        var passed = 0
+        var steps = 0
+        while (iterator.hasNext() && steps++ < MAX_STEPS) {
+            val candidate = iterator.nextDateTime().toTaskDue(anchor, zone)
+            if (!candidate.isAfter(anchor)) continue
+            passed++
+            if (count != null && passed >= count) break
+            val date = candidate.localDate(zone)
+            if (date > until) break
+            if (date > after) result += candidate
+        }
+        return result
+    }
+
     private fun TaskDue.toDateTime(zone: ZoneId): DateTime = when (this) {
         is TaskDue.AllDay -> DateTime(date.year, date.monthValue - 1, date.dayOfMonth)
         is TaskDue.AtTime -> instant.atZone(zone).toLocalDateTime().let {
@@ -80,15 +107,28 @@ object Recurrence {
  */
 fun Task.nextOccurrence(zone: ZoneId, today: LocalDate): Task? {
     val rule = rrule ?: return null
-    val due = due ?: return null
-    val anchor = start ?: due
+    val anchor = start ?: due ?: return null
     val next = Recurrence.next(rule, anchor, zone, today) ?: return null
+    return movedTo(next.anchor)?.copy(rrule = next.rrule)
+}
+
+/** Будущие повторы задачи с датой после [today] и не позже [until] — только для показа. */
+fun Task.upcomingRepeats(zone: ZoneId, today: LocalDate, until: LocalDate): List<Task> {
+    val rule = rrule ?: return emptyList()
+    val anchor = start ?: due ?: return emptyList()
+    return Recurrence.upcoming(rule, anchor, zone, after = today, until = until).mapNotNull { movedTo(it) }
+}
+
+/** Задача с началом (или сроком) в [anchor]; конец интервала сдвигается на то же время. */
+private fun Task.movedTo(anchor: TaskDue): Task? {
+    val due = due ?: return null
+    val current = start ?: due
     val newDue = when {
-        anchor is TaskDue.AtTime && next.anchor is TaskDue.AtTime && due is TaskDue.AtTime ->
-            TaskDue.AtTime(due.instant.plus(Duration.between(anchor.instant, next.anchor.instant)))
-        anchor is TaskDue.AllDay && next.anchor is TaskDue.AllDay && due is TaskDue.AllDay ->
-            TaskDue.AllDay(due.date.plusDays(ChronoUnit.DAYS.between(anchor.date, next.anchor.date)))
-        else -> next.anchor
+        current is TaskDue.AtTime && anchor is TaskDue.AtTime && due is TaskDue.AtTime ->
+            TaskDue.AtTime(due.instant.plus(Duration.between(current.instant, anchor.instant)))
+        current is TaskDue.AllDay && anchor is TaskDue.AllDay && due is TaskDue.AllDay ->
+            TaskDue.AllDay(due.date.plusDays(ChronoUnit.DAYS.between(current.date, anchor.date)))
+        else -> anchor
     }
-    return withDue(newDue).copy(rrule = next.rrule)
+    return withDue(newDue)
 }

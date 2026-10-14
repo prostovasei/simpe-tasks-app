@@ -97,7 +97,7 @@ private fun LazyListScope.tasks(
             onToggle = { onIntent(TaskListIntent.ToggleComplete(item.id, item.isRecurring)) },
             showToday = showToday,
             isOverdue = isOverdue,
-            onClick = { onOpenTask(item.id) },
+            onClick = { onOpenTask(item.taskId) },
         )
     }
 }
