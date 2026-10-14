@@ -33,6 +33,7 @@ fun LazyItemScope.TaskItemRow(
         listColor = if (showList) parseListColor(item.listColor) else null,
         isCompleting = item.isCompleting,
         isRecurring = item.isRecurring,
+        isGhost = item.isGhost,
         onToggle = onToggle,
         modifier = Modifier.animateItem(),
         testTag = "task:${item.id}",

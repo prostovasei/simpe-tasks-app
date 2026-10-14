@@ -17,6 +17,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -36,7 +37,7 @@ import com.prostovasei.simpletasks.domain.model.Priority
 /**
  * Строка задачи: чекбокс, название, подпись (срок · список), плашка приоритета.
  * [isCompleting] — задача только что отмечена: зачёркнута и полупрозрачна (alpha 0.4, SPEC.md §4.1).
- * [isRecurring] — значок повтора после подписи.
+ * [isRecurring] — значок повтора после подписи. [isGhost] — будущий повтор: бледный, без галочки.
  */
 @Composable
 fun TaskRow(
@@ -51,10 +52,18 @@ fun TaskRow(
     testTag: String = "",
     onClick: (() -> Unit)? = null,
     isRecurring: Boolean = false,
+    isGhost: Boolean = false,
 ) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
-    val alpha by animateFloatAsState(if (isCompleting) COMPLETING_ALPHA else 1f, label = "taskAlpha")
+    val alpha by animateFloatAsState(
+        when {
+            isCompleting -> COMPLETING_ALPHA
+            isGhost -> GHOST_ALPHA
+            else -> 1f
+        },
+        label = "taskAlpha",
+    )
 
     Row(
         modifier = modifier
@@ -68,7 +77,8 @@ fun TaskRow(
             .testTag(testTag),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Checkbox(
+        // У будущего повтора галочки нет: выполнить можно только ближайший раз.
+        if (isGhost) Box(Modifier.minimumInteractiveComponentSize()) else Checkbox(
             checked = isCompleting,
             onCheckedChange = { onToggle() },
             colors = CheckboxDefaults.colors(
@@ -150,3 +160,4 @@ fun ColorDot(color: Color, modifier: Modifier = Modifier) {
 }
 
 private const val COMPLETING_ALPHA = 0.4f
+private const val GHOST_ALPHA = 0.5f

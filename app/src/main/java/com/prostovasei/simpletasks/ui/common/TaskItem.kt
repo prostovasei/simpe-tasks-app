@@ -3,6 +3,8 @@ package com.prostovasei.simpletasks.ui.common
 import com.prostovasei.simpletasks.domain.model.Priority
 import com.prostovasei.simpletasks.domain.model.Project
 import com.prostovasei.simpletasks.domain.model.Task
+import com.prostovasei.simpletasks.domain.model.TaskDue
+import com.prostovasei.simpletasks.domain.model.upcomingRepeats
 import java.time.LocalDate
 import java.time.ZoneId
 
@@ -20,12 +22,19 @@ data class TaskItem(
     val hasChecklist: Boolean = false,
     /** Повторяющаяся: при отметке переезжает на следующий раз. */
     val isRecurring: Boolean = false,
-)
+    /** Будущий повтор задачи [ghostOf] — только для показа: бледный, без галочки. */
+    val ghostOf: String? = null,
+) {
+    val isGhost: Boolean get() = ghostOf != null
 
-fun Task.toItem(projects: Map<String, Project>, today: LocalDate, zone: ZoneId, pending: Set<String>): TaskItem {
+    /** Задача, которую открывает нажатие. */
+    val taskId: String get() = ghostOf ?: id
+}
+
+fun Task.toItem(projects: Map<String, Project>, today: LocalDate, zone: ZoneId, pending: Set<String>, ghostIndex: Int? = null): TaskItem {
     val project = projects[projectId]
     return TaskItem(
-        id = id,
+        id = if (ghostIndex == null) id else "$id@$ghostIndex",
         title = title,
         priority = priority,
         due = DueFormatter.format(due, start, today, zone),
@@ -34,8 +43,41 @@ fun Task.toItem(projects: Map<String, Project>, today: LocalDate, zone: ZoneId, 
         isInboxList = project?.isInbox == true,
         isCompleting = id in pending,
         isRecurring = rrule != null && due != null,
+        ghostOf = id.takeIf { ghostIndex != null },
     )
 }
+
+/** Сколько дней вперёд показываются будущие повторы (решение PM). */
+const val REPEATS_AHEAD_DAYS = 30L
+
+/**
+ * «Предстоящие» вместе с будущими повторами (на [REPEATS_AHEAD_DAYS] дней) всех повторяющихся задач [all],
+ * по порядку: день, сначала «весь день», потом по времени.
+ */
+fun upcomingWithRepeats(
+    upcoming: List<Task>,
+    all: List<Task>,
+    projects: Map<String, Project>,
+    today: LocalDate,
+    zone: ZoneId,
+    pending: Set<String>,
+): List<TaskItem> {
+    val until = today.plusDays(REPEATS_AHEAD_DAYS)
+    val real = upcoming.map { it to it.toItem(projects, today, zone, pending) }
+    val ghosts = all.filter { it.rrule != null }.flatMap { task ->
+        task.upcomingRepeats(zone, today, until).mapIndexed { index, repeat -> repeat to repeat.toItem(projects, today, zone, pending, ghostIndex = index) }
+    }
+    return (real + ghosts).sortedWith(compareBy({ it.first.sortDay(zone) }, { it.first.sortTime() }, { it.second.isGhost })).map { it.second }
+}
+
+/** Порядок в «Предстоящих»: день → «весь день» раньше задач со временем → время начала. */
+private fun Task.sortDay(zone: ZoneId): LocalDate = when (val anchor = start ?: due) {
+    is TaskDue.AllDay -> anchor.date
+    is TaskDue.AtTime -> anchor.instant.atZone(zone).toLocalDate()
+    null -> LocalDate.MAX
+}
+
+private fun Task.sortTime(): Long = ((start ?: due) as? TaskDue.AtTime)?.instant?.toEpochMilli() ?: Long.MIN_VALUE
 
 /**
  * Оставляет в списке задачи, отмеченные только что ([pending]): из БД они уже пропали (статус «выполнена»),

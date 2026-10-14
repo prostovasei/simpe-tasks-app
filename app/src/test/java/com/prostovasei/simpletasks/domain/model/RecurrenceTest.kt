@@ -92,4 +92,38 @@ class RecurrenceTest {
         assertNull(task("t", due = day(10, 14)).nextOccurrence(utc, today))
         assertNull(task("t").copy(rrule = "FREQ=DAILY").nextOccurrence(utc, today))
     }
+
+    @Test
+    fun upcomingRepeatsFor30Days() {
+        val until = today.plusDays(30)
+        val weekly = Recurrence.upcoming("FREQ=WEEKLY;BYDAY=WE", day(10, 14), utc, after = today, until = until)
+        assertEquals("Еженедельная — 4 повтора", listOf(day(10, 21), day(10, 28), day(11, 4), day(11, 11)), weekly)
+        assertEquals(30, Recurrence.upcoming("FREQ=DAILY", day(10, 14), utc, today, until).size)
+        assertEquals("14 ноября — через 31 день, за окном", emptyList<TaskDue>(), Recurrence.upcoming("FREQ=MONTHLY;BYMONTHDAY=14", day(10, 14), utc, today, until))
+        assertEquals(listOf(day(11, 13)), Recurrence.upcoming("FREQ=MONTHLY;BYMONTHDAY=13", day(10, 13), utc, today, until))
+    }
+
+    @Test
+    fun upcomingRespectsCountAndSkipsPast() {
+        assertEquals(
+            "COUNT=3: текущий + ещё 2",
+            listOf(day(10, 15), day(10, 16)),
+            Recurrence.upcoming("FREQ=DAILY;COUNT=3", day(10, 14), utc, today, today.plusDays(30)),
+        )
+        assertEquals(
+            "Просроченная ежедневная: повторы с завтрашнего дня",
+            day(10, 15),
+            Recurrence.upcoming("FREQ=DAILY", day(10, 1), utc, today, today.plusDays(30)).first(),
+        )
+    }
+
+    @Test
+    fun taskUpcomingRepeatsKeepInterval() {
+        val call = task("t", start = at(utc, 10, 14, 10, 0), due = at(utc, 10, 14, 11, 0)).copy(rrule = "FREQ=WEEKLY;BYDAY=WE")
+        val repeats = call.upcomingRepeats(utc, today, today.plusDays(30))
+        assertEquals(4, repeats.size)
+        assertEquals(at(utc, 10, 21, 10, 0), repeats.first().start)
+        assertEquals(at(utc, 10, 21, 11, 0), repeats.first().due)
+        assertEquals(call.id, repeats.first().id)
+    }
 }
