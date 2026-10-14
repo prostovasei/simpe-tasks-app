@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Simple Tasks</string>
+
+    <string name="tab_inbox">Входящие</string>
+    <string name="tab_all">Все</string>
+    <string name="tab_lists">Списки</string>
+    <string name="tab_settings">Настройки</string>
+
+    <string name="day_today">Сегодня</string>
+    <string name="day_tomorrow">Завтра</string>
+    <string name="day_yesterday">Вчера</string>
+    <string name="inbox_list_name">Входящие</string>
+    <string name="meta_separator">\u0020·\u0020</string>
+
+    <string name="task_completed">Задача выполнена</string>
+    <string name="task_undo">Отмена</string>
+
+    <string name="all_title">Все</string>
+    <string name="all_overdue">Просрочено</string>
+    <string name="all_today">Сегодня</string>
+    <string name="all_today_all_day">Весь день</string>
+    <string name="all_today_timed">По времени</string>
+    <string name="all_upcoming">Предстоящие</string>
+    <string name="all_empty">Задач со сроком нет</string>
+
+    <string name="inbox_title">Входящие</string>
+    <string name="inbox_empty">Во «Входящих» пусто</string>
+
+    <string name="lists_title">Списки</string>
+    <string name="lists_new_list">+ Список</string>
+    <string name="lists_new_folder">+ Папка</string>
+    <string name="lists_empty">Списков пока нет</string>
+    <string name="lists_create_list_title">Новый список</string>
+    <string name="lists_create_folder_title">Новая папка</string>
+    <string name="lists_rename_folder_title">Переименовать папку</string>
+    <string name="lists_delete_folder_title">Удалить папку «%s»?</string>
+    <string name="lists_delete_folder_text">Списки из папки останутся и переместятся на верхний уровень.</string>
+    <string name="lists_folder_none">Без папки</string>
+    <string name="lists_folder_menu">Меню папки</string>
+    <string name="lists_expand">Развернуть</string>
+    <string name="lists_collapse">Свернуть</string>
+
+    <string name="project_empty">В списке нет активных задач</string>
+    <string name="project_back">Назад</string>
+    <string name="project_menu">Меню списка</string>
+    <string name="project_rename">Переименовать</string>
+    <string name="project_color">Цвет</string>
+    <string name="project_delete">Удалить</string>
+    <string name="project_rename_title">Переименовать список</string>
+    <string name="project_color_title">Цвет списка</string>
+    <string name="project_no_color">Без цвета</string>
+    <string name="project_delete_title">Удалить список «%s»?</string>
+    <string name="project_delete_text">Задачи и чек-листы этого списка тоже будут удалены.</string>
+
+    <string name="action_create">Создать</string>
+    <string name="action_save">Сохранить</string>
+    <string name="action_cancel">Отмена</string>
+    <string name="action_delete">Удалить</string>
+    <string name="action_rename">Переименовать</string>
+
+    <string name="settings_title">Настройки</string>
+    <string name="settings_import_title">Импорт из TickTick</string>
+    <string name="settings_import_hint">Резервную копию (.csv) можно создать в настройках веб-версии TickTick. Повторный импорт того же файла не создаст дублей.</string>
+    <string name="settings_import_button">Выбрать файл .csv</string>
+    <string name="settings_import_reading">Чтение файла…</string>
+    <string name="settings_import_progress">Импорт: %1$d из %2$d</string>
+    <string name="settings_import_done">Импорт завершён</string>
+    <string name="settings_report_added">Добавлено задач: %d</string>
+    <string name="settings_report_skipped">Пропущено (уже были): %d</string>
+    <string name="settings_report_lists">Создано списков: %d</string>
+    <string name="settings_report_folders">Создано папок: %d</string>
+    <string name="settings_report_checklist">Пунктов чек-листов: %d</string>
+    <string name="settings_report_subtasks">Подзадач связано: %d</string>
+    <string name="settings_report_failed">Строк с ошибками: %d</string>
+    <string name="settings_import_error_format">Это не резервная копия TickTick. Выберите файл .csv, созданный в TickTick.</string>
+    <string name="settings_import_error_read">Не удалось прочитать файл. Попробуйте выбрать его ещё раз.</string>
+    <string name="settings_export_title">Резервная копия</string>
+    <string name="settings_export_hint">Сохраняет все задачи в файл формата TickTick. Его можно загрузить обратно в TickTick или в это приложение.</string>
+    <string name="settings_export_button">Сохранить резервную копию</string>
+    <string name="settings_export_in_progress">Сохранение…</string>
+    <string name="settings_export_done">Сохранено задач: %d</string>
+    <string name="settings_export_error">Не удалось сохранить файл. Попробуйте ещё раз.</string>
+    <string name="settings_version">Версия %1$s (сборка %2$d)</string>
+    <string name="settings_data_title">Данные</string>
+    <string name="settings_stats_tasks">Задач в базе: %1$d (активных: %2$d)</string>
+    <string name="settings_stats_lists">Списков: %d</string>
+    <string name="settings_clear_button">Очистить все данные</string>
+    <string name="settings_clearing">Удаление…</string>
+    <string name="settings_clear_dialog_title">Удалить все данные?</string>
+    <string name="settings_clear_dialog_text">Все задачи, списки и чек-листы будут удалены без возможности восстановления.</string>
+    <string name="settings_clear_dialog_confirm">Удалить</string>
+    <string name="settings_clear_dialog_cancel">Отмена</string>
+    <string name="settings_cleared">Все данные удалены</string>
+
+    <string name="showcase_title">Simple Tasks</string>
+    <string name="showcase_subtitle">Итерация 01 · дизайн-токены</string>
+    <string name="showcase_section_colors">Базовые цвета</string>
+    <string name="showcase_section_priorities">Приоритеты</string>
+    <string name="showcase_section_preview">Пример карточек</string>
+
+    <string name="token_background">background · фон экрана</string>
+    <string name="token_surface">surface · карточки</string>
+    <string name="token_text_primary">textPrimary · основной текст</string>
+    <string name="token_text_secondary">textSecondary · подписи</string>
+    <string name="token_accent">accent · кнопки, активные элементы</string>
+    <string name="token_overdue">overdue · просрочено</string>
+    <string name="token_divider">divider · разделители</string>
+
+    <string name="priority_high">P1 Высокий</string>
+    <string name="priority_medium">P2 Средний</string>
+    <string name="priority_low">P3 Низкий</string>
+    <string name="priority_none">P0 Без приоритета</string>
+
+    <string name="sample_section_overdue">Просрочено</string>
+    <string name="sample_section_today">Сегодня</string>
+    <string name="sample_task_overdue">Отправить отчёт</string>
+    <string name="sample_task_overdue_meta">Вчера · Работа</string>
+    <string name="sample_task_today">Созвон с командой</string>
+    <string name="sample_task_today_meta">15:00 · Работа</string>
+</resources>

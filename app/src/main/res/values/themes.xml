@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Тема окна до старта Compose. Цвета интерфейса задаёт AppTheme. -->
+    <style name="Theme.SimpleTasks" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>
