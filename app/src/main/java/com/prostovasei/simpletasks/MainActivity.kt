@@ -18,6 +18,8 @@ import androidx.core.content.ContextCompat
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.notifications.PrefsReminderStore
 import com.prostovasei.simpletasks.ui.navigation.AppNavHost
+import com.prostovasei.simpletasks.ui.navigation.QuickAddDestination
+import com.prostovasei.simpletasks.ui.navigation.TaskDetailDestination
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -25,24 +27,32 @@ import javax.inject.Inject
 class MainActivity : ComponentActivity() {
     @Inject lateinit var reminderStore: PrefsReminderStore
 
-    /** Задача из уведомления, которую нужно открыть. */
-    private var openTaskId by mutableStateOf<String?>(null)
+    /** Экран, который нужно открыть: задача из уведомления или виджета, создание задачи из виджета. */
+    private var openRoute by mutableStateOf<Any?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        if (savedInstanceState == null) openTaskId = intent.getStringExtra(EXTRA_TASK_ID)
+        if (savedInstanceState == null) openRoute = routeFrom(intent)
         setContent {
             AskNotificationsOnce()
             AppTheme {
-                AppNavHost(openTaskId = openTaskId, onTaskOpened = { openTaskId = null })
+                AppNavHost(openRoute = openRoute, onRouteOpened = { openRoute = null })
             }
         }
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        intent.getStringExtra(EXTRA_TASK_ID)?.let { openTaskId = it }
+        routeFrom(intent)?.let { openRoute = it }
+    }
+
+    private fun routeFrom(intent: Intent): Any? = when {
+        intent.getBooleanExtra(EXTRA_QUICK_ADD, false) -> QuickAddDestination(
+            projectId = intent.getStringExtra(EXTRA_QUICK_ADD_PROJECT),
+            today = intent.getBooleanExtra(EXTRA_QUICK_ADD_TODAY, false),
+        )
+        else -> intent.getStringExtra(EXTRA_TASK_ID)?.let { TaskDetailDestination(it) }
     }
 
     /** Android 13+: разрешение на уведомления спрашивается один раз, при первом запуске. */
@@ -62,5 +72,8 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         const val EXTRA_TASK_ID = "open_task_id"
+        const val EXTRA_QUICK_ADD = "quick_add"
+        const val EXTRA_QUICK_ADD_PROJECT = "quick_add_project"
+        const val EXTRA_QUICK_ADD_TODAY = "quick_add_today"
     }
 }

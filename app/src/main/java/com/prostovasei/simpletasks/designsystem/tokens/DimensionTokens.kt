@@ -27,6 +27,10 @@ object SizeTokens {
     const val PROGRESS_HEIGHT = 6
     const val LIST_DOT = 10
     const val META_ICON = 14
+    const val PICKER_MAX_HEIGHT = 440
+
+    /** Ширина галочки в виджете Glance — под неё отступ у будущих повторов. */
+    const val WIDGET_CHECKBOX = 32
     const val COLOR_SWATCH = 40
     const val ICON = 24
     const val CHECKBOX_TOUCH = 40

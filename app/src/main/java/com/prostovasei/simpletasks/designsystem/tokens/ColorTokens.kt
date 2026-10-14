@@ -22,6 +22,9 @@ object ColorTokens {
 
     /** Опасные действия (удаление). Совпадает с [overdue], но означает другое — отдельная роль. */
     val danger = ThemedColor(light = 0xFFD32F2F, dark = 0xFFFF6B6B)
+
+    /** Затемнение под всплывающим окном (выбор списка виджета). */
+    val scrim = ThemedColor(light = 0x66000000, dark = 0x99000000)
 }
 
 /**

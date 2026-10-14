@@ -30,6 +30,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import kotlinx.coroutines.flow.first
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.ui.feature.all.AllRoute
@@ -52,15 +53,17 @@ enum class Tab(val route: Any, val routeClass: KClass<*>, @param:StringRes val l
 @Composable
 fun AppNavHost(
     navController: NavHostController = rememberNavController(),
-    openTaskId: String? = null,
-    onTaskOpened: () -> Unit = {},
+    openRoute: Any? = null,
+    onRouteOpened: () -> Unit = {},
 ) {
     val backStack by navController.currentBackStackEntryAsState()
-    // Нажатие на уведомление: открыть задачу поверх текущего экрана.
-    LaunchedEffect(openTaskId) {
-        openTaskId ?: return@LaunchedEffect
-        navController.navigate(TaskDetailDestination(openTaskId)) { launchSingleTop = true }
-        onTaskOpened()
+    // Уведомление или виджет: открыть задачу или создание задачи поверх текущего экрана.
+    // При холодном запуске ждём, пока NavHost построит граф, — иначе navigate() падает.
+    LaunchedEffect(openRoute) {
+        openRoute ?: return@LaunchedEffect
+        navController.currentBackStackEntryFlow.first()
+        navController.navigate(openRoute) { launchSingleTop = true }
+        onRouteOpened()
     }
     val destination = backStack?.destination
     val currentTab = Tab.entries.firstOrNull { destination.isOn(it) }
