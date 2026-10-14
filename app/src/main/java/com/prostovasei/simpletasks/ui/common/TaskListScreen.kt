@@ -16,6 +16,7 @@ fun FlatTaskList(
     onIntent: (TaskListIntent) -> Unit,
     showList: Boolean,
     modifier: Modifier = Modifier,
+    onOpenTask: (String) -> Unit = {},
 ) {
     if (!isLoading && tasks.isEmpty()) {
         EmptyState(emptyText, modifier)
@@ -23,7 +24,12 @@ fun FlatTaskList(
     }
     LazyColumn(modifier.fillMaxSize()) {
         items(tasks, key = { it.id }) { item ->
-            TaskItemRow(item = item, onToggle = { onIntent(TaskListIntent.ToggleComplete(item.id)) }, showList = showList)
+            TaskItemRow(
+                item = item,
+                onToggle = { onIntent(TaskListIntent.ToggleComplete(item.id)) },
+                showList = showList,
+                onClick = { onOpenTask(item.id) },
+            )
         }
     }
 }

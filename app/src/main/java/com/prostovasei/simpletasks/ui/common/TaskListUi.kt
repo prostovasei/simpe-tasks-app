@@ -23,6 +23,7 @@ fun LazyItemScope.TaskItemRow(
     showToday: Boolean = true,
     showList: Boolean = true,
     isOverdue: Boolean = false,
+    onClick: (() -> Unit)? = null,
 ) {
     TaskRow(
         title = item.title,
@@ -34,6 +35,7 @@ fun LazyItemScope.TaskItemRow(
         onToggle = onToggle,
         modifier = Modifier.animateItem(),
         testTag = "task:${item.id}",
+        onClick = onClick,
     )
 }
 

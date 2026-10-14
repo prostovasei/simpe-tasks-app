@@ -24,17 +24,18 @@ import com.prostovasei.simpletasks.designsystem.components.EmptyState
 import com.prostovasei.simpletasks.designsystem.components.ScreenTitle
 import com.prostovasei.simpletasks.designsystem.components.SectionHeader
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
+import com.prostovasei.simpletasks.ui.common.AddTaskButton
 import com.prostovasei.simpletasks.ui.common.TaskItem
 import com.prostovasei.simpletasks.ui.common.TaskItemRow
 import com.prostovasei.simpletasks.ui.common.TaskListIntent
 import com.prostovasei.simpletasks.ui.common.TaskListEffects
 
 @Composable
-fun AllRoute(viewModel: AllViewModel = hiltViewModel()) {
+fun AllRoute(onAddTask: () -> Unit, onOpenTask: (String) -> Unit, viewModel: AllViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     TaskListEffects(viewModel, snackbar)
-    AllScreen(state, viewModel::onIntent, snackbar)
+    AllScreen(state, viewModel::onIntent, snackbar, onAddTask, onOpenTask)
 }
 
 @Composable
@@ -42,12 +43,15 @@ fun AllScreen(
     state: AllState,
     onIntent: (TaskListIntent) -> Unit,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    onAddTask: () -> Unit = {},
+    onOpenTask: (String) -> Unit = {},
 ) {
     val colors = AppTheme.colors
     Scaffold(
         containerColor = colors.background,
         contentWindowInsets = WindowInsets(0),
         snackbarHost = { SnackbarHost(snackbarHostState) },
+        floatingActionButton = { AddTaskButton(onAddTask) },
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
             ScreenTitle(stringResource(R.string.all_title))
@@ -58,22 +62,22 @@ fun AllScreen(
             LazyColumn(Modifier.fillMaxSize()) {
                 if (state.overdue.isNotEmpty()) {
                     item(key = "h-overdue") { SectionHeader(stringResource(R.string.all_overdue), color = colors.overdue) }
-                    tasks(state.overdue, onIntent, showToday = true, isOverdue = true)
+                    tasks(state.overdue, onIntent, onOpenTask, showToday = true, isOverdue = true)
                 }
                 if (state.todayAllDay.isNotEmpty() || state.todayTimed.isNotEmpty()) {
                     item(key = "h-today") { SectionHeader(stringResource(R.string.all_today)) }
                     if (state.todayAllDay.isNotEmpty()) {
                         item(key = "h-all-day") { BlockHeader(stringResource(R.string.all_today_all_day)) }
-                        tasks(state.todayAllDay, onIntent, showToday = false)
+                        tasks(state.todayAllDay, onIntent, onOpenTask, showToday = false)
                     }
                     if (state.todayTimed.isNotEmpty()) {
                         item(key = "h-timed") { BlockHeader(stringResource(R.string.all_today_timed)) }
-                        tasks(state.todayTimed, onIntent, showToday = false)
+                        tasks(state.todayTimed, onIntent, onOpenTask, showToday = false)
                     }
                 }
                 if (state.upcoming.isNotEmpty()) {
                     item(key = "h-upcoming") { SectionHeader(stringResource(R.string.all_upcoming)) }
-                    tasks(state.upcoming, onIntent, showToday = true)
+                    tasks(state.upcoming, onIntent, onOpenTask, showToday = true)
                 }
             }
         }
@@ -83,6 +87,7 @@ fun AllScreen(
 private fun LazyListScope.tasks(
     items: List<TaskItem>,
     onIntent: (TaskListIntent) -> Unit,
+    onOpenTask: (String) -> Unit,
     showToday: Boolean,
     isOverdue: Boolean = false,
 ) {
@@ -92,6 +97,7 @@ private fun LazyListScope.tasks(
             onToggle = { onIntent(TaskListIntent.ToggleComplete(item.id)) },
             showToday = showToday,
             isOverdue = isOverdue,
+            onClick = { onOpenTask(item.id) },
         )
     }
 }

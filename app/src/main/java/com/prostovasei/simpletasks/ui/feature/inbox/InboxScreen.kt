@@ -17,16 +17,17 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.components.ScreenTitle
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
+import com.prostovasei.simpletasks.ui.common.AddTaskButton
 import com.prostovasei.simpletasks.ui.common.FlatTaskList
 import com.prostovasei.simpletasks.ui.common.TaskListEffects
 import com.prostovasei.simpletasks.ui.common.TaskListIntent
 
 @Composable
-fun InboxRoute(viewModel: InboxViewModel = hiltViewModel()) {
+fun InboxRoute(onAddTask: () -> Unit, onOpenTask: (String) -> Unit, viewModel: InboxViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     TaskListEffects(viewModel, snackbar)
-    InboxScreen(state, viewModel::onIntent, snackbar)
+    InboxScreen(state, viewModel::onIntent, snackbar, onAddTask, onOpenTask)
 }
 
 @Composable
@@ -34,11 +35,14 @@ fun InboxScreen(
     state: InboxState,
     onIntent: (TaskListIntent) -> Unit,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    onAddTask: () -> Unit = {},
+    onOpenTask: (String) -> Unit = {},
 ) {
     Scaffold(
         containerColor = AppTheme.colors.background,
         contentWindowInsets = WindowInsets(0),
         snackbarHost = { SnackbarHost(snackbarHostState) },
+        floatingActionButton = { AddTaskButton(onAddTask) },
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
             ScreenTitle(stringResource(R.string.inbox_title))
@@ -48,6 +52,7 @@ fun InboxScreen(
                 emptyText = stringResource(R.string.inbox_empty),
                 onIntent = onIntent,
                 showList = true,
+                onOpenTask = onOpenTask,
             )
         }
     }

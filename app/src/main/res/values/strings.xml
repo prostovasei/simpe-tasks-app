@@ -59,6 +59,121 @@
     <string name="action_delete">Удалить</string>
     <string name="action_rename">Переименовать</string>
 
+    <string name="add_task">Новая задача</string>
+    <string name="quick_add_title_hint">Что нужно сделать?</string>
+    <string name="quick_add_content_hint">Описание</string>
+    <string name="quick_add_checklist_hint">Пункт чек-листа</string>
+    <string name="quick_add_save">Сохранить</string>
+    <string name="quick_add_close">Закрыть</string>
+    <string name="chip_date">Дата</string>
+    <string name="chip_time">Время</string>
+    <string name="chip_priority">Приоритет</string>
+    <string name="chip_checklist">Чек-лист</string>
+    <string name="chip_repeat">Повтор</string>
+    <string name="date_today">Сегодня</string>
+    <string name="date_tomorrow">Завтра</string>
+    <string name="date_pick">Выбрать дату…</string>
+    <string name="date_none">Без даты</string>
+    <string name="time_all_day">Весь день</string>
+    <string name="time_pick">Указать время…</string>
+    <string name="priority_p1">P1 Высокий</string>
+    <string name="priority_p2">P2 Средний</string>
+    <string name="priority_p3">P3 Низкий</string>
+    <string name="priority_p0">Без приоритета</string>
+    <string name="action_ok">Готово</string>
+
+    <string name="repeat_title">Повтор</string>
+    <string name="repeat_none">Не повторять</string>
+    <string name="repeat_every">Каждые</string>
+    <string name="repeat_day">День</string>
+    <string name="repeat_week">Неделя</string>
+    <string name="repeat_month">Месяц</string>
+    <string name="repeat_year">Год</string>
+    <string name="repeat_complex">Особый повтор из TickTick</string>
+    <string name="repeat_complex_hint">Это правило сложнее конструктора. Оно сохранится как есть. Чтобы изменить, задайте новое ниже.</string>
+    <string name="repeat_needs_date">Повтор начинается от даты задачи — сначала выберите дату.</string>
+    <string name="repeat_until">до %s</string>
+    <string name="repeat_on_day">%d-го</string>
+    <plurals name="repeat_days">
+        <item quantity="one">Каждый %d день</item>
+        <item quantity="few">Каждые %d дня</item>
+        <item quantity="many">Каждые %d дней</item>
+        <item quantity="other">Каждые %d дня</item>
+    </plurals>
+    <plurals name="repeat_weeks">
+        <item quantity="one">Каждую %d неделю</item>
+        <item quantity="few">Каждые %d недели</item>
+        <item quantity="many">Каждые %d недель</item>
+        <item quantity="other">Каждые %d недели</item>
+    </plurals>
+    <plurals name="repeat_months">
+        <item quantity="one">Каждый %d месяц</item>
+        <item quantity="few">Каждые %d месяца</item>
+        <item quantity="many">Каждые %d месяцев</item>
+        <item quantity="other">Каждые %d месяца</item>
+    </plurals>
+    <plurals name="repeat_years">
+        <item quantity="one">Каждый %d год</item>
+        <item quantity="few">Каждые %d года</item>
+        <item quantity="many">Каждые %d лет</item>
+        <item quantity="other">Каждые %d года</item>
+    </plurals>
+    <string name="repeat_daily">Каждый день</string>
+    <string name="repeat_weekly">Каждую неделю</string>
+    <string name="repeat_monthly">Каждый месяц</string>
+    <string name="repeat_yearly">Каждый год</string>
+    <plurals name="repeat_count">
+        <item quantity="one">%d раз</item>
+        <item quantity="few">%d раза</item>
+        <item quantity="many">%d раз</item>
+        <item quantity="other">%d раза</item>
+    </plurals>
+
+    <string name="reminder_at_due">В момент срока</string>
+    <string name="reminder_before">За %s</string>
+    <string name="reminder_after">Через %s</string>
+    <plurals name="unit_minutes">
+        <item quantity="one">%d минуту</item>
+        <item quantity="few">%d минуты</item>
+        <item quantity="many">%d минут</item>
+        <item quantity="other">%d минуты</item>
+    </plurals>
+    <plurals name="unit_hours">
+        <item quantity="one">%d час</item>
+        <item quantity="few">%d часа</item>
+        <item quantity="many">%d часов</item>
+        <item quantity="other">%d часа</item>
+    </plurals>
+    <plurals name="unit_days">
+        <item quantity="one">%d день</item>
+        <item quantity="few">%d дня</item>
+        <item quantity="many">%d дней</item>
+        <item quantity="other">%d дня</item>
+    </plurals>
+    <plurals name="unit_weeks">
+        <item quantity="one">%d неделю</item>
+        <item quantity="few">%d недели</item>
+        <item quantity="many">%d недель</item>
+        <item quantity="other">%d недели</item>
+    </plurals>
+
+    <string name="detail_back">Назад</string>
+    <string name="detail_menu">Меню задачи</string>
+    <string name="detail_delete_title">Удалить задачу?</string>
+    <string name="detail_delete_text">Задача, её чек-лист и подзадачи будут удалены.</string>
+    <string name="detail_checklist">Чек-лист</string>
+    <string name="detail_checklist_add">Добавить пункт</string>
+    <string name="detail_subtasks">Подзадачи</string>
+    <string name="detail_reminders">Напоминания</string>
+    <string name="detail_reminders_hint">Уведомления заработают в следующей версии.</string>
+    <string name="detail_created">Создана %s</string>
+    <string name="detail_item_menu">Меню пункта</string>
+    <string name="detail_item_up">Выше</string>
+    <string name="detail_item_down">Ниже</string>
+    <string name="detail_item_rename">Переименовать пункт</string>
+    <string name="detail_title_hint">Название</string>
+    <string name="detail_mark_done">Отметить выполненной</string>
+
     <string name="settings_title">Настройки</string>
     <string name="settings_import_title">Импорт из TickTick</string>
     <string name="settings_import_hint">Резервную копию (.csv) можно создать в настройках веб-версии TickTick. Повторный импорт того же файла не создаст дублей.</string>

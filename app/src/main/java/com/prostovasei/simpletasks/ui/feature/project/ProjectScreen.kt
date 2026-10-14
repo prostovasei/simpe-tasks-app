@@ -39,16 +39,22 @@ import com.prostovasei.simpletasks.designsystem.components.NameDialog
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.designsystem.theme.parseListColor
 import com.prostovasei.simpletasks.designsystem.tokens.ListColorTokens
+import com.prostovasei.simpletasks.ui.common.AddTaskButton
 import com.prostovasei.simpletasks.ui.common.FlatTaskList
 import com.prostovasei.simpletasks.ui.common.TaskListEffects
 import com.prostovasei.simpletasks.ui.common.TaskListIntent
 
 @Composable
-fun ProjectRoute(onBack: () -> Unit, viewModel: ProjectViewModel = hiltViewModel()) {
+fun ProjectRoute(
+    onBack: () -> Unit,
+    onAddTask: () -> Unit,
+    onOpenTask: (String) -> Unit,
+    viewModel: ProjectViewModel = hiltViewModel(),
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     TaskListEffects(viewModel, snackbar) { effect -> if (effect == ProjectEffect.Close) onBack() }
-    ProjectScreen(state, viewModel::onIntent, onBack, snackbar)
+    ProjectScreen(state, viewModel::onIntent, onBack, snackbar, onAddTask, onOpenTask)
 }
 
 @Composable
@@ -57,6 +63,8 @@ fun ProjectScreen(
     onIntent: (TaskListIntent) -> Unit,
     onBack: () -> Unit,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    onAddTask: () -> Unit = {},
+    onOpenTask: (String) -> Unit = {},
 ) {
     val colors = AppTheme.colors
     val inboxName = stringResource(R.string.inbox_list_name)
@@ -65,6 +73,7 @@ fun ProjectScreen(
         containerColor = colors.background,
         contentWindowInsets = WindowInsets(0),
         snackbarHost = { SnackbarHost(snackbarHostState) },
+        floatingActionButton = { AddTaskButton(onAddTask) },
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
             Row(
@@ -92,6 +101,7 @@ fun ProjectScreen(
                 emptyText = stringResource(R.string.project_empty),
                 onIntent = onIntent,
                 showList = false,
+                onOpenTask = onOpenTask,
             )
         }
     }

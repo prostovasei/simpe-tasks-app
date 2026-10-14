@@ -20,8 +20,8 @@ android {
         // поэтому любой новый APK ставится поверх старого как обновление.
         versionCode = providers.exec { commandLine("git", "rev-list", "--count", "HEAD"); isIgnoreExitValue = true }
             .standardOutput.asText.get().trim().toIntOrNull() ?: 1
-        // 0.<итерация>.<доработка>: 0.4.0 — Итерация 04.
-        versionName = "0.4.0"
+        // 0.<итерация>.<доработка>: 0.5.0 — Итерация 05.
+        versionName = "0.5.0"
     }
 
     signingConfigs {

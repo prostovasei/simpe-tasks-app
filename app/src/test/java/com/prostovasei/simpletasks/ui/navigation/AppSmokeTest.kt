@@ -2,13 +2,18 @@ package com.prostovasei.simpletasks.ui.navigation
 
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextReplacement
 import com.prostovasei.simpletasks.MainActivity
 import com.prostovasei.simpletasks.designsystem.components.TAG_NAME_FIELD
+import com.prostovasei.simpletasks.ui.common.TAG_ADD_TASK
 import com.prostovasei.simpletasks.ui.feature.lists.TAG_NEW_LIST
+import com.prostovasei.simpletasks.ui.feature.task.TAG_DETAIL_TITLE
+import com.prostovasei.simpletasks.ui.feature.task.TAG_QUICK_SAVE
+import com.prostovasei.simpletasks.ui.feature.task.TAG_QUICK_TITLE
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -27,7 +32,7 @@ class AppSmokeTest {
 
     @Test
     fun walkThroughTabsAndCreateList() {
-        composeRule.onNodeWithText("Задач со сроком нет").assertExists()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Задач со сроком нет") }
 
         composeRule.onNodeWithTag("tab:INBOX").performClick()
         composeRule.onNodeWithText("Во «Входящих» пусто").assertExists()
@@ -49,6 +54,27 @@ class AppSmokeTest {
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Покупки") }
         composeRule.onNodeWithTag("tab:ALL").performClick()
         composeRule.onNodeWithText("Задач со сроком нет").assertExists()
+    }
+
+    @Test
+    fun createTaskOpenItAndRename() {
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Задач со сроком нет") }
+        // «+» на «Все» → задача на сегодня.
+        composeRule.onNodeWithTag(TAG_ADD_TASK).performClick()
+        composeRule.onNodeWithTag(TAG_QUICK_TITLE).performTextReplacement("Купить продукты")
+        composeRule.onNodeWithTag(TAG_QUICK_SAVE).performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_QUICK_TITLE).fetchSemanticsNodes().isEmpty() }
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Купить продукты") }
+        composeRule.onNodeWithText("СЕГОДНЯ").assertExists()
+
+        // Тап по карточке → экран задачи → переименование → назад.
+        composeRule.onNodeWithText("Купить продукты").performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_DETAIL_TITLE).fetchSemanticsNodes().isNotEmpty() }
+        composeRule.onNodeWithTag(TAG_DETAIL_TITLE).performTextReplacement("Купить продукты на неделю")
+        composeRule.onNodeWithContentDescription("Назад").performClick()
+
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_DETAIL_TITLE).fetchSemanticsNodes().isEmpty() }
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Купить продукты на неделю") }
     }
 }
 
