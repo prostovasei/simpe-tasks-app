@@ -1,6 +1,7 @@
 package com.prostovasei.simpletasks.ui.navigation
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
@@ -27,6 +28,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.ui.feature.all.AllRoute
@@ -34,6 +36,8 @@ import com.prostovasei.simpletasks.ui.feature.inbox.InboxRoute
 import com.prostovasei.simpletasks.ui.feature.lists.ListsRoute
 import com.prostovasei.simpletasks.ui.feature.project.ProjectRoute
 import com.prostovasei.simpletasks.ui.feature.settings.SettingsRoute
+import com.prostovasei.simpletasks.ui.feature.task.QuickAddRoute
+import com.prostovasei.simpletasks.ui.feature.task.TaskDetailRoute
 import kotlin.reflect.KClass
 
 /** Вкладки нижнего бара (SPEC.md §4). */
@@ -59,12 +63,27 @@ fun AppNavHost(navController: NavHostController = rememberNavController()) {
             }
         },
     ) { padding ->
-        NavHost(navController, startDestination = AllDestination, modifier = Modifier.padding(padding)) {
-            composable<InboxDestination> { InboxRoute() }
-            composable<AllDestination> { AllRoute() }
+        // consumeWindowInsets: экраны с клавиатурой (imePadding) не добавляют отступ панели навигации второй раз.
+        NavHost(navController, startDestination = AllDestination, modifier = Modifier.padding(padding).consumeWindowInsets(padding)) {
+            val openTask: (String) -> Unit = { navController.navigate(TaskDetailDestination(it)) }
+            composable<InboxDestination> {
+                InboxRoute(onAddTask = { navController.navigate(QuickAddDestination()) }, onOpenTask = openTask)
+            }
+            composable<AllDestination> {
+                AllRoute(onAddTask = { navController.navigate(QuickAddDestination(today = true)) }, onOpenTask = openTask)
+            }
             composable<ListsDestination> { ListsRoute(onOpenProject = { navController.navigate(ProjectDestination(it)) }) }
             composable<SettingsDestination> { SettingsRoute() }
-            composable<ProjectDestination> { ProjectRoute(onBack = { navController.popBackStack() }) }
+            composable<ProjectDestination> { entry ->
+                val projectId = entry.toRoute<ProjectDestination>().projectId
+                ProjectRoute(
+                    onBack = { navController.popBackStack() },
+                    onAddTask = { navController.navigate(QuickAddDestination(projectId = projectId)) },
+                    onOpenTask = openTask,
+                )
+            }
+            composable<QuickAddDestination> { QuickAddRoute(onClose = { navController.popBackStack() }) }
+            composable<TaskDetailDestination> { TaskDetailRoute(onClose = { navController.popBackStack() }, onOpenTask = openTask) }
         }
     }
 }

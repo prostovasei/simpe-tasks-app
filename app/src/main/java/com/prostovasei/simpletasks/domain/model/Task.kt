@@ -32,6 +32,8 @@ data class NewTask(
     val priority: Priority = Priority.NONE,
     val due: TaskDue? = null,
     val checklist: List<String> = emptyList(),
+    /** Правило повтора RRULE (см. [RepeatRule]); повторы начнут создаваться с Итерации 05b. */
+    val rrule: String? = null,
 )
 
 data class ChecklistItem(

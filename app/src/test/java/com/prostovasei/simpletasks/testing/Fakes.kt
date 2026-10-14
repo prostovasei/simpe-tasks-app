@@ -69,8 +69,23 @@ class FakeTaskRepository : TaskRepository {
     override fun observeTaskDetails(taskId: String): Flow<TaskDetails?> =
         tasks.map { all -> all.firstOrNull { it.id == taskId }?.let { TaskDetails(it, emptyList()) } }
 
-    override suspend fun createTask(task: NewTask): String = error("не используется")
-    override suspend fun updateTask(task: Task) = Unit
+    override fun observeSubtasks(parentId: String): Flow<List<Task>> =
+        tasks.map { all -> all.filter { it.parentId == parentId } }
+
+    val created = mutableListOf<NewTask>()
+
+    override suspend fun createTask(task: NewTask): String {
+        created += task
+        val id = "new${created.size}"
+        tasks.update { it + task(id, title = task.title, projectId = task.projectId, due = task.due, priority = task.priority).copy(content = task.content, rrule = task.rrule) }
+        return id
+    }
+    val updated = mutableListOf<Task>()
+
+    override suspend fun updateTask(task: Task) {
+        updated += task
+        tasks.update { all -> all.map { if (it.id == task.id) task else it } }
+    }
 
     override suspend fun setCompleted(taskId: String, completed: Boolean) {
         completedCalls += taskId to completed
@@ -132,4 +147,14 @@ class FakeProjectRepository : ProjectRepository {
         calls += "deleteProject:$projectId"
         tree.update { t -> t.copy(ungrouped = t.ungrouped.filterNot { it.project.id == projectId }) }
     }
+}
+
+/** Пункты чек-листа в памяти; изменения видны через [FakeTaskRepository.observeTaskDetails] не нужны — тесты читают [items]. */
+class FakeChecklistRepository : com.prostovasei.simpletasks.domain.repository.ChecklistRepository {
+    val calls = mutableListOf<String>()
+    override suspend fun addItem(taskId: String, title: String): String { calls += "add:$taskId:$title"; return "i${calls.size}" }
+    override suspend fun renameItem(itemId: String, title: String) { calls += "rename:$itemId:$title" }
+    override suspend fun setDone(itemId: String, done: Boolean) { calls += "done:$itemId:$done" }
+    override suspend fun deleteItem(itemId: String) { calls += "delete:$itemId" }
+    override suspend fun reorder(taskId: String, orderedItemIds: List<String>) { calls += "reorder:$taskId:${orderedItemIds.joinToString(",")}" }
 }

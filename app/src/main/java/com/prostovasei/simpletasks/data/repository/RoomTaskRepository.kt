@@ -59,6 +59,9 @@ class RoomTaskRepository @Inject constructor(
             task?.let { TaskDetails(it.toDomain(), items.map { item -> item.toDomain() }) }
         }.distinctUntilChanged()
 
+    override fun observeSubtasks(parentId: String): Flow<List<Task>> =
+        taskDao.observeSubtasks(parentId).map { tasks -> tasks.map { it.toDomain() } }.distinctUntilChanged()
+
     override suspend fun createTask(task: NewTask): String {
         val id = ids.newId()
         db.withTransaction {
@@ -120,6 +123,7 @@ class RoomTaskRepository @Inject constructor(
             dueDate = due.dueDate,
             isAllDay = due.isAllDay,
             sortOrder = taskDao.nextSortOrder(task.projectId),
+            rrule = task.rrule?.takeIf { task.due != null },
             createdAt = now,
             updatedAt = now,
         )

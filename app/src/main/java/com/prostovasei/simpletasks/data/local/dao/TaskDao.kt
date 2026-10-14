@@ -116,6 +116,15 @@ interface TaskDao {
     )
     fun observeActiveByProject(projectId: String): Flow<List<TaskEntity>>
 
+    @Query(
+        """
+        SELECT * FROM tasks
+        WHERE parent_id = :parentId AND is_deleted = 0
+        ORDER BY status != 0, sort_order, created_at
+        """,
+    )
+    fun observeSubtasks(parentId: String): Flow<List<TaskEntity>>
+
     @Query("SELECT COALESCE(MAX(sort_order), -1) + 1 FROM tasks WHERE project_id = :projectId AND is_deleted = 0")
     suspend fun nextSortOrder(projectId: String): Int
 

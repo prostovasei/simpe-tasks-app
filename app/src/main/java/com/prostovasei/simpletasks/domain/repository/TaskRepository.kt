@@ -18,6 +18,9 @@ interface TaskRepository {
 
     fun observeTaskDetails(taskId: String): Flow<TaskDetails?>
 
+    /** Подзадачи (активные сначала, затем выполненные). */
+    fun observeSubtasks(parentId: String): Flow<List<Task>>
+
     /** Создаёт задачу вместе с пунктами чек-листа. Возвращает id задачи. */
     suspend fun createTask(task: NewTask): String
 

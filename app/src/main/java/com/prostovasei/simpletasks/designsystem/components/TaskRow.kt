@@ -2,6 +2,7 @@ package com.prostovasei.simpletasks.designsystem.components
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +20,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -43,6 +45,7 @@ fun TaskRow(
     onToggle: () -> Unit,
     modifier: Modifier = Modifier,
     testTag: String = "",
+    onClick: (() -> Unit)? = null,
 ) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
@@ -53,8 +56,11 @@ fun TaskRow(
             .fillMaxWidth()
             .alpha(alpha)
             .padding(horizontal = spacing.xs, vertical = spacing.xxs)
-            .background(colors.surface, AppTheme.shapes.large)
-            .padding(end = spacing.sm, top = spacing.xxs, bottom = spacing.xxs),
+            .clip(AppTheme.shapes.large)
+            .background(colors.surface)
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .padding(end = spacing.sm, top = spacing.xxs, bottom = spacing.xxs)
+            .testTag(testTag),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Checkbox(

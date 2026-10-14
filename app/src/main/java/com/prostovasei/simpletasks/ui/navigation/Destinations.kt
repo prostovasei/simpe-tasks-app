@@ -15,6 +15,17 @@ data object ListsDestination
 @Serializable
 data object SettingsDestination
 
+/**
+ * Быстрое создание задачи. [projectId] — список по умолчанию (null — «Входящие»);
+ * [today] — задача сразу на сегодня (открыто с экрана «Все»).
+ */
+@Serializable
+data class QuickAddDestination(val projectId: String? = null, val today: Boolean = false)
+
+/** Экран задачи. */
+@Serializable
+data class TaskDetailDestination(val taskId: String)
+
 /** Экран задач списка. Имя поля — ключ аргумента в SavedStateHandle. */
 @Serializable
 data class ProjectDestination(val projectId: String)
