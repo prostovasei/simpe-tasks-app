@@ -11,8 +11,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,6 +36,7 @@ import com.prostovasei.simpletasks.domain.model.Priority
 /**
  * Строка задачи: чекбокс, название, подпись (срок · список), плашка приоритета.
  * [isCompleting] — задача только что отмечена: зачёркнута и полупрозрачна (alpha 0.4, SPEC.md §4.1).
+ * [isRecurring] — значок повтора после подписи.
  */
 @Composable
 fun TaskRow(
@@ -46,6 +50,7 @@ fun TaskRow(
     modifier: Modifier = Modifier,
     testTag: String = "",
     onClick: (() -> Unit)? = null,
+    isRecurring: Boolean = false,
 ) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
@@ -91,7 +96,16 @@ fun TaskRow(
                         color = metaColor ?: colors.textSecondary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
                     )
+                    if (isRecurring) {
+                        Icon(
+                            Icons.Default.Refresh,
+                            contentDescription = null,
+                            tint = metaColor ?: colors.textSecondary,
+                            modifier = Modifier.size(AppTheme.sizes.metaIcon).testTag("$testTag:repeat"),
+                        )
+                    }
                 }
             }
         }

@@ -10,13 +10,13 @@ import kotlinx.coroutines.launch
 
 /** Действия со списком задач — общие для «Все», «Входящих» и экрана списка. */
 interface TaskListIntent {
-    data class ToggleComplete(val taskId: String) : TaskListIntent
+    data class ToggleComplete(val taskId: String, val recurring: Boolean = false) : TaskListIntent
     data class Undo(val taskId: String) : TaskListIntent
 }
 
 interface TaskListEffect {
-    /** Показать Snackbar «Задача выполнена · Отмена». */
-    data class ShowUndo(val taskId: String) : TaskListEffect
+    /** Snackbar «Задача выполнена · Отмена»; у повторяющейся — «Следующий раз: [next] · Отмена». */
+    data class ShowUndo(val taskId: String, val next: DueText? = null) : TaskListEffect
 }
 
 /**
@@ -31,11 +31,14 @@ fun TaskListEffects(
 ) {
     val message = stringResource(R.string.task_completed)
     val action = stringResource(R.string.task_undo)
+    val rescheduled = stringResource(R.string.task_rescheduled)
+    val days = DayNames(stringResource(R.string.day_today), stringResource(R.string.day_tomorrow), stringResource(R.string.day_yesterday))
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
             when (effect) {
                 is TaskListEffect.ShowUndo -> launch {
-                    snackbar.showUndo(message, action) { viewModel.onIntent(TaskListIntent.Undo(effect.taskId)) }
+                    val text = effect.next?.let { rescheduled.format(days.format(it)) } ?: message
+                    snackbar.showUndo(text, action) { viewModel.onIntent(TaskListIntent.Undo(effect.taskId)) }
                 }
                 else -> onOtherEffect(effect)
             }

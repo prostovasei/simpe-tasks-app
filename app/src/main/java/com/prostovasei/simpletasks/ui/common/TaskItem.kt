@@ -18,6 +18,8 @@ data class TaskItem(
     /** Отмечена только что: показывается зачёркнутой и полупрозрачной 2,5 с (SPEC.md §4.1). */
     val isCompleting: Boolean = false,
     val hasChecklist: Boolean = false,
+    /** Повторяющаяся: при отметке переезжает на следующий раз. */
+    val isRecurring: Boolean = false,
 )
 
 fun Task.toItem(projects: Map<String, Project>, today: LocalDate, zone: ZoneId, pending: Set<String>): TaskItem {
@@ -31,6 +33,7 @@ fun Task.toItem(projects: Map<String, Project>, today: LocalDate, zone: ZoneId, 
         listColor = project?.color,
         isInboxList = project?.isInbox == true,
         isCompleting = id in pending,
+        isRecurring = rrule != null && due != null,
     )
 }
 

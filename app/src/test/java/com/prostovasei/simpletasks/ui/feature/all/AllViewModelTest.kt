@@ -38,7 +38,7 @@ class AllViewModelTest {
     private val dispatcher = StandardTestDispatcher()
     private val today = LocalDate.of(2026, 10, 13)
     private val day = MutableStateFlow(today)
-    private val tasks = FakeTaskRepository()
+    private val tasks = FakeTaskRepository(today)
     private val projects = FakeProjectRepository()
     private val time = FakeTimeProvider(zone = ZoneOffset.UTC)
 
@@ -95,6 +95,28 @@ class AllViewModelTest {
         advanceTimeBy(200)
         runCurrent()
         assertTrue(vm.state.value.todayAllDay.isEmpty())
+    }
+
+    @Test
+    fun recurringTaskMovesAtOnceAndCanBeUndone() = runTest(dispatcher) {
+        tasks.tasks.value = listOf(task("gym", due = TaskDue.AllDay(today)).copy(rrule = "FREQ=WEEKLY;BYDAY=TU,FR"))
+        val vm = viewModel()
+        runCurrent()
+        assertTrue(vm.state.value.todayAllDay.single().isRecurring)
+
+        vm.effects.test {
+            vm.onIntent(TaskListIntent.ToggleComplete("gym", recurring = true))
+            runCurrent()
+            val effect = awaitItem() as TaskListEffect.ShowUndo
+            assertEquals(DayLabel.Date(LocalDate.of(2026, 10, 16), showYear = false), effect.next!!.day)
+        }
+        assertTrue("Сегодня задачи больше нет", vm.state.value.todayAllDay.isEmpty())
+        assertEquals(listOf("gym"), vm.state.value.upcoming.map { it.id })
+        assertFalse("Без зачёркивания: задача не выполнена, а перенесена", vm.state.value.upcoming.single().isCompleting)
+
+        vm.onIntent(TaskListIntent.Undo("gym"))
+        runCurrent()
+        assertEquals(listOf("gym"), vm.state.value.todayAllDay.map { it.id })
     }
 
     @Test

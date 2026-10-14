@@ -26,7 +26,7 @@ fun FlatTaskList(
         items(tasks, key = { it.id }) { item ->
             TaskItemRow(
                 item = item,
-                onToggle = { onIntent(TaskListIntent.ToggleComplete(item.id)) },
+                onToggle = { onIntent(TaskListIntent.ToggleComplete(item.id, item.isRecurring)) },
                 showList = showList,
                 onClick = { onOpenTask(item.id) },
             )

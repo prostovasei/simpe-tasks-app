@@ -29,7 +29,7 @@ class InboxViewModel @Inject constructor(
     private val time: TimeProvider,
 ) : MviViewModel<InboxState, TaskListIntent, TaskListEffect>(InboxState()) {
 
-    private val completion = CompletionTracker(viewModelScope, tasks)
+    private val completion = CompletionTracker(viewModelScope, tasks, time)
 
     init {
         viewModelScope.launch {
@@ -44,8 +44,7 @@ class InboxViewModel @Inject constructor(
 
     override fun onIntent(intent: TaskListIntent) {
         when (intent) {
-            is TaskListIntent.ToggleComplete ->
-                if (completion.toggle(intent.taskId)) sendEffect(TaskListEffect.ShowUndo(intent.taskId))
+            is TaskListIntent.ToggleComplete -> completion.toggle(intent.taskId, intent.recurring) { sendEffect(it) }
             is TaskListIntent.Undo -> completion.undo(intent.taskId)
             else -> Unit
         }

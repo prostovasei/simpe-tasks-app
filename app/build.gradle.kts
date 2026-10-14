@@ -21,7 +21,7 @@ android {
         versionCode = providers.exec { commandLine("git", "rev-list", "--count", "HEAD"); isIgnoreExitValue = true }
             .standardOutput.asText.get().trim().toIntOrNull() ?: 1
         // 0.<итерация>.<доработка>: 0.5.0 — Итерация 05.
-        versionName = "0.5.0"
+        versionName = "0.6.0"
     }
 
     signingConfigs {
@@ -118,6 +118,7 @@ dependencies {
     implementation(libs.androidx.hilt.navigation.compose)
 
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.lib.recur)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

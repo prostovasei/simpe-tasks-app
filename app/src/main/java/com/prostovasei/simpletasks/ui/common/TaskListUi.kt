@@ -32,6 +32,7 @@ fun LazyItemScope.TaskItemRow(
         metaColor = if (isOverdue) AppTheme.colors.overdue else null,
         listColor = if (showList) parseListColor(item.listColor) else null,
         isCompleting = item.isCompleting,
+        isRecurring = item.isRecurring,
         onToggle = onToggle,
         modifier = Modifier.animateItem(),
         testTag = "task:${item.id}",
@@ -57,11 +58,20 @@ fun taskMeta(item: TaskItem, showToday: Boolean, showList: Boolean): String {
 
 @Composable
 @ReadOnlyComposable
-private fun dayText(day: DayLabel): String = when (day) {
-    DayLabel.Today -> stringResource(R.string.day_today)
-    DayLabel.Tomorrow -> stringResource(R.string.day_tomorrow)
-    DayLabel.Yesterday -> stringResource(R.string.day_yesterday)
-    is DayLabel.Date -> (if (day.showYear) DATE_WITH_YEAR else DATE).format(day.date)
+private fun dayText(day: DayLabel): String =
+    DayNames(stringResource(R.string.day_today), stringResource(R.string.day_tomorrow), stringResource(R.string.day_yesterday)).day(day)
+
+/** Подписи дней, заранее взятые из ресурсов, — чтобы форматировать срок вне Compose (например, в Snackbar). */
+class DayNames(private val today: String, private val tomorrow: String, private val yesterday: String) {
+    fun day(day: DayLabel): String = when (day) {
+        DayLabel.Today -> today
+        DayLabel.Tomorrow -> tomorrow
+        DayLabel.Yesterday -> yesterday
+        is DayLabel.Date -> (if (day.showYear) DATE_WITH_YEAR else DATE).format(day.date)
+    }
+
+    /** «Завтра, 10:00». */
+    fun format(due: DueText): String = listOfNotNull(day(due.day), due.time).joinToString(", ")
 }
 
 private val RUSSIAN = Locale.forLanguageTag("ru")
