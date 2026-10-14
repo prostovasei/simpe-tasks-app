@@ -103,6 +103,8 @@ class FakeTaskRepository(private val today: LocalDate = LocalDate.of(2026, 10, 1
 
     override suspend fun getTask(taskId: String): Task? = tasks.value.firstOrNull { it.id == taskId }
 
+    override fun observeDataChanges(): Flow<Unit> = tasks.map { }
+
     override fun observeWithReminders(): Flow<List<Task>> =
         tasks.map { all -> all.filter { it.status == TaskStatus.ACTIVE && it.due != null && it.reminders.isNotEmpty() } }
 

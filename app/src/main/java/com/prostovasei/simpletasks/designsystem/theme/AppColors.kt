@@ -29,6 +29,7 @@ data class AppColors(
     val overdue: Color,
     val divider: Color,
     val danger: Color,
+    val scrim: Color,
     val priority: PriorityPalette,
     val isDark: Boolean,
 )
@@ -47,6 +48,7 @@ internal fun appColors(isDark: Boolean): AppColors {
         overdue = ColorTokens.overdue.resolve(),
         divider = ColorTokens.divider.resolve(),
         danger = ColorTokens.danger.resolve(),
+        scrim = ColorTokens.scrim.resolve(),
         priority = PriorityPalette(
             high = PriorityTokens.high.resolve(),
             medium = PriorityTokens.medium.resolve(),

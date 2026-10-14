@@ -21,7 +21,7 @@ android {
         versionCode = providers.exec { commandLine("git", "rev-list", "--count", "HEAD"); isIgnoreExitValue = true }
             .standardOutput.asText.get().trim().toIntOrNull() ?: 1
         // 0.<итерация>.<доработка>: 0.5.0 — Итерация 05.
-        versionName = "0.6.1"
+        versionName = "0.7.0"
     }
 
     signingConfigs {
@@ -130,6 +130,7 @@ dependencies {
     testImplementation(libs.roborazzi.compose)
     testImplementation(platform(libs.androidx.compose.bom))
     testImplementation(libs.androidx.compose.ui.test.junit4)
+    testImplementation(libs.androidx.glance.appwidget.testing)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 }
 

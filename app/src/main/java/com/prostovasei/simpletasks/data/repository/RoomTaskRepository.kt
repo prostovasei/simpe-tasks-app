@@ -99,6 +99,8 @@ class RoomTaskRepository @Inject constructor(
 
     override suspend fun getTask(taskId: String): Task? = taskDao.getById(taskId)?.takeUnless { it.isDeleted }?.toDomain()
 
+    override fun observeDataChanges(): Flow<Unit> = taskDao.observeDataChanges().map { }
+
     override fun observeWithReminders(): Flow<List<Task>> =
         taskDao.observeWithReminders().map { tasks -> tasks.map { it.toDomain() } }.distinctUntilChanged()
 

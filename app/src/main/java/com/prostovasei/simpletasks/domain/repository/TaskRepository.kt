@@ -30,6 +30,9 @@ interface TaskRepository {
 
     suspend fun getTask(taskId: String): Task?
 
+    /** Сигнал о любом изменении задач или списков (для виджета). */
+    fun observeDataChanges(): Flow<Unit>
+
     /** Активные задачи со сроком и напоминаниями — для расписания уведомлений. */
     fun observeWithReminders(): Flow<List<Task>>
 

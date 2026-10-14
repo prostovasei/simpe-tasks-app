@@ -164,6 +164,10 @@ interface TaskDao {
     @Query("SELECT * FROM tasks WHERE is_deleted = 0 AND status = 0 AND due_date IS NOT NULL AND reminders IS NOT NULL")
     fun observeWithReminders(): Flow<List<TaskEntity>>
 
+    /** Срабатывает при любой записи в задачи или списки — для обновления виджета. */
+    @Query("SELECT (SELECT COUNT(*) FROM tasks) + (SELECT COUNT(*) FROM projects)")
+    fun observeDataChanges(): Flow<Int>
+
     /** Физическое удаление — только для только что созданной копии при «Отмене». */
     @Query("DELETE FROM tasks WHERE id = :id")
     suspend fun deleteHard(id: String)

@@ -244,4 +244,11 @@
     <string name="settings_notifications_title">Напоминания</string>
     <string name="settings_notifications_off">Уведомления выключены — напоминания не придут.</string>
     <string name="settings_notifications_enable">Включить уведомления</string>
+    <string name="widget_name">Задачи</string>
+    <string name="widget_description">Задачи на сегодня и ближайшие дни, с галочками</string>
+    <string name="widget_all">Все</string>
+    <string name="widget_all_hint">Просроченные и ближайшие 30 дней</string>
+    <string name="widget_empty">Задач нет</string>
+    <string name="widget_pick_list">Выбрать список</string>
+    <string name="widget_pick_title">Показывать в виджете</string>
 </resources>
