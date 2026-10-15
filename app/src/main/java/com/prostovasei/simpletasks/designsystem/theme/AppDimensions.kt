@@ -24,6 +24,8 @@ data class AppShapes(
     val medium: RoundedCornerShape = RoundedCornerShape(RadiusTokens.MD.dp),
     val large: RoundedCornerShape = RoundedCornerShape(RadiusTokens.LG.dp),
     val extraLarge: RoundedCornerShape = RoundedCornerShape(RadiusTokens.XL.dp),
+    /** Скругление только сверху — карточка, выезжающая снизу. */
+    val extraLargeTop: RoundedCornerShape = RoundedCornerShape(topStart = RadiusTokens.XL.dp, topEnd = RadiusTokens.XL.dp),
 )
 
 @Immutable

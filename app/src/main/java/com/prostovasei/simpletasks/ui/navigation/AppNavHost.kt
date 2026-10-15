@@ -1,6 +1,8 @@
 package com.prostovasei.simpletasks.ui.navigation
 
 import androidx.annotation.StringRes
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -78,7 +80,16 @@ fun AppNavHost(
         },
     ) { padding ->
         // consumeWindowInsets: экраны с клавиатурой (imePadding) не добавляют отступ панели навигации второй раз.
-        NavHost(navController, startDestination = AllDestination, modifier = Modifier.padding(padding).consumeWindowInsets(padding)) {
+        // Переходы между экранами без анимации (решение PM).
+        NavHost(
+            navController,
+            startDestination = AllDestination,
+            modifier = Modifier.padding(padding).consumeWindowInsets(padding),
+            enterTransition = { EnterTransition.None },
+            exitTransition = { ExitTransition.None },
+            popEnterTransition = { EnterTransition.None },
+            popExitTransition = { ExitTransition.None },
+        ) {
             val openTask: (String) -> Unit = { navController.navigate(TaskDetailDestination(it)) }
             composable<InboxDestination> {
                 InboxRoute(onAddTask = { navController.navigate(QuickAddDestination()) }, onOpenTask = openTask)

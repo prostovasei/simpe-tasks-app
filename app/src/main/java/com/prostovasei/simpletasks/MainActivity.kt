@@ -47,14 +47,6 @@ class MainActivity : ComponentActivity() {
         routeFrom(intent)?.let { openRoute = it }
     }
 
-    private fun routeFrom(intent: Intent): Any? = when {
-        intent.getBooleanExtra(EXTRA_QUICK_ADD, false) -> QuickAddDestination(
-            projectId = intent.getStringExtra(EXTRA_QUICK_ADD_PROJECT),
-            today = intent.getBooleanExtra(EXTRA_QUICK_ADD_TODAY, false),
-        )
-        else -> intent.getStringExtra(EXTRA_TASK_ID)?.let { TaskDetailDestination(it) }
-    }
-
     /** Android 13+: разрешение на уведомления спрашивается один раз, при первом запуске. */
     @androidx.compose.runtime.Composable
     private fun AskNotificationsOnce() {
@@ -71,6 +63,15 @@ class MainActivity : ComponentActivity() {
     }
 
     companion object {
+        /** Экран из интента: задача ([EXTRA_TASK_ID]) или создание задачи ([EXTRA_QUICK_ADD]). */
+        fun routeFrom(intent: Intent): Any? = when {
+            intent.getBooleanExtra(EXTRA_QUICK_ADD, false) -> QuickAddDestination(
+                projectId = intent.getStringExtra(EXTRA_QUICK_ADD_PROJECT),
+                today = intent.getBooleanExtra(EXTRA_QUICK_ADD_TODAY, false),
+            )
+            else -> intent.getStringExtra(EXTRA_TASK_ID)?.let { TaskDetailDestination(it) }
+        }
+
         const val EXTRA_TASK_ID = "open_task_id"
         const val EXTRA_QUICK_ADD = "quick_add"
         const val EXTRA_QUICK_ADD_PROJECT = "quick_add_project"

@@ -51,6 +51,7 @@ import androidx.glance.text.TextDecoration
 import androidx.glance.text.TextStyle
 import com.prostovasei.simpletasks.MainActivity
 import com.prostovasei.simpletasks.R
+import com.prostovasei.simpletasks.TaskPopupActivity
 import com.prostovasei.simpletasks.designsystem.tokens.RadiusTokens
 import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
 import com.prostovasei.simpletasks.designsystem.tokens.SpacingTokens
@@ -267,19 +268,22 @@ fun widgetMeta(item: TaskItem, days: DayNames, inboxName: String, showList: Bool
     return listOfNotNull(due, list).joinToString(" · ")
 }
 
-/** Открыть задачу в приложении. У каждой задачи свой адрес — иначе Android подменит одно нажатие другим. */
-fun openTaskIntent(context: Context, taskId: String): Intent = Intent(context, MainActivity::class.java)
+/**
+ * Открыть задачу поверх рабочего стола, без приложения (решение PM). У каждой задачи свой адрес —
+ * иначе Android подменит одно нажатие другим.
+ */
+fun openTaskIntent(context: Context, taskId: String): Intent = Intent(context, TaskPopupActivity::class.java)
     .setData("simpletasks://task/$taskId".toUri())
     .putExtra(MainActivity.EXTRA_TASK_ID, taskId)
-    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
 
-/** «+»: создание задачи — на сегодня («Все»), во «Входящие» или в выбранный список. */
-fun quickAddIntent(context: Context, filter: WidgetFilter): Intent = Intent(context, MainActivity::class.java)
+/** «+»: создание задачи поверх рабочего стола — на сегодня («Все»), во «Входящие» или в выбранный список. */
+fun quickAddIntent(context: Context, filter: WidgetFilter): Intent = Intent(context, TaskPopupActivity::class.java)
     .setData("simpletasks://add/${filter.encode()}".toUri())
     .putExtra(MainActivity.EXTRA_QUICK_ADD, true)
     .putExtra(MainActivity.EXTRA_QUICK_ADD_TODAY, filter == WidgetFilter.All)
     .putExtra(MainActivity.EXTRA_QUICK_ADD_PROJECT, (filter as? WidgetFilter.ProjectList)?.projectId)
-    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
 
 fun pickerIntent(context: Context, appWidgetId: Int): Intent = Intent(context, WidgetConfigActivity::class.java)
     .setData("simpletasks://widget/$appWidgetId".toUri())

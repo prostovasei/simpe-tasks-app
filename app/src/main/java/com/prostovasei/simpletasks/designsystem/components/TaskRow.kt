@@ -1,6 +1,5 @@
 package com.prostovasei.simpletasks.designsystem.components
 
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -20,7 +19,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -56,14 +54,12 @@ fun TaskRow(
 ) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
-    val alpha by animateFloatAsState(
-        when {
-            isCompleting -> COMPLETING_ALPHA
-            isGhost -> GHOST_ALPHA
-            else -> 1f
-        },
-        label = "taskAlpha",
-    )
+    // Без плавного перехода (решение PM): отмеченная задача сразу бледная.
+    val alpha = when {
+        isCompleting -> COMPLETING_ALPHA
+        isGhost -> GHOST_ALPHA
+        else -> 1f
+    }
 
     Row(
         modifier = modifier

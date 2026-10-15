@@ -104,7 +104,7 @@ class TaskViewModelsTest {
         assertEquals("Молоко, хлеб", created.content)
         assertEquals("work", created.projectId)
         assertEquals(Priority.HIGH, created.priority)
-        assertEquals(TaskDue.AllDay(today), created.due)
+        assertEquals("Сегодня среда + «каждую субботу» → суббота", TaskDue.AllDay(LocalDate.of(2026, 10, 17)), created.due)
         assertEquals("FREQ=WEEKLY;BYDAY=SA", created.rrule)
         assertEquals("Пустой пункт отбрасывается", listOf("Молоко"), created.checklist)
         assertEquals("Напоминание включено по умолчанию: в день срока в 10:00", listOf("P0DT10H0M0S"), created.reminders)
@@ -126,6 +126,29 @@ class TaskViewModelsTest {
 
         vm.onIntent(QuickAddIntent.Edit(FieldEdit.SetReminders(emptyList())))
         assertTrue("Можно отключить", vm.state.value.reminders.isEmpty())
+    }
+
+    /** 14.10.2026 — среда; 17.10 — суббота. */
+    @Test
+    fun quickAddRepeatStartsFromFirstMatchingDay() = runTest(dispatcher) {
+        val vm = quickAdd()
+        vm.onIntent(QuickAddIntent.Edit(FieldEdit.Due(TaskDue.AllDay(today.plusDays(1)))))
+        vm.onIntent(QuickAddIntent.Edit(FieldEdit.Repeat("FREQ=WEEKLY;BYDAY=SA")))
+        assertEquals("Дата «завтра» + «каждую субботу» → суббота", TaskDue.AllDay(LocalDate.of(2026, 10, 17)), vm.state.value.due)
+
+        vm.onIntent(QuickAddIntent.Edit(FieldEdit.Due(TaskDue.AllDay(LocalDate.of(2026, 10, 19)))))
+        assertEquals("Новая дата (понедельник) → ближайшая суббота", TaskDue.AllDay(LocalDate.of(2026, 10, 24)), vm.state.value.due)
+    }
+
+    @Test
+    fun detailRepeatStartsFromFirstMatchingDay() = runTest(dispatcher) {
+        tasks.tasks.value = listOf(task("t1", due = TaskDue.AllDay(today)))
+        val vm = detail(this)
+        runCurrent()
+        vm.onIntent(TaskDetailIntent.Edit(FieldEdit.Repeat("FREQ=WEEKLY;BYDAY=SA")))
+        runCurrent()
+        assertEquals(TaskDue.AllDay(LocalDate.of(2026, 10, 17)), vm.state.value.task!!.due)
+        assertEquals(TaskDue.AllDay(LocalDate.of(2026, 10, 17)), tasks.updated.last().due)
     }
 
     @Test

@@ -15,7 +15,7 @@ import com.prostovasei.simpletasks.designsystem.theme.parseListColor
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-/** Строка списка задач с анимацией появления и исчезновения. */
+/** Строка списка задач. Без анимаций (решение PM: всё переключается мгновенно). */
 @Composable
 fun LazyItemScope.TaskItemRow(
     item: TaskItem,
@@ -35,7 +35,6 @@ fun LazyItemScope.TaskItemRow(
         isRecurring = item.isRecurring,
         isGhost = item.isGhost,
         onToggle = onToggle,
-        modifier = Modifier.animateItem(),
         testTag = "task:${item.id}",
         onClick = onClick,
     )
