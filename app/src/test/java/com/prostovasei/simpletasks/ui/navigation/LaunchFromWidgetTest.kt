@@ -25,6 +25,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
+import android.os.Looper
 
 /** Виджет и уведомления открывают задачу и создание задачи поверх рабочего стола, без приложения (решение PM). */
 @Suppress("DEPRECATION") // v1-правило: поле ввода с мигающим курсором вешает v2
@@ -38,7 +40,7 @@ class LaunchFromWidgetTest {
     @Test
     fun plusFromAllWidgetOpensQuickAddForToday() {
         ActivityScenario.launch<TaskPopupActivity>(quickAddIntent(context, WidgetFilter.All)).use {
-            composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_QUICK_TITLE).fetchSemanticsNodes().isNotEmpty() }
+            composeRule.waitUntil(LAUNCH_TIMEOUT_MS) { composeRule.onAllNodesWithTag(TAG_QUICK_TITLE).fetchSemanticsNodes().isNotEmpty() }
             composeRule.onNodeWithTag(TAG_CHIP_DATE).assertTextEquals("Сегодня")
         }
     }
@@ -52,7 +54,7 @@ class LaunchFromWidgetTest {
         ActivityScenario.launch<TaskPopupActivity>(openTaskIntent(context, id)).use { scenario ->
             var activity: TaskPopupActivity? = null
             scenario.onActivity { activity = it }
-            composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_DETAIL_TITLE).fetchSemanticsNodes().isNotEmpty() }
+            composeRule.waitUntil(LAUNCH_TIMEOUT_MS) { composeRule.onAllNodesWithTag(TAG_DETAIL_TITLE).fetchSemanticsNodes().isNotEmpty() }
             composeRule.onNodeWithTag(TAG_DETAIL_TITLE).assertTextEquals("Позвонить маме")
             // Нажатие на затемнённый рабочий стол закрывает окно — приложение не открывается.
             composeRule.onNodeWithTag(TAG_POPUP_SCRIM).performTouchInput { click(Offset(centerX, top + 5f)) }
@@ -65,7 +67,17 @@ class LaunchFromWidgetTest {
         ActivityScenario.launch<TaskPopupActivity>(openTaskIntent(context, "нет-такой")).use { scenario ->
             var activity: TaskPopupActivity? = null
             scenario.onActivity { activity = it }
-            composeRule.waitUntil(5_000) { checkNotNull(activity).isFinishing }
+            // Закрытие приходит из базы (задачи нет) и проходит через очередь Android — прокручиваем её явно,
+            // с запасом по времени на медленном CI.
+            composeRule.waitUntil(LAUNCH_TIMEOUT_MS) {
+                shadowOf(Looper.getMainLooper()).idle()
+                checkNotNull(activity).isFinishing
+            }
         }
+    }
+
+    private companion object {
+        /** Холодный запуск окна с Hilt и базой на CI бывает медленным. */
+        const val LAUNCH_TIMEOUT_MS = 20_000L
     }
 }
