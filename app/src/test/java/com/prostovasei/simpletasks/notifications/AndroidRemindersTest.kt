@@ -57,7 +57,7 @@ class AndroidRemindersTest {
         assertEquals(AndroidReminderNotifications.VIBRATION.toList(), channel.vibrationPattern.toList())
 
         val open = shadowOf(posted.contentIntent).savedIntent
-        assertEquals(MainActivity::class.java.name, open.component?.className)
+        assertEquals("Задача открывается поверх, без приложения", com.prostovasei.simpletasks.TaskPopupActivity::class.java.name, open.component?.className)
         assertEquals("t1", open.getStringExtra(MainActivity.EXTRA_TASK_ID))
         val tomorrow = shadowOf(posted.actions[1].actionIntent).savedIntent
         assertEquals(ReminderReceiver.ACTION_TOMORROW, tomorrow.action)

@@ -15,6 +15,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import com.prostovasei.simpletasks.MainActivity
 import com.prostovasei.simpletasks.R
+import com.prostovasei.simpletasks.TaskPopupActivity
 import com.prostovasei.simpletasks.core.time.TimeProvider
 import com.prostovasei.simpletasks.domain.model.Task
 import com.prostovasei.simpletasks.domain.repository.ProjectRepository
@@ -83,9 +84,10 @@ class AndroidReminderNotifications @Inject constructor(
                 PendingIntent.getActivity(
                     context,
                     id,
-                    Intent(context, MainActivity::class.java)
+                    // Задача открывается поверх того, что на экране, без перехода в приложение (решение PM).
+                    Intent(context, TaskPopupActivity::class.java)
                         .putExtra(MainActivity.EXTRA_TASK_ID, task.id)
-                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK),
                     PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
                 ),
             )

@@ -9,6 +9,7 @@ import com.prostovasei.simpletasks.domain.model.ChecklistItem
 import com.prostovasei.simpletasks.domain.model.Completion
 import com.prostovasei.simpletasks.domain.model.Task
 import com.prostovasei.simpletasks.domain.model.TaskStatus
+import com.prostovasei.simpletasks.domain.model.alignedToRepeat
 import com.prostovasei.simpletasks.domain.model.withDue
 import com.prostovasei.simpletasks.domain.repository.ChecklistRepository
 import com.prostovasei.simpletasks.domain.repository.ProjectRepository
@@ -113,10 +114,11 @@ class TaskDetailViewModel @Inject constructor(
             is TaskDetailIntent.Content -> editText { copy(content = intent.text) }
             is TaskDetailIntent.Edit -> editNow {
                 when (val edit = intent.edit) {
-                    is FieldEdit.Due -> withDue(edit.due)
+                    // Повтор начинается с первого подходящего дня от выбранной даты (решение PM).
+                    is FieldEdit.Due -> withDue(edit.due).alignedToRepeat(time.zone())
                     is FieldEdit.Project -> copy(projectId = edit.projectId)
                     is FieldEdit.SetPriority -> copy(priority = edit.priority)
-                    is FieldEdit.Repeat -> copy(rrule = edit.rrule)
+                    is FieldEdit.Repeat -> copy(rrule = edit.rrule).alignedToRepeat(time.zone())
                     is FieldEdit.SetReminders -> copy(reminders = edit.reminders)
                 }
             }

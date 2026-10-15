@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.prostovasei.simpletasks.core.time.TimeProvider
 import com.prostovasei.simpletasks.domain.model.NewTask
 import com.prostovasei.simpletasks.domain.model.Priority
+import com.prostovasei.simpletasks.domain.model.Recurrence
 import com.prostovasei.simpletasks.domain.model.Reminders
 import com.prostovasei.simpletasks.domain.model.TaskDue
 import com.prostovasei.simpletasks.domain.repository.ProjectRepository
@@ -89,14 +90,18 @@ class QuickAddViewModel @Inject constructor(
             is QuickAddIntent.Edit -> setState {
                 when (val edit = intent.edit) {
                     is FieldEdit.Due -> copy(
-                        due = edit.due,
+                        // Повтор начинается с первого подходящего дня от выбранной даты (решение PM).
+                        due = edit.due?.let { due -> rrule?.let { Recurrence.alignStart(it, due, zone) } ?: due },
                         rrule = if (edit.due == null) null else rrule,
                         // Свои напоминания живут, пока не меняется вид срока («весь день» ↔ «со временем»).
                         customReminders = customReminders.takeIf { edit.due != null && due != null && edit.due::class == due::class },
                     )
                     is FieldEdit.Project -> copy(projectId = edit.projectId)
                     is FieldEdit.SetPriority -> copy(priority = edit.priority)
-                    is FieldEdit.Repeat -> copy(rrule = edit.rrule)
+                    is FieldEdit.Repeat -> copy(
+                        rrule = edit.rrule,
+                        due = due?.let { due -> edit.rrule?.let { Recurrence.alignStart(it, due, zone) } ?: due },
+                    )
                     is FieldEdit.SetReminders -> copy(customReminders = edit.reminders)
                 }
             }

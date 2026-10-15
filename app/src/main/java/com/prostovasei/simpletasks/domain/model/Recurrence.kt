@@ -77,6 +77,31 @@ object Recurrence {
         return result
     }
 
+    /**
+     * Первый день повтора начиная с [anchor] (решение PM: «дата завтра + каждую субботу» → ближайшая суббота).
+     * Меняется только для правил с выбранными днями (BYDAY / BYMONTHDAY / BYMONTH); «каждый день», «каждые
+     * N недель» без дней и т.п. и так начинаются с выбранной даты. Время дня сохраняется.
+     */
+    fun alignStart(rrule: String, anchor: TaskDue, zone: ZoneId): TaskDue {
+        val parts = rrule.trim().removePrefix("RRULE:").split(';').filter { it.isNotBlank() }
+        if (parts.none { it.startsWith("BYDAY=") || it.startsWith("BYMONTHDAY=") || it.startsWith("BYMONTH=") }) return anchor
+        val rule = runCatching {
+            RecurrenceRule(parts.filterNot { it.startsWith("COUNT=") }.joinToString(";"), RecurrenceRule.RfcMode.RFC2445_LAX)
+        }.getOrNull() ?: return anchor
+        val dayBefore = when (anchor) {
+            is TaskDue.AllDay -> TaskDue.AllDay(anchor.date.minusDays(1))
+            is TaskDue.AtTime -> TaskDue.AtTime(anchor.instant.atZone(zone).minusDays(1).toInstant())
+        }
+        val start = anchor.localDate(zone)
+        val iterator = rule.iterator(dayBefore.toDateTime(zone))
+        var steps = 0
+        while (iterator.hasNext() && steps++ < MAX_STEPS) {
+            val candidate = iterator.nextDateTime().toTaskDue(anchor, zone)
+            if (candidate.localDate(zone) >= start) return candidate
+        }
+        return anchor
+    }
+
     private fun TaskDue.toDateTime(zone: ZoneId): DateTime = when (this) {
         is TaskDue.AllDay -> DateTime(date.year, date.monthValue - 1, date.dayOfMonth)
         is TaskDue.AtTime -> instant.atZone(zone).toLocalDateTime().let {
@@ -117,6 +142,14 @@ fun Task.upcomingRepeats(zone: ZoneId, today: LocalDate, until: LocalDate): List
     val rule = rrule ?: return emptyList()
     val anchor = start ?: due ?: return emptyList()
     return Recurrence.upcoming(rule, anchor, zone, after = today, until = until).mapNotNull { movedTo(it) }
+}
+
+/** Срок (и начало интервала) ставятся на первый день повтора начиная с текущей даты задачи. */
+fun Task.alignedToRepeat(zone: ZoneId): Task {
+    val rule = rrule ?: return this
+    val anchor = start ?: due ?: return this
+    val aligned = Recurrence.alignStart(rule, anchor, zone)
+    return if (aligned == anchor) this else movedTo(aligned)?.copy(rrule = rule) ?: this
 }
 
 /** Задача с началом (или сроком) в [anchor]; конец интервала сдвигается на то же время. */

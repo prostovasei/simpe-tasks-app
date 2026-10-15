@@ -126,4 +126,26 @@ class RecurrenceTest {
         assertEquals(at(utc, 10, 21, 11, 0), repeats.first().due)
         assertEquals(call.id, repeats.first().id)
     }
+
+    /** 14.10.2026 — среда, 16.10 — пятница, 17.10 — суббота. */
+    @Test
+    fun repeatStartsFromFirstMatchingDay() {
+        assertEquals("Пятница + «каждую субботу» → суббота", day(10, 17), Recurrence.alignStart("FREQ=WEEKLY;BYDAY=SA", day(10, 16), utc))
+        assertEquals("Суббота уже подходит", day(10, 17), Recurrence.alignStart("FREQ=WEEKLY;BYDAY=SA", day(10, 17), utc))
+        assertEquals("Вт и пт, выбрана среда → пятница", day(10, 16), Recurrence.alignStart("FREQ=WEEKLY;BYDAY=TU,FR", day(10, 14), utc))
+        assertEquals("14-го числа, выбрано 15-е → 14 ноября", day(11, 14), Recurrence.alignStart("FREQ=MONTHLY;BYMONTHDAY=14", day(10, 15), utc))
+        assertEquals("Каждый день — с выбранной даты", day(10, 16), Recurrence.alignStart("FREQ=DAILY", day(10, 16), utc))
+        assertEquals("Каждые 2 недели без дней — с выбранной даты", day(10, 16), Recurrence.alignStart("FREQ=WEEKLY;INTERVAL=2", day(10, 16), utc))
+        assertEquals("«N раз» не тратится", day(10, 17), Recurrence.alignStart("FREQ=WEEKLY;COUNT=1;BYDAY=SA", day(10, 16), utc))
+        assertEquals("Время сохраняется", at(utc, 10, 17, 9, 30), Recurrence.alignStart("FREQ=WEEKLY;BYDAY=SA", at(utc, 10, 16, 9, 30), utc))
+    }
+
+    @Test
+    fun taskAlignedKeepsIntervalAndRule() {
+        val call = task("t", start = at(utc, 10, 16, 10, 0), due = at(utc, 10, 16, 11, 0)).copy(rrule = "FREQ=WEEKLY;BYDAY=SA")
+        val aligned = call.alignedToRepeat(utc)
+        assertEquals(at(utc, 10, 17, 10, 0), aligned.start)
+        assertEquals(at(utc, 10, 17, 11, 0), aligned.due)
+        assertEquals("FREQ=WEEKLY;BYDAY=SA", aligned.rrule)
+    }
 }
