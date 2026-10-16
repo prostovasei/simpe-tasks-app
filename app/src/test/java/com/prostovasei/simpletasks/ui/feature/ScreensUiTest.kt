@@ -20,12 +20,18 @@ import com.prostovasei.simpletasks.ui.common.TaskItem
 import com.prostovasei.simpletasks.ui.common.TaskListIntent
 import com.prostovasei.simpletasks.ui.feature.all.AllScreen
 import com.prostovasei.simpletasks.ui.feature.all.AllState
+import com.prostovasei.simpletasks.ui.feature.completed.CompletedDay
+import com.prostovasei.simpletasks.ui.feature.completed.CompletedIntent
+import com.prostovasei.simpletasks.ui.feature.completed.CompletedScreen
+import com.prostovasei.simpletasks.ui.feature.completed.CompletedState
+import com.prostovasei.simpletasks.ui.feature.completed.CompletedTask
 import com.prostovasei.simpletasks.ui.feature.inbox.InboxScreen
 import com.prostovasei.simpletasks.ui.feature.inbox.InboxState
 import com.prostovasei.simpletasks.ui.feature.lists.ListsDialog
 import com.prostovasei.simpletasks.ui.feature.lists.ListsIntent
 import com.prostovasei.simpletasks.ui.feature.lists.ListsScreen
 import com.prostovasei.simpletasks.ui.feature.lists.ListsState
+import com.prostovasei.simpletasks.ui.feature.lists.TAG_COMPLETED
 import com.prostovasei.simpletasks.ui.feature.lists.TAG_NEW_LIST
 import com.prostovasei.simpletasks.ui.feature.project.ProjectDialog
 import com.prostovasei.simpletasks.ui.feature.project.ProjectIntent
@@ -35,6 +41,7 @@ import com.prostovasei.simpletasks.ui.feature.project.TAG_PROJECT_MENU
 import com.prostovasei.simpletasks.ui.navigation.BottomBar
 import com.prostovasei.simpletasks.ui.navigation.Tab
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -162,6 +169,45 @@ class ScreensUiTest {
 
         assertEquals("work", opened)
         assertEquals(listOf<Any>(ListsIntent.ToggleFolder("g1"), ListsIntent.OpenDialog(ListsDialog.CreateList)), intents)
+    }
+
+    @Test
+    fun listsScreenOpensCompleted() {
+        var opened = false
+        show { ListsScreen(ListsState(tree = tree), { intents += it }, {}, { opened = true }) }
+        composeRule.onNodeWithTag(TAG_COMPLETED).performClick()
+        assertTrue(opened)
+    }
+
+    private val completedState = CompletedState(
+        days = listOf(
+            CompletedDay(DayLabel.Today, listOf(CompletedTask("c1", "Отправить отчёт", "Работа", "#3D8BFD", false, "09:05"))),
+            CompletedDay(DayLabel.Date(LocalDate.of(2026, 10, 1), showYear = false), listOf(CompletedTask("c2", "Купить продукты", null, null, true, null))),
+        ),
+        isLoading = false,
+    )
+
+    @Test
+    fun completedScreenShowsDaysAndRestores() {
+        var opened: String? = null
+        show { CompletedScreen(completedState, { intents += it }, {}, { opened = it }) }
+
+        composeRule.onNodeWithText("СЕГОДНЯ").assertExists()
+        composeRule.onNodeWithText("1 ОКТЯБРЯ").assertExists()
+        composeRule.onNodeWithText("Работа · 09:05").assertExists()
+        composeRule.onNodeWithText("Входящие").assertExists()
+        composeRule.onNodeWithText("Купить продукты").performClick()
+        composeRule.onNodeWithTag("completed:c1:check", useUnmergedTree = true).performClick()
+
+        assertEquals("c2", opened)
+        assertEquals(listOf<Any>(CompletedIntent.Restore("c1")), intents)
+        composeRule.onRoot().captureRoboImage("screenshots/completed_light.png")
+    }
+
+    @Test
+    fun completedScreenEmpty() {
+        show { CompletedScreen(CompletedState(isLoading = false), {}, {}, {}) }
+        composeRule.onNodeWithText("Выполненных задач пока нет").assertExists()
     }
 
     @Test

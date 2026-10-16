@@ -160,6 +160,26 @@ class RoomTaskRepository @Inject constructor(
         updateTask(task.withDue(newDue))
     }
 
+    override fun observeCompleted(): Flow<List<Task>> =
+        taskDao.observeCompleted().map { tasks -> tasks.map { it.toDomain() } }.distinctUntilChanged()
+
+    override suspend fun restore(taskId: String): Task? {
+        val task = getTask(taskId)?.takeIf { it.isCompleted } ?: return null
+        db.withTransaction {
+            if (task.rrule != null) updateTask(task.copy(rrule = null))
+            taskDao.setStatus(taskId, TaskStatus.ACTIVE.value, completedAt = null, now = nowMillis())
+        }
+        return task
+    }
+
+    override suspend fun undoRestore(previous: Task) {
+        val now = nowMillis()
+        db.withTransaction {
+            updateTask(previous)
+            taskDao.setStatus(previous.id, TaskStatus.COMPLETED.value, completedAt = previous.completedAt?.toEpochMilli() ?: now, now = now)
+        }
+    }
+
     override suspend fun setCompleted(taskId: String, completed: Boolean) {
         val now = nowMillis()
         if (completed) {

@@ -31,6 +31,9 @@
     <string name="lists_new_list">+ Список</string>
     <string name="lists_new_folder">+ Папка</string>
     <string name="lists_empty">Списков пока нет</string>
+    <string name="completed_title">Выполненные</string>
+    <string name="completed_empty">Выполненных задач пока нет</string>
+    <string name="completed_restored">Задача возвращена</string>
     <string name="lists_create_list_title">Новый список</string>
     <string name="lists_create_folder_title">Новая папка</string>
     <string name="lists_rename_folder_title">Переименовать папку</string>

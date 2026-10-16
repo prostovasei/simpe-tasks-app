@@ -39,6 +39,7 @@ import com.prostovasei.simpletasks.ui.feature.all.AllRoute
 import com.prostovasei.simpletasks.ui.feature.inbox.InboxRoute
 import com.prostovasei.simpletasks.ui.feature.lists.ListsRoute
 import com.prostovasei.simpletasks.ui.feature.project.ProjectRoute
+import com.prostovasei.simpletasks.ui.feature.completed.CompletedRoute
 import com.prostovasei.simpletasks.ui.feature.settings.SettingsRoute
 import com.prostovasei.simpletasks.ui.feature.task.QuickAddRoute
 import com.prostovasei.simpletasks.ui.feature.task.TaskDetailRoute
@@ -97,7 +98,10 @@ fun AppNavHost(
             composable<AllDestination> {
                 AllRoute(onAddTask = { navController.navigate(QuickAddDestination(today = true)) }, onOpenTask = openTask)
             }
-            composable<ListsDestination> { ListsRoute(onOpenProject = { navController.navigate(ProjectDestination(it)) }) }
+            composable<ListsDestination> {
+                ListsRoute(onOpenProject = { navController.navigate(ProjectDestination(it)) }, onOpenCompleted = { navController.navigate(CompletedDestination) })
+            }
+            composable<CompletedDestination> { CompletedRoute(onBack = { navController.popBackStack() }, onOpenTask = openTask) }
             composable<SettingsDestination> { SettingsRoute() }
             composable<ProjectDestination> { entry ->
                 val projectId = entry.toRoute<ProjectDestination>().projectId
