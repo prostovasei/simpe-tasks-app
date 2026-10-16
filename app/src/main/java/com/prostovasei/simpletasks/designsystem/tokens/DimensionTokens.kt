@@ -39,6 +39,11 @@ object SizeTokens {
     const val WIDGET_ADD = 30
     const val WIDGET_ADD_ICON = 20
 
+    /** Вкладка списка внизу виджета: ширина, иконка и точка выбранной. */
+    const val WIDGET_TAB = 28
+    const val WIDGET_TAB_ICON = 20
+    const val WIDGET_TAB_DOT = 4
+
     /** Отступ между строками задач в блоке дня виджета. */
     const val WIDGET_ROW_GAP = 3
 

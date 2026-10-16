@@ -17,6 +17,7 @@ import androidx.glance.GlanceModifier
 import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
+import androidx.glance.action.Action
 import androidx.glance.action.ActionParameters
 import androidx.glance.action.actionParametersOf
 import androidx.glance.action.clickable
@@ -29,6 +30,7 @@ import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.lazy.LazyColumn
 import androidx.glance.appwidget.lazy.items
 import androidx.glance.appwidget.provideContent
+import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.background
 import androidx.glance.currentState
 import androidx.glance.layout.Alignment
@@ -46,9 +48,11 @@ import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
+import androidx.glance.unit.ColorProvider
 import com.prostovasei.simpletasks.MainActivity
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.TaskPopupActivity
+import com.prostovasei.simpletasks.designsystem.theme.parseListColor
 import com.prostovasei.simpletasks.designsystem.tokens.RadiusTokens
 import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
 import com.prostovasei.simpletasks.designsystem.tokens.SpacingTokens
@@ -60,8 +64,8 @@ import com.prostovasei.simpletasks.widget.theme.WidgetColors
 import java.time.LocalDate
 
 /**
- * Виджет «Задачи» (SPEC.md §5; редизайн — итерация 08). Лента по дням: подпись дня над светлой плашкой,
- * в плашке задачи с круглой галочкой цвета приоритета. Внизу — выбор списка («Все» / «Входящие» / список),
+ * Виджет «Задачи» (SPEC.md §5; редизайн — итерации 08–09). Лента по дням: подпись дня над светлой плашкой,
+ * в плашке задачи с круглой галочкой цвета приоритета. Внизу — вкладки списков, кнопка приложения,
  * сегодняшняя дата и «+». Галочка выполняет задачу сразу; нажатие на задачу открывает её поверх рабочего стола.
  */
 class TasksWidget : GlanceAppWidget() {
@@ -171,11 +175,12 @@ private fun <T> ManyRows(items: List<T>, row: @Composable (T) -> Unit) {
 /** Предел детей у Row/Column в Glance. */
 private const val MAX_CHILDREN = 10
 
-/** «ПРОСРОЧЕНО», «СЕГОДНЯ · 16 окт», «ПОНЕДЕЛЬНИК · 19 окт», «БЕЗ ДАТЫ». */
+/** «ПРОСРОЧЕНО», «ПТ, 16 ОКТ · СЕГОДНЯ» («Сегодня» синим), «СБ, 17 ОКТ · ЗАВТРА», «ПН, 19 ОКТ», «БЕЗ ДАТЫ». */
 @Composable
 private fun DayTitle(day: WidgetDay, today: LocalDate, isFirst: Boolean) {
-    val (label, date) = widgetDayTitle(LocalContext.current, day, today)
+    val title = widgetDayTitle(LocalContext.current, day, today)
     val color = if (day == WidgetDay.Overdue) WidgetColors.overdue else WidgetColors.textSecondary
+    val style = TextStyle(color = color, fontSize = 11.sp, fontWeight = FontWeight.Bold)
     Row(
         modifier = GlanceModifier.fillMaxWidth().padding(
             start = SizeTokens.WIDGET_EDGE.dp,
@@ -184,20 +189,29 @@ private fun DayTitle(day: WidgetDay, today: LocalDate, isFirst: Boolean) {
         ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(label.uppercase(), style = TextStyle(color = color, fontSize = 11.sp, fontWeight = FontWeight.Bold), maxLines = 1)
-        if (date != null) Text(" · $date", style = TextStyle(color = color, fontSize = 11.sp), maxLines = 1)
+        Text(title.text, style = style, maxLines = 1)
+        if (title.relative != null) {
+            Text(" · ", style = style, maxLines = 1)
+            Text(title.relative, style = if (title.isToday) style.copy(color = WidgetColors.accent) else style, maxLines = 1)
+        }
     }
 }
 
-/** Подпись дня и короткая дата к ней (у «Просрочено» и «Без даты» даты нет). */
-fun widgetDayTitle(context: Context, day: WidgetDay, today: LocalDate): Pair<String, String?> = when (day) {
-    WidgetDay.Overdue -> context.getString(R.string.all_overdue) to null
-    WidgetDay.NoDate -> context.getString(R.string.date_none) to null
-    is WidgetDay.On -> when (day.date) {
-        today -> context.getString(R.string.day_today)
-        today.plusDays(1) -> context.getString(R.string.day_tomorrow)
-        else -> WidgetDates.weekday(day.date)
-    } to WidgetDates.short(day.date)
+/** Подпись дня: [text] — «ПТ, 16 ОКТ»; [relative] — «СЕГОДНЯ» / «ЗАВТРА» или null. */
+data class WidgetDayTitle(val text: String, val relative: String?, val isToday: Boolean)
+
+fun widgetDayTitle(context: Context, day: WidgetDay, today: LocalDate): WidgetDayTitle = when (day) {
+    WidgetDay.Overdue -> WidgetDayTitle(context.getString(R.string.all_overdue).uppercase(), null, false)
+    WidgetDay.NoDate -> WidgetDayTitle(context.getString(R.string.date_none).uppercase(), null, false)
+    is WidgetDay.On -> WidgetDayTitle(
+        text = WidgetDates.withWeekday(day.date).uppercase(),
+        relative = when (day.date) {
+            today -> context.getString(R.string.day_today)
+            today.plusDays(1) -> context.getString(R.string.day_tomorrow)
+            else -> null
+        }?.uppercase(),
+        isToday = day.date == today,
+    )
 }
 
 @Composable
@@ -271,33 +285,58 @@ fun widgetCheckColors(priority: Priority): WidgetCheckColors = when (priority) {
     Priority.NONE -> WidgetColors.checkNone
 }
 
-/** Нижняя строка цвета фона, без линии: слева выбор списка, справа сегодняшняя дата и «+» (решение PM). */
+/**
+ * Нижняя строка (решение PM, итерация 09): слева вкладки списков — нажатие сразу переключает виджет, «⋯» открывает
+ * окошко со всеми списками; в центре — открыть приложение; справа «пт, 16 окт» и «+».
+ */
 @Composable
 private fun BottomBar(model: WidgetModel, appWidgetId: Int) {
     val context = LocalContext.current
-    val title = model.title ?: context.getString(if (model.filter == WidgetFilter.Inbox) R.string.inbox_list_name else R.string.widget_all)
     Row(
         modifier = GlanceModifier.fillMaxWidth().height(SizeTokens.WIDGET_BAR.dp).padding(horizontal = SizeTokens.WIDGET_EDGE.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(
-            modifier = GlanceModifier
-                .background(WidgetColors.surface)
-                .cornerRadius(RadiusTokens.XL.dp)
-                .padding(start = SpacingTokens.SM.dp, end = SpacingTokens.XS.dp, top = SpacingTokens.XXS.dp, bottom = SpacingTokens.XXS.dp)
-                .clickable(actionStartActivity(pickerIntent(context, appWidgetId))),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(title, style = TextStyle(color = WidgetColors.textPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold), maxLines = 1)
-            Image(
-                ImageProvider(R.drawable.ic_widget_expand),
-                contentDescription = context.getString(R.string.widget_pick_list),
-                colorFilter = ColorFilter.tint(WidgetColors.textSecondary),
-                modifier = GlanceModifier.size(SizeTokens.CHECKBOX.dp),
+        // Вкладки — отдельной группой: в Row виджета не больше 10 элементов (иначе «+» пропадает).
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            model.tabs.forEach { tab ->
+                ListTab(
+                    icon = when (tab.filter) {
+                        WidgetFilter.All -> R.drawable.ic_widget_all
+                        WidgetFilter.Inbox -> R.drawable.ic_widget_inbox
+                        is WidgetFilter.ProjectList -> R.drawable.ic_widget_list
+                    },
+                    label = tab.name ?: context.getString(if (tab.filter == WidgetFilter.Inbox) R.string.inbox_list_name else R.string.widget_all),
+                    tint = tab.color?.let { parseListColor(it) }?.let { ColorProvider(it) },
+                    selected = tab.filter == model.filter,
+                    action = actionRunCallback<SwitchListAction>(actionParametersOf(SwitchListAction.FILTER to tab.filter.encode())),
+                )
+            }
+            ListTab(
+                icon = R.drawable.ic_widget_more,
+                label = context.getString(R.string.widget_pick_list),
+                tint = null,
+                selected = false,
+                action = actionStartActivity(pickerIntent(context, appWidgetId)),
             )
         }
         Spacer(GlanceModifier.defaultWeight())
-        Text(WidgetDates.short(model.today), style = TextStyle(color = WidgetColors.textSecondary, fontSize = 14.sp), maxLines = 1)
+        Box(
+            modifier = GlanceModifier
+                .size(SizeTokens.WIDGET_ADD.dp)
+                .background(WidgetColors.surface)
+                .cornerRadius(RadiusTokens.MD.dp)
+                .clickable(actionStartActivity(openAppIntent(context))),
+            contentAlignment = Alignment.Center,
+        ) {
+            Image(
+                ImageProvider(R.drawable.ic_widget_app),
+                contentDescription = context.getString(R.string.widget_open_app),
+                colorFilter = ColorFilter.tint(WidgetColors.accent),
+                modifier = GlanceModifier.size(SizeTokens.WIDGET_ADD_ICON.dp),
+            )
+        }
+        Spacer(GlanceModifier.defaultWeight())
+        Text(WidgetDates.withWeekday(model.today), style = TextStyle(color = WidgetColors.textSecondary, fontSize = 13.sp), maxLines = 1)
         Spacer(GlanceModifier.width(SpacingTokens.XS.dp))
         Box(
             modifier = GlanceModifier
@@ -316,6 +355,53 @@ private fun BottomBar(model: WidgetModel, appWidgetId: Int) {
         }
     }
 }
+
+/** Вкладка: иконка (у своего списка — его цветом), у выбранной — синяя с точкой снизу. */
+@Composable
+private fun ListTab(icon: Int, label: String, tint: ColorProvider?, selected: Boolean, action: Action) {
+    Column(
+        modifier = GlanceModifier.width(SizeTokens.WIDGET_TAB.dp).height(SizeTokens.WIDGET_BAR.dp).clickable(action),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Image(
+            ImageProvider(icon),
+            contentDescription = label,
+            colorFilter = ColorFilter.tint(if (selected) WidgetColors.accent else tint ?: WidgetColors.textSecondary),
+            modifier = GlanceModifier.size(SizeTokens.WIDGET_TAB_ICON.dp),
+        )
+        Spacer(GlanceModifier.height(SizeTokens.WIDGET_TAB_DOT.dp))
+        if (selected) {
+            Image(
+                ImageProvider(R.drawable.ic_widget_dot),
+                contentDescription = null,
+                colorFilter = ColorFilter.tint(WidgetColors.accent),
+                modifier = GlanceModifier.size(SizeTokens.WIDGET_TAB_DOT.dp),
+            )
+        } else {
+            Spacer(GlanceModifier.size(SizeTokens.WIDGET_TAB_DOT.dp))
+        }
+    }
+}
+
+/** Вкладка списка: сохранить выбор и сразу перерисовать виджет (без окошка). */
+class SwitchListAction : ActionCallback {
+    override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
+        val filter = parameters[FILTER] ?: return
+        updateAppWidgetState(context, glanceId) { it[TasksWidget.FILTER_KEY] = filter }
+        WidgetRefresh.one(context, glanceId)
+    }
+
+    companion object {
+        val FILTER = ActionParameters.Key<String>("filter")
+    }
+}
+
+/** Открыть приложение, как с рабочего стола: уже запущенное — вернуть на экран. */
+fun openAppIntent(context: Context): Intent = Intent(context, MainActivity::class.java)
+    .setAction(Intent.ACTION_MAIN)
+    .addCategory(Intent.CATEGORY_LAUNCHER)
+    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
 /**
  * «10:00 · Работа»: время и список (в виджете одного списка — без него). День ([showDay]) — только у просроченных:

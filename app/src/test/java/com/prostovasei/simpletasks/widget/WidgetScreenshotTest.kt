@@ -65,10 +65,20 @@ class WidgetScreenshotTest {
                 listOf(item("doc", "Записаться к врачу", DueText(DayLabel.Date(today.plusDays(3), false), "09:30"), list = "Здоровье")),
             ),
         ),
+        tabs = listOf(
+            WidgetTab(WidgetFilter.All),
+            WidgetTab(WidgetFilter.Inbox),
+            WidgetTab(WidgetFilter.ProjectList("work"), "Работа", "#3D8BFD"),
+            WidgetTab(WidgetFilter.ProjectList("home"), "Дом", "#46A758"),
+        ),
     )
 
     @Test
     fun widgetLight() = capture("screenshots/widget_light.png")
+
+    /** Основа миниатюры в меню виджетов (`res/drawable-nodpi/widget_preview.png`, см. docs/ARCHITECTURE.md §4.11). */
+    @Test
+    fun widgetPreview() = capture("screenshots/widget_preview.png", heightDp = 210, shown = model.copy(days = model.days.drop(1).take(1)))
 
     @Test
     @Config(qualifiers = "+night")
@@ -86,13 +96,25 @@ class WidgetScreenshotTest {
         assertEquals(25, found.size)
     }
 
-    private fun capture(path: String) {
+    /** Настоящая картинка: в нижней строке все кнопки на месте (Glance отбрасывает детей Row сверх 10). */
+    @Test
+    fun bottomBarKeepsAllButtons() {
         val views = runBlocking { Preview(model).compose(context, size = DpSize(320.dp, 420.dp)) }
+        val root = views.apply(context, FrameLayout(context))
+        listOf("Все", "Входящие", "Работа", "Дом", "Другие списки", "Открыть приложение", "Новая задача").forEach { label ->
+            val found = ArrayList<View>()
+            root.findViewsWithText(found, label, View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
+            assertEquals(label, 1, found.size)
+        }
+    }
+
+    private fun capture(path: String, heightDp: Int = 420, shown: WidgetModel = model) {
+        val views = runBlocking { Preview(shown).compose(context, size = DpSize(320.dp, heightDp.dp)) }
         val parent = FrameLayout(context)
         val view = views.apply(context, parent)
         val density = context.resources.displayMetrics.density
         val width = (320 * density).toInt()
-        val height = (420 * density).toInt()
+        val height = (heightDp * density).toInt()
         view.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY))
         view.layout(0, 0, width, height)
         val bitmap = android.graphics.Bitmap.createBitmap(width, height, android.graphics.Bitmap.Config.ARGB_8888)

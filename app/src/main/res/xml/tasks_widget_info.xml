@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Виджет «Задачи»: от 4×2 до всего экрана. Выбор списка необязателен при добавлении (по умолчанию «Все»). -->
+<!-- Виджет «Задачи»: от 4×2 до всего экрана. Выбор списка необязателен при добавлении (по умолчанию «Все»).
+     Миниатюра в меню виджетов — снимок из WidgetScreenshotTest.widgetPreview со скруглёнными углами. -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:minWidth="250dp"
     android:minHeight="110dp"
@@ -11,6 +12,7 @@
     android:widgetCategory="home_screen"
     android:updatePeriodMillis="0"
     android:initialLayout="@layout/glance_default_loading_layout"
+    android:previewImage="@drawable/widget_preview"
     android:description="@string/widget_description"
     android:configure="com.prostovasei.simpletasks.widget.WidgetConfigActivity"
     android:widgetFeatures="reconfigurable|configuration_optional" />
