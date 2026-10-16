@@ -11,6 +11,7 @@ import androidx.compose.ui.res.stringResource
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.components.TaskRow
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
+import com.prostovasei.simpletasks.designsystem.theme.CardPosition
 import com.prostovasei.simpletasks.designsystem.theme.parseListColor
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -24,6 +25,7 @@ fun LazyItemScope.TaskItemRow(
     showList: Boolean = true,
     isOverdue: Boolean = false,
     onClick: (() -> Unit)? = null,
+    position: CardPosition = CardPosition.Single,
 ) {
     TaskRow(
         title = item.title,
@@ -37,6 +39,7 @@ fun LazyItemScope.TaskItemRow(
         onToggle = onToggle,
         testTag = "task:${item.id}",
         onClick = onClick,
+        position = position,
     )
 }
 

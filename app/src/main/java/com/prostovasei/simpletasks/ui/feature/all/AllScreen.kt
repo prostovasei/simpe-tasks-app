@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -24,6 +24,7 @@ import com.prostovasei.simpletasks.designsystem.components.EmptyState
 import com.prostovasei.simpletasks.designsystem.components.ScreenTitle
 import com.prostovasei.simpletasks.designsystem.components.SectionHeader
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
+import com.prostovasei.simpletasks.designsystem.theme.CardPosition
 import com.prostovasei.simpletasks.ui.common.AddTaskButton
 import com.prostovasei.simpletasks.ui.common.TaskItem
 import com.prostovasei.simpletasks.ui.common.TaskItemRow
@@ -91,13 +92,14 @@ private fun LazyListScope.tasks(
     showToday: Boolean,
     isOverdue: Boolean = false,
 ) {
-    items(items, key = { it.id }) { item ->
+    itemsIndexed(items, key = { _, it -> it.id }) { index, item ->
         TaskItemRow(
             item = item,
             onToggle = { onIntent(TaskListIntent.ToggleComplete(item.id, item.isRecurring)) },
             showToday = showToday,
             isOverdue = isOverdue,
             onClick = { onOpenTask(item.taskId) },
+            position = CardPosition.of(index, items.size),
         )
     }
 }

@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Icon
@@ -31,6 +31,7 @@ import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.components.EmptyState
 import com.prostovasei.simpletasks.designsystem.components.TaskRow
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
+import com.prostovasei.simpletasks.designsystem.theme.CardPosition
 import com.prostovasei.simpletasks.designsystem.theme.parseListColor
 import com.prostovasei.simpletasks.domain.model.Priority
 import com.prostovasei.simpletasks.ui.common.DayNames
@@ -97,7 +98,7 @@ fun CompletedScreen(
                                 modifier = Modifier.padding(start = spacing.md, top = spacing.md, bottom = spacing.xxs),
                             )
                         }
-                        items(day.tasks, key = { it.id }) { task ->
+                        itemsIndexed(day.tasks, key = { _, it -> it.id }) { index, task ->
                             val list = if (task.isInboxList) inbox else task.listName
                             TaskRow(
                                 title = task.title,
@@ -109,6 +110,7 @@ fun CompletedScreen(
                                 onToggle = { onIntent(CompletedIntent.Restore(task.id)) },
                                 onClick = { onOpenTask(task.id) },
                                 testTag = "completed:${task.id}",
+                                position = CardPosition.of(index, day.tasks.size),
                             )
                         }
                     }

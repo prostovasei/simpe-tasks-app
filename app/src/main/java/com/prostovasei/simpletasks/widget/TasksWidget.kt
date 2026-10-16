@@ -93,7 +93,10 @@ private val WidgetDay.id: Long
         is WidgetDay.On -> date.toEpochDay()
     }
 
-/** Блок дня: подпись над плашкой, почти вплотную; задачи внутри — без своих плашек (решение PM). */
+/**
+ * Блок дня: подпись над блоком, почти вплотную. Задачи — белые плашки через тонкую щель цвета фона,
+ * скруглены только края блока (итерация 12, вариант A; углы у отдельных строк Glance скруглять не умеет).
+ */
 @Composable
 private fun DayBlock(block: WidgetDayBlock, isFirst: Boolean, model: WidgetModel, days: DayNames) {
     Column(GlanceModifier.fillMaxWidth()) {
@@ -101,11 +104,15 @@ private fun DayBlock(block: WidgetDayBlock, isFirst: Boolean, model: WidgetModel
         Column(
             modifier = GlanceModifier
                 .fillMaxWidth()
-                .background(WidgetColors.dayBlock)
-                .cornerRadius(RadiusTokens.LG.dp)
-                .padding(horizontal = SpacingTokens.XXS.dp, vertical = SizeTokens.WIDGET_DAY_GAP.dp),
+                .background(WidgetColors.surface)
+                .cornerRadius(RadiusTokens.LG.dp),
         ) {
-            ManyRows(block.items) { TaskRow(it, overdue = block.day == WidgetDay.Overdue, model.filter, days) }
+            ManyRows(block.items.withIndex().toList()) { (index, item) ->
+                Column(GlanceModifier.fillMaxWidth()) {
+                    if (index > 0) Spacer(GlanceModifier.fillMaxWidth().height(SizeTokens.CARD_GAP.dp).background(WidgetColors.background))
+                    TaskRow(item, overdue = block.day == WidgetDay.Overdue, model.filter, days)
+                }
+            }
         }
     }
 }
@@ -174,7 +181,7 @@ private fun TaskRow(item: TaskItem, overdue: Boolean, filter: WidgetFilter, days
     Row(
         modifier = GlanceModifier
             .fillMaxWidth()
-            .padding(vertical = SizeTokens.WIDGET_ROW_GAP.dp)
+            .padding(horizontal = SpacingTokens.XXS.dp, vertical = SizeTokens.WIDGET_ROW_GAP.dp)
             .clickable(actionStartActivity(openTaskIntent(context, item.taskId))),
         verticalAlignment = Alignment.CenterVertically,
     ) {
