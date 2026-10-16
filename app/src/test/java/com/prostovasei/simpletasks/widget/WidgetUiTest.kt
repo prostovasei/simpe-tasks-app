@@ -152,10 +152,8 @@ class WidgetUiTest {
         val daily = entry.tasks().createTask(
             com.prostovasei.simpletasks.domain.model.NewTask(inbox, "Зарядка", due = com.prostovasei.simpletasks.domain.model.TaskDue.AllDay(today), rrule = "FREQ=DAILY"),
         )
-        val glanceId = object : androidx.glance.GlanceId {}
-
-        CompleteTaskAction().onAction(context, glanceId, androidx.glance.action.actionParametersOf(CompleteTaskAction.TASK_ID to plain))
-        CompleteTaskAction().onAction(context, glanceId, androidx.glance.action.actionParametersOf(CompleteTaskAction.TASK_ID to daily))
+        WidgetActionReceiver.handle(context, WidgetActions.complete(context, plain))
+        WidgetActionReceiver.handle(context, WidgetActions.complete(context, daily))
 
         assertEquals(com.prostovasei.simpletasks.domain.model.TaskStatus.COMPLETED, entry.tasks().getTask(plain)!!.status)
         assertEquals(com.prostovasei.simpletasks.domain.model.TaskDue.AllDay(today.plusDays(1)), entry.tasks().getTask(daily)!!.due)
