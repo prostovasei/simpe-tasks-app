@@ -6,57 +6,63 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
-import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.components.TaskRow
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
-import com.prostovasei.simpletasks.designsystem.theme.CardPosition
 import com.prostovasei.simpletasks.designsystem.theme.parseListColor
+import com.prostovasei.simpletasks.widget.WidgetDates
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-/** Строка списка задач. Без анимаций (решение PM: всё переключается мгновенно). */
+/**
+ * Плашка задачи в списке. Без анимаций (решение PM: всё переключается мгновенно).
+ * [showDay] — справа день и время (у «Входящих» и списков); в ленте «Все» день уже в подписи — только время.
+ */
 @Composable
 fun LazyItemScope.TaskItemRow(
     item: TaskItem,
     onToggle: () -> Unit,
-    showToday: Boolean = true,
+    showDay: Boolean = true,
     showList: Boolean = true,
     isOverdue: Boolean = false,
     onClick: (() -> Unit)? = null,
-    position: CardPosition = CardPosition.Single,
 ) {
     TaskRow(
         title = item.title,
         priority = item.priority,
-        meta = taskMeta(item, showToday, showList),
-        metaColor = if (isOverdue) AppTheme.colors.overdue else null,
-        listColor = if (showList) parseListColor(item.listColor) else null,
+        listColor = if (showList) listSquareColor(item) else null,
         isCompleting = item.isCompleting,
         isRecurring = item.isRecurring,
         isGhost = item.isGhost,
+        isOverdue = isOverdue,
+        trailing = if (showDay) dueLines(item) else item.timeLines(),
         onToggle = onToggle,
         testTag = "task:${item.id}",
         onClick = onClick,
-        position = position,
     )
 }
 
-/** Подпись под задачей: «Вчера, 10:00 · Работа». */
+/** Цвет квадратика списка: у «Входящих» свой, у списка без цвета — нейтральный. */
 @Composable
 @ReadOnlyComposable
-fun taskMeta(item: TaskItem, showToday: Boolean, showList: Boolean): String {
-    val parts = mutableListOf<String>()
-    item.due?.let { due ->
-        val day = if (due.day == DayLabel.Today && !showToday) null else dayText(due.day)
-        listOfNotNull(day, due.time).joinToString(", ").takeIf { it.isNotEmpty() }?.let(parts::add)
+fun listSquareColor(item: TaskItem): Color =
+    if (item.isInboxList) AppTheme.colors.inboxList else parseListColor(item.listColor) ?: AppTheme.colors.inactive
+
+/** Время справа: «16:00» или интервал столбиком — «16:00», «17:00». */
+fun TaskItem.timeLines(): List<String> = due?.time?.split("–").orEmpty()
+
+/** День и время справа: «Сегодня» / «16 окт» и «10:00». */
+@Composable
+@ReadOnlyComposable
+fun dueLines(item: TaskItem): List<String> {
+    val due = item.due ?: return emptyList()
+    val day = when (val label = due.day) {
+        is DayLabel.Date -> WidgetDates.short(label.date)
+        else -> dayText(label)
     }
-    if (showList) {
-        val list = if (item.isInboxList) stringResource(R.string.inbox_list_name) else item.listName
-        list?.let(parts::add)
-    }
-    return parts.joinToString(stringResource(R.string.meta_separator))
+    return listOfNotNull(day, due.time)
 }
 
 @Composable

@@ -1,6 +1,7 @@
 package com.prostovasei.simpletasks.ui.feature.all
 
 import com.prostovasei.simpletasks.ui.common.TaskItem
+import java.time.LocalDate
 
 /** Экран «Все» (SPEC.md §4.1). */
 data class AllState(
@@ -9,6 +10,8 @@ data class AllState(
     val todayTimed: List<TaskItem> = emptyList(),
     val upcoming: List<TaskItem> = emptyList(),
     val isLoading: Boolean = true,
+    /** Сегодняшняя дата — для подписей дней «ПТ, 16 окт». */
+    val today: LocalDate? = null,
 ) {
     val isEmpty: Boolean get() = overdue.isEmpty() && todayAllDay.isEmpty() && todayTimed.isEmpty() && upcoming.isEmpty()
 }

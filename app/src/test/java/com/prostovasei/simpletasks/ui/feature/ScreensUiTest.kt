@@ -2,6 +2,9 @@ package com.prostovasei.simpletasks.ui.feature
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
@@ -17,6 +20,7 @@ import com.prostovasei.simpletasks.testing.project
 import com.prostovasei.simpletasks.ui.common.DayLabel
 import com.prostovasei.simpletasks.ui.common.DueText
 import com.prostovasei.simpletasks.ui.common.TaskItem
+import com.prostovasei.simpletasks.ui.common.TAG_ADD_TASK
 import com.prostovasei.simpletasks.ui.common.TaskListIntent
 import com.prostovasei.simpletasks.ui.feature.all.AllScreen
 import com.prostovasei.simpletasks.ui.feature.all.AllState
@@ -90,28 +94,30 @@ class ScreensUiTest {
             item("u1", "Записаться к врачу", DueText(DayLabel.Date(LocalDate.of(2026, 10, 20), false), "09:30"), list = "Здоровье", color = "#E5484D"),
         ),
         isLoading = false,
+        today = LocalDate.of(2026, 10, 16),
     )
 
     @Test
-    fun allScreenShowsSectionsAndLabels() {
+    fun allScreenShowsDaysAndTimes() {
         show { AllScreen(allState, { intents += it }) }
 
-        composeRule.onNodeWithText("ПРОСРОЧЕНО").assertExists()
-        composeRule.onNodeWithText("СЕГОДНЯ").assertExists()
-        composeRule.onNodeWithText("Весь день").assertExists()
-        composeRule.onNodeWithText("По времени").assertExists()
-        composeRule.onNodeWithText("ПРЕДСТОЯЩИЕ").assertExists()
-        composeRule.onNodeWithText("Вчера · Работа").assertExists()
-        composeRule.onNodeWithText("10:00–11:00 · Работа").assertExists()
-        composeRule.onNodeWithText("Входящие").assertExists()
-        composeRule.onNodeWithText("20 октября, 09:30 · Здоровье").assertExists()
-        composeRule.onNodeWithText("P1").assertExists()
+        composeRule.onNodeWithText("ЧТ, 15 окт").assertExists()
+        composeRule.onNodeWithText("Вчера").assertExists()
+        composeRule.onNodeWithText("ПТ, 16 окт").assertExists()
+        composeRule.onNodeWithText("Сегодня").assertExists()
+        composeRule.onNodeWithText("СБ, 17 окт").assertExists()
+        composeRule.onNodeWithText("Завтра").assertExists()
+        composeRule.onNodeWithText("ВТ, 20 окт").assertExists()
+        composeRule.onAllNodesWithText("10:00").assertCountEquals(2)
+        composeRule.onAllNodesWithText("11:00").assertCountEquals(2)
+        composeRule.onNodeWithText("09:30").assertExists()
+        composeRule.onNodeWithTag("task:t1:repeat", useUnmergedTree = true).assertExists()
     }
 
     @Test
-    fun overdueSectionHiddenWhenEmpty() {
+    fun overdueDayHiddenWhenEmpty() {
         show { AllScreen(allState.copy(overdue = emptyList()), { intents += it }) }
-        composeRule.onNodeWithText("ПРОСРОЧЕНО").assertDoesNotExist()
+        composeRule.onNodeWithText("ЧТ, 15 окт").assertDoesNotExist()
     }
 
     @Test
@@ -192,10 +198,9 @@ class ScreensUiTest {
         var opened: String? = null
         show { CompletedScreen(completedState, { intents += it }, {}, { opened = it }) }
 
-        composeRule.onNodeWithText("СЕГОДНЯ").assertExists()
-        composeRule.onNodeWithText("1 ОКТЯБРЯ").assertExists()
-        composeRule.onNodeWithText("Работа · 09:05").assertExists()
-        composeRule.onNodeWithText("Входящие").assertExists()
+        composeRule.onNodeWithText("Сегодня").assertExists()
+        composeRule.onNodeWithText("1 октября").assertExists()
+        composeRule.onNodeWithText("09:05").assertExists()
         composeRule.onNodeWithText("Купить продукты").performClick()
         composeRule.onNodeWithTag("completed:c1:check", useUnmergedTree = true).performClick()
 
@@ -265,13 +270,16 @@ class ScreensUiTest {
     @Test
     fun bottomBarSwitchesTabs() {
         val selected = mutableListOf<Tab>()
-        show { BottomBar(selected = Tab.ALL) { selected += it } }
+        var added = 0
+        show { BottomBar(selected = Tab.ALL, onSelect = { selected += it }, onAdd = { added++ }) }
 
-        composeRule.onNodeWithText("Входящие").assertExists()
-        composeRule.onNodeWithText("Списки").performClick()
+        composeRule.onNodeWithContentDescription("Входящие").assertExists()
+        composeRule.onNodeWithContentDescription("Списки").performClick()
         composeRule.onNodeWithTag("tab:SETTINGS").performClick()
+        composeRule.onNodeWithTag(TAG_ADD_TASK).performClick()
 
         assertEquals(listOf(Tab.LISTS, Tab.SETTINGS), selected)
+        assertEquals(1, added)
     }
 
     @Test
@@ -300,7 +308,7 @@ class ScreensUiTest {
 
     @Test
     fun screenshotBottomBar() {
-        show { BottomBar(selected = Tab.ALL) {} }
+        show { BottomBar(selected = Tab.ALL, onSelect = {}) }
         composeRule.onRoot().captureRoboImage("screenshots/bottom_bar_light.png")
     }
 }

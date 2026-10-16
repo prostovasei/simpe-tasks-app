@@ -11,20 +11,26 @@ data class PriorityColorTokens(val container: ThemedColor, val content: ThemedCo
 
 /** Базовая палитра приложения. Единственный источник цветов (см. docs/ARCHITECTURE.md §1.5). */
 object ColorTokens {
-    /** Еле-голубой фон экранов и виджета (итерация 12, вариант A). */
-    val background = ThemedColor(light = 0xFFEEF4FC, dark = 0xFF0E141B)
+    /** Светло-зелёный фон экранов и виджета (итерация 13, макет PM). */
+    val background = ThemedColor(light = 0xFFEDF5EF, dark = 0xFF0E1511)
 
-    /** Белые плашки задач, меню и окна поверх фона. */
-    val surface = ThemedColor(light = 0xFFFFFFFF, dark = 0xFF1A222D)
-    val textPrimary = ThemedColor(light = 0xFF1F2328, dark = 0xFFE6E6E6)
-    val textSecondary = ThemedColor(light = 0xFF57606A, dark = 0xFF9DA5AE)
-    val accent = ThemedColor(light = 0xFF0969DA, dark = 0xFF4C9AFF)
-    val onAccent = ThemedColor(light = 0xFFFFFFFF, dark = 0xFF0B1A2E)
-    val overdue = ThemedColor(light = 0xFFD32F2F, dark = 0xFFFF6B6B)
-    val divider = ThemedColor(light = 0xFFD0D7DE, dark = 0xFF30363D)
+    /** Белые плашки задач, меню, окна и нижняя панель поверх фона. */
+    val surface = ThemedColor(light = 0xFFFFFFFF, dark = 0xFF1A231E)
+    val textPrimary = ThemedColor(light = 0xFF15161F, dark = 0xFFE6EAE7)
+    val textSecondary = ThemedColor(light = 0xFF5F6474, dark = 0xFF9DA8A1)
+    val accent = ThemedColor(light = 0xFF15803D, dark = 0xFF4FC07F)
+    val onAccent = ThemedColor(light = 0xFFFFFFFF, dark = 0xFF0A1A10)
+
+    /** Квадратик списка «Входящие» (у него нет своего цвета). */
+    val inboxList = ThemedColor(light = 0xFF3D8BFD, dark = 0xFF6AA8FF)
+
+    /** Рамка пустой галочки без приоритета и неактивные иконки нижней панели. */
+    val inactive = ThemedColor(light = 0xFFA8B3AB, dark = 0xFF5F6B64)
+    val overdue = ThemedColor(light = 0xFFC62828, dark = 0xFFFF6B6B)
+    val divider = ThemedColor(light = 0xFFD5E0D8, dark = 0xFF2C3731)
 
     /** Опасные действия (удаление). Совпадает с [overdue], но означает другое — отдельная роль. */
-    val danger = ThemedColor(light = 0xFFD32F2F, dark = 0xFFFF6B6B)
+    val danger = ThemedColor(light = 0xFFC62828, dark = 0xFFFF6B6B)
 
     /** Затемнение под всплывающим окном (выбор списка виджета). */
     val scrim = ThemedColor(light = 0x66000000, dark = 0x99000000)

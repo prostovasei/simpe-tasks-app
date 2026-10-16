@@ -65,7 +65,7 @@ class AppSmokeTest {
         composeRule.onNodeWithTag(TAG_QUICK_SAVE).performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_QUICK_TITLE).fetchSemanticsNodes().isEmpty() }
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Купить продукты") }
-        composeRule.onNodeWithText("СЕГОДНЯ").assertExists()
+        composeRule.onNodeWithText("Сегодня").assertExists()
 
         // Тап по карточке → экран задачи → переименование → назад.
         composeRule.onNodeWithText("Купить продукты").performClick()

@@ -1,5 +1,6 @@
 package com.prostovasei.simpletasks.ui.feature.completed
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
@@ -7,7 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Icon
@@ -28,10 +29,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.prostovasei.simpletasks.R
+import com.prostovasei.simpletasks.designsystem.components.DayHeader
 import com.prostovasei.simpletasks.designsystem.components.EmptyState
 import com.prostovasei.simpletasks.designsystem.components.TaskRow
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
-import com.prostovasei.simpletasks.designsystem.theme.CardPosition
 import com.prostovasei.simpletasks.designsystem.theme.parseListColor
 import com.prostovasei.simpletasks.domain.model.Priority
 import com.prostovasei.simpletasks.ui.common.DayNames
@@ -64,9 +65,7 @@ fun CompletedScreen(
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
     val colors = AppTheme.colors
-    val spacing = AppTheme.spacing
     val days = DayNames(stringResource(R.string.day_today), stringResource(R.string.day_tomorrow), stringResource(R.string.day_yesterday))
-    val inbox = stringResource(R.string.inbox_list_name)
     Scaffold(
         containerColor = colors.background,
         contentWindowInsets = WindowInsets(0),
@@ -87,30 +86,21 @@ fun CompletedScreen(
             when {
                 state.isLoading -> Unit
                 state.days.isEmpty() -> EmptyState(stringResource(R.string.completed_empty))
-                else -> LazyColumn(Modifier.fillMaxSize()) {
+                else -> LazyColumn(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(AppTheme.sizes.cardGap)) {
                     state.days.forEach { day ->
                         item(key = "day-${days.day(day.day)}") {
-                            Text(
-                                text = days.day(day.day).uppercase(),
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = colors.textSecondary,
-                                modifier = Modifier.padding(start = spacing.md, top = spacing.md, bottom = spacing.xxs),
-                            )
+                            DayHeader(text = days.day(day.day), relative = null, isOverdue = false)
                         }
-                        itemsIndexed(day.tasks, key = { _, it -> it.id }) { index, task ->
-                            val list = if (task.isInboxList) inbox else task.listName
+                        items(day.tasks, key = { it.id }) { task ->
                             TaskRow(
                                 title = task.title,
                                 priority = Priority.NONE,
-                                meta = listOfNotNull(list, task.time).joinToString(" · "),
-                                metaColor = null,
-                                listColor = parseListColor(task.listColor),
+                                listColor = if (task.isInboxList) colors.inboxList else parseListColor(task.listColor) ?: colors.inactive,
                                 isCompleting = true,
+                                trailing = listOfNotNull(task.time),
                                 onToggle = { onIntent(CompletedIntent.Restore(task.id)) },
                                 onClick = { onOpenTask(task.id) },
                                 testTag = "completed:${task.id}",
-                                position = CardPosition.of(index, day.tasks.size),
                             )
                         }
                     }

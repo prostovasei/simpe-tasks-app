@@ -1,22 +1,22 @@
 package com.prostovasei.simpletasks.designsystem.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -26,25 +26,24 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
-import com.prostovasei.simpletasks.designsystem.theme.CardPosition
 import com.prostovasei.simpletasks.designsystem.theme.PriorityColors
 import com.prostovasei.simpletasks.domain.model.Priority
 
 /**
- * Строка задачи: чекбокс, название, подпись (срок · список), плашка приоритета.
- * [isCompleting] — задача только что отмечена: зачёркнута и полупрозрачна (alpha 0.4, SPEC.md §4.1).
- * [isRecurring] — значок повтора после подписи. [isGhost] — будущий повтор: бледный, без галочки.
- * [position] — место в блоке: плашки блока идут через тонкую щель, скруглены только края блока.
+ * Плашка задачи в одну строку (итерация 13, макет PM): квадратная галочка (рамка — цвет приоритета),
+ * цветной квадратик списка, название, ↻ у повторяющихся; справа [trailing] — время столбиком
+ * («16:00» или «16:00 · 17:00»), у списков — день и время.
+ * [isCompleting] — задача только что отмечена: зачёркнута и полупрозрачна (SPEC.md §4.1).
+ * [isGhost] — будущий повтор: бледный, без галочки. [isOverdue] — рамка галочки и время красные.
  */
 @Composable
 fun TaskRow(
     title: String,
     priority: Priority,
-    meta: String?,
-    metaColor: Color?,
     listColor: Color?,
     isCompleting: Boolean,
     onToggle: () -> Unit,
@@ -53,74 +52,113 @@ fun TaskRow(
     onClick: (() -> Unit)? = null,
     isRecurring: Boolean = false,
     isGhost: Boolean = false,
-    position: CardPosition = CardPosition.Single,
+    isOverdue: Boolean = false,
+    trailing: List<String> = emptyList(),
 ) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
+    val sizes = AppTheme.sizes
     // Без плавного перехода (решение PM): отмеченная задача сразу бледная.
     val alpha = when {
         isCompleting -> COMPLETING_ALPHA
         isGhost -> GHOST_ALPHA
         else -> 1f
     }
+    val ring = when {
+        isOverdue -> colors.overdue
+        priority == Priority.HIGH -> colors.checkRings.high
+        priority == Priority.MEDIUM -> colors.checkRings.medium
+        priority == Priority.LOW -> colors.checkRings.low
+        else -> colors.inactive
+    }
 
     Row(
         modifier = modifier
             .fillMaxWidth()
             .alpha(alpha)
-            .padding(horizontal = spacing.xs)
-            .padding(top = if (position.isBlockStart) spacing.xxs else AppTheme.sizes.cardGap)
-            .then(if (position.isBlockEnd) Modifier.padding(bottom = spacing.xxs) else Modifier)
-            .clip(AppTheme.shapes.card(position))
+            .padding(horizontal = spacing.xxs)
+            .clip(AppTheme.shapes.medium)
             .background(colors.surface)
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(end = spacing.sm, top = spacing.xxs, bottom = spacing.xxs)
+            .padding(start = spacing.xxs, end = spacing.sm, top = sizes.cardGap, bottom = sizes.cardGap)
             .testTag(testTag),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // У будущего повтора галочки нет: выполнить можно только ближайший раз.
-        if (isGhost) Box(Modifier.minimumInteractiveComponentSize()) else Checkbox(
-            checked = isCompleting,
-            onCheckedChange = { onToggle() },
-            colors = CheckboxDefaults.colors(
-                checkedColor = colors.accent,
-                uncheckedColor = colors.textSecondary,
-                checkmarkColor = colors.onAccent,
-            ),
-            modifier = Modifier.testTag("$testTag:check"),
-        )
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.xxs)) {
+        Box(
+            modifier = Modifier
+                .size(sizes.checkboxTouch)
+                // У будущего повтора галочки нет: выполнить можно только ближайший раз.
+                .then(if (isGhost) Modifier else Modifier.clickable(onClick = onToggle).testTag("$testTag:check")),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (!isGhost) SquareCheck(checked = isCompleting, ring = ring)
+        }
+        listColor?.let {
+            Box(Modifier.size(sizes.listSquare).background(it, AppTheme.shapes.small))
+            Spacer(Modifier.width(spacing.xs))
+        }
+        // Название занимает всё свободное место, ↻ — сразу за текстом, время прижато вправо.
+        Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                color = colors.textPrimary,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = if (isCompleting) colors.textSecondary else colors.textPrimary,
                 textDecoration = if (isCompleting) TextDecoration.LineThrough else null,
-                maxLines = 2,
+                maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false),
             )
-            if (!meta.isNullOrEmpty()) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(spacing.xxs)) {
-                    listColor?.let { ColorDot(it) }
-                    Text(
-                        text = meta,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = metaColor ?: colors.textSecondary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f, fill = false),
-                    )
-                    if (isRecurring) {
-                        Icon(
-                            Icons.Default.Refresh,
-                            contentDescription = null,
-                            tint = metaColor ?: colors.textSecondary,
-                            modifier = Modifier.size(AppTheme.sizes.metaIcon).testTag("$testTag:repeat"),
-                        )
-                    }
-                }
+            if (isRecurring) {
+                Icon(
+                    Icons.Default.Refresh,
+                    contentDescription = null,
+                    tint = colors.textSecondary,
+                    modifier = Modifier.padding(start = spacing.xxs).size(sizes.metaIcon).testTag("$testTag:repeat"),
+                )
             }
         }
-        PriorityBadge(priority)
+        if (trailing.isNotEmpty()) Spacer(Modifier.width(spacing.xs))
+        TrailingTime(trailing, color = if (isOverdue) colors.overdue else colors.textPrimary)
+    }
+}
+
+/** Квадратная галочка (макет PM): рамка цвета [ring], отмеченная — залита акцентом. */
+@Composable
+private fun SquareCheck(checked: Boolean, ring: Color) {
+    val colors = AppTheme.colors
+    val shape = AppTheme.shapes.small
+    Box(
+        modifier = Modifier
+            .size(AppTheme.sizes.checkbox)
+            .clip(shape)
+            .background(if (checked) colors.accent else colors.surface)
+            .border(AppTheme.sizes.checkboxStroke, if (checked) colors.accent else ring, shape),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (checked) Icon(Icons.Default.Check, contentDescription = null, tint = colors.onAccent, modifier = Modifier.size(AppTheme.sizes.metaIcon))
+    }
+}
+
+/** Время справа: одна строка или две через точку («16:00 · 17:00» столбиком, плотно — как в макете PM). */
+@Composable
+private fun TrailingTime(lines: List<String>, color: Color) {
+    if (lines.isEmpty()) return
+    if (lines.size == 1) {
+        Text(lines[0], style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = color, maxLines = 1)
+        return
+    }
+    val base = MaterialTheme.typography.labelMedium
+    val tight = base.copy(
+        fontWeight = FontWeight.Bold,
+        lineHeight = base.fontSize,
+        lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.Both),
+    )
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        lines.forEachIndexed { index, line ->
+            if (index > 0) Text("·", style = tight, color = AppTheme.colors.textSecondary)
+            Text(line, style = tight, color = color, maxLines = 1)
+        }
     }
 }
 

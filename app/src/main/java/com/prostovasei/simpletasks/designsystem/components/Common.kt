@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -59,6 +60,35 @@ fun SectionHeader(text: String, modifier: Modifier = Modifier, color: Color = Ap
 }
 
 /** Подзаголовок блока внутри секции («Весь день», «По времени»). */
+/**
+ * Подпись дня в ленте (итерация 13, макет PM): «ПТ, 16 окт» и белая метка [relative] («Сегодня»).
+ * [isOverdue] — прошедший день с невыполненными задачами: подпись красная.
+ */
+@Composable
+fun DayHeader(text: String, relative: String?, isOverdue: Boolean, modifier: Modifier = Modifier) {
+    val colors = AppTheme.colors
+    val spacing = AppTheme.spacing
+    val color = if (isOverdue) colors.overdue else colors.textPrimary
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(spacing.xs),
+        modifier = modifier.padding(start = spacing.sm, top = spacing.sm, bottom = spacing.xxs),
+    ) {
+        Text(text, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = color)
+        if (relative != null) {
+            Text(
+                relative,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = color,
+                modifier = Modifier
+                    .background(colors.surface, AppTheme.shapes.small)
+                    .padding(horizontal = spacing.xs, vertical = AppTheme.sizes.hairline),
+            )
+        }
+    }
+}
+
 @Composable
 fun BlockHeader(text: String, modifier: Modifier = Modifier) {
     Text(

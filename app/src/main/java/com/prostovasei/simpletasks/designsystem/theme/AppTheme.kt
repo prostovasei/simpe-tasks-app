@@ -31,7 +31,7 @@ fun AppTheme(
         LocalAppShapes provides AppShapes(),
         LocalAppSizes provides AppSizes(),
     ) {
-        MaterialTheme(colorScheme = colors.toMaterialColorScheme(), content = content)
+        MaterialTheme(colorScheme = colors.toMaterialColorScheme(), typography = appTypography(), content = content)
     }
 }
 

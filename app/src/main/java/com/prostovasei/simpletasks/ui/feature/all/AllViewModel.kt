@@ -41,13 +41,13 @@ class AllViewModel @Inject constructor(
                 val byId = tree.projectsById()
                 val zone = time.zone()
                 val everything = all.overdue + all.todayAllDay + all.todayTimed + all.upcoming
-                pending to listOf(all.overdue, all.todayAllDay, all.todayTimed).map { section -> section.map { it.toItem(byId, day, zone, pending) } } +
-                    listOf(upcomingWithRepeats(all.upcoming, everything, byId, day, zone, pending))
-            }.collect { (pending, fresh) ->
+                Triple(day, pending, listOf(all.overdue, all.todayAllDay, all.todayTimed).map { section -> section.map { it.toItem(byId, day, zone, pending) } } +
+                    listOf(upcomingWithRepeats(all.upcoming, everything, byId, day, zone, pending)))
+            }.collect { (day, pending, fresh) ->
                 setState {
                     val merged = listOf(overdue, todayAllDay, todayTimed, upcoming)
                         .zip(fresh) { previous, current -> mergeWithPending(previous, current, pending) }
-                    copy(overdue = merged[0], todayAllDay = merged[1], todayTimed = merged[2], upcoming = merged[3], isLoading = false)
+                    copy(overdue = merged[0], todayAllDay = merged[1], todayTimed = merged[2], upcoming = merged[3], isLoading = false, today = day)
                 }
             }
         }
