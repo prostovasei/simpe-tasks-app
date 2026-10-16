@@ -49,15 +49,17 @@ jobs:
       # Обновление по кнопке (итерация 10): после мержа в main APK уходит релизом в публичный репозиторий
       # prostovasei/simple-tasks-releases (только файлы, без кода). Нужен секрет RELEASES_TOKEN — без него шаг пропускается.
       - name: Опубликовать APK для обновления в приложении
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        # Также вручную (Actions → Android CI → Run workflow на main) — опубликовать текущую сборку повторно.
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
         run: |
-          if [ -z "$GH_TOKEN" ]; then echo "Секрет RELEASES_TOKEN не задан — публикация пропущена"; exit 0; fi
+          if [ -z "$GH_TOKEN" ]; then echo "::warning::Секрет RELEASES_TOKEN не задан — APK не опубликован"; exit 0; fi
           BUILD=$(git rev-list --count HEAD)
           NAME=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
           APK="simple-tasks-$NAME-build$BUILD.apk"
           cp app/build/outputs/apk/debug/app-debug.apk "$APK"
+          if gh release view "build-$BUILD" --repo prostovasei/simple-tasks-releases >/dev/null 2>&1; then echo "Сборка $BUILD уже опубликована"; exit 0; fi
           gh release create "build-$BUILD" "$APK" --repo prostovasei/simple-tasks-releases \
             --title "$NAME (сборка $BUILD)" --notes "Simple Tasks $NAME, сборка $BUILD" --latest
 
