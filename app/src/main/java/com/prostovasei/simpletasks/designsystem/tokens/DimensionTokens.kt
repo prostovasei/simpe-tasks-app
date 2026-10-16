@@ -16,11 +16,17 @@ object RadiusTokens {
     const val MD = 8
     const val LG = 12
     const val XL = 16
+
+    /** Внутренние углы плашек в блоке — без скругления. */
+    const val NONE = 0
 }
 
 /** Фиксированные размеры элементов в dp. */
 object SizeTokens {
     const val HAIRLINE = 1
+
+    /** Щель между плашками задач одного блока (итерация 12). */
+    const val CARD_GAP = 2
     const val CHECKBOX = 18
     const val CHECKBOX_STROKE = 2
     const val SWATCH = 32
@@ -44,8 +50,8 @@ object SizeTokens {
     const val WIDGET_TAB_ICON = 20
     const val WIDGET_TAB_DOT = 4
 
-    /** Отступ между строками задач в блоке дня виджета. */
-    const val WIDGET_ROW_GAP = 3
+    /** Поля строки задачи внутри её плашки в виджете. */
+    const val WIDGET_ROW_GAP = 4
 
     /** Подпись дня почти вплотную к плашке. */
     const val WIDGET_DAY_GAP = 2

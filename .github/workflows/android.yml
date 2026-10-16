@@ -33,11 +33,8 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v5
 
-      - name: Сборка APK, тесты, lint и проверка дизайн-токенов
-        run: ./gradlew assembleDebug check --stacktrace
-
-      - name: Скриншоты экранов
-        run: ./gradlew recordRoborazziDebug --stacktrace
+      - name: Сборка APK
+        run: ./gradlew assembleDebug --stacktrace
 
       - name: APK для установки на телефон
         uses: actions/upload-artifact@v6
@@ -49,6 +46,8 @@ jobs:
       # Обновление по кнопке (итерация 10): после мержа в main APK уходит релизом в публичный репозиторий
       # prostovasei/simple-tasks-releases (только файлы, без кода). Нужен секрет RELEASES_TOKEN — без него шаг пропускается.
       - name: Опубликовать APK для обновления в приложении
+        # Сразу после сборки, до тестов (итерация 12): этот же код уже прошёл все проверки в PR, а тесты ниже
+        # всё равно идут — упавшие на main видны в Actions.
         # Также вручную (Actions → Android CI → Run workflow на main) — опубликовать текущую сборку повторно.
         if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
         env:
@@ -62,6 +61,12 @@ jobs:
           if gh release view "build-$BUILD" --repo prostovasei/simple-tasks-releases >/dev/null 2>&1; then echo "Сборка $BUILD уже опубликована"; exit 0; fi
           gh release create "build-$BUILD" "$APK" --repo prostovasei/simple-tasks-releases \
             --title "$NAME (сборка $BUILD)" --notes "Simple Tasks $NAME, сборка $BUILD" --latest
+
+      - name: Тесты, lint и проверка дизайн-токенов
+        run: ./gradlew check --stacktrace
+
+      - name: Скриншоты экранов
+        run: ./gradlew recordRoborazziDebug --stacktrace
 
       - name: Скриншоты
         uses: actions/upload-artifact@v6

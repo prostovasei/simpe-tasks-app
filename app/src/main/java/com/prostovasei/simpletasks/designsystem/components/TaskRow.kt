@@ -29,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
+import com.prostovasei.simpletasks.designsystem.theme.CardPosition
 import com.prostovasei.simpletasks.designsystem.theme.PriorityColors
 import com.prostovasei.simpletasks.domain.model.Priority
 
@@ -36,6 +37,7 @@ import com.prostovasei.simpletasks.domain.model.Priority
  * Строка задачи: чекбокс, название, подпись (срок · список), плашка приоритета.
  * [isCompleting] — задача только что отмечена: зачёркнута и полупрозрачна (alpha 0.4, SPEC.md §4.1).
  * [isRecurring] — значок повтора после подписи. [isGhost] — будущий повтор: бледный, без галочки.
+ * [position] — место в блоке: плашки блока идут через тонкую щель, скруглены только края блока.
  */
 @Composable
 fun TaskRow(
@@ -51,6 +53,7 @@ fun TaskRow(
     onClick: (() -> Unit)? = null,
     isRecurring: Boolean = false,
     isGhost: Boolean = false,
+    position: CardPosition = CardPosition.Single,
 ) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
@@ -65,8 +68,10 @@ fun TaskRow(
         modifier = modifier
             .fillMaxWidth()
             .alpha(alpha)
-            .padding(horizontal = spacing.xs, vertical = spacing.xxs)
-            .clip(AppTheme.shapes.large)
+            .padding(horizontal = spacing.xs)
+            .padding(top = if (position.isBlockStart) spacing.xxs else AppTheme.sizes.cardGap)
+            .then(if (position.isBlockEnd) Modifier.padding(bottom = spacing.xxs) else Modifier)
+            .clip(AppTheme.shapes.card(position))
             .background(colors.surface)
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .padding(end = spacing.sm, top = spacing.xxs, bottom = spacing.xxs)

@@ -23,7 +23,6 @@ object WidgetColors {
     val onAccent = ColorTokens.onAccent.toProvider()
     val overdue = ColorTokens.overdue.toProvider()
     val divider = ColorTokens.divider.toProvider()
-    val dayBlock = ColorTokens.surfaceSubtle.toProvider()
 
     val checkHigh = WidgetCheckTokens.high.toProviders()
     val checkMedium = WidgetCheckTokens.medium.toProviders()

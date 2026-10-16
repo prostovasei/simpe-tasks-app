@@ -11,17 +11,17 @@ data class PriorityColorTokens(val container: ThemedColor, val content: ThemedCo
 
 /** Базовая палитра приложения. Единственный источник цветов (см. docs/ARCHITECTURE.md §1.5). */
 object ColorTokens {
-    val background = ThemedColor(light = 0xFFFFFFFF, dark = 0xFF121212)
-    val surface = ThemedColor(light = 0xFFF6F8FA, dark = 0xFF1E1E1E)
+    /** Еле-голубой фон экранов и виджета (итерация 12, вариант A). */
+    val background = ThemedColor(light = 0xFFEEF4FC, dark = 0xFF0E141B)
+
+    /** Белые плашки задач, меню и окна поверх фона. */
+    val surface = ThemedColor(light = 0xFFFFFFFF, dark = 0xFF1A222D)
     val textPrimary = ThemedColor(light = 0xFF1F2328, dark = 0xFFE6E6E6)
     val textSecondary = ThemedColor(light = 0xFF57606A, dark = 0xFF9DA5AE)
     val accent = ThemedColor(light = 0xFF0969DA, dark = 0xFF4C9AFF)
     val onAccent = ThemedColor(light = 0xFFFFFFFF, dark = 0xFF0B1A2E)
     val overdue = ThemedColor(light = 0xFFD32F2F, dark = 0xFFFF6B6B)
     val divider = ThemedColor(light = 0xFFD0D7DE, dark = 0xFF30363D)
-
-    /** Едва заметная плашка блока дня в виджете — светлее [surface]. */
-    val surfaceSubtle = ThemedColor(light = 0xFFF7F8FA, dark = 0xFF1A1B1D)
 
     /** Опасные действия (удаление). Совпадает с [overdue], но означает другое — отдельная роль. */
     val danger = ThemedColor(light = 0xFFD32F2F, dark = 0xFFFF6B6B)
