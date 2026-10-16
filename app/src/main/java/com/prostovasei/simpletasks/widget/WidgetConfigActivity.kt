@@ -96,14 +96,15 @@ class WidgetConfigActivity : ComponentActivity() {
     }
 
     private fun choose(filter: WidgetFilter) {
-        // Окошко закрывается сразу; сохранение и мгновенная перерисовка виджета доживают до конца
+        // Окошко закрывается сразу; сохранение и перерисовка виджета доживают до конца
         // в области приложения (у окошка она отменилась бы при закрытии).
         val context = applicationContext
         val id = appWidgetId
         appScope.launch {
             val glanceId = GlanceAppWidgetManager(context).getGlanceIdBy(id)
+            WidgetLog.add(context, "окошко списков: ${filter.encode()}")
             updateAppWidgetState(context, glanceId) { it[TasksWidget.FILTER_KEY] = filter.encode() }
-            WidgetRefresh.one(context, glanceId)
+            WidgetRefresh.one(context, glanceId, "окошко списков")
         }
         finish()
     }

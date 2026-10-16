@@ -2,8 +2,10 @@ package com.prostovasei.simpletasks.widget
 
 import android.app.AlarmManager
 import android.app.PendingIntent
+import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.Intent
+import android.os.Bundle
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
@@ -30,12 +32,27 @@ class TasksWidgetReceiver : GlanceAppWidgetReceiver() {
         val pending = goAsync()
         MainScope().launch {
             try {
-                WidgetRefresh.all(context)
+                WidgetRefresh.all(context, "полночь")
                 scheduleMidnight(context, context.widgetEntryPoint().time())
             } finally {
                 pending.finish()
             }
         }
+    }
+
+    override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
+        WidgetLog.add(context, "система: обновить ${appWidgetIds.joinToString()}")
+        super.onUpdate(context, appWidgetManager, appWidgetIds)
+    }
+
+    override fun onAppWidgetOptionsChanged(context: Context, appWidgetManager: AppWidgetManager, appWidgetId: Int, newOptions: Bundle) {
+        WidgetLog.add(context, "система: размер виджета $appWidgetId")
+        super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions)
+    }
+
+    override fun onDeleted(context: Context, appWidgetIds: IntArray) {
+        WidgetLog.add(context, "система: виджет удалён ${appWidgetIds.joinToString()}")
+        super.onDeleted(context, appWidgetIds)
     }
 
     companion object {
@@ -74,7 +91,7 @@ class WidgetUpdater @Inject constructor(
         appScope.launch {
             combine(tasks.observeDataChanges(), dayTicker.today()) { _, _ -> }.debounce(DEBOUNCE_MS).collect {
                 if (GlanceAppWidgetManager(context).getGlanceIds(TasksWidget::class.java).isEmpty()) return@collect
-                WidgetRefresh.all(context)
+                WidgetRefresh.all(context, "изменились задачи")
                 scheduleMidnight(context, time)
             }
         }
