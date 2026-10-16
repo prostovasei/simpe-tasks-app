@@ -17,16 +17,25 @@ object RadiusTokens {
     const val LG = 12
     const val XL = 16
 
-    /** Внутренние углы плашек в блоке — без скругления. */
-    const val NONE = 0
+    /** Плавающая нижняя панель (итерация 13). */
+    const val NAV = 22
 }
 
 /** Фиксированные размеры элементов в dp. */
 object SizeTokens {
     const val HAIRLINE = 1
 
-    /** Щель между плашками задач одного блока (итерация 12). */
+    /** Щель между плашками задач (итерация 12). */
     const val CARD_GAP = 2
+
+    /** Цветной квадратик списка перед названием задачи (итерация 13). */
+    const val LIST_SQUARE = 14
+
+    /** Плавающая нижняя панель: высота, кнопка вкладки, кнопка «+», тень. */
+    const val NAV_BAR = 64
+    const val NAV_TAB = 48
+    const val NAV_ADD = 52
+    const val NAV_SHADOW = 10
     const val CHECKBOX = 18
     const val CHECKBOX_STROKE = 2
     const val SWATCH = 32

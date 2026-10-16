@@ -6,6 +6,7 @@ import com.prostovasei.simpletasks.designsystem.tokens.ColorTokens
 import com.prostovasei.simpletasks.designsystem.tokens.PriorityColorTokens
 import com.prostovasei.simpletasks.designsystem.tokens.PriorityTokens
 import com.prostovasei.simpletasks.designsystem.tokens.ThemedColor
+import com.prostovasei.simpletasks.designsystem.tokens.WidgetCheckTokens
 
 @Immutable
 data class PriorityColors(val container: Color, val content: Color)
@@ -18,6 +19,10 @@ data class PriorityPalette(
     val none: PriorityColors,
 )
 
+/** Рамка галочки по приоритету (итерация 13): как круглые галочки виджета, только в приложении — квадратные. */
+@Immutable
+data class CheckRings(val high: Color, val medium: Color, val low: Color)
+
 @Immutable
 data class AppColors(
     val background: Color,
@@ -28,6 +33,9 @@ data class AppColors(
     val onAccent: Color,
     val overdue: Color,
     val divider: Color,
+    val inactive: Color,
+    val inboxList: Color,
+    val checkRings: CheckRings,
     val danger: Color,
     val scrim: Color,
     val priority: PriorityPalette,
@@ -47,6 +55,13 @@ internal fun appColors(isDark: Boolean): AppColors {
         onAccent = ColorTokens.onAccent.resolve(),
         overdue = ColorTokens.overdue.resolve(),
         divider = ColorTokens.divider.resolve(),
+        inactive = ColorTokens.inactive.resolve(),
+        inboxList = ColorTokens.inboxList.resolve(),
+        checkRings = CheckRings(
+            high = WidgetCheckTokens.high.ring.resolve(),
+            medium = WidgetCheckTokens.medium.ring.resolve(),
+            low = WidgetCheckTokens.low.ring.resolve(),
+        ),
         danger = ColorTokens.danger.resolve(),
         scrim = ColorTokens.scrim.resolve(),
         priority = PriorityPalette(

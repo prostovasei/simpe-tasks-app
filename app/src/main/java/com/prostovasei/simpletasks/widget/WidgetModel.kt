@@ -135,4 +135,7 @@ object WidgetDates {
 
     /** «пт, 16 окт» — нижняя строка и подписи дней (там — заглавными). */
     fun withWeekday(date: LocalDate): String = "${WEEKDAYS[date.dayOfWeek.value - 1]}, ${short(date)}"
+
+    /** «ПТ, 16 окт» — подписи дней в ленте приложения (итерация 13). */
+    fun header(date: LocalDate): String = "${WEEKDAYS[date.dayOfWeek.value - 1].uppercase()}, ${short(date)}"
 }

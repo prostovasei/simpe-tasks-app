@@ -26,38 +26,19 @@ data class AppShapes(
     val extraLarge: RoundedCornerShape = RoundedCornerShape(RadiusTokens.XL.dp),
     /** Скругление только сверху — карточка, выезжающая снизу. */
     val extraLargeTop: RoundedCornerShape = RoundedCornerShape(topStart = RadiusTokens.XL.dp, topEnd = RadiusTokens.XL.dp),
-) {
-    /** Плашка в блоке: скруглены только внешние углы блока (итерация 12, вариант A). */
-    fun card(position: CardPosition): RoundedCornerShape {
-        val round = RadiusTokens.LG.dp
-        val flat = RadiusTokens.NONE.dp
-        val top = if (position.isBlockStart) round else flat
-        val bottom = if (position.isBlockEnd) round else flat
-        return RoundedCornerShape(topStart = top, topEnd = top, bottomStart = bottom, bottomEnd = bottom)
-    }
-}
-
-/** Место плашки в блоке задач одного дня или раздела. */
-enum class CardPosition {
-    Single, First, Middle, Last;
-
-    val isBlockStart: Boolean get() = this == Single || this == First
-    val isBlockEnd: Boolean get() = this == Single || this == Last
-
-    companion object {
-        fun of(index: Int, count: Int): CardPosition = when {
-            count <= 1 -> Single
-            index == 0 -> First
-            index == count - 1 -> Last
-            else -> Middle
-        }
-    }
-}
+    /** Плавающая нижняя панель. */
+    val nav: RoundedCornerShape = RoundedCornerShape(RadiusTokens.NAV.dp),
+)
 
 @Immutable
 data class AppSizes(
     val hairline: Dp = SizeTokens.HAIRLINE.dp,
     val cardGap: Dp = SizeTokens.CARD_GAP.dp,
+    val listSquare: Dp = SizeTokens.LIST_SQUARE.dp,
+    val navBar: Dp = SizeTokens.NAV_BAR.dp,
+    val navTab: Dp = SizeTokens.NAV_TAB.dp,
+    val navAdd: Dp = SizeTokens.NAV_ADD.dp,
+    val navShadow: Dp = SizeTokens.NAV_SHADOW.dp,
     val checkbox: Dp = SizeTokens.CHECKBOX.dp,
     val checkboxStroke: Dp = SizeTokens.CHECKBOX_STROKE.dp,
     val swatch: Dp = SizeTokens.SWATCH.dp,

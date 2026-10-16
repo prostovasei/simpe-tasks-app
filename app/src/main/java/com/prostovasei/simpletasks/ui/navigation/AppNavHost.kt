@@ -3,23 +3,35 @@ package com.prostovasei.simpletasks.ui.navigation
 import androidx.annotation.StringRes
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.MailOutline
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -35,6 +47,7 @@ import androidx.navigation.toRoute
 import kotlinx.coroutines.flow.first
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
+import com.prostovasei.simpletasks.ui.common.TAG_ADD_TASK
 import com.prostovasei.simpletasks.ui.feature.all.AllRoute
 import com.prostovasei.simpletasks.ui.feature.inbox.InboxRoute
 import com.prostovasei.simpletasks.ui.feature.lists.ListsRoute
@@ -76,7 +89,13 @@ fun AppNavHost(
         bottomBar = {
             // На экране списка нижний бар скрыт: это вложенный экран с кнопкой «Назад».
             if (destination == null || currentTab != null) {
-                BottomBar(selected = currentTab ?: Tab.ALL) { tab -> navController.openTab(tab) }
+                val selected = currentTab ?: Tab.ALL
+                BottomBar(
+                    selected = selected,
+                    onSelect = { tab -> navController.openTab(tab) },
+                    // На «Все» новая задача — на сегодня, на остальных вкладках — во «Входящие».
+                    onAdd = { navController.navigate(QuickAddDestination(today = selected == Tab.ALL)) },
+                )
             }
         },
     ) { padding ->
@@ -93,10 +112,10 @@ fun AppNavHost(
         ) {
             val openTask: (String) -> Unit = { navController.navigate(TaskDetailDestination(it)) }
             composable<InboxDestination> {
-                InboxRoute(onAddTask = { navController.navigate(QuickAddDestination()) }, onOpenTask = openTask)
+                InboxRoute(onOpenTask = openTask)
             }
             composable<AllDestination> {
-                AllRoute(onAddTask = { navController.navigate(QuickAddDestination(today = true)) }, onOpenTask = openTask)
+                AllRoute(onOpenTask = openTask)
             }
             composable<ListsDestination> {
                 ListsRoute(onOpenProject = { navController.navigate(ProjectDestination(it)) }, onOpenCompleted = { navController.navigate(CompletedDestination) })
@@ -117,25 +136,50 @@ fun AppNavHost(
     }
 }
 
+/**
+ * Плавающая нижняя панель (итерация 13, макет PM): иконки вкладок без подписей, открытая — зелёная,
+ * в конце — кнопка «+» новой задачи.
+ */
 @Composable
-fun BottomBar(selected: Tab, onSelect: (Tab) -> Unit) {
+fun BottomBar(selected: Tab, onSelect: (Tab) -> Unit, onAdd: () -> Unit = {}) {
     val colors = AppTheme.colors
-    NavigationBar(containerColor = colors.surface) {
-        Tab.entries.forEach { tab ->
-            NavigationBarItem(
-                selected = tab == selected,
-                onClick = { onSelect(tab) },
-                icon = { Icon(tab.icon, contentDescription = null) },
-                label = { Text(stringResource(tab.label)) },
-                colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = colors.accent,
-                    selectedTextColor = colors.accent,
-                    indicatorColor = colors.background,
-                    unselectedIconColor = colors.textSecondary,
-                    unselectedTextColor = colors.textSecondary,
-                ),
-                modifier = Modifier.testTag("tab:${tab.name}"),
-            )
+    val spacing = AppTheme.spacing
+    val sizes = AppTheme.sizes
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .windowInsetsPadding(WindowInsets.navigationBars)
+            .padding(horizontal = spacing.sm, vertical = spacing.sm),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(sizes.navBar)
+                .shadow(sizes.navShadow, AppTheme.shapes.nav)
+                .background(colors.surface, AppTheme.shapes.nav)
+                .padding(start = spacing.sm, end = spacing.xxs),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Tab.entries.forEach { tab ->
+                IconButton(
+                    onClick = { onSelect(tab) },
+                    modifier = Modifier.size(sizes.navTab).testTag("tab:${tab.name}"),
+                ) {
+                    Icon(tab.icon, contentDescription = stringResource(tab.label), tint = if (tab == selected) colors.accent else colors.textSecondary)
+                }
+            }
+            Box(
+                modifier = Modifier
+                    .size(sizes.navAdd)
+                    .clip(AppTheme.shapes.extraLarge)
+                    .background(colors.accent)
+                    .clickable(onClick = onAdd)
+                    .testTag(TAG_ADD_TASK),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_task), tint = colors.onAccent)
+            }
         }
     }
 }

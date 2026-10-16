@@ -1,12 +1,14 @@
 package com.prostovasei.simpletasks.ui.common
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.prostovasei.simpletasks.designsystem.components.EmptyState
-import com.prostovasei.simpletasks.designsystem.theme.CardPosition
+import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 
 /** Плоский список задач с пустым состоянием — для «Входящих» и экрана списка. */
 @Composable
@@ -23,14 +25,17 @@ fun FlatTaskList(
         EmptyState(emptyText, modifier)
         return
     }
-    LazyColumn(modifier.fillMaxSize()) {
-        itemsIndexed(tasks, key = { _, it -> it.id }) { index, item ->
+    LazyColumn(
+        modifier.fillMaxSize(),
+        contentPadding = PaddingValues(vertical = AppTheme.spacing.xs),
+        verticalArrangement = Arrangement.spacedBy(AppTheme.sizes.cardGap),
+    ) {
+        items(tasks, key = { it.id }) { item ->
             TaskItemRow(
                 item = item,
                 onToggle = { onIntent(TaskListIntent.ToggleComplete(item.id, item.isRecurring)) },
                 showList = showList,
                 onClick = { onOpenTask(item.id) },
-                position = CardPosition.of(index, tasks.size),
             )
         }
     }
