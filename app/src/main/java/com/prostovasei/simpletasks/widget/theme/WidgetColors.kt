@@ -3,10 +3,12 @@ package com.prostovasei.simpletasks.widget.theme
 import androidx.compose.ui.graphics.Color
 import androidx.glance.color.ColorProvider
 import androidx.glance.unit.ColorProvider
+import com.prostovasei.simpletasks.designsystem.tokens.CheckTokens
 import com.prostovasei.simpletasks.designsystem.tokens.ColorTokens
 import com.prostovasei.simpletasks.designsystem.tokens.PriorityColorTokens
 import com.prostovasei.simpletasks.designsystem.tokens.PriorityTokens
 import com.prostovasei.simpletasks.designsystem.tokens.ThemedColor
+import com.prostovasei.simpletasks.designsystem.tokens.WidgetCheckTokens
 
 /**
  * Цвета виджета Glance из тех же токенов, что и AppTheme.
@@ -21,6 +23,12 @@ object WidgetColors {
     val onAccent = ColorTokens.onAccent.toProvider()
     val overdue = ColorTokens.overdue.toProvider()
     val divider = ColorTokens.divider.toProvider()
+    val dayBlock = ColorTokens.surfaceSubtle.toProvider()
+
+    val checkHigh = WidgetCheckTokens.high.toProviders()
+    val checkMedium = WidgetCheckTokens.medium.toProviders()
+    val checkLow = WidgetCheckTokens.low.toProviders()
+    val checkNone = WidgetCheckTokens.none.toProviders()
 
     val priorityHigh = PriorityTokens.high.toProviders()
     val priorityMedium = PriorityTokens.medium.toProviders()
@@ -28,8 +36,12 @@ object WidgetColors {
     val priorityNone = PriorityTokens.none.toProviders()
 }
 
+data class WidgetCheckColors(val ring: ColorProvider, val fill: ColorProvider)
+
 data class WidgetPriorityColors(val container: ColorProvider, val content: ColorProvider)
 
 private fun ThemedColor.toProvider(): ColorProvider = ColorProvider(day = Color(light), night = Color(dark))
 
 private fun PriorityColorTokens.toProviders() = WidgetPriorityColors(container.toProvider(), content.toProvider())
+
+private fun CheckTokens.toProviders() = WidgetCheckColors(ring.toProvider(), fill.toProvider())

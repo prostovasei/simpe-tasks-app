@@ -16,7 +16,7 @@ class WidgetModelTest {
     private fun day(offset: Long) = TaskDue.AllDay(today.plusDays(offset))
 
     @Test
-    fun allShowsOverdueTodayAndNext30DaysWithRepeats() {
+    fun allShowsOverdueThenDaysForNext30DaysWithRepeats() {
         val all = AllScreenTasks(
             overdue = listOf(task("late", due = day(-2))),
             todayAllDay = listOf(task("gym", due = day(0)).copy(rrule = "FREQ=WEEKLY")),
@@ -25,30 +25,57 @@ class WidgetModelTest {
         )
         val model = WidgetModels.all(all, projects, today, ZoneOffset.UTC)
 
-        assertEquals(listOf(WidgetSectionKind.OVERDUE, WidgetSectionKind.TODAY, WidgetSectionKind.UPCOMING), model.sections.map { it.kind })
-        assertEquals(listOf("late"), model.sections[0].items.map { it.id })
-        assertEquals(listOf("gym"), model.sections[1].items.map { it.id })
         assertEquals(
-            "Через 31 день — уже не показываем; еженедельный повтор — 4 раза",
-            listOf("soon", "gym@0", "gym@1", "gym@2", "gym@3"),
-            model.sections[2].items.map { it.id },
+            "Через 31 день — уже не показываем; еженедельный повтор — по дням",
+            listOf(
+                WidgetDay.Overdue to listOf("late"),
+                WidgetDay.On(today) to listOf("gym"),
+                WidgetDay.On(today.plusDays(5)) to listOf("soon"),
+                WidgetDay.On(today.plusDays(7)) to listOf("gym@0"),
+                WidgetDay.On(today.plusDays(14)) to listOf("gym@1"),
+                WidgetDay.On(today.plusDays(21)) to listOf("gym@2"),
+                WidgetDay.On(today.plusDays(28)) to listOf("gym@3"),
+            ),
+            model.days.map { block -> block.day to block.items.map { it.id } },
         )
-        assertEquals("Будущие повторы не считаются", 3, model.openCount)
+        assertEquals(today, model.today)
     }
 
     @Test
-    fun emptySectionsAreHidden() {
+    fun sameDayTasksShareOneBlock() {
+        val all = AllScreenTasks(emptyList(), listOf(task("a", due = day(0)), task("b", due = day(0))), emptyList(), listOf(task("c", due = day(1)), task("d", due = day(1))))
+        val model = WidgetModels.all(all, projects, today, ZoneOffset.UTC)
+        assertEquals(listOf(listOf("a", "b"), listOf("c", "d")), model.days.map { block -> block.items.map { it.id } })
+    }
+
+    @Test
+    fun emptyWidget() {
         val model = WidgetModels.all(AllScreenTasks(emptyList(), emptyList(), emptyList(), emptyList()), projects, today, ZoneOffset.UTC)
         assertTrue(model.isEmpty)
-        assertEquals(0, model.openCount)
     }
 
     @Test
-    fun listModelHasOneSection() {
-        val model = WidgetModels.list(WidgetFilter.ProjectList("work"), "Работа", listOf(task("a", projectId = "work"), task("b", projectId = "work")), projects, today, ZoneOffset.UTC)
+    fun listGroupsByDayWithOverdueFirstAndNoDateLast() {
+        val tasks = listOf(
+            task("none", projectId = "work"),
+            task("next", projectId = "work", due = day(3)),
+            task("late", projectId = "work", due = day(-1)),
+            task("now", projectId = "work", due = day(0)),
+        )
+        val model = WidgetModels.list(WidgetFilter.ProjectList("work"), "Работа", tasks, projects, today, ZoneOffset.UTC)
         assertEquals("Работа", model.title)
-        assertEquals(listOf(null), model.sections.map { it.kind })
-        assertEquals(2, model.openCount)
+        assertEquals(
+            listOf(WidgetDay.Overdue, WidgetDay.On(today), WidgetDay.On(today.plusDays(3)), WidgetDay.NoDate),
+            model.days.map { it.day },
+        )
+    }
+
+    @Test
+    fun shortDates() {
+        assertEquals("05 окт", WidgetDates.short(LocalDate.of(2026, 10, 5)))
+        assertEquals("16 окт", WidgetDates.short(LocalDate.of(2026, 10, 16)))
+        assertEquals("01 мая", WidgetDates.short(LocalDate.of(2026, 5, 1)))
+        assertEquals("понедельник", WidgetDates.weekday(LocalDate.of(2026, 10, 19)))
     }
 
     @Test
