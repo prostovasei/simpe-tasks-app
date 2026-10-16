@@ -44,8 +44,8 @@ import androidx.glance.appwidget.state.getAppWidgetState
 import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.lifecycleScope
 import com.prostovasei.simpletasks.R
+import com.prostovasei.simpletasks.core.di.ApplicationScope
 import com.prostovasei.simpletasks.designsystem.components.ColorDot
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.designsystem.theme.parseListColor
@@ -53,6 +53,7 @@ import com.prostovasei.simpletasks.domain.repository.ProjectRepository
 import com.prostovasei.simpletasks.ui.feature.task.ProjectOption
 import com.prostovasei.simpletasks.ui.feature.task.options
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -64,6 +65,8 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class WidgetConfigActivity : ComponentActivity() {
     @Inject lateinit var projects: ProjectRepository
+
+    @Inject @ApplicationScope lateinit var appScope: CoroutineScope
 
     private var appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
 
@@ -93,12 +96,16 @@ class WidgetConfigActivity : ComponentActivity() {
     }
 
     private fun choose(filter: WidgetFilter) {
-        lifecycleScope.launch {
-            val glanceId = GlanceAppWidgetManager(this@WidgetConfigActivity).getGlanceIdBy(appWidgetId)
-            updateAppWidgetState(this@WidgetConfigActivity, glanceId) { it[TasksWidget.FILTER_KEY] = filter.encode() }
-            TasksWidget().update(this@WidgetConfigActivity, glanceId)
-            finish()
+        // Окошко закрывается сразу; сохранение и мгновенная перерисовка виджета доживают до конца
+        // в области приложения (у окошка она отменилась бы при закрытии).
+        val context = applicationContext
+        val id = appWidgetId
+        appScope.launch {
+            val glanceId = GlanceAppWidgetManager(context).getGlanceIdBy(id)
+            updateAppWidgetState(context, glanceId) { it[TasksWidget.FILTER_KEY] = filter.encode() }
+            WidgetRefresh.one(context, glanceId)
         }
+        finish()
     }
 }
 
