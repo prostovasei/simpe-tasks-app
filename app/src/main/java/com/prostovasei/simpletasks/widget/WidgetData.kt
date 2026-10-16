@@ -39,7 +39,7 @@ fun WidgetEntryPoint.observeModel(filter: WidgetFilter): Flow<WidgetModel> = day
             val projects = t.projectsById()
             // Список удалили — виджет возвращается к «Все».
             projects[filter.projectId]?.let { WidgetModels.list(filter, it.name, list, projects, today, zone) }
-                ?: WidgetModel(WidgetFilter.All, null, emptyList())
+                ?: WidgetModel(WidgetFilter.All, null, today, emptyList())
         }
     }
 }

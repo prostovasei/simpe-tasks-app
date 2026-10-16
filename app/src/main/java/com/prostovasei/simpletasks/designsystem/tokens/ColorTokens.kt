@@ -20,6 +20,9 @@ object ColorTokens {
     val overdue = ThemedColor(light = 0xFFD32F2F, dark = 0xFFFF6B6B)
     val divider = ThemedColor(light = 0xFFD0D7DE, dark = 0xFF30363D)
 
+    /** Едва заметная плашка блока дня в виджете — светлее [surface]. */
+    val surfaceSubtle = ThemedColor(light = 0xFFF7F8FA, dark = 0xFF1A1B1D)
+
     /** Опасные действия (удаление). Совпадает с [overdue], но означает другое — отдельная роль. */
     val danger = ThemedColor(light = 0xFFD32F2F, dark = 0xFFFF6B6B)
 
@@ -55,4 +58,18 @@ object PriorityTokens {
         container = ThemedColor(light = 0xFFEEEEEE, dark = 0xFF242424),
         content = ThemedColor(light = 0xFF424242, dark = 0xFFBDBDBD),
     )
+}
+
+/**
+ * Круглая галочка виджета: приоритет — цветом обводки и лёгкой заливки (решение PM, редизайн виджета).
+ * [ring] — обводка, [fill] — заливка: непрозрачный оттенок поверх плашки дня (полупрозрачный оттенок
+ * виджеты рисуют неровно). У задач без приоритета заливки нет.
+ */
+data class CheckTokens(val ring: ThemedColor, val fill: ThemedColor)
+
+object WidgetCheckTokens {
+    val high = CheckTokens(ring = ThemedColor(light = 0xFFE5484D, dark = 0xFFFF6B6B), fill = ThemedColor(light = 0xFFF4DFE2, dark = 0xFF43292B))
+    val medium = CheckTokens(ring = ThemedColor(light = 0xFFE09400, dark = 0xFFFFB020), fill = ThemedColor(light = 0xFFF4EAD7, dark = 0xFF43361E))
+    val low = CheckTokens(ring = ThemedColor(light = 0xFF3D8BFD, dark = 0xFF6AA8FF), fill = ThemedColor(light = 0xFFDDE9FA, dark = 0xFF283446))
+    val none = CheckTokens(ring = ThemedColor(light = 0xFF8B949E, dark = 0xFF7D8590), fill = ThemedColor(light = 0x00000000, dark = 0x00000000))
 }

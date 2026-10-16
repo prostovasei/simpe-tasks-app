@@ -8,9 +8,10 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import androidx.glance.appwidget.testing.unit.isNotChecked
 import androidx.glance.appwidget.testing.unit.runGlanceAppWidgetUnitTest
+import androidx.glance.testing.unit.hasContentDescription
 import androidx.glance.testing.unit.hasText
+import androidx.glance.testing.unit.hasTextEqualTo
 import androidx.test.core.app.ApplicationProvider
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.prostovasei.simpletasks.MainActivity
@@ -42,38 +43,57 @@ class WidgetUiTest {
     private fun item(id: String, title: String, due: DueText?, list: String? = "Работа", ghostOf: String? = null, priority: Priority = Priority.NONE) =
         TaskItem(id, title, priority, due, list, null, isInboxList = list == null, isRecurring = ghostOf != null, ghostOf = ghostOf)
 
+    private val today = LocalDate.of(2026, 10, 16)
+
     private val model = WidgetModel(
         WidgetFilter.All,
         null,
+        today,
         listOf(
-            WidgetSection(WidgetSectionKind.OVERDUE, listOf(item("late", "Отправить отчёт", DueText(DayLabel.Yesterday, null), priority = Priority.HIGH))),
-            WidgetSection(WidgetSectionKind.TODAY, listOf(item("gym", "Зарядка", DueText(DayLabel.Today, "08:00"), list = null))),
-            WidgetSection(WidgetSectionKind.UPCOMING, listOf(item("gym@0", "Зарядка", DueText(DayLabel.Tomorrow, "08:00"), list = null, ghostOf = "gym"))),
+            WidgetDayBlock(WidgetDay.Overdue, listOf(item("late", "Отправить отчёт", DueText(DayLabel.Yesterday, null), priority = Priority.HIGH))),
+            WidgetDayBlock(WidgetDay.On(today), listOf(item("gym", "Зарядка", DueText(DayLabel.Today, "08:00"), list = null))),
+            WidgetDayBlock(WidgetDay.On(today.plusDays(3)), listOf(item("gym@0", "Зарядка", DueText(DayLabel.Date(today.plusDays(3), false), "08:00"), list = null, ghostOf = "gym"))),
         ),
     )
 
     @Test
-    fun widgetShowsHeaderSectionsAndCheckboxes() = runGlanceAppWidgetUnitTest {
+    fun widgetShowsDayBlocksAndBottomBar() = runGlanceAppWidgetUnitTest {
         setAppWidgetSize(DpSize(320.dp, 400.dp))
         setContext(context)
         provideComposable { WidgetContent(model, appWidgetId = 7) }
 
+        // Нижняя строка: список, сегодняшняя дата; числа задач нет.
         onNode(hasText("Все")).assertExists()
-        onNode(hasText("2")).assertExists()
+        onNode(hasTextEqualTo("16 окт")).assertExists()
+        onAllNodes(hasText("2")).assertCountEquals(0)
+        // Подписи дней.
         onNode(hasText("ПРОСРОЧЕНО")).assertExists()
+        onNode(hasText("СЕГОДНЯ")).assertExists()
+        onNode(hasTextEqualTo(" · 16 окт")).assertExists()
+        onNode(hasText("ПОНЕДЕЛЬНИК")).assertExists()
+        // У просроченной — день, у остальных — только время и список.
         onNode(hasText("Вчера · Работа")).assertExists()
-        onNode(hasText("Завтра, 08:00 · Входящие ↻")).assertExists()
+        onNode(hasText("08:00 · Входящие ↻")).assertExists()
         // Галочки только у двух настоящих задач: у будущего повтора её нет.
-        onAllNodes(isNotChecked()).assertCountEquals(2)
+        onAllNodes(hasContentDescription("Выполнить")).assertCountEquals(2)
     }
 
     @Test
     fun emptyListWidget() = runGlanceAppWidgetUnitTest {
         setAppWidgetSize(DpSize(320.dp, 200.dp))
         setContext(context)
-        provideComposable { WidgetContent(WidgetModel(WidgetFilter.ProjectList("p"), "Покупки", listOf(WidgetSection(null, emptyList()))), appWidgetId = 7) }
+        provideComposable { WidgetContent(WidgetModel(WidgetFilter.ProjectList("p"), "Покупки", today, emptyList()), appWidgetId = 7) }
         onNode(hasText("Покупки")).assertExists()
         onNode(hasText("Задач нет")).assertExists()
+        onNode(hasText("16 окт")).assertExists()
+    }
+
+    @Test
+    fun priorityPicksCheckColor() {
+        assertEquals(widgetCheckColors(Priority.HIGH), com.prostovasei.simpletasks.widget.theme.WidgetColors.checkHigh)
+        assertEquals(widgetCheckColors(Priority.MEDIUM), com.prostovasei.simpletasks.widget.theme.WidgetColors.checkMedium)
+        assertEquals(widgetCheckColors(Priority.LOW), com.prostovasei.simpletasks.widget.theme.WidgetColors.checkLow)
+        assertEquals(widgetCheckColors(Priority.NONE), com.prostovasei.simpletasks.widget.theme.WidgetColors.checkNone)
     }
 
     @Test

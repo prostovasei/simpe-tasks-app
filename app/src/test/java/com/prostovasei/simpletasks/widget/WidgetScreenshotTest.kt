@@ -36,40 +36,54 @@ class WidgetScreenshotTest {
     private fun item(id: String, title: String, due: DueText?, list: String? = "Работа", ghostOf: String? = null, priority: Priority = Priority.NONE) =
         TaskItem(id, title, priority, due, list, null, isInboxList = list == null, isRecurring = ghostOf != null || id == "gym", ghostOf = ghostOf)
 
+    private val today = LocalDate.of(2026, 10, 16)
+
     private val model = WidgetModel(
         WidgetFilter.All,
         null,
+        today,
         listOf(
-            WidgetSection(WidgetSectionKind.OVERDUE, listOf(item("late", "Отправить отчёт", DueText(DayLabel.Yesterday, null), priority = Priority.HIGH))),
-            WidgetSection(
-                WidgetSectionKind.TODAY,
+            WidgetDayBlock(WidgetDay.Overdue, listOf(item("late", "Отправить отчёт", DueText(DayLabel.Yesterday, null), priority = Priority.HIGH))),
+            WidgetDayBlock(
+                WidgetDay.On(today),
                 listOf(
                     item("gym", "Зарядка", DueText(DayLabel.Today, "08:00"), list = null),
                     item("call", "Созвон с командой", DueText(DayLabel.Today, "10:00–11:00"), priority = Priority.MEDIUM),
+                    item("food", "Купить продукты", DueText(DayLabel.Today, null), list = "Дом", priority = Priority.LOW),
                 ),
             ),
-            WidgetSection(
-                WidgetSectionKind.UPCOMING,
+            WidgetDayBlock(
+                WidgetDay.On(today.plusDays(1)),
                 listOf(
                     item("gym@0", "Зарядка", DueText(DayLabel.Tomorrow, "08:00"), list = null, ghostOf = "gym"),
-                    item("doc", "Записаться к врачу", DueText(DayLabel.Date(LocalDate.of(2026, 10, 20), false), "09:30"), list = "Здоровье"),
+                    item("net", "Оплатить интернет", DueText(DayLabel.Tomorrow, null)),
                 ),
+            ),
+            WidgetDayBlock(
+                WidgetDay.On(today.plusDays(3)),
+                listOf(item("doc", "Записаться к врачу", DueText(DayLabel.Date(today.plusDays(3), false), "09:30"), list = "Здоровье")),
             ),
         ),
     )
 
     @Test
-    fun widgetLight() {
-        val views = runBlocking { Preview(model).compose(context, size = DpSize(320.dp, 360.dp)) }
+    fun widgetLight() = capture("screenshots/widget_light.png")
+
+    @Test
+    @Config(qualifiers = "+night")
+    fun widgetDark() = capture("screenshots/widget_dark.png")
+
+    private fun capture(path: String) {
+        val views = runBlocking { Preview(model).compose(context, size = DpSize(320.dp, 420.dp)) }
         val parent = FrameLayout(context)
         val view = views.apply(context, parent)
         val density = context.resources.displayMetrics.density
         val width = (320 * density).toInt()
-        val height = (360 * density).toInt()
+        val height = (420 * density).toInt()
         view.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY))
         view.layout(0, 0, width, height)
         val bitmap = android.graphics.Bitmap.createBitmap(width, height, android.graphics.Bitmap.Config.ARGB_8888)
         view.draw(android.graphics.Canvas(bitmap))
-        bitmap.captureRoboImage("screenshots/widget_light.png")
+        bitmap.captureRoboImage(path)
     }
 }
