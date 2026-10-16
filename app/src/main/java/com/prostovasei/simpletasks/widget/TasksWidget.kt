@@ -4,6 +4,7 @@ import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.Intent
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -76,12 +77,22 @@ class TasksWidget : GlanceAppWidget() {
         val appWidgetId = GlanceAppWidgetManager(context).getAppWidgetId(id)
         // Данные загружаются до первой отрисовки: иначе на долю секунды мелькает «Задач нет».
         val initial = WidgetRefresh.loadModel(context, id)
+        WidgetLog.add(context, "сеанс виджета $appWidgetId запущен: ${initial.filter.encode()}")
         provideContent {
             val filter = WidgetFilter.decode(currentState(FILTER_KEY))
             val first = initial.takeIf { it.filter == filter }
             val model by remember(filter) { entry.observeModel(filter) }.collectAsState(initial = first)
-            WidgetContent(model ?: WidgetModel(filter, null, entry.time().today(), emptyList()), appWidgetId)
+            val shown = model ?: WidgetModel(filter, null, entry.time().today(), emptyList())
+            LaunchedEffect(shown) {
+                WidgetLog.add(context, "отрисовка $appWidgetId: ${shown.filter.encode()}, задач ${shown.days.sumOf { it.items.size }}")
+            }
+            WidgetContent(shown, appWidgetId)
         }
+    }
+
+    override fun onCompositionError(context: Context, glanceId: GlanceId, appWidgetId: Int, throwable: Throwable) {
+        WidgetLog.error(context, "отрисовка виджета $appWidgetId", throwable)
+        super.onCompositionError(context, glanceId, appWidgetId, throwable)
     }
 
     companion object {
@@ -93,8 +104,9 @@ class TasksWidget : GlanceAppWidget() {
 class CompleteTaskAction : ActionCallback {
     override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
         val taskId = parameters[TASK_ID] ?: return
+        WidgetLog.add(context, "галочка: задача выполнена")
         context.widgetEntryPoint().tasks().complete(taskId)
-        WidgetRefresh.all(context)
+        WidgetRefresh.all(context, "галочка")
     }
 
     companion object {
@@ -388,8 +400,9 @@ private fun ListTab(icon: Int, label: String, tint: ColorProvider?, selected: Bo
 class SwitchListAction : ActionCallback {
     override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
         val filter = parameters[FILTER] ?: return
+        WidgetLog.add(context, "вкладка: $filter")
         updateAppWidgetState(context, glanceId) { it[TasksWidget.FILTER_KEY] = filter }
-        WidgetRefresh.one(context, glanceId)
+        WidgetRefresh.one(context, glanceId, "вкладка $filter")
     }
 
     companion object {

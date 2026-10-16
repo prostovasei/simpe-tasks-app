@@ -5,7 +5,10 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTouchInput
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.domain.model.DataStats
@@ -41,6 +44,31 @@ class SettingsScreenTest {
         import = ImportState.Done(previewReport),
         export = ExportState.Done(3399),
     )
+
+    /** Скрытый журнал виджета: долгое нажатие на версию, «Отправить» и «Очистить». */
+    @Test
+    fun longPressOnVersionShowsWidgetLog() {
+        val shared = mutableListOf<String>()
+        var cleared = false
+        composeRule.setContent {
+            AppTheme {
+                SettingsScreen(
+                    state = doneState,
+                    onIntent = {},
+                    appVersion = AppVersion("0.9.1", 30),
+                    widgetLog = WidgetLogActions(read = { "16.10 17:37  вкладка: inbox" }, share = { shared += it }, clear = { cleared = true }),
+                )
+            }
+        }
+        composeRule.onNodeWithTag(TAG_VERSION).performScrollTo().performTouchInput { longClick() }
+        composeRule.onNodeWithText("Журнал виджета").assertExists()
+        composeRule.onNodeWithText("16.10 17:37  вкладка: inbox").assertExists()
+        composeRule.onNodeWithText("Отправить").performClick()
+        assertEquals(listOf("16.10 17:37  вкладка: inbox"), shared)
+        composeRule.onNodeWithText("Очистить").performClick()
+        assertEquals(true, cleared)
+        composeRule.onNodeWithText("Журнал виджета").assertDoesNotExist()
+    }
 
     @Test
     fun showsStatsAndImportReport() {
