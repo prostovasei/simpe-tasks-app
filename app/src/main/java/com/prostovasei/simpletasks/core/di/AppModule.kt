@@ -9,6 +9,8 @@ import com.prostovasei.simpletasks.core.time.DayTicker
 import com.prostovasei.simpletasks.core.time.SystemDayTicker
 import com.prostovasei.simpletasks.core.time.SystemTimeProvider
 import com.prostovasei.simpletasks.core.time.TimeProvider
+import com.prostovasei.simpletasks.core.update.AppUpdater
+import com.prostovasei.simpletasks.core.update.GitHubAppUpdater
 import com.prostovasei.simpletasks.data.local.db.AppDatabase
 import com.prostovasei.simpletasks.data.repository.RoomChecklistRepository
 import com.prostovasei.simpletasks.data.repository.RoomBackupRepository
@@ -24,6 +26,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CoroutineDispatcher
 import javax.inject.Singleton
 
 @Module
@@ -44,6 +47,10 @@ object CoreModule {
     @Provides
     @Singleton
     fun provideDocumentOpener(@ApplicationContext context: Context): DocumentOpener = ContentResolverDocumentOpener(context)
+
+    @Provides
+    @Singleton
+    fun provideAppUpdater(@ApplicationContext context: Context, @IoDispatcher io: CoroutineDispatcher): AppUpdater = GitHubAppUpdater(context, io)
 
     @Provides
     @Singleton

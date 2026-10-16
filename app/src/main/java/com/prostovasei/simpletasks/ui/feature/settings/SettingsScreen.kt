@@ -13,6 +13,7 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -146,6 +147,9 @@ fun SettingsScreen(
                 }
                 HorizontalDivider(color = colors.divider, modifier = Modifier.padding(vertical = spacing.xs))
             }
+
+            UpdateSection(state.update, onIntent)
+            HorizontalDivider(color = colors.divider, modifier = Modifier.padding(vertical = spacing.xs))
 
             SectionTitle(R.string.settings_import_title)
             Text(
@@ -330,6 +334,62 @@ private fun ImportReportView(report: ImportReport) {
     }
 }
 
+/** «Обновление»: проверить → «Доступна версия…» → «Обновить» → окно Android (итерация 10). */
+@Composable
+private fun UpdateSection(update: UpdateState, onIntent: (SettingsIntent) -> Unit) {
+    val colors = AppTheme.colors
+    SectionTitle(R.string.update_title)
+    val message = when (update) {
+        UpdateState.Idle -> null
+        UpdateState.Checking -> stringResource(R.string.update_checking)
+        UpdateState.UpToDate -> stringResource(R.string.update_up_to_date)
+        is UpdateState.Available -> stringResource(R.string.update_available, update.update.versionName, update.update.build)
+        is UpdateState.Downloading -> stringResource(R.string.update_downloading, update.percent)
+        is UpdateState.NeedsPermission -> stringResource(R.string.update_needs_permission)
+        is UpdateState.Confirming -> stringResource(R.string.update_confirm)
+        UpdateState.CheckFailed -> stringResource(R.string.update_check_failed)
+        is UpdateState.DownloadFailed -> stringResource(R.string.update_download_failed)
+    }
+    val isError = update is UpdateState.CheckFailed || update is UpdateState.DownloadFailed
+    message?.let {
+        Text(
+            it,
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (isError) colors.overdue else colors.textPrimary,
+            modifier = Modifier.testTag(TAG_UPDATE_STATUS),
+        )
+    }
+    if (update is UpdateState.Downloading) {
+        LinearProgressIndicator(progress = { update.percent / PERCENT }, modifier = Modifier.fillMaxWidth())
+    }
+    when (update) {
+        is UpdateState.Available, is UpdateState.DownloadFailed, is UpdateState.Confirming -> Button(
+            onClick = { onIntent(SettingsIntent.InstallUpdate) },
+            modifier = Modifier.testTag(TAG_UPDATE_BUTTON),
+        ) { Text(stringResource(R.string.update_install)) }
+        is UpdateState.NeedsPermission -> Row(horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.xs)) {
+            Button(onClick = { onIntent(SettingsIntent.GrantInstallPermission) }, modifier = Modifier.testTag(TAG_UPDATE_GRANT)) {
+                Text(stringResource(R.string.update_grant))
+            }
+            OutlinedButton(onClick = { onIntent(SettingsIntent.InstallUpdate) }, modifier = Modifier.testTag(TAG_UPDATE_BUTTON)) {
+                Text(stringResource(R.string.update_install))
+            }
+        }
+        else -> OutlinedButton(
+            onClick = { onIntent(SettingsIntent.CheckUpdate) },
+            enabled = update !is UpdateState.Checking && update !is UpdateState.Downloading,
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.accent),
+            modifier = Modifier.testTag(TAG_UPDATE_CHECK),
+        ) { Text(stringResource(R.string.update_check)) }
+    }
+}
+
+private const val PERCENT = 100f
+const val TAG_UPDATE_CHECK = "update_check"
+const val TAG_UPDATE_BUTTON = "update_install"
+const val TAG_UPDATE_GRANT = "update_grant"
+const val TAG_UPDATE_STATUS = "update_status"
+
 @Composable
 private fun SectionTitle(@StringRes text: Int) {
     Text(
@@ -346,7 +406,6 @@ private fun BodyText(text: String) {
     Text(text = text, style = MaterialTheme.typography.bodyMedium, color = AppTheme.colors.textPrimary)
 }
 
-/** Версия приложения для подвала экрана; в тестах подменяется, чтобы скриншоты не зависели от номера сборки. */
 /** Журнал виджета: прочитать, отправить (например, в чат с Claude), очистить. */
 data class WidgetLogActions(val read: () -> String, val share: (String) -> Unit, val clear: () -> Unit) {
     companion object {
@@ -357,6 +416,7 @@ data class WidgetLogActions(val read: () -> String, val share: (String) -> Unit,
 const val TAG_VERSION = "settings_version"
 const val TAG_WIDGET_LOG = "widget_log"
 
+/** Версия приложения для подвала экрана; в тестах подменяется, чтобы скриншоты не зависели от номера сборки. */
 data class AppVersion(val name: String, val build: Int) {
     companion object {
         val current = AppVersion(BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE)

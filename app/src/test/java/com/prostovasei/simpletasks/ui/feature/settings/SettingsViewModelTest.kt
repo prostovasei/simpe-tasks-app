@@ -22,6 +22,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import com.prostovasei.simpletasks.core.files.DocumentOpener
+import com.prostovasei.simpletasks.core.update.AppUpdater
+import com.prostovasei.simpletasks.core.update.AvailableUpdate
+import com.prostovasei.simpletasks.core.update.InstallStart
 import com.prostovasei.simpletasks.testing.FakeTimeProvider
 import java.io.ByteArrayOutputStream
 import java.io.IOException
@@ -66,7 +69,59 @@ class SettingsViewModelTest {
         },
         dispatcher,
         FakeTimeProvider(now = Instant.parse("2026-10-13T12:00:00Z")),
+        updater,
     )
+
+    private class FakeUpdater : AppUpdater {
+        var available: AvailableUpdate? = null
+        var failCheck = false
+        var result: InstallStart = InstallStart.Started
+        var permissionScreens = 0
+        override suspend fun check(): AvailableUpdate? = if (failCheck) throw IOException("нет сети") else available
+        override suspend fun install(update: AvailableUpdate, onProgress: (Int) -> Unit): InstallStart {
+            onProgress(50)
+            return result
+        }
+        override fun openInstallPermissionSettings() {
+            permissionScreens++
+        }
+    }
+
+    private val updater = FakeUpdater()
+    private val newVersion = AvailableUpdate(40, "0.10.1", "https://example.com/a.apk")
+
+    @Test
+    fun checkShowsUpToDateOrAvailable() = runTest {
+        val vm = viewModel()
+        vm.onIntent(SettingsIntent.CheckUpdate)
+        assertEquals(UpdateState.UpToDate, vm.state.value.update)
+        updater.available = newVersion
+        vm.onIntent(SettingsIntent.CheckUpdate)
+        assertEquals(UpdateState.Available(newVersion), vm.state.value.update)
+    }
+
+    @Test
+    fun checkWithoutInternetShowsError() = runTest {
+        updater.failCheck = true
+        val vm = viewModel()
+        vm.onIntent(SettingsIntent.CheckUpdate)
+        assertEquals(UpdateState.CheckFailed, vm.state.value.update)
+    }
+
+    @Test
+    fun installAsksPermissionOnceThenConfirms() = runTest {
+        updater.available = newVersion
+        updater.result = InstallStart.NeedsPermission
+        val vm = viewModel()
+        vm.onIntent(SettingsIntent.CheckUpdate)
+        vm.onIntent(SettingsIntent.InstallUpdate)
+        assertEquals(UpdateState.NeedsPermission(newVersion), vm.state.value.update)
+        vm.onIntent(SettingsIntent.GrantInstallPermission)
+        assertEquals(1, updater.permissionScreens)
+        updater.result = InstallStart.Started
+        vm.onIntent(SettingsIntent.InstallUpdate)
+        assertEquals(UpdateState.Confirming(newVersion), vm.state.value.update)
+    }
 
     @Before
     fun setUp() = Dispatchers.setMain(dispatcher)

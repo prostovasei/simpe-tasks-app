@@ -4,6 +4,8 @@ import androidx.lifecycle.viewModelScope
 import com.prostovasei.simpletasks.core.di.IoDispatcher
 import com.prostovasei.simpletasks.core.files.DocumentOpener
 import com.prostovasei.simpletasks.core.time.TimeProvider
+import com.prostovasei.simpletasks.core.update.AppUpdater
+import com.prostovasei.simpletasks.core.update.InstallStart
 import com.prostovasei.simpletasks.domain.model.InvalidImportFileException
 import com.prostovasei.simpletasks.domain.repository.BackupRepository
 import com.prostovasei.simpletasks.ui.mvi.MviViewModel
@@ -21,6 +23,7 @@ class SettingsViewModel @Inject constructor(
     private val documents: DocumentOpener,
     @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     time: TimeProvider,
+    private val updater: AppUpdater,
 ) : MviViewModel<SettingsState, SettingsIntent, SettingsEffect>(
     SettingsState(backupFileName = "simple-tasks-backup-${time.today()}.csv"),
 ) {
@@ -38,6 +41,48 @@ class SettingsViewModel @Inject constructor(
             SettingsIntent.ClearRequested -> if (!currentState.isBusy) setState { copy(showClearConfirmation = true) }
             SettingsIntent.ClearDismissed -> setState { copy(showClearConfirmation = false) }
             SettingsIntent.ClearConfirmed -> clearAll()
+            SettingsIntent.CheckUpdate -> checkUpdate()
+            SettingsIntent.InstallUpdate -> installUpdate()
+            SettingsIntent.GrantInstallPermission -> updater.openInstallPermissionSettings()
+        }
+    }
+
+    private fun checkUpdate() {
+        if (currentState.update is UpdateState.Checking || currentState.update is UpdateState.Downloading) return
+        setState { copy(update = UpdateState.Checking) }
+        viewModelScope.launch {
+            val result = try {
+                updater.check()?.let { UpdateState.Available(it) } ?: UpdateState.UpToDate
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                UpdateState.CheckFailed
+            }
+            setState { copy(update = result) }
+        }
+    }
+
+    private fun installUpdate() {
+        val update = when (val current = currentState.update) {
+            is UpdateState.Available -> current.update
+            is UpdateState.NeedsPermission -> current.update
+            is UpdateState.DownloadFailed -> current.update
+            is UpdateState.Confirming -> current.update
+            else -> return
+        }
+        setState { copy(update = UpdateState.Downloading(update, 0)) }
+        viewModelScope.launch {
+            val result = try {
+                when (updater.install(update) { percent -> setState { copy(update = UpdateState.Downloading(update, percent)) } }) {
+                    InstallStart.Started -> UpdateState.Confirming(update)
+                    InstallStart.NeedsPermission -> UpdateState.NeedsPermission(update)
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                UpdateState.DownloadFailed(update)
+            }
+            setState { copy(update = result) }
         }
     }
 

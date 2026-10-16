@@ -45,6 +45,21 @@ class SettingsScreenTest {
         export = ExportState.Done(3399),
     )
 
+    @Test
+    fun updateSectionShowsAvailableVersionAndInstallButton() {
+        show(doneState.copy(update = UpdateState.Available(com.prostovasei.simpletasks.core.update.AvailableUpdate(40, "0.10.1", "u"))))
+        composeRule.onNodeWithText("Доступна версия 0.10.1 (сборка 40)").assertExists()
+        composeRule.onNodeWithTag(TAG_UPDATE_BUTTON).performClick()
+        assertEquals(SettingsIntent.InstallUpdate, intents.last())
+    }
+
+    @Test
+    fun updateSectionCheckButton() {
+        show(doneState)
+        composeRule.onNodeWithTag(TAG_UPDATE_CHECK).performClick()
+        assertEquals(SettingsIntent.CheckUpdate, intents.last())
+    }
+
     /** Скрытый журнал виджета: долгое нажатие на версию, «Отправить» и «Очистить». */
     @Test
     fun longPressOnVersionShowsWidgetLog() {
@@ -101,7 +116,7 @@ class SettingsScreenTest {
     fun clearButtonSendsIntent() {
         show(doneState)
 
-        composeRule.onNodeWithTag(TAG_CLEAR_BUTTON).performClick()
+        composeRule.onNodeWithTag(TAG_CLEAR_BUTTON).performScrollTo().performClick()
 
         assertEquals(listOf<SettingsIntent>(SettingsIntent.ClearRequested), intents)
     }

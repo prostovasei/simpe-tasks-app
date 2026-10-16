@@ -46,6 +46,21 @@ jobs:
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
 
+      # Обновление по кнопке (итерация 10): после мержа в main APK уходит релизом в публичный репозиторий
+      # prostovasei/simple-tasks-releases (только файлы, без кода). Нужен секрет RELEASES_TOKEN — без него шаг пропускается.
+      - name: Опубликовать APK для обновления в приложении
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then echo "Секрет RELEASES_TOKEN не задан — публикация пропущена"; exit 0; fi
+          BUILD=$(git rev-list --count HEAD)
+          NAME=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
+          APK="simple-tasks-$NAME-build$BUILD.apk"
+          cp app/build/outputs/apk/debug/app-debug.apk "$APK"
+          gh release create "build-$BUILD" "$APK" --repo prostovasei/simple-tasks-releases \
+            --title "$NAME (сборка $BUILD)" --notes "Simple Tasks $NAME, сборка $BUILD" --latest
+
       - name: Скриншоты
         uses: actions/upload-artifact@v6
         with:
