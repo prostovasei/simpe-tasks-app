@@ -4,6 +4,7 @@ import com.prostovasei.simpletasks.domain.model.AllScreenTasks
 import com.prostovasei.simpletasks.domain.model.TaskDue
 import com.prostovasei.simpletasks.testing.project
 import com.prostovasei.simpletasks.testing.task
+import com.prostovasei.simpletasks.ui.feature.task.ProjectOption
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -75,7 +76,34 @@ class WidgetModelTest {
         assertEquals("05 окт", WidgetDates.short(LocalDate.of(2026, 10, 5)))
         assertEquals("16 окт", WidgetDates.short(LocalDate.of(2026, 10, 16)))
         assertEquals("01 мая", WidgetDates.short(LocalDate.of(2026, 5, 1)))
-        assertEquals("понедельник", WidgetDates.weekday(LocalDate.of(2026, 10, 19)))
+        assertEquals("пт, 16 окт", WidgetDates.withWeekday(LocalDate.of(2026, 10, 16)))
+        assertEquals("пн, 19 окт", WidgetDates.withWeekday(LocalDate.of(2026, 10, 19)))
+    }
+
+    private val lists = listOf(
+        ProjectOption("inbox", "Inbox", null, isInbox = true),
+        ProjectOption("work", "Работа", "#3D8BFD", isInbox = false),
+        ProjectOption("home", "Дом", "#46A758", isInbox = false),
+        ProjectOption("health", "Здоровье", null, isInbox = false),
+    )
+
+    @Test
+    fun tabsShowAllInboxAndFirstTwoLists() {
+        assertEquals(
+            listOf(WidgetTab(WidgetFilter.All), WidgetTab(WidgetFilter.Inbox), WidgetTab(WidgetFilter.ProjectList("work"), "Работа", "#3D8BFD"), WidgetTab(WidgetFilter.ProjectList("home"), "Дом", "#46A758")),
+            WidgetModels.tabs(WidgetFilter.All, lists),
+        )
+    }
+
+    @Test
+    fun listPickedFromMoreReplacesSecondListTab() {
+        val tabs = WidgetModels.tabs(WidgetFilter.ProjectList("health"), lists).map { it.filter }
+        assertEquals(listOf(WidgetFilter.All, WidgetFilter.Inbox, WidgetFilter.ProjectList("work"), WidgetFilter.ProjectList("health")), tabs)
+    }
+
+    @Test
+    fun noOwnListsOnlyAllAndInbox() {
+        assertEquals(listOf(WidgetFilter.All, WidgetFilter.Inbox), WidgetModels.tabs(WidgetFilter.Inbox, lists.take(1)).map { it.filter })
     }
 
     @Test

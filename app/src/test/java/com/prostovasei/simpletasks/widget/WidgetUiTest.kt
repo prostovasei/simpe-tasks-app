@@ -52,8 +52,10 @@ class WidgetUiTest {
         listOf(
             WidgetDayBlock(WidgetDay.Overdue, listOf(item("late", "Отправить отчёт", DueText(DayLabel.Yesterday, null), priority = Priority.HIGH))),
             WidgetDayBlock(WidgetDay.On(today), listOf(item("gym", "Зарядка", DueText(DayLabel.Today, "08:00"), list = null))),
+            WidgetDayBlock(WidgetDay.On(today.plusDays(1)), listOf(item("net", "Оплатить интернет", DueText(DayLabel.Tomorrow, null)))),
             WidgetDayBlock(WidgetDay.On(today.plusDays(3)), listOf(item("gym@0", "Зарядка", DueText(DayLabel.Date(today.plusDays(3), false), "08:00"), list = null, ghostOf = "gym"))),
         ),
+        tabs = listOf(WidgetTab(WidgetFilter.All), WidgetTab(WidgetFilter.Inbox), WidgetTab(WidgetFilter.ProjectList("work"), "Работа", "#3D8BFD")),
     )
 
     @Test
@@ -62,30 +64,33 @@ class WidgetUiTest {
         setContext(context)
         provideComposable { WidgetContent(model, appWidgetId = 7) }
 
-        // Нижняя строка: список, сегодняшняя дата; числа задач нет.
-        onNode(hasText("Все")).assertExists()
-        onNode(hasTextEqualTo("16 окт")).assertExists()
+        // Нижняя строка: вкладки списков, «⋯», приложение, «пт, 16 окт», «+»; числа задач нет.
+        listOf("Все", "Входящие", "Работа", "Другие списки", "Открыть приложение", "Новая задача").forEach { onNode(hasContentDescription(it)).assertExists() }
+        onNode(hasTextEqualTo("пт, 16 окт")).assertExists()
         onAllNodes(hasText("2")).assertCountEquals(0)
-        // Подписи дней.
-        onNode(hasText("ПРОСРОЧЕНО")).assertExists()
-        onNode(hasText("СЕГОДНЯ")).assertExists()
-        onNode(hasTextEqualTo(" · 16 окт")).assertExists()
-        onNode(hasText("ПОНЕДЕЛЬНИК")).assertExists()
+        // Подписи дней: «ПТ, 16 ОКТ · СЕГОДНЯ», «СБ, 17 ОКТ · ЗАВТРА», «ПН, 19 ОКТ».
+        onNode(hasTextEqualTo("ПРОСРОЧЕНО")).assertExists()
+        onNode(hasTextEqualTo("ПТ, 16 ОКТ")).assertExists()
+        onNode(hasTextEqualTo("СЕГОДНЯ")).assertExists()
+        onNode(hasTextEqualTo("СБ, 17 ОКТ")).assertExists()
+        onNode(hasTextEqualTo("ЗАВТРА")).assertExists()
+        onNode(hasTextEqualTo("ПН, 19 ОКТ")).assertExists()
         // У просроченной — день, у остальных — только время и список.
         onNode(hasText("Вчера · Работа")).assertExists()
         onNode(hasText("08:00 · Входящие ↻")).assertExists()
-        // Галочки только у двух настоящих задач: у будущего повтора её нет.
-        onAllNodes(hasContentDescription("Выполнить")).assertCountEquals(2)
+        // Галочки только у трёх настоящих задач: у будущего повтора её нет.
+        onAllNodes(hasContentDescription("Выполнить")).assertCountEquals(3)
     }
 
     @Test
     fun emptyListWidget() = runGlanceAppWidgetUnitTest {
         setAppWidgetSize(DpSize(320.dp, 200.dp))
         setContext(context)
-        provideComposable { WidgetContent(WidgetModel(WidgetFilter.ProjectList("p"), "Покупки", today, emptyList()), appWidgetId = 7) }
-        onNode(hasText("Покупки")).assertExists()
+        val tabs = listOf(WidgetTab(WidgetFilter.All), WidgetTab(WidgetFilter.Inbox), WidgetTab(WidgetFilter.ProjectList("p"), "Покупки", null))
+        provideComposable { WidgetContent(WidgetModel(WidgetFilter.ProjectList("p"), "Покупки", today, emptyList(), tabs), appWidgetId = 7) }
+        onNode(hasContentDescription("Покупки")).assertExists()
         onNode(hasText("Задач нет")).assertExists()
-        onNode(hasText("16 окт")).assertExists()
+        onNode(hasTextEqualTo("пт, 16 окт")).assertExists()
     }
 
     @Test
@@ -109,6 +114,8 @@ class WidgetUiTest {
         assertEquals("work", addToList.getStringExtra(MainActivity.EXTRA_QUICK_ADD_PROJECT))
         assertEquals(false, addToList.getBooleanExtra(MainActivity.EXTRA_QUICK_ADD_TODAY, true))
         assertEquals("Разные адреса — разные нажатия", false, openTaskIntent(context, "a").filterEquals(openTaskIntent(context, "b")))
+        assertEquals(android.content.Intent.ACTION_MAIN, openAppIntent(context).action)
+        assertEquals(MainActivity::class.java.name, openAppIntent(context).component?.className)
     }
 
     private val options = listOf(
