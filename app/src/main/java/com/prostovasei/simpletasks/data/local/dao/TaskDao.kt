@@ -116,6 +116,16 @@ interface TaskDao {
     )
     fun observeActiveByProject(projectId: String): Flow<List<TaskEntity>>
 
+    /** Выполненные задачи: новые сверху (у импортированных без времени выполнения — по времени изменения). */
+    @Query(
+        """
+        SELECT * FROM tasks
+        WHERE is_deleted = 0 AND status = 2
+        ORDER BY COALESCE(completed_at, updated_at) DESC
+        """,
+    )
+    fun observeCompleted(): Flow<List<TaskEntity>>
+
     @Query(
         """
         SELECT * FROM tasks

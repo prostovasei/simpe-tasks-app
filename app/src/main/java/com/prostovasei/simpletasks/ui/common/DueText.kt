@@ -33,7 +33,7 @@ object DueFormatter {
 
     private fun time(instant: Instant, zone: ZoneId): String = TIME.format(instant.atZone(zone))
 
-    private fun dayLabel(date: LocalDate, today: LocalDate): DayLabel = when (date) {
+    fun dayLabel(date: LocalDate, today: LocalDate): DayLabel = when (date) {
         today -> DayLabel.Today
         today.plusDays(1) -> DayLabel.Tomorrow
         today.minusDays(1) -> DayLabel.Yesterday

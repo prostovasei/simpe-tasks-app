@@ -91,6 +91,21 @@ class FakeTaskRepository(private val today: LocalDate = LocalDate.of(2026, 10, 1
         tasks.update { all -> all.map { if (it.id == task.id) task else it } }
     }
 
+    val restored = mutableListOf<String>()
+
+    override fun observeCompleted(): Flow<List<Task>> = tasks.map { all -> all.filter { it.status == TaskStatus.COMPLETED } }
+
+    override suspend fun restore(taskId: String): Task? {
+        val task = tasks.value.firstOrNull { it.id == taskId && it.status == TaskStatus.COMPLETED } ?: return null
+        restored += taskId
+        tasks.update { all -> all.map { if (it.id == taskId) it.copy(status = TaskStatus.ACTIVE, rrule = null, completedAt = null) else it } }
+        return task
+    }
+
+    override suspend fun undoRestore(previous: Task) {
+        tasks.update { all -> all.map { if (it.id == previous.id) previous else it } }
+    }
+
     override suspend fun setCompleted(taskId: String, completed: Boolean) {
         completedCalls += taskId to completed
         val status = if (completed) TaskStatus.COMPLETED else TaskStatus.ACTIVE

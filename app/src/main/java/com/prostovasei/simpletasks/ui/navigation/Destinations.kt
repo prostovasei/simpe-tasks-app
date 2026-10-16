@@ -22,6 +22,10 @@ data object SettingsDestination
 @Serializable
 data class QuickAddDestination(val projectId: String? = null, val today: Boolean = false)
 
+/** Выполненные задачи (итерация 11). */
+@Serializable
+data object CompletedDestination
+
 /** Экран задачи. */
 @Serializable
 data class TaskDetailDestination(val taskId: String)

@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.MoreVert
@@ -55,7 +56,7 @@ import com.prostovasei.simpletasks.domain.model.GroupWithProjects
 import com.prostovasei.simpletasks.domain.model.ProjectWithCount
 
 @Composable
-fun ListsRoute(onOpenProject: (String) -> Unit, viewModel: ListsViewModel = hiltViewModel()) {
+fun ListsRoute(onOpenProject: (String) -> Unit, onOpenCompleted: () -> Unit = {}, viewModel: ListsViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
@@ -64,11 +65,11 @@ fun ListsRoute(onOpenProject: (String) -> Unit, viewModel: ListsViewModel = hilt
             }
         }
     }
-    ListsScreen(state, viewModel::onIntent, onOpenProject)
+    ListsScreen(state, viewModel::onIntent, onOpenProject, onOpenCompleted)
 }
 
 @Composable
-fun ListsScreen(state: ListsState, onIntent: (ListsIntent) -> Unit, onOpenProject: (String) -> Unit) {
+fun ListsScreen(state: ListsState, onIntent: (ListsIntent) -> Unit, onOpenProject: (String) -> Unit, onOpenCompleted: () -> Unit = {}) {
     val colors = AppTheme.colors
     Scaffold(containerColor = colors.background, contentWindowInsets = WindowInsets(0)) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
@@ -81,6 +82,7 @@ fun ListsScreen(state: ListsState, onIntent: (ListsIntent) -> Unit, onOpenProjec
                     Text(stringResource(R.string.lists_new_list), color = colors.accent)
                 }
             }
+            CompletedRow(onOpenCompleted)
             val tree = state.tree ?: return@Column
             if (tree.groups.isEmpty() && tree.ungrouped.isEmpty()) {
                 EmptyState(stringResource(R.string.lists_empty))
@@ -104,6 +106,31 @@ fun ListsScreen(state: ListsState, onIntent: (ListsIntent) -> Unit, onOpenProjec
     }
     ListsDialogs(state, onIntent)
 }
+
+/** «Выполненные» — над списками (итерация 11). */
+@Composable
+private fun CompletedRow(onClick: () -> Unit) {
+    val colors = AppTheme.colors
+    val spacing = AppTheme.spacing
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = spacing.md, vertical = spacing.sm)
+            .testTag(TAG_COMPLETED),
+    ) {
+        Icon(Icons.Default.Check, contentDescription = null, tint = colors.textSecondary)
+        Text(
+            text = stringResource(R.string.completed_title),
+            style = MaterialTheme.typography.bodyLarge,
+            color = colors.textPrimary,
+            modifier = Modifier.weight(1f).padding(start = spacing.sm),
+        )
+    }
+}
+
+const val TAG_COMPLETED = "lists_completed"
 
 @Composable
 private fun FolderRow(group: GroupWithProjects, collapsed: Boolean, onIntent: (ListsIntent) -> Unit) {
