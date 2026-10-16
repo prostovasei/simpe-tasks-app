@@ -61,6 +61,11 @@
                 android:resource="@xml/tasks_widget_info" />
         </receiver>
 
+        <!-- Нажатия в виджете (вкладки, галочка) и полночь — только от самого приложения. -->
+        <receiver
+            android:name=".widget.WidgetActionReceiver"
+            android:exported="false" />
+
         <activity
             android:name=".widget.WidgetConfigActivity"
             android:exported="true"

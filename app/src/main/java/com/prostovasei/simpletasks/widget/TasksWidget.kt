@@ -4,36 +4,22 @@ import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.Intent
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
-import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.glance.ColorFilter
-import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
 import androidx.glance.action.Action
-import androidx.glance.action.ActionParameters
-import androidx.glance.action.actionParametersOf
 import androidx.glance.action.clickable
-import androidx.glance.appwidget.GlanceAppWidget
-import androidx.glance.appwidget.GlanceAppWidgetManager
-import androidx.glance.appwidget.action.ActionCallback
-import androidx.glance.appwidget.action.actionRunCallback
+import androidx.glance.appwidget.action.actionSendBroadcast
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.lazy.LazyColumn
 import androidx.glance.appwidget.lazy.items
-import androidx.glance.appwidget.provideContent
-import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.background
-import androidx.glance.currentState
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.Column
@@ -45,7 +31,6 @@ import androidx.glance.layout.height
 import androidx.glance.layout.padding
 import androidx.glance.layout.size
 import androidx.glance.layout.width
-import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
@@ -64,55 +49,11 @@ import com.prostovasei.simpletasks.widget.theme.WidgetCheckColors
 import com.prostovasei.simpletasks.widget.theme.WidgetColors
 import java.time.LocalDate
 
-/**
+/*
  * Виджет «Задачи» (SPEC.md §5; редизайн — итерации 08–09). Лента по дням: подпись дня над светлой плашкой,
  * в плашке задачи с круглой галочкой цвета приоритета. Внизу — вкладки списков, кнопка приложения,
- * сегодняшняя дата и «+». Галочка выполняет задачу сразу; нажатие на задачу открывает её поверх рабочего стола.
+ * сегодняшняя дата и «+». Рисует `WidgetRenderer` сразу при событии, без фонового сеанса Glance (0.9.2).
  */
-class TasksWidget : GlanceAppWidget() {
-    override val stateDefinition = PreferencesGlanceStateDefinition
-
-    override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val entry = context.widgetEntryPoint()
-        val appWidgetId = GlanceAppWidgetManager(context).getAppWidgetId(id)
-        // Данные загружаются до первой отрисовки: иначе на долю секунды мелькает «Задач нет».
-        val initial = WidgetRefresh.loadModel(context, id)
-        WidgetLog.add(context, "сеанс виджета $appWidgetId запущен: ${initial.filter.encode()}")
-        provideContent {
-            val filter = WidgetFilter.decode(currentState(FILTER_KEY))
-            val first = initial.takeIf { it.filter == filter }
-            val model by remember(filter) { entry.observeModel(filter) }.collectAsState(initial = first)
-            val shown = model ?: WidgetModel(filter, null, entry.time().today(), emptyList())
-            LaunchedEffect(shown) {
-                WidgetLog.add(context, "отрисовка $appWidgetId: ${shown.filter.encode()}, задач ${shown.days.sumOf { it.items.size }}")
-            }
-            WidgetContent(shown, appWidgetId)
-        }
-    }
-
-    override fun onCompositionError(context: Context, glanceId: GlanceId, appWidgetId: Int, throwable: Throwable) {
-        WidgetLog.error(context, "отрисовка виджета $appWidgetId", throwable)
-        super.onCompositionError(context, glanceId, appWidgetId, throwable)
-    }
-
-    companion object {
-        val FILTER_KEY = stringPreferencesKey("filter")
-    }
-}
-
-/** Галочка в виджете: задача выполняется (повторяющаяся — переезжает), все виджеты обновляются. */
-class CompleteTaskAction : ActionCallback {
-    override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
-        val taskId = parameters[TASK_ID] ?: return
-        WidgetLog.add(context, "галочка: задача выполнена")
-        context.widgetEntryPoint().tasks().complete(taskId)
-        WidgetRefresh.all(context, "галочка")
-    }
-
-    companion object {
-        val TASK_ID = ActionParameters.Key<String>("task_id")
-    }
-}
 
 /** [scrollable] = false — блоки без прокрутки: только для снимков в тестах (там прокручиваемый список не рисуется). */
 @Composable
@@ -270,7 +211,7 @@ private fun PriorityCheck(item: TaskItem) {
     Box(
         modifier = GlanceModifier
             .size(SizeTokens.WIDGET_CHECKBOX.dp)
-            .clickable(actionRunCallback<CompleteTaskAction>(actionParametersOf(CompleteTaskAction.TASK_ID to item.id))),
+            .clickable(actionSendBroadcast(WidgetActions.complete(context, item.id))),
         contentAlignment = Alignment.Center,
     ) {
         if (item.priority != Priority.NONE) {
@@ -320,7 +261,7 @@ private fun BottomBar(model: WidgetModel, appWidgetId: Int) {
                     label = tab.name ?: context.getString(if (tab.filter == WidgetFilter.Inbox) R.string.inbox_list_name else R.string.widget_all),
                     tint = tab.color?.let { parseListColor(it) }?.let { ColorProvider(it) },
                     selected = tab.filter == model.filter,
-                    action = actionRunCallback<SwitchListAction>(actionParametersOf(SwitchListAction.FILTER to tab.filter.encode())),
+                    action = actionSendBroadcast(WidgetActions.switch(context, appWidgetId, tab.filter)),
                 )
             }
             ListTab(
@@ -393,20 +334,6 @@ private fun ListTab(icon: Int, label: String, tint: ColorProvider?, selected: Bo
         } else {
             Spacer(GlanceModifier.size(SizeTokens.WIDGET_TAB_DOT.dp))
         }
-    }
-}
-
-/** Вкладка списка: сохранить выбор и сразу перерисовать виджет (без окошка). */
-class SwitchListAction : ActionCallback {
-    override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
-        val filter = parameters[FILTER] ?: return
-        WidgetLog.add(context, "вкладка: $filter")
-        updateAppWidgetState(context, glanceId) { it[TasksWidget.FILTER_KEY] = filter }
-        WidgetRefresh.one(context, glanceId, "вкладка $filter")
-    }
-
-    companion object {
-        val FILTER = ActionParameters.Key<String>("filter")
     }
 }
 

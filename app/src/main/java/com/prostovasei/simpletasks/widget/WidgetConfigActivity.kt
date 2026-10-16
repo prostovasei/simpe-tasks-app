@@ -38,11 +38,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.datastore.preferences.core.Preferences
-import androidx.glance.appwidget.GlanceAppWidgetManager
-import androidx.glance.appwidget.state.getAppWidgetState
-import androidx.glance.appwidget.state.updateAppWidgetState
-import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.core.di.ApplicationScope
@@ -89,11 +84,7 @@ class WidgetConfigActivity : ComponentActivity() {
         }
     }
 
-    private suspend fun currentFilter(): WidgetFilter {
-        val glanceId = GlanceAppWidgetManager(this).getGlanceIdBy(appWidgetId)
-        val prefs: Preferences = getAppWidgetState(this, PreferencesGlanceStateDefinition, glanceId)
-        return WidgetFilter.decode(prefs[TasksWidget.FILTER_KEY])
-    }
+    private fun currentFilter(): WidgetFilter = WidgetSelection.get(this, appWidgetId) ?: WidgetFilter.All
 
     private fun choose(filter: WidgetFilter) {
         // Окошко закрывается сразу; сохранение и перерисовка виджета доживают до конца
@@ -101,10 +92,9 @@ class WidgetConfigActivity : ComponentActivity() {
         val context = applicationContext
         val id = appWidgetId
         appScope.launch {
-            val glanceId = GlanceAppWidgetManager(context).getGlanceIdBy(id)
             WidgetLog.add(context, "окошко списков: ${filter.encode()}")
-            updateAppWidgetState(context, glanceId) { it[TasksWidget.FILTER_KEY] = filter.encode() }
-            WidgetRefresh.one(context, glanceId, "окошко списков")
+            WidgetSelection.set(context, id, filter)
+            WidgetRenderer.render(context, id, "окошко списков")
         }
         finish()
     }

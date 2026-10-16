@@ -3,12 +3,10 @@ package com.prostovasei.simpletasks.widget
 import android.app.AlarmManager
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
+import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import androidx.glance.appwidget.GlanceAppWidget
-import androidx.glance.appwidget.GlanceAppWidgetManager
-import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import com.prostovasei.simpletasks.core.di.ApplicationScope
 import com.prostovasei.simpletasks.core.time.DayTicker
 import com.prostovasei.simpletasks.core.time.TimeProvider
@@ -16,47 +14,50 @@ import com.prostovasei.simpletasks.domain.repository.TaskRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 
-class TasksWidgetReceiver : GlanceAppWidgetReceiver() {
-    override val glanceAppWidget: GlanceAppWidget = TasksWidget()
+/**
+ * Виджет на рабочем столе — обычный AppWidgetProvider (с 0.9.2 без GlanceAppWidgetReceiver и его сеансов).
+ * Система просит обновить или изменила размер — рисуем сразу через [WidgetRenderer].
+ */
+class TasksWidgetReceiver : AppWidgetProvider() {
+    override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
+        WidgetLog.add(context, "система: обновить ${appWidgetIds.joinToString()}")
+        inBackground {
+            appWidgetIds.forEach { WidgetRenderer.render(context.applicationContext, it, "система") }
+            scheduleMidnight(context, context.widgetEntryPoint().time())
+        }
+    }
 
-    override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action != ACTION_MIDNIGHT) return super.onReceive(context, intent)
-        // Новый день: «Сегодня» и «Просрочено» в виджете пересчитываются, даже если приложение не запущено.
+    override fun onAppWidgetOptionsChanged(context: Context, appWidgetManager: AppWidgetManager, appWidgetId: Int, newOptions: Bundle) {
+        WidgetLog.add(context, "система: размер виджета $appWidgetId")
+        inBackground { WidgetRenderer.render(context.applicationContext, appWidgetId, "размер") }
+    }
+
+    override fun onDeleted(context: Context, appWidgetIds: IntArray) {
+        WidgetLog.add(context, "система: виджет удалён ${appWidgetIds.joinToString()}")
+        appWidgetIds.forEach { WidgetSelection.remove(context, it) }
+    }
+
+    private fun inBackground(block: suspend () -> Unit) {
         val pending = goAsync()
-        MainScope().launch {
+        scope.launch {
             try {
-                WidgetRefresh.all(context, "полночь")
-                scheduleMidnight(context, context.widgetEntryPoint().time())
+                block()
             } finally {
                 pending.finish()
             }
         }
     }
 
-    override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
-        WidgetLog.add(context, "система: обновить ${appWidgetIds.joinToString()}")
-        super.onUpdate(context, appWidgetManager, appWidgetIds)
-    }
-
-    override fun onAppWidgetOptionsChanged(context: Context, appWidgetManager: AppWidgetManager, appWidgetId: Int, newOptions: Bundle) {
-        WidgetLog.add(context, "система: размер виджета $appWidgetId")
-        super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions)
-    }
-
-    override fun onDeleted(context: Context, appWidgetIds: IntArray) {
-        WidgetLog.add(context, "система: виджет удалён ${appWidgetIds.joinToString()}")
-        super.onDeleted(context, appWidgetIds)
-    }
-
-    companion object {
-        const val ACTION_MIDNIGHT = "com.prostovasei.simpletasks.WIDGET_MIDNIGHT"
+    private companion object {
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     }
 }
 
@@ -66,7 +67,7 @@ fun scheduleMidnight(context: Context, time: TimeProvider) {
     val intent = PendingIntent.getBroadcast(
         context,
         0,
-        Intent(context, TasksWidgetReceiver::class.java).setAction(TasksWidgetReceiver.ACTION_MIDNIGHT),
+        Intent(context, WidgetActionReceiver::class.java).setAction(WidgetActions.MIDNIGHT),
         PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
     )
     context.getSystemService(AlarmManager::class.java).setAndAllowWhileIdle(AlarmManager.RTC, midnight.toEpochMilli(), intent)
@@ -90,8 +91,8 @@ class WidgetUpdater @Inject constructor(
     fun start() {
         appScope.launch {
             combine(tasks.observeDataChanges(), dayTicker.today()) { _, _ -> }.debounce(DEBOUNCE_MS).collect {
-                if (GlanceAppWidgetManager(context).getGlanceIds(TasksWidget::class.java).isEmpty()) return@collect
-                WidgetRefresh.all(context, "изменились задачи")
+                if (WidgetRenderer.widgetIds(context).isEmpty()) return@collect
+                WidgetRenderer.renderAll(context, "изменились задачи")
                 scheduleMidnight(context, time)
             }
         }
