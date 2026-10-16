@@ -15,6 +15,7 @@ import com.prostovasei.simpletasks.ui.common.DayLabel
 import com.prostovasei.simpletasks.ui.common.DueText
 import com.prostovasei.simpletasks.ui.common.TaskItem
 import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -72,6 +73,18 @@ class WidgetScreenshotTest {
     @Test
     @Config(qualifiers = "+night")
     fun widgetDark() = capture("screenshots/widget_dark.png")
+
+    /** Настоящая картинка виджета: Glance молча отбрасывает детей Column сверх 10 — все 25 задач дня должны остаться. */
+    @Test
+    fun dayWithManyTasksKeepsAll() {
+        val many = (1..25).map { item("t$it", "Задача $it", DueText(DayLabel.Today, null)) }
+        val big = WidgetModel(WidgetFilter.All, null, today, listOf(WidgetDayBlock(WidgetDay.On(today), many)))
+        val views = runBlocking { Preview(big).compose(context, size = DpSize(320.dp, 2000.dp)) }
+        val root = views.apply(context, FrameLayout(context))
+        val found = ArrayList<View>()
+        root.findViewsWithText(found, "Выполнить", View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
+        assertEquals(25, found.size)
+    }
 
     private fun capture(path: String) {
         val views = runBlocking { Preview(model).compose(context, size = DpSize(320.dp, 420.dp)) }

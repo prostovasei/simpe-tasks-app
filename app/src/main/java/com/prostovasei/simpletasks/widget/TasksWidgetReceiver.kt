@@ -7,7 +7,6 @@ import android.content.Intent
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
-import androidx.glance.appwidget.updateAll
 import com.prostovasei.simpletasks.core.di.ApplicationScope
 import com.prostovasei.simpletasks.core.time.DayTicker
 import com.prostovasei.simpletasks.core.time.TimeProvider
@@ -31,7 +30,7 @@ class TasksWidgetReceiver : GlanceAppWidgetReceiver() {
         val pending = goAsync()
         MainScope().launch {
             try {
-                TasksWidget().updateAll(context)
+                WidgetRefresh.all(context)
                 scheduleMidnight(context, context.widgetEntryPoint().time())
             } finally {
                 pending.finish()
@@ -75,7 +74,7 @@ class WidgetUpdater @Inject constructor(
         appScope.launch {
             combine(tasks.observeDataChanges(), dayTicker.today()) { _, _ -> }.debounce(DEBOUNCE_MS).collect {
                 if (GlanceAppWidgetManager(context).getGlanceIds(TasksWidget::class.java).isEmpty()) return@collect
-                TasksWidget().updateAll(context)
+                WidgetRefresh.all(context)
                 scheduleMidnight(context, time)
             }
         }

@@ -29,7 +29,6 @@ import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.lazy.LazyColumn
 import androidx.glance.appwidget.lazy.items
 import androidx.glance.appwidget.provideContent
-import androidx.glance.appwidget.updateAll
 import androidx.glance.background
 import androidx.glance.currentState
 import androidx.glance.layout.Alignment
@@ -71,9 +70,12 @@ class TasksWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val entry = context.widgetEntryPoint()
         val appWidgetId = GlanceAppWidgetManager(context).getAppWidgetId(id)
+        // Данные загружаются до первой отрисовки: иначе на долю секунды мелькает «Задач нет».
+        val initial = WidgetRefresh.loadModel(context, id)
         provideContent {
             val filter = WidgetFilter.decode(currentState(FILTER_KEY))
-            val model by remember(filter) { entry.observeModel(filter) }.collectAsState(initial = null)
+            val first = initial.takeIf { it.filter == filter }
+            val model by remember(filter) { entry.observeModel(filter) }.collectAsState(initial = first)
             WidgetContent(model ?: WidgetModel(filter, null, entry.time().today(), emptyList()), appWidgetId)
         }
     }
@@ -88,7 +90,7 @@ class CompleteTaskAction : ActionCallback {
     override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
         val taskId = parameters[TASK_ID] ?: return
         context.widgetEntryPoint().tasks().complete(taskId)
-        TasksWidget().updateAll(context)
+        WidgetRefresh.all(context)
     }
 
     companion object {
@@ -146,10 +148,28 @@ private fun DayBlock(block: WidgetDayBlock, isFirst: Boolean, model: WidgetModel
                 .cornerRadius(RadiusTokens.LG.dp)
                 .padding(horizontal = SpacingTokens.XXS.dp, vertical = SizeTokens.WIDGET_DAY_GAP.dp),
         ) {
-            block.items.forEach { TaskRow(it, overdue = block.day == WidgetDay.Overdue, model.filter, days) }
+            ManyRows(block.items) { TaskRow(it, overdue = block.day == WidgetDay.Overdue, model.filter, days) }
         }
     }
 }
+
+/**
+ * Строки без потерь: в Column виджета помещается не больше [MAX_CHILDREN] элементов, остальные Glance молча
+ * отбрасывает. Длинный список раскладывается во вложенные колонки по 10 и меньше.
+ */
+@Composable
+private fun <T> ManyRows(items: List<T>, row: @Composable (T) -> Unit) {
+    if (items.size <= MAX_CHILDREN) {
+        items.forEach { row(it) }
+    } else {
+        items.chunked((items.size + MAX_CHILDREN - 1) / MAX_CHILDREN).forEach { chunk ->
+            Column(GlanceModifier.fillMaxWidth()) { ManyRows(chunk, row) }
+        }
+    }
+}
+
+/** Предел детей у Row/Column в Glance. */
+private const val MAX_CHILDREN = 10
 
 /** «ПРОСРОЧЕНО», «СЕГОДНЯ · 16 окт», «ПОНЕДЕЛЬНИК · 19 окт», «БЕЗ ДАТЫ». */
 @Composable
