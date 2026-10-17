@@ -10,6 +10,7 @@ import com.prostovasei.simpletasks.domain.model.Project
 import com.prostovasei.simpletasks.domain.model.ProjectGroup
 import com.prostovasei.simpletasks.domain.model.ProjectTree
 import com.prostovasei.simpletasks.domain.model.ProjectWithCount
+import com.prostovasei.simpletasks.domain.model.SearchableTask
 import com.prostovasei.simpletasks.domain.model.Task
 import com.prostovasei.simpletasks.domain.model.TaskDetails
 import com.prostovasei.simpletasks.domain.model.TaskDue
@@ -18,6 +19,7 @@ import com.prostovasei.simpletasks.domain.repository.ProjectRepository
 import com.prostovasei.simpletasks.domain.repository.TaskRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import java.time.Instant
@@ -92,6 +94,12 @@ class FakeTaskRepository(private val today: LocalDate = LocalDate.of(2026, 10, 1
     }
 
     val restored = mutableListOf<String>()
+
+    /** Пункты чек-листа для поиска: id задачи → пункты. */
+    val checklists = MutableStateFlow<Map<String, List<String>>>(emptyMap())
+
+    override fun observeSearchable(): Flow<List<SearchableTask>> =
+        combine(tasks, checklists) { all, lists -> all.map { SearchableTask(it, lists[it.id].orEmpty()) } }
 
     override fun observeCompleted(): Flow<List<Task>> = tasks.map { all -> all.filter { it.status == TaskStatus.COMPLETED } }
 

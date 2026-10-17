@@ -24,6 +24,9 @@ data class Task(
     val isCompleted: Boolean get() = status == TaskStatus.COMPLETED
 }
 
+/** Задача для поиска: с текстом пунктов чек-листа (итерация 15). */
+data class SearchableTask(val task: Task, val checklist: List<String>)
+
 /** Данные для создания задачи. [checklist] — пункты чек-листа, добавляемые вместе с задачей. */
 data class NewTask(
     val projectId: String,

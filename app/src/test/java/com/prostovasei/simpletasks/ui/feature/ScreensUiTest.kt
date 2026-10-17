@@ -10,6 +10,16 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import com.github.takahirom.roborazzi.captureRoboImage
+import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.test.performTextInput
+import com.prostovasei.simpletasks.designsystem.components.TAG_EMPTY_TASKS
+import com.prostovasei.simpletasks.designsystem.components.TaskRow
+import com.prostovasei.simpletasks.ui.feature.search.SearchIntent
+import com.prostovasei.simpletasks.ui.feature.search.SearchResult
+import com.prostovasei.simpletasks.ui.feature.search.SearchScreen
+import com.prostovasei.simpletasks.ui.feature.search.SearchState
+import com.prostovasei.simpletasks.ui.feature.search.TAG_SEARCH_CLEAR
+import com.prostovasei.simpletasks.ui.feature.search.TAG_SEARCH_FIELD
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.domain.model.GroupWithProjects
 import com.prostovasei.simpletasks.domain.model.Priority
@@ -129,7 +139,66 @@ class ScreensUiTest {
     @Test
     fun allScreenEmptyState() {
         show { AllScreen(AllState(isLoading = false), { intents += it }) }
-        composeRule.onNodeWithText("Задач со сроком нет").assertExists()
+        composeRule.onNodeWithText("Всё сделано").assertExists()
+        composeRule.onNodeWithText("Нажмите «+» внизу, чтобы добавить задачу").assertExists()
+        composeRule.onNodeWithTag(TAG_EMPTY_TASKS).captureRoboImage("screenshots/empty_all_light.png")
+    }
+
+    private val searchState = SearchState(
+        query = "вра",
+        active = listOf(
+            SearchResult(item("s1", "Записаться к врачу", DueText(DayLabel.Tomorrow, "09:30"), list = "Здоровье", color = "#E5484D"), isDone = false, match = null),
+            SearchResult(item("s2", "Вернуть книгу", list = "Дом", color = "#46A758"), isDone = false, match = "до 20-го, спросить врача"),
+        ),
+        done = listOf(SearchResult(item("s3", "Позвонить врачу", list = null, color = null).copy(isCompleting = true), isDone = true, match = null)),
+        isLoading = false,
+    )
+
+    @Test
+    fun searchShowsResultsAndTogglesBothWays() {
+        var opened: String? = null
+        show { SearchScreen(searchState, { intents += it }, { opened = it }, autoFocus = false) }
+
+        composeRule.onNodeWithText("НАЙДЕНО 3 ЗАДАЧИ").assertExists()
+        composeRule.onNodeWithText("ВЫПОЛНЕННЫЕ").assertExists()
+        composeRule.onNodeWithTag("search:s2:subtitle", useUnmergedTree = true).assertTextEquals("до 20-го, спросить врача")
+        composeRule.onNodeWithTag("search:s1:check").performClick()
+        composeRule.onNodeWithTag("search:s3:check").performClick()
+        composeRule.onNodeWithTag(TAG_SEARCH_CLEAR).performClick()
+        composeRule.onNodeWithText("Позвонить врачу").performClick()
+
+        assertEquals(
+            listOf<Any>(SearchIntent.Toggle("s1", isDone = false), SearchIntent.Toggle("s3", isDone = true), SearchIntent.Query("")),
+            intents,
+        )
+        assertEquals("s3", opened)
+    }
+
+    @Test
+    fun searchStartsWithHintAndShowsNothingFound() {
+        show { SearchScreen(SearchState(isLoading = false), { intents += it }, autoFocus = false) }
+        composeRule.onNodeWithText("Начните вводить — задачи появятся сразу").assertExists()
+        composeRule.onNodeWithTag(TAG_SEARCH_FIELD).performTextInput("молоко")
+        assertEquals(listOf<Any>(SearchIntent.Query("молоко")), intents)
+    }
+
+    @Test
+    fun screenshotDustMidway() {
+        composeRule.mainClock.autoAdvance = false
+        show {
+            androidx.compose.foundation.layout.Column {
+                TaskRow(title = "Записаться к врачу", priority = Priority.HIGH, listColor = null, isCompleting = true, onToggle = {}, trailing = listOf("18:30"))
+                TaskRow(title = "Купить продукты", priority = Priority.NONE, listColor = null, isCompleting = false, onToggle = {})
+            }
+        }
+        composeRule.mainClock.advanceTimeBy(550)
+        composeRule.onRoot().captureRoboImage("screenshots/dust_midway.png")
+    }
+
+    @Test
+    fun screenshotSearch() {
+        show { SearchScreen(searchState, {}, autoFocus = false) }
+        composeRule.onRoot().captureRoboImage("screenshots/search_light.png")
     }
 
     @Test
@@ -336,7 +405,7 @@ class ScreensUiTest {
 
     @Test
     fun screenshotBottomBar() {
-        show { BottomBar(selected = Tab.ALL, onSelect = {}) }
+        show { BottomBar(selected = Tab.SEARCH, onSelect = {}) }
         composeRule.onRoot().captureRoboImage("screenshots/bottom_bar_light.png")
     }
 }

@@ -13,10 +13,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
- * Отметка задачи с отменой (SPEC.md §4.1, аудит N6). Отметка пишется в БД сразу (виджет и закрытие
- * приложения ничего не теряют).
- * - Обычная задача остаётся на экране зачёркнутой [HIDE_DELAY_MS] мс.
- * - Повторяющаяся сразу переезжает на следующий раз — подсказка «Следующий раз: …».
+ * Отметка задачи с отменой (SPEC.md §4.1, аудит N6). Пока плашка «рассыпается в пыль» ([HIDE_DELAY_MS],
+ * итерация 15), задача остаётся в списке отмеченной ([pending]), затем пропадает.
+ * - Обычная задача пишется в БД сразу (виджет и закрытие приложения ничего не теряют).
+ * - Повторяющаяся переезжает на следующий раз после анимации — иначе плашка перепрыгнет на новый день
+ *   посреди «распада»; затем подсказка «Следующий раз: …».
  */
 class CompletionTracker(
     private val scope: CoroutineScope,
@@ -38,30 +39,40 @@ class CompletionTracker(
             undo(taskId)
             return
         }
-        if (!recurring) {
-            _pending.update { it + taskId }
+        _pending.update { it + taskId }
+        if (recurring) {
             timers[taskId] = scope.launch {
                 delay(HIDE_DELAY_MS)
-                _pending.update { it - taskId }
                 timers.remove(taskId)
+                writes[taskId] = scope.launch {
+                    val result = repository.complete(taskId)
+                    results[taskId] = result
+                    _pending.update { it - taskId }
+                    onCompleted(TaskListEffect.ShowUndo(taskId, next = result.nextDueText()))
+                }
             }
-            onCompleted(TaskListEffect.ShowUndo(taskId))
+            return
         }
-        writes[taskId] = scope.launch {
-            val result = repository.complete(taskId)
-            results[taskId] = result
-            if (recurring) onCompleted(TaskListEffect.ShowUndo(taskId, next = result.nextDueText()))
+        timers[taskId] = scope.launch {
+            delay(HIDE_DELAY_MS)
+            _pending.update { it - taskId }
+            timers.remove(taskId)
         }
+        onCompleted(TaskListEffect.ShowUndo(taskId))
+        writes[taskId] = scope.launch { results[taskId] = repository.complete(taskId) }
     }
 
-    /** Возвращает задачу как было — и пока она ещё видна, и после того как скрылась или переехала. */
+    /**
+     * Возвращает задачу как было — и пока она ещё видна, и после того как скрылась или переехала.
+     * Повторяющаяся, отменённая до конца анимации, в БД не менялась — возвращать нечего.
+     */
     fun undo(taskId: String) {
         timers.remove(taskId)?.cancel()
         _pending.update { it - taskId }
         val write = writes.remove(taskId)
         scope.launch {
             write?.join()
-            repository.undo(results.remove(taskId) ?: Completion.Done(taskId))
+            results.remove(taskId)?.let { repository.undo(it) }
         }
     }
 
@@ -70,6 +81,7 @@ class CompletionTracker(
     }
 
     companion object {
-        const val HIDE_DELAY_MS = 2_500L
+        /** Длительность «распада в пыль» в [com.prostovasei.simpletasks.designsystem.components.TaskRow]. */
+        const val HIDE_DELAY_MS = 1_100L
     }
 }

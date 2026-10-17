@@ -6,6 +6,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -30,7 +33,15 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -107,6 +118,104 @@ fun EmptyState(text: String, modifier: Modifier = Modifier) {
         Text(text = text, style = MaterialTheme.typography.bodyMedium, color = AppTheme.colors.textSecondary)
     }
 }
+
+/**
+ * Пустой экран со списком задач (итерация 15, вариант D2 из прототипа PM): бледные силуэты плашек,
+ * первая — пунктирная подсказка «Нажмите «+» внизу», в правом нижнем углу — стрелка к «+».
+ * [arrowLift] — отступ стрелки снизу: на экране списка «+» плавает над контентом.
+ */
+@Composable
+fun EmptyTasks(title: String, hint: String, modifier: Modifier = Modifier, arrowLift: Dp = AppTheme.spacing.xxs) {
+    val spacing = AppTheme.spacing
+    val sizes = AppTheme.sizes
+    Box(modifier.fillMaxSize().testTag(TAG_EMPTY_TASKS)) {
+        Column(
+            modifier = Modifier.fillMaxWidth().align(Alignment.Center).padding(horizontal = spacing.sm),
+            verticalArrangement = Arrangement.spacedBy(sizes.cardGap),
+        ) {
+            DashedHint(title, hint)
+            GHOST_WIDTHS.forEach { GhostRow(it) }
+        }
+        EmptyArrow(Modifier.align(Alignment.BottomEnd).padding(end = spacing.lg, bottom = arrowLift).size(sizes.emptyArrow))
+    }
+}
+
+@Composable
+private fun DashedHint(title: String, hint: String) {
+    val colors = AppTheme.colors
+    val spacing = AppTheme.spacing
+    val sizes = AppTheme.sizes
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = spacing.xxs)
+            .drawBehind {
+                val stroke = sizes.checkboxStroke.toPx()
+                val dash = sizes.emptyDash.toPx()
+                drawRoundRect(
+                    color = colors.inactive,
+                    cornerRadius = CornerRadius(spacing.sm.toPx()),
+                    style = Stroke(width = stroke, pathEffect = PathEffect.dashPathEffect(floatArrayOf(dash, dash))),
+                )
+            }
+            .padding(horizontal = spacing.md, vertical = spacing.lg),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(spacing.xxs),
+    ) {
+        Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, color = colors.textPrimary)
+        Text(hint, style = MaterialTheme.typography.bodyMedium, color = colors.textSecondary)
+    }
+}
+
+/** Бледный силуэт плашки: рамка галочки и серая полоска вместо названия. */
+@Composable
+private fun GhostRow(width: Float) {
+    val colors = AppTheme.colors
+    val spacing = AppTheme.spacing
+    val sizes = AppTheme.sizes
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(sizes.ghostRow)
+            .background(colors.surface, AppTheme.shapes.medium)
+            .padding(horizontal = spacing.sm),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(spacing.sm),
+    ) {
+        Box(Modifier.size(sizes.checkbox).border(sizes.checkboxStroke, colors.divider, AppTheme.shapes.small))
+        Box(Modifier.fillMaxWidth(width).height(sizes.ghostBar).background(colors.divider, CircleShape))
+    }
+}
+
+/** Изогнутая стрелка вниз-вправо — к кнопке «+». */
+@Composable
+private fun EmptyArrow(modifier: Modifier) {
+    val color = AppTheme.colors.accent
+    val stroke = AppTheme.sizes.checkboxStroke
+    Canvas(modifier) {
+        val u = size.width / ARROW_GRID
+        val style = Stroke(width = stroke.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
+        val curve = Path().apply {
+            moveTo(6 * u, 6 * u)
+            cubicTo(26 * u, 10 * u, 40 * u, 24 * u, 44 * u, 46 * u)
+        }
+        val head = Path().apply {
+            moveTo(36 * u, 40 * u)
+            lineTo(44 * u, 48 * u)
+            lineTo(50 * u, 38 * u)
+        }
+        drawPath(curve, color, style = style)
+        drawPath(head, color, style = style)
+    }
+}
+
+/** Длина полосок «названия» в силуэтах плашек (доля ширины). */
+private val GHOST_WIDTHS = listOf(0.7f, 0.5f, 0.62f)
+
+/** Сетка рисунка стрелки: координаты пути заданы в квадрате 60×60. */
+private const val ARROW_GRID = 60f
+
+const val TAG_EMPTY_TASKS = "empty_tasks"
 
 /** Диалог ввода названия (создание и переименование списка или папки). */
 @Composable

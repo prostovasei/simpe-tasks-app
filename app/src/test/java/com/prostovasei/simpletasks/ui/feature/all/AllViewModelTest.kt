@@ -79,7 +79,7 @@ class AllViewModelTest {
     }
 
     @Test
-    fun completedTaskStaysFadedFor2500msThenDisappears() = runTest(dispatcher) {
+    fun completedTaskStaysWhileDissolvingThenDisappears() = runTest(dispatcher) {
         val vm = viewModel()
         runCurrent()
 
@@ -98,7 +98,7 @@ class AllViewModelTest {
     }
 
     @Test
-    fun recurringTaskMovesAtOnceAndCanBeUndone() = runTest(dispatcher) {
+    fun recurringTaskMovesAfterDissolveAndCanBeUndone() = runTest(dispatcher) {
         tasks.tasks.value = listOf(task("gym", due = TaskDue.AllDay(today)).copy(rrule = "FREQ=WEEKLY;BYDAY=TU,FR"))
         val vm = viewModel()
         runCurrent()
@@ -106,6 +106,12 @@ class AllViewModelTest {
 
         vm.effects.test {
             vm.onIntent(TaskListIntent.ToggleComplete("gym", recurring = true))
+            runCurrent()
+            // Пока плашка «рассыпается», задача на месте и в БД не менялась.
+            assertTrue(vm.state.value.todayAllDay.single().isCompleting)
+            assertTrue(tasks.completedCalls.isEmpty())
+
+            advanceTimeBy(CompletionTracker.HIDE_DELAY_MS + 1)
             runCurrent()
             val effect = awaitItem() as TaskListEffect.ShowUndo
             assertEquals(DayLabel.Date(LocalDate.of(2026, 10, 16), showYear = false), effect.next!!.day)
@@ -118,6 +124,23 @@ class AllViewModelTest {
         vm.onIntent(TaskListIntent.Undo("gym"))
         runCurrent()
         assertEquals(listOf("gym"), vm.state.value.todayAllDay.map { it.id })
+    }
+
+    @Test
+    fun recurringTaskTappedAgainDuringDissolveIsNotWritten() = runTest(dispatcher) {
+        tasks.tasks.value = listOf(task("gym", due = TaskDue.AllDay(today)).copy(rrule = "FREQ=WEEKLY;BYDAY=TU,FR"))
+        val vm = viewModel()
+        runCurrent()
+
+        vm.onIntent(TaskListIntent.ToggleComplete("gym", recurring = true))
+        runCurrent()
+        vm.onIntent(TaskListIntent.ToggleComplete("gym", recurring = true))
+        advanceTimeBy(CompletionTracker.HIDE_DELAY_MS * 2)
+        runCurrent()
+
+        assertTrue(tasks.completedCalls.isEmpty())
+        assertTrue(tasks.undone.isEmpty())
+        assertFalse(vm.state.value.todayAllDay.single().isCompleting)
     }
 
     @Test

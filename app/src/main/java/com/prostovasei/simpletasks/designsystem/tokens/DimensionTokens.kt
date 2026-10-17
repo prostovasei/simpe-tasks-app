@@ -78,4 +78,13 @@ object SizeTokens {
     const val COLOR_SWATCH = 40
     const val ICON = 24
     const val CHECKBOX_TOUCH = 40
+
+    /** Частица «распада в пыль» при выполнении задачи (итерация 15). */
+    const val DUST_PARTICLE = 3
+
+    /** Пустой экран (итерация 15): пунктир подсказки, высота бледной плашки, стрелка к «+». */
+    const val EMPTY_DASH = 6
+    const val GHOST_ROW = 44
+    const val GHOST_BAR = 8
+    const val EMPTY_ARROW = 64
 }

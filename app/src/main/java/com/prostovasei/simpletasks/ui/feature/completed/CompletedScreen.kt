@@ -98,6 +98,7 @@ fun CompletedScreen(
                                 priority = Priority.NONE,
                                 listColor = if (task.isInboxList) colors.inboxList else parseListColor(task.listColor) ?: colors.inactive,
                                 isCompleting = true,
+                                animateCompletion = false,
                                 trailing = listOfNotNull(task.time),
                                 listIcon = ListIcons.drawable(task.listIcon),
                                 onToggle = { onIntent(CompletedIntent.Restore(task.id)) },

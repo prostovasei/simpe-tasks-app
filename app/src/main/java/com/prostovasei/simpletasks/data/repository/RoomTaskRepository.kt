@@ -12,6 +12,7 @@ import com.prostovasei.simpletasks.data.mapper.toDomain
 import com.prostovasei.simpletasks.domain.model.AllScreenTasks
 import com.prostovasei.simpletasks.domain.model.Completion
 import com.prostovasei.simpletasks.domain.model.NewTask
+import com.prostovasei.simpletasks.domain.model.SearchableTask
 import com.prostovasei.simpletasks.domain.model.Task
 import com.prostovasei.simpletasks.domain.model.TaskDetails
 import com.prostovasei.simpletasks.domain.model.TaskDue
@@ -159,6 +160,11 @@ class RoomTaskRepository @Inject constructor(
         }
         updateTask(task.withDue(newDue))
     }
+
+    override fun observeSearchable(): Flow<List<SearchableTask>> =
+        taskDao.observeSearchable().map { rows ->
+            rows.map { row -> SearchableTask(row.task.toDomain(), row.checklistText?.split('\n').orEmpty()) }
+        }.distinctUntilChanged()
 
     override fun observeCompleted(): Flow<List<Task>> =
         taskDao.observeCompleted().map { tasks -> tasks.map { it.toDomain() } }.distinctUntilChanged()

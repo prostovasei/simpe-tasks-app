@@ -17,7 +17,7 @@ data class TaskItem(
     val listName: String?,
     val listColor: String?,
     val isInboxList: Boolean,
-    /** Отмечена только что: показывается зачёркнутой и полупрозрачной 2,5 с (SPEC.md §4.1). */
+    /** Отмечена только что: плашка «рассыпается в пыль», затем пропадает (SPEC.md §4.1, итерация 15). */
     val isCompleting: Boolean = false,
     val hasChecklist: Boolean = false,
     /** Повторяющаяся: при отметке переезжает на следующий раз. */

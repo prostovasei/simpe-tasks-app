@@ -3,6 +3,7 @@ package com.prostovasei.simpletasks.domain.repository
 import com.prostovasei.simpletasks.domain.model.AllScreenTasks
 import com.prostovasei.simpletasks.domain.model.Completion
 import com.prostovasei.simpletasks.domain.model.NewTask
+import com.prostovasei.simpletasks.domain.model.SearchableTask
 import com.prostovasei.simpletasks.domain.model.Task
 import com.prostovasei.simpletasks.domain.model.TaskDetails
 import kotlinx.coroutines.flow.Flow
@@ -44,6 +45,9 @@ interface TaskRepository {
 
     /** Отменяет отметку: возвращает задачу в активные или повторяющуюся — на прежний срок. */
     suspend fun undo(completion: Completion)
+
+    /** Все задачи, кроме удалённых, с пунктами чек-листа — для поиска (итерация 15). */
+    fun observeSearchable(): Flow<List<SearchableTask>>
 
     /** Выполненные задачи, новые сверху (экран «Выполненные», итерация 11). */
     fun observeCompleted(): Flow<List<Task>>

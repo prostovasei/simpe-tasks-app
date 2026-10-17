@@ -25,6 +25,19 @@ class ChecklistRepositoryTest : DatabaseTest() {
     }
 
     @Test
+    fun searchableTasksCarryChecklistWithoutDeletedItemsAndTasks() = runTest {
+        val task = newTask("Паспорт", "Лишний")
+        val gone = newTask("Удалённая")
+        checklist.deleteItem(items(task)[1].id)
+        tasks.deleteTask(gone)
+
+        val found = tasks.observeSearchable().first()
+
+        assertEquals(listOf(task), found.map { it.task.id })
+        assertEquals(listOf("Паспорт"), found.single().checklist)
+    }
+
+    @Test
     fun renameMarkAndDelete() = runTest {
         val task = newTask("Пункт", "Лишний")
         val (item, extra) = items(task)
