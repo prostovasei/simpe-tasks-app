@@ -43,15 +43,17 @@ import com.prostovasei.simpletasks.designsystem.tokens.RadiusTokens
 import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
 import com.prostovasei.simpletasks.designsystem.tokens.SpacingTokens
 import com.prostovasei.simpletasks.domain.model.Priority
+import com.prostovasei.simpletasks.ui.common.DayLabel
 import com.prostovasei.simpletasks.ui.common.DayNames
+import com.prostovasei.simpletasks.ui.common.ListIcons
 import com.prostovasei.simpletasks.ui.common.TaskItem
 import com.prostovasei.simpletasks.widget.theme.WidgetCheckColors
 import com.prostovasei.simpletasks.widget.theme.WidgetColors
 import java.time.LocalDate
 
 /*
- * Виджет «Задачи» (SPEC.md §5; редизайн — итерации 08–09). Лента по дням: подпись дня над светлой плашкой,
- * в плашке задачи с круглой галочкой цвета приоритета. Внизу — вкладки списков, кнопка приложения,
+ * Виджет «Задачи» (SPEC.md §5; редизайн — итерации 08–09, 14). Лента по дням: подпись дня, под ней — белые
+ * плашки задач с квадратной галочкой цвета приоритета и квадратиком списка. Внизу — вкладки списков, кнопка приложения,
  * сегодняшняя дата и «+». Рисует `WidgetRenderer` сразу при событии, без фонового сеанса Glance (0.9.2).
  */
 
@@ -93,25 +95,15 @@ private val WidgetDay.id: Long
         is WidgetDay.On -> date.toEpochDay()
     }
 
-/**
- * Блок дня: подпись над блоком, почти вплотную. Задачи — белые плашки через тонкую щель цвета фона,
- * скруглены только края блока (итерация 12, вариант A; углы у отдельных строк Glance скруглять не умеет).
- */
+/** Блок дня (итерация 14, как в приложении): подпись дня, под ней — отдельные белые плашки задач через щель 2 dp. */
 @Composable
 private fun DayBlock(block: WidgetDayBlock, isFirst: Boolean, model: WidgetModel, days: DayNames) {
     Column(GlanceModifier.fillMaxWidth()) {
         DayTitle(block.day, model.today, isFirst)
-        Column(
-            modifier = GlanceModifier
-                .fillMaxWidth()
-                .background(WidgetColors.surface)
-                .cornerRadius(RadiusTokens.LG.dp),
-        ) {
-            ManyRows(block.items.withIndex().toList()) { (index, item) ->
-                Column(GlanceModifier.fillMaxWidth()) {
-                    if (index > 0) Spacer(GlanceModifier.fillMaxWidth().height(SizeTokens.CARD_GAP.dp).background(WidgetColors.background))
-                    TaskRow(item, overdue = block.day == WidgetDay.Overdue, model.filter, days)
-                }
+        ManyRows(block.items.withIndex().toList()) { (index, item) ->
+            Column(GlanceModifier.fillMaxWidth()) {
+                if (index > 0) Spacer(GlanceModifier.height(SizeTokens.CARD_GAP.dp))
+                TaskRow(item, overdue = block.day == WidgetDay.Overdue, model.filter, days)
             }
         }
     }
@@ -135,12 +127,12 @@ private fun <T> ManyRows(items: List<T>, row: @Composable (T) -> Unit) {
 /** Предел детей у Row/Column в Glance. */
 private const val MAX_CHILDREN = 10
 
-/** «ПРОСРОЧЕНО», «ПТ, 16 ОКТ · СЕГОДНЯ» («Сегодня» синим), «СБ, 17 ОКТ · ЗАВТРА», «ПН, 19 ОКТ», «БЕЗ ДАТЫ». */
+/** «Просрочено», «ПТ, 16 окт» + белая метка «Сегодня» / «Завтра» (итерация 14, как в приложении), «Без даты». */
 @Composable
 private fun DayTitle(day: WidgetDay, today: LocalDate, isFirst: Boolean) {
     val title = widgetDayTitle(LocalContext.current, day, today)
-    val color = if (day == WidgetDay.Overdue) WidgetColors.overdue else WidgetColors.textSecondary
-    val style = TextStyle(color = color, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+    val color = if (day == WidgetDay.Overdue) WidgetColors.overdue else WidgetColors.textPrimary
+    val style = TextStyle(color = color, fontSize = 12.sp, fontWeight = FontWeight.Bold)
     Row(
         modifier = GlanceModifier.fillMaxWidth().padding(
             start = SizeTokens.WIDGET_EDGE.dp,
@@ -151,8 +143,15 @@ private fun DayTitle(day: WidgetDay, today: LocalDate, isFirst: Boolean) {
     ) {
         Text(title.text, style = style, maxLines = 1)
         if (title.relative != null) {
-            Text(" · ", style = style, maxLines = 1)
-            Text(title.relative, style = if (title.isToday) style.copy(color = WidgetColors.accent) else style, maxLines = 1)
+            Spacer(GlanceModifier.width(SpacingTokens.XXS.dp))
+            Box(
+                GlanceModifier
+                    .background(WidgetColors.surface)
+                    .cornerRadius(RadiusTokens.SM.dp)
+                    .padding(horizontal = SpacingTokens.XXS.dp, vertical = SizeTokens.HAIRLINE.dp),
+            ) {
+                Text(title.relative, style = style.copy(fontSize = 11.sp), maxLines = 1)
+            }
         }
     }
 }
@@ -161,27 +160,32 @@ private fun DayTitle(day: WidgetDay, today: LocalDate, isFirst: Boolean) {
 data class WidgetDayTitle(val text: String, val relative: String?, val isToday: Boolean)
 
 fun widgetDayTitle(context: Context, day: WidgetDay, today: LocalDate): WidgetDayTitle = when (day) {
-    WidgetDay.Overdue -> WidgetDayTitle(context.getString(R.string.all_overdue).uppercase(), null, false)
-    WidgetDay.NoDate -> WidgetDayTitle(context.getString(R.string.date_none).uppercase(), null, false)
+    WidgetDay.Overdue -> WidgetDayTitle(context.getString(R.string.all_overdue), null, false)
+    WidgetDay.NoDate -> WidgetDayTitle(context.getString(R.string.date_none), null, false)
     is WidgetDay.On -> WidgetDayTitle(
-        text = WidgetDates.withWeekday(day.date).uppercase(),
+        text = WidgetDates.header(day.date),
         relative = when (day.date) {
             today -> context.getString(R.string.day_today)
             today.plusDays(1) -> context.getString(R.string.day_tomorrow)
             else -> null
-        }?.uppercase(),
+        },
         isToday = day.date == today,
     )
 }
 
+/**
+ * Плашка задачи (итерация 14, как в приложении): квадратная галочка (рамка — приоритет), квадратик списка со
+ * значком, название, ↻; справа время (интервал — столбиком), у просроченных — день.
+ */
 @Composable
 private fun TaskRow(item: TaskItem, overdue: Boolean, filter: WidgetFilter, days: DayNames) {
     val context = LocalContext.current
-    val secondary = if (item.isGhost) WidgetColors.divider else WidgetColors.textSecondary
     Row(
         modifier = GlanceModifier
             .fillMaxWidth()
-            .padding(horizontal = SpacingTokens.XXS.dp, vertical = SizeTokens.WIDGET_ROW_GAP.dp)
+            .background(WidgetColors.surface)
+            .cornerRadius(RadiusTokens.MD.dp)
+            .padding(end = SpacingTokens.SM.dp, top = SizeTokens.WIDGET_ROW_GAP.dp, bottom = SizeTokens.WIDGET_ROW_GAP.dp)
             .clickable(actionStartActivity(openTaskIntent(context, item.taskId))),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -189,50 +193,78 @@ private fun TaskRow(item: TaskItem, overdue: Boolean, filter: WidgetFilter, days
             // У будущего повтора галочки нет: выполнить можно только ближайший раз.
             Spacer(GlanceModifier.width(SizeTokens.WIDGET_CHECKBOX.dp))
         } else {
-            PriorityCheck(item)
+            PriorityCheck(item, overdue)
         }
-        Column(GlanceModifier.defaultWeight()) {
-            Text(
-                item.title,
-                style = TextStyle(color = if (item.isGhost) WidgetColors.textSecondary else WidgetColors.textPrimary, fontSize = 14.sp),
-                maxLines = 2,
-            )
-            // День уже в подписи блока; у просроченных он нужен — «Вчера», «12 октября».
-            val meta = widgetMeta(item, days, context.getString(R.string.inbox_list_name), showList = filter !is WidgetFilter.ProjectList, showDay = overdue)
-            if (meta.isNotEmpty() || item.isRecurring) {
-                Text(
-                    listOf(meta, if (item.isRecurring) "↻" else "").filter { it.isNotEmpty() }.joinToString(" "),
-                    style = TextStyle(color = if (overdue) WidgetColors.overdue else secondary, fontSize = 12.sp),
-                    maxLines = 1,
-                )
+        if (filter !is WidgetFilter.ProjectList) {
+            ListSquare(item)
+            Spacer(GlanceModifier.width(SpacingTokens.XS.dp))
+        }
+        val titleColor = if (item.isGhost) WidgetColors.textSecondary else WidgetColors.textPrimary
+        Text(
+            item.title + if (item.isRecurring) " ↻" else "",
+            style = TextStyle(color = titleColor, fontSize = 14.sp, fontWeight = FontWeight.Medium),
+            maxLines = 1,
+            modifier = GlanceModifier.defaultWeight(),
+        )
+        val lines = widgetTrailing(item, days, showDay = overdue)
+        if (lines.isNotEmpty()) {
+            Spacer(GlanceModifier.width(SpacingTokens.XS.dp))
+            val timeStyle = TextStyle(color = if (overdue) WidgetColors.overdue else titleColor, fontSize = if (lines.size == 1) 13.sp else 11.sp, fontWeight = FontWeight.Bold)
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                lines.forEachIndexed { index, line ->
+                    if (index > 0) Text("·", style = timeStyle.copy(color = WidgetColors.textSecondary, fontSize = 9.sp), maxLines = 1)
+                    Text(line, style = timeStyle, maxLines = 1)
+                }
             }
         }
     }
 }
 
-/** Круглая галочка: цвет — приоритет (P1 красный, P2 жёлтый, P3 синий, без приоритета серый). Нажатие выполняет задачу. */
+/** Квадратик цвета списка со значком (как в приложении). */
 @Composable
-private fun PriorityCheck(item: TaskItem) {
+private fun ListSquare(item: TaskItem) {
+    val color = if (item.isInboxList) WidgetColors.inboxList else parseListColor(item.listColor)?.let { ColorProvider(it) } ?: WidgetColors.inactive
+    Box(
+        modifier = GlanceModifier.size(SizeTokens.LIST_SQUARE.dp).background(color).cornerRadius(RadiusTokens.SM.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        ListIcons.drawable(item.listIcon)?.let { icon ->
+            Image(
+                ImageProvider(icon),
+                contentDescription = null,
+                colorFilter = ColorFilter.tint(WidgetColors.onListSquare),
+                modifier = GlanceModifier.size(SizeTokens.LIST_GLYPH.dp),
+            )
+        }
+    }
+}
+
+/** Справа на плашке: время («10:00» или «10:00», «11:00» столбиком); у просроченных — день и время начала. */
+fun widgetTrailing(item: TaskItem, days: DayNames, showDay: Boolean): List<String> {
+    val due = item.due ?: return emptyList()
+    val times = due.time?.split("–").orEmpty()
+    if (!showDay) return times
+    val day = when (val label = due.day) {
+        is DayLabel.Date -> WidgetDates.short(label.date)
+        else -> days.day(label)
+    }
+    return listOfNotNull(day, times.firstOrNull())
+}
+
+/** Квадратная галочка: рамка — приоритет (P1 красный, P2 жёлтый, P3 синий, без приоритета серый), у просроченной — красная. */
+@Composable
+private fun PriorityCheck(item: TaskItem, overdue: Boolean) {
     val context = LocalContext.current
-    val colors = widgetCheckColors(item.priority)
     Box(
         modifier = GlanceModifier
             .size(SizeTokens.WIDGET_CHECKBOX.dp)
             .clickable(actionSendBroadcast(WidgetActions.complete(context, item.id))),
         contentAlignment = Alignment.Center,
     ) {
-        if (item.priority != Priority.NONE) {
-            Image(
-                ImageProvider(R.drawable.ic_widget_check_fill),
-                contentDescription = null,
-                colorFilter = ColorFilter.tint(colors.fill),
-                modifier = GlanceModifier.size(SizeTokens.CHECKBOX.dp),
-            )
-        }
         Image(
             ImageProvider(R.drawable.ic_widget_check_ring),
             contentDescription = context.getString(R.string.widget_complete),
-            colorFilter = ColorFilter.tint(colors.ring),
+            colorFilter = ColorFilter.tint(if (overdue) WidgetColors.overdue else widgetCheckColors(item.priority).ring),
             modifier = GlanceModifier.size(SizeTokens.CHECKBOX.dp),
         )
     }
@@ -349,16 +381,6 @@ fun openAppIntent(context: Context): Intent = Intent(context, MainActivity::clas
     .setAction(Intent.ACTION_MAIN)
     .addCategory(Intent.CATEGORY_LAUNCHER)
     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-
-/**
- * «10:00 · Работа»: время и список (в виджете одного списка — без него). День ([showDay]) — только у просроченных:
- * у остальных он в подписи блока.
- */
-fun widgetMeta(item: TaskItem, days: DayNames, inboxName: String, showList: Boolean, showDay: Boolean): String {
-    val due = item.due?.let { if (showDay) days.format(it) else it.time }
-    val list = if (!showList) null else if (item.isInboxList) inboxName else item.listName
-    return listOfNotNull(due, list).joinToString(" · ")
-}
 
 /**
  * Открыть задачу поверх рабочего стола, без приложения (решение PM). У каждой задачи свой адрес —

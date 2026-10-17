@@ -23,6 +23,9 @@ object WidgetColors {
     val onAccent = ColorTokens.onAccent.toProvider()
     val overdue = ColorTokens.overdue.toProvider()
     val divider = ColorTokens.divider.toProvider()
+    val inactive = ColorTokens.inactive.toProvider()
+    val inboxList = ColorTokens.inboxList.toProvider()
+    val onListSquare = ColorTokens.onListSquare.toProvider()
 
     val checkHigh = WidgetCheckTokens.high.toProviders()
     val checkMedium = WidgetCheckTokens.medium.toProviders()

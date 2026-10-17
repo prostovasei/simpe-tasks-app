@@ -24,6 +24,8 @@ data class TaskItem(
     val isRecurring: Boolean = false,
     /** Будущий повтор задачи [ghostOf] — только для показа: бледный, без галочки. */
     val ghostOf: String? = null,
+    /** Значок списка — ключ из [ListIcons] (у «Входящих» свой). */
+    val listIcon: String? = null,
 ) {
     val isGhost: Boolean get() = ghostOf != null
 
@@ -44,6 +46,7 @@ fun Task.toItem(projects: Map<String, Project>, today: LocalDate, zone: ZoneId, 
         isCompleting = id in pending,
         isRecurring = rrule != null && due != null,
         ghostOf = id.takeIf { ghostIndex != null },
+        listIcon = if (project?.isInbox == true) ListIcons.INBOX else project?.icon,
     )
 }
 

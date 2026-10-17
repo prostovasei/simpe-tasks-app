@@ -32,7 +32,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.prostovasei.simpletasks.R
-import com.prostovasei.simpletasks.designsystem.components.ColorDot
+import com.prostovasei.simpletasks.designsystem.components.IconPickerDialog
+import com.prostovasei.simpletasks.designsystem.components.ListSquare
 import com.prostovasei.simpletasks.designsystem.components.ColorPickerDialog
 import com.prostovasei.simpletasks.designsystem.components.ConfirmDeleteDialog
 import com.prostovasei.simpletasks.designsystem.components.NameDialog
@@ -40,6 +41,7 @@ import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.designsystem.theme.parseListColor
 import com.prostovasei.simpletasks.designsystem.tokens.ListColorTokens
 import com.prostovasei.simpletasks.ui.common.AddTaskButton
+import com.prostovasei.simpletasks.ui.common.ListIcons
 import com.prostovasei.simpletasks.ui.common.FlatTaskList
 import com.prostovasei.simpletasks.ui.common.TaskListEffects
 import com.prostovasei.simpletasks.ui.common.TaskListIntent
@@ -83,7 +85,14 @@ fun ProjectScreen(
                 IconButton(onClick = onBack) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.project_back), tint = colors.textPrimary)
                 }
-                parseListColor(state.color)?.let { ColorDot(it, Modifier.padding(end = AppTheme.spacing.xs)) }
+                if (!state.isInbox) {
+                    ListSquare(
+                        color = parseListColor(state.color) ?: colors.inactive,
+                        icon = ListIcons.drawable(state.icon),
+                        large = true,
+                        modifier = Modifier.padding(end = AppTheme.spacing.sm),
+                    )
+                }
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleLarge,
@@ -118,6 +127,7 @@ private fun ProjectMenu(onIntent: (TaskListIntent) -> Unit) {
         listOf(
             R.string.project_rename to ProjectDialog.Rename,
             R.string.project_color to ProjectDialog.Color,
+            R.string.project_icon to ProjectDialog.Icon,
             R.string.project_delete to ProjectDialog.Delete,
         ).forEach { (label, dialog) ->
             DropdownMenuItem(
@@ -156,6 +166,16 @@ private fun ProjectDialogs(state: ProjectState, onIntent: (TaskListIntent) -> Un
             noColorLabel = stringResource(R.string.project_no_color),
             cancelLabel = stringResource(R.string.action_cancel),
             onSelect = { onIntent(ProjectIntent.SetColor(it)) },
+            onDismiss = dismiss,
+        )
+        ProjectDialog.Icon -> IconPickerDialog(
+            title = stringResource(R.string.project_icon_title),
+            icons = ListIcons.choices.mapNotNull { key -> ListIcons.drawable(key)?.let { key to it } },
+            selected = state.icon,
+            color = parseListColor(state.color) ?: AppTheme.colors.inactive,
+            noIconLabel = stringResource(R.string.project_no_icon),
+            cancelLabel = stringResource(R.string.action_cancel),
+            onSelect = { onIntent(ProjectIntent.SetIcon(it)) },
             onDismiss = dismiss,
         )
         ProjectDialog.Delete -> ConfirmDeleteDialog(

@@ -1,5 +1,6 @@
 package com.prostovasei.simpletasks.designsystem.components
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -25,6 +26,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextDecoration
@@ -54,6 +56,7 @@ fun TaskRow(
     isGhost: Boolean = false,
     isOverdue: Boolean = false,
     trailing: List<String> = emptyList(),
+    @DrawableRes listIcon: Int? = null,
 ) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
@@ -94,7 +97,7 @@ fun TaskRow(
             if (!isGhost) SquareCheck(checked = isCompleting, ring = ring)
         }
         listColor?.let {
-            Box(Modifier.size(sizes.listSquare).background(it, AppTheme.shapes.small))
+            ListSquare(it, listIcon)
             Spacer(Modifier.width(spacing.xs))
         }
         // Название занимает всё свободное место, ↻ — сразу за текстом, время прижато вправо.
@@ -120,6 +123,27 @@ fun TaskRow(
         }
         if (trailing.isNotEmpty()) Spacer(Modifier.width(spacing.xs))
         TrailingTime(trailing, color = if (isOverdue) colors.overdue else colors.textPrimary)
+    }
+}
+
+/** Квадратик цвета списка со значком [icon] (итерация 14); [large] — на экране «Списки» и в заголовке списка. */
+@Composable
+fun ListSquare(color: Color, @DrawableRes icon: Int?, modifier: Modifier = Modifier, large: Boolean = false) {
+    val sizes = AppTheme.sizes
+    Box(
+        modifier = modifier
+            .size(if (large) sizes.listSquareLarge else sizes.listSquare)
+            .background(color, if (large) AppTheme.shapes.medium else AppTheme.shapes.small),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (icon != null) {
+            Icon(
+                painterResource(icon),
+                contentDescription = null,
+                tint = AppTheme.colors.onListSquare,
+                modifier = Modifier.size(if (large) sizes.listGlyphLarge else sizes.listGlyph),
+            )
+        }
     }
 }
 

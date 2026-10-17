@@ -68,16 +68,17 @@ class WidgetUiTest {
         listOf("Все", "Входящие", "Работа", "Другие списки", "Открыть приложение", "Новая задача").forEach { onNode(hasContentDescription(it)).assertExists() }
         onNode(hasTextEqualTo("пт, 16 окт")).assertExists()
         onAllNodes(hasText("2")).assertCountEquals(0)
-        // Подписи дней: «ПТ, 16 ОКТ · СЕГОДНЯ», «СБ, 17 ОКТ · ЗАВТРА», «ПН, 19 ОКТ».
-        onNode(hasTextEqualTo("ПРОСРОЧЕНО")).assertExists()
-        onNode(hasTextEqualTo("ПТ, 16 ОКТ")).assertExists()
-        onNode(hasTextEqualTo("СЕГОДНЯ")).assertExists()
-        onNode(hasTextEqualTo("СБ, 17 ОКТ")).assertExists()
-        onNode(hasTextEqualTo("ЗАВТРА")).assertExists()
-        onNode(hasTextEqualTo("ПН, 19 ОКТ")).assertExists()
-        // У просроченной — день, у остальных — только время и список.
-        onNode(hasText("Вчера · Работа")).assertExists()
-        onNode(hasText("08:00 · Входящие ↻")).assertExists()
+        // Подписи дней как в приложении: «ПТ, 16 окт» + метка «Сегодня», «СБ, 17 окт» + «Завтра», «ПН, 19 окт».
+        onNode(hasTextEqualTo("Просрочено")).assertExists()
+        onNode(hasTextEqualTo("ПТ, 16 окт")).assertExists()
+        onNode(hasTextEqualTo("Сегодня")).assertExists()
+        onNode(hasTextEqualTo("СБ, 17 окт")).assertExists()
+        onNode(hasTextEqualTo("Завтра")).assertExists()
+        onNode(hasTextEqualTo("ПН, 19 окт")).assertExists()
+        // Справа на плашке: у просроченной — день, у остальных — время; повтор — «↻» после названия.
+        onNode(hasTextEqualTo("Вчера")).assertExists()
+        onAllNodes(hasTextEqualTo("08:00")).assertCountEquals(2)
+        onNode(hasTextEqualTo("Зарядка ↻")).assertExists()
         // Галочки только у трёх настоящих задач: у будущего повтора её нет.
         onAllNodes(hasContentDescription("Выполнить")).assertCountEquals(3)
     }

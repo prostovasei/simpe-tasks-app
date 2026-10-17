@@ -36,6 +36,7 @@ import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.designsystem.theme.parseListColor
 import com.prostovasei.simpletasks.domain.model.Priority
 import com.prostovasei.simpletasks.ui.common.DayNames
+import com.prostovasei.simpletasks.ui.common.ListIcons
 import com.prostovasei.simpletasks.ui.common.showUndo
 import kotlinx.coroutines.launch
 
@@ -98,6 +99,7 @@ fun CompletedScreen(
                                 listColor = if (task.isInboxList) colors.inboxList else parseListColor(task.listColor) ?: colors.inactive,
                                 isCompleting = true,
                                 trailing = listOfNotNull(task.time),
+                                listIcon = ListIcons.drawable(task.listIcon),
                                 onToggle = { onIntent(CompletedIntent.Restore(task.id)) },
                                 onClick = { onOpenTask(task.id) },
                                 testTag = "completed:${task.id}",

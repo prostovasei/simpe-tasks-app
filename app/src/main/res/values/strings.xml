@@ -49,6 +49,9 @@
     <string name="project_menu">Меню списка</string>
     <string name="project_rename">Переименовать</string>
     <string name="project_color">Цвет</string>
+    <string name="project_icon">Значок</string>
+    <string name="project_icon_title">Значок списка</string>
+    <string name="project_no_icon">Без значка</string>
     <string name="project_delete">Удалить</string>
     <string name="project_rename_title">Переименовать список</string>
     <string name="project_color_title">Цвет списка</string>

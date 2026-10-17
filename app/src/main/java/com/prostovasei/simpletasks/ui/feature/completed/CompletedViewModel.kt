@@ -9,6 +9,7 @@ import com.prostovasei.simpletasks.domain.repository.ProjectRepository
 import com.prostovasei.simpletasks.domain.repository.TaskRepository
 import com.prostovasei.simpletasks.ui.common.DayLabel
 import com.prostovasei.simpletasks.ui.common.DueFormatter
+import com.prostovasei.simpletasks.ui.common.ListIcons
 import com.prostovasei.simpletasks.ui.feature.all.projectsById
 import com.prostovasei.simpletasks.ui.mvi.MviViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -27,6 +28,7 @@ data class CompletedTask(
     val listColor: String?,
     val isInboxList: Boolean,
     val time: String?,
+    val listIcon: String? = null,
 )
 
 /** Выполненные за один день. */
@@ -96,6 +98,7 @@ class CompletedViewModel @Inject constructor(
                                 listColor = project?.color,
                                 isInboxList = project?.isInbox == true,
                                 time = task.completedAt?.atZone(zone)?.let(TIME::format),
+                                listIcon = if (project?.isInbox == true) ListIcons.INBOX else project?.icon,
                             )
                         },
                     )

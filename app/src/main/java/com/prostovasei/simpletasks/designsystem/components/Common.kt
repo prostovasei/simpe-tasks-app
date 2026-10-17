@@ -32,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 
@@ -171,6 +172,59 @@ fun ConfirmDeleteDialog(
                 Text(confirmLabel)
             }
         },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(cancelLabel) } },
+        containerColor = colors.surface,
+        titleContentColor = colors.textPrimary,
+        textContentColor = colors.textSecondary,
+    )
+}
+
+/** Выбор значка списка (итерация 14): плитки цвета списка с белым значком или «без значка». */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun IconPickerDialog(
+    title: String,
+    icons: List<Pair<String, Int>>,
+    selected: String?,
+    color: Color,
+    noIconLabel: String,
+    cancelLabel: String,
+    onSelect: (String?) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val colors = AppTheme.colors
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm)) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm),
+                    verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm),
+                ) {
+                    icons.forEach { (key, icon) ->
+                        val isSelected = key == selected
+                        Box(
+                            modifier = Modifier
+                                .size(AppTheme.sizes.iconTile)
+                                .background(color, AppTheme.shapes.medium)
+                                .border(
+                                    if (isSelected) AppTheme.sizes.checkboxStroke else AppTheme.sizes.hairline,
+                                    if (isSelected) colors.textPrimary else colors.divider,
+                                    AppTheme.shapes.medium,
+                                )
+                                .clickable { onSelect(key) }
+                                .testTag("icon:$key"),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(painterResource(icon), contentDescription = key, tint = colors.onListSquare)
+                        }
+                    }
+                }
+                TextButton(onClick = { onSelect(null) }) { Text(noIconLabel, color = colors.textPrimary) }
+            }
+        },
+        confirmButton = {},
         dismissButton = { TextButton(onClick = onDismiss) { Text(cancelLabel) } },
         containerColor = colors.surface,
         titleContentColor = colors.textPrimary,

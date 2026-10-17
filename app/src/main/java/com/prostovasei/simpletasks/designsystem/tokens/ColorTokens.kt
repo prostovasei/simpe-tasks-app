@@ -21,6 +21,9 @@ object ColorTokens {
     val accent = ThemedColor(light = 0xFF15803D, dark = 0xFF4FC07F)
     val onAccent = ThemedColor(light = 0xFFFFFFFF, dark = 0xFF0A1A10)
 
+    /** Значок поверх квадратика цвета списка (итерация 14). */
+    val onListSquare = ThemedColor(light = 0xFFFFFFFF, dark = 0xFFFFFFFF)
+
     /** Квадратик списка «Входящие» (у него нет своего цвета). */
     val inboxList = ThemedColor(light = 0xFF3D8BFD, dark = 0xFF6AA8FF)
 

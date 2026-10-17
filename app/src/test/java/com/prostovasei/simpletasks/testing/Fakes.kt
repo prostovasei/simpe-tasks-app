@@ -40,8 +40,8 @@ fun task(
     createdAt = EPOCH, updatedAt = EPOCH,
 )
 
-fun project(id: String, name: String = id, isInbox: Boolean = false, groupId: String? = null, color: String? = null) =
-    Project(id, groupId, name, color, sortOrder = 0, isInbox = isInbox, createdAt = EPOCH, updatedAt = EPOCH)
+fun project(id: String, name: String = id, isInbox: Boolean = false, groupId: String? = null, color: String? = null, icon: String? = null) =
+    Project(id, groupId, name, color, sortOrder = 0, isInbox = isInbox, createdAt = EPOCH, updatedAt = EPOCH, icon = icon)
 
 /** Задачи в памяти; даты сравниваются в UTC. */
 class FakeTaskRepository(private val today: LocalDate = LocalDate.of(2026, 10, 14)) : TaskRepository {
@@ -192,6 +192,10 @@ class FakeProjectRepository : ProjectRepository {
                 if (it.project.id == projectId) it.copy(project = it.project.copy(name = name, groupId = groupId, color = color)) else it
             })
         }
+    }
+
+    override suspend fun setProjectIcon(projectId: String, icon: String?) {
+        calls += "icon:$projectId:$icon"
     }
 
     override suspend fun deleteProject(projectId: String) {

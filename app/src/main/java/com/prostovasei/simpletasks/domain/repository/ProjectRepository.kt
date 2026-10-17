@@ -23,6 +23,9 @@ interface ProjectRepository {
 
     suspend fun updateProject(projectId: String, name: String, groupId: String?, color: String?)
 
+    /** Значок списка (итерация 14): ключ из `ListIcons`, null — убрать значок. */
+    suspend fun setProjectIcon(projectId: String, icon: String?)
+
     /** Мягкое удаление списка вместе с задачами и их чек-листами. «Входящие» удалить нельзя. */
     suspend fun deleteProject(projectId: String)
 }

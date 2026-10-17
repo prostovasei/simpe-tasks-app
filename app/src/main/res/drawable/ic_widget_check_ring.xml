@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Обводка круглой галочки виджета; цвет задаётся оттенком (приоритет). -->
+<!-- Обводка квадратной галочки виджета (итерация 14, как в приложении); цвет задаётся оттенком (приоритет). -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="18dp" android:height="18dp" android:viewportWidth="18" android:viewportHeight="18">
-    <path android:strokeColor="@android:color/white" android:strokeWidth="2" android:pathData="M9,1a8,8 0,1 1,0 16a8,8 0,1 1,0 -16z" />
+    <path android:strokeColor="@android:color/white" android:strokeWidth="2" android:pathData="M5,1h8a4,4 0,0 1,4 4v8a4,4 0,0 1,-4 4H5a4,4 0,0 1,-4 -4V5a4,4 0,0 1,4 -4z" />
 </vector>

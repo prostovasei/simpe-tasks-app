@@ -80,7 +80,13 @@ class ScreensUiTest {
         completing: Boolean = false,
         recurring: Boolean = false,
         ghostOf: String? = null,
-    ) = TaskItem(id, title, priority, due, list, color, isInboxList = list == null, isCompleting = completing, isRecurring = recurring, ghostOf = ghostOf)
+    ) = TaskItem(
+        id, title, priority, due, list, color, isInboxList = list == null, isCompleting = completing, isRecurring = recurring, ghostOf = ghostOf,
+        listIcon = ICONS[list ?: "Inbox"],
+    )
+
+    // Значки списков в тестовых данных (итерация 14).
+    private val ICONS = mapOf("Inbox" to "inbox", "Работа" to "work", "Дом" to "home", "Здоровье" to "health")
 
     private val allState = AllState(
         overdue = listOf(item("o1", "Отправить отчёт", DueText(DayLabel.Yesterday, null), priority = Priority.HIGH)),
@@ -155,10 +161,10 @@ class ScreensUiTest {
         groups = listOf(
             GroupWithProjects(
                 ProjectGroup("g1", "Личное", 0, Instant.EPOCH, Instant.EPOCH),
-                listOf(ProjectWithCount(project("home", "Дом", groupId = "g1", color = "#46A758"), 4), ProjectWithCount(project("health", "Здоровье", groupId = "g1", color = "#E5484D"), 1)),
+                listOf(ProjectWithCount(project("home", "Дом", groupId = "g1", color = "#46A758", icon = "home"), 4), ProjectWithCount(project("health", "Здоровье", groupId = "g1", color = "#E5484D", icon = "health"), 1)),
             ),
         ),
-        ungrouped = listOf(ProjectWithCount(project("work", "Работа", color = "#3D8BFD"), 12), ProjectWithCount(project("ideas", "Идеи"), 0)),
+        ungrouped = listOf(ProjectWithCount(project("work", "Работа", color = "#3D8BFD", icon = "work"), 12), ProjectWithCount(project("ideas", "Идеи"), 0)),
     )
 
     @Test
@@ -225,6 +231,7 @@ class ScreensUiTest {
     private val projectState = ProjectState(
         name = "Работа",
         color = "#3D8BFD",
+        icon = "work",
         tasks = listOf(item("w1", "Подготовить презентацию", DueText(DayLabel.Tomorrow, null), priority = Priority.HIGH), item("w2", "Разобрать почту")),
         isLoading = false,
     )
@@ -248,6 +255,27 @@ class ScreensUiTest {
         composeRule.onNodeWithText("Без цвета").performClick()
 
         assertEquals(listOf<Any>(ProjectIntent.SetColor("#E5484D"), ProjectIntent.SetColor(null)), intents)
+    }
+
+    @Test
+    fun iconDialogSelectsIcon() {
+        show { ProjectScreen(projectState.copy(dialog = ProjectDialog.Icon), { intents += it }, {}) }
+
+        composeRule.onNodeWithText("Значок списка").assertExists()
+        composeRule.onNodeWithTag("icon:home").performClick()
+        composeRule.onNodeWithText("Без значка").performClick()
+
+        assertEquals(listOf<Any>(ProjectIntent.SetIcon("home"), ProjectIntent.SetIcon(null)), intents)
+    }
+
+    @Test
+    fun menuHasIconItem() {
+        show { ProjectScreen(projectState, { intents += it }, {}) }
+
+        composeRule.onNodeWithTag(TAG_PROJECT_MENU).performClick()
+        composeRule.onNodeWithText("Значок").performClick()
+
+        assertEquals(listOf<Any>(ProjectIntent.OpenDialog(ProjectDialog.Icon)), intents)
     }
 
     @Test
