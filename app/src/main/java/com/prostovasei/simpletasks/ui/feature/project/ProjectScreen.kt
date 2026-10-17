@@ -111,6 +111,8 @@ fun ProjectScreen(
                 onIntent = onIntent,
                 showList = false,
                 onOpenTask = onOpenTask,
+                // «+» здесь плавает над списком в правом нижнем углу — стрелка над ним.
+                emptyArrowLift = AppTheme.sizes.navBar + AppTheme.spacing.md,
             )
         }
     }

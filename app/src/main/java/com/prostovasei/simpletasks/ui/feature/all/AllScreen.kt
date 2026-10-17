@@ -20,7 +20,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.components.DayHeader
-import com.prostovasei.simpletasks.designsystem.components.EmptyState
+import com.prostovasei.simpletasks.designsystem.components.EmptyTasks
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.ui.common.DayNames
 import com.prostovasei.simpletasks.ui.common.TaskItemRow
@@ -52,7 +52,7 @@ fun AllScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         if (!state.isLoading && state.isEmpty) {
-            EmptyState(stringResource(R.string.all_empty), Modifier.padding(padding))
+            EmptyTasks(stringResource(R.string.all_empty), stringResource(R.string.empty_hint), Modifier.padding(padding))
             return@Scaffold
         }
         LazyColumn(
@@ -66,6 +66,7 @@ fun AllScreen(
                         text = WidgetDates.header(group.date),
                         relative = group.relative?.let(days::day),
                         isOverdue = group.isOverdue,
+                        modifier = Modifier.animateItem(),
                     )
                 }
                 items(group.items, key = { it.id }) { item ->

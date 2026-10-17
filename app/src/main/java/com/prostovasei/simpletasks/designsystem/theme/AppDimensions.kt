@@ -53,4 +53,9 @@ data class AppSizes(
     val colorSwatch: Dp = SizeTokens.COLOR_SWATCH.dp,
     val icon: Dp = SizeTokens.ICON.dp,
     val checkboxTouch: Dp = SizeTokens.CHECKBOX_TOUCH.dp,
+    val dustParticle: Dp = SizeTokens.DUST_PARTICLE.dp,
+    val emptyDash: Dp = SizeTokens.EMPTY_DASH.dp,
+    val ghostRow: Dp = SizeTokens.GHOST_ROW.dp,
+    val ghostBar: Dp = SizeTokens.GHOST_BAR.dp,
+    val emptyArrow: Dp = SizeTokens.EMPTY_ARROW.dp,
 )

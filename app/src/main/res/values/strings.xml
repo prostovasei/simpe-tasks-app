@@ -5,6 +5,18 @@
     <string name="tab_inbox">Входящие</string>
     <string name="tab_all">Все</string>
     <string name="tab_lists">Списки</string>
+    <string name="tab_search">Поиск</string>
+    <string name="search_hint">Поиск задач</string>
+    <string name="search_clear">Очистить</string>
+    <string name="search_start">Начните вводить — задачи появятся сразу</string>
+    <string name="search_nothing">Ничего не найдено</string>
+    <string name="search_done">Выполненные</string>
+    <plurals name="search_found">
+        <item quantity="one">Найдена %d задача</item>
+        <item quantity="few">Найдено %d задачи</item>
+        <item quantity="many">Найдено %d задач</item>
+        <item quantity="other">Найдено %d задачи</item>
+    </plurals>
     <string name="tab_settings">Настройки</string>
 
     <string name="day_today">Сегодня</string>
@@ -22,10 +34,11 @@
     <string name="all_today_all_day">Весь день</string>
     <string name="all_today_timed">По времени</string>
     <string name="all_upcoming">Предстоящие</string>
-    <string name="all_empty">Задач со сроком нет</string>
+    <string name="all_empty">Всё сделано</string>
+    <string name="empty_hint">Нажмите «+» внизу, чтобы добавить задачу</string>
 
     <string name="inbox_title">Входящие</string>
-    <string name="inbox_empty">Во «Входящих» пусто</string>
+    <string name="inbox_empty">Входящие пусты</string>
 
     <string name="lists_title">Списки</string>
     <string name="lists_new_list">+ Список</string>
@@ -44,7 +57,7 @@
     <string name="lists_expand">Развернуть</string>
     <string name="lists_collapse">Свернуть</string>
 
-    <string name="project_empty">В списке нет активных задач</string>
+    <string name="project_empty">В списке пусто</string>
     <string name="project_back">Назад</string>
     <string name="project_menu">Меню списка</string>
     <string name="project_rename">Переименовать</string>

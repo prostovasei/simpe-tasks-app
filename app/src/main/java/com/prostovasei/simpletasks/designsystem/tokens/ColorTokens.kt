@@ -19,6 +19,9 @@ object ColorTokens {
     val textPrimary = ThemedColor(light = 0xFF15161F, dark = 0xFFE6EAE7)
     val textSecondary = ThemedColor(light = 0xFF5F6474, dark = 0xFF9DA8A1)
     val accent = ThemedColor(light = 0xFF15803D, dark = 0xFF4FC07F)
+
+    /** Бледный акцент: подсветка найденного в поиске (итерация 15). */
+    val accentSoft = ThemedColor(light = 0xFFD3ECDB, dark = 0xFF1F4430)
     val onAccent = ThemedColor(light = 0xFFFFFFFF, dark = 0xFF0A1A10)
 
     /** Значок поверх квадратика цвета списка (итерация 14). */

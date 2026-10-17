@@ -6,6 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.prostovasei.simpletasks.data.local.entity.DataStatsRow
 import com.prostovasei.simpletasks.data.local.entity.ExportTaskRow
+import com.prostovasei.simpletasks.data.local.entity.SearchTaskRow
 import com.prostovasei.simpletasks.data.local.entity.TaskEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -115,6 +116,21 @@ interface TaskDao {
         """,
     )
     fun observeActiveByProject(projectId: String): Flow<List<TaskEntity>>
+
+    /**
+     * Все задачи, кроме удалённых, с текстом чек-листа — для поиска. Фильтр по словам — в приложении:
+     * LIKE в SQLite не различает регистр только у латиницы.
+     */
+    @Query(
+        """
+        SELECT t.*, (
+            SELECT GROUP_CONCAT(c.title, char(10)) FROM checklist_items c WHERE c.task_id = t.id AND c.is_deleted = 0
+        ) AS checklist_text
+        FROM tasks t
+        WHERE t.is_deleted = 0
+        """,
+    )
+    fun observeSearchable(): Flow<List<SearchTaskRow>>
 
     /** Выполненные задачи: новые сверху (у импортированных без времени выполнения — по времени изменения). */
     @Query(

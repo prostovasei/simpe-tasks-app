@@ -14,6 +14,7 @@ import com.prostovasei.simpletasks.ui.feature.lists.TAG_NEW_LIST
 import com.prostovasei.simpletasks.ui.feature.task.TAG_DETAIL_TITLE
 import com.prostovasei.simpletasks.ui.feature.task.TAG_QUICK_SAVE
 import com.prostovasei.simpletasks.ui.feature.task.TAG_QUICK_TITLE
+import com.prostovasei.simpletasks.ui.feature.search.TAG_SEARCH_FIELD
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -32,10 +33,15 @@ class AppSmokeTest {
 
     @Test
     fun walkThroughTabsAndCreateList() {
-        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Задач со сроком нет") }
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Всё сделано") }
 
         composeRule.onNodeWithTag("tab:INBOX").performClick()
-        composeRule.onNodeWithText("Во «Входящих» пусто").assertExists()
+        composeRule.onNodeWithText("Входящие пусты").assertExists()
+
+        // Поиск: поле ввода сразу на экране, ничего не найдено.
+        composeRule.onNodeWithTag("tab:SEARCH").performClick()
+        composeRule.onNodeWithTag(TAG_SEARCH_FIELD).performTextReplacement("молоко")
+        composeRule.onNodeWithText("Ничего не найдено").assertExists()
 
         composeRule.onNodeWithTag("tab:SETTINGS").performClick()
         composeRule.onNodeWithText("Импорт из TickTick").assertExists()
@@ -47,18 +53,18 @@ class AppSmokeTest {
         composeRule.onNodeWithText("Создать").performClick()
 
         // Новый список открывается сразу, нижний бар скрыт.
-        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("В списке нет активных задач") }
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("В списке пусто") }
         composeRule.onNodeWithTag("tab:ALL").assertDoesNotExist()
 
         composeRule.onNodeWithContentDescription("Назад").performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Покупки") }
         composeRule.onNodeWithTag("tab:ALL").performClick()
-        composeRule.onNodeWithText("Задач со сроком нет").assertExists()
+        composeRule.onNodeWithText("Всё сделано").assertExists()
     }
 
     @Test
     fun createTaskOpenItAndRename() {
-        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Задач со сроком нет") }
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Всё сделано") }
         // «+» на «Все» → задача на сегодня.
         composeRule.onNodeWithTag(TAG_ADD_TASK).performClick()
         composeRule.onNodeWithTag(TAG_QUICK_TITLE).performTextReplacement("Купить продукты")
@@ -66,6 +72,13 @@ class AppSmokeTest {
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_QUICK_TITLE).fetchSemanticsNodes().isEmpty() }
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Купить продукты") }
         composeRule.onNodeWithText("Сегодня").assertExists()
+
+        // Поиск находит новую задачу по части слова.
+        composeRule.onNodeWithTag("tab:SEARCH").performClick()
+        composeRule.onNodeWithTag(TAG_SEARCH_FIELD).performTextReplacement("прод")
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("НАЙДЕНА 1 ЗАДАЧА") }
+        composeRule.onNodeWithTag("tab:ALL").performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_SEARCH_FIELD).fetchSemanticsNodes().isEmpty() }
 
         // Тап по карточке → экран задачи → переименование → назад.
         composeRule.onNodeWithText("Купить продукты").performClick()

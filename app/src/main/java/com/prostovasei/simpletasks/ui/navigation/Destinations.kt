@@ -13,6 +13,9 @@ data object AllDestination
 data object ListsDestination
 
 @Serializable
+data object SearchDestination
+
+@Serializable
 data object SettingsDestination
 
 /**

@@ -6,6 +6,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import com.prostovasei.simpletasks.R
@@ -17,7 +18,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 /**
- * Плашка задачи в списке. Без анимаций (решение PM: всё переключается мгновенно).
+ * Плашка задачи в списке. Отмеченная «рассыпается в пыль», затем список плавно смыкается (итерация 15).
  * [showDay] — справа день и время (у «Входящих» и списков); в ленте «Все» день уже в подписи — только время.
  */
 @Composable
@@ -30,6 +31,7 @@ fun LazyItemScope.TaskItemRow(
     onClick: (() -> Unit)? = null,
 ) {
     TaskRow(
+        modifier = Modifier.animateItem(),
         title = item.title,
         priority = item.priority,
         listColor = if (showList) listSquareColor(item) else null,

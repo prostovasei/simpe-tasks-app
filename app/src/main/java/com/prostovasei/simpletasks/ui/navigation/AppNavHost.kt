@@ -1,8 +1,13 @@
 package com.prostovasei.simpletasks.ui.navigation
 
 import androidx.annotation.StringRes
+import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -21,6 +26,7 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.MailOutline
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -28,10 +34,17 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -40,7 +53,9 @@ import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.dialog
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
@@ -53,6 +68,7 @@ import com.prostovasei.simpletasks.ui.feature.inbox.InboxRoute
 import com.prostovasei.simpletasks.ui.feature.lists.ListsRoute
 import com.prostovasei.simpletasks.ui.feature.project.ProjectRoute
 import com.prostovasei.simpletasks.ui.feature.completed.CompletedRoute
+import com.prostovasei.simpletasks.ui.feature.search.SearchRoute
 import com.prostovasei.simpletasks.ui.feature.settings.SettingsRoute
 import com.prostovasei.simpletasks.ui.feature.task.QuickAddRoute
 import com.prostovasei.simpletasks.ui.feature.task.TaskDetailRoute
@@ -63,6 +79,7 @@ enum class Tab(val route: Any, val routeClass: KClass<*>, @param:StringRes val l
     INBOX(InboxDestination, InboxDestination::class, R.string.tab_inbox, Icons.Default.MailOutline),
     ALL(AllDestination, AllDestination::class, R.string.tab_all, Icons.Default.DateRange),
     LISTS(ListsDestination, ListsDestination::class, R.string.tab_lists, Icons.AutoMirrored.Filled.List),
+    SEARCH(SearchDestination, SearchDestination::class, R.string.tab_search, Icons.Default.Search),
     SETTINGS(SettingsDestination, SettingsDestination::class, R.string.tab_settings, Icons.Default.Settings),
 }
 
@@ -73,15 +90,22 @@ fun AppNavHost(
     onRouteOpened: () -> Unit = {},
 ) {
     val backStack by navController.currentBackStackEntryAsState()
+    // Центр «+» нижней панели — из него вырастает карточка новой задачи; null — открыта не этой кнопкой.
+    var barPlus by remember { mutableStateOf<Offset?>(null) }
+    var addOrigin by remember { mutableStateOf<Offset?>(null) }
     // Уведомление или виджет: открыть задачу или создание задачи поверх текущего экрана.
     // При холодном запуске ждём, пока NavHost построит граф, — иначе navigate() падает.
     LaunchedEffect(openRoute) {
         openRoute ?: return@LaunchedEffect
+        addOrigin = null
         navController.currentBackStackEntryFlow.first()
         navController.navigate(openRoute) { launchSingleTop = true }
         onRouteOpened()
     }
-    val destination = backStack?.destination
+    // Карточка новой задачи открыта поверх экрана — панель и вкладка остаются от экрана под ней.
+    val destination = backStack?.destination?.let { top ->
+        if (top.hasRoute(QuickAddDestination::class)) navController.previousBackStackEntry?.destination else top
+    }
     val currentTab = Tab.entries.firstOrNull { destination.isOn(it) }
 
     Scaffold(
@@ -94,21 +118,25 @@ fun AppNavHost(
                     selected = selected,
                     onSelect = { tab -> navController.openTab(tab) },
                     // На «Все» новая задача — на сегодня, на остальных вкладках — во «Входящие».
-                    onAdd = { navController.navigate(QuickAddDestination(today = selected == Tab.ALL)) },
+                    onAdd = {
+                        addOrigin = barPlus
+                        navController.navigate(QuickAddDestination(today = selected == Tab.ALL))
+                    },
+                    onAddPositioned = { barPlus = it },
                 )
             }
         },
     ) { padding ->
         // consumeWindowInsets: экраны с клавиатурой (imePadding) не добавляют отступ панели навигации второй раз.
-        // Переходы между экранами без анимации (решение PM).
+        // Переход между экранами — сдвиг вбок в сторону нажатой вкладки; вложенный экран — справа (итерация 15, C2).
         NavHost(
             navController,
             startDestination = AllDestination,
             modifier = Modifier.padding(padding).consumeWindowInsets(padding),
-            enterTransition = { EnterTransition.None },
-            exitTransition = { ExitTransition.None },
-            popEnterTransition = { EnterTransition.None },
-            popExitTransition = { ExitTransition.None },
+            enterTransition = { slideIn(push = true) },
+            exitTransition = { slideOut(push = true) },
+            popEnterTransition = { slideIn(push = false) },
+            popExitTransition = { slideOut(push = false) },
         ) {
             val openTask: (String) -> Unit = { navController.navigate(TaskDetailDestination(it)) }
             composable<InboxDestination> {
@@ -121,16 +149,28 @@ fun AppNavHost(
                 ListsRoute(onOpenProject = { navController.navigate(ProjectDestination(it)) }, onOpenCompleted = { navController.navigate(CompletedDestination) })
             }
             composable<CompletedDestination> { CompletedRoute(onBack = { navController.popBackStack() }, onOpenTask = openTask) }
+            composable<SearchDestination> { SearchRoute(onOpenTask = openTask) }
             composable<SettingsDestination> { SettingsRoute() }
             composable<ProjectDestination> { entry ->
                 val projectId = entry.toRoute<ProjectDestination>().projectId
                 ProjectRoute(
                     onBack = { navController.popBackStack() },
-                    onAddTask = { navController.navigate(QuickAddDestination(projectId = projectId)) },
+                    onAddTask = {
+                        addOrigin = null
+                        navController.navigate(QuickAddDestination(projectId = projectId))
+                    },
                     onOpenTask = openTask,
                 )
             }
-            composable<QuickAddDestination> { QuickAddRoute(onClose = { navController.popBackStack() }) }
+            // Новая задача — карточка поверх текущего экрана (итерация 15): экран под ней остаётся виден.
+            dialog<QuickAddDestination>(
+                dialogProperties = DialogProperties(
+                    usePlatformDefaultWidth = false,
+                    decorFitsSystemWindows = false,
+                    dismissOnBackPress = false,
+                    dismissOnClickOutside = false,
+                ),
+            ) { QuickAddRoute(onClose = { navController.popBackStack() }, origin = addOrigin) }
             composable<TaskDetailDestination> { TaskDetailRoute(onClose = { navController.popBackStack() }, onOpenTask = openTask) }
         }
     }
@@ -138,10 +178,10 @@ fun AppNavHost(
 
 /**
  * Плавающая нижняя панель (итерация 13, макет PM): иконки вкладок без подписей, открытая — зелёная,
- * в конце — кнопка «+» новой задачи.
+ * в конце — кнопка «+» новой задачи. Поиск — всегда в панели, перед «Настройками» (итерация 15).
  */
 @Composable
-fun BottomBar(selected: Tab, onSelect: (Tab) -> Unit, onAdd: () -> Unit = {}) {
+fun BottomBar(selected: Tab, onSelect: (Tab) -> Unit, onAdd: () -> Unit = {}, onAddPositioned: (Offset) -> Unit = {}) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
     val sizes = AppTheme.sizes
@@ -172,6 +212,7 @@ fun BottomBar(selected: Tab, onSelect: (Tab) -> Unit, onAdd: () -> Unit = {}) {
             Box(
                 modifier = Modifier
                     .size(sizes.navAdd)
+                    .onGloballyPositioned { onAddPositioned(it.boundsInWindow().center) }
                     .clip(AppTheme.shapes.extraLarge)
                     .background(colors.accent)
                     .clickable(onClick = onAdd)
@@ -182,6 +223,27 @@ fun BottomBar(selected: Tab, onSelect: (Tab) -> Unit, onAdd: () -> Unit = {}) {
             }
         }
     }
+}
+
+private const val SLIDE_MS = 270
+
+/** Порядок экрана слева направо: вкладки по порядку в панели, вложенные экраны — правее всех. */
+private fun NavDestination.order(): Int = Tab.entries.indexOfFirst { isOn(it) }.takeIf { it >= 0 } ?: Tab.entries.size
+
+/** 1 — новый экран приходит справа, -1 — слева. Между экранами одного уровня: вперёд — справа, «Назад» — слева. */
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.direction(push: Boolean): Int {
+    val delta = targetState.destination.order().compareTo(initialState.destination.order())
+    return if (delta != 0) delta else if (push) 1 else -1
+}
+
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.slideIn(push: Boolean): EnterTransition {
+    val dir = direction(push)
+    return slideInHorizontally(tween(SLIDE_MS, easing = FastOutSlowInEasing)) { it * dir }
+}
+
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.slideOut(push: Boolean): ExitTransition {
+    val dir = direction(push)
+    return slideOutHorizontally(tween(SLIDE_MS, easing = FastOutSlowInEasing)) { -it * dir }
 }
 
 /** Переход на вкладку с сохранением состояния каждой вкладки (стандартное поведение нижнего бара). */

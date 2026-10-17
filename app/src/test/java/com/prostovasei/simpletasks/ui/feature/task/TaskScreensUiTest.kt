@@ -16,6 +16,8 @@ import com.prostovasei.simpletasks.domain.model.Priority
 import com.prostovasei.simpletasks.domain.model.TaskDue
 import com.prostovasei.simpletasks.testing.task
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import androidx.compose.ui.test.onNodeWithContentDescription
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -69,6 +71,15 @@ class TaskScreensUiTest {
         composeRule.onNodeWithTag(TAG_CHIP_PRIORITY).assertTextEquals("P2")
         composeRule.onNodeWithTag(TAG_CHIP_REPEAT).assertTextEquals("Каждые 2 недели: вт, чт")
         composeRule.onNodeWithText("Повестка").assertExists()
+    }
+
+    @Test
+    fun quickAddClosesOnTapOutsideCard() {
+        var closed = false
+        show { QuickAddScreen(quickState, { intents += it }, { closed = true }, autoFocus = false) }
+        composeRule.onNodeWithTag(TAG_QUICK_CARD).assertExists()
+        composeRule.onNodeWithContentDescription("Закрыть").performClick()
+        assertTrue(closed)
     }
 
     @Test

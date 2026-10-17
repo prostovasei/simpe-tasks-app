@@ -7,7 +7,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import com.prostovasei.simpletasks.designsystem.components.EmptyState
+import com.prostovasei.simpletasks.designsystem.components.EmptyTasks
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
+import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 
 /** Плоский список задач с пустым состоянием — для «Входящих» и экрана списка. */
@@ -20,9 +23,10 @@ fun FlatTaskList(
     showList: Boolean,
     modifier: Modifier = Modifier,
     onOpenTask: (String) -> Unit = {},
+    emptyArrowLift: Dp = AppTheme.spacing.xxs,
 ) {
     if (!isLoading && tasks.isEmpty()) {
-        EmptyState(emptyText, modifier)
+        EmptyTasks(emptyText, stringResource(R.string.empty_hint), modifier, emptyArrowLift)
         return
     }
     LazyColumn(

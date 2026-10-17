@@ -73,6 +73,12 @@ data class ExportTaskRow(
     @ColumnInfo(name = "folder_name") val folderName: String?,
 )
 
+/** Задача с текстом её чек-листа (пункты через перевод строки) — для поиска (итерация 15). */
+data class SearchTaskRow(
+    @Embedded val task: TaskEntity,
+    @ColumnInfo(name = "checklist_text") val checklistText: String?,
+)
+
 /** Сводка по базе для экрана «Настройки». */
 data class DataStatsRow(
     @ColumnInfo(name = "total_tasks") val totalTasks: Int,

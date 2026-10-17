@@ -19,12 +19,26 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -41,6 +55,9 @@ import com.prostovasei.simpletasks.domain.model.Priority
  * («16:00» или «16:00 · 17:00»), у списков — день и время.
  * [isCompleting] — задача только что отмечена: зачёркнута и полупрозрачна (SPEC.md §4.1).
  * [isGhost] — будущий повтор: бледный, без галочки. [isOverdue] — рамка галочки и время красные.
+ * [animateCompletion] — при отметке плашка «рассыпается в пыль» слева направо (итерация 15, вариант A4);
+ * без него (экран «Выполненные», поиск) отмеченная просто зачёркнута.
+ * [highlight] — подсветить найденное в названии, [subtitle] — строка под названием (поиск).
  */
 @Composable
 fun TaskRow(
@@ -57,13 +74,24 @@ fun TaskRow(
     isOverdue: Boolean = false,
     trailing: List<String> = emptyList(),
     @DrawableRes listIcon: Int? = null,
+    animateCompletion: Boolean = true,
+    highlight: String? = null,
+    subtitle: String? = null,
 ) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
     val sizes = AppTheme.sizes
-    // Без плавного перехода (решение PM): отмеченная задача сразу бледная.
+    val dissolving = isCompleting && animateCompletion
+    val dust = remember { Animatable(0f) }
+    LaunchedEffect(dissolving) {
+        if (dissolving) dust.animateTo(1f, tween(DUST_MS, delayMillis = DUST_DELAY_MS, easing = LinearEasing)) else dust.snapTo(0f)
+    }
+    val particles = remember(title) { dustParticles(title.hashCode()) }
+    val particleSize = with(LocalDensity.current) { sizes.dustParticle.toPx() }
+    val dustColors = listOf(colors.textSecondary, colors.inactive, colors.textPrimary)
+    val strike = isCompleting && !animateCompletion
     val alpha = when {
-        isCompleting -> COMPLETING_ALPHA
+        strike -> COMPLETING_ALPHA
         isGhost -> GHOST_ALPHA
         else -> 1f
     }
@@ -80,6 +108,7 @@ fun TaskRow(
             .fillMaxWidth()
             .alpha(alpha)
             .padding(horizontal = spacing.xxs)
+            .dust({ dust.value }, particles, particleSize, dustColors)
             .clip(AppTheme.shapes.medium)
             .background(colors.surface)
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
@@ -102,16 +131,27 @@ fun TaskRow(
         }
         // Название занимает всё свободное место, ↻ — сразу за текстом, время прижато вправо.
         Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = if (isCompleting) colors.textSecondary else colors.textPrimary,
-                textDecoration = if (isCompleting) TextDecoration.LineThrough else null,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f, fill = false),
-            )
+            Column(Modifier.weight(1f, fill = false)) {
+                Text(
+                    text = highlighted(title, highlight, colors.accentSoft),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (strike) colors.textSecondary else colors.textPrimary,
+                    textDecoration = if (strike) TextDecoration.LineThrough else null,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                subtitle?.let {
+                    Text(
+                        text = highlighted(it, highlight, colors.accentSoft),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colors.textSecondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.testTag("$testTag:subtitle"),
+                    )
+                }
+            }
             if (isRecurring) {
                 Icon(
                     Icons.Default.Refresh,
@@ -221,6 +261,68 @@ fun ColorDot(color: Color, modifier: Modifier = Modifier) {
             .background(color, CircleShape),
     )
 }
+
+/** Текст с подсвеченными вхождениями [query] (без учёта регистра). */
+fun highlighted(text: String, query: String?, background: Color): AnnotatedString = buildAnnotatedString {
+    val q = query?.trim().orEmpty()
+    if (q.isEmpty()) {
+        append(text)
+        return@buildAnnotatedString
+    }
+    var from = 0
+    while (true) {
+        val at = text.indexOf(q, from, ignoreCase = true)
+        if (at < 0) break
+        append(text.substring(from, at))
+        withStyle(SpanStyle(background = background)) { append(text.substring(at, at + q.length)) }
+        from = at + q.length
+    }
+    append(text.substring(from))
+}
+
+/** Частица пыли: место на плашке (доли ширины и высоты), куда улетает (доли) и оттенок. */
+private class DustParticle(val x: Float, val y: Float, val dx: Float, val dy: Float, val shade: Int, val scale: Float)
+
+private fun dustParticles(seed: Int): List<DustParticle> {
+    val random = kotlin.random.Random(seed)
+    fun between(from: Float, to: Float) = from + random.nextFloat() * (to - from)
+    return List(DUST_PARTICLES) {
+        DustParticle(random.nextFloat(), random.nextFloat(), between(0.06f, 0.22f), between(-0.9f, 0.2f), it % 3, between(0.6f, 1.3f))
+    }
+}
+
+/**
+ * «Распад в пыль»: граница [progress] идёт слева направо, левее неё плашки уже нет, а с границы
+ * срываются частицы и улетают вправо-вверх, тая.
+ */
+private fun Modifier.dust(progress: () -> Float, particles: List<DustParticle>, particleSize: Float, colors: List<Color>): Modifier =
+    drawWithContent {
+        val p = progress()
+        if (p <= 0f) {
+            drawContent()
+            return@drawWithContent
+        }
+        val edge = p * (1f + DUST_TAIL)
+        clipRect(left = (edge * size.width).coerceAtLeast(0f)) { this@drawWithContent.drawContent() }
+        particles.forEach { particle ->
+            val t = ((edge - particle.x) / DUST_TAIL).coerceIn(0f, 1f)
+            if (t <= 0f || t >= 1f) return@forEach
+            val side = particleSize * particle.scale
+            drawRect(
+                color = colors[particle.shade],
+                topLeft = Offset(particle.x * size.width + t * particle.dx * size.width, particle.y * size.height + t * particle.dy * size.height),
+                size = Size(side, side),
+                alpha = 1f - t,
+            )
+        }
+    }
+
+private const val DUST_MS = 850
+private const val DUST_DELAY_MS = 150
+private const val DUST_PARTICLES = 90
+
+/** Сколько ширины плашки частица летит после того, как граница её прошла. */
+private const val DUST_TAIL = 0.35f
 
 private const val COMPLETING_ALPHA = 0.4f
 private const val GHOST_ALPHA = 0.5f
