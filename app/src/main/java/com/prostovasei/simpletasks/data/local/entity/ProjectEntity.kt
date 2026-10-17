@@ -33,6 +33,8 @@ data class ProjectEntity(
     @ColumnInfo(name = "is_deleted", defaultValue = "0") val isDeleted: Boolean = false,
     @ColumnInfo(name = "created_at") val createdAt: Long,
     @ColumnInfo(name = "updated_at") val updatedAt: Long,
+    /** Значок списка (итерация 14): ключ из `ListIcons`, null — без значка. Колонка добавлена в версии БД 2. */
+    @ColumnInfo(name = "icon", defaultValue = "NULL") val icon: String? = null,
 )
 
 /** Список со счётчиком открытых задач — для экрана «Списки». */

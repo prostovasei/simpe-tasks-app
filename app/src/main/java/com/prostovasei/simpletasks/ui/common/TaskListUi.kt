@@ -33,6 +33,7 @@ fun LazyItemScope.TaskItemRow(
         title = item.title,
         priority = item.priority,
         listColor = if (showList) listSquareColor(item) else null,
+        listIcon = ListIcons.drawable(item.listIcon),
         isCompleting = item.isCompleting,
         isRecurring = item.isRecurring,
         isGhost = item.isGhost,

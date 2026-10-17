@@ -52,6 +52,7 @@ internal fun ProjectEntity.toDomain() = Project(
     isInbox = isInbox,
     createdAt = Instant.ofEpochMilli(createdAt),
     updatedAt = Instant.ofEpochMilli(updatedAt),
+    icon = icon,
 )
 
 internal fun ProjectWithOpenCount.toDomain() = ProjectWithCount(project.toDomain(), openCount)

@@ -21,6 +21,8 @@ data class Project(
     val isInbox: Boolean,
     val createdAt: Instant,
     val updatedAt: Instant,
+    /** Значок списка (итерация 14): ключ из `ListIcons`, null — без значка. */
+    val icon: String? = null,
 )
 
 data class ProjectWithCount(

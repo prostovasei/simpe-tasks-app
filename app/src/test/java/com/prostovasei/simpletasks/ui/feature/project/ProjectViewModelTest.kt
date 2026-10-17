@@ -89,6 +89,22 @@ class ProjectViewModelTest {
     }
 
     @Test
+    fun iconIsSavedAndDialogCloses() = runTest(dispatcher) {
+        val vm = viewModel()
+        runCurrent()
+        vm.onIntent(ProjectIntent.OpenDialog(ProjectDialog.Icon))
+
+        vm.onIntent(ProjectIntent.SetIcon("work"))
+        runCurrent()
+        assertEquals("icon:work:work", projects.calls.last())
+        assertEquals(ProjectDialog.None, vm.state.value.dialog)
+
+        vm.onIntent(ProjectIntent.SetIcon(null))
+        runCurrent()
+        assertEquals("icon:work:null", projects.calls.last())
+    }
+
+    @Test
     fun deleteClosesScreen() = runTest(dispatcher) {
         val vm = viewModel()
         runCurrent()

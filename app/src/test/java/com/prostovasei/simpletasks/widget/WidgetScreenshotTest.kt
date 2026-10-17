@@ -35,7 +35,14 @@ class WidgetScreenshotTest {
     }
 
     private fun item(id: String, title: String, due: DueText?, list: String? = "Работа", ghostOf: String? = null, priority: Priority = Priority.NONE) =
-        TaskItem(id, title, priority, due, list, null, isInboxList = list == null, isRecurring = ghostOf != null || id == "gym", ghostOf = ghostOf)
+        TaskItem(
+            id, title, priority, due, list, LIST_COLORS[list], isInboxList = list == null, isRecurring = ghostOf != null || id == "gym", ghostOf = ghostOf,
+            listIcon = LIST_ICONS[list ?: "Inbox"],
+        )
+
+    // Цвета и значки списков в тестовых данных (итерация 14).
+    private val LIST_COLORS = mapOf("Работа" to "#6B5CE7", "Дом" to "#2F9E57", "Здоровье" to "#E0457B")
+    private val LIST_ICONS = mapOf("Inbox" to "inbox", "Работа" to "work", "Дом" to "home", "Здоровье" to "health")
 
     private val today = LocalDate.of(2026, 10, 16)
 

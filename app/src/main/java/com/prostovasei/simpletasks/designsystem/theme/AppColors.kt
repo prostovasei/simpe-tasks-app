@@ -35,6 +35,7 @@ data class AppColors(
     val divider: Color,
     val inactive: Color,
     val inboxList: Color,
+    val onListSquare: Color,
     val checkRings: CheckRings,
     val danger: Color,
     val scrim: Color,
@@ -57,6 +58,7 @@ internal fun appColors(isDark: Boolean): AppColors {
         divider = ColorTokens.divider.resolve(),
         inactive = ColorTokens.inactive.resolve(),
         inboxList = ColorTokens.inboxList.resolve(),
+        onListSquare = ColorTokens.onListSquare.resolve(),
         checkRings = CheckRings(
             high = WidgetCheckTokens.high.ring.resolve(),
             medium = WidgetCheckTokens.medium.ring.resolve(),
