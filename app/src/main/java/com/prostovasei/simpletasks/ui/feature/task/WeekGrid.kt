@@ -4,6 +4,10 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
+import androidx.compose.ui.draw.shadow
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
@@ -71,12 +75,14 @@ import java.time.format.TextStyle
 import java.time.temporal.ChronoUnit
 import java.util.Locale
 import kotlin.math.floor
+import kotlin.math.sign
 import kotlin.math.roundToInt
 
 /**
  * Сетка недели в шторке новой задачи (итерация 16, макет PM): шапка дней и сутки шагом 30 минут.
  * Свайп вбок листает плавно по дням, вверх-вниз — по часам. Нажатие на день — «на весь день»,
  * нажатие на сетку — время; зелёный блок — выбранное время, серые — уже занятое другими задачами.
+ * Зелёный блок после долгого нажатия перетаскивается, за ручку снизу — растягивается в интервал (итерация 17).
  * [nowMinute] — сейчас (минута от начала суток): к нему прокручивается сетка, если день не выбран или сегодня.
  */
 @Composable
@@ -85,9 +91,12 @@ fun WeekGrid(
     nowMinute: Int,
     selectedDate: LocalDate?,
     selectedMinute: Int?,
+    selectedDuration: Int,
     busy: List<BusySlot>,
     onDayTap: (LocalDate) -> Unit,
     onSlotTap: (LocalDate, Int) -> Unit,
+    onMove: (LocalDate, Int) -> Unit,
+    onResize: (Int) -> Unit,
     onClearTime: () -> Unit,
     onFirstDayChange: (LocalDate) -> Unit,
     onInteract: () -> Unit,
@@ -206,11 +215,17 @@ fun WeekGrid(
                         val index = ChronoUnit.DAYS.between(today, selectedDate).toInt()
                         if (index in visible) {
                             SelectedBlock(
+                                index = index,
                                 minute = selectedMinute,
+                                duration = selectedDuration,
+                                dayPx = dayPx,
+                                hourPx = hourPx,
+                                scrollDays = { scrollDays },
                                 width = dayWidth - sizes.cardGap,
-                                height = sizes.weekHour / 2 - sizes.hairline,
+                                onMove = { shift, minute -> onMove(selectedDate.plusDays(shift.toLong()), minute) },
+                                onResize = onResize,
                                 onClear = onClearTime,
-                                offset = { IntOffset(columnX(index) + (gapPx / 2).roundToInt(), (selectedMinute / MINUTES_PER_HOUR * hourPx).roundToInt()) },
+                                onInteract = onInteract,
                             )
                         }
                     }
@@ -300,45 +315,134 @@ private fun BusyBlock(slot: BusySlot, width: Dp, height: Dp, modifier: Modifier)
     }
 }
 
-/** Зелёный блок выбранного времени; крестик на углу убирает время (задача остаётся на весь день). */
+/**
+ * Зелёный блок выбранного времени ([duration] минут, колонка [index] от сегодня). Долгое нажатие и перетаскивание —
+ * новое начало (встаёт на шаг 30 минут, можно в другой день); ручка снизу — длительность; крестик — убрать время.
+ */
 @Composable
-private fun SelectedBlock(minute: Int, width: Dp, height: Dp, onClear: () -> Unit, offset: androidx.compose.ui.unit.Density.() -> IntOffset) {
+private fun SelectedBlock(
+    index: Int,
+    minute: Int,
+    duration: Int,
+    dayPx: Float,
+    hourPx: Float,
+    scrollDays: () -> Float,
+    width: Dp,
+    onMove: (Int, Int) -> Unit,
+    onResize: (Int) -> Unit,
+    onClear: () -> Unit,
+    onInteract: () -> Unit,
+) {
     val colors = AppTheme.colors
     val sizes = AppTheme.sizes
+    val density = LocalDensity.current
     val clearLabel = stringResource(R.string.quick_clear_time)
-    Box(Modifier.offset(offset)) {
+    val stepPx = hourPx * WeekGridMath.STEP_MINUTES / MINUTES_PER_HOUR
+    var drag by remember { mutableStateOf<Offset?>(null) }
+    var stretch by remember { mutableStateOf<Float?>(null) }
+    val current by rememberUpdatedState(SlotPosition(minute, duration))
+    val dragTarget = drag?.let { WeekGridMath.moveTarget(current.minute, current.duration, it.x, it.y, dayPx, stepPx) }
+    val shownMinute = dragTarget?.second ?: minute
+    val shownDuration = stretch?.let { WeekGridMath.resizeTarget(minute, duration, it, stepPx) } ?: duration
+    val shift = dragTarget?.first ?: 0
+    val height = with(density) { (shownDuration / MINUTES_PER_HOUR * hourPx).toDp() } - sizes.hairline
+    val active = drag != null || stretch != null
+    val gapPx = with(density) { sizes.cardGap.toPx() }
+
+    Box(
+        Modifier.offset {
+            IntOffset(((index + shift - scrollDays()) * dayPx + gapPx / 2).roundToInt(), (shownMinute / MINUTES_PER_HOUR * hourPx).roundToInt())
+        },
+    ) {
         Box(
             Modifier
                 .size(width, height)
+                .then(if (active) Modifier.shadow(sizes.navShadow, AppTheme.shapes.small) else Modifier)
                 .clip(AppTheme.shapes.small)
                 .background(colors.accent)
+                .pointerInput(dayPx, stepPx) {
+                    detectDragGesturesAfterLongPress(
+                        onDragStart = { onInteract(); drag = Offset.Zero },
+                        onDrag = { change, amount ->
+                            change.consume()
+                            drag = (drag ?: Offset.Zero) + amount
+                        },
+                        onDragEnd = {
+                            val (days, start) = WeekGridMath.moveTarget(current.minute, current.duration, drag?.x ?: 0f, drag?.y ?: 0f, dayPx, stepPx)
+                            drag = null
+                            if (days != 0 || start != current.minute) onMove(days, start)
+                        },
+                        onDragCancel = { drag = null },
+                    )
+                }
                 .testTag(TAG_GRID_SELECTION),
             contentAlignment = Alignment.Center,
         ) {
-            Text(timeText(minute), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.ExtraBold, color = colors.onAccent, maxLines = 1)
+            // Интервал — начало и конец в две строки: в узкую колонку «10:00–11:30» не помещается.
+            val label = if (shownDuration > WeekGridMath.STEP_MINUTES) "${timeText(shownMinute)}\n${timeText(shownMinute + shownDuration)}" else timeText(shownMinute)
+            Text(label, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.ExtraBold, color = colors.onAccent, maxLines = 2)
         }
-        // Крестик сидит на правом верхнем углу блока; зона нажатия больше самого значка.
-        Box(
-            Modifier
-                .offset(x = width - sizes.weekClear, y = -sizes.weekClear)
-                .size(sizes.weekClear * 2)
-                .clickable(onClick = onClear)
-                .semantics { contentDescription = clearLabel }
-                .testTag(TAG_GRID_CLEAR),
-            contentAlignment = Alignment.Center,
-        ) {
+        if (!active) {
+            // Крестик сидит на правом верхнем углу блока; зона нажатия больше самого значка.
             Box(
                 Modifier
-                    .size(sizes.weekClear)
-                    .background(colors.surface, CircleShape)
-                    .border(sizes.hairline, colors.accent, CircleShape),
+                    .offset(x = width - sizes.weekClear, y = -sizes.weekClear)
+                    .size(sizes.weekClear * 2)
+                    .clickable(onClick = onClear)
+                    .semantics { contentDescription = clearLabel }
+                    .testTag(TAG_GRID_CLEAR),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(Icons.Default.Close, contentDescription = null, tint = colors.accent, modifier = Modifier.size(sizes.metaIcon))
+                Box(
+                    Modifier
+                        .size(sizes.weekClear)
+                        .background(colors.surface, CircleShape)
+                        .border(sizes.hairline, colors.accent, CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(Icons.Default.Close, contentDescription = null, tint = colors.accent, modifier = Modifier.size(sizes.metaIcon))
+                }
+            }
+        }
+        if (drag == null) {
+            // Ручка по центру нижнего края: тянется сразу, без долгого нажатия; нажатие на неё не ставит новое время.
+            Box(
+                Modifier
+                    .offset(x = width / 2 - sizes.weekClear, y = height - sizes.weekClear)
+                    .size(sizes.weekClear * 2)
+                    .pointerInput(stepPx) {
+                        detectVerticalDragGestures(
+                            onDragStart = { onInteract(); stretch = 0f },
+                            onVerticalDrag = { change, amount ->
+                                change.consume()
+                                // Первый сдвиг приходит без порога касания — добавляем его, чтобы ручка шла за пальцем.
+                                val slop = if (stretch == 0f) sign(amount) * viewConfiguration.touchSlop else 0f
+                                stretch = (stretch ?: 0f) + amount + slop
+                            },
+                            onDragEnd = {
+                                val minutes = WeekGridMath.resizeTarget(current.minute, current.duration, stretch ?: 0f, stepPx)
+                                stretch = null
+                                if (minutes != current.duration) onResize(minutes)
+                            },
+                            onDragCancel = { stretch = null },
+                        )
+                    }
+                    .pointerInput(Unit) { detectTapGestures { } }
+                    .testTag(TAG_GRID_RESIZE),
+                contentAlignment = Alignment.Center,
+            ) {
+                Box(
+                    Modifier
+                        .size(sizes.weekKnob)
+                        .background(colors.surface, CircleShape)
+                        .border(sizes.checkboxStroke, colors.accent, CircleShape),
+                )
             }
         }
     }
 }
+
+private data class SlotPosition(val minute: Int, val duration: Int)
 
 private fun timeText(minute: Int): String = "%02d:%02d".format(minute / 60 % 24, minute % 60)
 
@@ -357,3 +461,4 @@ const val TAG_WEEK_GRID = "week_grid"
 const val TAG_GRID_DAY = "grid_day"
 const val TAG_GRID_SELECTION = "grid_selection"
 const val TAG_GRID_CLEAR = "grid_clear_time"
+const val TAG_GRID_RESIZE = "grid_resize"

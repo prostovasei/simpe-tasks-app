@@ -157,6 +157,48 @@ class TaskViewModelsTest {
     }
 
     @Test
+    fun quickAddIntervalMoveAndResize() = runTest(dispatcher) {
+        val vm = quickAdd()
+        runCurrent()
+        vm.onIntent(QuickAddIntent.Title("Встреча"))
+        vm.onIntent(QuickAddIntent.SlotTap(today.plusDays(1), 16 * 60))
+        vm.onIntent(QuickAddIntent.Resize(90))
+        assertEquals(Instant.parse("2026-10-15T17:30:00Z"), vm.state.value.intervalEnd)
+
+        vm.onIntent(QuickAddIntent.SlotTap(today.plusDays(1), 17 * 60))
+        assertEquals("Нажатие внутри блока его не сбрасывает", 90, vm.state.value.durationMinutes)
+
+        vm.onIntent(QuickAddIntent.MoveSlot(today.plusDays(2), 23 * 60))
+        assertEquals("Перенос сохраняет длительность", 90, vm.state.value.durationMinutes)
+        assertEquals("Блок сдвигается, чтобы конец был не дальше 24:00", TaskDue.AtTime(Instant.parse("2026-10-16T22:30:00Z")), vm.state.value.due)
+        assertEquals("Не дальше 24:00", Instant.parse("2026-10-17T00:00:00Z"), vm.state.value.intervalEnd)
+
+        vm.onIntent(QuickAddIntent.MoveSlot(today.plusDays(2), 9 * 60))
+        vm.onIntent(QuickAddIntent.Resize(120))
+        vm.effects.test {
+            vm.onIntent(QuickAddIntent.Save)
+            runCurrent()
+            awaitItem()
+        }
+        val created = tasks.created.single()
+        assertEquals(TaskDue.AtTime(Instant.parse("2026-10-16T09:00:00Z")), created.start)
+        assertEquals(TaskDue.AtTime(Instant.parse("2026-10-16T11:00:00Z")), created.due)
+        assertEquals("Напоминание — в начале (решение PM)", listOf("PT0S"), created.reminders)
+    }
+
+    @Test
+    fun quickAddPlainTimeAfterNewTapOrDay() = runTest(dispatcher) {
+        val vm = quickAdd()
+        vm.onIntent(QuickAddIntent.SlotTap(today, 10 * 60))
+        vm.onIntent(QuickAddIntent.Resize(60))
+        vm.onIntent(QuickAddIntent.SlotTap(today, 14 * 60))
+        assertEquals("Новое время на сетке — снова 30 минут", null, vm.state.value.intervalEnd)
+        vm.onIntent(QuickAddIntent.Resize(60))
+        vm.onIntent(QuickAddIntent.ClearTime)
+        assertEquals(30, vm.state.value.durationMinutes)
+    }
+
+    @Test
     fun quickAddShowsBusyTimeOfVisibleDays() = runTest(dispatcher) {
         tasks.tasks.value = listOf(
             task("near", title = "Встреча", due = TaskDue.AtTime(Instant.parse("2026-10-15T10:00:00Z"))),

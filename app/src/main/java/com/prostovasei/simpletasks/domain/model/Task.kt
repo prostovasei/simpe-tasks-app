@@ -34,6 +34,8 @@ data class NewTask(
     val content: String = "",
     val priority: Priority = Priority.NONE,
     val due: TaskDue? = null,
+    /** Начало интервала (итерация 17): тогда [due] — его конец; того же вида, что [due]. */
+    val start: TaskDue? = null,
     val checklist: List<String> = emptyList(),
     /** Правило повтора RRULE (см. [RepeatRule]). */
     val rrule: String? = null,

@@ -38,12 +38,18 @@ data class QuickAddState(
     val zone: ZoneId = ZoneId.systemDefault(),
     /** Сейчас — минута от начала суток (красная линия и начальная прокрутка сетки). */
     val nowMinute: Int = 0,
+    /** Длительность выбранного времени в минутах (итерация 17): 30 — просто время, больше — интервал. */
+    val durationMinutes: Int = WeekGridMath.STEP_MINUTES,
     /** Занятое другими задачами время в видимых днях сетки (серые плашки). */
     val busy: List<BusySlot> = emptyList(),
     val isSaving: Boolean = false,
 ) {
     val selectedDate: LocalDate? get() = due?.localDate(zone)
     val selectedMinute: Int? get() = due?.localTime(zone)?.let { it.hour * 60 + it.minute }
+
+    /** Интервал: начало — [due], конец — через [durationMinutes]; null — просто время или без времени. */
+    val intervalEnd: java.time.Instant? get() =
+        (due as? TaskDue.AtTime)?.instant?.takeIf { durationMinutes > WeekGridMath.STEP_MINUTES }?.plusSeconds(durationMinutes * 60L)
     val canSave: Boolean get() = title.isNotBlank() && projectId.isNotEmpty() && !isSaving
     val reminders: List<String> get() = customReminders ?: Reminders.default(due)
 }
@@ -56,6 +62,10 @@ sealed interface QuickAddIntent {
     data class DayTap(val date: LocalDate) : QuickAddIntent
     /** Нажатие на сетку: время [minute] (от начала суток) в день [date]. */
     data class SlotTap(val date: LocalDate, val minute: Int) : QuickAddIntent
+    /** Блок перетащили (после долгого нажатия): то же время по длительности, новое начало. */
+    data class MoveSlot(val date: LocalDate, val minute: Int) : QuickAddIntent
+    /** Блок растянули за ручку: новая длительность в минутах (кратна 30). */
+    data class Resize(val minutes: Int) : QuickAddIntent
     /** Крестик на зелёном блоке: убрать время, день остаётся. */
     data object ClearTime : QuickAddIntent
     /** Сетку пролистали: первый видимый день — [first]. */
@@ -123,7 +133,15 @@ class QuickAddViewModel @Inject constructor(
                 edit(FieldEdit.Due(if (selectedDate == intent.date) null else TaskDue.AllDay(intent.date)))
             }
             is QuickAddIntent.SlotTap -> setState {
-                edit(FieldEdit.Due(TaskDue.AtTime(intent.date.atStartOfDay(zone).plusMinutes(intent.minute.toLong()).toInstant())))
+                // Нажатие внутри уже выбранного блока ничего не меняет (например, долгое нажатие без перетаскивания).
+                val start = selectedMinute
+                val inside = selectedDate == intent.date && start != null && intent.minute in start until start + durationMinutes
+                if (inside) this else atSlot(intent.date, intent.minute, WeekGridMath.STEP_MINUTES)
+            }
+            is QuickAddIntent.MoveSlot -> setState { atSlot(intent.date, intent.minute, durationMinutes) }
+            is QuickAddIntent.Resize -> setState {
+                val start = selectedMinute ?: return@setState this
+                copy(durationMinutes = intent.minutes.coerceIn(WeekGridMath.STEP_MINUTES, WeekGridMath.DAY_MINUTES - start))
             }
             QuickAddIntent.ClearTime -> setState { selectedDate?.let { edit(FieldEdit.Due(TaskDue.AllDay(it))) } ?: this }
             is QuickAddIntent.GridDays -> gridFirst.value = intent.first
@@ -138,8 +156,18 @@ class QuickAddViewModel @Inject constructor(
         }
     }
 
+    /** Время [minute] в день [date]; интервал не выходит за конец суток (решение PM). */
+    private fun QuickAddState.atSlot(date: LocalDate, minute: Int, duration: Int): QuickAddState {
+        val length = duration.coerceIn(WeekGridMath.STEP_MINUTES, WeekGridMath.DAY_MINUTES)
+        val start = minute.coerceIn(0, WeekGridMath.DAY_MINUTES - length)
+        return edit(FieldEdit.Due(TaskDue.AtTime(date.atStartOfDay(zone).plusMinutes(start.toLong()).toInstant())))
+            .copy(durationMinutes = length)
+    }
+
     private fun QuickAddState.edit(edit: FieldEdit): QuickAddState = when (edit) {
+        // Любой срок не с сетки (или без времени) — снова 30 минут; atSlot ставит длительность сам.
         is FieldEdit.Due -> copy(
+            durationMinutes = WeekGridMath.STEP_MINUTES,
             // Повтор начинается с первого подходящего дня от выбранной даты (решение PM).
             due = edit.due?.let { due -> rrule?.let { Recurrence.alignStart(it, due, zone) } ?: due },
             rrule = if (edit.due == null) null else rrule,
@@ -166,7 +194,9 @@ class QuickAddViewModel @Inject constructor(
                     title = state.title.trim(),
                     content = state.content.trim(),
                     priority = state.priority,
-                    due = state.due,
+                    // Интервал: начало — выбранное время, срок — конец (как у задач из TickTick).
+                    due = state.intervalEnd?.let { TaskDue.AtTime(it) } ?: state.due,
+                    start = state.due.takeIf { state.intervalEnd != null },
                     checklist = state.checklist.orEmpty().map { it.trim() }.filter { it.isNotEmpty() },
                     rrule = state.rrule,
                     reminders = state.reminders,

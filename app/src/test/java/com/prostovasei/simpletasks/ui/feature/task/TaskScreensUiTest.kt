@@ -135,6 +135,33 @@ class TaskScreensUiTest {
     }
 
     @Test
+    fun intervalBlockResizeAndMove() {
+        show { QuickAddScreen(quickState.copy(durationMinutes = 90), { intents += it }, {}, autoFocus = false) }
+        composeRule.onNodeWithTag(TAG_QUICK_WHEN).assertTextEquals("Завтра, 10:00–11:30")
+        composeRule.onNodeWithText("10:00\n11:30", useUnmergedTree = true).assertExists()
+
+        // Ручка: вниз на час (44dp) — +60 минут.
+        composeRule.onNodeWithTag(TAG_GRID_RESIZE, useUnmergedTree = true).performTouchInput {
+            down(center)
+            moveBy(Offset(0f, 10f * density))
+            moveBy(Offset(0f, 34f * density))
+            up()
+        }
+        // Блок: долгое нажатие и перенос на день вправо и на полчаса вниз.
+        composeRule.onNodeWithTag(TAG_GRID_SELECTION, useUnmergedTree = true).performTouchInput {
+            down(center)
+            advanceEventTime(1000)
+            moveBy(Offset(30f * density, 11f * density))
+            moveBy(Offset(30f * density, 11f * density))
+            up()
+        }
+        assertEquals(
+            listOf<Any>(QuickAddIntent.Resize(150), QuickAddIntent.MoveSlot(today.plusDays(2), 10 * 60 + 30)),
+            intents.filter { it is QuickAddIntent.Resize || it is QuickAddIntent.MoveSlot },
+        )
+    }
+
+    @Test
     fun toolbarMenusSendEdits() {
         show { QuickAddScreen(quickState.copy(due = null, priority = Priority.NONE, checklist = null), { intents += it }, {}, autoFocus = false) }
 
@@ -277,7 +304,7 @@ class TaskScreensUiTest {
 
     @Test
     fun screenshotQuickAdd() {
-        show { QuickAddScreen(quickState.copy(busy = busy), {}, {}, autoFocus = false) }
+        show { QuickAddScreen(quickState.copy(busy = busy, durationMinutes = 90), {}, {}, autoFocus = false) }
         composeRule.onRoot().captureRoboImage("screenshots/quick_add_light.png")
     }
 

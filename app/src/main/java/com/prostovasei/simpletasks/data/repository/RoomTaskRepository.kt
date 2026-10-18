@@ -211,6 +211,8 @@ class RoomTaskRepository @Inject constructor(
         require(task.title.isNotBlank()) { "Название задачи не может быть пустым" }
         val now = nowMillis()
         val due = DueDateCodec.encode(task.due)
+        val start = DueDateCodec.encode(task.start?.takeIf { task.due != null })
+        require(task.start == null || task.due == null || start.isAllDay == due.isAllDay) { "Начало и срок должны быть одного типа" }
         return TaskEntity(
             id = id,
             projectId = task.projectId,
@@ -218,6 +220,7 @@ class RoomTaskRepository @Inject constructor(
             content = task.content,
             priority = task.priority.value,
             dueDate = due.dueDate,
+            startDate = start.dueDate,
             isAllDay = due.isAllDay,
             sortOrder = taskDao.nextSortOrder(task.projectId),
             rrule = task.rrule?.takeIf { task.due != null },
