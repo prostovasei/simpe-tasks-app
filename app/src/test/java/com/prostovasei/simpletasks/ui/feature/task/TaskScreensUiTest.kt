@@ -122,8 +122,8 @@ class TaskScreensUiTest {
             click(Offset(5f * dp, (2 * hour + 2f) * dp))
         }
         assertEquals(
-            listOf<Any>(QuickAddIntent.DayTap(today.plusDays(2)), QuickAddIntent.SlotTap(today, 2 * 60)),
-            intents.filterNot { it is QuickAddIntent.GridDays },
+            listOf<Any>(QuickAddIntent.Grid(GridAction.DayTap(today.plusDays(2))), QuickAddIntent.Grid(GridAction.SlotTap(today, 2 * 60))),
+            intents.filterNot { it is QuickAddIntent.Grid && it.action is GridAction.FirstDay },
         )
     }
 
@@ -131,12 +131,12 @@ class TaskScreensUiTest {
     fun clearTimeCross() {
         show { QuickAddScreen(quickState, { intents += it }, {}, autoFocus = false) }
         composeRule.onNodeWithTag(TAG_GRID_CLEAR, useUnmergedTree = true).performClick()
-        assertTrue(QuickAddIntent.ClearTime in intents)
+        assertTrue(QuickAddIntent.Grid(GridAction.ClearTime) in intents)
     }
 
     @Test
     fun intervalBlockResizeAndMove() {
-        show { QuickAddScreen(quickState.copy(durationMinutes = 90), { intents += it }, {}, autoFocus = false) }
+        show { QuickAddScreen(quickState.copy(start = TaskDue.AtTime(Instant.parse("2026-10-15T10:00:00Z")), due = TaskDue.AtTime(Instant.parse("2026-10-15T11:30:00Z"))), { intents += it }, {}, autoFocus = false) }
         composeRule.onNodeWithTag(TAG_QUICK_WHEN).assertTextEquals("Завтра, 10:00–11:30")
         composeRule.onNodeWithText("10:00\n11:30", useUnmergedTree = true).assertExists()
 
@@ -156,8 +156,8 @@ class TaskScreensUiTest {
             up()
         }
         assertEquals(
-            listOf<Any>(QuickAddIntent.Resize(150), QuickAddIntent.MoveSlot(today.plusDays(2), 10 * 60 + 30)),
-            intents.filter { it is QuickAddIntent.Resize || it is QuickAddIntent.MoveSlot },
+            listOf<Any>(QuickAddIntent.Grid(GridAction.Resize(150)), QuickAddIntent.Grid(GridAction.MoveSlot(today.plusDays(2), 10 * 60 + 30))),
+            intents.filter { it is QuickAddIntent.Grid && (it.action is GridAction.Resize || it.action is GridAction.MoveSlot) },
         )
     }
 
@@ -177,7 +177,7 @@ class TaskScreensUiTest {
                 QuickAddIntent.Edit(FieldEdit.SetPriority(Priority.HIGH)),
                 QuickAddIntent.AddChecklist,
             ),
-            intents.filterNot { it is QuickAddIntent.GridDays },
+            intents.filterNot { it is QuickAddIntent.Grid && it.action is GridAction.FirstDay },
         )
     }
 
@@ -244,22 +244,25 @@ class TaskScreensUiTest {
         show { TaskDetailScreen(detailState, { intents += it }, {}, {}) }
 
         composeRule.onNodeWithText("Подготовить отчёт").assertExists()
-        composeRule.onNodeWithTag(TAG_CHIP_DATE).assertTextEquals("Сегодня")
-        composeRule.onNodeWithTag(TAG_CHIP_REPEAT).assertTextEquals("Каждый месяц: 14-го")
-        composeRule.onNodeWithTag(TAG_CHIP_REMINDER).assertTextEquals("10:00 +1")
+        composeRule.onNodeWithTag(TAG_QUICK_WHEN).assertTextEquals("Сегодня, весь день")
+        composeRule.onNodeWithTag("$TAG_GRID_DAY:$today").assertIsSelected()
+        composeRule.onNodeWithTag(TAG_TOOL_REPEAT).assertIsSelected()
+        composeRule.onNodeWithTag(TAG_TOOL_REMINDER).assertIsSelected()
+        composeRule.onNodeWithTag(TAG_TOOL_LIST).assertIsSelected()
+        composeRule.onNodeWithTag(TAG_TOOL_CHECKLIST).assertIsSelected()
         composeRule.onNodeWithText("Собрать данные").assertExists()
         composeRule.onNodeWithText("Запросить цифры у бухгалтерии").assertExists()
         composeRule.onNodeWithText("Создана 1 января 2026").assertExists()
     }
 
     @Test
-    fun reminderMenuTogglesOptions() {
+    fun detailReminderMenuTogglesOptions() {
         show { TaskDetailScreen(detailState, { intents += it }, {}, {}) }
 
-        composeRule.onNodeWithTag(TAG_CHIP_REMINDER).performScrollTo().performClick()
+        composeRule.onNodeWithTag(TAG_TOOL_REMINDER).performClick()
         composeRule.onNodeWithText("За 1 неделю в 10:00").assertExists()
         composeRule.onNodeWithText("За 1 день в 10:00").performClick()
-        composeRule.onNodeWithTag(TAG_CHIP_REMINDER).performScrollTo().performClick()
+        composeRule.onNodeWithTag(TAG_TOOL_REMINDER).performClick()
         composeRule.onNodeWithText("Без напоминания").performClick()
 
         assertEquals(
@@ -267,8 +270,18 @@ class TaskScreensUiTest {
                 TaskDetailIntent.Edit(FieldEdit.SetReminders(listOf("P0DT10H0M0S", "-P6DT14H0M0S", "-P0DT14H0M0S"))),
                 TaskDetailIntent.Edit(FieldEdit.SetReminders(emptyList())),
             ),
-            intents,
+            intents.filterNot { it is TaskDetailIntent.Grid },
         )
+    }
+
+    @Test
+    fun detailGridAndClose() {
+        var closed = false
+        show { TaskDetailScreen(detailState, { intents += it }, { closed = true }, {}) }
+        composeRule.onNodeWithTag("$TAG_GRID_DAY:${today.plusDays(1)}").performClick()
+        composeRule.onNodeWithTag(TAG_DETAIL_CLOSE).performClick()
+        assertEquals(listOf<Any>(TaskDetailIntent.Grid(GridAction.DayTap(today.plusDays(1)))), intents.filterNot { it is TaskDetailIntent.Grid && it.action is GridAction.FirstDay })
+        assertTrue(closed)
     }
 
     @Test
@@ -279,7 +292,7 @@ class TaskScreensUiTest {
         composeRule.onNodeWithTag("$TAG_REMINDER_OPTION:-PT30M").performClick()
         assertEquals(
             listOf<Any>(QuickAddIntent.Edit(FieldEdit.SetReminders(listOf("PT0S", "-PT30M")))),
-            intents.filterNot { it is QuickAddIntent.GridDays },
+            intents.filterNot { it is QuickAddIntent.Grid && it.action is GridAction.FirstDay },
         )
     }
 
@@ -289,22 +302,21 @@ class TaskScreensUiTest {
         show { TaskDetailScreen(detailState, { intents += it }, {}, { opened = it }) }
 
         composeRule.onNodeWithTag(TAG_DETAIL_DONE).performClick()
-        composeRule.onNodeWithTag("item_menu:i1").performClick()
+        composeRule.onNodeWithTag("item_menu:i1").performScrollTo().performClick()
         composeRule.onNodeWithText("Ниже").performClick()
-        composeRule.onNodeWithTag("subtask:s1").performClick()
-        composeRule.onNodeWithTag(TAG_DETAIL_MENU).performClick()
-        composeRule.onNodeWithText("Удалить").performClick()
+        composeRule.onNodeWithTag("subtask:s1").performScrollTo().performClick()
+        composeRule.onNodeWithTag(TAG_DETAIL_DELETE).performClick()
 
         assertEquals(
             listOf<Any>(TaskDetailIntent.ToggleCompleted, TaskDetailIntent.MoveItem("i1", up = false), TaskDetailIntent.RequestDelete),
-            intents,
+            intents.filterNot { it is TaskDetailIntent.Grid },
         )
         assertEquals("s1", opened)
     }
 
     @Test
     fun screenshotQuickAdd() {
-        show { QuickAddScreen(quickState.copy(busy = busy, durationMinutes = 90), {}, {}, autoFocus = false) }
+        show { QuickAddScreen(quickState.copy(busy = busy, start = TaskDue.AtTime(Instant.parse("2026-10-15T10:00:00Z")), due = TaskDue.AtTime(Instant.parse("2026-10-15T11:30:00Z"))), {}, {}, autoFocus = false) }
         composeRule.onRoot().captureRoboImage("screenshots/quick_add_light.png")
     }
 

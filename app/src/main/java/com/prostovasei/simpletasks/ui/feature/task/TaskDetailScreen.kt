@@ -1,20 +1,14 @@
 package com.prostovasei.simpletasks.ui.feature.task
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
@@ -31,11 +25,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import kotlinx.coroutines.launch
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -52,19 +47,21 @@ import com.prostovasei.simpletasks.domain.model.ChecklistItem
 import com.prostovasei.simpletasks.domain.model.Task
 import com.prostovasei.simpletasks.domain.model.TaskStatus
 import com.prostovasei.simpletasks.ui.common.DayNames
+import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 @Composable
 fun TaskDetailRoute(onClose: () -> Unit, onOpenTask: (String) -> Unit, viewModel: TaskDetailViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val motion = rememberSheetMotion(onClose)
     val snackbar = remember { SnackbarHostState() }
     val rescheduled = stringResource(R.string.task_rescheduled)
     val days = DayNames(stringResource(R.string.day_today), stringResource(R.string.day_tomorrow), stringResource(R.string.day_yesterday))
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
             when (effect) {
-                TaskDetailEffect.Close -> onClose()
+                TaskDetailEffect.Close -> motion.close()
                 is TaskDetailEffect.Rescheduled -> launch {
                     snackbar.currentSnackbarData?.dismiss()
                     snackbar.showSnackbar(rescheduled.format(days.format(effect.next)))
@@ -72,86 +69,111 @@ fun TaskDetailRoute(onClose: () -> Unit, onOpenTask: (String) -> Unit, viewModel
             }
         }
     }
-    Box {
-        TaskDetailScreen(state, viewModel::onIntent, onClose, onOpenTask)
-        SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter))
+    TaskDetailScreen(state, viewModel::onIntent, motion.close, onOpenTask, progress = motion.progress) {
+        // Подсказка «Следующий раз» — сверху, над шторкой: внизу её закрыла бы панель кнопок.
+        SnackbarHost(snackbar, Modifier.align(Alignment.TopCenter).statusBarsPadding())
     }
 }
 
+/**
+ * Созданная задача — та же шторка с сеткой недели, что и новая (итерация 19, решения PM): все правки сохраняются сразу,
+ * галочка «Готово» и затемнение просто закрывают. Галочка у названия — выполнить; корзина на панели — удалить
+ * с подтверждением. Чек-лист: отметить, переименовать (нажатие на пункт), «⋮» — выше, ниже, удалить. Подзадачи из TickTick.
+ */
 @Composable
 fun TaskDetailScreen(
     state: TaskDetailState,
     onIntent: (TaskDetailIntent) -> Unit,
-    onBack: () -> Unit,
+    onClose: () -> Unit,
     onOpenTask: (String) -> Unit,
+    progress: () -> Float = { 1f },
+    overlay: @Composable androidx.compose.foundation.layout.BoxScope.() -> Unit = {},
 ) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
     val task = state.task
-
-    Column(Modifier.fillMaxSize().background(AppTheme.colors.background).imePadding()) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = spacing.xxs),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.detail_back), tint = colors.textPrimary)
-            }
-            Spacer(Modifier.weight(1f))
-            if (task != null) TaskMenu(onIntent)
+    val fields = state.fields
+    if (task == null || fields == null) {
+        Box(Modifier.fillMaxSize())
+        return
+    }
+    val done = task.status != TaskStatus.ACTIVE
+    val addFocus = remember { FocusRequester() }
+    var showAdd by rememberSaveable { mutableStateOf(false) }
+    var focusAdd by remember { mutableStateOf(false) }
+    LaunchedEffect(focusAdd) {
+        if (focusAdd) {
+            addFocus.requestFocus()
+            focusAdd = false
         }
-        if (task == null) return@Column
-        val done = task.status != TaskStatus.ACTIVE
+    }
 
-        Column(
-            modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(bottom = spacing.xl),
-            verticalArrangement = Arrangement.spacedBy(spacing.xs),
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = spacing.xxs)) {
-                Checkbox(
-                    checked = done,
-                    onCheckedChange = { onIntent(TaskDetailIntent.ToggleCompleted) },
-                    colors = CheckboxDefaults.colors(checkedColor = colors.accent, uncheckedColor = colors.textSecondary, checkmarkColor = colors.onAccent),
-                    modifier = Modifier.testTag(TAG_DETAIL_DONE),
-                )
-                FormTextField(
-                    value = task.title,
-                    onValueChange = { onIntent(TaskDetailIntent.Title(it)) },
-                    hint = stringResource(R.string.detail_title_hint),
-                    textStyle = MaterialTheme.typography.titleLarge.copy(textDecoration = if (done) TextDecoration.LineThrough else null),
-                    modifier = Modifier.weight(1f).testTag(TAG_DETAIL_TITLE),
-                )
-                PriorityBadge(task.priority, Modifier.padding(end = spacing.sm))
+    TaskSheet(
+        fields = fields,
+        onGrid = { onIntent(TaskDetailIntent.Grid(it)) },
+        onEdit = { onIntent(TaskDetailIntent.Edit(it)) },
+        onClose = onClose,
+        checklistActive = state.checklist.isNotEmpty(),
+        onChecklist = {
+            showAdd = true
+            focusAdd = true
+        },
+        progress = progress,
+        overlay = overlay,
+        actions = {
+            ToolButton(R.string.sheet_delete, active = false, tag = TAG_DETAIL_DELETE, icon = R.drawable.ic_tool_delete, tint = colors.danger) {
+                onIntent(TaskDetailIntent.RequestDelete)
             }
-            TaskFieldChips(
-                due = task.due,
-                projectId = task.projectId,
-                priority = task.priority,
-                rrule = task.rrule,
-                reminders = task.reminders,
-                projects = state.projects,
-                today = state.today,
-                zone = state.zone,
-                onEdit = { onIntent(TaskDetailIntent.Edit(it)) },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = spacing.md),
+            SheetConfirmButton(R.string.sheet_done, enabled = true, tag = TAG_DETAIL_CLOSE, onClick = onClose)
+        },
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            SheetCheckbox(done, Modifier.testTag(TAG_DETAIL_DONE)) { onIntent(TaskDetailIntent.ToggleCompleted) }
+            CompactField(
+                value = task.title,
+                onValueChange = { onIntent(TaskDetailIntent.Title(it)) },
+                hint = stringResource(R.string.detail_title_hint),
+                textStyle = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.ExtraBold,
+                    textDecoration = if (done) TextDecoration.LineThrough else null,
+                ),
+                modifier = Modifier.weight(1f).testTag(TAG_DETAIL_TITLE),
             )
-            FormTextField(
-                value = task.content,
-                onValueChange = { onIntent(TaskDetailIntent.Content(it)) },
-                hint = stringResource(R.string.quick_add_content_hint),
-                textStyle = MaterialTheme.typography.bodyLarge,
-                singleLine = false,
-                modifier = Modifier.padding(horizontal = spacing.xs).testTag(TAG_DETAIL_CONTENT),
-            )
-            ChecklistSection(state.checklist, onIntent)
-            if (state.subtasks.isNotEmpty()) SubtasksSection(state.subtasks, onIntent, onOpenTask)
-            Text(
-                text = stringResource(R.string.detail_created, CREATED.format(task.createdAt.atZone(state.zone))),
-                style = MaterialTheme.typography.bodySmall,
-                color = colors.textSecondary,
-                modifier = Modifier.padding(horizontal = spacing.md, vertical = spacing.sm),
+            PriorityBadge(task.priority)
+        }
+        CompactField(
+            value = task.content,
+            onValueChange = { onIntent(TaskDetailIntent.Content(it)) },
+            hint = stringResource(R.string.quick_add_content_hint),
+            textStyle = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold, color = colors.textSecondary),
+            singleLine = false,
+            modifier = Modifier.padding(top = spacing.xxs).testTag(TAG_DETAIL_CONTENT),
+        )
+        state.checklist.forEachIndexed { index, item ->
+            ChecklistRow(item, isFirst = index == 0, isLast = index == state.checklist.lastIndex, onIntent)
+        }
+        if (showAdd || state.checklist.isNotEmpty()) {
+            var newItem by rememberSaveable { mutableStateOf("") }
+            CompactField(
+                value = newItem,
+                onValueChange = { newItem = it },
+                hint = stringResource(R.string.detail_checklist_add),
+                textStyle = MaterialTheme.typography.bodyMedium,
+                imeAction = ImeAction.Done,
+                onImeAction = {
+                    onIntent(TaskDetailIntent.AddItem(newItem))
+                    newItem = ""
+                },
+                modifier = Modifier.padding(start = AppTheme.sizes.checkboxTouch).focusRequester(addFocus).testTag(TAG_DETAIL_ADD_ITEM),
             )
         }
+        if (state.subtasks.isNotEmpty()) SubtasksSection(state.subtasks, onIntent, onOpenTask)
+        Text(
+            text = stringResource(R.string.detail_created, CREATED.format(task.createdAt.atZone(state.zone))),
+            style = MaterialTheme.typography.labelSmall,
+            color = colors.textSecondary,
+            modifier = Modifier.padding(vertical = spacing.xs),
+        )
     }
 
     if (state.showDeleteConfirm) {
@@ -177,72 +199,37 @@ fun TaskDetailScreen(
 }
 
 @Composable
-private fun TaskMenu(onIntent: (TaskDetailIntent) -> Unit) {
-    var menu by remember { mutableStateOf(false) }
-    Box {
-        IconButton(onClick = { menu = true }, modifier = Modifier.testTag(TAG_DETAIL_MENU)) {
-            Icon(Icons.Default.MoreVert, stringResource(R.string.detail_menu), tint = AppTheme.colors.textPrimary)
-        }
-        DropdownMenu(expanded = menu, onDismissRequest = { menu = false }, containerColor = AppTheme.colors.surface) {
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.action_delete), color = AppTheme.colors.danger) },
-                onClick = { menu = false; onIntent(TaskDetailIntent.RequestDelete) },
-            )
-        }
-    }
-}
-
-@Composable
-private fun SectionTitle(text: String) {
-    Text(
-        text = text.uppercase(),
-        style = MaterialTheme.typography.labelMedium,
-        fontWeight = FontWeight.Bold,
-        color = AppTheme.colors.textSecondary,
-        modifier = Modifier.padding(start = AppTheme.spacing.md, top = AppTheme.spacing.sm),
-    )
-}
-
-@Composable
-private fun ChecklistSection(items: List<ChecklistItem>, onIntent: (TaskDetailIntent) -> Unit) {
+private fun SheetCheckbox(checked: Boolean, modifier: Modifier = Modifier, onToggle: () -> Unit) {
     val colors = AppTheme.colors
-    SectionTitle(stringResource(R.string.detail_checklist))
-    items.forEachIndexed { index, item ->
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = AppTheme.spacing.xxs).testTag("item:${item.id}")) {
-            Checkbox(
-                checked = item.isDone,
-                onCheckedChange = { onIntent(TaskDetailIntent.ToggleItem(item.id)) },
-                colors = CheckboxDefaults.colors(checkedColor = colors.accent, uncheckedColor = colors.textSecondary, checkmarkColor = colors.onAccent),
-            )
-            Text(
-                text = item.title,
-                color = if (item.isDone) colors.textSecondary else colors.textPrimary,
-                textDecoration = if (item.isDone) TextDecoration.LineThrough else null,
-                modifier = Modifier.weight(1f).clickable { onIntent(TaskDetailIntent.StartRenameItem(item.id)) },
-            )
-            ItemMenu(item, isFirst = index == 0, isLast = index == items.lastIndex, onIntent)
-        }
-    }
-    var newItem by rememberSaveable { mutableStateOf("") }
-    FormTextField(
-        value = newItem,
-        onValueChange = { newItem = it },
-        hint = stringResource(R.string.detail_checklist_add),
-        textStyle = MaterialTheme.typography.bodyMedium,
-        imeAction = ImeAction.Done,
-        onImeAction = {
-            onIntent(TaskDetailIntent.AddItem(newItem))
-            newItem = ""
-        },
-        modifier = Modifier.padding(start = AppTheme.spacing.xl).testTag(TAG_DETAIL_ADD_ITEM),
+    Checkbox(
+        checked = checked,
+        onCheckedChange = { onToggle() },
+        colors = CheckboxDefaults.colors(checkedColor = colors.accent, uncheckedColor = colors.textSecondary, checkmarkColor = colors.onAccent),
+        modifier = modifier.size(AppTheme.sizes.checkboxTouch),
     )
+}
+
+@Composable
+private fun ChecklistRow(item: ChecklistItem, isFirst: Boolean, isLast: Boolean, onIntent: (TaskDetailIntent) -> Unit) {
+    val colors = AppTheme.colors
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.testTag("item:${item.id}")) {
+        SheetCheckbox(item.isDone) { onIntent(TaskDetailIntent.ToggleItem(item.id)) }
+        Text(
+            text = item.title,
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (item.isDone) colors.textSecondary else colors.textPrimary,
+            textDecoration = if (item.isDone) TextDecoration.LineThrough else null,
+            modifier = Modifier.weight(1f).clickable { onIntent(TaskDetailIntent.StartRenameItem(item.id)) },
+        )
+        ItemMenu(item, isFirst, isLast, onIntent)
+    }
 }
 
 @Composable
 private fun ItemMenu(item: ChecklistItem, isFirst: Boolean, isLast: Boolean, onIntent: (TaskDetailIntent) -> Unit) {
     var menu by remember { mutableStateOf(false) }
     Box {
-        IconButton(onClick = { menu = true }, modifier = Modifier.testTag("item_menu:${item.id}")) {
+        IconButton(onClick = { menu = true }, modifier = Modifier.size(AppTheme.sizes.checkboxTouch).testTag("item_menu:${item.id}")) {
             Icon(Icons.Default.MoreVert, stringResource(R.string.detail_item_menu), tint = AppTheme.colors.textSecondary)
         }
         DropdownMenu(expanded = menu, onDismissRequest = { menu = false }, containerColor = AppTheme.colors.surface) {
@@ -265,25 +252,28 @@ private fun MenuText(label: Int, onClick: () -> Unit) {
 @Composable
 private fun SubtasksSection(subtasks: List<Task>, onIntent: (TaskDetailIntent) -> Unit, onOpenTask: (String) -> Unit) {
     val colors = AppTheme.colors
-    SectionTitle(stringResource(R.string.detail_subtasks))
+    Text(
+        text = stringResource(R.string.detail_subtasks).uppercase(),
+        style = MaterialTheme.typography.labelMedium,
+        fontWeight = FontWeight.Bold,
+        color = colors.textSecondary,
+        modifier = Modifier.padding(top = AppTheme.spacing.sm),
+    )
     subtasks.forEach { sub ->
         val done = sub.status != TaskStatus.ACTIVE
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth().clickable { onOpenTask(sub.id) }.padding(horizontal = AppTheme.spacing.xxs).testTag("subtask:${sub.id}"),
+            modifier = Modifier.fillMaxWidth().clickable { onOpenTask(sub.id) }.testTag("subtask:${sub.id}"),
         ) {
-            Checkbox(
-                checked = done,
-                onCheckedChange = { onIntent(TaskDetailIntent.ToggleSubtask(sub.id)) },
-                colors = CheckboxDefaults.colors(checkedColor = colors.accent, uncheckedColor = colors.textSecondary, checkmarkColor = colors.onAccent),
-            )
+            SheetCheckbox(done) { onIntent(TaskDetailIntent.ToggleSubtask(sub.id)) }
             Text(
                 text = sub.title,
+                style = MaterialTheme.typography.bodyMedium,
                 color = if (done) colors.textSecondary else colors.textPrimary,
                 textDecoration = if (done) TextDecoration.LineThrough else null,
                 modifier = Modifier.weight(1f),
             )
-            PriorityBadge(sub.priority, Modifier.padding(end = AppTheme.spacing.md))
+            PriorityBadge(sub.priority)
         }
     }
 }
@@ -293,5 +283,6 @@ private val CREATED: DateTimeFormatter = DateTimeFormatter.ofPattern("d MMMM yyy
 const val TAG_DETAIL_TITLE = "detail_title"
 const val TAG_DETAIL_CONTENT = "detail_content"
 const val TAG_DETAIL_DONE = "detail_done"
-const val TAG_DETAIL_MENU = "detail_menu"
+const val TAG_DETAIL_DELETE = "detail_delete"
+const val TAG_DETAIL_CLOSE = "detail_close"
 const val TAG_DETAIL_ADD_ITEM = "detail_add_item"

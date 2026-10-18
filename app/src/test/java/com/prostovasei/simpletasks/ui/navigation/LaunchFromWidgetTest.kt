@@ -9,9 +9,9 @@ import androidx.compose.ui.test.click
 import androidx.compose.ui.test.performTouchInput
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
-import com.prostovasei.simpletasks.TAG_POPUP_SCRIM
 import com.prostovasei.simpletasks.TaskPopupActivity
 import com.prostovasei.simpletasks.domain.model.NewTask
+import com.prostovasei.simpletasks.ui.feature.task.TAG_QUICK_SCRIM
 import com.prostovasei.simpletasks.ui.feature.task.TAG_QUICK_WHEN
 import com.prostovasei.simpletasks.ui.feature.task.TAG_DETAIL_TITLE
 import com.prostovasei.simpletasks.ui.feature.task.TAG_QUICK_TITLE
@@ -57,7 +57,9 @@ class LaunchFromWidgetTest {
             composeRule.waitUntil(LAUNCH_TIMEOUT_MS) { composeRule.onAllNodesWithTag(TAG_DETAIL_TITLE).fetchSemanticsNodes().isNotEmpty() }
             composeRule.onNodeWithTag(TAG_DETAIL_TITLE).assertTextEquals("Позвонить маме")
             // Нажатие на затемнённый рабочий стол закрывает окно — приложение не открывается.
-            composeRule.onNodeWithTag(TAG_POPUP_SCRIM).performTouchInput { click(Offset(centerX, top + 5f)) }
+            // Шторка сначала уезжает вниз, потом окно закрывается.
+            composeRule.onNodeWithTag(TAG_QUICK_SCRIM).performTouchInput { click(Offset(centerX, top + 5f)) }
+            composeRule.waitUntil(LAUNCH_TIMEOUT_MS) { checkNotNull(activity).isFinishing }
             assertTrue(checkNotNull(activity).isFinishing)
         }
     }

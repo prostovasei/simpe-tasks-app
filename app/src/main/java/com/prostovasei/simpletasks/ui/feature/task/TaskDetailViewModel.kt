@@ -19,6 +19,10 @@ import com.prostovasei.simpletasks.ui.common.DueText
 import com.prostovasei.simpletasks.ui.mvi.MviViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -26,7 +30,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 import javax.inject.Inject
 
-/** Экран задачи (SPEC.md §4.5): правка всех полей с автосохранением, чек-лист, подзадачи. */
+/** Задача в шторке с сеткой недели (SPEC.md §4.5, итерация 19): правка всех полей с автосохранением, чек-лист, подзадачи. */
 data class TaskDetailState(
     val task: Task? = null,
     val checklist: List<ChecklistItem> = emptyList(),
@@ -34,15 +38,23 @@ data class TaskDetailState(
     val projects: List<ProjectOption> = emptyList(),
     val today: LocalDate = LocalDate.MIN,
     val zone: ZoneId = ZoneId.systemDefault(),
+    /** Сейчас — минута от начала суток (линия и начальная прокрутка сетки). */
+    val nowMinute: Int = 0,
+    /** Занятое другими задачами время в видимых днях сетки. */
+    val busy: List<BusySlot> = emptyList(),
     val showDeleteConfirm: Boolean = false,
     /** Пункт чек-листа, который переименовывается (диалог). */
     val renamingItem: ChecklistItem? = null,
-)
+) {
+    val fields: SheetFields?
+        get() = task?.let { SheetFields(it.due, it.start, it.projectId, it.priority, it.rrule, it.reminders, projects, today, zone, nowMinute, busy) }
+}
 
 sealed interface TaskDetailIntent {
     data class Title(val text: String) : TaskDetailIntent
     data class Content(val text: String) : TaskDetailIntent
     data class Edit(val edit: FieldEdit) : TaskDetailIntent
+    data class Grid(val action: GridAction) : TaskDetailIntent
     data object ToggleCompleted : TaskDetailIntent
     data object RequestDelete : TaskDetailIntent
     data object DismissDelete : TaskDetailIntent
@@ -64,6 +76,7 @@ sealed interface TaskDetailEffect {
     data class Rescheduled(val next: DueText) : TaskDetailEffect
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class TaskDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
@@ -73,7 +86,13 @@ class TaskDetailViewModel @Inject constructor(
     dayTicker: DayTicker,
     private val time: TimeProvider,
     @param:ApplicationScope private val appScope: CoroutineScope,
-) : MviViewModel<TaskDetailState, TaskDetailIntent, TaskDetailEffect>(TaskDetailState(today = time.today(), zone = time.zone())) {
+) : MviViewModel<TaskDetailState, TaskDetailIntent, TaskDetailEffect>(
+    TaskDetailState(
+        today = time.today(),
+        zone = time.zone(),
+        nowMinute = time.now().atZone(time.zone()).let { it.hour * 60 + it.minute },
+    ),
+) {
 
     private val taskId: String = checkNotNull(savedStateHandle["taskId"]) { "Не передан taskId" }
 
@@ -85,6 +104,9 @@ class TaskDetailViewModel @Inject constructor(
     private var textDirty = false
     private var lastWrite: Job? = null
     private var closed = false
+
+    /** Первый видимый день сетки: по нему подгружается занятое время (с запасом на день по краям). */
+    private val gridFirst = MutableStateFlow(time.today())
 
     init {
         viewModelScope.launch {
@@ -106,6 +128,15 @@ class TaskDetailViewModel @Inject constructor(
         viewModelScope.launch { tasks.observeSubtasks(taskId).collect { setState { copy(subtasks = it) } } }
         viewModelScope.launch { projects.observeProjectTree().collect { tree -> setState { copy(projects = tree.options()) } } }
         viewModelScope.launch { dayTicker.today().collect { setState { copy(today = it) } } }
+        viewModelScope.launch {
+            gridFirst.flatMapLatest { first ->
+                val from = first.minusDays(1)
+                val until = first.plusDays(WeekGridMath.VISIBLE_DAYS.toLong())
+                val zone = currentState.zone
+                tasks.observeTimedInRange(from.atStartOfDay(zone).toInstant(), until.plusDays(1).atStartOfDay(zone).toInstant())
+                    .map { all -> busySlots(all.filter { it.id != taskId }, zone, from, until) }
+            }.collect { setState { copy(busy = it) } }
+        }
     }
 
     override fun onIntent(intent: TaskDetailIntent) {
@@ -120,6 +151,13 @@ class TaskDetailViewModel @Inject constructor(
                     is FieldEdit.SetPriority -> copy(priority = edit.priority)
                     is FieldEdit.Repeat -> copy(rrule = edit.rrule).alignedToRepeat(time.zone())
                     is FieldEdit.SetReminders -> copy(reminders = edit.reminders)
+                }
+            }
+            is TaskDetailIntent.Grid -> when (val action = intent.action) {
+                is GridAction.FirstDay -> gridFirst.value = action.first
+                else -> editNow {
+                    val next = Schedule(due, start).after(action, time.zone())
+                    withDue(next.due).copy(start = next.start).alignedToRepeat(time.zone())
                 }
             }
             TaskDetailIntent.ToggleCompleted -> toggleCompleted()
