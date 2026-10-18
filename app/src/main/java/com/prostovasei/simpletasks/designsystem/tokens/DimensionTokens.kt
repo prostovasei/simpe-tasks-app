@@ -17,7 +17,7 @@ object RadiusTokens {
     const val LG = 12
     const val XL = 16
 
-    /** Плавающая нижняя панель (итерация 13). */
+    /** Плавающая нижняя панель (итерация 13) и шторка новой задачи (итерация 16). */
     const val NAV = 22
 }
 
@@ -87,4 +87,16 @@ object SizeTokens {
     const val GHOST_ROW = 44
     const val GHOST_BAR = 8
     const val EMPTY_ARROW = 64
+
+    /** Шторка новой задачи (итерация 16): ручка сверху, кнопки нижней панели и их значки. */
+    const val SHEET_HANDLE_WIDTH = 36
+    const val SHEET_HANDLE_HEIGHT = 4
+    const val TOOL_BUTTON = 40
+    const val TOOL_ICON = 20
+
+    /** Сетка недели: высота часа, колонка часов слева, шапка дней, крестик «убрать время». */
+    const val WEEK_HOUR = 44
+    const val WEEK_GUTTER = 26
+    const val WEEK_HEADER = 36
+    const val WEEK_CLEAR = 18
 }

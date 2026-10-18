@@ -28,6 +28,8 @@ data class AppShapes(
     val extraLargeTop: RoundedCornerShape = RoundedCornerShape(topStart = RadiusTokens.XL.dp, topEnd = RadiusTokens.XL.dp),
     /** Плавающая нижняя панель. */
     val nav: RoundedCornerShape = RoundedCornerShape(RadiusTokens.NAV.dp),
+    /** Шторка новой задачи: скругление сверху, как у нижней панели. */
+    val sheetTop: RoundedCornerShape = RoundedCornerShape(topStart = RadiusTokens.NAV.dp, topEnd = RadiusTokens.NAV.dp),
 )
 
 @Immutable
@@ -58,4 +60,12 @@ data class AppSizes(
     val ghostRow: Dp = SizeTokens.GHOST_ROW.dp,
     val ghostBar: Dp = SizeTokens.GHOST_BAR.dp,
     val emptyArrow: Dp = SizeTokens.EMPTY_ARROW.dp,
+    val sheetHandleWidth: Dp = SizeTokens.SHEET_HANDLE_WIDTH.dp,
+    val sheetHandleHeight: Dp = SizeTokens.SHEET_HANDLE_HEIGHT.dp,
+    val toolButton: Dp = SizeTokens.TOOL_BUTTON.dp,
+    val toolIcon: Dp = SizeTokens.TOOL_ICON.dp,
+    val weekHour: Dp = SizeTokens.WEEK_HOUR.dp,
+    val weekGutter: Dp = SizeTokens.WEEK_GUTTER.dp,
+    val weekHeader: Dp = SizeTokens.WEEK_HEADER.dp,
+    val weekClear: Dp = SizeTokens.WEEK_CLEAR.dp,
 )

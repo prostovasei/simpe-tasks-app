@@ -7,6 +7,7 @@ import com.prostovasei.simpletasks.domain.model.SearchableTask
 import com.prostovasei.simpletasks.domain.model.Task
 import com.prostovasei.simpletasks.domain.model.TaskDetails
 import kotlinx.coroutines.flow.Flow
+import java.time.Instant
 import java.time.LocalDate
 
 interface TaskRepository {
@@ -45,6 +46,12 @@ interface TaskRepository {
 
     /** Отменяет отметку: возвращает задачу в активные или повторяющуюся — на прежний срок. */
     suspend fun undo(completion: Completion)
+
+    /**
+     * Задачи со временем, идущие в промежутке [from, to), и все активные повторяющиеся со временем —
+     * для сетки недели в окне новой задачи (итерация 16).
+     */
+    fun observeTimedInRange(from: Instant, to: Instant): Flow<List<Task>>
 
     /** Все задачи, кроме удалённых, с пунктами чек-листа — для поиска (итерация 15). */
     fun observeSearchable(): Flow<List<SearchableTask>>

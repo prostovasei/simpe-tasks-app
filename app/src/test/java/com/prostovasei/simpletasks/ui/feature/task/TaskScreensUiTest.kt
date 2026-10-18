@@ -1,6 +1,11 @@
 package com.prostovasei.simpletasks.ui.feature.task
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.test.click
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -44,6 +49,11 @@ class TaskScreensUiTest {
         ProjectOption("work", "Работа", "#3D8BFD", isInbox = false),
     )
     private val intents = mutableListOf<Any>()
+    private val busy = listOf(
+        BusySlot("a", "Планёрка", today, 9 * 60, 10 * 60, isDone = true),
+        BusySlot("b", "Обед", today.plusDays(1), 13 * 60, 14 * 60 + 30, isDone = false),
+        BusySlot("c", "Звонок", today.plusDays(2), 11 * 60, 11 * 60 + 30, isDone = false),
+    )
 
     private fun show(dark: Boolean = false, content: @Composable () -> Unit) {
         composeRule.setContent { AppTheme(darkTheme = dark) { content() } }
@@ -65,12 +75,28 @@ class TaskScreensUiTest {
     fun quickAddShowsChosenFields() {
         show { QuickAddScreen(quickState, { intents += it }, {}, autoFocus = false) }
 
-        composeRule.onNodeWithTag(TAG_CHIP_DATE).assertTextEquals("Завтра")
-        composeRule.onNodeWithTag(TAG_CHIP_TIME).assertTextEquals("10:00")
-        composeRule.onNodeWithTag(TAG_CHIP_LIST).assertTextEquals("Работа")
-        composeRule.onNodeWithTag(TAG_CHIP_PRIORITY).assertTextEquals("P2")
-        composeRule.onNodeWithTag(TAG_CHIP_REPEAT).assertTextEquals("Каждые 2 недели: вт, чт")
+        composeRule.onNodeWithTag(TAG_QUICK_WHEN).assertTextEquals("Завтра, 10:00")
+        composeRule.onNodeWithTag("$TAG_GRID_DAY:${today.plusDays(1)}").assertIsSelected()
+        composeRule.onNodeWithTag("$TAG_GRID_DAY:$today").assertIsNotSelected()
+        composeRule.onNodeWithTag(TAG_GRID_SELECTION, useUnmergedTree = true).assertExists()
+        composeRule.onNodeWithTag(TAG_TOOL_LIST).assertIsSelected()
+        composeRule.onNodeWithTag(TAG_TOOL_PRIORITY).assertIsSelected()
+        composeRule.onNodeWithTag(TAG_TOOL_REPEAT).assertIsSelected()
+        composeRule.onNodeWithTag(TAG_TOOL_CHECKLIST).assertIsSelected()
         composeRule.onNodeWithText("Повестка").assertExists()
+    }
+
+    @Test
+    fun quickAddWithoutDate() {
+        show { QuickAddScreen(QuickAddState(projectId = "inbox", projects = projects, today = today, zone = zone), { intents += it }, {}, autoFocus = false) }
+        composeRule.onNodeWithTag(TAG_QUICK_WHEN).assertTextEquals("Без даты")
+        composeRule.onNodeWithTag(TAG_GRID_SELECTION, useUnmergedTree = true).assertDoesNotExist()
+        composeRule.onNodeWithTag(TAG_TOOL_LIST).assertIsNotSelected()
+        composeRule.onNodeWithTag(TAG_QUICK_SAVE).assertIsNotEnabled()
+
+        // Без даты напоминание не выбрать: меню подсказывает выбрать день.
+        composeRule.onNodeWithTag(TAG_TOOL_REMINDER).performClick()
+        composeRule.onNodeWithText("Сначала выберите день на сетке").assertExists()
     }
 
     @Test
@@ -78,43 +104,61 @@ class TaskScreensUiTest {
         var closed = false
         show { QuickAddScreen(quickState, { intents += it }, { closed = true }, autoFocus = false) }
         composeRule.onNodeWithTag(TAG_QUICK_CARD).assertExists()
-        composeRule.onNodeWithContentDescription("Закрыть").performClick()
+        // Шторка занимает низ экрана — нажимаем на затемнение над ней.
+        composeRule.onNodeWithContentDescription("Закрыть").performTouchInput { click(Offset(centerX, top + 5f)) }
         assertTrue(closed)
     }
 
     @Test
-    fun quickAddEmptyTitleCannotBeSaved() {
-        show { QuickAddScreen(QuickAddState(projectId = "inbox", projects = projects, today = today, zone = zone), { intents += it }, {}, autoFocus = false) }
-        composeRule.onNodeWithTag(TAG_QUICK_SAVE).assertIsNotEnabled()
-        composeRule.onNodeWithTag(TAG_CHIP_LIST).assertTextEquals("Входящие")
-    }
+    fun gridTapsSendDayAndTime() {
+        show { QuickAddScreen(quickState.copy(due = TaskDue.AllDay(today)), { intents += it }, {}, autoFocus = false) }
+        composeRule.onNodeWithTag(TAG_QUICK_WHEN).assertTextEquals("Сегодня, весь день")
 
-    @Test
-    fun dateMenuSetsTomorrowAndPriorityMenuSetsP1() {
-        show { QuickAddScreen(quickState.copy(due = null, priority = Priority.NONE, checklist = null), { intents += it }, {}, autoFocus = false) }
-
-        composeRule.onNodeWithTag(TAG_CHIP_DATE).performClick()
-        composeRule.onNodeWithText("Завтра").performClick()
-        composeRule.onNodeWithTag(TAG_CHIP_PRIORITY).performClick()
-        composeRule.onNodeWithText("P1 Высокий").performClick()
-        composeRule.onNodeWithTag(TAG_CHIP_CHECKLIST).performScrollTo().performClick()
-
+        composeRule.onNodeWithTag("$TAG_GRID_DAY:${today.plusDays(2)}").performClick()
+        // Точка в начале колонки «сегодня», 2:00 по высоте часа (сетка прокручена к полуночи — «сейчас» в состоянии 0:00).
+        val hour = 44f
+        composeRule.onNodeWithTag(TAG_WEEK_GRID).performTouchInput {
+            val dp = density
+            click(Offset(5f * dp, (2 * hour + 2f) * dp))
+        }
         assertEquals(
-            listOf<Any>(
-                QuickAddIntent.Edit(FieldEdit.Due(TaskDue.AllDay(today.plusDays(1)))),
-                QuickAddIntent.Edit(FieldEdit.SetPriority(Priority.HIGH)),
-                QuickAddIntent.AddChecklist,
-            ),
-            intents,
+            listOf<Any>(QuickAddIntent.DayTap(today.plusDays(2)), QuickAddIntent.SlotTap(today, 2 * 60)),
+            intents.filterNot { it is QuickAddIntent.GridDays },
         )
     }
 
     @Test
-    fun timeMenuSwitchesToAllDay() {
+    fun clearTimeCross() {
         show { QuickAddScreen(quickState, { intents += it }, {}, autoFocus = false) }
-        composeRule.onNodeWithTag(TAG_CHIP_TIME).performClick()
-        composeRule.onNodeWithText("Весь день").performClick()
-        assertEquals(listOf<Any>(QuickAddIntent.Edit(FieldEdit.Due(TaskDue.AllDay(today.plusDays(1))))), intents)
+        composeRule.onNodeWithTag(TAG_GRID_CLEAR, useUnmergedTree = true).performClick()
+        assertTrue(QuickAddIntent.ClearTime in intents)
+    }
+
+    @Test
+    fun toolbarMenusSendEdits() {
+        show { QuickAddScreen(quickState.copy(due = null, priority = Priority.NONE, checklist = null), { intents += it }, {}, autoFocus = false) }
+
+        composeRule.onNodeWithTag(TAG_TOOL_LIST).performClick()
+        composeRule.onNodeWithTag("$TAG_PROJECT_OPTION:inbox").performClick()
+        composeRule.onNodeWithTag(TAG_TOOL_PRIORITY).performClick()
+        composeRule.onNodeWithText("P1 Высокий").performClick()
+        composeRule.onNodeWithTag(TAG_TOOL_CHECKLIST).performClick()
+
+        assertEquals(
+            listOf<Any>(
+                QuickAddIntent.Edit(FieldEdit.Project("inbox")),
+                QuickAddIntent.Edit(FieldEdit.SetPriority(Priority.HIGH)),
+                QuickAddIntent.AddChecklist,
+            ),
+            intents.filterNot { it is QuickAddIntent.GridDays },
+        )
+    }
+
+    @Test
+    fun repeatToolOpensConstructor() {
+        show { QuickAddScreen(quickState, { intents += it }, {}, autoFocus = false) }
+        composeRule.onNodeWithTag(TAG_TOOL_REPEAT).performClick()
+        composeRule.onNodeWithTag(TAG_REPEAT_PREVIEW).assertTextEquals("Каждые 2 недели: вт, чт")
     }
 
     @Test
@@ -201,20 +245,15 @@ class TaskScreensUiTest {
     }
 
     @Test
-    fun quickAddShowsDefaultReminder() {
+    fun quickAddReminderMenu() {
         show { QuickAddScreen(quickState, { intents += it }, {}, autoFocus = false) }
-        composeRule.onNodeWithTag(TAG_CHIP_REMINDER).assertTextEquals("В срок")
-
-        composeRule.onNodeWithTag(TAG_CHIP_REMINDER).performScrollTo().performClick()
+        composeRule.onNodeWithTag(TAG_TOOL_REMINDER).assertIsSelected().performClick()
         composeRule.onNodeWithTag("$TAG_REMINDER_OPTION:PT0S").assertExists()
         composeRule.onNodeWithTag("$TAG_REMINDER_OPTION:-PT30M").performClick()
-        assertEquals(listOf<Any>(QuickAddIntent.Edit(FieldEdit.SetReminders(listOf("PT0S", "-PT30M")))), intents)
-    }
-
-    @Test
-    fun noDateNoReminderChip() {
-        show { QuickAddScreen(quickState.copy(due = null), { intents += it }, {}, autoFocus = false) }
-        composeRule.onNodeWithTag(TAG_CHIP_REMINDER).assertDoesNotExist()
+        assertEquals(
+            listOf<Any>(QuickAddIntent.Edit(FieldEdit.SetReminders(listOf("PT0S", "-PT30M")))),
+            intents.filterNot { it is QuickAddIntent.GridDays },
+        )
     }
 
     @Test
@@ -238,8 +277,14 @@ class TaskScreensUiTest {
 
     @Test
     fun screenshotQuickAdd() {
-        show { QuickAddScreen(quickState, {}, {}, autoFocus = false) }
+        show { QuickAddScreen(quickState.copy(busy = busy), {}, {}, autoFocus = false) }
         composeRule.onRoot().captureRoboImage("screenshots/quick_add_light.png")
+    }
+
+    @Test
+    fun screenshotQuickAddDark() {
+        show(dark = true) { QuickAddScreen(quickState.copy(busy = busy, checklist = null), {}, {}, autoFocus = false) }
+        composeRule.onRoot().captureRoboImage("screenshots/quick_add_dark.png")
     }
 
     @Test

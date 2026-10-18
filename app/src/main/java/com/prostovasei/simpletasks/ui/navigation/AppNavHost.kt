@@ -41,9 +41,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.layout.boundsInWindow
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
@@ -90,19 +87,15 @@ fun AppNavHost(
     onRouteOpened: () -> Unit = {},
 ) {
     val backStack by navController.currentBackStackEntryAsState()
-    // Центр «+» нижней панели — из него вырастает карточка новой задачи; null — открыта не этой кнопкой.
-    var barPlus by remember { mutableStateOf<Offset?>(null) }
-    var addOrigin by remember { mutableStateOf<Offset?>(null) }
     // Уведомление или виджет: открыть задачу или создание задачи поверх текущего экрана.
     // При холодном запуске ждём, пока NavHost построит граф, — иначе navigate() падает.
     LaunchedEffect(openRoute) {
         openRoute ?: return@LaunchedEffect
-        addOrigin = null
         navController.currentBackStackEntryFlow.first()
         navController.navigate(openRoute) { launchSingleTop = true }
         onRouteOpened()
     }
-    // Карточка новой задачи открыта поверх экрана — панель и вкладка остаются от экрана под ней.
+    // Шторка новой задачи открыта поверх экрана — панель и вкладка остаются от экрана под ней.
     val destination = backStack?.destination?.let { top ->
         if (top.hasRoute(QuickAddDestination::class)) navController.previousBackStackEntry?.destination else top
     }
@@ -118,11 +111,7 @@ fun AppNavHost(
                     selected = selected,
                     onSelect = { tab -> navController.openTab(tab) },
                     // На «Все» новая задача — на сегодня, на остальных вкладках — во «Входящие».
-                    onAdd = {
-                        addOrigin = barPlus
-                        navController.navigate(QuickAddDestination(today = selected == Tab.ALL))
-                    },
-                    onAddPositioned = { barPlus = it },
+                    onAdd = { navController.navigate(QuickAddDestination(today = selected == Tab.ALL)) },
                 )
             }
         },
@@ -155,14 +144,11 @@ fun AppNavHost(
                 val projectId = entry.toRoute<ProjectDestination>().projectId
                 ProjectRoute(
                     onBack = { navController.popBackStack() },
-                    onAddTask = {
-                        addOrigin = null
-                        navController.navigate(QuickAddDestination(projectId = projectId))
-                    },
+                    onAddTask = { navController.navigate(QuickAddDestination(projectId = projectId)) },
                     onOpenTask = openTask,
                 )
             }
-            // Новая задача — карточка поверх текущего экрана (итерация 15): экран под ней остаётся виден.
+            // Новая задача — шторка поверх текущего экрана (итерация 16): экран под ней остаётся виден.
             dialog<QuickAddDestination>(
                 dialogProperties = DialogProperties(
                     usePlatformDefaultWidth = false,
@@ -170,7 +156,7 @@ fun AppNavHost(
                     dismissOnBackPress = false,
                     dismissOnClickOutside = false,
                 ),
-            ) { QuickAddRoute(onClose = { navController.popBackStack() }, origin = addOrigin) }
+            ) { QuickAddRoute(onClose = { navController.popBackStack() }) }
             composable<TaskDetailDestination> { TaskDetailRoute(onClose = { navController.popBackStack() }, onOpenTask = openTask) }
         }
     }
@@ -181,7 +167,7 @@ fun AppNavHost(
  * в конце — кнопка «+» новой задачи. Поиск — всегда в панели, перед «Настройками» (итерация 15).
  */
 @Composable
-fun BottomBar(selected: Tab, onSelect: (Tab) -> Unit, onAdd: () -> Unit = {}, onAddPositioned: (Offset) -> Unit = {}) {
+fun BottomBar(selected: Tab, onSelect: (Tab) -> Unit, onAdd: () -> Unit = {}) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
     val sizes = AppTheme.sizes
@@ -212,7 +198,6 @@ fun BottomBar(selected: Tab, onSelect: (Tab) -> Unit, onAdd: () -> Unit = {}, on
             Box(
                 modifier = Modifier
                     .size(sizes.navAdd)
-                    .onGloballyPositioned { onAddPositioned(it.boundsInWindow().center) }
                     .clip(AppTheme.shapes.extraLarge)
                     .background(colors.accent)
                     .clickable(onClick = onAdd)
