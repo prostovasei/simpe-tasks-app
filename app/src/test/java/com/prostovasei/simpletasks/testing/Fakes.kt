@@ -83,7 +83,7 @@ class FakeTaskRepository(private val today: LocalDate = LocalDate.of(2026, 10, 1
     override suspend fun createTask(task: NewTask): String {
         created += task
         val id = "new${created.size}"
-        tasks.update { it + task(id, title = task.title, projectId = task.projectId, due = task.due, priority = task.priority).copy(content = task.content, rrule = task.rrule, reminders = task.reminders) }
+        tasks.update { it + task(id, title = task.title, projectId = task.projectId, due = task.due, start = task.start, priority = task.priority).copy(content = task.content, rrule = task.rrule, reminders = task.reminders) }
         return id
     }
     val updated = mutableListOf<Task>()

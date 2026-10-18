@@ -86,11 +86,10 @@ import com.prostovasei.simpletasks.designsystem.components.ListSquare
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.designsystem.theme.parseListColor
 import com.prostovasei.simpletasks.domain.model.Priority
+import com.prostovasei.simpletasks.domain.model.TaskDue
 import com.prostovasei.simpletasks.ui.common.DueFormatter
 import com.prostovasei.simpletasks.ui.common.ListIcons
 import kotlinx.coroutines.launch
-import java.time.LocalTime
-import java.time.format.DateTimeFormatter
 
 @Composable
 fun QuickAddRoute(onClose: () -> Unit, viewModel: QuickAddViewModel = hiltViewModel()) {
@@ -232,9 +231,12 @@ fun QuickAddScreen(
                     nowMinute = state.nowMinute,
                     selectedDate = state.selectedDate,
                     selectedMinute = state.selectedMinute,
+                    selectedDuration = state.durationMinutes,
                     busy = state.busy,
                     onDayTap = { onIntent(QuickAddIntent.DayTap(it)) },
                     onSlotTap = { date, minute -> onIntent(QuickAddIntent.SlotTap(date, minute)) },
+                    onMove = { date, minute -> onIntent(QuickAddIntent.MoveSlot(date, minute)) },
+                    onResize = { onIntent(QuickAddIntent.Resize(it)) },
                     onClearTime = { onIntent(QuickAddIntent.ClearTime) },
                     onFirstDayChange = { onIntent(QuickAddIntent.GridDays(it)) },
                     onInteract = {
@@ -249,16 +251,14 @@ fun QuickAddScreen(
     }
 }
 
-/** Строка «когда»: «Без даты», «Сегодня, весь день» или «Завтра, 16:00». */
+/** Строка «когда»: «Без даты», «Сегодня, весь день», «Завтра, 16:00» или «Завтра, 16:00–17:30». */
 @Composable
 private fun whenText(state: QuickAddState): String {
-    val day = DueFormatter.format(state.due, null, state.today, state.zone)?.day ?: return stringResource(R.string.quick_when_none)
-    val time = state.selectedMinute
-    return if (time == null) {
-        stringResource(R.string.quick_when_all_day, dayLabelText(day))
-    } else {
-        stringResource(R.string.quick_when_time, dayLabelText(day), TIME.format(LocalTime.of(time / 60, time % 60)))
-    }
+    val end = state.intervalEnd?.let { TaskDue.AtTime(it) }
+    val text = DueFormatter.format(end ?: state.due, state.due.takeIf { end != null }, state.today, state.zone)
+        ?: return stringResource(R.string.quick_when_none)
+    val time = text.time ?: return stringResource(R.string.quick_when_all_day, dayLabelText(text.day))
+    return stringResource(R.string.quick_when_time, dayLabelText(text.day), time)
 }
 
 /** Нижняя панель шторки: квадратные кнопки свойств слева и зелёная «Сохранить» справа. */
@@ -424,7 +424,6 @@ private fun CompactField(
     )
 }
 
-private val TIME: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 private val SHEET_EASING = CubicBezierEasing(0.32f, 0.72f, 0f, 1f)
 private const val OPEN_MS = 340
 private const val CLOSE_MS = 220

@@ -52,6 +52,20 @@ object WeekGridMath {
         return if (days in 0 until VISIBLE_DAYS) 0f else days.coerceIn(-MAX_DAYS_AWAY.toLong(), MAX_DAYS_AWAY.toLong()).toFloat()
     }
 
+    /**
+     * Куда встанет перетаскиваемый блок ([minute], [duration] минут), сдвинутый на [dx]/[dy] px:
+     * сдвиг в днях и новое начало — шагом 30 минут, весь блок в пределах суток.
+     */
+    fun moveTarget(minute: Int, duration: Int, dx: Float, dy: Float, dayPx: Float, stepPx: Float): Pair<Int, Int> {
+        val days = (dx / dayPx).roundToInt()
+        val start = (minute + (dy / stepPx).roundToInt() * STEP_MINUTES).coerceIn(0, (DAY_MINUTES - duration).coerceAtLeast(0))
+        return days to start
+    }
+
+    /** Длительность после растягивания ручки на [dy] px: шаг 30 минут, не меньше шага и не дальше 24:00. */
+    fun resizeTarget(minute: Int, duration: Int, dy: Float, stepPx: Float): Int =
+        (duration + (dy / stepPx).roundToInt() * STEP_MINUTES).coerceIn(STEP_MINUTES, DAY_MINUTES - minute)
+
     private const val MINUTES_PER_HOUR = 60
 }
 

@@ -80,6 +80,16 @@ class TaskRepositoryTest : DatabaseTest() {
     }
 
     @Test
+    fun createIntervalKeepsStart() = runTest {
+        val start = TaskDue.AtTime(Instant.parse("2026-10-15T16:00:00Z"))
+        val end = TaskDue.AtTime(Instant.parse("2026-10-15T17:30:00Z"))
+        val id = tasks.createTask(NewTask(projectId = projects.getInbox().id, title = "Встреча", due = end, start = start))
+        val created = tasks.observeTaskDetails(id).first()!!.task
+        assertEquals(start, created.start)
+        assertEquals(end, created.due)
+    }
+
+    @Test
     fun completeAndUndo() = runTest {
         val id = tasks.createTask(NewTask(projectId = projects.getInbox().id, title = "Задача"))
 

@@ -47,6 +47,22 @@ class WeekGridModelTest {
     }
 
     @Test
+    fun dragSnapsToStepsAndStaysInDay() {
+        // День 50 px, шаг 30 минут — 20 px.
+        assertEquals(1 to 10 * 60 + 30, WeekGridMath.moveTarget(10 * 60, 60, 30f, 25f, 50f, 20f))
+        assertEquals(-1 to 9 * 60, WeekGridMath.moveTarget(10 * 60, 60, -40f, -45f, 50f, 20f))
+        assertEquals("Конец не дальше 24:00", 0 to 22 * 60, WeekGridMath.moveTarget(10 * 60, 120, 0f, 2000f, 50f, 20f))
+        assertEquals(0 to 0, WeekGridMath.moveTarget(1 * 60, 30, 0f, -500f, 50f, 20f))
+    }
+
+    @Test
+    fun resizeSnapsAndLimits() {
+        assertEquals(90, WeekGridMath.resizeTarget(16 * 60, 30, 41f, 20f))
+        assertEquals("Не короче 30 минут", 30, WeekGridMath.resizeTarget(16 * 60, 60, -300f, 20f))
+        assertEquals("Не дальше 24:00", 60, WeekGridMath.resizeTarget(23 * 60, 30, 500f, 20f))
+    }
+
+    @Test
     fun busySlotsFromTimedTasks() {
         val tasks = listOf(
             task("a", due = at("2026-10-14T16:00:00Z")),

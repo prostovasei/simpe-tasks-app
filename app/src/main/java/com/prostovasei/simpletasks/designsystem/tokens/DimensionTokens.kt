@@ -99,4 +99,5 @@ object SizeTokens {
     const val WEEK_GUTTER = 26
     const val WEEK_HEADER = 36
     const val WEEK_CLEAR = 18
+    const val WEEK_KNOB = 10
 }
