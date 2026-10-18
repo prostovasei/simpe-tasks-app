@@ -84,6 +84,16 @@
     <string name="quick_add_checklist_hint">Пункт чек-листа</string>
     <string name="quick_add_save">Сохранить</string>
     <string name="quick_add_close">Закрыть</string>
+    <string name="quick_tool_list">Список</string>
+    <string name="quick_tool_repeat">Повтор</string>
+    <string name="quick_tool_reminder">Напоминание</string>
+    <string name="quick_tool_priority">Приоритет</string>
+    <string name="quick_tool_checklist">Чек-лист</string>
+    <string name="quick_reminder_need_day">Сначала выберите день на сетке</string>
+    <string name="quick_clear_time">Убрать время</string>
+    <string name="quick_when_none">Без даты</string>
+    <string name="quick_when_all_day">%1$s, весь день</string>
+    <string name="quick_when_time">%1$s, %2$s</string>
     <string name="chip_date">Дата</string>
     <string name="chip_time">Время</string>
     <string name="chip_priority">Приоритет</string>

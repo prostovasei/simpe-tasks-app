@@ -12,7 +12,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.prostovasei.simpletasks.TAG_POPUP_SCRIM
 import com.prostovasei.simpletasks.TaskPopupActivity
 import com.prostovasei.simpletasks.domain.model.NewTask
-import com.prostovasei.simpletasks.ui.feature.task.TAG_CHIP_DATE
+import com.prostovasei.simpletasks.ui.feature.task.TAG_QUICK_WHEN
 import com.prostovasei.simpletasks.ui.feature.task.TAG_DETAIL_TITLE
 import com.prostovasei.simpletasks.ui.feature.task.TAG_QUICK_TITLE
 import com.prostovasei.simpletasks.widget.WidgetFilter
@@ -41,7 +41,7 @@ class LaunchFromWidgetTest {
     fun plusFromAllWidgetOpensQuickAddForToday() {
         ActivityScenario.launch<TaskPopupActivity>(quickAddIntent(context, WidgetFilter.All)).use {
             composeRule.waitUntil(LAUNCH_TIMEOUT_MS) { composeRule.onAllNodesWithTag(TAG_QUICK_TITLE).fetchSemanticsNodes().isNotEmpty() }
-            composeRule.onNodeWithTag(TAG_CHIP_DATE).assertTextEquals("Сегодня")
+            composeRule.onNodeWithTag(TAG_QUICK_WHEN).assertTextEquals("Сегодня, весь день")
         }
     }
 

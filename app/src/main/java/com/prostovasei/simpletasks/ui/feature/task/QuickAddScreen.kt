@@ -1,51 +1,43 @@
 package com.prostovasei.simpletasks.ui.feature.task
 
-import androidx.compose.foundation.background
 import androidx.activity.compose.BackHandler
+import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.FastOutLinearInEasing
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.ime
-import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.union
-import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.TransformOrigin
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.boundsInWindow
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.window.DialogWindowProvider
-import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -54,31 +46,60 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.window.DialogWindowProvider
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.prostovasei.simpletasks.R
+import com.prostovasei.simpletasks.designsystem.components.ListSquare
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
+import com.prostovasei.simpletasks.designsystem.theme.parseListColor
+import com.prostovasei.simpletasks.domain.model.Priority
+import com.prostovasei.simpletasks.ui.common.DueFormatter
+import com.prostovasei.simpletasks.ui.common.ListIcons
+import kotlinx.coroutines.launch
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 
 @Composable
-fun QuickAddRoute(onClose: () -> Unit, origin: Offset? = null, viewModel: QuickAddViewModel = hiltViewModel()) {
+fun QuickAddRoute(onClose: () -> Unit, viewModel: QuickAddViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val progress = remember { Animatable(0f) }
     val scope = rememberCoroutineScope()
     val keyboard = LocalSoftwareKeyboardController.current
     var closing by remember { mutableStateOf(false) }
-    // Закрытие — обратная анимация: карточка уходит в «+», потом экран убирается из навигации.
+    // Закрытие — обратная анимация: шторка уезжает вниз, потом экран убирается из навигации.
     val close: () -> Unit = {
         if (!closing) {
             closing = true
@@ -89,20 +110,20 @@ fun QuickAddRoute(onClose: () -> Unit, origin: Offset? = null, viewModel: QuickA
             }
         }
     }
-    LaunchedEffect(Unit) { progress.animateTo(1f, tween(OPEN_MS, easing = FastOutSlowInEasing)) }
+    LaunchedEffect(Unit) { progress.animateTo(1f, tween(OPEN_MS, easing = SHEET_EASING)) }
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect -> if (effect == QuickAddEffect.Close) close() }
     }
     BackHandler(onBack = close)
-    // Своё затемнение плавно появляется вместе с карточкой — системное затемнение окна выключено.
+    // Своё затемнение плавно появляется вместе со шторкой — системное затемнение окна выключено.
     val window = (LocalView.current.parent as? DialogWindowProvider)?.window
     SideEffect { window?.setDimAmount(0f) }
-    QuickAddScreen(state, viewModel::onIntent, close, progress = { progress.value }, origin = origin)
+    QuickAddScreen(state, viewModel::onIntent, close, progress = { progress.value })
 }
 
 /**
- * Новая задача — маленькая карточка над нижней панелью (итерация 15, вариант B1): вырастает из «+»
- * ([origin] — центр кнопки в координатах окна; null — из правого нижнего угла), курсор сразу в названии.
+ * Новая задача — шторка снизу на 75% экрана (итерация 16, макет PM): название и описание, строка «когда»,
+ * сетка недели и панель кнопок: список, повтор, напоминание, приоритет, чек-лист и «Сохранить».
  * Нажатие на затемнение или «Назад» — закрыть.
  */
 @Composable
@@ -112,20 +133,19 @@ fun QuickAddScreen(
     onClose: () -> Unit,
     autoFocus: Boolean = true,
     progress: () -> Float = { 1f },
-    origin: Offset? = null,
 ) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
     val sizes = AppTheme.sizes
     val titleFocus = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
+    val focus = LocalFocusManager.current
     if (autoFocus) {
         LaunchedEffect(Unit) {
             titleFocus.requestFocus()
             keyboard?.show()
         }
     }
-    var cardBounds by remember { mutableStateOf(Rect.Zero) }
     val closeLabel = stringResource(R.string.quick_add_close)
 
     Box(Modifier.fillMaxSize()) {
@@ -138,107 +158,278 @@ fun QuickAddScreen(
                 .semantics { contentDescription = closeLabel }
                 .testTag(TAG_QUICK_SCRIM),
         )
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.ime))
-                .padding(spacing.sm)
-                .onGloballyPositioned { cardBounds = it.boundsInWindow() }
-                .graphicsLayer {
-                    val p = progress()
-                    val scale = START_SCALE + (1f - START_SCALE) * p
-                    scaleX = scale
-                    scaleY = scale
-                    alpha = (p * 2f).coerceAtMost(1f)
-                    transformOrigin = growOrigin(origin, cardBounds)
-                }
-                .shadow(sizes.navShadow, AppTheme.shapes.nav)
-                .background(colors.surface, AppTheme.shapes.nav)
-                .heightIn(max = sizes.pickerMaxHeight)
-                .padding(vertical = spacing.xs)
-                .testTag(TAG_QUICK_CARD),
-        ) {
+        Box(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars.union(WindowInsets.ime))) {
             Column(
-                modifier = Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()).padding(horizontal = spacing.xxs),
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .fillMaxHeight(SHEET_FRACTION)
+                    .graphicsLayer { translationY = (1f - progress()) * size.height }
+                    .shadow(sizes.navShadow, AppTheme.shapes.sheetTop)
+                    .background(colors.surface, AppTheme.shapes.sheetTop)
+                    // Нажатия по пустому месту шторки не должны доходить до затемнения.
+                    .pointerInput(Unit) { detectTapGestures { } }
+                    .testTag(TAG_QUICK_CARD),
             ) {
-                FormTextField(
-                    value = state.title,
-                    onValueChange = { onIntent(QuickAddIntent.Title(it)) },
-                    hint = stringResource(R.string.quick_add_title_hint),
-                    textStyle = MaterialTheme.typography.titleMedium,
-                    imeAction = ImeAction.Done,
-                    onImeAction = { onIntent(QuickAddIntent.Save) },
-                    container = colors.surface,
-                    modifier = Modifier.focusRequester(titleFocus).testTag(TAG_QUICK_TITLE),
+                Box(
+                    Modifier
+                        .padding(top = spacing.xs, bottom = spacing.xxs)
+                        .align(Alignment.CenterHorizontally)
+                        .size(sizes.sheetHandleWidth, sizes.sheetHandleHeight)
+                        .background(colors.divider, AppTheme.shapes.small),
                 )
-                FormTextField(
-                    value = state.content,
-                    onValueChange = { onIntent(QuickAddIntent.Content(it)) },
-                    hint = stringResource(R.string.quick_add_content_hint),
-                    textStyle = MaterialTheme.typography.bodyMedium,
-                    singleLine = false,
-                    container = colors.surface,
-                    modifier = Modifier.testTag(TAG_QUICK_CONTENT),
-                )
-                state.checklist?.forEachIndexed { index, item ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        FormTextField(
-                            value = item,
-                            onValueChange = { onIntent(QuickAddIntent.ChecklistItem(index, it)) },
-                            hint = stringResource(R.string.quick_add_checklist_hint),
-                            textStyle = MaterialTheme.typography.bodyMedium,
-                            imeAction = ImeAction.Next,
-                            onImeAction = { onIntent(QuickAddIntent.AddChecklist) },
-                            container = colors.surface,
-                            modifier = Modifier.weight(1f).testTag("$TAG_QUICK_CHECKLIST:$index"),
-                        )
-                        IconButton(onClick = { onIntent(QuickAddIntent.RemoveChecklistItem(index)) }) {
-                            Icon(Icons.Default.Close, null, tint = colors.textSecondary)
+                Column(
+                    Modifier
+                        .heightIn(max = sizes.pickerMaxHeight)
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = spacing.md),
+                ) {
+                    CompactField(
+                        value = state.title,
+                        onValueChange = { onIntent(QuickAddIntent.Title(it)) },
+                        hint = stringResource(R.string.quick_add_title_hint),
+                        textStyle = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
+                        imeAction = ImeAction.Done,
+                        onImeAction = { onIntent(QuickAddIntent.Save) },
+                        modifier = Modifier.focusRequester(titleFocus).testTag(TAG_QUICK_TITLE),
+                    )
+                    CompactField(
+                        value = state.content,
+                        onValueChange = { onIntent(QuickAddIntent.Content(it)) },
+                        hint = stringResource(R.string.quick_add_content_hint),
+                        textStyle = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold, color = colors.textSecondary),
+                        singleLine = false,
+                        modifier = Modifier.padding(top = spacing.xxs).testTag(TAG_QUICK_CONTENT),
+                    )
+                    state.checklist?.forEachIndexed { index, item ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(Modifier.size(sizes.listDot).border(sizes.checkboxStroke, colors.divider, AppTheme.shapes.small))
+                            Spacer(Modifier.size(spacing.xs))
+                            CompactField(
+                                value = item,
+                                onValueChange = { onIntent(QuickAddIntent.ChecklistItem(index, it)) },
+                                hint = stringResource(R.string.quick_add_checklist_hint),
+                                textStyle = MaterialTheme.typography.bodyMedium,
+                                imeAction = ImeAction.Next,
+                                onImeAction = { onIntent(QuickAddIntent.AddChecklist) },
+                                modifier = Modifier.weight(1f).testTag("$TAG_QUICK_CHECKLIST:$index"),
+                            )
+                            IconButton(onClick = { onIntent(QuickAddIntent.RemoveChecklistItem(index)) }, modifier = Modifier.size(sizes.toolButton)) {
+                                Icon(Icons.Default.Close, null, tint = colors.textSecondary, modifier = Modifier.size(sizes.metaIcon))
+                            }
                         }
                     }
                 }
-            }
-            TaskFieldChips(
-                due = state.due,
-                projectId = state.projectId,
-                priority = state.priority,
-                rrule = state.rrule,
-                reminders = state.reminders,
-                projects = state.projects,
-                today = state.today,
-                zone = state.zone,
-                onEdit = { onIntent(QuickAddIntent.Edit(it)) },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = spacing.sm, vertical = spacing.xxs),
-            ) {
-                AppChip(stringResource(R.string.chip_checklist), selected = state.checklist != null, tag = TAG_CHIP_CHECKLIST) {
-                    onIntent(QuickAddIntent.AddChecklist)
-                }
-            }
-            Row(Modifier.fillMaxWidth().padding(horizontal = spacing.sm)) {
-                Spacer(Modifier.weight(1f))
-                Button(
-                    onClick = { onIntent(QuickAddIntent.Save) },
-                    enabled = state.canSave,
-                    shape = AppTheme.shapes.large,
-                    colors = ButtonDefaults.buttonColors(containerColor = colors.accent, contentColor = colors.onAccent),
-                    modifier = Modifier.testTag(TAG_QUICK_SAVE),
-                ) { Text(stringResource(R.string.quick_add_save)) }
+                Text(
+                    whenText(state),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = if (state.due == null) colors.textSecondary else colors.accent,
+                    modifier = Modifier.padding(horizontal = spacing.md, vertical = spacing.xs).testTag(TAG_QUICK_WHEN),
+                )
+                WeekGrid(
+                    today = state.today,
+                    nowMinute = state.nowMinute,
+                    selectedDate = state.selectedDate,
+                    selectedMinute = state.selectedMinute,
+                    busy = state.busy,
+                    onDayTap = { onIntent(QuickAddIntent.DayTap(it)) },
+                    onSlotTap = { date, minute -> onIntent(QuickAddIntent.SlotTap(date, minute)) },
+                    onClearTime = { onIntent(QuickAddIntent.ClearTime) },
+                    onFirstDayChange = { onIntent(QuickAddIntent.GridDays(it)) },
+                    onInteract = {
+                        focus.clearFocus()
+                        keyboard?.hide()
+                    },
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                )
+                QuickToolbar(state, onIntent, Modifier.windowInsetsPadding(WindowInsets.navigationBars))
             }
         }
     }
 }
 
-/** Точка, из которой растёт карточка: центр «+» относительно карточки (может быть за её краем). */
-private fun growOrigin(origin: Offset?, card: Rect): TransformOrigin {
-    if (origin == null || card.width <= 0f || card.height <= 0f) return TransformOrigin(DEFAULT_ORIGIN_X, 1f)
-    return TransformOrigin((origin.x - card.left) / card.width, (origin.y - card.top) / card.height)
+/** Строка «когда»: «Без даты», «Сегодня, весь день» или «Завтра, 16:00». */
+@Composable
+private fun whenText(state: QuickAddState): String {
+    val day = DueFormatter.format(state.due, null, state.today, state.zone)?.day ?: return stringResource(R.string.quick_when_none)
+    val time = state.selectedMinute
+    return if (time == null) {
+        stringResource(R.string.quick_when_all_day, dayLabelText(day))
+    } else {
+        stringResource(R.string.quick_when_time, dayLabelText(day), TIME.format(LocalTime.of(time / 60, time % 60)))
+    }
 }
 
+/** Нижняя панель шторки: квадратные кнопки свойств слева и зелёная «Сохранить» справа. */
+@Composable
+private fun QuickToolbar(state: QuickAddState, onIntent: (QuickAddIntent) -> Unit, modifier: Modifier) {
+    val colors = AppTheme.colors
+    val spacing = AppTheme.spacing
+    val onEdit: (FieldEdit) -> Unit = { onIntent(QuickAddIntent.Edit(it)) }
+    var menu by remember { mutableStateOf(ToolMenu.None) }
+    var repeatDialog by remember { mutableStateOf(false) }
+    val close = { menu = ToolMenu.None }
+    Row(
+        modifier = modifier.fillMaxWidth().padding(horizontal = spacing.sm, vertical = spacing.xs),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(spacing.xs),
+    ) {
+        val project = state.projects.firstOrNull { it.id == state.projectId }
+        Box {
+            ToolButton(
+                R.string.quick_tool_list,
+                active = project?.isInbox == false,
+                tag = TAG_TOOL_LIST,
+                content = {
+                    ListSquare(
+                        color = parseListColor(project?.color) ?: colors.inactive,
+                        icon = ListIcons.drawable(if (project?.isInbox != false) ListIcons.INBOX else project.icon),
+                    )
+                },
+            ) { menu = ToolMenu.List }
+            DropdownMenu(expanded = menu == ToolMenu.List, onDismissRequest = close, containerColor = colors.surface) {
+                ProjectMenuItems(state.projectId, state.projects, onEdit, close)
+            }
+        }
+        ToolButton(R.string.quick_tool_repeat, active = state.rrule != null, tag = TAG_TOOL_REPEAT, icon = R.drawable.ic_tool_repeat) {
+            repeatDialog = true
+        }
+        Box {
+            ToolButton(
+                R.string.quick_tool_reminder,
+                active = state.due != null && state.reminders.isNotEmpty(),
+                tag = TAG_TOOL_REMINDER,
+                icon = R.drawable.ic_tool_reminder,
+                dimmed = state.due == null,
+            ) { menu = ToolMenu.Reminder }
+            DropdownMenu(expanded = menu == ToolMenu.Reminder, onDismissRequest = close, containerColor = colors.surface) {
+                val due = state.due
+                if (due == null) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.quick_reminder_need_day), color = colors.textSecondary) },
+                        onClick = close,
+                        modifier = Modifier.testTag(TAG_REMINDER_NEED_DAY),
+                    )
+                } else {
+                    ReminderMenuItems(due, state.reminders, onEdit, close)
+                }
+            }
+        }
+        Box {
+            ToolButton(R.string.quick_tool_priority, active = state.priority != Priority.NONE, tag = TAG_TOOL_PRIORITY, icon = R.drawable.ic_tool_priority) {
+                menu = ToolMenu.Priority
+            }
+            DropdownMenu(expanded = menu == ToolMenu.Priority, onDismissRequest = close, containerColor = colors.surface) {
+                PriorityMenuItems(state.priority, onEdit, close)
+            }
+        }
+        ToolButton(R.string.quick_tool_checklist, active = state.checklist != null, tag = TAG_TOOL_CHECKLIST, icon = R.drawable.ic_tool_checklist) {
+            onIntent(QuickAddIntent.AddChecklist)
+        }
+        Spacer(Modifier.weight(1f))
+        val saveLabel = stringResource(R.string.quick_add_save)
+        Box(
+            Modifier
+                .size(AppTheme.sizes.toolButton)
+                .clip(AppTheme.shapes.medium)
+                .background(if (state.canSave) colors.accent else colors.inactive)
+                .clickable(enabled = state.canSave, role = Role.Button) { onIntent(QuickAddIntent.Save) }
+                .semantics { contentDescription = saveLabel }
+                .testTag(TAG_QUICK_SAVE),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(Icons.Default.Check, null, tint = colors.onAccent)
+        }
+    }
+    if (repeatDialog) {
+        RepeatDialog(
+            rrule = state.rrule,
+            due = state.selectedDate,
+            onConfirm = { onEdit(FieldEdit.Repeat(it)); repeatDialog = false },
+            onDismiss = { repeatDialog = false },
+        )
+    }
+}
+
+private enum class ToolMenu { None, List, Reminder, Priority }
+
+/** Квадратная кнопка панели (макет PM): выбранная — залита акцентом; [dimmed] — бледная, пока нет даты. */
+@Composable
+private fun ToolButton(
+    label: Int,
+    active: Boolean,
+    tag: String,
+    @DrawableRes icon: Int? = null,
+    dimmed: Boolean = false,
+    content: @Composable () -> Unit = {},
+    onClick: () -> Unit,
+) {
+    val colors = AppTheme.colors
+    val sizes = AppTheme.sizes
+    val shape = AppTheme.shapes.medium
+    val description = stringResource(label)
+    Box(
+        Modifier
+            .size(sizes.toolButton)
+            .clip(shape)
+            .background(if (active) colors.accent else colors.surface)
+            .border(sizes.checkboxStroke, if (active) colors.accent else colors.divider, shape)
+            .clickable(role = Role.Button, onClick = onClick)
+            .semantics {
+                contentDescription = description
+                selected = active
+            }
+            .then(if (dimmed) Modifier.alpha(DIMMED_ALPHA) else Modifier)
+            .testTag(tag),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (icon != null) {
+            Icon(painterResource(icon), null, tint = if (active) colors.onAccent else colors.textSecondary, modifier = Modifier.size(sizes.toolIcon))
+        } else {
+            content()
+        }
+    }
+}
+
+/** Поле без рамки и отступов (шторка новой задачи): подсказка того же стиля, бледная. */
+@Composable
+private fun CompactField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    hint: String,
+    textStyle: TextStyle,
+    modifier: Modifier = Modifier,
+    singleLine: Boolean = true,
+    imeAction: ImeAction = ImeAction.Default,
+    onImeAction: () -> Unit = {},
+) {
+    val colors = AppTheme.colors
+    val style = if (textStyle.color == Color.Unspecified) textStyle.copy(color = colors.textPrimary) else textStyle
+    BasicTextField(
+        value = value,
+        onValueChange = onValueChange,
+        textStyle = style,
+        singleLine = singleLine,
+        cursorBrush = SolidColor(colors.accent),
+        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = imeAction),
+        keyboardActions = KeyboardActions(onAny = { onImeAction() }),
+        modifier = modifier.fillMaxWidth().padding(vertical = AppTheme.spacing.xxs),
+        decorationBox = { inner ->
+            Box {
+                if (value.isEmpty()) Text(hint, style = style.copy(color = colors.inactive))
+                inner()
+            }
+        },
+    )
+}
+
+private val TIME: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+private val SHEET_EASING = CubicBezierEasing(0.32f, 0.72f, 0f, 1f)
 private const val OPEN_MS = 340
 private const val CLOSE_MS = 220
-private const val START_SCALE = 0.08f
-private const val DEFAULT_ORIGIN_X = 0.9f
+private const val SHEET_FRACTION = 0.75f
+private const val DIMMED_ALPHA = 0.45f
 
 /** Поле без рамки на фоне [container] (по умолчанию — фон экрана). */
 @Composable
@@ -280,4 +471,10 @@ const val TAG_QUICK_SCRIM = "quick_scrim"
 const val TAG_QUICK_CONTENT = "quick_content"
 const val TAG_QUICK_SAVE = "quick_save"
 const val TAG_QUICK_CHECKLIST = "quick_checklist"
-const val TAG_CHIP_CHECKLIST = "chip_checklist"
+const val TAG_QUICK_WHEN = "quick_when"
+const val TAG_TOOL_LIST = "tool_list"
+const val TAG_TOOL_REPEAT = "tool_repeat"
+const val TAG_TOOL_REMINDER = "tool_reminder"
+const val TAG_TOOL_PRIORITY = "tool_priority"
+const val TAG_TOOL_CHECKLIST = "tool_checklist"
+const val TAG_REMINDER_NEED_DAY = "reminder_need_day"

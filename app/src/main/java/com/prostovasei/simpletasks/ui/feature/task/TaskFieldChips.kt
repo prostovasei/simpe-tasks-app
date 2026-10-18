@@ -35,7 +35,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.data.local.DueDateCodec
-import com.prostovasei.simpletasks.designsystem.components.ColorDot
+import com.prostovasei.simpletasks.designsystem.components.ListSquare
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.designsystem.theme.parseListColor
 import com.prostovasei.simpletasks.domain.model.Priority
@@ -45,6 +45,7 @@ import com.prostovasei.simpletasks.domain.model.allDayReminder
 import com.prostovasei.simpletasks.domain.model.parseReminder
 import com.prostovasei.simpletasks.ui.common.DayLabel
 import com.prostovasei.simpletasks.ui.common.DueFormatter
+import com.prostovasei.simpletasks.ui.common.ListIcons
 import com.prostovasei.simpletasks.ui.common.reminderText
 import com.prostovasei.simpletasks.ui.common.repeatSummary
 import java.time.LocalDate
@@ -156,25 +157,32 @@ private fun ReminderChip(due: TaskDue, reminders: List<String>, onEdit: (FieldEd
         reminders.size == 1 -> first
         else -> stringResource(R.string.reminder_more, first, reminders.size - 1)
     }
-    val options = reminders + Reminders.presets(due).filter { preset -> reminders.none { Reminders.sameMoment(it, preset) } }
     Box {
         AppChip(label, selected = reminders.isNotEmpty(), tag = TAG_CHIP_REMINDER, icon = Icons.Default.Notifications) { menu = true }
         DropdownMenu(expanded = menu, onDismissRequest = { menu = false }, containerColor = AppTheme.colors.surface) {
-            options.forEach { option ->
-                val checked = option in reminders
-                DropdownMenuItem(
-                    text = { Text(reminderText(option, allDay), color = AppTheme.colors.textPrimary) },
-                    leadingIcon = { if (checked) Icon(Icons.Default.Check, null, tint = AppTheme.colors.accent) else Spacer(Modifier.size(AppTheme.sizes.icon)) },
-                    onClick = {
-                        menu = false
-                        onEdit(FieldEdit.SetReminders(if (checked) reminders - option else reminders + option))
-                    },
-                    modifier = Modifier.testTag("$TAG_REMINDER_OPTION:$option"),
-                )
-            }
-            if (reminders.isNotEmpty()) MenuItem(R.string.reminder_none) { menu = false; onEdit(FieldEdit.SetReminders(emptyList())) }
+            ReminderMenuItems(due, reminders, onEdit) { menu = false }
         }
     }
+}
+
+/** Пункты меню напоминаний: готовые варианты и уже заданные (с галочками); [onDone] закрывает меню. */
+@Composable
+fun ReminderMenuItems(due: TaskDue, reminders: List<String>, onEdit: (FieldEdit) -> Unit, onDone: () -> Unit) {
+    val allDay = due is TaskDue.AllDay
+    val options = reminders + Reminders.presets(due).filter { preset -> reminders.none { Reminders.sameMoment(it, preset) } }
+    options.forEach { option ->
+        val checked = option in reminders
+        DropdownMenuItem(
+            text = { Text(reminderText(option, allDay), color = AppTheme.colors.textPrimary) },
+            leadingIcon = { if (checked) Icon(Icons.Default.Check, null, tint = AppTheme.colors.accent) else Spacer(Modifier.size(AppTheme.sizes.icon)) },
+            onClick = {
+                onDone()
+                onEdit(FieldEdit.SetReminders(if (checked) reminders - option else reminders + option))
+            },
+            modifier = Modifier.testTag("$TAG_REMINDER_OPTION:$option"),
+        )
+    }
+    if (reminders.isNotEmpty()) MenuItem(R.string.reminder_none) { onDone(); onEdit(FieldEdit.SetReminders(emptyList())) }
 }
 
 /** Короткая подпись для кнопки: «10:00» (в день срока), «В срок», иначе полный текст. */
@@ -194,19 +202,32 @@ private fun reminderChipText(trigger: String, allDay: Boolean): String {
 private fun ProjectChip(projectId: String, projects: List<ProjectOption>, onEdit: (FieldEdit) -> Unit) {
     var menu by remember { mutableStateOf(false) }
     val inboxName = stringResource(R.string.inbox_list_name)
-    fun ProjectOption.title() = if (isInbox) inboxName else name
     val current = projects.firstOrNull { it.id == projectId }
     Box {
-        AppChip(current?.title() ?: inboxName, selected = current?.isInbox == false, tag = TAG_CHIP_LIST) { menu = true }
+        AppChip(current?.let { if (it.isInbox) inboxName else it.name } ?: inboxName, selected = current?.isInbox == false, tag = TAG_CHIP_LIST) { menu = true }
         DropdownMenu(expanded = menu, onDismissRequest = { menu = false }, containerColor = AppTheme.colors.surface) {
-            projects.forEach { option ->
-                DropdownMenuItem(
-                    text = { Text(option.title(), color = AppTheme.colors.textPrimary) },
-                    leadingIcon = parseListColor(option.color)?.let { color -> { ColorDot(color) } },
-                    onClick = { menu = false; onEdit(FieldEdit.Project(option.id)) },
-                )
-            }
+            ProjectMenuItems(projectId, projects, onEdit) { menu = false }
         }
+    }
+}
+
+/** Пункты меню списков: квадратик цвета со значком, у выбранного — галочка. */
+@Composable
+fun ProjectMenuItems(projectId: String, projects: List<ProjectOption>, onEdit: (FieldEdit) -> Unit, onDone: () -> Unit) {
+    val inboxName = stringResource(R.string.inbox_list_name)
+    projects.forEach { option ->
+        DropdownMenuItem(
+            text = { Text(if (option.isInbox) inboxName else option.name, color = AppTheme.colors.textPrimary) },
+            leadingIcon = {
+                ListSquare(
+                    color = parseListColor(option.color) ?: AppTheme.colors.inactive,
+                    icon = ListIcons.drawable(if (option.isInbox) ListIcons.INBOX else option.icon),
+                )
+            },
+            trailingIcon = if (option.id == projectId) { { Icon(Icons.Default.Check, null, tint = AppTheme.colors.accent) } } else null,
+            onClick = { onDone(); onEdit(FieldEdit.Project(option.id)) },
+            modifier = Modifier.testTag("$TAG_PROJECT_OPTION:${option.id}"),
+        )
     }
 }
 
@@ -222,13 +243,26 @@ private fun PriorityChip(priority: Priority, onEdit: (FieldEdit) -> Unit) {
     Box {
         AppChip(label, selected = priority != Priority.NONE, tag = TAG_CHIP_PRIORITY) { menu = true }
         DropdownMenu(expanded = menu, onDismissRequest = { menu = false }, containerColor = AppTheme.colors.surface) {
-            listOf(
-                R.string.priority_p1 to Priority.HIGH,
-                R.string.priority_p2 to Priority.MEDIUM,
-                R.string.priority_p3 to Priority.LOW,
-                R.string.priority_p0 to Priority.NONE,
-            ).forEach { (label, value) -> MenuItem(label) { menu = false; onEdit(FieldEdit.SetPriority(value)) } }
+            PriorityMenuItems(priority, onEdit) { menu = false }
         }
+    }
+}
+
+/** Пункты меню приоритета; у выбранного — галочка. */
+@Composable
+fun PriorityMenuItems(priority: Priority, onEdit: (FieldEdit) -> Unit, onDone: () -> Unit) {
+    listOf(
+        R.string.priority_p1 to Priority.HIGH,
+        R.string.priority_p2 to Priority.MEDIUM,
+        R.string.priority_p3 to Priority.LOW,
+        R.string.priority_p0 to Priority.NONE,
+    ).forEach { (label, value) ->
+        DropdownMenuItem(
+            text = { Text(stringResource(label), color = AppTheme.colors.textPrimary) },
+            trailingIcon = if (value == priority) { { Icon(Icons.Default.Check, null, tint = AppTheme.colors.accent) } } else null,
+            onClick = { onDone(); onEdit(FieldEdit.SetPriority(value)) },
+            modifier = Modifier.testTag("$TAG_PRIORITY_OPTION:${value.name}"),
+        )
     }
 }
 
@@ -259,7 +293,7 @@ private fun MenuItem(label: Int, onClick: () -> Unit) {
 }
 
 @Composable
-private fun dayLabelText(day: DayLabel): String = when (day) {
+internal fun dayLabelText(day: DayLabel): String = when (day) {
     DayLabel.Today -> stringResource(R.string.day_today)
     DayLabel.Tomorrow -> stringResource(R.string.day_tomorrow)
     DayLabel.Yesterday -> stringResource(R.string.day_yesterday)
@@ -308,3 +342,5 @@ const val TAG_CHIP_PRIORITY = "chip_priority"
 const val TAG_CHIP_REPEAT = "chip_repeat"
 const val TAG_CHIP_REMINDER = "chip_reminder"
 const val TAG_REMINDER_OPTION = "reminder_option"
+const val TAG_PROJECT_OPTION = "project_option"
+const val TAG_PRIORITY_OPTION = "priority_option"

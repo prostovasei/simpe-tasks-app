@@ -141,6 +141,38 @@ class TaskViewModelsTest {
     }
 
     @Test
+    fun quickAddGridTaps() = runTest(dispatcher) {
+        val vm = quickAdd("today" to true)
+        vm.onIntent(QuickAddIntent.SlotTap(today.plusDays(1), 16 * 60))
+        assertEquals(TaskDue.AtTime(Instant.parse("2026-10-15T16:00:00Z")), vm.state.value.due)
+        assertEquals(16 * 60, vm.state.value.selectedMinute)
+
+        vm.onIntent(QuickAddIntent.ClearTime)
+        assertEquals("Крестик — тот же день без времени", TaskDue.AllDay(today.plusDays(1)), vm.state.value.due)
+
+        vm.onIntent(QuickAddIntent.DayTap(today.plusDays(3)))
+        assertEquals(TaskDue.AllDay(today.plusDays(3)), vm.state.value.due)
+        vm.onIntent(QuickAddIntent.DayTap(today.plusDays(3)))
+        assertEquals("Повторное нажатие на день убирает дату", null, vm.state.value.due)
+    }
+
+    @Test
+    fun quickAddShowsBusyTimeOfVisibleDays() = runTest(dispatcher) {
+        tasks.tasks.value = listOf(
+            task("near", title = "Встреча", due = TaskDue.AtTime(Instant.parse("2026-10-15T10:00:00Z"))),
+            task("far", due = TaskDue.AtTime(Instant.parse("2026-11-20T10:00:00Z"))),
+        )
+        val vm = quickAdd()
+        runCurrent()
+        assertEquals(listOf("near"), vm.state.value.busy.map { it.taskId })
+        assertEquals(5 * 60, vm.state.value.nowMinute)
+
+        vm.onIntent(QuickAddIntent.GridDays(LocalDate.of(2026, 11, 18)))
+        runCurrent()
+        assertEquals("Пролистали сетку — подгрузилась та неделя", listOf("far"), vm.state.value.busy.map { it.taskId })
+    }
+
+    @Test
     fun detailRepeatStartsFromFirstMatchingDay() = runTest(dispatcher) {
         tasks.tasks.value = listOf(task("t1", due = TaskDue.AllDay(today)))
         val vm = detail(this)

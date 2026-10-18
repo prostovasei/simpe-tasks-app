@@ -118,6 +118,19 @@ interface TaskDao {
     fun observeActiveByProject(projectId: String): Flow<List<TaskEntity>>
 
     /**
+     * Задачи со временем для сетки недели (итерация 16): попадающие в промежуток [start, end) и все активные
+     * повторяющиеся — их будущие разы считает приложение. Время — по началу интервала, если оно есть.
+     */
+    @Query(
+        """
+        SELECT * FROM tasks
+        WHERE is_deleted = 0 AND is_all_day = 0 AND due_date IS NOT NULL
+          AND ((COALESCE(start_date, due_date) < :end AND due_date >= :start) OR (rrule IS NOT NULL AND status = 0))
+        """,
+    )
+    fun observeTimedInRange(start: Long, end: Long): Flow<List<TaskEntity>>
+
+    /**
      * Все задачи, кроме удалённых, с текстом чек-листа — для поиска. Фильтр по словам — в приложении:
      * LIKE в SQLite не различает регистр только у латиницы.
      */

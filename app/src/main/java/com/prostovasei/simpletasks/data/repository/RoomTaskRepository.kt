@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import java.time.Instant
 import java.time.LocalDate
 import javax.inject.Inject
 
@@ -160,6 +161,9 @@ class RoomTaskRepository @Inject constructor(
         }
         updateTask(task.withDue(newDue))
     }
+
+    override fun observeTimedInRange(from: Instant, to: Instant): Flow<List<Task>> =
+        taskDao.observeTimedInRange(from.toEpochMilli(), to.toEpochMilli()).map { tasks -> tasks.map { it.toDomain() } }.distinctUntilChanged()
 
     override fun observeSearchable(): Flow<List<SearchableTask>> =
         taskDao.observeSearchable().map { rows ->

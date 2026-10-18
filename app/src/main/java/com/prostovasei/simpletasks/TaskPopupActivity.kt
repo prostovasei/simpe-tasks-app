@@ -54,10 +54,34 @@ class TaskPopupActivity : ComponentActivity() {
     }
 }
 
-/** Затемнённый рабочий стол и карточка снизу; нажатие на затемнение закрывает окно. */
+/**
+ * Окно поверх рабочего стола: задача — карточкой снизу на затемнении, новая задача — той же шторкой,
+ * что и в приложении (итерация 16). Нажатие на затемнение закрывает окно.
+ */
 @Composable
 fun TaskPopup(start: Any, onDismiss: () -> Unit, navController: NavHostController = rememberNavController()) {
     val close: () -> Unit = { if (!navController.popBackStack()) onDismiss() }
+    NavHost(
+        navController,
+        startDestination = start,
+        modifier = Modifier.fillMaxSize(),
+        enterTransition = { EnterTransition.None },
+        exitTransition = { ExitTransition.None },
+        popEnterTransition = { EnterTransition.None },
+        popExitTransition = { ExitTransition.None },
+    ) {
+        composable<TaskDetailDestination> {
+            PopupCard(onDismiss) {
+                TaskDetailRoute(onClose = close, onOpenTask = { navController.navigate(TaskDetailDestination(it)) })
+            }
+        }
+        composable<QuickAddDestination> { QuickAddRoute(onClose = close) }
+    }
+}
+
+/** Затемнённый рабочий стол и карточка снизу. */
+@Composable
+private fun PopupCard(onDismiss: () -> Unit, content: @Composable () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -74,21 +98,7 @@ fun TaskPopup(start: Any, onDismiss: () -> Unit, navController: NavHostControlle
                 .clip(AppTheme.shapes.extraLargeTop)
                 .background(AppTheme.colors.background)
                 .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {},
-        ) {
-            NavHost(
-                navController,
-                startDestination = start,
-                enterTransition = { EnterTransition.None },
-                exitTransition = { ExitTransition.None },
-                popEnterTransition = { EnterTransition.None },
-                popExitTransition = { ExitTransition.None },
-            ) {
-                composable<TaskDetailDestination> {
-                    TaskDetailRoute(onClose = close, onOpenTask = { navController.navigate(TaskDetailDestination(it)) })
-                }
-                composable<QuickAddDestination> { QuickAddRoute(onClose = close) }
-            }
-        }
+        ) { content() }
     }
 }
 

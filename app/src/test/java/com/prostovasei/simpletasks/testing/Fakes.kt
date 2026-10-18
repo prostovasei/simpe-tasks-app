@@ -101,6 +101,14 @@ class FakeTaskRepository(private val today: LocalDate = LocalDate.of(2026, 10, 1
     override fun observeSearchable(): Flow<List<SearchableTask>> =
         combine(tasks, checklists) { all, lists -> all.map { SearchableTask(it, lists[it.id].orEmpty()) } }
 
+    override fun observeTimedInRange(from: Instant, to: Instant): Flow<List<Task>> = tasks.map { all ->
+        all.filter { task ->
+            val end = (task.due as? TaskDue.AtTime)?.instant ?: return@filter false
+            val begin = (task.start as? TaskDue.AtTime)?.instant ?: end
+            (begin < to && end >= from) || (task.rrule != null && task.status == TaskStatus.ACTIVE)
+        }
+    }
+
     override fun observeCompleted(): Flow<List<Task>> = tasks.map { all -> all.filter { it.status == TaskStatus.COMPLETED } }
 
     override suspend fun restore(taskId: String): Task? {
