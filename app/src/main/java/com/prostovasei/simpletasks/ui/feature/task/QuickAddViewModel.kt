@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.prostovasei.simpletasks.core.time.TimeProvider
 import com.prostovasei.simpletasks.domain.model.NewTask
 import com.prostovasei.simpletasks.domain.model.Priority
-import com.prostovasei.simpletasks.domain.model.Recurrence
 import com.prostovasei.simpletasks.domain.model.Reminders
 import com.prostovasei.simpletasks.domain.model.TaskDue
 import com.prostovasei.simpletasks.domain.repository.ProjectRepository
@@ -38,38 +37,24 @@ data class QuickAddState(
     val zone: ZoneId = ZoneId.systemDefault(),
     /** Сейчас — минута от начала суток (красная линия и начальная прокрутка сетки). */
     val nowMinute: Int = 0,
-    /** Длительность выбранного времени в минутах (итерация 17): 30 — просто время, больше — интервал. */
-    val durationMinutes: Int = WeekGridMath.STEP_MINUTES,
+    /** Начало интервала (итерация 17): тогда [due] — его конец; у простого времени и «на весь день» — пусто. */
+    val start: TaskDue? = null,
     /** Занятое другими задачами время в видимых днях сетки (серые плашки). */
     val busy: List<BusySlot> = emptyList(),
     val isSaving: Boolean = false,
 ) {
-    val selectedDate: LocalDate? get() = due?.localDate(zone)
-    val selectedMinute: Int? get() = due?.localTime(zone)?.let { it.hour * 60 + it.minute }
-
-    /** Интервал: начало — [due], конец — через [durationMinutes]; null — просто время или без времени. */
-    val intervalEnd: java.time.Instant? get() =
-        (due as? TaskDue.AtTime)?.instant?.takeIf { durationMinutes > WeekGridMath.STEP_MINUTES }?.plusSeconds(durationMinutes * 60L)
     val canSave: Boolean get() = title.isNotBlank() && projectId.isNotEmpty() && !isSaving
     val reminders: List<String> get() = customReminders ?: Reminders.default(due)
+
+    val fields: SheetFields
+        get() = SheetFields(due, start, projectId, priority, rrule, reminders, projects, today, zone, nowMinute, busy)
 }
 
 sealed interface QuickAddIntent {
     data class Title(val text: String) : QuickAddIntent
     data class Content(val text: String) : QuickAddIntent
     data class Edit(val edit: FieldEdit) : QuickAddIntent
-    /** Нажатие на день в шапке сетки: «на весь день»; повторное — убрать дату. */
-    data class DayTap(val date: LocalDate) : QuickAddIntent
-    /** Нажатие на сетку: время [minute] (от начала суток) в день [date]. */
-    data class SlotTap(val date: LocalDate, val minute: Int) : QuickAddIntent
-    /** Блок перетащили (после долгого нажатия): то же время по длительности, новое начало. */
-    data class MoveSlot(val date: LocalDate, val minute: Int) : QuickAddIntent
-    /** Блок растянули за ручку: новая длительность в минутах (кратна 30). */
-    data class Resize(val minutes: Int) : QuickAddIntent
-    /** Крестик на зелёном блоке: убрать время, день остаётся. */
-    data object ClearTime : QuickAddIntent
-    /** Сетку пролистали: первый видимый день — [first]. */
-    data class GridDays(val first: LocalDate) : QuickAddIntent
+    data class Grid(val action: GridAction) : QuickAddIntent
     data object AddChecklist : QuickAddIntent
     data class ChecklistItem(val index: Int, val text: String) : QuickAddIntent
     data class RemoveChecklistItem(val index: Int) : QuickAddIntent
@@ -129,22 +114,10 @@ class QuickAddViewModel @Inject constructor(
             is QuickAddIntent.Title -> setState { copy(title = intent.text) }
             is QuickAddIntent.Content -> setState { copy(content = intent.text) }
             is QuickAddIntent.Edit -> setState { edit(intent.edit) }
-            is QuickAddIntent.DayTap -> setState {
-                edit(FieldEdit.Due(if (selectedDate == intent.date) null else TaskDue.AllDay(intent.date)))
+            is QuickAddIntent.Grid -> when (val action = intent.action) {
+                is GridAction.FirstDay -> gridFirst.value = action.first
+                else -> setState { schedule(Schedule(due, start).after(action, zone)) }
             }
-            is QuickAddIntent.SlotTap -> setState {
-                // Нажатие внутри уже выбранного блока ничего не меняет (например, долгое нажатие без перетаскивания).
-                val start = selectedMinute
-                val inside = selectedDate == intent.date && start != null && intent.minute in start until start + durationMinutes
-                if (inside) this else atSlot(intent.date, intent.minute, WeekGridMath.STEP_MINUTES)
-            }
-            is QuickAddIntent.MoveSlot -> setState { atSlot(intent.date, intent.minute, durationMinutes) }
-            is QuickAddIntent.Resize -> setState {
-                val start = selectedMinute ?: return@setState this
-                copy(durationMinutes = intent.minutes.coerceIn(WeekGridMath.STEP_MINUTES, WeekGridMath.DAY_MINUTES - start))
-            }
-            QuickAddIntent.ClearTime -> setState { selectedDate?.let { edit(FieldEdit.Due(TaskDue.AllDay(it))) } ?: this }
-            is QuickAddIntent.GridDays -> gridFirst.value = intent.first
             QuickAddIntent.AddChecklist -> setState { copy(checklist = (checklist ?: emptyList()) + "") }
             is QuickAddIntent.ChecklistItem -> setState {
                 copy(checklist = checklist?.mapIndexed { i, old -> if (i == intent.index) intent.text else old })
@@ -156,30 +129,23 @@ class QuickAddViewModel @Inject constructor(
         }
     }
 
-    /** Время [minute] в день [date]; интервал не выходит за конец суток (решение PM). */
-    private fun QuickAddState.atSlot(date: LocalDate, minute: Int, duration: Int): QuickAddState {
-        val length = duration.coerceIn(WeekGridMath.STEP_MINUTES, WeekGridMath.DAY_MINUTES)
-        val start = minute.coerceIn(0, WeekGridMath.DAY_MINUTES - length)
-        return edit(FieldEdit.Due(TaskDue.AtTime(date.atStartOfDay(zone).plusMinutes(start.toLong()).toInstant())))
-            .copy(durationMinutes = length)
+    /** Новые срок и начало; повтор начинается с первого подходящего дня от выбранной даты (решение PM). */
+    private fun QuickAddState.schedule(next: Schedule): QuickAddState {
+        val aligned = next.alignedTo(rrule, zone)
+        return copy(
+            due = aligned.due,
+            start = aligned.start,
+            rrule = if (aligned.due == null) null else rrule,
+            // Свои напоминания живут, пока не меняется вид срока («весь день» ↔ «со временем»).
+            customReminders = customReminders.takeIf { aligned.due != null && due != null && aligned.due::class == due::class },
+        )
     }
 
     private fun QuickAddState.edit(edit: FieldEdit): QuickAddState = when (edit) {
-        // Любой срок не с сетки (или без времени) — снова 30 минут; atSlot ставит длительность сам.
-        is FieldEdit.Due -> copy(
-            durationMinutes = WeekGridMath.STEP_MINUTES,
-            // Повтор начинается с первого подходящего дня от выбранной даты (решение PM).
-            due = edit.due?.let { due -> rrule?.let { Recurrence.alignStart(it, due, zone) } ?: due },
-            rrule = if (edit.due == null) null else rrule,
-            // Свои напоминания живут, пока не меняется вид срока («весь день» ↔ «со временем»).
-            customReminders = customReminders.takeIf { edit.due != null && due != null && edit.due::class == due::class },
-        )
+        is FieldEdit.Due -> schedule(Schedule(edit.due, null))
         is FieldEdit.Project -> copy(projectId = edit.projectId)
         is FieldEdit.SetPriority -> copy(priority = edit.priority)
-        is FieldEdit.Repeat -> copy(
-            rrule = edit.rrule,
-            due = due?.let { due -> edit.rrule?.let { Recurrence.alignStart(it, due, zone) } ?: due },
-        )
+        is FieldEdit.Repeat -> Schedule(due, start).alignedTo(edit.rrule, zone).let { copy(rrule = edit.rrule, due = it.due, start = it.start) }
         is FieldEdit.SetReminders -> copy(customReminders = edit.reminders)
     }
 
@@ -195,8 +161,8 @@ class QuickAddViewModel @Inject constructor(
                     content = state.content.trim(),
                     priority = state.priority,
                     // Интервал: начало — выбранное время, срок — конец (как у задач из TickTick).
-                    due = state.intervalEnd?.let { TaskDue.AtTime(it) } ?: state.due,
-                    start = state.due.takeIf { state.intervalEnd != null },
+                    due = state.due,
+                    start = state.start,
                     checklist = state.checklist.orEmpty().map { it.trim() }.filter { it.isNotEmpty() },
                     rrule = state.rrule,
                     reminders = state.reminders,

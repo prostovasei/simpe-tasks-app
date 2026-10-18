@@ -55,8 +55,8 @@ class TaskPopupActivity : ComponentActivity() {
 }
 
 /**
- * Окно поверх рабочего стола: задача — карточкой снизу на затемнении, новая задача — той же шторкой,
- * что и в приложении (итерация 16). Нажатие на затемнение закрывает окно.
+ * Окно поверх рабочего стола: задача и новая задача — та же шторка с сеткой, что и в приложении (итерация 19).
+ * Нажатие на затемнение или «Назад» закрывает окно.
  */
 @Composable
 fun TaskPopup(start: Any, onDismiss: () -> Unit, navController: NavHostController = rememberNavController()) {
@@ -71,38 +71,8 @@ fun TaskPopup(start: Any, onDismiss: () -> Unit, navController: NavHostControlle
         popExitTransition = { ExitTransition.None },
     ) {
         composable<TaskDetailDestination> {
-            PopupCard(onDismiss) {
-                TaskDetailRoute(onClose = close, onOpenTask = { navController.navigate(TaskDetailDestination(it)) })
-            }
+            TaskDetailRoute(onClose = close, onOpenTask = { navController.navigate(TaskDetailDestination(it)) })
         }
         composable<QuickAddDestination> { QuickAddRoute(onClose = close) }
     }
 }
-
-/** Затемнённый рабочий стол и карточка снизу. */
-@Composable
-private fun PopupCard(onDismiss: () -> Unit, content: @Composable () -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(AppTheme.colors.scrim)
-            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onDismiss)
-            .systemBarsPadding()
-            .testTag(TAG_POPUP_SCRIM),
-    ) {
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .fillMaxHeight(POPUP_HEIGHT)
-                .clip(AppTheme.shapes.extraLargeTop)
-                .background(AppTheme.colors.background)
-                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {},
-        ) { content() }
-    }
-}
-
-/** Доля высоты экрана под карточкой: сверху остаётся полоска затемнённого рабочего стола. */
-private const val POPUP_HEIGHT = 0.92f
-
-const val TAG_POPUP_SCRIM = "popup_scrim"

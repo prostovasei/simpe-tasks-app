@@ -95,9 +95,9 @@ fun AppNavHost(
         navController.navigate(openRoute) { launchSingleTop = true }
         onRouteOpened()
     }
-    // Шторка новой задачи открыта поверх экрана — панель и вкладка остаются от экрана под ней.
+    // Шторка задачи (новой или созданной) открыта поверх экрана — панель и вкладка остаются от экрана под ней.
     val destination = backStack?.destination?.let { top ->
-        if (top.hasRoute(QuickAddDestination::class)) navController.previousBackStackEntry?.destination else top
+        if (top.isSheet()) navController.previousBackStackEntry?.destination?.takeUnless { it.isSheet() } else top
     }
     val currentTab = Tab.entries.firstOrNull { destination.isOn(it) }
 
@@ -149,15 +149,11 @@ fun AppNavHost(
                 )
             }
             // Новая задача — шторка поверх текущего экрана (итерация 16): экран под ней остаётся виден.
-            dialog<QuickAddDestination>(
-                dialogProperties = DialogProperties(
-                    usePlatformDefaultWidth = false,
-                    decorFitsSystemWindows = false,
-                    dismissOnBackPress = false,
-                    dismissOnClickOutside = false,
-                ),
-            ) { QuickAddRoute(onClose = { navController.popBackStack() }) }
-            composable<TaskDetailDestination> { TaskDetailRoute(onClose = { navController.popBackStack() }, onOpenTask = openTask) }
+            dialog<QuickAddDestination>(dialogProperties = SHEET_DIALOG) { QuickAddRoute(onClose = { navController.popBackStack() }) }
+            // Созданная задача — та же шторка (итерация 19).
+            dialog<TaskDetailDestination>(dialogProperties = SHEET_DIALOG) {
+                TaskDetailRoute(onClose = { navController.popBackStack() }, onOpenTask = openTask)
+            }
         }
     }
 }
@@ -211,6 +207,16 @@ fun BottomBar(selected: Tab, onSelect: (Tab) -> Unit, onAdd: () -> Unit = {}) {
 }
 
 private const val SLIDE_MS = 270
+
+/** Шторка задачи — диалог навигации на весь экран: экран под ней виден, затемнение и «Назад» — свои. */
+private val SHEET_DIALOG = DialogProperties(
+    usePlatformDefaultWidth = false,
+    decorFitsSystemWindows = false,
+    dismissOnBackPress = false,
+    dismissOnClickOutside = false,
+)
+
+private fun NavDestination.isSheet() = hasRoute(QuickAddDestination::class) || hasRoute(TaskDetailDestination::class)
 
 /** Порядок экрана слева направо: вкладки по порядку в панели, вложенные экраны — правее всех. */
 private fun NavDestination.order(): Int = Tab.entries.indexOfFirst { isOn(it) }.takeIf { it >= 0 } ?: Tab.entries.size

@@ -59,6 +59,8 @@ class TaskViewModelsTest {
 
     private fun quickAdd(vararg args: Pair<String, Any?>) = QuickAddViewModel(SavedStateHandle(mapOf(*args)), tasks, projects, time)
 
+    private fun QuickAddViewModel.intervalEnd() = (state.value.due as? TaskDue.AtTime)?.instant?.takeIf { state.value.start != null }
+
     private fun detail(scope: CoroutineScope, taskId: String = "t1") = TaskDetailViewModel(
         SavedStateHandle(mapOf("taskId" to taskId)), tasks, checklist, projects, DayTicker { flowOf(today) }, time, scope,
     )
@@ -143,16 +145,16 @@ class TaskViewModelsTest {
     @Test
     fun quickAddGridTaps() = runTest(dispatcher) {
         val vm = quickAdd("today" to true)
-        vm.onIntent(QuickAddIntent.SlotTap(today.plusDays(1), 16 * 60))
+        vm.onIntent(QuickAddIntent.Grid(GridAction.SlotTap(today.plusDays(1), 16 * 60)))
         assertEquals(TaskDue.AtTime(Instant.parse("2026-10-15T16:00:00Z")), vm.state.value.due)
-        assertEquals(16 * 60, vm.state.value.selectedMinute)
+        assertEquals(16 * 60, vm.state.value.fields.selectedMinute)
 
-        vm.onIntent(QuickAddIntent.ClearTime)
+        vm.onIntent(QuickAddIntent.Grid(GridAction.ClearTime))
         assertEquals("Крестик — тот же день без времени", TaskDue.AllDay(today.plusDays(1)), vm.state.value.due)
 
-        vm.onIntent(QuickAddIntent.DayTap(today.plusDays(3)))
+        vm.onIntent(QuickAddIntent.Grid(GridAction.DayTap(today.plusDays(3))))
         assertEquals(TaskDue.AllDay(today.plusDays(3)), vm.state.value.due)
-        vm.onIntent(QuickAddIntent.DayTap(today.plusDays(3)))
+        vm.onIntent(QuickAddIntent.Grid(GridAction.DayTap(today.plusDays(3))))
         assertEquals("Повторное нажатие на день убирает дату", null, vm.state.value.due)
     }
 
@@ -161,20 +163,20 @@ class TaskViewModelsTest {
         val vm = quickAdd()
         runCurrent()
         vm.onIntent(QuickAddIntent.Title("Встреча"))
-        vm.onIntent(QuickAddIntent.SlotTap(today.plusDays(1), 16 * 60))
-        vm.onIntent(QuickAddIntent.Resize(90))
-        assertEquals(Instant.parse("2026-10-15T17:30:00Z"), vm.state.value.intervalEnd)
+        vm.onIntent(QuickAddIntent.Grid(GridAction.SlotTap(today.plusDays(1), 16 * 60)))
+        vm.onIntent(QuickAddIntent.Grid(GridAction.Resize(90)))
+        assertEquals(Instant.parse("2026-10-15T17:30:00Z"), vm.intervalEnd())
 
-        vm.onIntent(QuickAddIntent.SlotTap(today.plusDays(1), 17 * 60))
-        assertEquals("Нажатие внутри блока его не сбрасывает", 90, vm.state.value.durationMinutes)
+        vm.onIntent(QuickAddIntent.Grid(GridAction.SlotTap(today.plusDays(1), 17 * 60)))
+        assertEquals("Нажатие внутри блока его не сбрасывает", 90, vm.state.value.fields.durationMinutes)
 
-        vm.onIntent(QuickAddIntent.MoveSlot(today.plusDays(2), 23 * 60))
-        assertEquals("Перенос сохраняет длительность", 90, vm.state.value.durationMinutes)
-        assertEquals("Блок сдвигается, чтобы конец был не дальше 24:00", TaskDue.AtTime(Instant.parse("2026-10-16T22:30:00Z")), vm.state.value.due)
-        assertEquals("Не дальше 24:00", Instant.parse("2026-10-17T00:00:00Z"), vm.state.value.intervalEnd)
+        vm.onIntent(QuickAddIntent.Grid(GridAction.MoveSlot(today.plusDays(2), 23 * 60)))
+        assertEquals("Перенос сохраняет длительность", 90, vm.state.value.fields.durationMinutes)
+        assertEquals("Блок сдвигается, чтобы конец был не дальше 24:00", TaskDue.AtTime(Instant.parse("2026-10-16T22:30:00Z")), vm.state.value.start)
+        assertEquals("Не дальше 24:00", Instant.parse("2026-10-17T00:00:00Z"), vm.intervalEnd())
 
-        vm.onIntent(QuickAddIntent.MoveSlot(today.plusDays(2), 9 * 60))
-        vm.onIntent(QuickAddIntent.Resize(120))
+        vm.onIntent(QuickAddIntent.Grid(GridAction.MoveSlot(today.plusDays(2), 9 * 60)))
+        vm.onIntent(QuickAddIntent.Grid(GridAction.Resize(120)))
         vm.effects.test {
             vm.onIntent(QuickAddIntent.Save)
             runCurrent()
@@ -189,13 +191,13 @@ class TaskViewModelsTest {
     @Test
     fun quickAddPlainTimeAfterNewTapOrDay() = runTest(dispatcher) {
         val vm = quickAdd()
-        vm.onIntent(QuickAddIntent.SlotTap(today, 10 * 60))
-        vm.onIntent(QuickAddIntent.Resize(60))
-        vm.onIntent(QuickAddIntent.SlotTap(today, 14 * 60))
-        assertEquals("Новое время на сетке — снова 30 минут", null, vm.state.value.intervalEnd)
-        vm.onIntent(QuickAddIntent.Resize(60))
-        vm.onIntent(QuickAddIntent.ClearTime)
-        assertEquals(30, vm.state.value.durationMinutes)
+        vm.onIntent(QuickAddIntent.Grid(GridAction.SlotTap(today, 10 * 60)))
+        vm.onIntent(QuickAddIntent.Grid(GridAction.Resize(60)))
+        vm.onIntent(QuickAddIntent.Grid(GridAction.SlotTap(today, 14 * 60)))
+        assertEquals("Новое время на сетке — снова 30 минут", null, vm.intervalEnd())
+        vm.onIntent(QuickAddIntent.Grid(GridAction.Resize(60)))
+        vm.onIntent(QuickAddIntent.Grid(GridAction.ClearTime))
+        assertEquals(30, vm.state.value.fields.durationMinutes)
     }
 
     @Test
@@ -209,9 +211,42 @@ class TaskViewModelsTest {
         assertEquals(listOf("near"), vm.state.value.busy.map { it.taskId })
         assertEquals(5 * 60, vm.state.value.nowMinute)
 
-        vm.onIntent(QuickAddIntent.GridDays(LocalDate.of(2026, 11, 18)))
+        vm.onIntent(QuickAddIntent.Grid(GridAction.FirstDay(LocalDate.of(2026, 11, 18))))
         runCurrent()
         assertEquals("Пролистали сетку — подгрузилась та неделя", listOf("far"), vm.state.value.busy.map { it.taskId })
+    }
+
+    @Test
+    fun detailGridEditsSaveImmediately() = runTest(dispatcher) {
+        tasks.tasks.value = listOf(
+            task("t1", due = TaskDue.AtTime(Instant.parse("2026-10-15T11:00:00Z")), start = TaskDue.AtTime(Instant.parse("2026-10-15T10:00:00Z"))),
+            task("other", due = TaskDue.AtTime(Instant.parse("2026-10-15T14:00:00Z"))),
+        )
+        val vm = detail(this)
+        runCurrent()
+        assertEquals("Своя задача не серая плашка", listOf("other"), vm.state.value.busy.map { it.taskId })
+        assertEquals(60, vm.state.value.fields!!.durationMinutes)
+
+        vm.onIntent(TaskDetailIntent.Grid(GridAction.MoveSlot(today.plusDays(2), 16 * 60)))
+        runCurrent()
+        assertEquals(TaskDue.AtTime(Instant.parse("2026-10-16T16:00:00Z")), tasks.updated.last().start)
+        assertEquals(TaskDue.AtTime(Instant.parse("2026-10-16T17:00:00Z")), tasks.updated.last().due)
+
+        vm.onIntent(TaskDetailIntent.Grid(GridAction.ClearTime))
+        runCurrent()
+        assertEquals(TaskDue.AllDay(today.plusDays(2)), tasks.updated.last().due)
+        assertEquals(null, tasks.updated.last().start)
+    }
+
+    @Test
+    fun detailMultiDayTaskMovesWhole() = runTest(dispatcher) {
+        tasks.tasks.value = listOf(task("t1", due = TaskDue.AllDay(LocalDate.of(2026, 10, 22)), start = TaskDue.AllDay(LocalDate.of(2026, 10, 20))))
+        val vm = detail(this)
+        runCurrent()
+        vm.onIntent(TaskDetailIntent.Grid(GridAction.DayTap(LocalDate.of(2026, 10, 21))))
+        runCurrent()
+        assertEquals(TaskDue.AllDay(LocalDate.of(2026, 10, 21)), tasks.updated.last().start)
+        assertEquals(TaskDue.AllDay(LocalDate.of(2026, 10, 23)), tasks.updated.last().due)
     }
 
     @Test

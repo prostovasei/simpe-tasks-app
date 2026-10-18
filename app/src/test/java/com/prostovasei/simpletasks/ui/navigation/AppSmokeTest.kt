@@ -11,6 +11,7 @@ import com.prostovasei.simpletasks.MainActivity
 import com.prostovasei.simpletasks.designsystem.components.TAG_NAME_FIELD
 import com.prostovasei.simpletasks.ui.common.TAG_ADD_TASK
 import com.prostovasei.simpletasks.ui.feature.lists.TAG_NEW_LIST
+import com.prostovasei.simpletasks.ui.feature.task.TAG_DETAIL_CLOSE
 import com.prostovasei.simpletasks.ui.feature.task.TAG_DETAIL_TITLE
 import com.prostovasei.simpletasks.ui.feature.task.TAG_QUICK_SAVE
 import com.prostovasei.simpletasks.ui.feature.task.TAG_QUICK_TITLE
@@ -80,11 +81,11 @@ class AppSmokeTest {
         composeRule.onNodeWithTag("tab:ALL").performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_SEARCH_FIELD).fetchSemanticsNodes().isEmpty() }
 
-        // Тап по карточке → экран задачи → переименование → назад.
+        // Тап по карточке → шторка задачи → переименование → «Готово».
         composeRule.onNodeWithText("Купить продукты").performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_DETAIL_TITLE).fetchSemanticsNodes().isNotEmpty() }
         composeRule.onNodeWithTag(TAG_DETAIL_TITLE).performTextReplacement("Купить продукты на неделю")
-        composeRule.onNodeWithContentDescription("Назад").performClick()
+        composeRule.onNodeWithTag(TAG_DETAIL_CLOSE).performClick()
 
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_DETAIL_TITLE).fetchSemanticsNodes().isEmpty() }
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Купить продукты на неделю") }
