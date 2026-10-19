@@ -52,9 +52,6 @@ object SizeTokens {
     const val META_ICON = 14
     const val PICKER_MAX_HEIGHT = 440
 
-    /** Ширина галочки в виджете Glance — под неё отступ у будущих повторов. */
-    const val WIDGET_CHECKBOX = 32
-
     /** Нижняя строка виджета: список, дата и «+». */
     const val WIDGET_BAR = 40
 
@@ -75,6 +72,27 @@ object SizeTokens {
 
     /** Поля ленты виджета от краёв. */
     const val WIDGET_EDGE = 6
+
+    /** Шкала дня в виджете (итерация 20): поле ленты у левого и правого краёв — минимальное. */
+    const val WIDGET_LIST_EDGE = 3
+
+    /** Колонка времени слева и колонка шкалы с кружками. */
+    const val WIDGET_TIME = 38
+    const val WIDGET_RAIL = 26
+
+    /** Высота строки: задача со временем или на весь день, период; отметка «сейчас». */
+    const val WIDGET_ROW = 46
+    const val WIDGET_PERIOD_ROW = 64
+    const val WIDGET_NOW_ROW = 14
+
+    /** Кружок приоритета на шкале, хвостики линии у капсулы периода, точка «сейчас», значки в плашке. */
+    const val WIDGET_NODE = 14
+    const val WIDGET_PERIOD_STUB = 6
+    const val WIDGET_NOW_DOT = 7
+    const val WIDGET_META_ICON = 16
+
+    /** Щель между плашками — внутри строки (по 3 dp сверху и снизу), чтобы линия шкалы не рвалась. */
+    const val WIDGET_CARD_INSET = 3
     const val COLOR_SWATCH = 40
     const val ICON = 24
     const val CHECKBOX_TOUCH = 40

@@ -57,6 +57,8 @@ data class WidgetModel(
     val today: LocalDate,
     val days: List<WidgetDayBlock>,
     val tabs: List<WidgetTab> = emptyList(),
+    /** Минута дня для отметки «сейчас» в блоке «Сегодня» (итерация 20); null — без отметки. */
+    val nowMinute: Int? = null,
 ) {
     val isEmpty: Boolean get() = days.all { it.items.isEmpty() }
 }
