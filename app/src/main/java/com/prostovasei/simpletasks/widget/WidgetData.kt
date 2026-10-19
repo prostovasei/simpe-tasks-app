@@ -29,7 +29,7 @@ interface WidgetEntryPoint {
 
 fun Context.widgetEntryPoint(): WidgetEntryPoint = EntryPointAccessors.fromApplication(applicationContext, WidgetEntryPoint::class.java)
 
-/** Данные виджета для выбранного [filter]; обновляются при любых изменениях задач и в полночь. */
+/** Данные виджета для выбранного [filter]; обновляются при любых изменениях задач, в начале и конце сегодняшних задач и в полночь. */
 @OptIn(ExperimentalCoroutinesApi::class)
 fun WidgetEntryPoint.observeModel(filter: WidgetFilter): Flow<WidgetModel> = dayTicker().today().flatMapLatest { today ->
     val zone = time().zone()
@@ -44,6 +44,11 @@ fun WidgetEntryPoint.observeModel(filter: WidgetFilter): Flow<WidgetModel> = day
                 ?: WidgetModel(WidgetFilter.All, null, today, emptyList())) to t
         }
     }
-    model.map { (m, t) -> m.copy(tabs = WidgetModels.tabs(m.filter, t.options())) }
+    model.map { (m, t) ->
+        val now = time().now().atZone(zone)
+        val nowMinute = if (now.toLocalDate() == today) now.hour * MINUTES_PER_HOUR + now.minute else null
+        m.copy(tabs = WidgetModels.tabs(m.filter, t.options()), nowMinute = nowMinute)
+    }
 }
 
+private const val MINUTES_PER_HOUR = 60

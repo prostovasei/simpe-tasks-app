@@ -30,15 +30,23 @@ import java.time.LocalDate
 class WidgetScreenshotTest {
     private val context = ApplicationProvider.getApplicationContext<android.app.Application>()
 
-    private class Preview(private val model: WidgetModel) : GlanceAppWidget() {
-        override suspend fun provideGlance(context: android.content.Context, id: GlanceId) = provideContent { WidgetContent(model, 1, scrollable = false) }
+    private class Preview(private val model: WidgetModel, private val liveClock: Boolean = false) : GlanceAppWidget() {
+        override suspend fun provideGlance(context: android.content.Context, id: GlanceId) =
+            provideContent { WidgetContent(model, 1, scrollable = false, liveClock = liveClock) }
     }
 
-    private fun item(id: String, title: String, due: DueText?, list: String? = "Работа", ghostOf: String? = null, priority: Priority = Priority.NONE) =
-        TaskItem(
-            id, title, priority, due, list, LIST_COLORS[list], isInboxList = list == null, isRecurring = ghostOf != null || id == "gym", ghostOf = ghostOf,
-            listIcon = LIST_ICONS[list ?: "Inbox"],
-        )
+    private fun item(
+        id: String,
+        title: String,
+        due: DueText?,
+        list: String? = "Работа",
+        ghostOf: String? = null,
+        priority: Priority = Priority.NONE,
+        reminders: Boolean = false,
+    ) = TaskItem(
+        id, title, priority, due, list, LIST_COLORS[list], isInboxList = list == null, isRecurring = ghostOf != null || id == "gym", ghostOf = ghostOf,
+        listIcon = LIST_ICONS[list ?: "Inbox"], hasReminders = reminders,
+    )
 
     // Цвета и значки списков в тестовых данных (итерация 14).
     private val LIST_COLORS = mapOf("Работа" to "#6B5CE7", "Дом" to "#2F9E57", "Здоровье" to "#E0457B")
@@ -55,9 +63,10 @@ class WidgetScreenshotTest {
             WidgetDayBlock(
                 WidgetDay.On(today),
                 listOf(
-                    item("gym", "Зарядка", DueText(DayLabel.Today, "08:00"), list = null),
-                    item("call", "Созвон с командой", DueText(DayLabel.Today, "10:00–11:00"), priority = Priority.MEDIUM),
                     item("food", "Купить продукты", DueText(DayLabel.Today, null), list = "Дом", priority = Priority.LOW),
+                    item("gym", "Зарядка", DueText(DayLabel.Today, "08:00"), list = null),
+                    item("call", "Созвон с командой", DueText(DayLabel.Today, "10:00–11:00"), priority = Priority.MEDIUM, reminders = true),
+                    item("doc", "Позвонить врачу", DueText(DayLabel.Today, "12:30"), list = "Здоровье", priority = Priority.HIGH),
                 ),
             ),
             WidgetDayBlock(
@@ -78,6 +87,8 @@ class WidgetScreenshotTest {
             WidgetTab(WidgetFilter.ProjectList("work"), "Работа", "#3D8BFD"),
             WidgetTab(WidgetFilter.ProjectList("home"), "Дом", "#46A758"),
         ),
+        // Сейчас 09:40: «Зарядка» прошла, отметка «сейчас» — перед «Созвоном».
+        nowMinute = 9 * 60 + 40,
     )
 
     @Test
@@ -101,6 +112,19 @@ class WidgetScreenshotTest {
         val found = ArrayList<View>()
         root.findViewsWithText(found, "Выполнить", View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
         assertEquals(25, found.size)
+    }
+
+    /** Время отметки «сейчас» на телефоне — системные часы: идут сами, без перерисовки виджета. */
+    @Test
+    fun nowMarkerShowsSystemClock() {
+        val views = runBlocking { Preview(model, liveClock = true).compose(context, size = DpSize(320.dp, 420.dp)) }
+        val root = views.apply(context, FrameLayout(context))
+        assertEquals(1, root.descendants().filterIsInstance<android.widget.TextClock>().count())
+    }
+
+    private fun View.descendants(): Sequence<View> = sequence {
+        yield(this@descendants)
+        if (this@descendants is android.view.ViewGroup) for (i in 0 until childCount) yieldAll(getChildAt(i).descendants())
     }
 
     /** Настоящая картинка: в нижней строке все кнопки на месте (Glance отбрасывает детей Row сверх 10). */

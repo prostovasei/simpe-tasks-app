@@ -26,6 +26,8 @@ data class TaskItem(
     val ghostOf: String? = null,
     /** Значок списка — ключ из [ListIcons] (у «Входящих» свой). */
     val listIcon: String? = null,
+    /** Есть напоминания — в виджете значок будильника (итерация 20). */
+    val hasReminders: Boolean = false,
 ) {
     val isGhost: Boolean get() = ghostOf != null
 
@@ -47,6 +49,7 @@ fun Task.toItem(projects: Map<String, Project>, today: LocalDate, zone: ZoneId, 
         isRecurring = rrule != null && due != null,
         ghostOf = id.takeIf { ghostIndex != null },
         listIcon = if (project?.isInbox == true) ListIcons.INBOX else project?.icon,
+        hasReminders = reminders.isNotEmpty() && due != null,
     )
 }
 

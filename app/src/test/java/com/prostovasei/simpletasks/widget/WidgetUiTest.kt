@@ -75,11 +75,11 @@ class WidgetUiTest {
         onNode(hasTextEqualTo("СБ, 17 окт")).assertExists()
         onNode(hasTextEqualTo("Завтра")).assertExists()
         onNode(hasTextEqualTo("ПН, 19 окт")).assertExists()
-        // Справа на плашке: у просроченной — день, у остальных — время; повтор — «↻» после названия.
+        // Слева время (итерация 20): у просроченной — день, у остальных — время; название без «↻» (повтор — значком).
         onNode(hasTextEqualTo("Вчера")).assertExists()
         onAllNodes(hasTextEqualTo("08:00")).assertCountEquals(2)
-        onNode(hasTextEqualTo("Зарядка ↻")).assertExists()
-        // Галочки только у трёх настоящих задач: у будущего повтора её нет.
+        onAllNodes(hasTextEqualTo("Зарядка")).assertCountEquals(2)
+        // Кружки-галочки на шкале только у трёх настоящих задач: у будущего повтора нажатия нет.
         onAllNodes(hasContentDescription("Выполнить")).assertCountEquals(3)
     }
 

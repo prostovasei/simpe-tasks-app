@@ -19,6 +19,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
+import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -31,7 +32,6 @@ class TasksWidgetReceiver : AppWidgetProvider() {
         WidgetLog.add(context, "система: обновить ${appWidgetIds.joinToString()}")
         inBackground {
             appWidgetIds.forEach { WidgetRenderer.render(context.applicationContext, it, "система") }
-            scheduleMidnight(context, context.widgetEntryPoint().time())
         }
     }
 
@@ -61,30 +61,34 @@ class TasksWidgetReceiver : AppWidgetProvider() {
     }
 }
 
-/** Будильник на ближайшую полночь (не точный: минута-другая не важна, батарею бережём). */
-fun scheduleMidnight(context: Context, time: TimeProvider) {
+/**
+ * Будильник на ближайшее изменение виджета: полночь или, с итерации 20, начало/конец сегодняшней задачи
+ * ([next] — для шкалы «Сегодня»: отметка «сейчас» и бледные прошедшие задачи). Не точный: минута-другая
+ * не важна, батарею бережём. Будильник один на все виджеты — новый заменяет прежний.
+ */
+fun scheduleRefresh(context: Context, time: TimeProvider, next: Instant?) {
     val midnight = time.today().plusDays(1).atStartOfDay(time.zone()).toInstant().plusSeconds(MIDNIGHT_DELAY_SECONDS)
+    val at = next?.takeIf { it.isAfter(time.now()) && it.isBefore(midnight) } ?: midnight
     val intent = PendingIntent.getBroadcast(
         context,
         0,
         Intent(context, WidgetActionReceiver::class.java).setAction(WidgetActions.MIDNIGHT),
         PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
     )
-    context.getSystemService(AlarmManager::class.java).setAndAllowWhileIdle(AlarmManager.RTC, midnight.toEpochMilli(), intent)
+    context.getSystemService(AlarmManager::class.java).setAndAllowWhileIdle(AlarmManager.RTC, at.toEpochMilli(), intent)
 }
 
 private const val MIDNIGHT_DELAY_SECONDS = 30L
 
 /**
  * Обновляет виджеты при любых изменениях задач и списков (в приложении, из уведомления, из виджета)
- * и при смене дня; ставит будильник на полночь, если виджеты есть на рабочем столе.
+ * и при смене дня; будильник на следующее обновление ставит сама отрисовка.
  */
 @Singleton
 class WidgetUpdater @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val tasks: TaskRepository,
     private val dayTicker: DayTicker,
-    private val time: TimeProvider,
     @param:ApplicationScope private val appScope: CoroutineScope,
 ) {
     @OptIn(FlowPreview::class)
@@ -93,7 +97,6 @@ class WidgetUpdater @Inject constructor(
             combine(tasks.observeDataChanges(), dayTicker.today()) { _, _ -> }.debounce(DEBOUNCE_MS).collect {
                 if (WidgetRenderer.widgetIds(context).isEmpty()) return@collect
                 WidgetRenderer.renderAll(context, "изменились задачи")
-                scheduleMidnight(context, time)
             }
         }
     }

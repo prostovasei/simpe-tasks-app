@@ -10,7 +10,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
 /**
- * Нажатия в виджете (доработка 0.9.2): вкладка списка, галочка, полночь. Обрабатываются сразу этим приёмником
+ * Нажатия в виджете (доработка 0.9.2): вкладка списка, галочка; будильник полуночи и шкалы дня. Обрабатываются сразу этим приёмником
  * приложения — без фонового сеанса Glance и очереди задач Android. Приёмник закрыт для других приложений.
  */
 class WidgetActionReceiver : BroadcastReceiver() {
@@ -46,10 +46,7 @@ class WidgetActionReceiver : BroadcastReceiver() {
                     context.widgetEntryPoint().tasks().complete(taskId)
                     WidgetRenderer.renderAll(context, "галочка")
                 }
-                WidgetActions.MIDNIGHT -> {
-                    WidgetRenderer.renderAll(context, "полночь")
-                    scheduleMidnight(context, context.widgetEntryPoint().time())
-                }
+                WidgetActions.MIDNIGHT -> WidgetRenderer.renderAll(context, "время")
             }
         }
     }

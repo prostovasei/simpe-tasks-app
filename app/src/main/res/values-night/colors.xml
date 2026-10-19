@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Часы отметки «сейчас» в виджете: совпадает с ColorTokens.accent (тёмная тема). -->
+    <color name="widget_now">#4FC07F</color>
+</resources>

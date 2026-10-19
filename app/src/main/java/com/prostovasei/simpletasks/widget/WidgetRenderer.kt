@@ -17,6 +17,8 @@ import androidx.glance.state.PreferencesGlanceStateDefinition
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import java.time.Instant
+import java.time.ZoneId
 
 /**
  * Отрисовка виджета сразу при событии (доработка 0.9.2, docs/ARCHITECTURE.md §4.13). Раньше виджет рисовал
@@ -31,6 +33,9 @@ object WidgetRenderer {
 
     /** Свой сборщик на каждый виджет: одинаковая раскладка элементов от обновления к обновлению. */
     private val composers = HashMap<Int, GlanceRemoteViews>()
+
+    /** Когда шкала «Сегодня» каждого виджета изменится сама (начало или конец задачи); null — до полуночи ничего. */
+    private val nextChanges = HashMap<Int, Instant?>()
 
     fun widgetIds(context: Context): IntArray =
         AppWidgetManager.getInstance(context).getAppWidgetIds(ComponentName(context, TasksWidgetReceiver::class.java))
@@ -55,11 +60,21 @@ object WidgetRenderer {
                 }
                 .remoteViews
             manager.updateAppWidget(appWidgetId, views)
+            val time = context.widgetEntryPoint().time()
+            nextChanges[appWidgetId] = nextChange(model, time.zone())
+            scheduleRefresh(context, time, nextChanges.filterKeys { it in widgetIds(context) }.values.filterNotNull().minOrNull())
             val tasks = model.days.sumOf { it.items.size }
             WidgetLog.add(context, "отрисовка $appWidgetId: ${model.filter.encode()}, задач $tasks, ${SystemClock.elapsedRealtime() - started} мс ($reason)")
         } catch (e: Exception) {
             WidgetLog.error(context, "отрисовка виджета $appWidgetId ($reason)", e)
         }
+    }
+
+    private fun nextChange(model: WidgetModel, zone: ZoneId): Instant? {
+        val now = model.nowMinute ?: return null
+        val today = model.days.find { it.day == WidgetDay.On(model.today) } ?: return null
+        val minute = WidgetTimeline.nextChange(today.items, now) ?: return null
+        return model.today.atStartOfDay(zone).plusMinutes(minute.toLong()).toInstant()
     }
 
     /** Выбор списка; до 0.9.2 он хранился в состоянии Glance — переносим один раз. */
