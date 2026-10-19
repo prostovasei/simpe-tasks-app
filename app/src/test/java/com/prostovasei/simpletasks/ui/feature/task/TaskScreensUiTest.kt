@@ -1,6 +1,9 @@
 package com.prostovasei.simpletasks.ui.feature.task
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.test.performImeAction
+import androidx.compose.ui.test.assertIsNotFocused
+import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.performTouchInput
@@ -159,6 +162,37 @@ class TaskScreensUiTest {
             listOf<Any>(QuickAddIntent.Grid(GridAction.Resize(150)), QuickAddIntent.Grid(GridAction.MoveSlot(today.plusDays(2), 10 * 60 + 30))),
             intents.filter { it is QuickAddIntent.Grid && (it.action is GridAction.Resize || it.action is GridAction.MoveSlot) },
         )
+    }
+
+    /** Как во ViewModel: «Добавить пункт» дописывает пустой пункт в конец чек-листа. */
+    private fun statefulQuickAdd(initial: QuickAddState): androidx.compose.runtime.MutableState<QuickAddState> {
+        val state = androidx.compose.runtime.mutableStateOf(initial)
+        show {
+            QuickAddScreen(
+                state.value,
+                { if (it == QuickAddIntent.AddChecklist) state.value = state.value.copy(checklist = state.value.checklist.orEmpty() + "") },
+                {},
+                autoFocus = false,
+            )
+        }
+        return state
+    }
+
+    @Test
+    fun nextOnChecklistItemMovesCursorToNewItem() {
+        statefulQuickAdd(quickState.copy(checklist = listOf("Повестка")))
+        composeRule.onNodeWithTag("$TAG_QUICK_CHECKLIST:0").performImeAction()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("$TAG_QUICK_CHECKLIST:1").assertIsFocused()
+        composeRule.onNodeWithTag("$TAG_QUICK_CHECKLIST:0").assertIsNotFocused()
+    }
+
+    @Test
+    fun checklistButtonPutsCursorInFirstItem() {
+        statefulQuickAdd(quickState.copy(checklist = null))
+        composeRule.onNodeWithTag(TAG_TOOL_CHECKLIST).performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("$TAG_QUICK_CHECKLIST:0").assertIsFocused()
     }
 
     @Test

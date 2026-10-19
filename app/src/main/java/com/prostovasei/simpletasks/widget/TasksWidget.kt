@@ -98,7 +98,8 @@ private val WidgetDay.id: Long
 /** Блок дня (итерация 14, как в приложении): подпись дня, под ней — отдельные белые плашки задач через щель 2 dp. */
 @Composable
 private fun DayBlock(block: WidgetDayBlock, isFirst: Boolean, model: WidgetModel, days: DayNames) {
-    Column(GlanceModifier.fillMaxWidth()) {
+    // Справа — свободная полоска для линии прокрутки (она рисуется системой по краю списка).
+    Column(GlanceModifier.fillMaxWidth().padding(end = SizeTokens.WIDGET_SCROLL_GUTTER.dp)) {
         DayTitle(block.day, model.today, isFirst)
         // Одно место в колонке дня занимает подпись.
         ManyRows(block.items.withIndex().toList(), limit = MAX_CHILDREN - 1) { (index, item) ->
