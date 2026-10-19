@@ -100,7 +100,8 @@ private val WidgetDay.id: Long
 private fun DayBlock(block: WidgetDayBlock, isFirst: Boolean, model: WidgetModel, days: DayNames) {
     Column(GlanceModifier.fillMaxWidth()) {
         DayTitle(block.day, model.today, isFirst)
-        ManyRows(block.items.withIndex().toList()) { (index, item) ->
+        // Одно место в колонке дня занимает подпись.
+        ManyRows(block.items.withIndex().toList(), limit = MAX_CHILDREN - 1) { (index, item) ->
             Column(GlanceModifier.fillMaxWidth()) {
                 if (index > 0) Spacer(GlanceModifier.height(SizeTokens.CARD_GAP.dp))
                 TaskRow(item, overdue = block.day == WidgetDay.Overdue, model.filter, days)
@@ -111,21 +112,25 @@ private fun DayBlock(block: WidgetDayBlock, isFirst: Boolean, model: WidgetModel
 
 /**
  * Строки без потерь: в Column виджета помещается не больше [MAX_CHILDREN] элементов, остальные Glance молча
- * отбрасывает. Длинный список раскладывается во вложенные колонки по 10 и меньше.
+ * отбрасывает. В колонке дня одно место занимает подпись дня, поэтому строкам — [MAX_CHILDREN] − 1;
+ * длинный список раскладывается во вложенные колонки (в них — по 10 и меньше).
  */
 @Composable
-private fun <T> ManyRows(items: List<T>, row: @Composable (T) -> Unit) {
-    if (items.size <= MAX_CHILDREN) {
+private fun <T> ManyRows(items: List<T>, limit: Int = MAX_CHILDREN, row: @Composable (T) -> Unit) {
+    val chunks = rowChunks(items, limit)
+    if (chunks == null) {
         items.forEach { row(it) }
     } else {
-        items.chunked((items.size + MAX_CHILDREN - 1) / MAX_CHILDREN).forEach { chunk ->
-            Column(GlanceModifier.fillMaxWidth()) { ManyRows(chunk, row) }
-        }
+        chunks.forEach { chunk -> Column(GlanceModifier.fillMaxWidth()) { ManyRows(chunk, MAX_CHILDREN, row) } }
     }
 }
 
+/** null — [items] помещаются в одну колонку ([limit] детей); иначе — не больше [limit] частей поровну. */
+internal fun <T> rowChunks(items: List<T>, limit: Int): List<List<T>>? =
+    if (items.size <= limit) null else items.chunked((items.size + limit - 1) / limit)
+
 /** Предел детей у Row/Column в Glance. */
-private const val MAX_CHILDREN = 10
+internal const val MAX_CHILDREN = 10
 
 /** «Просрочено», «ПТ, 16 окт» + белая метка «Сегодня» / «Завтра» (итерация 14, как в приложении), «Без даты». */
 @Composable
