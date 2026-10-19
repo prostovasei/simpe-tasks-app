@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Своя полоска прокрутки списка виджета (доработка 0.19.4): тонкая, серая, без отступов — у самого края.
+     Системная полоска на телефоне PM (HyperOS) стоит с отступом ~11 dp и ложится на плашки. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/widget_scroll_thumb" />
+    <corners android:radius="2dp" />
+</shape>

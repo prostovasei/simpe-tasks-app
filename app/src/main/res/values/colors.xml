@@ -2,4 +2,6 @@
 <resources>
     <!-- Только для иконки лаунчера: совпадает с ColorTokens.accent (светлая тема). -->
     <color name="ic_launcher_background">#0969DA</color>
+    <!-- Полоска прокрутки списка виджета: полупрозрачный серый, виден и на светлом, и на тёмном фоне. -->
+    <color name="widget_scroll_thumb">#808A8F98</color>
 </resources>
