@@ -75,9 +75,6 @@ object SizeTokens {
 
     /** Поля ленты виджета от краёв. */
     const val WIDGET_EDGE = 6
-
-    /** Свободная полоска справа у плашек: в ней системная линия прокрутки списка, а не поверх времени. */
-    const val WIDGET_SCROLL_GUTTER = 10
     const val COLOR_SWATCH = 40
     const val ICON = 24
     const val CHECKBOX_TOUCH = 40

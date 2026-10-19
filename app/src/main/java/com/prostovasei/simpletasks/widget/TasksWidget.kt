@@ -67,7 +67,9 @@ fun WidgetContent(model: WidgetModel, appWidgetId: Int, scrollable: Boolean = tr
             .background(WidgetColors.background)
             .cornerRadius(RadiusTokens.XL.dp),
     ) {
-        Box(GlanceModifier.fillMaxWidth().defaultWeight().padding(start = SizeTokens.WIDGET_EDGE.dp, end = SizeTokens.WIDGET_EDGE.dp, top = SizeTokens.WIDGET_EDGE.dp)) {
+        // Список доходит до самого правого края виджета: системная линия прокрутки лежит у края, а не на плашках;
+        // правое поле плашек — у них самих (DayBlock).
+        Box(GlanceModifier.fillMaxWidth().defaultWeight().padding(start = SizeTokens.WIDGET_EDGE.dp, top = SizeTokens.WIDGET_EDGE.dp)) {
             if (model.isEmpty) {
                 Box(GlanceModifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(context.getString(R.string.widget_empty), style = TextStyle(color = WidgetColors.textSecondary, fontSize = 14.sp))
@@ -98,8 +100,8 @@ private val WidgetDay.id: Long
 /** Блок дня (итерация 14, как в приложении): подпись дня, под ней — отдельные белые плашки задач через щель 2 dp. */
 @Composable
 private fun DayBlock(block: WidgetDayBlock, isFirst: Boolean, model: WidgetModel, days: DayNames) {
-    // Справа — свободная полоска для линии прокрутки (она рисуется системой по краю списка).
-    Column(GlanceModifier.fillMaxWidth().padding(end = SizeTokens.WIDGET_SCROLL_GUTTER.dp)) {
+    // Правое поле плашек; за ним, у самого края виджета, — системная линия прокрутки.
+    Column(GlanceModifier.fillMaxWidth().padding(end = SizeTokens.WIDGET_EDGE.dp)) {
         DayTitle(block.day, model.today, isFirst)
         // Одно место в колонке дня занимает подпись.
         ManyRows(block.items.withIndex().toList(), limit = MAX_CHILDREN - 1) { (index, item) ->
