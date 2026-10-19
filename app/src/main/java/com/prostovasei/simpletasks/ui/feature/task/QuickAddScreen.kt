@@ -20,6 +20,8 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -71,6 +73,17 @@ fun QuickAddScreen(
             keyboard?.show()
         }
     }
+    // Новый пункт чек-листа сразу получает курсор — и после «Далее», и после кнопки «Чек-лист» на панели.
+    val checklistCount = state.checklist?.size ?: 0
+    val itemFocus = remember(checklistCount) { List(checklistCount) { FocusRequester() } }
+    var shownCount by remember { mutableIntStateOf(checklistCount) }
+    LaunchedEffect(checklistCount) {
+        if (checklistCount > shownCount) {
+            itemFocus.lastOrNull()?.requestFocus()
+            keyboard?.show()
+        }
+        shownCount = checklistCount
+    }
     TaskSheet(
         fields = state.fields,
         onGrid = { onIntent(QuickAddIntent.Grid(it)) },
@@ -109,7 +122,7 @@ fun QuickAddScreen(
                     textStyle = MaterialTheme.typography.bodyMedium,
                     imeAction = ImeAction.Next,
                     onImeAction = { onIntent(QuickAddIntent.AddChecklist) },
-                    modifier = Modifier.weight(1f).testTag("$TAG_QUICK_CHECKLIST:$index"),
+                    modifier = Modifier.weight(1f).focusRequester(itemFocus[index]).testTag("$TAG_QUICK_CHECKLIST:$index"),
                 )
                 IconButton(onClick = { onIntent(QuickAddIntent.RemoveChecklistItem(index)) }, modifier = Modifier.size(sizes.toolButton)) {
                     Icon(Icons.Default.Close, null, tint = colors.textSecondary, modifier = Modifier.size(sizes.metaIcon))
