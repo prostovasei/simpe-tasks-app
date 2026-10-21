@@ -69,4 +69,6 @@ data class AppSizes(
     val weekHeader: Dp = SizeTokens.WEEK_HEADER.dp,
     val weekClear: Dp = SizeTokens.WEEK_CLEAR.dp,
     val weekKnob: Dp = SizeTokens.WEEK_KNOB.dp,
+    val stripBarWidth: Dp = SizeTokens.STRIP_BAR_WIDTH.dp,
+    val stripBarHeight: Dp = SizeTokens.STRIP_BAR_HEIGHT.dp,
 )

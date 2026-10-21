@@ -39,11 +39,20 @@ class WeekGridModelTest {
     }
 
     @Test
-    fun startsFromTodayUnlessSelectedFar() {
-        assertEquals(0f, WeekGridMath.initialScroll(today, null))
-        assertEquals(0f, WeekGridMath.initialScroll(today, today.plusDays(6)))
-        assertEquals(10f, WeekGridMath.initialScroll(today, today.plusDays(10)))
-        assertEquals(-3f, WeekGridMath.initialScroll(today, today.minusDays(3)))
+    fun timelineCentersTappedDayButNotBeforeToday() {
+        // Нажали на «послезавтра» — видно завтра, послезавтра (в центре) и день после.
+        assertEquals(1f, WeekGridMath.timelineScroll(today, today.plusDays(2)))
+        assertEquals(5f, WeekGridMath.timelineScroll(today, today.plusDays(6)))
+        // Нажали на сегодня — таймлайн всё равно с сегодняшнего дня.
+        assertEquals(0f, WeekGridMath.timelineScroll(today, today))
+    }
+
+    @Test
+    fun stripBarCoversAfternoon() {
+        assertEquals(0f, StripMath.fraction(9 * 60))
+        assertEquals(0f, StripMath.fraction(12 * 60))
+        assertEquals(0.5f, StripMath.fraction(18 * 60))
+        assertEquals(1f, StripMath.fraction(24 * 60))
     }
 
     @Test

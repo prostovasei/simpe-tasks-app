@@ -118,4 +118,8 @@ object SizeTokens {
     const val WEEK_HEADER = 36
     const val WEEK_CLEAR = 18
     const val WEEK_KNOB = 10
+
+    /** Строка недели в шторке (итерация 21): столбик занятости дня с 12 до 24 часов. */
+    const val STRIP_BAR_WIDTH = 22
+    const val STRIP_BAR_HEIGHT = 40
 }

@@ -5,6 +5,7 @@ import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -38,10 +39,12 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -53,6 +56,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -85,6 +89,7 @@ import com.prostovasei.simpletasks.designsystem.theme.parseListColor
 import com.prostovasei.simpletasks.domain.model.Priority
 import com.prostovasei.simpletasks.ui.common.DueFormatter
 import com.prostovasei.simpletasks.ui.common.ListIcons
+import java.time.LocalDate
 import kotlinx.coroutines.launch
 
 /** Открытие и закрытие шторки: [progress] 0 → 1 при открытии; [close] увозит её вниз и вызывает закрытие экрана. */
@@ -122,9 +127,11 @@ fun rememberSheetMotion(onClosed: () -> Unit): SheetMotion {
 }
 
 /**
- * Шторка задачи снизу на 75% экрана (итерации 16–19, макет PM) — и для новой, и для созданной задачи.
- * Сверху [header] (название, описание, чек-лист…), потом строка «когда», сетка недели и панель кнопок:
- * список, повтор, напоминание, приоритет, чек-лист и справа [actions]. Нажатие на затемнение или «Назад» — [onClose].
+ * Шторка задачи снизу (итерации 16–19, с итерации 21 — макет PM N2) — и для новой, и для созданной задачи.
+ * Сверху [header] (название, описание, чек-лист…), потом строка «когда», строка недели (7 дней со столбиками
+ * занятости) и панель кнопок: список, повтор, напоминание, приоритет, чек-лист и справа [actions].
+ * Нажатие на день открывает таймлайн на 3 дня (нажатый — в центре) почти на весь экран: там выбирается время.
+ * Нажатие на затемнение или «Назад» — [onClose]; «Назад» в таймлайне возвращает к задаче.
  */
 @Composable
 fun TaskSheet(
@@ -146,6 +153,19 @@ fun TaskSheet(
     val keyboard = LocalSoftwareKeyboardController.current
     val focus = LocalFocusManager.current
     val closeLabel = stringResource(R.string.quick_add_close)
+    // Открытый таймлайн — день, по которому нажали (номер дня), null — шторка со строкой недели.
+    var timelineDay by rememberSaveable { mutableStateOf<Long?>(null) }
+    var dayOnly by rememberSaveable { mutableStateOf(false) }
+    val hideKeyboard: () -> Unit = {
+        focus.clearFocus()
+        keyboard?.hide()
+    }
+    val closeTimeline = {
+        timelineDay = null
+        // Занятость снова нужна для строки недели — с сегодняшнего дня.
+        onGrid(GridAction.FirstDay(fields.today))
+    }
+    BackHandler(enabled = timelineDay != null, onBack = closeTimeline)
 
     Box(modifier.fillMaxSize()) {
         Box(
@@ -158,12 +178,13 @@ fun TaskSheet(
                 .testTag(TAG_QUICK_SCRIM),
         )
         BoxWithConstraints(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars.union(WindowInsets.ime))) {
-            val headerMax = maxHeight * SHEET_FRACTION * HEADER_FRACTION
+            val headerMax = maxHeight * HEADER_FRACTION
+            val opened = timelineDay?.let { LocalDate.ofEpochDay(it) }
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .fillMaxHeight(SHEET_FRACTION)
+                    .then(if (opened != null) Modifier.fillMaxHeight(TIMELINE_FRACTION) else Modifier)
                     .graphicsLayer { translationY = (1f - progress()) * size.height }
                     .shadow(sizes.navShadow, AppTheme.shapes.sheetTop)
                     .background(colors.surface, AppTheme.shapes.sheetTop)
@@ -178,44 +199,143 @@ fun TaskSheet(
                         .size(sizes.sheetHandleWidth, sizes.sheetHandleHeight)
                         .background(colors.divider, AppTheme.shapes.small),
                 )
-                Column(
-                    Modifier
-                        .heightIn(max = headerMax)
-                        .verticalScroll(rememberScrollState())
-                        .padding(horizontal = spacing.md),
-                    content = header,
-                )
-                Text(
-                    whenText(fields),
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = if (fields.due == null) colors.textSecondary else colors.accent,
-                    modifier = Modifier.padding(horizontal = spacing.md, vertical = spacing.xs).testTag(TAG_QUICK_WHEN),
-                )
-                WeekGrid(
-                    today = fields.today,
-                    nowMinute = fields.nowMinute,
-                    selectedDate = fields.selectedDate,
-                    selectedMinute = fields.selectedMinute,
-                    selectedDuration = fields.durationMinutes,
-                    busy = fields.busy,
-                    onDayTap = { onGrid(GridAction.DayTap(it)) },
-                    onSlotTap = { date, minute -> onGrid(GridAction.SlotTap(date, minute)) },
-                    onMove = { date, minute -> onGrid(GridAction.MoveSlot(date, minute)) },
-                    onResize = { onGrid(GridAction.Resize(it)) },
-                    onClearTime = { onGrid(GridAction.ClearTime) },
-                    onFirstDayChange = { onGrid(GridAction.FirstDay(it)) },
-                    onInteract = {
-                        focus.clearFocus()
-                        keyboard?.hide()
-                    },
-                    modifier = Modifier.weight(1f).fillMaxWidth(),
-                )
-                SheetToolbar(fields, onEdit, checklistActive, onChecklist, actions, Modifier.windowInsetsPadding(WindowInsets.navigationBars))
+                if (opened != null) {
+                    Timeline(fields, opened, onGrid, hideKeyboard, closeTimeline, Modifier.weight(1f).windowInsetsPadding(WindowInsets.navigationBars))
+                } else {
+                    Column(
+                        Modifier
+                            .heightIn(max = headerMax)
+                            .verticalScroll(rememberScrollState())
+                            .padding(horizontal = spacing.md),
+                        content = header,
+                    )
+                    WhenLabel(fields, Modifier.padding(horizontal = spacing.md, vertical = spacing.xs))
+                    WeekStrip(
+                        today = fields.today,
+                        selectedDate = fields.selectedDate,
+                        busy = fields.busy,
+                        dayOnly = dayOnly,
+                        onDay = { date ->
+                            hideKeyboard()
+                            if (dayOnly) {
+                                onGrid(GridAction.DayTap(date))
+                                dayOnly = false
+                            } else {
+                                timelineDay = date.toEpochDay()
+                            }
+                        },
+                        onDayOnly = { dayOnly = !dayOnly },
+                        onClearDate = { onGrid(GridAction.ClearDate) },
+                    )
+                    SheetToolbar(fields, onEdit, checklistActive, onChecklist, actions, Modifier.windowInsetsPadding(WindowInsets.navigationBars))
+                }
             }
         }
         overlay()
     }
+}
+
+/** Строка «когда» зелёным (серым — «Без даты»). */
+@Composable
+private fun WhenLabel(fields: SheetFields, modifier: Modifier) {
+    val colors = AppTheme.colors
+    Text(
+        whenText(fields),
+        style = MaterialTheme.typography.labelMedium,
+        fontWeight = FontWeight.Bold,
+        color = if (fields.due == null) colors.textSecondary else colors.accent,
+        modifier = modifier.testTag(TAG_QUICK_WHEN),
+    )
+}
+
+/**
+ * Таймлайн на 3 дня (итерация 21, макет PM N2): сверху «к задаче», выбранное время и «Готово»; сетка с нажатым днём
+ * в центре; снизу «Раньше» / «Позже» — на 3 дня и «Без времени» — только день.
+ */
+@Composable
+private fun Timeline(
+    fields: SheetFields,
+    day: LocalDate,
+    onGrid: (GridAction) -> Unit,
+    onInteract: () -> Unit,
+    onBack: () -> Unit,
+    modifier: Modifier,
+) {
+    val colors = AppTheme.colors
+    val spacing = AppTheme.spacing
+    val scope = rememberCoroutineScope()
+    val scroll = remember(day) { GridScroll(WeekGridMath.timelineScroll(fields.today, day)) }
+    val page = { days: Int ->
+        scope.launch {
+            val limit = WeekGridMath.MAX_DAYS_AWAY.toFloat()
+            animate(scroll.days, (scroll.days + days).coerceIn(-limit, limit)) { value, _ -> scroll.days = value }
+        }
+        Unit
+    }
+    Column(modifier.fillMaxWidth()) {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = spacing.xs, vertical = spacing.xxs),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(spacing.xs),
+        ) {
+            IconButton(onClick = onBack, modifier = Modifier.testTag(TAG_TIMELINE_BACK)) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.timeline_back), tint = colors.textPrimary)
+            }
+            WhenLabel(fields, Modifier.weight(1f))
+            SheetConfirmButton(R.string.sheet_done, enabled = true, tag = TAG_TIMELINE_DONE, onClick = onBack)
+        }
+        WeekGrid(
+            scroll = scroll,
+            today = fields.today,
+            nowMinute = fields.nowMinute,
+            selectedDate = fields.selectedDate,
+            selectedMinute = fields.selectedMinute,
+            selectedDuration = fields.durationMinutes,
+            busy = fields.busy,
+            onDayTap = { onGrid(GridAction.DayTap(it)) },
+            onSlotTap = { date, minute -> onGrid(GridAction.SlotTap(date, minute)) },
+            onMove = { date, minute -> onGrid(GridAction.MoveSlot(date, minute)) },
+            onResize = { onGrid(GridAction.Resize(it)) },
+            onClearTime = { onGrid(GridAction.ClearTime) },
+            onFirstDayChange = { onGrid(GridAction.FirstDay(it)) },
+            onInteract = onInteract,
+            visibleDays = WeekGridMath.TIMELINE_DAYS,
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+        )
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = spacing.sm, vertical = spacing.xs),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(spacing.xs),
+        ) {
+            TimelineButton(R.string.timeline_earlier, TAG_TIMELINE_EARLIER) { page(-WeekGridMath.TIMELINE_DAYS) }
+            Spacer(Modifier.weight(1f))
+            TimelineButton(R.string.strip_no_time, TAG_TIMELINE_NO_TIME) {
+                when {
+                    fields.selectedMinute != null -> onGrid(GridAction.ClearTime)
+                    fields.selectedDate == null -> onGrid(GridAction.DayTap(day))
+                }
+                onBack()
+            }
+            TimelineButton(R.string.timeline_later, TAG_TIMELINE_LATER) { page(WeekGridMath.TIMELINE_DAYS) }
+        }
+    }
+}
+
+@Composable
+private fun TimelineButton(label: Int, tag: String, onClick: () -> Unit) {
+    val colors = AppTheme.colors
+    Text(
+        stringResource(label),
+        style = MaterialTheme.typography.labelMedium,
+        fontWeight = FontWeight.Bold,
+        color = colors.textPrimary,
+        modifier = Modifier
+            .clip(AppTheme.shapes.medium)
+            .background(colors.background)
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(horizontal = AppTheme.spacing.sm, vertical = AppTheme.spacing.xs)
+            .testTag(tag),
+    )
 }
 
 /** Строка «когда»: «Без даты», «Сегодня, весь день», «Завтра, 16:00» или «Завтра, 16:00–17:30». */
@@ -404,10 +524,9 @@ fun CompactField(
 private val SHEET_EASING = CubicBezierEasing(0.32f, 0.72f, 0f, 1f)
 private const val OPEN_MS = 340
 private const val CLOSE_MS = 220
-private const val SHEET_FRACTION = 0.75f
-
-/** Верхняя часть (поля, чек-лист) занимает не больше этой доли шторки — остальное сетке. */
-private const val HEADER_FRACTION = 0.4f
+/** Таймлайн занимает почти весь экран; верхняя часть шторки (поля, чек-лист) — не больше этой доли экрана. */
+private const val TIMELINE_FRACTION = 0.97f
+private const val HEADER_FRACTION = 0.45f
 private const val DIMMED_ALPHA = 0.45f
 
 const val TAG_QUICK_CARD = "quick_card"
@@ -419,3 +538,8 @@ const val TAG_TOOL_REMINDER = "tool_reminder"
 const val TAG_TOOL_PRIORITY = "tool_priority"
 const val TAG_TOOL_CHECKLIST = "tool_checklist"
 const val TAG_REMINDER_NEED_DAY = "reminder_need_day"
+const val TAG_TIMELINE_BACK = "timeline_back"
+const val TAG_TIMELINE_DONE = "timeline_done"
+const val TAG_TIMELINE_EARLIER = "timeline_earlier"
+const val TAG_TIMELINE_LATER = "timeline_later"
+const val TAG_TIMELINE_NO_TIME = "timeline_no_time"
