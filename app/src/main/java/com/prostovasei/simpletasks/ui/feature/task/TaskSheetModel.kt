@@ -48,6 +48,9 @@ sealed interface GridAction {
     /** Крестик на зелёном блоке: убрать время, день остаётся. */
     data object ClearTime : GridAction
 
+    /** «Без даты» в строке недели (итерация 21): убрать и день, и время. */
+    data object ClearDate : GridAction
+
     /** Сетку пролистали: первый видимый день — [first]. */
     data class FirstDay(val first: LocalDate) : GridAction
 }
@@ -89,6 +92,7 @@ fun Schedule.after(action: GridAction, zone: ZoneId): Schedule {
         is GridAction.MoveSlot -> timed(action.date, action.minute, duration, zone)
         is GridAction.Resize -> if (date == null || minute == null) this else timed(date, minute, action.minutes, zone)
         GridAction.ClearTime -> if (date == null) this else Schedule(TaskDue.AllDay(date), null)
+        GridAction.ClearDate -> Schedule(null, null)
         is GridAction.FirstDay -> this
     }
 }

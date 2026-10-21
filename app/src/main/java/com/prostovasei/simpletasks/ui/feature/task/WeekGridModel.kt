@@ -21,11 +21,15 @@ data class BusySlot(
     val isDone: Boolean,
 )
 
-/** Геометрия сетки недели: сутки с 00:00 до 24:00 шагом 30 минут, на экране 7 дней, листается по дням. */
+/**
+ * Геометрия сетки: сутки с 00:00 до 24:00 шагом 30 минут, листается по дням. В шторке — строка недели
+ * из [VISIBLE_DAYS] дней, по нажатию на день — таймлайн на [TIMELINE_DAYS] дня (итерация 21).
+ */
 object WeekGridMath {
     const val STEP_MINUTES = 30
     const val DAY_MINUTES = 24 * 60
     const val VISIBLE_DAYS = 7
+    const val TIMELINE_DAYS = 3
 
     /** Насколько далеко можно уйти свайпом от сегодняшнего дня (в днях). */
     const val MAX_DAYS_AWAY = 730
@@ -46,10 +50,13 @@ object WeekGridMath {
     fun settleTarget(scrollDays: Float, velocityPx: Float, dayPx: Float): Float =
         (scrollDays - velocityPx / dayPx * FLING_SECONDS).roundToInt().toFloat().coerceIn(-MAX_DAYS_AWAY.toFloat(), MAX_DAYS_AWAY.toFloat())
 
-    /** С какого дня начать сетку: с сегодняшнего, а если выбранный день не виден в первой неделе — с него. */
-    fun initialScroll(today: LocalDate, selected: LocalDate?): Float {
-        val days = selected?.let { java.time.temporal.ChronoUnit.DAYS.between(today, it) } ?: 0L
-        return if (days in 0 until VISIBLE_DAYS) 0f else days.coerceIn(-MAX_DAYS_AWAY.toLong(), MAX_DAYS_AWAY.toLong()).toFloat()
+    /**
+     * С какого дня начать таймлайн, открытый нажатием на [day]: нажатый день — в центре (решение PM, вариант N2),
+     * но не раньше сегодняшнего. Результат — сдвиг в днях от [today].
+     */
+    fun timelineScroll(today: LocalDate, day: LocalDate): Float {
+        val days = java.time.temporal.ChronoUnit.DAYS.between(today, day) - TIMELINE_DAYS / 2
+        return days.coerceIn(0L, MAX_DAYS_AWAY.toLong()).toFloat()
     }
 
     /**

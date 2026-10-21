@@ -38,6 +38,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -45,7 +46,6 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
@@ -78,8 +78,14 @@ import kotlin.math.floor
 import kotlin.math.sign
 import kotlin.math.roundToInt
 
+/** Прокрутка сетки по дням (дробная: 0 — первым виден сегодняшний день); её двигают и свайп, и кнопки. */
+@Stable
+class GridScroll(initial: Float) {
+    var days by mutableFloatStateOf(initial)
+}
+
 /**
- * Сетка недели в шторке новой задачи (итерация 16, макет PM): шапка дней и сутки шагом 30 минут.
+ * Сетка дней (итерация 16, макет PM; с итерации 21 — таймлайн на [visibleDays] дня): шапка дней и сутки шагом 30 минут.
  * Свайп вбок листает плавно по дням, вверх-вниз — по часам. Нажатие на день — «на весь день»,
  * нажатие на сетку — время; зелёный блок — выбранное время, серые — уже занятое другими задачами.
  * Зелёный блок после долгого нажатия перетаскивается, за ручку снизу — растягивается в интервал (итерация 17).
@@ -87,6 +93,7 @@ import kotlin.math.roundToInt
  */
 @Composable
 fun WeekGrid(
+    scroll: GridScroll,
     today: LocalDate,
     nowMinute: Int,
     selectedDate: LocalDate?,
@@ -101,11 +108,12 @@ fun WeekGrid(
     onFirstDayChange: (LocalDate) -> Unit,
     onInteract: () -> Unit,
     modifier: Modifier = Modifier,
+    visibleDays: Int = WeekGridMath.VISIBLE_DAYS,
 ) {
     val colors = AppTheme.colors
     val sizes = AppTheme.sizes
     val density = LocalDensity.current
-    var scrollDays by rememberSaveable { mutableFloatStateOf(WeekGridMath.initialScroll(today, selectedDate)) }
+    var scrollDays by scroll::days
     val first by remember { derivedStateOf { floor(scrollDays).toInt() } }
     val currentOnFirstDay by rememberUpdatedState(onFirstDayChange)
     val currentOnInteract by rememberUpdatedState(onInteract)
@@ -113,11 +121,11 @@ fun WeekGrid(
     LaunchedEffect(first) { currentOnFirstDay(today.plusDays(first.toLong())) }
 
     BoxWithConstraints(modifier.background(colors.surface)) {
-        val dayWidth = (maxWidth - sizes.weekGutter) / WeekGridMath.VISIBLE_DAYS
+        val dayWidth = (maxWidth - sizes.weekGutter) / visibleDays
         val dayPx = with(density) { dayWidth.toPx() }
         val hourPx = with(density) { sizes.weekHour.toPx() }
         val gapPx = with(density) { sizes.cardGap.toPx() }
-        val visible = (first - 1)..(first + WeekGridMath.VISIBLE_DAYS)
+        val visible = (first - 1)..(first + visibleDays)
         val limit = WeekGridMath.MAX_DAYS_AWAY.toFloat()
         val drag = rememberDraggableState { delta -> scrollDays = (scrollDays - delta / dayPx).coerceIn(-limit, limit) }
         val horizontal = Modifier.draggable(
@@ -187,7 +195,7 @@ fun WeekGrid(
                                 if (hour < HOURS) drawLine(colors.divider.copy(alpha = HALF_HOUR_ALPHA), Offset(0f, y + hourPx / 2), Offset(size.width, y + hourPx / 2), line)
                             }
                             val firstColumn = floor(scrollDays).toInt()
-                            for (index in firstColumn..firstColumn + WeekGridMath.VISIBLE_DAYS + 1) {
+                            for (index in firstColumn..firstColumn + visibleDays + 1) {
                                 val x = (index - scrollDays) * dayPx
                                 drawLine(colors.divider, Offset(x, 0f), Offset(x, size.height), line)
                             }

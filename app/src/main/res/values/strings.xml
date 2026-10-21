@@ -89,7 +89,13 @@
     <string name="quick_tool_reminder">Напоминание</string>
     <string name="quick_tool_priority">Приоритет</string>
     <string name="quick_tool_checklist">Чек-лист</string>
-    <string name="quick_reminder_need_day">Сначала выберите день на сетке</string>
+    <string name="quick_reminder_need_day">Сначала выберите день</string>
+    <string name="strip_no_time">Без времени</string>
+    <string name="strip_day_today">Сег</string>
+    <string name="strip_day_tomorrow">Зав</string>
+    <string name="timeline_back">К задаче</string>
+    <string name="timeline_earlier">‹ Раньше</string>
+    <string name="timeline_later">Позже ›</string>
     <string name="quick_clear_time">Убрать время</string>
     <string name="quick_when_none">Без даты</string>
     <string name="quick_when_all_day">%1$s, весь день</string>
