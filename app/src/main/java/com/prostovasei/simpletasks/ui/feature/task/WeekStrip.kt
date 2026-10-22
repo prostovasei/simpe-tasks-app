@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -30,10 +29,13 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.style.LineHeightStyle
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.sp
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
+import com.prostovasei.simpletasks.designsystem.theme.Manrope
 import com.prostovasei.simpletasks.domain.model.TaskDue
 import java.time.LocalDate
 import java.time.format.TextStyle
@@ -59,11 +61,11 @@ fun DayTiles(
     val days = remember(today) { (0L until DayStripMath.DAYS).map { today.plusDays(it) } }
     val outside = selectedDate?.takeIf { it !in days }
     val list = rememberLazyListState()
-    // Крупный системный шрифт (0.22.1): плитка и текст в ней растут вместе, но не больше чем в MAX_SCALE раз —
-    // так плитка остаётся квадратной, ничего не обрезается и видно 3 дня.
-    val fontScale = LocalDensity.current.fontScale
-    val scale = fontScale.coerceIn(1f, MAX_SCALE)
-    val tile = TileSize(AppTheme.sizes.dayTile * scale, scale / fontScale)
+    // Крупный системный шрифт: плитка растёт, но не больше чем в MAX_SCALE раз, а текст в ней считается
+    // от размера плитки (0.22.2) — так он всегда помещается, какими бы ни были шрифт и его высота строки.
+    val density = LocalDensity.current
+    val tile = AppTheme.sizes.dayTile * density.fontScale.coerceIn(1f, MAX_SCALE)
+    val text = remember(tile, density) { TileText.of(tile, density) }
     // Выбранный день дальше третьей плитки — подвинуть ленту, чтобы он был виден.
     LaunchedEffect(selectedDate) {
         val index = selectedDate?.let { ChronoUnit.DAYS.between(today, it).toInt() } ?: -1
@@ -71,7 +73,7 @@ fun DayTiles(
     }
     Row(modifier.fillMaxWidth().padding(start = spacing.md), horizontalArrangement = Arrangement.spacedBy(spacing.xs)) {
         CalendarTile(tile, onCalendar)
-        if (outside != null) DayTile(outside, time, selected = true, tile, onClick = { onDay(outside) })
+        if (outside != null) DayTile(outside, time, selected = true, tile, text, onClick = { onDay(outside) })
         LazyRow(
             state = list,
             horizontalArrangement = Arrangement.spacedBy(spacing.xs),
@@ -81,19 +83,19 @@ fun DayTiles(
             items(days.size) { index ->
                 val date = days[index]
                 val selected = date == selectedDate
-                DayTile(date, if (selected) time else emptyList(), selected, tile, onClick = { onDay(date) })
+                DayTile(date, if (selected) time else emptyList(), selected, tile, text, onClick = { onDay(date) })
             }
         }
     }
 }
 
 @Composable
-private fun CalendarTile(tile: TileSize, onClick: () -> Unit) {
+private fun CalendarTile(tile: Dp, onClick: () -> Unit) {
     val colors = AppTheme.colors
     val label = stringResource(R.string.strip_pick_date)
     Box(
         Modifier
-            .size(tile.side)
+            .size(tile)
             .clip(AppTheme.shapes.large)
             .background(colors.background)
             .clickable(role = Role.Button, onClick = onClick)
@@ -106,20 +108,19 @@ private fun CalendarTile(tile: TileSize, onClick: () -> Unit) {
 }
 
 @Composable
-private fun DayTile(date: LocalDate, time: List<String>, selected: Boolean, tile: TileSize, onClick: () -> Unit) {
+private fun DayTile(date: LocalDate, time: List<String>, selected: Boolean, tile: Dp, text: TileText, onClick: () -> Unit) {
     val colors = AppTheme.colors
     val main = if (selected) colors.onAccent else colors.textPrimary
     val minor = if (selected) colors.onAccent.copy(alpha = MINOR_ON_ACCENT) else colors.textSecondary
-    val k = tile.text
-    val big = MaterialTheme.typography.titleLarge.copy(fontSize = DAY_SIZE * k, lineHeight = DAY_LINE * k, fontWeight = FontWeight.ExtraBold, color = main)
+    val big = text.day.copy(color = main)
     Row(
         Modifier
-            .size(tile.side)
+            .size(tile)
             .clip(AppTheme.shapes.large)
             .background(if (selected) colors.accent else colors.background)
             .clickable(role = Role.Button, onClick = onClick)
             .semantics { this.selected = selected }
-            .padding(start = AppTheme.spacing.xs, end = AppTheme.spacing.xs, top = AppTheme.spacing.xxs)
+            .padding(start = AppTheme.spacing.xs, end = AppTheme.spacing.xs, top = tile * TOP_PAD)
             .testTag("$TAG_DAY_TILE:$date"),
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
@@ -128,19 +129,17 @@ private fun DayTile(date: LocalDate, time: List<String>, selected: Boolean, tile
             Text("%02d".format(date.dayOfMonth), style = big, maxLines = 1)
             Text(
                 MONTHS[date.monthValue - 1],
-                style = MaterialTheme.typography.labelSmall.copy(fontSize = MONTH_SIZE * k, lineHeight = MONTH_LINE * k),
-                fontWeight = FontWeight.Bold,
+                style = text.month,
                 color = minor,
                 maxLines = 1,
             )
         }
         // Время — бледнее и тоньше даты, верх — на одной линии с днём недели.
-        Column(Modifier.padding(top = AppTheme.spacing.xxs), horizontalAlignment = Alignment.End) {
+        Column(Modifier.padding(top = tile * TIME_TOP), horizontalAlignment = Alignment.End) {
             time.forEach {
                 Text(
                     it,
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = TIME_SIZE * k, lineHeight = TIME_LINE * k),
-                    fontWeight = FontWeight.Medium,
+                    style = text.time,
                     color = minor,
                     maxLines = 1,
                     modifier = Modifier.testTag(TAG_DAY_TIME),
@@ -168,19 +167,43 @@ object DayStripMath {
     private const val HOURS_PER_DAY = 24
 }
 
-/** Размер плитки и множитель текста в ней (sp × fontScale × [text] = базовый размер × рост плитки). */
-private class TileSize(val side: Dp, val text: Float)
+/**
+ * Текст плитки — доли её стороны (0.22.2): «чт» и «22» — по 0,24 стороны, «окт» — 0,13, время — 0,115.
+ * Даже с полной высотой строки шрифта (~1,37 размера) это ~0,9 стороны вместе с отступом сверху — запас
+ * на любой шрифт. Размеры переводятся в sp без системного масштаба шрифта: он уже учтён в размере плитки.
+ */
+private class TileText(val day: androidx.compose.ui.text.TextStyle, val month: androidx.compose.ui.text.TextStyle, val time: androidx.compose.ui.text.TextStyle) {
+    companion object {
+        fun of(tile: Dp, density: Density): TileText = with(density) {
+            fun style(size: Float, line: Float, weight: FontWeight) = androidx.compose.ui.text.TextStyle(
+                fontFamily = Manrope,
+                fontSize = (tile * size).toSp(),
+                lineHeight = (tile * line).toSp(),
+                fontWeight = weight,
+                platformStyle = PlatformTextStyle(includeFontPadding = false),
+                lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.Both),
+            )
+            TileText(
+                day = style(DAY_SIZE, DAY_LINE, FontWeight.ExtraBold),
+                month = style(MONTH_SIZE, MONTH_LINE, FontWeight.Bold),
+                time = style(TIME_SIZE, TIME_LINE, FontWeight.Medium),
+            )
+        }
+    }
+}
 
 private const val MAX_SCALE = 1.15f
+private const val DAY_SIZE = 0.24f
+private const val DAY_LINE = 0.27f
+private const val MONTH_SIZE = 0.13f
+private const val MONTH_LINE = 0.15f
+private const val TIME_SIZE = 0.115f
+private const val TIME_LINE = 0.14f
+private const val TOP_PAD = 0.07f
+private const val TIME_TOP = 0.02f
 private const val VISIBLE_TILES = 3
 private val RUSSIAN = Locale.forLanguageTag("ru")
 private val MONTHS = listOf("янв", "фев", "мар", "апр", "мая", "июн", "июл", "авг", "сен", "окт", "ноя", "дек")
-private val DAY_SIZE = 20.sp
-private val DAY_LINE = 21.sp
-private val MONTH_SIZE = 11.sp
-private val MONTH_LINE = 13.sp
-private val TIME_SIZE = 9.sp
-private val TIME_LINE = 11.sp
 private const val MINOR_ON_ACCENT = 0.72f
 
 const val TAG_DAY_TILES = "day_tiles"
