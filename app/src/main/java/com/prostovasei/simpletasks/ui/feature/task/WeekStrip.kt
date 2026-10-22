@@ -1,150 +1,177 @@
 package com.prostovasei.simpletasks.ui.feature.task
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
+import com.prostovasei.simpletasks.domain.model.TaskDue
 import java.time.LocalDate
 import java.time.format.TextStyle
+import java.time.temporal.ChronoUnit
 import java.util.Locale
 
 /**
- * Строка недели в шторке задачи (итерация 21, макет PM N2): 7 дней с сегодняшнего, под каждым — столбик занятости
- * с 12 до 24 часов (серое — время других задач). Выбранный день — зелёный. Нажатие на день — [onDay]
- * (открывает таймлайн или, в режиме «Без времени», ставит день); ниже — «Без времени» и «Без даты».
+ * Плитки дней в шторке задачи (итерация 22, макет PM «Z1, время сверху»): слева значок календаря (не уезжает),
+ * дальше [DayStripMath.DAYS] дней с сегодняшнего — свайпом, справа виден край следующего. Плитка квадратная:
+ * «чт» и «22» крупно, «окт» мелко, время — бледное, сверху справа (период — начало над концом).
+ * Выбранный день зелёный; дата из календаря за пределами двух недель — зелёной плиткой сразу после значка.
  */
 @Composable
-fun WeekStrip(
+fun DayTiles(
     today: LocalDate,
     selectedDate: LocalDate?,
-    busy: List<BusySlot>,
-    dayOnly: Boolean,
+    time: List<String>,
     onDay: (LocalDate) -> Unit,
-    onDayOnly: () -> Unit,
-    onClearDate: () -> Unit,
+    onCalendar: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val spacing = AppTheme.spacing
-    Column(modifier.fillMaxWidth().padding(horizontal = spacing.md), verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
-        Row(Modifier.fillMaxWidth()) {
-            repeat(WeekGridMath.VISIBLE_DAYS) { index ->
-                val date = today.plusDays(index.toLong())
-                StripDay(
-                    date = date,
-                    label = when (index) {
-                        0 -> stringResource(R.string.strip_day_today)
-                        1 -> stringResource(R.string.strip_day_tomorrow)
-                        else -> date.dayOfWeek.getDisplayName(TextStyle.SHORT, RUSSIAN).replaceFirstChar { it.uppercase() }
-                    },
-                    isSelected = date == selectedDate,
-                    busy = busy.filter { it.date == date },
-                    onClick = { onDay(date) },
-                    modifier = Modifier.weight(1f),
+    val days = remember(today) { (0L until DayStripMath.DAYS).map { today.plusDays(it) } }
+    val outside = selectedDate?.takeIf { it !in days }
+    val list = rememberLazyListState()
+    // Выбранный день дальше третьей плитки — подвинуть ленту, чтобы он был виден.
+    LaunchedEffect(selectedDate) {
+        val index = selectedDate?.let { ChronoUnit.DAYS.between(today, it).toInt() } ?: -1
+        if (index >= VISIBLE_TILES) list.animateScrollToItem(index - 1)
+    }
+    Row(modifier.fillMaxWidth().padding(start = spacing.md), horizontalArrangement = Arrangement.spacedBy(spacing.xs)) {
+        CalendarTile(onCalendar)
+        if (outside != null) DayTile(outside, time, selected = true, onClick = { onDay(outside) })
+        LazyRow(
+            state = list,
+            horizontalArrangement = Arrangement.spacedBy(spacing.xs),
+            contentPadding = PaddingValues(end = spacing.md),
+            modifier = Modifier.weight(1f).testTag(TAG_DAY_TILES),
+        ) {
+            items(days.size) { index ->
+                val date = days[index]
+                val selected = date == selectedDate
+                DayTile(date, if (selected) time else emptyList(), selected, onClick = { onDay(date) })
+            }
+        }
+    }
+}
+
+@Composable
+private fun CalendarTile(onClick: () -> Unit) {
+    val colors = AppTheme.colors
+    val label = stringResource(R.string.strip_pick_date)
+    Box(
+        Modifier
+            .size(AppTheme.sizes.dayTile)
+            .clip(AppTheme.shapes.large)
+            .background(colors.background)
+            .clickable(role = Role.Button, onClick = onClick)
+            .semantics { contentDescription = label }
+            .testTag(TAG_DAY_CALENDAR),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(painterResource(R.drawable.ic_widget_all), null, tint = colors.textPrimary, modifier = Modifier.size(AppTheme.sizes.toolIcon))
+    }
+}
+
+@Composable
+private fun DayTile(date: LocalDate, time: List<String>, selected: Boolean, onClick: () -> Unit) {
+    val colors = AppTheme.colors
+    val main = if (selected) colors.onAccent else colors.textPrimary
+    val minor = if (selected) colors.onAccent.copy(alpha = MINOR_ON_ACCENT) else colors.textSecondary
+    val big = MaterialTheme.typography.titleLarge.copy(fontSize = DAY_SIZE, lineHeight = DAY_LINE, fontWeight = FontWeight.ExtraBold, color = main)
+    Row(
+        Modifier
+            .size(AppTheme.sizes.dayTile)
+            .clip(AppTheme.shapes.large)
+            .background(if (selected) colors.accent else colors.background)
+            .clickable(role = Role.Button, onClick = onClick)
+            .semantics { this.selected = selected }
+            .padding(start = AppTheme.spacing.xs, end = AppTheme.spacing.xs, top = AppTheme.spacing.xxs)
+            .testTag("$TAG_DAY_TILE:$date"),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Column {
+            Text(date.dayOfWeek.getDisplayName(TextStyle.SHORT, RUSSIAN), style = big, maxLines = 1)
+            Text("%02d".format(date.dayOfMonth), style = big, maxLines = 1)
+            Text(
+                MONTHS[date.monthValue - 1],
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = MONTH_SIZE, lineHeight = MONTH_LINE),
+                fontWeight = FontWeight.Bold,
+                color = minor,
+                maxLines = 1,
+            )
+        }
+        // Время — бледнее и тоньше даты, верх — на одной линии с днём недели.
+        Column(Modifier.padding(top = AppTheme.spacing.xxs), horizontalAlignment = Alignment.End) {
+            time.forEach {
+                Text(
+                    it,
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = TIME_SIZE, lineHeight = TIME_LINE),
+                    fontWeight = FontWeight.Medium,
+                    color = minor,
+                    maxLines = 1,
+                    modifier = Modifier.testTag(TAG_DAY_TIME),
                 )
             }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(spacing.xs)) {
-            StripChip(stringResource(R.string.strip_no_time), active = dayOnly, tag = TAG_STRIP_NO_TIME, onClick = onDayOnly)
-            if (selectedDate != null) StripChip(stringResource(R.string.quick_when_none), active = false, tag = TAG_STRIP_NO_DATE, onClick = onClearDate)
-        }
     }
 }
 
-@Composable
-private fun StripDay(date: LocalDate, label: String, isSelected: Boolean, busy: List<BusySlot>, onClick: () -> Unit, modifier: Modifier) {
-    val colors = AppTheme.colors
-    val sizes = AppTheme.sizes
-    val text = if (isSelected) colors.onAccent else colors.textPrimary
-    Column(
-        modifier = modifier
-            .padding(horizontal = sizes.hairline)
-            .clip(AppTheme.shapes.medium)
-            .background(if (isSelected) colors.accent else colors.surface)
-            .clickable(role = Role.Button, onClick = onClick)
-            .semantics { selected = isSelected }
-            .padding(vertical = AppTheme.spacing.xxs)
-            .testTag("$TAG_STRIP_DAY:$date"),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(label, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = if (isSelected) text else colors.textSecondary)
-        Text(date.dayOfMonth.toString(), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, color = text)
-        val bar = if (isSelected) colors.onAccent.copy(alpha = BAR_ON_ACCENT) else colors.background
-        val taken = if (isSelected) colors.onAccent else colors.inactive
-        Box(
-            Modifier
-                .padding(top = sizes.cardGap)
-                .size(sizes.stripBarWidth, sizes.stripBarHeight)
-                .clip(AppTheme.shapes.small)
-                .background(bar)
-                .drawBehind {
-                    busy.forEach { slot ->
-                        val top = StripMath.fraction(slot.startMinute) * size.height
-                        val bottom = StripMath.fraction(slot.endMinute) * size.height
-                        if (bottom > top) {
-                            drawRoundRect(taken, Offset(0f, top), Size(size.width, bottom - top), CornerRadius(sizes.hairline.toPx() * 2))
-                        }
-                    }
-                },
-        )
+/** Лента дней: сколько дней листается и сколько плиток видно целиком. */
+object DayStripMath {
+    const val DAYS = 14L
+
+    /** Время на плитке: «15:00» или период — начало над концом; без времени — пусто. */
+    fun timeLines(fields: SheetFields): List<String> {
+        val minute = fields.selectedMinute ?: return emptyList()
+        val start = clock(minute)
+        val isPeriod = fields.start is TaskDue.AtTime
+        return if (isPeriod) listOf(start, clock(minute + fields.durationMinutes)) else listOf(start)
     }
+
+    private fun clock(minute: Int): String = "%02d:%02d".format(minute / MINUTES_PER_HOUR % HOURS_PER_DAY, minute % MINUTES_PER_HOUR)
+
+    private const val MINUTES_PER_HOUR = 60
+    private const val HOURS_PER_DAY = 24
 }
 
-@Composable
-private fun StripChip(text: String, active: Boolean, tag: String, onClick: () -> Unit) {
-    val colors = AppTheme.colors
-    val shape = AppTheme.shapes.medium
-    Text(
-        text,
-        style = MaterialTheme.typography.labelMedium,
-        fontWeight = FontWeight.Bold,
-        color = if (active) colors.onAccent else colors.accent,
-        modifier = Modifier
-            .clip(shape)
-            .background(if (active) colors.accent else colors.surface)
-            .border(AppTheme.sizes.checkboxStroke, colors.accent, shape)
-            .clickable(role = Role.Button, onClick = onClick)
-            .semantics { selected = active }
-            .padding(horizontal = AppTheme.spacing.sm, vertical = AppTheme.spacing.xxs)
-            .testTag(tag),
-    )
-}
-
-/** Столбик занятости показывает вторую половину дня — с 12 до 24 часов (решение PM, макет N2). */
-object StripMath {
-    const val FROM_MINUTE = 12 * 60
-    private const val SPAN = WeekGridMath.DAY_MINUTES - FROM_MINUTE
-
-    /** Доля высоты столбика для минуты суток; утро — у верхнего края. */
-    fun fraction(minute: Int): Float = ((minute - FROM_MINUTE).coerceIn(0, SPAN)).toFloat() / SPAN
-}
-
+private const val VISIBLE_TILES = 3
 private val RUSSIAN = Locale.forLanguageTag("ru")
-private const val BAR_ON_ACCENT = 0.25f
+private val MONTHS = listOf("янв", "фев", "мар", "апр", "мая", "июн", "июл", "авг", "сен", "окт", "ноя", "дек")
+private val DAY_SIZE = 20.sp
+private val DAY_LINE = 21.sp
+private val MONTH_SIZE = 11.sp
+private val MONTH_LINE = 13.sp
+private val TIME_SIZE = 9.sp
+private val TIME_LINE = 11.sp
+private const val MINOR_ON_ACCENT = 0.72f
 
-const val TAG_STRIP_DAY = "strip_day"
-const val TAG_STRIP_NO_TIME = "strip_no_time"
-const val TAG_STRIP_NO_DATE = "strip_no_date"
+const val TAG_DAY_TILES = "day_tiles"
+const val TAG_DAY_TILE = "day_tile"
+const val TAG_DAY_CALENDAR = "day_calendar"
+const val TAG_DAY_TIME = "day_time"

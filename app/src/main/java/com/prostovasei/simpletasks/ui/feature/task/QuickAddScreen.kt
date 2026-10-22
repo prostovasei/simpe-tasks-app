@@ -98,7 +98,7 @@ fun QuickAddScreen(
             value = state.title,
             onValueChange = { onIntent(QuickAddIntent.Title(it)) },
             hint = stringResource(R.string.quick_add_title_hint),
-            textStyle = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
+            textStyle = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.ExtraBold),
             imeAction = ImeAction.Done,
             onImeAction = { onIntent(QuickAddIntent.Save) },
             modifier = Modifier.focusRequester(titleFocus).testTag(TAG_QUICK_TITLE),
@@ -107,7 +107,7 @@ fun QuickAddScreen(
             value = state.content,
             onValueChange = { onIntent(QuickAddIntent.Content(it)) },
             hint = stringResource(R.string.quick_add_content_hint),
-            textStyle = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold, color = colors.textSecondary),
+            textStyle = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium, color = colors.textSecondary),
             singleLine = false,
             modifier = Modifier.padding(top = spacing.xxs).testTag(TAG_QUICK_CONTENT),
         )

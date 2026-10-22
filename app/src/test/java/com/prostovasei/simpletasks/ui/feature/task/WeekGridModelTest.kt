@@ -48,11 +48,16 @@ class WeekGridModelTest {
     }
 
     @Test
-    fun stripBarCoversAfternoon() {
-        assertEquals(0f, StripMath.fraction(9 * 60))
-        assertEquals(0f, StripMath.fraction(12 * 60))
-        assertEquals(0.5f, StripMath.fraction(18 * 60))
-        assertEquals(1f, StripMath.fraction(24 * 60))
+    fun tileTimeLines() {
+        val zone = java.time.ZoneOffset.UTC
+        fun at(h: Int, m: Int) = com.prostovasei.simpletasks.domain.model.TaskDue.AtTime(today.atTime(h, m).toInstant(zone))
+        fun fields(due: com.prostovasei.simpletasks.domain.model.TaskDue?, start: com.prostovasei.simpletasks.domain.model.TaskDue? = null) =
+            SheetFields(due, start, "p", com.prostovasei.simpletasks.domain.model.Priority.NONE, null, emptyList(), emptyList(), today, zone, 0, emptyList())
+        assertEquals(emptyList<String>(), DayStripMath.timeLines(fields(null)))
+        assertEquals(emptyList<String>(), DayStripMath.timeLines(fields(com.prostovasei.simpletasks.domain.model.TaskDue.AllDay(today))))
+        assertEquals(listOf("09:30"), DayStripMath.timeLines(fields(at(9, 30))))
+        // Период — начало и конец столбиком.
+        assertEquals(listOf("15:00", "16:30"), DayStripMath.timeLines(fields(at(16, 30), at(15, 0))))
     }
 
     @Test

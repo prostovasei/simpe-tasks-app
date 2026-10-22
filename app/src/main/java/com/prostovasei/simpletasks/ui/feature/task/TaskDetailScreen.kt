@@ -133,7 +133,7 @@ fun TaskDetailScreen(
                 value = task.title,
                 onValueChange = { onIntent(TaskDetailIntent.Title(it)) },
                 hint = stringResource(R.string.detail_title_hint),
-                textStyle = MaterialTheme.typography.titleMedium.copy(
+                textStyle = MaterialTheme.typography.headlineSmall.copy(
                     fontWeight = FontWeight.ExtraBold,
                     textDecoration = if (done) TextDecoration.LineThrough else null,
                 ),
@@ -145,7 +145,7 @@ fun TaskDetailScreen(
             value = task.content,
             onValueChange = { onIntent(TaskDetailIntent.Content(it)) },
             hint = stringResource(R.string.quick_add_content_hint),
-            textStyle = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold, color = colors.textSecondary),
+            textStyle = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium, color = colors.textSecondary),
             singleLine = false,
             modifier = Modifier.padding(top = spacing.xxs).testTag(TAG_DETAIL_CONTENT),
         )

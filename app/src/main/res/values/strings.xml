@@ -79,8 +79,8 @@
     <string name="action_rename">Переименовать</string>
 
     <string name="add_task">Новая задача</string>
-    <string name="quick_add_title_hint">Что нужно сделать?</string>
-    <string name="quick_add_content_hint">Описание</string>
+    <string name="quick_add_title_hint">Купить билеты на концерт</string>
+    <string name="quick_add_content_hint">2 билета в партер, оплатить до пятницы</string>
     <string name="quick_add_checklist_hint">Пункт чек-листа</string>
     <string name="quick_add_save">Сохранить</string>
     <string name="quick_add_close">Закрыть</string>
@@ -91,11 +91,10 @@
     <string name="quick_tool_checklist">Чек-лист</string>
     <string name="quick_reminder_need_day">Сначала выберите день</string>
     <string name="strip_no_time">Без времени</string>
-    <string name="strip_day_today">Сег</string>
-    <string name="strip_day_tomorrow">Зав</string>
+    <string name="strip_pick_date">Выбрать дату</string>
     <string name="timeline_back">К задаче</string>
-    <string name="timeline_earlier">‹ Раньше</string>
-    <string name="timeline_later">Позже ›</string>
+    <string name="timeline_earlier">Раньше</string>
+    <string name="timeline_later">Позже</string>
     <string name="quick_clear_time">Убрать время</string>
     <string name="quick_when_none">Без даты</string>
     <string name="quick_when_all_day">%1$s, весь день</string>
