@@ -35,6 +35,9 @@ object ColorTokens {
     val overdue = ThemedColor(light = 0xFFC62828, dark = 0xFFFF6B6B)
     val divider = ThemedColor(light = 0xFFD5E0D8, dark = 0xFF2C3731)
 
+    /** Серая подложка значка на колокольчике напоминаний (решение PM, итерация 23). */
+    val reminderBadge = ThemedColor(light = 0xFFDDE1E6, dark = 0xFF3A4540)
+
     /** Опасные действия (удаление). Совпадает с [overdue], но означает другое — отдельная роль. */
     val danger = ThemedColor(light = 0xFFC62828, dark = 0xFFFF6B6B)
 

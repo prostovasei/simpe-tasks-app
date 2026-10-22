@@ -129,6 +129,7 @@ private fun ResultRow(result: SearchResult, query: String, onIntent: (SearchInte
         isCompleting = result.isDone,
         animateCompletion = false,
         isRecurring = item.isRecurring && !result.isDone,
+        reminder = item.reminder.takeIf { !result.isDone },
         trailing = if (result.isDone) emptyList() else dueLines(item),
         onToggle = { onIntent(SearchIntent.Toggle(item.id, result.isDone)) },
         onClick = { onOpenTask(item.id) },

@@ -48,6 +48,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.designsystem.theme.PriorityColors
 import com.prostovasei.simpletasks.domain.model.Priority
+import com.prostovasei.simpletasks.domain.model.ReminderBadge
+import com.prostovasei.simpletasks.ui.common.ReminderIcon
 
 /**
  * Плашка задачи в одну строку (итерация 13, макет PM): квадратная галочка (рамка — цвет приоритета),
@@ -70,6 +72,7 @@ fun TaskRow(
     testTag: String = "",
     onClick: (() -> Unit)? = null,
     isRecurring: Boolean = false,
+    reminder: ReminderBadge? = null,
     isGhost: Boolean = false,
     isOverdue: Boolean = false,
     trailing: List<String> = emptyList(),
@@ -158,6 +161,16 @@ fun TaskRow(
                     contentDescription = null,
                     tint = colors.textSecondary,
                     modifier = Modifier.padding(start = spacing.xxs).size(sizes.metaIcon).testTag("$testTag:repeat"),
+                )
+            }
+            reminder?.let {
+                ReminderIcon(
+                    badge = it,
+                    size = sizes.reminderIcon,
+                    tint = colors.textSecondary,
+                    badgeColor = colors.reminderBadge,
+                    glyphColor = colors.textSecondary,
+                    modifier = Modifier.padding(start = spacing.xxs).testTag("$testTag:reminder"),
                 )
             }
         }
