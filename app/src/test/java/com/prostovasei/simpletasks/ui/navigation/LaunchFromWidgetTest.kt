@@ -57,9 +57,9 @@ class LaunchFromWidgetTest {
             scenario.onActivity { activity = it }
             composeRule.waitUntil(LAUNCH_TIMEOUT_MS) { composeRule.onAllNodesWithTag(TAG_DETAIL_TITLE).fetchSemanticsNodes().isNotEmpty() }
             composeRule.onNodeWithTag(TAG_DETAIL_TITLE).assertTextEquals("Позвонить маме")
-            // Нажатие на затемнённый рабочий стол закрывает окно — приложение не открывается.
-            // Шторка сначала уезжает вниз, потом окно закрывается.
-            composeRule.onNodeWithTag(TAG_QUICK_SCRIM).performTouchInput { click(Offset(centerX, top + 5f)) }
+            // Нажатие на затемнённый рабочий стол закрывает окно — приложение не открывается. С 0.23.3 окно — карточка
+            // над местом клавиатуры, поэтому нажимаем на затемнение под ней. Окно сначала уезжает вниз, потом закрывается.
+            composeRule.onNodeWithTag(TAG_QUICK_SCRIM).performTouchInput { click(Offset(centerX, bottom - 5f)) }
             composeRule.waitUntil(LAUNCH_TIMEOUT_MS) { checkNotNull(activity).isFinishing }
             assertTrue(checkNotNull(activity).isFinishing)
         }

@@ -71,6 +71,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalView
@@ -84,6 +85,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.window.DialogWindowProvider
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.components.ListSquare
@@ -184,17 +186,25 @@ fun TaskSheet(
                 .semantics { contentDescription = closeLabel }
                 .testTag(TAG_QUICK_SCRIM),
         )
-        BoxWithConstraints(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars.union(WindowInsets.ime))) {
-            val headerMax = maxHeight * HEADER_FRACTION
+        BoxWithConstraints(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars)) {
+            val density = LocalDensity.current
             val opened = timelineDay?.let { LocalDate.ofEpochDay(it) }
+            // Окно задачи — карточка сразу над клавиатурой (0.23.3, макет PM «А»): место не меняется, открыта
+            // клавиатура или нет. Таймлайн — по-прежнему шторка снизу почти на весь экран.
+            val keyboard = with(density) { rememberKeyboardHeight((maxHeight * KEYBOARD_FALLBACK).roundToPx()).toDp() }
+            val ime = with(density) { WindowInsets.ime.getBottom(this).toDp() }
+            val navBar = with(density) { WindowInsets.navigationBars.getBottom(this).toDp() }
+            val lift = if (opened != null) Dp.Hairline else maxOf(keyboard, ime, navBar) + spacing.xs
+            val headerMax = (maxHeight - lift) * HEADER_FRACTION
+            val shape = if (opened != null) AppTheme.shapes.sheetTop else AppTheme.shapes.nav
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .then(if (opened != null) Modifier.fillMaxHeight(TIMELINE_FRACTION) else Modifier)
-                    .graphicsLayer { translationY = (1f - progress()) * size.height }
-                    .shadow(sizes.navShadow, AppTheme.shapes.sheetTop)
-                    .background(colors.surface, AppTheme.shapes.sheetTop)
+                    .padding(bottom = lift)
+                    .then(if (opened != null) Modifier.fillMaxWidth().fillMaxHeight(TIMELINE_FRACTION) else Modifier.fillMaxWidth().padding(horizontal = spacing.xs))
+                    .graphicsLayer { translationY = (1f - progress()) * (size.height + lift.toPx()) }
+                    .shadow(sizes.navShadow, shape)
+                    .background(colors.surface, shape)
                     // Нажатия по пустому месту шторки не должны доходить до затемнения.
                     .pointerInput(Unit) { detectTapGestures { } }
                     .testTag(TAG_QUICK_CARD),
@@ -231,7 +241,7 @@ fun TaskSheet(
                         onClear = { onGrid(GridAction.ClearDate) },
                         modifier = Modifier.padding(top = spacing.sm, bottom = spacing.xs),
                     )
-                    SheetToolbar(fields, onEdit, checklistActive, onChecklist, actions, Modifier.windowInsetsPadding(WindowInsets.navigationBars))
+                    SheetToolbar(fields, onEdit, checklistActive, onChecklist, actions, Modifier.padding(bottom = spacing.xxs))
                 }
             }
         }
@@ -589,6 +599,9 @@ private const val CLOSE_MS = 220
 /** Таймлайн занимает почти весь экран; верхняя часть шторки (поля, чек-лист) — не больше этой доли экрана. */
 private const val TIMELINE_FRACTION = 0.97f
 private const val HEADER_FRACTION = 0.45f
+
+/** Пока клавиатура ни разу не открывалась — её высота примерно 40% экрана. */
+private const val KEYBOARD_FALLBACK = 0.4f
 private const val DIMMED_ALPHA = 0.45f
 
 const val TAG_QUICK_CARD = "quick_card"
