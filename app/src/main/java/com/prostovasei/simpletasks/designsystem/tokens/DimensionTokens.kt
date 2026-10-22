@@ -115,8 +115,8 @@ object SizeTokens {
     /** Шторка новой задачи (итерация 16): ручка сверху, кнопки нижней панели и их значки. */
     const val SHEET_HANDLE_WIDTH = 36
     const val SHEET_HANDLE_HEIGHT = 4
-    const val TOOL_BUTTON = 40
-    const val TOOL_ICON = 20
+    const val TOOL_BUTTON = 50
+    const val TOOL_ICON = 25
 
     /** Сетка недели: высота часа, колонка часов слева, шапка дней, крестик «убрать время». */
     const val WEEK_HOUR = 44

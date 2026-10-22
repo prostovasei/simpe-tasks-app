@@ -390,6 +390,16 @@ class TaskScreensUiTest {
     }
 
     @Test
+    fun keyboardOkDoesNotSave() {
+        show { QuickAddScreen(quickState.copy(title = "Купить хлеб"), { intents += it }, {}, autoFocus = false) }
+        // «ОК» на клавиатуре только убирает её; сохраняет задачу зелёная галочка (итерация 24).
+        composeRule.onNodeWithTag(TAG_QUICK_TITLE).performImeAction()
+        assertTrue(intents.none { it == QuickAddIntent.Save })
+        composeRule.onNodeWithTag(TAG_QUICK_SAVE).performClick()
+        assertTrue(intents.any { it == QuickAddIntent.Save })
+    }
+
+    @Test
     fun quickAddReminderMenu() {
         show { QuickAddScreen(quickState, { intents += it }, {}, autoFocus = false) }
         composeRule.onNodeWithTag(TAG_TOOL_REMINDER).assertIsSelected().performClick()

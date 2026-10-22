@@ -21,13 +21,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -67,6 +68,7 @@ fun QuickAddScreen(
     val sizes = AppTheme.sizes
     val titleFocus = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
+    val focus = LocalFocusManager.current
     if (autoFocus) {
         LaunchedEffect(Unit) {
             titleFocus.requestFocus()
@@ -100,7 +102,11 @@ fun QuickAddScreen(
             hint = stringResource(R.string.quick_add_title_hint),
             textStyle = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.ExtraBold),
             imeAction = ImeAction.Done,
-            onImeAction = { onIntent(QuickAddIntent.Save) },
+            // «ОК» на клавиатуре только убирает её (итерация 24): сохраняет задачу лишь зелёная галочка.
+            onImeAction = {
+                focus.clearFocus()
+                keyboard?.hide()
+            },
             modifier = Modifier.focusRequester(titleFocus).testTag(TAG_QUICK_TITLE),
         )
         CompactField(

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
@@ -37,6 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.zIndex
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.designsystem.theme.Manrope
@@ -78,19 +80,20 @@ fun DayTiles(
     val tile = ((maxWidth - spacing.xs * (VISIBLE_TILES + 1)) / (VISIBLE_TILES + 1 + PEEK))
         .coerceIn(AppTheme.sizes.dayTile * MIN_SCALE, AppTheme.sizes.dayTile * MAX_SCALE)
     val text = remember(tile, density) { TileText.of(tile, density) }
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(spacing.xs)) {
+    // Сверху — место под крестик выбранного дня, он выступает за угол плитки (итерация 24).
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(spacing.xs), verticalAlignment = Alignment.Bottom) {
         CalendarTile(tile, onCalendar)
         if (outside != null) DayTile(outside, time, selected = true, tile, text, onClear, onClick = { onDay(outside) })
         LazyRow(
             state = list,
             horizontalArrangement = Arrangement.spacedBy(spacing.xs),
-            contentPadding = PaddingValues(end = spacing.md),
+            contentPadding = PaddingValues(top = AppTheme.sizes.weekClear, end = spacing.md),
             modifier = Modifier.weight(1f).testTag(TAG_DAY_TILES),
         ) {
             items(days.size) { index ->
                 val date = days[index]
                 val selected = date == selectedDate
-                DayTile(date, if (selected) time else emptyList(), selected, tile, text, onClear, onClick = { onDay(date) })
+                DayTile(date, if (selected) time else emptyList(), selected, tile, text, onClear, Modifier.zIndex(if (selected) 1f else 0f), onClick = { onDay(date) })
             }
         }
     }
@@ -116,11 +119,23 @@ private fun CalendarTile(tile: Dp, onClick: () -> Unit) {
 }
 
 @Composable
-private fun DayTile(date: LocalDate, time: List<String>, selected: Boolean, tile: Dp, text: TileText, onClear: () -> Unit, onClick: () -> Unit) {
-    Box {
+private fun DayTile(
+    date: LocalDate,
+    time: List<String>,
+    selected: Boolean,
+    tile: Dp,
+    text: TileText,
+    onClear: () -> Unit,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
+    Box(modifier) {
         DayTileBody(date, time, selected, tile, text, onClick)
-        // Крестик внизу справа у выбранного дня (0.23.2): убрать дату и время.
-        if (selected) ClearBadge(ClearAction(R.string.clear_date, TAG_CLEAR_DATE, onClear), Modifier.align(Alignment.BottomEnd))
+        // Крестик у выбранного дня — снаружи в правом верхнем углу, как у кнопок панели (итерация 24): убрать дату и время.
+        if (selected) {
+            val clear = AppTheme.sizes.weekClear
+            ClearBadge(ClearAction(R.string.clear_date, TAG_CLEAR_DATE, onClear), Modifier.align(Alignment.TopEnd).offset(x = clear, y = -clear))
+        }
     }
 }
 

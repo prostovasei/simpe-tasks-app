@@ -52,9 +52,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -86,11 +88,13 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogWindowProvider
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.components.ListSquare
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.designsystem.theme.parseListColor
+import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
 import com.prostovasei.simpletasks.domain.model.Priority
 import com.prostovasei.simpletasks.domain.model.Reminders
 import com.prostovasei.simpletasks.ui.common.ListIcons
@@ -153,6 +157,7 @@ fun TaskSheet(
     modifier: Modifier = Modifier,
     progress: () -> Float = { 1f },
     overlay: @Composable BoxScope.() -> Unit = {},
+    actionCount: Int = 1,
     actions: @Composable RowScope.() -> Unit,
     header: @Composable ColumnScope.() -> Unit,
 ) {
@@ -239,9 +244,9 @@ fun TaskSheet(
                             calendarOpen = true
                         },
                         onClear = { onGrid(GridAction.ClearDate) },
-                        modifier = Modifier.padding(top = spacing.sm, bottom = spacing.xs),
+                        modifier = Modifier.padding(bottom = spacing.xs),
                     )
-                    SheetToolbar(fields, onEdit, checklistActive, onChecklist, actions, Modifier.padding(bottom = spacing.xxs))
+                    SheetToolbar(fields, onEdit, checklistActive, onChecklist, actionCount, actions, Modifier.padding(bottom = spacing.xxs))
                 }
             }
         }
@@ -341,18 +346,22 @@ private fun SheetToolbar(
     onEdit: (FieldEdit) -> Unit,
     checklistActive: Boolean,
     onChecklist: () -> Unit,
+    actionCount: Int,
     actions: @Composable RowScope.() -> Unit,
     modifier: Modifier,
 ) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
-    val sizes = AppTheme.sizes
     var menu by remember { mutableStateOf(ToolMenu.None) }
     var repeatDialog by remember { mutableStateOf(false) }
     var customReminder by remember { mutableStateOf(false) }
     val close = { menu = ToolMenu.None }
+    BoxWithConstraints(modifier.fillMaxWidth().padding(horizontal = spacing.sm, vertical = spacing.xs)) {
+    val count = TOOLBAR_TOOLS + actionCount
+    val fit = ((maxWidth - spacing.xs * (count - 1)) / count).coerceAtMost(SizeTokens.TOOL_BUTTON.dp)
+    CompositionLocalProvider(LocalToolButtonSize provides fit) {
     Row(
-        modifier = modifier.fillMaxWidth().padding(horizontal = spacing.sm, vertical = spacing.xs),
+        modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(spacing.xs),
     ) {
@@ -380,6 +389,7 @@ private fun SheetToolbar(
             active = fields.rrule != null,
             tag = TAG_TOOL_REPEAT,
             icon = R.drawable.ic_tool_repeat,
+            dimmed = fields.due == null,
             clear = if (fields.rrule != null) ClearAction(R.string.clear_repeat, TAG_CLEAR_REPEAT) { onEdit(FieldEdit.Repeat(null)) } else null,
         ) {
             repeatDialog = true
@@ -395,7 +405,7 @@ private fun SheetToolbar(
                 clear = if (badge != null) ClearAction(R.string.clear_reminders, TAG_CLEAR_REMINDERS) { onEdit(FieldEdit.SetReminders(emptyList())) } else null,
                 content = {
                     if (badge != null) {
-                        ReminderIcon(badge, sizes.toolIcon, tint = colors.onAccent, badgeColor = colors.onAccent, glyphColor = colors.accent)
+                        ReminderIcon(badge, LocalToolButtonSize.current * ICON_SHARE, tint = colors.onAccent, badgeColor = colors.onAccent, glyphColor = colors.accent)
                     }
                 },
             ) { menu = ToolMenu.Reminder }
@@ -429,6 +439,8 @@ private fun SheetToolbar(
         ToolButton(R.string.quick_tool_checklist, active = checklistActive, tag = TAG_TOOL_CHECKLIST, icon = R.drawable.ic_tool_checklist, onClick = onChecklist)
         Spacer(Modifier.weight(1f))
         actions()
+    }
+    }
     }
     val due = fields.due
     if (customReminder && due != null) {
@@ -517,14 +529,15 @@ private fun ToolButtonBody(
 ) {
     val colors = AppTheme.colors
     val sizes = AppTheme.sizes
-    val shape = AppTheme.shapes.medium
+    val shape = AppTheme.shapes.large
     val description = stringResource(label)
+    // Итерация 24: кнопки крупнее (50 dp, скругление как у плиток дней), обводка тоньше — в 1 dp (вариант PM «А»).
     Box(
         Modifier
-            .size(sizes.toolButton)
+            .size(LocalToolButtonSize.current)
             .clip(shape)
             .background(if (active) colors.accent else colors.surface)
-            .border(sizes.checkboxStroke, if (active) colors.accent else colors.divider, shape)
+            .border(sizes.hairline, if (active) colors.accent else colors.divider, shape)
             .clickable(role = Role.Button, onClick = onClick)
             .semantics {
                 contentDescription = description
@@ -535,7 +548,7 @@ private fun ToolButtonBody(
         contentAlignment = Alignment.Center,
     ) {
         if (icon != null) {
-            Icon(painterResource(icon), null, tint = if (active) colors.onAccent else tint ?: colors.textSecondary, modifier = Modifier.size(sizes.toolIcon))
+            Icon(painterResource(icon), null, tint = if (active) colors.onAccent else tint ?: colors.textSecondary, modifier = Modifier.size(LocalToolButtonSize.current * ICON_SHARE))
         } else {
             content()
         }
@@ -549,8 +562,8 @@ fun SheetConfirmButton(label: Int, enabled: Boolean, tag: String, onClick: () ->
     val description = stringResource(label)
     Box(
         Modifier
-            .size(AppTheme.sizes.toolButton)
-            .clip(AppTheme.shapes.medium)
+            .size(LocalToolButtonSize.current)
+            .clip(AppTheme.shapes.large)
             .background(if (enabled) colors.accent else colors.inactive)
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
             .semantics { contentDescription = description }
@@ -621,3 +634,16 @@ const val TAG_CLEAR_REMINDERS = "clear_reminders"
 const val TAG_CLEAR_PRIORITY = "clear_priority"
 const val TAG_CLEAR_DATE = "clear_date"
 const val TAG_DATE_DIALOG_OK = "date_dialog_ok"
+
+
+/**
+ * Размер квадратных кнопок панели (итерация 24): 50 dp, а если все кнопки и действия справа не помещаются
+ * в ширину (у созданной задачи их 7) — поровну меньше.
+ */
+val LocalToolButtonSize = compositionLocalOf { SizeTokens.TOOL_BUTTON.dp }
+
+/** Иконка занимает половину кнопки (20 из 40, 25 из 50). */
+private const val ICON_SHARE = 0.5f
+
+/** Кнопки панели слева: список, повтор, напоминание, приоритет, чек-лист. */
+private const val TOOLBAR_TOOLS = 5
