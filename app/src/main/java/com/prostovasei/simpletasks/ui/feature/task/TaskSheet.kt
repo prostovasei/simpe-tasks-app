@@ -40,13 +40,20 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
@@ -66,6 +73,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -89,7 +97,9 @@ import com.prostovasei.simpletasks.designsystem.theme.parseListColor
 import com.prostovasei.simpletasks.domain.model.Priority
 import com.prostovasei.simpletasks.ui.common.DueFormatter
 import com.prostovasei.simpletasks.ui.common.ListIcons
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneOffset
 import kotlinx.coroutines.launch
 
 /** Открытие и закрытие шторки: [progress] 0 → 1 при открытии; [close] увозит её вниз и вызывает закрытие экрана. */
@@ -128,9 +138,10 @@ fun rememberSheetMotion(onClosed: () -> Unit): SheetMotion {
 
 /**
  * Шторка задачи снизу (итерации 16–19, с итерации 21 — макет PM N2) — и для новой, и для созданной задачи.
- * Сверху [header] (название, описание, чек-лист…), потом строка «когда», строка недели (7 дней со столбиками
- * занятости) и панель кнопок: список, повтор, напоминание, приоритет, чек-лист и справа [actions].
- * Нажатие на день открывает таймлайн на 3 дня (нажатый — в центре) почти на весь экран: там выбирается время.
+ * Сверху [header] (название, описание, чек-лист…), потом плитки дней (итерация 22: значок календаря и 2 недели)
+ * и панель кнопок: список, повтор, напоминание, приоритет, чек-лист и справа [actions].
+ * Нажатие на день открывает таймлайн на 3 дня (нажатый — в центре) почти на весь экран: там выбирается время;
+ * значок календаря — месяц, выбранный в нём день тоже открывает таймлайн.
  * Нажатие на затемнение или «Назад» — [onClose]; «Назад» в таймлайне возвращает к задаче.
  */
 @Composable
@@ -153,9 +164,9 @@ fun TaskSheet(
     val keyboard = LocalSoftwareKeyboardController.current
     val focus = LocalFocusManager.current
     val closeLabel = stringResource(R.string.quick_add_close)
-    // Открытый таймлайн — день, по которому нажали (номер дня), null — шторка со строкой недели.
+    // Открытый таймлайн — день, по которому нажали (номер дня), null — шторка с плитками дней.
     var timelineDay by rememberSaveable { mutableStateOf<Long?>(null) }
-    var dayOnly by rememberSaveable { mutableStateOf(false) }
+    var calendarOpen by rememberSaveable { mutableStateOf(false) }
     val hideKeyboard: () -> Unit = {
         focus.clearFocus()
         keyboard?.hide()
@@ -209,29 +220,53 @@ fun TaskSheet(
                             .padding(horizontal = spacing.md),
                         content = header,
                     )
-                    WhenLabel(fields, Modifier.padding(horizontal = spacing.md, vertical = spacing.xs))
-                    WeekStrip(
+                    DayTiles(
                         today = fields.today,
                         selectedDate = fields.selectedDate,
-                        busy = fields.busy,
-                        dayOnly = dayOnly,
+                        time = DayStripMath.timeLines(fields),
                         onDay = { date ->
                             hideKeyboard()
-                            if (dayOnly) {
-                                onGrid(GridAction.DayTap(date))
-                                dayOnly = false
-                            } else {
-                                timelineDay = date.toEpochDay()
-                            }
+                            timelineDay = date.toEpochDay()
                         },
-                        onDayOnly = { dayOnly = !dayOnly },
-                        onClearDate = { onGrid(GridAction.ClearDate) },
+                        onCalendar = {
+                            hideKeyboard()
+                            calendarOpen = true
+                        },
+                        modifier = Modifier.padding(top = spacing.sm, bottom = spacing.xxs),
                     )
                     SheetToolbar(fields, onEdit, checklistActive, onChecklist, actions, Modifier.windowInsetsPadding(WindowInsets.navigationBars))
                 }
             }
         }
         overlay()
+    }
+    if (calendarOpen) {
+        DateDialog(
+            initial = fields.selectedDate ?: fields.today,
+            onPick = { date ->
+                calendarOpen = false
+                timelineDay = date.toEpochDay()
+            },
+            onDismiss = { calendarOpen = false },
+        )
+    }
+}
+
+/** Календарь на месяц (значок слева от плиток): выбранный день сразу открывает таймлайн. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DateDialog(initial: LocalDate, onPick: (LocalDate) -> Unit, onDismiss: () -> Unit) {
+    val state = rememberDatePickerState(initialSelectedDateMillis = initial.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli())
+    DatePickerDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(
+                onClick = { state.selectedDateMillis?.let { onPick(Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate()) } ?: onDismiss() },
+                modifier = Modifier.testTag(TAG_DATE_DIALOG_OK),
+            ) { Text(stringResource(R.string.sheet_done)) }
+        },
+    ) {
+        DatePicker(state = state, showModeToggle = false)
     }
 }
 
@@ -307,17 +342,41 @@ private fun Timeline(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(spacing.xs),
         ) {
-            TimelineButton(R.string.timeline_earlier, TAG_TIMELINE_EARLIER) { page(-WeekGridMath.TIMELINE_DAYS) }
+            ArrowButton(Icons.AutoMirrored.Filled.KeyboardArrowLeft, R.string.timeline_earlier, TAG_TIMELINE_EARLIER) { page(-WeekGridMath.TIMELINE_DAYS) }
             Spacer(Modifier.weight(1f))
+            TimelineButton(R.string.quick_when_none, TAG_TIMELINE_NO_DATE) {
+                onGrid(GridAction.ClearDate)
+                onBack()
+            }
             TimelineButton(R.string.strip_no_time, TAG_TIMELINE_NO_TIME) {
+                // Только день — тот, по которому открыт таймлайн; если он уже выбран — просто убрать время.
                 when {
+                    fields.selectedDate != day -> onGrid(GridAction.DayTap(day))
                     fields.selectedMinute != null -> onGrid(GridAction.ClearTime)
-                    fields.selectedDate == null -> onGrid(GridAction.DayTap(day))
                 }
                 onBack()
             }
-            TimelineButton(R.string.timeline_later, TAG_TIMELINE_LATER) { page(WeekGridMath.TIMELINE_DAYS) }
+            Spacer(Modifier.weight(1f))
+            ArrowButton(Icons.AutoMirrored.Filled.KeyboardArrowRight, R.string.timeline_later, TAG_TIMELINE_LATER) { page(WeekGridMath.TIMELINE_DAYS) }
         }
+    }
+}
+
+@Composable
+private fun ArrowButton(icon: ImageVector, label: Int, tag: String, onClick: () -> Unit) {
+    val colors = AppTheme.colors
+    val description = stringResource(label)
+    Box(
+        Modifier
+            .size(AppTheme.sizes.toolButton)
+            .clip(AppTheme.shapes.medium)
+            .background(colors.background)
+            .clickable(role = Role.Button, onClick = onClick)
+            .semantics { contentDescription = description }
+            .testTag(tag),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(icon, null, tint = colors.textPrimary)
     }
 }
 
@@ -543,3 +602,5 @@ const val TAG_TIMELINE_DONE = "timeline_done"
 const val TAG_TIMELINE_EARLIER = "timeline_earlier"
 const val TAG_TIMELINE_LATER = "timeline_later"
 const val TAG_TIMELINE_NO_TIME = "timeline_no_time"
+const val TAG_TIMELINE_NO_DATE = "timeline_no_date"
+const val TAG_DATE_DIALOG_OK = "date_dialog_ok"
