@@ -4,12 +4,15 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Icon
@@ -20,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.FirstBaseline
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -28,8 +32,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
@@ -61,17 +65,19 @@ fun DayTiles(
     val days = remember(today) { (0L until DayStripMath.DAYS).map { today.plusDays(it) } }
     val outside = selectedDate?.takeIf { it !in days }
     val list = rememberLazyListState()
-    // Крупный системный шрифт: плитка растёт, но не больше чем в MAX_SCALE раз, а текст в ней считается
-    // от размера плитки (0.22.2) — так он всегда помещается, какими бы ни были шрифт и его высота строки.
     val density = LocalDensity.current
-    val tile = AppTheme.sizes.dayTile * density.fontScale.coerceIn(1f, MAX_SCALE)
-    val text = remember(tile, density) { TileText.of(tile, density) }
     // Выбранный день дальше третьей плитки — подвинуть ленту, чтобы он был виден.
     LaunchedEffect(selectedDate) {
         val index = selectedDate?.let { ChronoUnit.DAYS.between(today, it).toInt() } ?: -1
         if (index >= VISIBLE_TILES) list.animateScrollToItem(index - 1)
     }
-    Row(modifier.fillMaxWidth().padding(start = spacing.md), horizontalArrangement = Arrangement.spacedBy(spacing.xs)) {
+    // Размер плитки — от ширины экрана (0.22.3): значок, 3 дня целиком и узкий край четвёртого на любом телефоне.
+    // Текст в плитке — доли её стороны (0.22.2), поэтому всегда помещается.
+    BoxWithConstraints(modifier.fillMaxWidth().padding(start = spacing.md)) {
+    val tile = ((maxWidth - spacing.xs * (VISIBLE_TILES + 1)) / (VISIBLE_TILES + 1 + PEEK))
+        .coerceIn(AppTheme.sizes.dayTile * MIN_SCALE, AppTheme.sizes.dayTile * MAX_SCALE)
+    val text = remember(tile, density) { TileText.of(tile, density) }
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(spacing.xs)) {
         CalendarTile(tile, onCalendar)
         if (outside != null) DayTile(outside, time, selected = true, tile, text, onClick = { onDay(outside) })
         LazyRow(
@@ -86,6 +92,7 @@ fun DayTiles(
                 DayTile(date, if (selected) time else emptyList(), selected, tile, text, onClick = { onDay(date) })
             }
         }
+    }
     }
 }
 
@@ -124,28 +131,28 @@ private fun DayTile(date: LocalDate, time: List<String>, selected: Boolean, tile
             .testTag("$TAG_DAY_TILE:$date"),
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Column {
-            Text(date.dayOfWeek.getDisplayName(TextStyle.SHORT, RUSSIAN), style = big, maxLines = 1)
-            Text("%02d".format(date.dayOfMonth), style = big, maxLines = 1)
-            Text(
-                MONTHS[date.monthValue - 1],
-                style = text.month,
-                color = minor,
-                maxLines = 1,
-            )
+        // Строки фиксированной высоты (0.22.3): «чт», «22» и «окт» плотно друг под другом на любом телефоне.
+        Column(Modifier.alignBy { it[FirstBaseline] - text.dayTop }) {
+            Line(tile * DAY_LINE) { Text(date.dayOfWeek.getDisplayName(TextStyle.SHORT, RUSSIAN), style = big, maxLines = 1, modifier = it) }
+            Line(tile * DAY_LINE) { Text("%02d".format(date.dayOfMonth), style = big, maxLines = 1, modifier = it) }
+            Line(tile * MONTH_LINE) { Text(MONTHS[date.monthValue - 1], style = text.month, color = minor, maxLines = 1, modifier = it) }
         }
-        // Время — бледнее и тоньше даты, верх — на одной линии с днём недели.
-        Column(Modifier.padding(top = tile * TIME_TOP), horizontalAlignment = Alignment.End) {
-            time.forEach {
-                Text(
-                    it,
-                    style = text.time,
-                    color = minor,
-                    maxLines = 1,
-                    modifier = Modifier.testTag(TAG_DAY_TIME),
-                )
+        // Время — бледнее и тоньше даты; верх цифр — на одной линии с верхом «чт».
+        if (time.isNotEmpty()) {
+            Column(Modifier.alignBy { it[FirstBaseline] - text.timeTop }, horizontalAlignment = Alignment.End) {
+                time.forEach { line ->
+                    Line(tile * TIME_LINE) { Text(line, style = text.time, color = minor, maxLines = 1, modifier = it.then(Modifier.testTag(TAG_DAY_TIME))) }
+                }
             }
         }
+    }
+}
+
+/** Строка заданной высоты: текст по центру, выступы шрифта сверху и снизу не раздвигают строки. */
+@Composable
+private fun Line(height: Dp, content: @Composable (Modifier) -> Unit) {
+    Box(Modifier.height(height), contentAlignment = Alignment.CenterStart) {
+        content(Modifier.wrapContentHeight(unbounded = true))
     }
 }
 
@@ -172,7 +179,14 @@ object DayStripMath {
  * Даже с полной высотой строки шрифта (~1,37 размера) это ~0,9 стороны вместе с отступом сверху — запас
  * на любой шрифт. Размеры переводятся в sp без системного масштаба шрифта: он уже учтён в размере плитки.
  */
-private class TileText(val day: androidx.compose.ui.text.TextStyle, val month: androidx.compose.ui.text.TextStyle, val time: androidx.compose.ui.text.TextStyle) {
+private class TileText(
+    val day: androidx.compose.ui.text.TextStyle,
+    val month: androidx.compose.ui.text.TextStyle,
+    val time: androidx.compose.ui.text.TextStyle,
+    /** От базовой линии до верха строчных «чт» и до верха цифр времени, px — по ним выравнивается время. */
+    val dayTop: Int,
+    val timeTop: Int,
+) {
     companion object {
         fun of(tile: Dp, density: Density): TileText = with(density) {
             fun style(size: Float, line: Float, weight: FontWeight) = androidx.compose.ui.text.TextStyle(
@@ -187,20 +201,29 @@ private class TileText(val day: androidx.compose.ui.text.TextStyle, val month: a
                 day = style(DAY_SIZE, DAY_LINE, FontWeight.ExtraBold),
                 month = style(MONTH_SIZE, MONTH_LINE, FontWeight.Bold),
                 time = style(TIME_SIZE, TIME_LINE, FontWeight.Medium),
+                dayTop = (tile * DAY_SIZE * X_HEIGHT).roundToPx(),
+                timeTop = (tile * TIME_SIZE * DIGIT_HEIGHT).roundToPx(),
             )
         }
     }
 }
 
-private const val MAX_SCALE = 1.15f
-private const val DAY_SIZE = 0.24f
+private const val MAX_SCALE = 1.3f
+private const val DAY_SIZE = 0.26f
 private const val DAY_LINE = 0.27f
-private const val MONTH_SIZE = 0.13f
-private const val MONTH_LINE = 0.15f
-private const val TIME_SIZE = 0.115f
-private const val TIME_LINE = 0.14f
-private const val TOP_PAD = 0.07f
-private const val TIME_TOP = 0.02f
+private const val MONTH_SIZE = 0.14f
+private const val MONTH_LINE = 0.18f
+private const val TIME_SIZE = 0.155f
+private const val TIME_LINE = 0.19f
+private const val TOP_PAD = 0.13f
+
+/** Высота строчных букв и цифр шрифта Manrope в долях размера — для выравнивания времени по верху «чт». */
+private const val X_HEIGHT = 0.54f
+private const val DIGIT_HEIGHT = 0.72f
+
+/** Сколько видно от четвёртого дня и пределы размера плитки относительно `DAY_TILE`. */
+private const val PEEK = 0.3f
+private const val MIN_SCALE = 0.9f
 private const val VISIBLE_TILES = 3
 private val RUSSIAN = Locale.forLanguageTag("ru")
 private val MONTHS = listOf("янв", "фев", "мар", "апр", "мая", "июн", "июл", "авг", "сен", "окт", "ноя", "дек")
