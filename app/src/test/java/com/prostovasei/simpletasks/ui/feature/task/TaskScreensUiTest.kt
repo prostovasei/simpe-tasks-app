@@ -415,9 +415,9 @@ class TaskScreensUiTest {
         composeRule.onRoot().captureRoboImage("screenshots/quick_add_timeline_light.png")
     }
 
-    /** Крупный системный шрифт (как на телефоне PM): плитки растут вместе с текстом, «окт» не обрезается. */
+    /** Широкий экран и крупный шрифт (как на телефоне PM): 3 дня и край четвёртого, «окт» не обрезается. */
     @Test
-    @Config(qualifiers = "w400dp-h900dp-xhdpi", fontScale = 1.3f)
+    @Config(qualifiers = "w412dp-h915dp-xxhdpi", fontScale = 1.3f)
     fun screenshotQuickAddLargeFont() {
         show { QuickAddScreen(quickState.copy(checklist = null, start = TaskDue.AtTime(Instant.parse("2026-10-15T10:00:00Z")), due = TaskDue.AtTime(Instant.parse("2026-10-15T11:30:00Z"))), {}, {}, autoFocus = false) }
         composeRule.onRoot().captureRoboImage("screenshots/quick_add_large_font.png")
