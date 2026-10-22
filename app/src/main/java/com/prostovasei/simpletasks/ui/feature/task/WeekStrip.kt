@@ -59,6 +59,7 @@ fun DayTiles(
     time: List<String>,
     onDay: (LocalDate) -> Unit,
     onCalendar: () -> Unit,
+    onClear: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val spacing = AppTheme.spacing
@@ -79,7 +80,7 @@ fun DayTiles(
     val text = remember(tile, density) { TileText.of(tile, density) }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(spacing.xs)) {
         CalendarTile(tile, onCalendar)
-        if (outside != null) DayTile(outside, time, selected = true, tile, text, onClick = { onDay(outside) })
+        if (outside != null) DayTile(outside, time, selected = true, tile, text, onClear, onClick = { onDay(outside) })
         LazyRow(
             state = list,
             horizontalArrangement = Arrangement.spacedBy(spacing.xs),
@@ -89,7 +90,7 @@ fun DayTiles(
             items(days.size) { index ->
                 val date = days[index]
                 val selected = date == selectedDate
-                DayTile(date, if (selected) time else emptyList(), selected, tile, text, onClick = { onDay(date) })
+                DayTile(date, if (selected) time else emptyList(), selected, tile, text, onClear, onClick = { onDay(date) })
             }
         }
     }
@@ -115,7 +116,16 @@ private fun CalendarTile(tile: Dp, onClick: () -> Unit) {
 }
 
 @Composable
-private fun DayTile(date: LocalDate, time: List<String>, selected: Boolean, tile: Dp, text: TileText, onClick: () -> Unit) {
+private fun DayTile(date: LocalDate, time: List<String>, selected: Boolean, tile: Dp, text: TileText, onClear: () -> Unit, onClick: () -> Unit) {
+    Box {
+        DayTileBody(date, time, selected, tile, text, onClick)
+        // Крестик внизу справа у выбранного дня (0.23.2): убрать дату и время.
+        if (selected) ClearBadge(ClearAction(R.string.clear_date, TAG_CLEAR_DATE, onClear), Modifier.align(Alignment.BottomEnd))
+    }
+}
+
+@Composable
+private fun DayTileBody(date: LocalDate, time: List<String>, selected: Boolean, tile: Dp, text: TileText, onClick: () -> Unit) {
     val colors = AppTheme.colors
     val main = if (selected) colors.onAccent else colors.textPrimary
     val minor = if (selected) colors.onAccent.copy(alpha = MINOR_ON_ACCENT) else colors.textSecondary

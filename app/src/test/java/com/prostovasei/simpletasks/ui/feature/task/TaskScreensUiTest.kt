@@ -345,7 +345,7 @@ class TaskScreensUiTest {
         composeRule.onNodeWithTag(TAG_TOOL_REMINDER).performClick()
         composeRule.onNodeWithText("За 1 неделю в 10:00").assertExists()
         composeRule.onNodeWithText("За 1 день в 10:00").performClick()
-        composeRule.onNodeWithTag(TAG_TOOL_REMINDER).performClick()
+        // Меню не закрылось — сразу «Без напоминания».
         composeRule.onNodeWithText("Без напоминания").performClick()
 
         assertEquals(
@@ -354,6 +354,26 @@ class TaskScreensUiTest {
                 TaskDetailIntent.Edit(FieldEdit.SetReminders(emptyList())),
             ),
             intents.filterNot { it is TaskDetailIntent.Grid },
+        )
+    }
+
+    @Test
+    fun clearBadgesResetOnlyTheirField() {
+        show { TaskDetailScreen(detailState, { intents += it }, {}, {}) }
+        composeRule.onNodeWithTag(TAG_CLEAR_REMINDERS).performClick()
+        composeRule.onNodeWithTag(TAG_CLEAR_REPEAT).performClick()
+        composeRule.onNodeWithTag(TAG_CLEAR_PRIORITY).performClick()
+        composeRule.onNodeWithTag(TAG_CLEAR_LIST).performClick()
+        composeRule.onNodeWithTag(TAG_CLEAR_DATE).performClick()
+        assertEquals(
+            listOf<Any>(
+                TaskDetailIntent.Edit(FieldEdit.SetReminders(emptyList())),
+                TaskDetailIntent.Edit(FieldEdit.Repeat(null)),
+                TaskDetailIntent.Edit(FieldEdit.SetPriority(Priority.NONE)),
+                TaskDetailIntent.Edit(FieldEdit.Project(projects.first { it.isInbox }.id)),
+                TaskDetailIntent.Grid(GridAction.ClearDate),
+            ),
+            intents.filterNot { it is TaskDetailIntent.Grid && it.action is GridAction.FirstDay },
         )
     }
 

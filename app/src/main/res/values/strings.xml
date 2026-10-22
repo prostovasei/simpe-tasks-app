@@ -8,6 +8,11 @@
     <string name="tab_search">Поиск</string>
     <string name="search_hint">Поиск задач</string>
     <string name="search_clear">Очистить</string>
+    <string name="clear_date">Убрать дату</string>
+    <string name="clear_reminders">Убрать напоминания</string>
+    <string name="clear_repeat">Убрать повтор</string>
+    <string name="clear_priority">Убрать приоритет</string>
+    <string name="clear_list">Вернуть во «Входящие»</string>
     <string name="search_start">Начните вводить — задачи появятся сразу</string>
     <string name="search_nothing">Ничего не найдено</string>
     <string name="search_done">Выполненные</string>
