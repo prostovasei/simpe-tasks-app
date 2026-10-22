@@ -120,6 +120,7 @@ fun TaskDetailScreen(
         },
         progress = progress,
         overlay = overlay,
+        actionCount = 2,
         actions = {
             ToolButton(R.string.sheet_delete, active = false, tag = TAG_DETAIL_DELETE, icon = R.drawable.ic_tool_delete, tint = colors.danger) {
                 onIntent(TaskDetailIntent.RequestDelete)
