@@ -21,6 +21,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -29,6 +30,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
@@ -57,14 +59,19 @@ fun DayTiles(
     val days = remember(today) { (0L until DayStripMath.DAYS).map { today.plusDays(it) } }
     val outside = selectedDate?.takeIf { it !in days }
     val list = rememberLazyListState()
+    // Крупный системный шрифт (0.22.1): плитка и текст в ней растут вместе, но не больше чем в MAX_SCALE раз —
+    // так плитка остаётся квадратной, ничего не обрезается и видно 3 дня.
+    val fontScale = LocalDensity.current.fontScale
+    val scale = fontScale.coerceIn(1f, MAX_SCALE)
+    val tile = TileSize(AppTheme.sizes.dayTile * scale, scale / fontScale)
     // Выбранный день дальше третьей плитки — подвинуть ленту, чтобы он был виден.
     LaunchedEffect(selectedDate) {
         val index = selectedDate?.let { ChronoUnit.DAYS.between(today, it).toInt() } ?: -1
         if (index >= VISIBLE_TILES) list.animateScrollToItem(index - 1)
     }
     Row(modifier.fillMaxWidth().padding(start = spacing.md), horizontalArrangement = Arrangement.spacedBy(spacing.xs)) {
-        CalendarTile(onCalendar)
-        if (outside != null) DayTile(outside, time, selected = true, onClick = { onDay(outside) })
+        CalendarTile(tile, onCalendar)
+        if (outside != null) DayTile(outside, time, selected = true, tile, onClick = { onDay(outside) })
         LazyRow(
             state = list,
             horizontalArrangement = Arrangement.spacedBy(spacing.xs),
@@ -74,19 +81,19 @@ fun DayTiles(
             items(days.size) { index ->
                 val date = days[index]
                 val selected = date == selectedDate
-                DayTile(date, if (selected) time else emptyList(), selected, onClick = { onDay(date) })
+                DayTile(date, if (selected) time else emptyList(), selected, tile, onClick = { onDay(date) })
             }
         }
     }
 }
 
 @Composable
-private fun CalendarTile(onClick: () -> Unit) {
+private fun CalendarTile(tile: TileSize, onClick: () -> Unit) {
     val colors = AppTheme.colors
     val label = stringResource(R.string.strip_pick_date)
     Box(
         Modifier
-            .size(AppTheme.sizes.dayTile)
+            .size(tile.side)
             .clip(AppTheme.shapes.large)
             .background(colors.background)
             .clickable(role = Role.Button, onClick = onClick)
@@ -99,14 +106,15 @@ private fun CalendarTile(onClick: () -> Unit) {
 }
 
 @Composable
-private fun DayTile(date: LocalDate, time: List<String>, selected: Boolean, onClick: () -> Unit) {
+private fun DayTile(date: LocalDate, time: List<String>, selected: Boolean, tile: TileSize, onClick: () -> Unit) {
     val colors = AppTheme.colors
     val main = if (selected) colors.onAccent else colors.textPrimary
     val minor = if (selected) colors.onAccent.copy(alpha = MINOR_ON_ACCENT) else colors.textSecondary
-    val big = MaterialTheme.typography.titleLarge.copy(fontSize = DAY_SIZE, lineHeight = DAY_LINE, fontWeight = FontWeight.ExtraBold, color = main)
+    val k = tile.text
+    val big = MaterialTheme.typography.titleLarge.copy(fontSize = DAY_SIZE * k, lineHeight = DAY_LINE * k, fontWeight = FontWeight.ExtraBold, color = main)
     Row(
         Modifier
-            .size(AppTheme.sizes.dayTile)
+            .size(tile.side)
             .clip(AppTheme.shapes.large)
             .background(if (selected) colors.accent else colors.background)
             .clickable(role = Role.Button, onClick = onClick)
@@ -120,7 +128,7 @@ private fun DayTile(date: LocalDate, time: List<String>, selected: Boolean, onCl
             Text("%02d".format(date.dayOfMonth), style = big, maxLines = 1)
             Text(
                 MONTHS[date.monthValue - 1],
-                style = MaterialTheme.typography.labelSmall.copy(fontSize = MONTH_SIZE, lineHeight = MONTH_LINE),
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = MONTH_SIZE * k, lineHeight = MONTH_LINE * k),
                 fontWeight = FontWeight.Bold,
                 color = minor,
                 maxLines = 1,
@@ -131,7 +139,7 @@ private fun DayTile(date: LocalDate, time: List<String>, selected: Boolean, onCl
             time.forEach {
                 Text(
                     it,
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = TIME_SIZE, lineHeight = TIME_LINE),
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = TIME_SIZE * k, lineHeight = TIME_LINE * k),
                     fontWeight = FontWeight.Medium,
                     color = minor,
                     maxLines = 1,
@@ -160,6 +168,10 @@ object DayStripMath {
     private const val HOURS_PER_DAY = 24
 }
 
+/** Размер плитки и множитель текста в ней (sp × fontScale × [text] = базовый размер × рост плитки). */
+private class TileSize(val side: Dp, val text: Float)
+
+private const val MAX_SCALE = 1.15f
 private const val VISIBLE_TILES = 3
 private val RUSSIAN = Locale.forLanguageTag("ru")
 private val MONTHS = listOf("янв", "фев", "мар", "апр", "мая", "июн", "июл", "авг", "сен", "окт", "ноя", "дек")

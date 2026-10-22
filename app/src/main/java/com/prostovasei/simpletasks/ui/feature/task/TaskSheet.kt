@@ -232,7 +232,7 @@ fun TaskSheet(
                             hideKeyboard()
                             calendarOpen = true
                         },
-                        modifier = Modifier.padding(top = spacing.sm, bottom = spacing.xxs),
+                        modifier = Modifier.padding(top = spacing.sm, bottom = spacing.xs),
                     )
                     SheetToolbar(fields, onEdit, checklistActive, onChecklist, actions, Modifier.windowInsetsPadding(WindowInsets.navigationBars))
                 }
