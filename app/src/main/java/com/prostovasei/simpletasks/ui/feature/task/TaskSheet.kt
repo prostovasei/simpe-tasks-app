@@ -27,18 +27,21 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
@@ -225,6 +228,7 @@ fun TaskSheet(
                             hideKeyboard()
                             calendarOpen = true
                         },
+                        onClear = { onGrid(GridAction.ClearDate) },
                         modifier = Modifier.padding(top = spacing.sm, bottom = spacing.xs),
                     )
                     SheetToolbar(fields, onEdit, checklistActive, onChecklist, actions, Modifier.windowInsetsPadding(WindowInsets.navigationBars))
@@ -343,11 +347,13 @@ private fun SheetToolbar(
         horizontalArrangement = Arrangement.spacedBy(spacing.xs),
     ) {
         val project = fields.projects.firstOrNull { it.id == fields.projectId }
+        val inbox = fields.projects.firstOrNull { it.isInbox }
         Box {
             ToolButton(
                 R.string.quick_tool_list,
                 active = project?.isInbox == false,
                 tag = TAG_TOOL_LIST,
+                clear = if (project?.isInbox == false && inbox != null) ClearAction(R.string.clear_list, TAG_CLEAR_LIST) { onEdit(FieldEdit.Project(inbox.id)) } else null,
                 content = {
                     ListSquare(
                         color = parseListColor(project?.color) ?: colors.inactive,
@@ -359,7 +365,13 @@ private fun SheetToolbar(
                 ProjectMenuItems(fields.projectId, fields.projects, onEdit, close)
             }
         }
-        ToolButton(R.string.quick_tool_repeat, active = fields.rrule != null, tag = TAG_TOOL_REPEAT, icon = R.drawable.ic_tool_repeat) {
+        ToolButton(
+            R.string.quick_tool_repeat,
+            active = fields.rrule != null,
+            tag = TAG_TOOL_REPEAT,
+            icon = R.drawable.ic_tool_repeat,
+            clear = if (fields.rrule != null) ClearAction(R.string.clear_repeat, TAG_CLEAR_REPEAT) { onEdit(FieldEdit.Repeat(null)) } else null,
+        ) {
             repeatDialog = true
         }
         Box {
@@ -370,6 +382,7 @@ private fun SheetToolbar(
                 tag = TAG_TOOL_REMINDER,
                 icon = if (badge == null) R.drawable.ic_tool_reminder else null,
                 dimmed = fields.due == null,
+                clear = if (badge != null) ClearAction(R.string.clear_reminders, TAG_CLEAR_REMINDERS) { onEdit(FieldEdit.SetReminders(emptyList())) } else null,
                 content = {
                     if (badge != null) {
                         ReminderIcon(badge, sizes.toolIcon, tint = colors.onAccent, badgeColor = colors.onAccent, glyphColor = colors.accent)
@@ -390,7 +403,13 @@ private fun SheetToolbar(
             }
         }
         Box {
-            ToolButton(R.string.quick_tool_priority, active = fields.priority != Priority.NONE, tag = TAG_TOOL_PRIORITY, icon = R.drawable.ic_tool_priority) {
+            ToolButton(
+                R.string.quick_tool_priority,
+                active = fields.priority != Priority.NONE,
+                tag = TAG_TOOL_PRIORITY,
+                icon = R.drawable.ic_tool_priority,
+                clear = if (fields.priority != Priority.NONE) ClearAction(R.string.clear_priority, TAG_CLEAR_PRIORITY) { onEdit(FieldEdit.SetPriority(Priority.NONE)) } else null,
+            ) {
                 menu = ToolMenu.Priority
             }
             DropdownMenu(expanded = menu == ToolMenu.Priority, onDismissRequest = close, containerColor = colors.surface) {
@@ -435,7 +454,55 @@ fun ToolButton(
     @DrawableRes icon: Int? = null,
     dimmed: Boolean = false,
     tint: Color? = null,
+    clear: ClearAction? = null,
     content: @Composable () -> Unit = {},
+    onClick: () -> Unit,
+) {
+    Box {
+        ToolButtonBody(label, active, tag, icon, dimmed, tint, content, onClick)
+        // Крестик в правом верхнем углу выбранной кнопки (0.23.2): сбрасывает только это свойство.
+        clear?.let { ClearBadge(it, Modifier.align(Alignment.TopEnd).offset(x = AppTheme.sizes.weekClear, y = -AppTheme.sizes.weekClear)) }
+    }
+}
+
+/** Что сбрасывает крестик: подпись для TalkBack, тег для тестов и действие. */
+data class ClearAction(val label: Int, val tag: String, val onClear: () -> Unit)
+
+/** Круглый крестик (как на блоке времени в сетке); область нажатия — вдвое больше значка. */
+@Composable
+fun ClearBadge(action: ClearAction, modifier: Modifier = Modifier) {
+    val colors = AppTheme.colors
+    val sizes = AppTheme.sizes
+    val description = stringResource(action.label)
+    Box(
+        modifier
+            .size(sizes.weekClear * 2)
+            .clickable(role = Role.Button, onClick = action.onClear)
+            .semantics { contentDescription = description }
+            .testTag(action.tag),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            Modifier
+                .size(sizes.weekClear)
+                .background(colors.surface, CircleShape)
+                .border(sizes.hairline, colors.accent, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(Icons.Default.Close, contentDescription = null, tint = colors.accent, modifier = Modifier.size(sizes.metaIcon))
+        }
+    }
+}
+
+@Composable
+private fun ToolButtonBody(
+    label: Int,
+    active: Boolean,
+    tag: String,
+    @DrawableRes icon: Int?,
+    dimmed: Boolean,
+    tint: Color?,
+    content: @Composable () -> Unit,
     onClick: () -> Unit,
 ) {
     val colors = AppTheme.colors
@@ -535,4 +602,9 @@ const val TAG_REMINDER_NEED_DAY = "reminder_need_day"
 const val TAG_TIMELINE_DONE = "timeline_done"
 const val TAG_TIMELINE_NO_TIME = "timeline_no_time"
 const val TAG_TIMELINE_NO_DATE = "timeline_no_date"
+const val TAG_CLEAR_LIST = "clear_list"
+const val TAG_CLEAR_REPEAT = "clear_repeat"
+const val TAG_CLEAR_REMINDERS = "clear_reminders"
+const val TAG_CLEAR_PRIORITY = "clear_priority"
+const val TAG_CLEAR_DATE = "clear_date"
 const val TAG_DATE_DIALOG_OK = "date_dialog_ok"

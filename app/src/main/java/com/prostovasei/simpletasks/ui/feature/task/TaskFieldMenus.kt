@@ -62,7 +62,8 @@ import java.util.Locale
 
 /**
  * Пункты меню напоминаний (итерация 23): у каждого — его значок, у заданных — галочка справа; заданные вручную —
- * сверху, дальше готовые варианты и «Вручную…» ([onCustom]). [onDone] закрывает меню.
+ * сверху, дальше готовые варианты и «Вручную…» ([onCustom]). Отметка пункта меню не закрывает; [onDone] закрывает
+ * его после «Вручную…» и «Без напоминания».
  */
 @Composable
 fun ReminderMenuItems(due: TaskDue, reminders: List<String>, onEdit: (FieldEdit) -> Unit, onDone: () -> Unit, onCustom: () -> Unit) {
@@ -77,10 +78,8 @@ fun ReminderMenuItems(due: TaskDue, reminders: List<String>, onEdit: (FieldEdit)
             text = { Text(reminderText(option, allDay), color = colors.textPrimary) },
             leadingIcon = { MenuReminderIcon(Reminders.badgeOf(due, option)) },
             trailingIcon = if (checked) { { Icon(Icons.Default.Check, null, tint = colors.accent) } } else null,
-            onClick = {
-                onDone()
-                onEdit(FieldEdit.SetReminders(if (checked) reminders - option else reminders + option))
-            },
+            // Меню не закрывается (0.23.2): можно отметить сразу несколько; закрывается нажатием вне меню.
+            onClick = { onEdit(FieldEdit.SetReminders(if (checked) reminders - option else reminders + option)) },
             modifier = Modifier.testTag("$TAG_REMINDER_OPTION:$option"),
         )
     }
