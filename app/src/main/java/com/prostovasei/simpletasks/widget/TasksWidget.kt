@@ -3,6 +3,7 @@ package com.prostovasei.simpletasks.widget
 import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
 import android.widget.RemoteViews
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
@@ -48,12 +49,15 @@ import com.prostovasei.simpletasks.designsystem.tokens.RadiusTokens
 import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
 import com.prostovasei.simpletasks.designsystem.tokens.SpacingTokens
 import com.prostovasei.simpletasks.domain.model.Priority
+import com.prostovasei.simpletasks.domain.model.ReminderBadge
 import com.prostovasei.simpletasks.ui.common.DayNames
 import com.prostovasei.simpletasks.ui.common.ListIcons
+import com.prostovasei.simpletasks.ui.common.ReminderIconMasks
 import com.prostovasei.simpletasks.ui.common.TaskItem
 import com.prostovasei.simpletasks.widget.theme.WidgetCheckColors
 import com.prostovasei.simpletasks.widget.theme.WidgetColors
 import java.time.LocalDate
+import kotlin.math.roundToInt
 
 /*
  * Виджет «Задачи» (SPEC.md §5; редизайн — итерации 08–09, 14, 20). Лента по дням: подпись дня, под ней — шкала дня:
@@ -228,7 +232,7 @@ private fun TimelineRow(row: WidgetRow.Task, line: Line, overdue: Boolean, filte
                     maxLines = 1,
                     modifier = GlanceModifier.defaultWeight(),
                 )
-                if (item.hasReminders) MetaIcon(R.drawable.ic_tool_reminder)
+                item.reminder?.let { ReminderIcon(it) }
                 if (item.isRecurring) MetaIcon(R.drawable.ic_tool_repeat)
                 if (filter !is WidgetFilter.ProjectList) {
                     Spacer(GlanceModifier.width(SpacingTokens.XS.dp))
@@ -357,6 +361,25 @@ private fun MetaIcon(icon: Int) {
         colorFilter = ColorFilter.tint(WidgetColors.textSecondary),
         modifier = GlanceModifier.size(SizeTokens.WIDGET_META_ICON.dp),
     )
+}
+
+/** Колокольчик напоминаний со значком (итерация 23): три маски, каждая со своим цветом темы. */
+@Composable
+private fun ReminderIcon(badge: ReminderBadge) {
+    val context = LocalContext.current
+    val size = SizeTokens.WIDGET_REMINDER_ICON
+    val masks = ReminderIconMasks.of(context, badge, (size * context.resources.displayMetrics.density).roundToInt())
+    Spacer(GlanceModifier.width(SpacingTokens.XXS.dp))
+    Box(GlanceModifier.size(size.dp)) {
+        MaskImage(masks.bell, WidgetColors.textSecondary, size)
+        masks.pill?.let { MaskImage(it, WidgetColors.reminderBadge, size) }
+        masks.glyph?.let { MaskImage(it, WidgetColors.textSecondary, size) }
+    }
+}
+
+@Composable
+private fun MaskImage(mask: Bitmap, color: ColorProvider, size: Int) {
+    Image(ImageProvider(mask), contentDescription = null, colorFilter = ColorFilter.tint(color), modifier = GlanceModifier.size(size.dp))
 }
 
 /** Квадратик цвета списка со значком (как в приложении). */

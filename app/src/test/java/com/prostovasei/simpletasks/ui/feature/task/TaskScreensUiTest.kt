@@ -1,40 +1,41 @@
 package com.prostovasei.simpletasks.ui.feature.task
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.test.performImeAction
-import androidx.compose.ui.test.assertIsNotFocused
-import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.test.click
-import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsNotFocused
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
-import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTouchInput
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.domain.model.ChecklistItem
 import com.prostovasei.simpletasks.domain.model.Priority
 import com.prostovasei.simpletasks.domain.model.TaskDue
 import com.prostovasei.simpletasks.testing.task
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
-import androidx.compose.ui.test.onNodeWithContentDescription
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneOffset
 
 /** Создание задачи, экран задачи и конструктор повтора: отображение, нажатия, скриншоты. */
 @RunWith(RobolectricTestRunner::class)
@@ -381,6 +382,32 @@ class TaskScreensUiTest {
         assertEquals(
             listOf<Any>(QuickAddIntent.Edit(FieldEdit.SetReminders(listOf("PT0S", "-PT30M")))),
             intents.filterNot { it is QuickAddIntent.Grid && it.action is GridAction.FirstDay },
+        )
+    }
+
+    @Test
+    fun customReminderCountsDaysHoursMinutes() {
+        var result: String? = null
+        val due = TaskDue.AtTime(today.plusDays(3).atTime(18, 0).atZone(zone).toInstant())
+        show { CustomReminderDialog(due = due, start = null, zone = zone, onConfirm = { result = it }, onDismiss = {}) }
+        repeat(2) { composeRule.onNodeWithTag("$TAG_CUSTOM_DAYS:plus").performClick() }
+        repeat(3) { composeRule.onNodeWithTag("$TAG_CUSTOM_HOURS:plus").performClick() }
+        repeat(6) { composeRule.onNodeWithTag("$TAG_CUSTOM_MINUTES:plus").performClick() }
+        composeRule.onNodeWithTag(TAG_CUSTOM_FIRES).assertTextContains("12:30", substring = true)
+        composeRule.onNodeWithTag(TAG_CUSTOM_ADD).performClick()
+        assertEquals("-P2DT5H30M0S", result)
+    }
+
+    @Test
+    fun reminderMenuOffersCustom() {
+        show { TaskDetailScreen(detailState, { intents += it }, {}, {}) }
+        composeRule.onNodeWithTag(TAG_TOOL_REMINDER).performClick()
+        composeRule.onNodeWithTag(TAG_REMINDER_CUSTOM).performClick()
+        composeRule.onNodeWithTag(TAG_CUSTOM_DAYS).assertTextEquals("01")
+        composeRule.onNodeWithTag(TAG_CUSTOM_ADD).performClick()
+        assertEquals(
+            listOf<Any>(TaskDetailIntent.Edit(FieldEdit.SetReminders(listOf("P0DT10H0M0S", "-P6DT14H0M0S", "-P0DT15H0M0S")))),
+            intents.filterNot { it is TaskDetailIntent.Grid },
         )
     }
 

@@ -95,8 +95,10 @@ import com.prostovasei.simpletasks.designsystem.components.ListSquare
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.designsystem.theme.parseListColor
 import com.prostovasei.simpletasks.domain.model.Priority
+import com.prostovasei.simpletasks.domain.model.Reminders
 import com.prostovasei.simpletasks.ui.common.DueFormatter
 import com.prostovasei.simpletasks.ui.common.ListIcons
+import com.prostovasei.simpletasks.ui.common.ReminderIcon
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -417,8 +419,10 @@ private fun SheetToolbar(
 ) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
+    val sizes = AppTheme.sizes
     var menu by remember { mutableStateOf(ToolMenu.None) }
     var repeatDialog by remember { mutableStateOf(false) }
+    var customReminder by remember { mutableStateOf(false) }
     val close = { menu = ToolMenu.None }
     Row(
         modifier = modifier.fillMaxWidth().padding(horizontal = spacing.sm, vertical = spacing.xs),
@@ -446,12 +450,18 @@ private fun SheetToolbar(
             repeatDialog = true
         }
         Box {
+            val badge = Reminders.badge(fields.due, fields.reminders)
             ToolButton(
                 R.string.quick_tool_reminder,
-                active = fields.due != null && fields.reminders.isNotEmpty(),
+                active = badge != null,
                 tag = TAG_TOOL_REMINDER,
-                icon = R.drawable.ic_tool_reminder,
+                icon = if (badge == null) R.drawable.ic_tool_reminder else null,
                 dimmed = fields.due == null,
+                content = {
+                    if (badge != null) {
+                        ReminderIcon(badge, sizes.toolIcon, tint = colors.onAccent, badgeColor = colors.onAccent, glyphColor = colors.accent)
+                    }
+                },
             ) { menu = ToolMenu.Reminder }
             DropdownMenu(expanded = menu == ToolMenu.Reminder, onDismissRequest = close, containerColor = colors.surface) {
                 val due = fields.due
@@ -462,7 +472,7 @@ private fun SheetToolbar(
                         modifier = Modifier.testTag(TAG_REMINDER_NEED_DAY),
                     )
                 } else {
-                    ReminderMenuItems(due, fields.reminders, onEdit, close)
+                    ReminderMenuItems(due, fields.reminders, onEdit, close, onCustom = { customReminder = true })
                 }
             }
         }
@@ -477,6 +487,19 @@ private fun SheetToolbar(
         ToolButton(R.string.quick_tool_checklist, active = checklistActive, tag = TAG_TOOL_CHECKLIST, icon = R.drawable.ic_tool_checklist, onClick = onChecklist)
         Spacer(Modifier.weight(1f))
         actions()
+    }
+    val due = fields.due
+    if (customReminder && due != null) {
+        CustomReminderDialog(
+            due = due,
+            start = fields.start,
+            zone = fields.zone,
+            onConfirm = { trigger ->
+                customReminder = false
+                if (fields.reminders.none { Reminders.sameMoment(it, trigger) }) onEdit(FieldEdit.SetReminders(fields.reminders + trigger))
+            },
+            onDismiss = { customReminder = false },
+        )
     }
     if (repeatDialog) {
         RepeatDialog(

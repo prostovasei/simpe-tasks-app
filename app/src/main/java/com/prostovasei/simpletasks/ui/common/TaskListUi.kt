@@ -38,6 +38,7 @@ fun LazyItemScope.TaskItemRow(
         listIcon = ListIcons.drawable(item.listIcon),
         isCompleting = item.isCompleting,
         isRecurring = item.isRecurring,
+        reminder = item.reminder,
         isGhost = item.isGhost,
         isOverdue = isOverdue,
         trailing = if (showDay) dueLines(item) else item.timeLines(),

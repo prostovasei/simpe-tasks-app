@@ -3,6 +3,7 @@ package com.prostovasei.simpletasks.ui.feature.task
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
@@ -10,6 +11,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
@@ -18,17 +20,19 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
@@ -39,6 +43,7 @@ import com.prostovasei.simpletasks.designsystem.components.ListSquare
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.designsystem.theme.parseListColor
 import com.prostovasei.simpletasks.domain.model.Priority
+import com.prostovasei.simpletasks.domain.model.ReminderBadge
 import com.prostovasei.simpletasks.domain.model.Reminders
 import com.prostovasei.simpletasks.domain.model.TaskDue
 import com.prostovasei.simpletasks.domain.model.allDayReminder
@@ -46,6 +51,7 @@ import com.prostovasei.simpletasks.domain.model.parseReminder
 import com.prostovasei.simpletasks.ui.common.DayLabel
 import com.prostovasei.simpletasks.ui.common.DueFormatter
 import com.prostovasei.simpletasks.ui.common.ListIcons
+import com.prostovasei.simpletasks.ui.common.ReminderIcon
 import com.prostovasei.simpletasks.ui.common.reminderText
 import com.prostovasei.simpletasks.ui.common.repeatSummary
 import java.time.LocalDate
@@ -54,16 +60,23 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-/** Пункты меню напоминаний: готовые варианты и уже заданные (с галочками); [onDone] закрывает меню. */
+/**
+ * Пункты меню напоминаний (итерация 23): у каждого — его значок, у заданных — галочка справа; заданные вручную —
+ * сверху, дальше готовые варианты и «Вручную…» ([onCustom]). [onDone] закрывает меню.
+ */
 @Composable
-fun ReminderMenuItems(due: TaskDue, reminders: List<String>, onEdit: (FieldEdit) -> Unit, onDone: () -> Unit) {
+fun ReminderMenuItems(due: TaskDue, reminders: List<String>, onEdit: (FieldEdit) -> Unit, onDone: () -> Unit, onCustom: () -> Unit) {
+    val colors = AppTheme.colors
     val allDay = due is TaskDue.AllDay
-    val options = reminders + Reminders.presets(due).filter { preset -> reminders.none { Reminders.sameMoment(it, preset) } }
+    val presets = Reminders.presets(due)
+    val custom = reminders.filter { r -> presets.none { Reminders.sameMoment(it, r) } }
+    val options = custom + presets.map { preset -> reminders.firstOrNull { Reminders.sameMoment(it, preset) } ?: preset }
     options.forEach { option ->
         val checked = option in reminders
         DropdownMenuItem(
-            text = { Text(reminderText(option, allDay), color = AppTheme.colors.textPrimary) },
-            leadingIcon = { if (checked) Icon(Icons.Default.Check, null, tint = AppTheme.colors.accent) else Spacer(Modifier.size(AppTheme.sizes.icon)) },
+            text = { Text(reminderText(option, allDay), color = colors.textPrimary) },
+            leadingIcon = { MenuReminderIcon(Reminders.badgeOf(due, option)) },
+            trailingIcon = if (checked) { { Icon(Icons.Default.Check, null, tint = colors.accent) } } else null,
             onClick = {
                 onDone()
                 onEdit(FieldEdit.SetReminders(if (checked) reminders - option else reminders + option))
@@ -71,8 +84,98 @@ fun ReminderMenuItems(due: TaskDue, reminders: List<String>, onEdit: (FieldEdit)
             modifier = Modifier.testTag("$TAG_REMINDER_OPTION:$option"),
         )
     }
+    DropdownMenuItem(
+        text = { Text(stringResource(R.string.reminder_custom), color = colors.textPrimary) },
+        leadingIcon = { MenuReminderIcon(ReminderBadge.Custom) },
+        onClick = { onDone(); onCustom() },
+        modifier = Modifier.testTag(TAG_REMINDER_CUSTOM),
+    )
     if (reminders.isNotEmpty()) MenuItem(R.string.reminder_none) { onDone(); onEdit(FieldEdit.SetReminders(emptyList())) }
 }
+
+@Composable
+private fun MenuReminderIcon(badge: ReminderBadge) {
+    val colors = AppTheme.colors
+    ReminderIcon(badge, AppTheme.sizes.icon, tint = colors.textSecondary, badgeColor = colors.reminderBadge, glyphColor = colors.textSecondary)
+}
+
+/**
+ * Своё напоминание (итерация 23). У задачи со временем — за сколько дней, часов и минут до срока; у задачи
+ * на весь день — за сколько дней и во сколько. Снизу — когда именно сработает.
+ */
+@Composable
+fun CustomReminderDialog(due: TaskDue, start: TaskDue?, zone: ZoneId, onConfirm: (String) -> Unit, onDismiss: () -> Unit) {
+    val colors = AppTheme.colors
+    val allDay = due is TaskDue.AllDay
+    var days by remember { mutableIntStateOf(if (allDay) 1 else 0) }
+    var hours by remember { mutableIntStateOf(if (allDay) CUSTOM_ALL_DAY_HOUR else CUSTOM_TIMED_HOURS) }
+    var minutes by remember { mutableIntStateOf(0) }
+    val trigger = if (allDay) {
+        Reminders.allDay(days, hours * MINUTES_PER_HOUR + minutes)
+    } else {
+        Reminders.timed((days * HOURS_PER_DAY + hours) * MINUTES_PER_HOUR.toLong() + minutes)
+    }
+    val fires = Reminders.instant(due, start, trigger, zone)?.atZone(zone)?.let { FIRES_FORMAT.format(it) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = colors.surface,
+        title = { Text(stringResource(R.string.reminder_custom_title), color = colors.textPrimary) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.xs)) {
+                Stepper(stringResource(if (allDay) R.string.reminder_custom_days_before else R.string.reminder_custom_days), days, 0, CUSTOM_MAX_DAYS, 1, TAG_CUSTOM_DAYS) { days = it }
+                Stepper(stringResource(if (allDay) R.string.reminder_custom_hour else R.string.reminder_custom_hours), hours, 0, HOURS_PER_DAY - 1, 1, TAG_CUSTOM_HOURS) { hours = it }
+                Stepper(stringResource(if (allDay) R.string.reminder_custom_minute else R.string.reminder_custom_minutes), minutes, 0, MINUTES_PER_HOUR - CUSTOM_MINUTE_STEP, CUSTOM_MINUTE_STEP, TAG_CUSTOM_MINUTES) { minutes = it }
+                fires?.let {
+                    Text(
+                        stringResource(R.string.reminder_custom_fires, it),
+                        color = colors.textSecondary,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.testTag(TAG_CUSTOM_FIRES),
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(trigger) }, modifier = Modifier.testTag(TAG_CUSTOM_ADD)) {
+                Text(stringResource(R.string.reminder_custom_add), color = colors.accent)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel), color = colors.textSecondary) }
+        },
+    )
+}
+
+/** Строка «Часов   −  2  +». */
+@Composable
+private fun Stepper(label: String, value: Int, min: Int, max: Int, step: Int, tag: String, onChange: (Int) -> Unit) {
+    val colors = AppTheme.colors
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(label, color = colors.textPrimary, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+        TextButton(onClick = { onChange((value - step).coerceAtLeast(min)) }, enabled = value > min, modifier = Modifier.testTag("$tag:minus")) {
+            Text(STEP_MINUS, style = MaterialTheme.typography.titleLarge)
+        }
+        Text(
+            "%02d".format(value),
+            color = colors.textPrimary,
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.testTag(tag),
+        )
+        TextButton(onClick = { onChange((value + step).coerceAtMost(max)) }, enabled = value < max, modifier = Modifier.testTag("$tag:plus")) {
+            Text(STEP_PLUS, style = MaterialTheme.typography.titleLarge)
+        }
+    }
+}
+
+private const val CUSTOM_MAX_DAYS = 30
+private const val CUSTOM_TIMED_HOURS = 2
+private const val CUSTOM_ALL_DAY_HOUR = 9
+private const val CUSTOM_MINUTE_STEP = 5
+private const val MINUTES_PER_HOUR = 60
+private const val HOURS_PER_DAY = 24
+private const val STEP_MINUS = "−"
+private const val STEP_PLUS = "+"
+private val FIRES_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("EEE, d MMM, HH:mm", Locale.forLanguageTag("ru"))
 
 /** Пункты меню списков: квадратик цвета со значком, у выбранного — галочка. */
 @Composable
@@ -147,5 +250,11 @@ internal fun dayLabelText(day: DayLabel): String = when (day) {
 }
 
 const val TAG_REMINDER_OPTION = "reminder_option"
+const val TAG_REMINDER_CUSTOM = "reminder_custom"
+const val TAG_CUSTOM_DAYS = "custom_days"
+const val TAG_CUSTOM_HOURS = "custom_hours"
+const val TAG_CUSTOM_MINUTES = "custom_minutes"
+const val TAG_CUSTOM_FIRES = "custom_fires"
+const val TAG_CUSTOM_ADD = "custom_add"
 const val TAG_PROJECT_OPTION = "project_option"
 const val TAG_PRIORITY_OPTION = "priority_option"

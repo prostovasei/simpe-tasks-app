@@ -2,6 +2,8 @@ package com.prostovasei.simpletasks.ui.common
 
 import com.prostovasei.simpletasks.domain.model.Priority
 import com.prostovasei.simpletasks.domain.model.Project
+import com.prostovasei.simpletasks.domain.model.ReminderBadge
+import com.prostovasei.simpletasks.domain.model.Reminders
 import com.prostovasei.simpletasks.domain.model.Task
 import com.prostovasei.simpletasks.domain.model.TaskDue
 import com.prostovasei.simpletasks.domain.model.upcomingRepeats
@@ -26,8 +28,8 @@ data class TaskItem(
     val ghostOf: String? = null,
     /** Значок списка — ключ из [ListIcons] (у «Входящих» свой). */
     val listIcon: String? = null,
-    /** Есть напоминания — в виджете значок будильника (итерация 20). */
-    val hasReminders: Boolean = false,
+    /** Значок напоминаний (итерация 23): колокольчик со значком вида; null — напоминаний нет. */
+    val reminder: ReminderBadge? = null,
 ) {
     val isGhost: Boolean get() = ghostOf != null
 
@@ -49,7 +51,7 @@ fun Task.toItem(projects: Map<String, Project>, today: LocalDate, zone: ZoneId, 
         isRecurring = rrule != null && due != null,
         ghostOf = id.takeIf { ghostIndex != null },
         listIcon = if (project?.isInbox == true) ListIcons.INBOX else project?.icon,
-        hasReminders = reminders.isNotEmpty() && due != null,
+        reminder = Reminders.badge(due, reminders),
     )
 }
 

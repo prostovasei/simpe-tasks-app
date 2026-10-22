@@ -50,6 +50,9 @@ object SizeTokens {
     const val PROGRESS_HEIGHT = 6
     const val LIST_DOT = 10
     const val META_ICON = 14
+
+    /** Колокольчик напоминаний со значком в строке задачи (итерация 23). */
+    const val REMINDER_ICON = 18
     const val PICKER_MAX_HEIGHT = 440
 
     /** Нижняя строка виджета: список, дата и «+». */
@@ -90,6 +93,9 @@ object SizeTokens {
     const val WIDGET_PERIOD_STUB = 6
     const val WIDGET_NOW_DOT = 7
     const val WIDGET_META_ICON = 16
+
+    /** Колокольчик напоминаний со значком в плашке виджета (итерация 23). */
+    const val WIDGET_REMINDER_ICON = 20
 
     /** Щель между плашками — внутри строки (по 3 dp сверху и снизу), чтобы линия шкалы не рвалась. */
     const val WIDGET_CARD_INSET = 3

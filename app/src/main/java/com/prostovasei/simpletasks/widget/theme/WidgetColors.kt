@@ -23,6 +23,7 @@ object WidgetColors {
     val onAccent = ColorTokens.onAccent.toProvider()
     val overdue = ColorTokens.overdue.toProvider()
     val divider = ColorTokens.divider.toProvider()
+    val reminderBadge = ColorTokens.reminderBadge.toProvider()
     val inactive = ColorTokens.inactive.toProvider()
     val inboxList = ColorTokens.inboxList.toProvider()
     val onListSquare = ColorTokens.onListSquare.toProvider()
