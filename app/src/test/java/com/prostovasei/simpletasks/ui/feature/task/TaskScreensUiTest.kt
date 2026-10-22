@@ -123,7 +123,6 @@ class TaskScreensUiTest {
 
         // Нажали на «послезавтра» — таймлайн на 3 дня: завтра, послезавтра (в центре), день после.
         composeRule.onNodeWithTag("$TAG_DAY_TILE:${today.plusDays(2)}").performClick()
-        composeRule.onNodeWithTag(TAG_QUICK_WHEN).assertTextEquals("Сегодня, весь день")
         composeRule.onNodeWithTag(TAG_WEEK_GRID).assertExists()
         composeRule.onNodeWithTag(TAG_TOOL_REPEAT).assertDoesNotExist()
         composeRule.onNodeWithTag("$TAG_GRID_DAY:${today.plusDays(2)}").performClick()
@@ -138,8 +137,8 @@ class TaskScreensUiTest {
             intents.filterNot { it is QuickAddIntent.Grid && it.action is GridAction.FirstDay },
         )
 
-        // «Назад к задаче» — снова строка недели, занятость — с сегодняшнего дня.
-        composeRule.onNodeWithTag(TAG_TIMELINE_BACK).performClick()
+        // Галочка — снова шторка, занятость — с сегодняшнего дня.
+        composeRule.onNodeWithTag(TAG_TIMELINE_DONE).performClick()
         composeRule.onNodeWithTag(TAG_WEEK_GRID).assertDoesNotExist()
         composeRule.onNodeWithTag(TAG_TOOL_REPEAT).assertExists()
         assertEquals(QuickAddIntent.Grid(GridAction.FirstDay(today)), intents.last())
@@ -175,11 +174,9 @@ class TaskScreensUiTest {
     fun timelineButtons() {
         show { QuickAddScreen(quickState, { intents += it }, {}, autoFocus = false) }
         composeRule.onNodeWithTag("$TAG_DAY_TILE:${today.plusDays(1)}").performClick()
-        // Крестик на блоке — убрать время; «Позже» — следующие 3 дня.
+        // Крестик на блоке — убрать время; стрелок и подписи сверху нет.
         composeRule.onNodeWithTag(TAG_GRID_CLEAR, useUnmergedTree = true).performClick()
-        composeRule.onNodeWithTag(TAG_TIMELINE_LATER).performClick()
-        composeRule.waitForIdle()
-        composeRule.onNodeWithTag("$TAG_GRID_DAY:${today.plusDays(3)}").assertExists()
+        composeRule.onNodeWithTag(TAG_TIMELINE_NO_DATE).assertExists()
         // «Без времени» — оставить только день и вернуться к задаче.
         composeRule.onNodeWithTag(TAG_TIMELINE_NO_TIME).performClick()
         composeRule.onNodeWithTag(TAG_WEEK_GRID).assertDoesNotExist()
@@ -194,7 +191,6 @@ class TaskScreensUiTest {
         show { QuickAddScreen(quickState.copy(start = TaskDue.AtTime(Instant.parse("2026-10-15T10:00:00Z")), due = TaskDue.AtTime(Instant.parse("2026-10-15T11:30:00Z"))), { intents += it }, {}, autoFocus = false) }
         // Таймлайн с завтрашним днём в центре: сегодня, завтра, послезавтра (колонка ≈ 125 dp).
         composeRule.onNodeWithTag("$TAG_DAY_TILE:${today.plusDays(1)}").performClick()
-        composeRule.onNodeWithTag(TAG_QUICK_WHEN).assertTextEquals("Завтра, 10:00–11:30")
         composeRule.onNodeWithText("10:00\n11:30", useUnmergedTree = true).assertExists()
 
         // Ручка: вниз на час (44dp) — +60 минут.

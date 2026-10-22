@@ -5,7 +5,6 @@ import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.FastOutLinearInEasing
-import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -39,9 +38,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -49,8 +45,6 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
@@ -73,7 +67,6 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -86,7 +79,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.window.DialogWindowProvider
@@ -96,7 +88,6 @@ import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.designsystem.theme.parseListColor
 import com.prostovasei.simpletasks.domain.model.Priority
 import com.prostovasei.simpletasks.domain.model.Reminders
-import com.prostovasei.simpletasks.ui.common.DueFormatter
 import com.prostovasei.simpletasks.ui.common.ListIcons
 import com.prostovasei.simpletasks.ui.common.ReminderIcon
 import java.time.Instant
@@ -272,22 +263,9 @@ private fun DateDialog(initial: LocalDate, onPick: (LocalDate) -> Unit, onDismis
     }
 }
 
-/** Строка «когда» зелёным (серым — «Без даты»). */
-@Composable
-private fun WhenLabel(fields: SheetFields, modifier: Modifier) {
-    val colors = AppTheme.colors
-    Text(
-        whenText(fields),
-        style = MaterialTheme.typography.labelMedium,
-        fontWeight = FontWeight.Bold,
-        color = if (fields.due == null) colors.textSecondary else colors.accent,
-        modifier = modifier.testTag(TAG_QUICK_WHEN),
-    )
-}
-
 /**
- * Таймлайн на 3 дня (итерация 21, макет PM N2): сверху «к задаче», выбранное время и «Готово»; сетка с нажатым днём
- * в центре; снизу «Раньше» / «Позже» — на 3 дня и «Без времени» — только день.
+ * Таймлайн на 3 дня (итерация 21, макет PM N2; 0.23.1 — макет «А»): сетка с нажатым днём в центре, листается свайпом;
+ * снизу иконки «Без даты» и «Без времени» (только день) и зелёная галочка «Готово».
  */
 @Composable
 private fun Timeline(
@@ -298,29 +276,9 @@ private fun Timeline(
     onBack: () -> Unit,
     modifier: Modifier,
 ) {
-    val colors = AppTheme.colors
     val spacing = AppTheme.spacing
-    val scope = rememberCoroutineScope()
     val scroll = remember(day) { GridScroll(WeekGridMath.timelineScroll(fields.today, day)) }
-    val page = { days: Int ->
-        scope.launch {
-            val limit = WeekGridMath.MAX_DAYS_AWAY.toFloat()
-            animate(scroll.days, (scroll.days + days).coerceIn(-limit, limit)) { value, _ -> scroll.days = value }
-        }
-        Unit
-    }
-    Column(modifier.fillMaxWidth()) {
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = spacing.xs, vertical = spacing.xxs),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(spacing.xs),
-        ) {
-            IconButton(onClick = onBack, modifier = Modifier.testTag(TAG_TIMELINE_BACK)) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.timeline_back), tint = colors.textPrimary)
-            }
-            WhenLabel(fields, Modifier.weight(1f))
-            SheetConfirmButton(R.string.sheet_done, enabled = true, tag = TAG_TIMELINE_DONE, onClick = onBack)
-        }
+    Column(modifier.fillMaxWidth().padding(top = spacing.xs)) {
         WeekGrid(
             scroll = scroll,
             today = fields.today,
@@ -344,13 +302,11 @@ private fun Timeline(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(spacing.xs),
         ) {
-            ArrowButton(Icons.AutoMirrored.Filled.KeyboardArrowLeft, R.string.timeline_earlier, TAG_TIMELINE_EARLIER) { page(-WeekGridMath.TIMELINE_DAYS) }
-            Spacer(Modifier.weight(1f))
-            TimelineButton(R.string.quick_when_none, TAG_TIMELINE_NO_DATE) {
+            ToolButton(R.string.quick_when_none, active = false, tag = TAG_TIMELINE_NO_DATE, icon = R.drawable.ic_no_date) {
                 onGrid(GridAction.ClearDate)
                 onBack()
             }
-            TimelineButton(R.string.strip_no_time, TAG_TIMELINE_NO_TIME) {
+            ToolButton(R.string.strip_no_time, active = false, tag = TAG_TIMELINE_NO_TIME, icon = R.drawable.ic_no_time) {
                 // Только день — тот, по которому открыт таймлайн; если он уже выбран — просто убрать время.
                 when {
                     fields.selectedDate != day -> onGrid(GridAction.DayTap(day))
@@ -359,52 +315,9 @@ private fun Timeline(
                 onBack()
             }
             Spacer(Modifier.weight(1f))
-            ArrowButton(Icons.AutoMirrored.Filled.KeyboardArrowRight, R.string.timeline_later, TAG_TIMELINE_LATER) { page(WeekGridMath.TIMELINE_DAYS) }
+            SheetConfirmButton(R.string.sheet_done, enabled = true, tag = TAG_TIMELINE_DONE, onClick = onBack)
         }
     }
-}
-
-@Composable
-private fun ArrowButton(icon: ImageVector, label: Int, tag: String, onClick: () -> Unit) {
-    val colors = AppTheme.colors
-    val description = stringResource(label)
-    Box(
-        Modifier
-            .size(AppTheme.sizes.toolButton)
-            .clip(AppTheme.shapes.medium)
-            .background(colors.background)
-            .clickable(role = Role.Button, onClick = onClick)
-            .semantics { contentDescription = description }
-            .testTag(tag),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(icon, null, tint = colors.textPrimary)
-    }
-}
-
-@Composable
-private fun TimelineButton(label: Int, tag: String, onClick: () -> Unit) {
-    val colors = AppTheme.colors
-    Text(
-        stringResource(label),
-        style = MaterialTheme.typography.labelMedium,
-        fontWeight = FontWeight.Bold,
-        color = colors.textPrimary,
-        modifier = Modifier
-            .clip(AppTheme.shapes.medium)
-            .background(colors.background)
-            .clickable(role = Role.Button, onClick = onClick)
-            .padding(horizontal = AppTheme.spacing.sm, vertical = AppTheme.spacing.xs)
-            .testTag(tag),
-    )
-}
-
-/** Строка «когда»: «Без даты», «Сегодня, весь день», «Завтра, 16:00» или «Завтра, 16:00–17:30». */
-@Composable
-private fun whenText(fields: SheetFields): String {
-    val text = DueFormatter.format(fields.due, fields.start, fields.today, fields.zone) ?: return stringResource(R.string.quick_when_none)
-    val time = text.time ?: return stringResource(R.string.quick_when_all_day, dayLabelText(text.day))
-    return stringResource(R.string.quick_when_time, dayLabelText(text.day), time)
 }
 
 /** Нижняя панель шторки: квадратные кнопки свойств слева, [actions] справа. */
@@ -613,17 +526,13 @@ private const val DIMMED_ALPHA = 0.45f
 
 const val TAG_QUICK_CARD = "quick_card"
 const val TAG_QUICK_SCRIM = "quick_scrim"
-const val TAG_QUICK_WHEN = "quick_when"
 const val TAG_TOOL_LIST = "tool_list"
 const val TAG_TOOL_REPEAT = "tool_repeat"
 const val TAG_TOOL_REMINDER = "tool_reminder"
 const val TAG_TOOL_PRIORITY = "tool_priority"
 const val TAG_TOOL_CHECKLIST = "tool_checklist"
 const val TAG_REMINDER_NEED_DAY = "reminder_need_day"
-const val TAG_TIMELINE_BACK = "timeline_back"
 const val TAG_TIMELINE_DONE = "timeline_done"
-const val TAG_TIMELINE_EARLIER = "timeline_earlier"
-const val TAG_TIMELINE_LATER = "timeline_later"
 const val TAG_TIMELINE_NO_TIME = "timeline_no_time"
 const val TAG_TIMELINE_NO_DATE = "timeline_no_date"
 const val TAG_DATE_DIALOG_OK = "date_dialog_ok"
