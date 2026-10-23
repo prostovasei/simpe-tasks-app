@@ -33,7 +33,7 @@ class WidgetRendererTest {
         val id = manager.createWidget(TasksWidgetReceiver::class.java, androidx.glance.appwidget.R.layout.glance_default_loading_layout)
         WidgetRenderer.render(context, id, "тест")
         val view = manager.getViewFor(id)
-        listOf("Все", "Входящие", "Другие списки", "Открыть приложение", "Новая задача").forEach {
+        listOf("Все", "Входящие", "Открыть приложение", "Новая задача").forEach {
             assertTrue(it, view.hasDescription(it))
         }
         assertTrue(WidgetLog.read(context).contains("отрисовка $id: all"))

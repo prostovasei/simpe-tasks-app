@@ -55,17 +55,21 @@ object SizeTokens {
     const val REMINDER_ICON = 18
     const val PICKER_MAX_HEIGHT = 440
 
-    /** Нижняя строка виджета: список, дата и «+». */
-    const val WIDGET_BAR = 40
+    /**
+     * Нижняя панель виджета (итерация 25, вариант PM «А + Г»): высота перехода от прозрачного к фону, строка кнопок,
+     * кнопка переключателя «Все» / «Входящие» и поле капсулы.
+     */
+    const val WIDGET_FADE = 104
+    const val WIDGET_BAR = 58
+    const val WIDGET_SWITCH_W = 46
+    const val WIDGET_SWITCH_H = 42
+    const val WIDGET_SWITCH_PAD = 4
 
     /** Кнопка «+» в нижней строке виджета. */
-    const val WIDGET_ADD = 30
-    const val WIDGET_ADD_ICON = 20
-
-    /** Вкладка списка внизу виджета: ширина, иконка и точка выбранной. */
-    const val WIDGET_TAB = 28
-    const val WIDGET_TAB_ICON = 20
-    const val WIDGET_TAB_DOT = 4
+    const val WIDGET_ADD = 46
+    const val WIDGET_ADD_ICON = 24
+    /** Иконки «Все» и «Входящие» в переключателе. */
+    const val WIDGET_TAB_ICON = 26
 
     /** Поля строки задачи внутри её плашки в виджете. */
     const val WIDGET_ROW_GAP = 4
@@ -92,10 +96,14 @@ object SizeTokens {
     const val WIDGET_NODE = 14
     const val WIDGET_PERIOD_STUB = 6
     const val WIDGET_NOW_DOT = 7
-    const val WIDGET_META_ICON = 16
+    const val WIDGET_META_ICON = 18
 
     /** Колокольчик напоминаний со значком в плашке виджета (итерация 23). */
-    const val WIDGET_REMINDER_ICON = 20
+    const val WIDGET_REMINDER_ICON = 22
+
+    /** Квадратик списка в плашке виджета и значок в нём (итерация 25 — крупнее, чем в приложении). */
+    const val WIDGET_LIST_SQUARE = 18
+    const val WIDGET_LIST_GLYPH = 14
 
     /** Щель между плашками — внутри строки (по 3 dp сверху и снизу), чтобы линия шкалы не рвалась. */
     const val WIDGET_CARD_INSET = 3

@@ -36,6 +36,8 @@ import androidx.glance.layout.height
 import androidx.glance.layout.padding
 import androidx.glance.layout.size
 import androidx.glance.layout.width
+import androidx.glance.semantics.contentDescription
+import androidx.glance.semantics.semantics
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextAlign
@@ -72,17 +74,19 @@ import kotlin.math.roundToInt
 @Composable
 fun WidgetContent(model: WidgetModel, appWidgetId: Int, scrollable: Boolean = true, liveClock: Boolean = true) {
     val context = LocalContext.current
-    Column(
+    // Итерация 25: список идёт до самого низа, нижняя панель лежит поверх — сверху прозрачная, книзу цвета фона.
+    Box(
         modifier = GlanceModifier
             .fillMaxSize()
             .background(WidgetColors.background)
             .cornerRadius(RadiusTokens.XL.dp),
+        contentAlignment = Alignment.BottomCenter,
     ) {
         // Список доходит до самого правого края виджета: полоска прокрутки лежит у края, а не на плашках;
         // правое поле плашек — у них самих (DayBlock). Слева поле минимальное: время прижато к краю (итерация 20).
-        Box(GlanceModifier.fillMaxWidth().defaultWeight().padding(start = SizeTokens.WIDGET_LIST_EDGE.dp, top = SizeTokens.WIDGET_EDGE.dp)) {
+        Box(GlanceModifier.fillMaxSize().padding(start = SizeTokens.WIDGET_LIST_EDGE.dp, top = SizeTokens.WIDGET_EDGE.dp)) {
             if (model.isEmpty) {
-                Box(GlanceModifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Box(GlanceModifier.fillMaxSize().padding(bottom = SizeTokens.WIDGET_FADE.dp), contentAlignment = Alignment.Center) {
                     Text(context.getString(R.string.widget_empty), style = TextStyle(color = WidgetColors.textSecondary, fontSize = 14.sp))
                 }
             } else {
@@ -90,16 +94,24 @@ fun WidgetContent(model: WidgetModel, appWidgetId: Int, scrollable: Boolean = tr
                 val blocks = model.days.filter { it.items.isNotEmpty() }
                 @Composable
                 fun Block(block: WidgetDayBlock) = DayBlock(block, isFirst = block == blocks.first(), model, days, liveClock)
+                // Место под панелью в конце списка: последние задачи можно докрутить выше неё.
+                val tail = @Composable { Spacer(GlanceModifier.fillMaxWidth().height(SizeTokens.WIDGET_FADE.dp)) }
                 if (scrollable) {
-                    LazyColumn(GlanceModifier.fillMaxSize()) { items(blocks, itemId = { it.day.id }) { Block(it) } }
+                    LazyColumn(GlanceModifier.fillMaxSize()) {
+                        items(blocks, itemId = { it.day.id }) { Block(it) }
+                        item(itemId = TAIL_ID) { tail() }
+                    }
                 } else {
                     Column(GlanceModifier.fillMaxSize()) { blocks.forEach { Block(it) } }
                 }
             }
         }
+        Box(GlanceModifier.fillMaxWidth().height(SizeTokens.WIDGET_FADE.dp).background(ImageProvider(R.drawable.widget_bar_fade))) {}
         BottomBar(model, appWidgetId)
     }
 }
+
+private const val TAIL_ID = Long.MIN_VALUE
 
 private val WidgetDay.id: Long
     get() = when (this) {
@@ -161,7 +173,8 @@ internal const val MAX_CHILDREN = 10
 private fun DayTitle(day: WidgetDay, today: LocalDate, isFirst: Boolean) {
     val title = widgetDayTitle(LocalContext.current, day, today)
     val color = if (day == WidgetDay.Overdue) WidgetColors.overdue else WidgetColors.textPrimary
-    val style = TextStyle(color = color, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+    // Итерация 25 (вариант PM «А»): дата группы крупнее — 14 sp, метка «Сегодня» — 12 sp.
+    val style = TextStyle(color = color, fontSize = 14.sp, fontWeight = FontWeight.Bold)
     Row(
         modifier = GlanceModifier.fillMaxWidth().padding(
             start = SizeTokens.WIDGET_EDGE.dp,
@@ -179,7 +192,7 @@ private fun DayTitle(day: WidgetDay, today: LocalDate, isFirst: Boolean) {
                     .cornerRadius(RadiusTokens.SM.dp)
                     .padding(horizontal = SpacingTokens.XXS.dp, vertical = SizeTokens.HAIRLINE.dp),
             ) {
-                Text(title.relative, style = style.copy(fontSize = 11.sp), maxLines = 1)
+                Text(title.relative, style = style.copy(fontSize = 12.sp), maxLines = 1)
             }
         }
     }
@@ -228,7 +241,7 @@ private fun TimelineRow(row: WidgetRow.Task, line: Line, overdue: Boolean, filte
             ) {
                 Text(
                     item.title,
-                    style = TextStyle(color = textColor, fontSize = 14.sp, fontWeight = FontWeight.Medium),
+                    style = TextStyle(color = textColor, fontSize = 14.sp, fontWeight = FontWeight.Bold),
                     maxLines = 1,
                     modifier = GlanceModifier.defaultWeight(),
                 )
@@ -387,7 +400,7 @@ private fun MaskImage(mask: Bitmap, color: ColorProvider, size: Int) {
 private fun ListSquare(item: TaskItem) {
     val color = if (item.isInboxList) WidgetColors.inboxList else parseListColor(item.listColor)?.let { ColorProvider(it) } ?: WidgetColors.inactive
     Box(
-        modifier = GlanceModifier.size(SizeTokens.LIST_SQUARE.dp).background(color).cornerRadius(RadiusTokens.SM.dp),
+        modifier = GlanceModifier.size(SizeTokens.WIDGET_LIST_SQUARE.dp).background(color).cornerRadius(RadiusTokens.SM.dp),
         contentAlignment = Alignment.Center,
     ) {
         ListIcons.drawable(item.listIcon)?.let { icon ->
@@ -395,7 +408,7 @@ private fun ListSquare(item: TaskItem) {
                 ImageProvider(icon),
                 contentDescription = null,
                 colorFilter = ColorFilter.tint(WidgetColors.onListSquare),
-                modifier = GlanceModifier.size(SizeTokens.LIST_GLYPH.dp),
+                modifier = GlanceModifier.size(SizeTokens.WIDGET_LIST_GLYPH.dp),
             )
         }
     }
@@ -409,8 +422,8 @@ fun widgetCheckColors(priority: Priority): WidgetCheckColors = when (priority) {
 }
 
 /**
- * Нижняя строка (решение PM, итерация 09): слева вкладки списков — нажатие сразу переключает виджет, «⋯» открывает
- * окошко со всеми списками; в центре — открыть приложение; справа «пт, 16 окт» и «+».
+ * Нижняя строка (итерация 25, вариант PM «Г»): слева белая капсула-переключатель «Все» / «Входящие» (выбранный
+ * залит зелёным), справа «+»; всё место между ними — открыть приложение. Дата и «⋯» убраны.
  */
 @Composable
 private fun BottomBar(model: WidgetModel, appWidgetId: Int) {
@@ -419,48 +432,27 @@ private fun BottomBar(model: WidgetModel, appWidgetId: Int) {
         modifier = GlanceModifier.fillMaxWidth().height(SizeTokens.WIDGET_BAR.dp).padding(horizontal = SizeTokens.WIDGET_EDGE.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // Вкладки — отдельной группой: в Row виджета не больше 10 элементов (иначе «+» пропадает).
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            model.tabs.forEach { tab ->
-                ListTab(
-                    icon = when (tab.filter) {
-                        WidgetFilter.All -> R.drawable.ic_widget_all
-                        WidgetFilter.Inbox -> R.drawable.ic_widget_inbox
-                        is WidgetFilter.ProjectList -> R.drawable.ic_widget_list
-                    },
-                    label = tab.name ?: context.getString(if (tab.filter == WidgetFilter.Inbox) R.string.inbox_list_name else R.string.widget_all),
-                    tint = tab.color?.let { parseListColor(it) }?.let { ColorProvider(it) },
-                    selected = tab.filter == model.filter,
-                    action = actionSendBroadcast(WidgetActions.switch(context, appWidgetId, tab.filter)),
+        Row(
+            modifier = GlanceModifier.background(WidgetColors.surface).cornerRadius(RadiusTokens.LG.dp).padding(SizeTokens.WIDGET_SWITCH_PAD.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            listOf(WidgetFilter.All, WidgetFilter.Inbox).forEach { filter ->
+                SwitchTab(
+                    icon = if (filter == WidgetFilter.All) R.drawable.ic_widget_all else R.drawable.ic_widget_inbox,
+                    label = context.getString(if (filter == WidgetFilter.Inbox) R.string.inbox_list_name else R.string.widget_all),
+                    selected = filter == model.filter,
+                    action = actionSendBroadcast(WidgetActions.switch(context, appWidgetId, filter)),
                 )
             }
-            ListTab(
-                icon = R.drawable.ic_widget_more,
-                label = context.getString(R.string.widget_pick_list),
-                tint = null,
-                selected = false,
-                action = actionStartActivity(pickerIntent(context, appWidgetId)),
-            )
         }
-        Spacer(GlanceModifier.defaultWeight())
+        val openApp = context.getString(R.string.widget_open_app)
         Box(
             modifier = GlanceModifier
-                .size(SizeTokens.WIDGET_ADD.dp)
-                .background(WidgetColors.surface)
-                .cornerRadius(RadiusTokens.MD.dp)
-                .clickable(actionStartActivity(openAppIntent(context))),
-            contentAlignment = Alignment.Center,
-        ) {
-            Image(
-                ImageProvider(R.drawable.ic_widget_app),
-                contentDescription = context.getString(R.string.widget_open_app),
-                colorFilter = ColorFilter.tint(WidgetColors.accent),
-                modifier = GlanceModifier.size(SizeTokens.WIDGET_ADD_ICON.dp),
-            )
-        }
-        Spacer(GlanceModifier.defaultWeight())
-        Text(WidgetDates.withWeekday(model.today), style = TextStyle(color = WidgetColors.textSecondary, fontSize = 13.sp), maxLines = 1)
-        Spacer(GlanceModifier.width(SpacingTokens.XS.dp))
+                .defaultWeight()
+                .fillMaxHeight()
+                .clickable(actionStartActivity(openAppIntent(context)))
+                .semantics { contentDescription = openApp },
+        ) {}
         Box(
             modifier = GlanceModifier
                 .size(SizeTokens.WIDGET_ADD.dp)
@@ -479,31 +471,24 @@ private fun BottomBar(model: WidgetModel, appWidgetId: Int) {
     }
 }
 
-/** Вкладка: иконка (у своего списка — его цветом), у выбранной — синяя с точкой снизу. */
+/** Кнопка переключателя: выбранная залита зелёным с белой иконкой, другая — серая иконка на белом. */
 @Composable
-private fun ListTab(icon: Int, label: String, tint: ColorProvider?, selected: Boolean, action: Action) {
-    Column(
-        modifier = GlanceModifier.width(SizeTokens.WIDGET_TAB.dp).height(SizeTokens.WIDGET_BAR.dp).clickable(action),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalAlignment = Alignment.CenterVertically,
+private fun SwitchTab(icon: Int, label: String, selected: Boolean, action: Action) {
+    Box(
+        modifier = GlanceModifier
+            .width(SizeTokens.WIDGET_SWITCH_W.dp)
+            .height(SizeTokens.WIDGET_SWITCH_H.dp)
+            .background(if (selected) WidgetColors.accent else WidgetColors.surface)
+            .cornerRadius(RadiusTokens.MD.dp)
+            .clickable(action),
+        contentAlignment = Alignment.Center,
     ) {
         Image(
             ImageProvider(icon),
             contentDescription = label,
-            colorFilter = ColorFilter.tint(if (selected) WidgetColors.accent else tint ?: WidgetColors.textSecondary),
+            colorFilter = ColorFilter.tint(if (selected) WidgetColors.onAccent else WidgetColors.textSecondary),
             modifier = GlanceModifier.size(SizeTokens.WIDGET_TAB_ICON.dp),
         )
-        Spacer(GlanceModifier.height(SizeTokens.WIDGET_TAB_DOT.dp))
-        if (selected) {
-            Image(
-                ImageProvider(R.drawable.ic_widget_dot),
-                contentDescription = null,
-                colorFilter = ColorFilter.tint(WidgetColors.accent),
-                modifier = GlanceModifier.size(SizeTokens.WIDGET_TAB_DOT.dp),
-            )
-        } else {
-            Spacer(GlanceModifier.size(SizeTokens.WIDGET_TAB_DOT.dp))
-        }
     }
 }
 
