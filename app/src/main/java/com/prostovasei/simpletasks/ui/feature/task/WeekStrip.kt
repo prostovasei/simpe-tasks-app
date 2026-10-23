@@ -1,6 +1,7 @@
 package com.prostovasei.simpletasks.ui.feature.task
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -108,7 +109,8 @@ private fun CalendarTile(tile: Dp, onClick: () -> Unit) {
         Modifier
             .size(tile)
             .clip(AppTheme.shapes.large)
-            .background(colors.background)
+            .background(colors.surface)
+            .border(AppTheme.sizes.hairline, colors.divider, AppTheme.shapes.large)
             .clickable(role = Role.Button, onClick = onClick)
             .semantics { contentDescription = label }
             .testTag(TAG_DAY_CALENDAR),
@@ -142,14 +144,16 @@ private fun DayTile(
 @Composable
 private fun DayTileBody(date: LocalDate, time: List<String>, selected: Boolean, tile: Dp, text: TileText, onClick: () -> Unit) {
     val colors = AppTheme.colors
-    val main = if (selected) colors.onAccent else colors.textPrimary
-    val minor = if (selected) colors.onAccent.copy(alpha = MINOR_ON_ACCENT) else colors.textSecondary
+    // Итерация 26: невыбранные — белые с тонкой рамкой, выбранный — светло-зелёный с зелёным текстом.
+    val main = if (selected) colors.accent else colors.textPrimary
+    val minor = if (selected) colors.accent.copy(alpha = MINOR_ON_ACCENT) else colors.textSecondary
     val big = text.day.copy(color = main)
     Row(
         Modifier
             .size(tile)
             .clip(AppTheme.shapes.large)
-            .background(if (selected) colors.accent else colors.background)
+            .background(if (selected) colors.selected else colors.surface)
+            .border(AppTheme.sizes.hairline, if (selected) colors.selected else colors.divider, AppTheme.shapes.large)
             .clickable(role = Role.Button, onClick = onClick)
             .semantics { this.selected = selected }
             .padding(start = AppTheme.spacing.xs, end = AppTheme.spacing.xs, top = tile * TOP_PAD)

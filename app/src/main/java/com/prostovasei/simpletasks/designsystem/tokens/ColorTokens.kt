@@ -11,8 +11,8 @@ data class PriorityColorTokens(val container: ThemedColor, val content: ThemedCo
 
 /** Базовая палитра приложения. Единственный источник цветов (см. docs/ARCHITECTURE.md §1.5). */
 object ColorTokens {
-    /** Светло-зелёный фон экранов и виджета (итерация 13, макет PM). */
-    val background = ThemedColor(light = 0xFFEDF5EF, dark = 0xFF0E1511)
+    /** Фон экранов и виджета: почти белый (итерация 26, вариант PM «В»; до этого — светло-зелёный). */
+    val background = ThemedColor(light = 0xFFF6F7F6, dark = 0xFF0E1511)
 
     /** Белые плашки задач, меню, окна и нижняя панель поверх фона. */
     val surface = ThemedColor(light = 0xFFFFFFFF, dark = 0xFF1A231E)
@@ -37,6 +37,12 @@ object ColorTokens {
 
     /** Серая подложка значка на колокольчике напоминаний (решение PM, итерация 23). */
     val reminderBadge = ThemedColor(light = 0xFFDDE1E6, dark = 0xFF3A4540)
+
+    /**
+     * Мягкая подсветка выбранного (итерация 26, вариант PM «А»): выбранные плитки дней, кнопки шторки
+     * и переключатель виджета — светло-зелёные с зелёной иконкой вместо сплошного зелёного.
+     */
+    val selected = ThemedColor(light = 0xFFE4F2E8, dark = 0xFF1F3A2A)
 
     /** Опасные действия (удаление). Совпадает с [overdue], но означает другое — отдельная роль. */
     val danger = ThemedColor(light = 0xFFC62828, dark = 0xFFFF6B6B)

@@ -423,7 +423,7 @@ fun widgetCheckColors(priority: Priority): WidgetCheckColors = when (priority) {
 
 /**
  * Нижняя строка (итерация 25, вариант PM «Г»): слева белая капсула-переключатель «Все» / «Входящие» (выбранный
- * залит зелёным), справа «+»; всё место между ними — открыть приложение. Дата и «⋯» убраны.
+ * с итерации 26 — светло-зелёный с зелёной иконкой), справа «+»; всё место между ними — открыть приложение. Дата и «⋯» убраны.
  */
 @Composable
 private fun BottomBar(model: WidgetModel, appWidgetId: Int) {
@@ -478,7 +478,7 @@ private fun SwitchTab(icon: Int, label: String, selected: Boolean, action: Actio
         modifier = GlanceModifier
             .width(SizeTokens.WIDGET_SWITCH_W.dp)
             .height(SizeTokens.WIDGET_SWITCH_H.dp)
-            .background(if (selected) WidgetColors.accent else WidgetColors.surface)
+            .background(if (selected) WidgetColors.selected else WidgetColors.surface)
             .cornerRadius(RadiusTokens.MD.dp)
             .clickable(action),
         contentAlignment = Alignment.Center,
@@ -486,7 +486,7 @@ private fun SwitchTab(icon: Int, label: String, selected: Boolean, action: Actio
         Image(
             ImageProvider(icon),
             contentDescription = label,
-            colorFilter = ColorFilter.tint(if (selected) WidgetColors.onAccent else WidgetColors.textSecondary),
+            colorFilter = ColorFilter.tint(if (selected) WidgetColors.accent else WidgetColors.textSecondary),
             modifier = GlanceModifier.size(SizeTokens.WIDGET_TAB_ICON.dp),
         )
     }

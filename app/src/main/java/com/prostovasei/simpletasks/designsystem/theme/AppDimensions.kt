@@ -69,6 +69,8 @@ data class AppSizes(
     val weekGutter: Dp = SizeTokens.WEEK_GUTTER.dp,
     val weekHeader: Dp = SizeTokens.WEEK_HEADER.dp,
     val weekClear: Dp = SizeTokens.WEEK_CLEAR.dp,
+    val clearDot: Dp = SizeTokens.CLEAR_DOT.dp,
+    val clearGlyph: Dp = SizeTokens.CLEAR_GLYPH.dp,
     val weekKnob: Dp = SizeTokens.WEEK_KNOB.dp,
     val dayTile: Dp = SizeTokens.DAY_TILE.dp,
 )

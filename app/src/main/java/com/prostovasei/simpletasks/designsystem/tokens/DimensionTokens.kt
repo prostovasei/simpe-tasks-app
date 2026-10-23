@@ -85,6 +85,9 @@ object SizeTokens {
 
     /** Колонка времени слева и колонка шкалы с кружками. */
     const val WIDGET_TIME = 38
+
+    /** Колонка дня и времени в плоских списках приложения (итерация 26): «Завтра» помещается целиком. */
+    const val TIMELINE_DAY_COLUMN = 48
     const val WIDGET_RAIL = 26
 
     /** Высота строки: задача со временем или на весь день, период; отметка «сейчас». */
@@ -131,6 +134,10 @@ object SizeTokens {
     const val WEEK_GUTTER = 26
     const val WEEK_HEADER = 36
     const val WEEK_CLEAR = 18
+
+    /** Видимый крестик выбранного (итерация 26, вариант PM «4»): серая таблетка с белым ×; нажимать — по-прежнему по [WEEK_CLEAR]. */
+    const val CLEAR_DOT = 14
+    const val CLEAR_GLYPH = 10
     const val WEEK_KNOB = 10
 
     /** Квадратная плитка дня в шторке (итерация 22): «чт / 22 / окт» и время. */

@@ -1,52 +1,18 @@
 package com.prostovasei.simpletasks.ui.common
 
-import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import com.prostovasei.simpletasks.R
-import com.prostovasei.simpletasks.designsystem.components.TaskRow
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.designsystem.theme.parseListColor
 import com.prostovasei.simpletasks.widget.WidgetDates
 import java.time.format.DateTimeFormatter
 import java.util.Locale
-
-/**
- * Плашка задачи в списке. Отмеченная «рассыпается в пыль», затем список плавно смыкается (итерация 15).
- * [showDay] — справа день и время (у «Входящих» и списков); в ленте «Все» день уже в подписи — только время.
- */
-@Composable
-fun LazyItemScope.TaskItemRow(
-    item: TaskItem,
-    onToggle: () -> Unit,
-    showDay: Boolean = true,
-    showList: Boolean = true,
-    isOverdue: Boolean = false,
-    onClick: (() -> Unit)? = null,
-) {
-    TaskRow(
-        modifier = Modifier.animateItem(),
-        title = item.title,
-        priority = item.priority,
-        listColor = if (showList) listSquareColor(item) else null,
-        listIcon = ListIcons.drawable(item.listIcon),
-        isCompleting = item.isCompleting,
-        isRecurring = item.isRecurring,
-        reminder = item.reminder,
-        isGhost = item.isGhost,
-        isOverdue = isOverdue,
-        trailing = if (showDay) dueLines(item) else item.timeLines(),
-        onToggle = onToggle,
-        testTag = "task:${item.id}",
-        onClick = onClick,
-    )
-}
 
 /** Цвет квадратика списка: у «Входящих» свой, у списка без цвета — нейтральный. */
 @Composable
