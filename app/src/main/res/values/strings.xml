@@ -301,7 +301,6 @@
     <string name="widget_all_hint">Просроченные и ближайшие 30 дней</string>
     <string name="widget_empty">Задач нет</string>
     <string name="widget_complete">Выполнить</string>
-    <string name="widget_pick_list">Другие списки</string>
     <string name="widget_open_app">Открыть приложение</string>
     <string name="widget_log_title">Журнал виджета</string>
     <string name="update_title">Обновление</string>

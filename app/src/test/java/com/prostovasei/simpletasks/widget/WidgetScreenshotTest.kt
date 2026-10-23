@@ -130,15 +130,21 @@ class WidgetScreenshotTest {
         if (this@descendants is android.view.ViewGroup) for (i in 0 until childCount) yieldAll(getChildAt(i).descendants())
     }
 
-    /** Настоящая картинка: в нижней строке все кнопки на месте (Glance отбрасывает детей Row сверх 10). */
+    /** Настоящая картинка: в нижней строке (итерация 25) только «Все», «Входящие», «открыть приложение» и «+». */
     @Test
     fun bottomBarKeepsAllButtons() {
         val views = runBlocking { Preview(model).compose(context, size = DpSize(320.dp, 420.dp)) }
         val root = views.apply(context, FrameLayout(context))
-        listOf("Все", "Входящие", "Работа", "Дом", "Другие списки", "Открыть приложение", "Новая задача").forEach { label ->
+        listOf("Все", "Входящие", "Открыть приложение", "Новая задача").forEach { label ->
             val found = ArrayList<View>()
             root.findViewsWithText(found, label, View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
             assertEquals(label, 1, found.size)
+        }
+        // Вкладок своих списков и «Другие списки» больше нет.
+        listOf("Работа", "Другие списки").forEach { label ->
+            val found = ArrayList<View>()
+            root.findViewsWithText(found, label, View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
+            assertEquals(label, 0, found.size)
         }
     }
 

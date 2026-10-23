@@ -64,9 +64,9 @@ class WidgetUiTest {
         setContext(context)
         provideComposable { WidgetContent(model, appWidgetId = 7) }
 
-        // Нижняя строка: вкладки списков, «⋯», приложение, «пт, 16 окт», «+»; числа задач нет.
-        listOf("Все", "Входящие", "Работа", "Другие списки", "Открыть приложение", "Новая задача").forEach { onNode(hasContentDescription(it)).assertExists() }
-        onNode(hasTextEqualTo("пт, 16 окт")).assertExists()
+        // Нижняя строка (итерация 25): «Все», «Входящие», открыть приложение и «+»; даты и «⋯» нет.
+        listOf("Все", "Входящие", "Открыть приложение", "Новая задача").forEach { onNode(hasContentDescription(it)).assertExists() }
+        onNode(hasTextEqualTo("пт, 16 окт")).assertDoesNotExist()
         onAllNodes(hasText("2")).assertCountEquals(0)
         // Подписи дней как в приложении: «ПТ, 16 окт» + метка «Сегодня», «СБ, 17 окт» + «Завтра», «ПН, 19 окт».
         onNode(hasTextEqualTo("Просрочено")).assertExists()
@@ -89,9 +89,9 @@ class WidgetUiTest {
         setContext(context)
         val tabs = listOf(WidgetTab(WidgetFilter.All), WidgetTab(WidgetFilter.Inbox), WidgetTab(WidgetFilter.ProjectList("p"), "Покупки", null))
         provideComposable { WidgetContent(WidgetModel(WidgetFilter.ProjectList("p"), "Покупки", today, emptyList(), tabs), appWidgetId = 7) }
-        onNode(hasContentDescription("Покупки")).assertExists()
         onNode(hasText("Задач нет")).assertExists()
-        onNode(hasTextEqualTo("пт, 16 окт")).assertExists()
+        // Итерация 25: даты внизу больше нет.
+        onNode(hasTextEqualTo("пт, 16 окт")).assertDoesNotExist()
     }
 
     @Test
