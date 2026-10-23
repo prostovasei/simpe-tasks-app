@@ -1,6 +1,5 @@
 package com.prostovasei.simpletasks.ui.common
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
@@ -29,18 +28,22 @@ fun FlatTaskList(
         EmptyTasks(emptyText, stringResource(R.string.empty_hint), modifier, emptyArrowLift)
         return
     }
+    val days = DayNames(stringResource(R.string.day_today), stringResource(R.string.day_tomorrow), stringResource(R.string.day_yesterday))
+    // Итерация 26: как в виджете; слева день и время — подписей дней в плоском списке нет.
     LazyColumn(
         modifier.fillMaxSize(),
         contentPadding = PaddingValues(vertical = AppTheme.spacing.xs),
-        verticalArrangement = Arrangement.spacedBy(AppTheme.sizes.cardGap),
     ) {
-        items(tasks, key = { it.id }) { item ->
-            TaskItemRow(
-                item = item,
-                onToggle = { onIntent(TaskListIntent.ToggleComplete(item.id, item.isRecurring)) },
-                showList = showList,
-                onClick = { onOpenTask(item.id) },
-            )
-        }
+        timelineItems(
+            items = tasks,
+            keyPrefix = "flat",
+            days = days,
+            nowMinute = null,
+            isOverdue = { false },
+            showList = showList,
+            onToggle = { onIntent(TaskListIntent.ToggleComplete(it.id, it.isRecurring)) },
+            onOpen = { onOpenTask(it.taskId) },
+            dayLabels = true,
+        )
     }
 }

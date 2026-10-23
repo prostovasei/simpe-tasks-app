@@ -294,9 +294,9 @@ fun highlighted(text: String, query: String?, background: Color): AnnotatedStrin
 }
 
 /** Частица пыли: место на плашке (доли ширины и высоты), куда улетает (доли) и оттенок. */
-private class DustParticle(val x: Float, val y: Float, val dx: Float, val dy: Float, val shade: Int, val scale: Float)
+internal class DustParticle(val x: Float, val y: Float, val dx: Float, val dy: Float, val shade: Int, val scale: Float)
 
-private fun dustParticles(seed: Int): List<DustParticle> {
+internal fun dustParticles(seed: Int): List<DustParticle> {
     val random = kotlin.random.Random(seed)
     fun between(from: Float, to: Float) = from + random.nextFloat() * (to - from)
     return List(DUST_PARTICLES) {
@@ -308,7 +308,7 @@ private fun dustParticles(seed: Int): List<DustParticle> {
  * «Распад в пыль»: граница [progress] идёт слева направо, левее неё плашки уже нет, а с границы
  * срываются частицы и улетают вправо-вверх, тая.
  */
-private fun Modifier.dust(progress: () -> Float, particles: List<DustParticle>, particleSize: Float, colors: List<Color>): Modifier =
+internal fun Modifier.dust(progress: () -> Float, particles: List<DustParticle>, particleSize: Float, colors: List<Color>): Modifier =
     drawWithContent {
         val p = progress()
         if (p <= 0f) {
@@ -330,12 +330,12 @@ private fun Modifier.dust(progress: () -> Float, particles: List<DustParticle>, 
         }
     }
 
-private const val DUST_MS = 850
-private const val DUST_DELAY_MS = 150
+internal const val DUST_MS = 850
+internal const val DUST_DELAY_MS = 150
 private const val DUST_PARTICLES = 90
 
 /** Сколько ширины плашки частица летит после того, как граница её прошла. */
 private const val DUST_TAIL = 0.35f
 
-private const val COMPLETING_ALPHA = 0.4f
-private const val GHOST_ALPHA = 0.5f
+internal const val COMPLETING_ALPHA = 0.4f
+internal const val GHOST_ALPHA = 0.5f

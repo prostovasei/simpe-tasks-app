@@ -1,6 +1,5 @@
 package com.prostovasei.simpletasks.ui.feature.all
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,7 +10,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -22,10 +20,12 @@ import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.components.DayHeader
 import com.prostovasei.simpletasks.designsystem.components.EmptyTasks
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
+import com.prostovasei.simpletasks.ui.common.DayLabel
 import com.prostovasei.simpletasks.ui.common.DayNames
-import com.prostovasei.simpletasks.ui.common.TaskItemRow
-import com.prostovasei.simpletasks.ui.common.TaskListIntent
 import com.prostovasei.simpletasks.ui.common.TaskListEffects
+import com.prostovasei.simpletasks.ui.common.TaskListIntent
+import com.prostovasei.simpletasks.ui.common.rememberNowMinute
+import com.prostovasei.simpletasks.ui.common.timelineItems
 import com.prostovasei.simpletasks.widget.WidgetDates
 
 @Composable
@@ -33,7 +33,7 @@ fun AllRoute(onOpenTask: (String) -> Unit, viewModel: AllViewModel = hiltViewMod
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     TaskListEffects(viewModel, snackbar)
-    AllScreen(state, viewModel::onIntent, snackbar, onOpenTask)
+    AllScreen(state, viewModel::onIntent, snackbar, onOpenTask, nowMinute = rememberNowMinute())
 }
 
 /** Лента «Все» по дням (итерация 13, макет PM): без заголовка экрана, «+» — в нижней панели. */
@@ -43,6 +43,7 @@ fun AllScreen(
     onIntent: (TaskListIntent) -> Unit,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     onOpenTask: (String) -> Unit = {},
+    nowMinute: Int? = null,
 ) {
     val colors = AppTheme.colors
     val days = DayNames(stringResource(R.string.day_today), stringResource(R.string.day_tomorrow), stringResource(R.string.day_yesterday))
@@ -58,7 +59,6 @@ fun AllScreen(
         LazyColumn(
             Modifier.fillMaxSize().padding(padding),
             contentPadding = PaddingValues(bottom = AppTheme.spacing.xs),
-            verticalArrangement = Arrangement.spacedBy(AppTheme.sizes.cardGap),
         ) {
             state.dayGroups().forEach { group ->
                 item(key = "day-${group.date}") {
@@ -69,15 +69,17 @@ fun AllScreen(
                         modifier = Modifier.animateItem(),
                     )
                 }
-                items(group.items, key = { it.id }) { item ->
-                    TaskItemRow(
-                        item = item,
-                        onToggle = { onIntent(TaskListIntent.ToggleComplete(item.id, item.isRecurring)) },
-                        showDay = false,
-                        isOverdue = item.id in group.overdueIds,
-                        onClick = { onOpenTask(item.taskId) },
-                    )
-                }
+                // Итерация 26: задачи — как в виджете (время | линия с кружком | плашка); «сейчас» — только у сегодня.
+                timelineItems(
+                    items = group.items,
+                    keyPrefix = "day-${group.date}",
+                    days = days,
+                    nowMinute = nowMinute.takeIf { group.relative == DayLabel.Today },
+                    isOverdue = { it.id in group.overdueIds },
+                    showList = true,
+                    onToggle = { onIntent(TaskListIntent.ToggleComplete(it.id, it.isRecurring)) },
+                    onOpen = { onOpenTask(it.taskId) },
+                )
             }
         }
     }

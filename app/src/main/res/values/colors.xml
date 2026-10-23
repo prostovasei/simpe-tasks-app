@@ -7,7 +7,7 @@
     <!-- Часы отметки «сейчас» в виджете: совпадает с ColorTokens.accent (светлая тема). -->
     <color name="widget_now">#15803D</color>
     <!-- Переход нижней панели виджета к фону: ColorTokens.background (светлая тема) с прозрачностью 0, 85% и 100%. -->
-    <color name="widget_fade_start">#00EDF5EF</color>
-    <color name="widget_fade_center">#D9EDF5EF</color>
-    <color name="widget_fade_end">#FFEDF5EF</color>
+    <color name="widget_fade_start">#00F6F7F6</color>
+    <color name="widget_fade_center">#D9F6F7F6</color>
+    <color name="widget_fade_end">#FFF6F7F6</color>
 </resources>

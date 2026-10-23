@@ -405,7 +405,7 @@ private fun SheetToolbar(
                 clear = if (badge != null) ClearAction(R.string.clear_reminders, TAG_CLEAR_REMINDERS) { onEdit(FieldEdit.SetReminders(emptyList())) } else null,
                 content = {
                     if (badge != null) {
-                        ReminderIcon(badge, LocalToolButtonSize.current * ICON_SHARE, tint = colors.onAccent, badgeColor = colors.onAccent, glyphColor = colors.accent)
+                        ReminderIcon(badge, LocalToolButtonSize.current * ICON_SHARE, tint = colors.accent, badgeColor = colors.reminderBadge, glyphColor = colors.accent)
                     }
                 },
             ) { menu = ToolMenu.Reminder }
@@ -504,14 +504,14 @@ fun ClearBadge(action: ClearAction, modifier: Modifier = Modifier) {
             .testTag(action.tag),
         contentAlignment = Alignment.Center,
     ) {
+        // Итерация 26: серая «таблетка» с белым × — заметна, но не спорит с выбранным.
         Box(
             Modifier
-                .size(sizes.weekClear)
-                .background(colors.surface, CircleShape)
-                .border(sizes.hairline, colors.accent, CircleShape),
+                .size(sizes.clearDot)
+                .background(colors.inactive, CircleShape),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(Icons.Default.Close, contentDescription = null, tint = colors.accent, modifier = Modifier.size(sizes.metaIcon))
+            Icon(Icons.Default.Close, contentDescription = null, tint = colors.surface, modifier = Modifier.size(sizes.clearGlyph))
         }
     }
 }
@@ -536,8 +536,8 @@ private fun ToolButtonBody(
         Modifier
             .size(LocalToolButtonSize.current)
             .clip(shape)
-            .background(if (active) colors.accent else colors.surface)
-            .border(sizes.hairline, if (active) colors.accent else colors.divider, shape)
+            .background(if (active) colors.selected else colors.surface)
+            .border(sizes.hairline, if (active) colors.selected else colors.divider, shape)
             .clickable(role = Role.Button, onClick = onClick)
             .semantics {
                 contentDescription = description
@@ -548,7 +548,7 @@ private fun ToolButtonBody(
         contentAlignment = Alignment.Center,
     ) {
         if (icon != null) {
-            Icon(painterResource(icon), null, tint = if (active) colors.onAccent else tint ?: colors.textSecondary, modifier = Modifier.size(LocalToolButtonSize.current * ICON_SHARE))
+            Icon(painterResource(icon), null, tint = if (active) colors.accent else tint ?: colors.textSecondary, modifier = Modifier.size(LocalToolButtonSize.current * ICON_SHARE))
         } else {
             content()
         }
