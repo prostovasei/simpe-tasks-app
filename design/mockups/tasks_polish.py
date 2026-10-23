@@ -49,7 +49,7 @@ def row(title, t1='', t2='', kind='dot', ring=INACT, done=False, rep=False, rem=
     return (f'<div style="display:flex;align-items:center;height:{h}px;margin-top:6px;">'
             f'<span style="width:44px;text-align:right;font-size:12.5px;font-weight:600;color:{OVD if overdue else T2};padding-right:7px;box-sizing:border-box;">{times}</span>'
             f'<span style="width:22px;display:flex;justify-content:center;">{mark(kind, ring, done, size, h - 4)}</span>'
-            f'<span style="flex:1;height:40px;margin:0 8px 0 7px;border-radius:12px;background:#fff;display:flex;align-items:center;gap:9px;padding:0 11px;box-sizing:border-box;{op}">'
+            f'<span style="flex:1;height:{h - 4 if kind == "cap" else 40}px;margin:0 8px 0 7px;border-radius:12px;background:#fff;display:flex;align-items:center;gap:9px;padding:0 11px;box-sizing:border-box;{op}">'
             f'<span style="flex:1;font-size:15px;font-weight:600;color:{INK};{st}white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{title}</span>{icons}</span></div>')
 
 
