@@ -30,6 +30,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -38,6 +39,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -47,6 +49,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.prostovasei.simpletasks.BuildConfig
 import com.prostovasei.simpletasks.R
+import com.prostovasei.simpletasks.notifications.PopupPrefs
 import com.prostovasei.simpletasks.widget.WidgetLog
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.domain.model.DataStats
@@ -68,8 +71,12 @@ fun SettingsRoute(viewModel: SettingsViewModel = hiltViewModel()) {
     // Уведомления могли выключить в системе — проверяем при каждом возвращении на экран.
     val context = LocalContext.current
     var notificationsOff by remember { mutableStateOf(false) }
+    // Полоска напоминания (T-69): переключатель и разрешение «поверх других приложений» — тоже при каждом возвращении.
+    var popupOn by remember { mutableStateOf(PopupPrefs.enabled(context)) }
+    var popupAllowed by remember { mutableStateOf(PopupPrefs.allowed(context)) }
     LifecycleResumeEffect(Unit) {
         notificationsOff = !NotificationManagerCompat.from(context).areNotificationsEnabled()
+        popupAllowed = PopupPrefs.allowed(context)
         onPauseOrDispose {}
     }
     SettingsScreen(
@@ -82,6 +89,17 @@ fun SettingsRoute(viewModel: SettingsViewModel = hiltViewModel()) {
                 Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName),
             )
         },
+        popup = PopupSettings(
+            enabled = popupOn,
+            allowed = popupAllowed,
+            onToggle = { on ->
+                PopupPrefs.setEnabled(context, on)
+                popupOn = on
+                // Решение PM: включил — сразу открывается разрешение телефона.
+                if (on && !popupAllowed) context.startActivity(PopupPrefs.permissionIntent(context))
+            },
+            onAllow = { context.startActivity(PopupPrefs.permissionIntent(context)) },
+        ),
         widgetLog = WidgetLogActions(
             read = { WidgetLog.read(context) },
             share = { text ->
@@ -102,6 +120,7 @@ fun SettingsScreen(
     appVersion: AppVersion = AppVersion.current,
     notificationsOff: Boolean = false,
     onEnableNotifications: () -> Unit = {},
+    popup: PopupSettings = PopupSettings(),
     widgetLog: WidgetLogActions = WidgetLogActions.None,
 ) {
     var logText by remember { mutableStateOf<String?>(null) }
@@ -135,8 +154,8 @@ fun SettingsScreen(
                 color = colors.textPrimary,
             )
 
+            SectionTitle(R.string.settings_notifications_title)
             if (notificationsOff) {
-                SectionTitle(R.string.settings_notifications_title)
                 Text(
                     text = stringResource(R.string.settings_notifications_off),
                     style = MaterialTheme.typography.bodyMedium,
@@ -145,8 +164,9 @@ fun SettingsScreen(
                 Button(onClick = onEnableNotifications, modifier = Modifier.testTag(TAG_NOTIFICATIONS_BUTTON)) {
                     Text(stringResource(R.string.settings_notifications_enable))
                 }
-                HorizontalDivider(color = colors.divider, modifier = Modifier.padding(vertical = spacing.xs))
             }
+            PopupSection(popup)
+            HorizontalDivider(color = colors.divider, modifier = Modifier.padding(vertical = spacing.xs))
 
             UpdateSection(state.update, onIntent)
             HorizontalDivider(color = colors.divider, modifier = Modifier.padding(vertical = spacing.xs))
@@ -390,6 +410,32 @@ const val TAG_UPDATE_BUTTON = "update_install"
 const val TAG_UPDATE_GRANT = "update_grant"
 const val TAG_UPDATE_STATUS = "update_status"
 
+/** Полоска напоминания (T-69): включена ли и есть ли разрешение «Появление поверх других приложений». */
+data class PopupSettings(
+    val enabled: Boolean = false,
+    val allowed: Boolean = true,
+    val onToggle: (Boolean) -> Unit = {},
+    val onAllow: () -> Unit = {},
+)
+
+@Composable
+private fun PopupSection(popup: PopupSettings) {
+    val colors = AppTheme.colors
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm)) {
+        Column(Modifier.weight(1f)) {
+            Text(stringResource(R.string.settings_popup_title), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold, color = colors.textPrimary)
+            Text(stringResource(R.string.settings_popup_hint), style = MaterialTheme.typography.bodySmall, color = colors.textSecondary)
+        }
+        Switch(checked = popup.enabled, onCheckedChange = popup.onToggle, modifier = Modifier.testTag(TAG_POPUP_SWITCH))
+    }
+    if (popup.enabled && !popup.allowed) {
+        Text(stringResource(R.string.settings_popup_no_permission), style = MaterialTheme.typography.bodyMedium, color = colors.overdue)
+        Button(onClick = popup.onAllow, modifier = Modifier.testTag(TAG_POPUP_ALLOW)) {
+            Text(stringResource(R.string.settings_popup_allow))
+        }
+    }
+}
+
 @Composable
 private fun SectionTitle(@StringRes text: Int) {
     Text(
@@ -428,6 +474,8 @@ const val TAG_IMPORT_BUTTON = "settings_import"
 const val TAG_EXPORT_BUTTON = "settings_export"
 const val TAG_CLEAR_BUTTON = "settings_clear"
 const val TAG_NOTIFICATIONS_BUTTON = "settings_notifications"
+const val TAG_POPUP_SWITCH = "settings_popup"
+const val TAG_POPUP_ALLOW = "settings_popup_allow"
 
 internal val previewReport = ImportReport(
     tasksAdded = 3399,

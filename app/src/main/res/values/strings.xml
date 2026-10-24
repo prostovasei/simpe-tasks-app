@@ -285,6 +285,12 @@
     <string name="task_rescheduled">Следующий повтор: %1$s</string>
     <string name="notification_channel">Напоминания</string>
     <string name="notification_complete">Выполнить</string>
+    <string name="popup_tomorrow">На завтра в это же время</string>
+    <string name="popup_more">ещё %1$d</string>
+    <string name="settings_popup_title">Всплывающая полоска</string>
+    <string name="settings_popup_hint">Напоминание — зелёной полоской снизу поверх любого приложения, вместо уведомления. На заблокированном экране — обычное уведомление.</string>
+    <string name="settings_popup_no_permission">Нет разрешения «Появление поверх других приложений» — полоска не появится, придёт обычное уведомление.</string>
+    <string name="settings_popup_allow">Разрешить</string>
     <string name="settings_notifications_title">Напоминания</string>
     <string name="settings_notifications_off">Уведомления выключены — напоминания не придут.</string>
     <string name="settings_notifications_enable">Включить уведомления</string>

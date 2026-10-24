@@ -15,8 +15,12 @@ import com.prostovasei.simpletasks.data.repository.RoomProjectRepository
 import com.prostovasei.simpletasks.data.repository.RoomTaskRepository
 import com.prostovasei.simpletasks.domain.model.NewTask
 import com.prostovasei.simpletasks.domain.model.TaskDue
+import com.prostovasei.simpletasks.testing.FakeProjectRepository
+import com.prostovasei.simpletasks.testing.FakeTaskRepository
 import com.prostovasei.simpletasks.testing.FakeTimeProvider
 import com.prostovasei.simpletasks.testing.task
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -34,9 +38,13 @@ class AndroidRemindersTest {
     private val app: Application = ApplicationProvider.getApplicationContext()
     private val notificationManager = app.getSystemService(NotificationManager::class.java)
 
+    private val popup = ReminderPopup(app, FakeTaskRepository(), CoroutineScope(Dispatchers.Unconfined))
+
     private fun notifications() = AndroidReminderNotifications(
         app,
         FakeTimeProvider(now = Instant.parse("2026-10-14T05:00:00Z"), zone = ZoneOffset.UTC),
+        FakeProjectRepository(),
+        popup,
     )
 
     @Test
@@ -63,6 +71,39 @@ class AndroidRemindersTest {
 
         notifications().cancel("t1")
         assertTrue(shadowOf(notificationManager).allNotifications.isEmpty())
+    }
+
+    @Test
+    fun popupReplacesNotificationWhenEnabledAndAllowed() = runBlocking {
+        shadowOf(app).grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
+        PopupPrefs.setEnabled(app, true)
+        org.robolectric.shadows.ShadowSettings.setCanDrawOverlays(true)
+        try {
+            notifications().show(task("t1", title = "Забрать посылку", due = TaskDue.AtTime(Instant.parse("2026-10-14T18:00:00Z"))))
+            // T-69: только полоска (и вибрация), обычного уведомления нет.
+            assertTrue(shadowOf(notificationManager).allNotifications.isEmpty())
+            assertEquals(listOf("t1"), popup.shown())
+
+            notifications().cancel("t1")
+            assertTrue("Выполнили в другом месте — полоска уходит", popup.shown().isEmpty())
+        } finally {
+            PopupPrefs.setEnabled(app, false)
+            org.robolectric.shadows.ShadowSettings.setCanDrawOverlays(false)
+        }
+    }
+
+    @Test
+    fun withoutOverlayPermissionNotificationIsShown() = runBlocking {
+        shadowOf(app).grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
+        PopupPrefs.setEnabled(app, true)
+        org.robolectric.shadows.ShadowSettings.setCanDrawOverlays(false)
+        try {
+            notifications().show(task("t1", due = TaskDue.AtTime(Instant.parse("2026-10-14T18:00:00Z"))))
+            assertEquals(1, shadowOf(notificationManager).allNotifications.size)
+            assertTrue(popup.shown().isEmpty())
+        } finally {
+            PopupPrefs.setEnabled(app, false)
+        }
     }
 
     @Test

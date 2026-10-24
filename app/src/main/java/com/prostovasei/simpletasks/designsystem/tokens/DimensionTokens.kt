@@ -146,6 +146,17 @@ object SizeTokens {
     const val CLEAR_GLYPH = 10
     const val WEEK_KNOB = 10
 
+    /**
+     * Полоска напоминания поверх других приложений (T-69, вариант PM «В»): высота, круглые кнопки и значки в них,
+     * поля от краёв экрана и между полосками стопки, на сколько смахнуть вниз, чтобы закрыть.
+     */
+    const val POPUP_STRIP = 68
+    const val POPUP_BUTTON = 48
+    const val POPUP_ICON = 22
+    const val POPUP_EDGE = 12
+    const val POPUP_GAP = 8
+    const val POPUP_SWIPE = 56
+
     /** Квадратная плитка дня в шторке (итерация 22): «чт / 22 / окт» и время. */
     const val DAY_TILE = 72
 }
