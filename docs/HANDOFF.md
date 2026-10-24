@@ -16,7 +16,7 @@
 |---|---|---|
 | Холст с макетами | https://claude.ai/artifact/4G8GPUfah2Q9nqvm5jpFwU | Раздел 4 |
 | Чек-лист ручной проверки | https://claude.ai/artifact/LfCQHWnhLob8u75CP2vaMS | После релиза: снять старые `isNew: true`, выставить `const NEW_IN`, добавить область с новыми пунктами (id уникальны, сейчас 184) перед областью «Перетаскивание и интервалы (0.17)». Плюс документ прогона в коллекции `runs` (doc_id `v0-X-Y-buildN`, поля `version`, `kind:"new"`, `createdAt`, `updatedAt`, `results:{}`, `notes:{}`) |
-| Бэклог | https://claude.ai/artifact/EoNYmmboC6gG13ju3MnEid | Коллекция `items` (поля `c, e, i, r, num, iteration, section, source, status, title, why, createdAt, updatedAt`). Последний `num` = 68 |
+| Бэклог | https://claude.ai/artifact/EoNYmmboC6gG13ju3MnEid | Коллекция `items` (поля `c, e, i, r, num, iteration, section, source, status, title, why, createdAt, updatedAt`). Последний `num` = 69 |
 
 Перед записью в артефакт — прочитать его (`Artifact read` / `ArtifactData get`) и писать с `if_version`.
 
@@ -66,6 +66,7 @@
 | `reflib.py` | Общие куски: шрифт Manrope из `app/src/main/res/font` (встраивается в макет), градиент карточки, кружки-кнопки, плитки |
 | `ref_structure.py` | Доски `VariantS1` / `VariantS2`: наша структура + визуал рефа (список, создание, виджет) |
 | `tasks_polish.py` | Доска `VariantT1` «Единый вид задач» (итерация 27): список, виджет, уведомление, состояния. `shot.mjs` с `W=1980 H=1100` |
+| `reminder_popup.py` | `VariantR1` — 4 варианта полоски (main); `VariantR2` — вариант «В» по решениям PM (`build_v`, T-69) |
 | `prio_overdue.py` | Доски `VariantP1–P3` «Просрочка и высокий приоритет» (PM выбрал «А») |
 | `ref_dashboard.py` | Доски `VariantR1–R3`: главный экран по рефу (дашборд, карточка + лента, тёмная) |
 | `sheetlib.py` | Иконки (`ico`, пути `P_*`) и старый шаблон доски `page()` |

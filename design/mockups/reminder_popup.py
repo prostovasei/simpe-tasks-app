@@ -135,3 +135,111 @@ class Component extends DCLogic {{ renderVals() {{ return {{}}; }} }}
     c['order'] = list(c['boards'])
     c['notes']['head'] = {'x': 0, 'y': -300, 'text': 'Всплывающее окно напоминания (сверху) · ниже — прежние макеты', 'kind': 'title1', 'maxW': 1900}
     json.dump(c, open(os.path.join(OUT, 'canvas.json'), 'w'), ensure_ascii=False, indent=2)
+
+
+# ---- Вариант «В» по решениям PM (T-69): зелёная полоска, подпись «время · список», стопка до 3, «ещё N». ----
+
+def strip(title, sub, bottom, depth=0):
+    """Зелёная полоска. depth > 0 — полоска сзади в стопке: уже и ниже, видна только краем."""
+    inset = 12 + depth * 10
+    op = [1, .85, .7][depth]
+    return (f'<div style="position:absolute;left:{inset}px;right:{inset}px;bottom:{bottom}px;height:68px;border-radius:34px;background:{A};opacity:{op};{SHADOW}'
+            f'display:flex;align-items:center;gap:12px;padding:0 10px 0 18px;z-index:{10 - depth};">'
+            f'{ico(P_BELL, "#fff", 22, 2)}<span style="flex:1;min-width:0;"><span style="display:block;font-size:16px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{title}</span>'
+            f'<span style="display:block;font-size:12px;color:rgba(255,255,255,.8);white-space:nowrap;">{sub}</span></span>'
+            f'<span style="width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;">{ico(P_CLOCK, "#fff", 22, 2)}</span>'
+            f'<span style="width:48px;height:48px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;">{ico(P_CHECK, A, 24, 2.6)}</span></div>')
+
+
+def note(text, bottom):
+    return (f'<div style="position:absolute;left:0;right:0;bottom:{bottom}px;display:flex;justify-content:center;z-index:20;">'
+            f'<span style="font-size:12px;font-weight:700;color:{T2};background:rgba(255,255,255,.9);padding:4px 10px;border-radius:10px;">{text}</span></div>')
+
+
+def callout(text, top):
+    return (f'<div style="position:absolute;left:16px;right:16px;top:{top}px;z-index:30;font-size:12.5px;line-height:17px;color:#fff;'
+            f'background:rgba(21,22,31,.82);border-radius:12px;padding:8px 12px;">{text}</div>')
+
+
+def screen_one():
+    return (status() + messenger() + strip('Забрать посылку', 'Сегодня, 18:00 · Дом', 20)
+            + callout('Часы — на завтра в 18:00 · галочка — выполнено · название — окно задачи · смахнуть вниз — закрыть', 640))
+
+
+def screen_stack():
+    return (status() + messenger()
+            + strip('Оплатить интернет', 'Сегодня, 18:00 · Дом', 172)
+            + strip('Позвонить маме', 'Сегодня, 18:00 · Входящие', 96)
+            + strip('Забрать посылку', 'Сегодня, 18:00 · Дом', 20)
+            + note('ещё 2', 250)
+            + callout('5 напоминаний в 18:00: 3 полоски друг над другом, остальные — «ещё 2». Убрал одну — на её место встаёт следующая.', 520))
+
+
+def screen_task():
+    """Нажали на название: окно задачи поверх (как из виджета), полоска ушла."""
+    tool = lambda p, on=False: (f'<span style="width:46px;height:46px;border-radius:12px;border:1px solid {SEL if on else LINE};background:{SEL if on else "#fff"};'
+                                f'display:flex;align-items:center;justify-content:center;">{ico(p, A if on else INK, 20, 2)}</span>')
+    sheet = (f'<div style="position:absolute;left:10px;right:10px;top:300px;border-radius:26px;background:#fff;{SHADOW}padding:0 18px 18px;">{handle()}'
+             f'<div style="display:flex;align-items:center;gap:12px;margin-top:14px;">{ring(PRI["mid"], 22)}<span style="font-size:22px;font-weight:700;color:{INK};">Забрать посылку</span></div>'
+             f'<div style="font-size:15px;color:{T2};margin-top:10px;">Пункт выдачи на Ленина, 12</div>'
+             f'<div style="display:flex;gap:8px;margin-top:16px;">'
+             f'<span style="width:72px;height:72px;border-radius:16px;background:{SEL};display:flex;flex-direction:column;justify-content:center;padding-left:10px;box-sizing:border-box;">'
+             f'<b style="font-size:16px;color:{A};">сб</b><b style="font-size:20px;color:{A};">24</b></span>'
+             f'<span style="flex:1"></span></div>'
+             f'<div style="display:flex;gap:8px;margin-top:16px;">{tool(P_INBOX)}{tool(P_BELL, True)}{tool(P_CLOCK)}<span style="flex:1"></span>'
+             f'<span style="width:50px;height:50px;border-radius:14px;background:{A};display:flex;align-items:center;justify-content:center;">{ico(P_CHECK, "#fff", 24, 2.6)}</span></div></div>')
+    return (status() + messenger() + '<div style="position:absolute;inset:0;background:rgba(21,22,31,.38);"></div>' + sheet
+            + callout('Нажатие на название полоски открывает окно задачи поверх текущего приложения — как из виджета.', 210))
+
+
+def screen_settings():
+    row = lambda t, s, on: (f'<div style="background:#fff;border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:12px;margin-top:10px;">'
+                            f'<span style="flex:1;"><span style="display:block;font-size:16px;font-weight:700;color:{INK};">{t}</span>'
+                            f'<span style="display:block;font-size:13px;color:{T2};margin-top:2px;line-height:18px;">{s}</span></span>'
+                            f'<span style="width:48px;height:28px;border-radius:14px;background:{A if on else "#C9D0CC"};position:relative;flex-shrink:0;">'
+                            f'<span style="position:absolute;top:3px;{"right" if on else "left"}:3px;width:22px;height:22px;border-radius:50%;background:#fff;"></span></span></div>')
+    warn = (f'<div style="background:#FDECEA;border-radius:16px;padding:12px 16px;margin-top:10px;font-size:13px;line-height:18px;color:{OVD};">'
+            f'Нет разрешения «Появление поверх других приложений» — полоска не появится, придёт обычное уведомление.'
+            f'<div style="margin-top:8px;"><span style="display:inline-block;background:{OVD};color:#fff;font-weight:700;padding:8px 14px;border-radius:10px;">Разрешить</span></div></div>')
+    body = (f'<div style="padding:8px 16px;"><div style="font-size:24px;font-weight:700;color:{INK};margin:6px 0 4px;">Настройки</div>'
+            f'<div style="font-size:12px;font-weight:700;color:{T2};margin-top:14px;">НАПОМИНАНИЯ</div>'
+            + row('Всплывающая полоска', 'Снизу поверх любого приложения, вместо уведомления. Вкл. — откроется разрешение телефона.', True)
+            + warn + row('Вибрация', 'Два коротких импульса', True) + '</div>')
+    return (status() + body + callout('Включил переключатель — сразу открылась настройка Samsung «Появление поверх других приложений». Без разрешения — красная подсказка и кнопка.', 640))
+
+
+OVD = '#C62828'
+VARIANTS_V = [
+    ('1. Одно напоминание', 'Зелёная полоска снизу поверх любого приложения: название, «время · список», «на завтра» и «выполнить». Висит, пока не уберёшь.', screen_one, '#EEF1F5'),
+    ('2. Несколько сразу', 'Стопкой до 3 полосок, остальные — «ещё N». Обычного уведомления сверху нет — только полоска и вибрация.', screen_stack, '#EEF1F5'),
+    ('3. Нажали на название', 'Окно задачи поверх текущего приложения, как из виджета.', screen_task, '#EEF1F5'),
+    ('4. Настройки', 'Переключатель «Всплывающая полоска» и подсказка, если нет разрешения.', screen_settings, BG),
+]
+
+
+def build_v(out):
+    lab = lambda s: f'<div style="font-size:17px;font-weight:700;color:{INK};margin-bottom:4px;">{s}</div>'
+    sub = lambda s: f'<div style="font-size:13px;color:{T2};line-height:18px;height:56px;width:428px;margin-bottom:10px;">{s}</div>'
+    phones = ''.join(f'<div>{lab(t)}{sub(d)}{phone(bg, f())}</div>' for t, d, f, bg in VARIANTS_V)
+    W, H = 4 * 428 + 3 * 30 + 80, 1170
+    body = (f'<div style="width:{W}px;height:{H}px;box-sizing:border-box;background:#EEF0EE;padding:36px 40px;font-family:Manrope,sans-serif;">'
+            f'<div style="font-size:28px;font-weight:700;color:{INK};letter-spacing:-.5px;">В. Полоска напоминания — по решениям PM</div>'
+            f'<div style="font-size:15px;color:{T2};margin:6px 0 22px;">Телефон заблокирован, нет разрешения или переключатель выключен — приходит обычное уведомление, как сейчас.</div>'
+            f'<div style="display:flex;gap:30px;">{phones}</div></div>')
+    html = f'''<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><title>Полоска напоминания</title><script src="./support.js"></script></head>
+<body><x-dc><helmet><style>{FACES}body{{margin:0}}</style></helmet>
+{body}
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{{"$preview":{{"width":{W},"height":{H}}}}}'>
+class Component extends DCLogic {{ renderVals() {{ return {{}}; }} }}
+</script></body></html>'''
+    open(os.path.join(out, 'VariantR2.dc.html'), 'w').write(html)
+    c = json.load(open(os.path.join(out, 'canvas.json')))
+    old = {k: v for k, v in c['boards'].items() if k != 'VariantR2.dc.html'}
+    for v in old.values():
+        v['y'] += H + 120
+    c['boards'] = {'VariantR2.dc.html': {'x': 0, 'y': 0, 'w': W, 'h': H, 'title': 'В. Полоска напоминания (T-69)'}, **old}
+    c['order'] = list(c['boards'])
+    c['notes']['head'] = {'x': 0, 'y': -300, 'text': 'Полоска напоминания (сверху) · ниже — прежние макеты', 'kind': 'title1', 'maxW': 1900}
+    json.dump(c, open(os.path.join(out, 'canvas.json'), 'w'), ensure_ascii=False, indent=2)
