@@ -105,7 +105,7 @@ class TickTickImporterTest : DatabaseTest() {
         importer.importTickTick(sample())
 
         val home = projects.observeProjectTree().first().groups.single().projects.single().project.id
-        assertEquals(listOf("Ремонт", "Купить лампочки"), tasks.observeProjectTasks(home).first().map { it.title })
+        assertEquals(listOf("Ремонт", "Купить лампочки"), tasks.observeProjectTasks(home, time.today()).first().map { it.title })
     }
 
     @Test

@@ -288,7 +288,7 @@ class TaskViewModelsTest {
         // Следующая правка не возвращает старую дату.
         vm.onIntent(TaskDetailIntent.Edit(FieldEdit.SetPriority(Priority.HIGH)))
         runCurrent()
-        assertEquals(TaskDue.AllDay(today.plusDays(1)), tasks.tasks.value.single().due)
+        assertEquals(TaskDue.AllDay(today.plusDays(1)), tasks.tasks.value.single { it.id == "t1" }.due)
     }
 
     @Test

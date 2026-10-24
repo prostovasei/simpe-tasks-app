@@ -10,7 +10,8 @@ import kotlinx.coroutines.launch
 
 /** Действия со списком задач — общие для «Все», «Входящих» и экрана списка. */
 interface TaskListIntent {
-    data class ToggleComplete(val taskId: String, val recurring: Boolean = false) : TaskListIntent
+    /** [done] — задача уже выполнена: нажатие возвращает её (итерация 27). */
+    data class ToggleComplete(val taskId: String, val recurring: Boolean = false, val done: Boolean = false) : TaskListIntent
     data class Undo(val taskId: String) : TaskListIntent
 }
 

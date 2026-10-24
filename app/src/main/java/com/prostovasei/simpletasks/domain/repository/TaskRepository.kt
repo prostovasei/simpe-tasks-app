@@ -11,13 +11,16 @@ import java.time.Instant
 import java.time.LocalDate
 
 interface TaskRepository {
-    /** Секции экрана «Все» относительно дня [today] в текущем часовом поясе. Задачи с интервалом — по времени начала. */
+    /**
+     * Секции экрана «Все» относительно дня [today] в текущем часовом поясе. Задачи с интервалом — по времени начала.
+     * Здесь и во «Входящих» и списках — активные и выполненные сегодня (до полуночи, итерация 27).
+     */
     fun observeAllScreen(today: LocalDate): Flow<AllScreenTasks>
 
     /** «Входящие»: задачи системного списка и все задачи без срока (SPEC.md §4.2). */
-    fun observeInbox(): Flow<List<Task>>
+    fun observeInbox(today: LocalDate): Flow<List<Task>>
 
-    fun observeProjectTasks(projectId: String): Flow<List<Task>>
+    fun observeProjectTasks(projectId: String, today: LocalDate): Flow<List<Task>>
 
     fun observeTaskDetails(taskId: String): Flow<TaskDetails?>
 

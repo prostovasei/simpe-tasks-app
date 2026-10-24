@@ -36,8 +36,8 @@ fun WidgetEntryPoint.observeModel(filter: WidgetFilter): Flow<WidgetModel> = day
     val tree = projects().observeProjectTree()
     val model = when (filter) {
         WidgetFilter.All -> combine(tasks().observeAllScreen(today), tree) { all, t -> WidgetModels.all(all, t.projectsById(), today, zone) to t }
-        WidgetFilter.Inbox -> combine(tasks().observeInbox(), tree) { list, t -> WidgetModels.list(filter, null, list, t.projectsById(), today, zone) to t }
-        is WidgetFilter.ProjectList -> combine(tasks().observeProjectTasks(filter.projectId), tree) { list, t ->
+        WidgetFilter.Inbox -> combine(tasks().observeInbox(today), tree) { list, t -> WidgetModels.list(filter, null, list, t.projectsById(), today, zone) to t }
+        is WidgetFilter.ProjectList -> combine(tasks().observeProjectTasks(filter.projectId, today), tree) { list, t ->
             val projects = t.projectsById()
             // Список удалили — виджет возвращается к «Все».
             (projects[filter.projectId]?.let { WidgetModels.list(filter, it.name, list, projects, today, zone) }

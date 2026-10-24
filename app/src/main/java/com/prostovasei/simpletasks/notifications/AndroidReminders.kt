@@ -18,11 +18,9 @@ import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.TaskPopupActivity
 import com.prostovasei.simpletasks.core.time.TimeProvider
 import com.prostovasei.simpletasks.domain.model.Task
-import com.prostovasei.simpletasks.domain.repository.ProjectRepository
 import com.prostovasei.simpletasks.ui.common.DayNames
 import com.prostovasei.simpletasks.ui.common.DueFormatter
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.flow.first
 import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -52,11 +50,10 @@ class AndroidReminderAlarm @Inject constructor(@param:ApplicationContext private
     }
 }
 
-/** Уведомление: название, срок и список; нажатие открывает задачу; кнопки «Выполнить» и «На завтра». */
+/** Уведомление (итерация 27, решение PM): название, срок и кнопка «Выполнить»; нажатие открывает задачу. */
 @Singleton
 class AndroidReminderNotifications @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val projects: ProjectRepository,
     private val time: TimeProvider,
 ) : ReminderNotifications {
     private val manager = NotificationManagerCompat.from(context)
@@ -64,12 +61,8 @@ class AndroidReminderNotifications @Inject constructor(
     override suspend fun show(task: Task) {
         if (!canPost()) return
         ensureChannel()
-        val listName = projects.observeProject(task.projectId).first()?.let {
-            if (it.isInbox) context.getString(R.string.inbox_list_name) else it.name
-        }
         val days = DayNames(context.getString(R.string.day_today), context.getString(R.string.day_tomorrow), context.getString(R.string.day_yesterday))
-        val due = DueFormatter.format(task.due, task.start, time.today(), time.zone())?.let(days::format)
-        val text = listOfNotNull(due, listName).joinToString(context.getString(R.string.meta_separator))
+        val text = DueFormatter.format(task.due, task.start, time.today(), time.zone())?.let(days::format)
         val id = notificationId(task.id)
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
@@ -92,7 +85,6 @@ class AndroidReminderNotifications @Inject constructor(
                 ),
             )
             .addAction(0, context.getString(R.string.notification_complete), action(task.id, ReminderReceiver.ACTION_COMPLETE, id))
-            .addAction(0, context.getString(R.string.notification_tomorrow), action(task.id, ReminderReceiver.ACTION_TOMORROW, id))
             .build()
         @Suppress("MissingPermission") // проверено в canPost()
         manager.notify(id, notification)

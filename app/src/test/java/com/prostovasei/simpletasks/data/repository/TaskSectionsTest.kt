@@ -53,16 +53,37 @@ class TaskSectionsTest : DatabaseTest() {
     }
 
     @Test
-    fun completedAndDeletedTasksAreHidden() = runTest {
-        val done = create("Выполнена", TaskDue.AllDay(today.minusDays(1)))
+    fun completedBeforeTodayAndDeletedTasksAreHidden() = runTest {
+        val done = create("Выполнена вчера", TaskDue.AllDay(today.minusDays(1)))
         val deleted = create("Удалена", TaskDue.AllDay(today))
         create("Активная", TaskDue.AllDay(today))
+        time.now = at(today.minusDays(1), 20).instant
         tasks.setCompleted(done, completed = true)
+        time.now = at(today, 15).instant
         tasks.deleteTask(deleted)
 
         val sections = tasks.observeAllScreen(today).first()
         assertTrue(sections.overdue.isEmpty())
         assertEquals(listOf("Активная"), sections.todayAllDay.map { it.title })
+    }
+
+    @Test
+    fun taskCompletedTodayStaysOnItsDayUntilMidnight() = runTest {
+        val late = create("Просрочена", TaskDue.AllDay(today.minusDays(2)))
+        val now = create("Сегодня", TaskDue.AllDay(today))
+        create("Активная", TaskDue.AllDay(today))
+        tasks.setCompleted(late, completed = true)
+        tasks.setCompleted(now, completed = true)
+
+        // Итерация 27: выполненные сегодня — на своих местах (просроченная — в своём дне).
+        val sections = tasks.observeAllScreen(today).first()
+        assertEquals(listOf("Просрочена"), sections.overdue.map { it.title })
+        assertTrue(sections.overdue.single().isCompleted)
+        assertEquals(setOf("Сегодня", "Активная"), sections.todayAllDay.map { it.title }.toSet())
+
+        // На следующий день их уже нет.
+        val tomorrow = tasks.observeAllScreen(today.plusDays(1)).first()
+        assertTrue((tomorrow.overdue + tomorrow.todayAllDay).none { it.isCompleted })
     }
 
     @Test
@@ -118,7 +139,7 @@ class TaskSectionsTest : DatabaseTest() {
         tasks.observeAllScreen(today).test {
             assertEquals(listOf("Сегодня"), awaitItem().todayAllDay.map { it.title })
             tasks.setCompleted(id, completed = true)
-            assertTrue(awaitItem().todayAllDay.isEmpty())
+            assertTrue("Итерация 27: остаётся выполненной", awaitItem().todayAllDay.single().isCompleted)
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -130,10 +151,16 @@ class TaskSectionsTest : DatabaseTest() {
         create("Во входящих без даты", null)
         create("Работа без даты", null, project = work)
         create("Работа с датой", TaskDue.AllDay(today), project = work)
-        val done = create("Выполненная без даты", null)
+        val done = create("Выполненная вчера", null)
+        val now = time.now
+        time.now = now.minusSeconds(SECONDS_PER_DAY)
         tasks.setCompleted(done, completed = true)
+        time.now = now
+        tasks.setCompleted(create("Выполненная сегодня", null), completed = true)
 
-        val inbox = tasks.observeInbox().first().map { it.title }.toSet()
-        assertEquals(setOf("Во входящих с датой", "Во входящих без даты", "Работа без даты"), inbox)
+        val inbox = tasks.observeInbox(time.today()).first().map { it.title }.toSet()
+        assertEquals(setOf("Во входящих с датой", "Во входящих без даты", "Работа без даты", "Выполненная сегодня"), inbox)
     }
 }
+
+private const val SECONDS_PER_DAY = 24L * 60 * 60

@@ -40,8 +40,8 @@ class WidgetUiTest {
 
     private val context = ApplicationProvider.getApplicationContext<android.app.Application>()
 
-    private fun item(id: String, title: String, due: DueText?, list: String? = "Работа", ghostOf: String? = null, priority: Priority = Priority.NONE) =
-        TaskItem(id, title, priority, due, list, null, isInboxList = list == null, isRecurring = ghostOf != null, ghostOf = ghostOf)
+    private fun item(id: String, title: String, due: DueText?, list: String? = "Работа", ghostOf: String? = null, priority: Priority = Priority.NONE, done: Boolean = false) =
+        TaskItem(id, title, priority, due, list, null, isInboxList = list == null, isRecurring = ghostOf != null, ghostOf = ghostOf, isDone = done)
 
     private val today = LocalDate.of(2026, 10, 16)
 
@@ -50,7 +50,13 @@ class WidgetUiTest {
         null,
         today,
         listOf(
-            WidgetDayBlock(WidgetDay.Overdue, listOf(item("late", "Отправить отчёт", DueText(DayLabel.Yesterday, null), priority = Priority.HIGH))),
+            WidgetDayBlock(
+                WidgetDay.On(today.minusDays(1)),
+                listOf(
+                    item("late", "Отправить отчёт", DueText(DayLabel.Yesterday, "18:00"), priority = Priority.HIGH),
+                    item("paid", "Оплатить свет", DueText(DayLabel.Yesterday, null), done = true),
+                ),
+            ),
             WidgetDayBlock(WidgetDay.On(today), listOf(item("gym", "Зарядка", DueText(DayLabel.Today, "08:00"), list = null))),
             WidgetDayBlock(WidgetDay.On(today.plusDays(1)), listOf(item("net", "Оплатить интернет", DueText(DayLabel.Tomorrow, null)))),
             WidgetDayBlock(WidgetDay.On(today.plusDays(3)), listOf(item("gym@0", "Зарядка", DueText(DayLabel.Date(today.plusDays(3), false), "08:00"), list = null, ghostOf = "gym"))),
@@ -68,19 +74,24 @@ class WidgetUiTest {
         listOf("Все", "Входящие", "Открыть приложение", "Новая задача").forEach { onNode(hasContentDescription(it)).assertExists() }
         onNode(hasTextEqualTo("пт, 16 окт")).assertDoesNotExist()
         onAllNodes(hasText("2")).assertCountEquals(0)
-        // Подписи дней как в приложении: «ПТ, 16 окт» + метка «Сегодня», «СБ, 17 окт» + «Завтра», «ПН, 19 окт».
-        onNode(hasTextEqualTo("Просрочено")).assertExists()
+        // Подписи дней как в приложении: просроченные — по дням (итерация 27), «ЧТ, 15 окт» + «Вчера»,
+        // «ПТ, 16 окт» + метка «Сегодня», «СБ, 17 окт» + «Завтра», «ПН, 19 окт».
+        onNode(hasTextEqualTo("Просрочено")).assertDoesNotExist()
+        onNode(hasTextEqualTo("ЧТ, 15 окт")).assertExists()
         onNode(hasTextEqualTo("ПТ, 16 окт")).assertExists()
         onNode(hasTextEqualTo("Сегодня")).assertExists()
         onNode(hasTextEqualTo("СБ, 17 окт")).assertExists()
         onNode(hasTextEqualTo("Завтра")).assertExists()
         onNode(hasTextEqualTo("ПН, 19 окт")).assertExists()
-        // Слева время (итерация 20): у просроченной — день, у остальных — время; название без «↻» (повтор — значком).
+        // Слева время (итерация 20), у просроченной тоже (итерация 27); название без «↻» (повтор — значком).
         onNode(hasTextEqualTo("Вчера")).assertExists()
+        onNode(hasTextEqualTo("18:00")).assertExists()
         onAllNodes(hasTextEqualTo("08:00")).assertCountEquals(2)
         onAllNodes(hasTextEqualTo("Зарядка")).assertCountEquals(2)
-        // Кружки-галочки на шкале только у трёх настоящих задач: у будущего повтора нажатия нет.
+        // Кружки-галочки на шкале только у настоящих задач: у будущего повтора нажатия нет; у выполненной — «снять отметку».
         onAllNodes(hasContentDescription("Выполнить")).assertCountEquals(3)
+        onAllNodes(hasContentDescription("Снять отметку «выполнено»")).assertCountEquals(1)
+        onNode(hasTextEqualTo("Оплатить свет")).assertExists()
     }
 
     @Test

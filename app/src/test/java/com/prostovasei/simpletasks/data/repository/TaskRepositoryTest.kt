@@ -117,7 +117,7 @@ class TaskRepositoryTest : DatabaseTest() {
         tasks.deleteTask(id)
 
         assertNull(tasks.observeTaskDetails(id).first())
-        assertTrue(tasks.observeInbox().first().isEmpty())
+        assertTrue(tasks.observeInbox(time.today()).first().isEmpty())
         val taskRow = db.taskDao().getById(id)!!
         val itemRow = db.checklistDao().getById(itemId)!!
         assertTrue(taskRow.isDeleted)
@@ -133,7 +133,7 @@ class TaskRepositoryTest : DatabaseTest() {
         tasks.createTask(NewTask(projectId = inbox, title = "Вторая"))
         tasks.createTask(NewTask(projectId = inbox, title = "Третья"))
 
-        val list = tasks.observeProjectTasks(inbox).first()
+        val list = tasks.observeProjectTasks(inbox, time.today()).first()
         assertEquals(listOf("Первая", "Вторая", "Третья"), list.map { it.title })
         assertEquals(listOf(0, 1, 2), list.map { it.sortOrder })
     }

@@ -395,17 +395,17 @@ private fun SheetToolbar(
             repeatDialog = true
         }
         Box {
-            val badge = Reminders.badge(fields.due, fields.reminders)
+            val mark = Reminders.mark(fields.due, fields.reminders)
             ToolButton(
                 R.string.quick_tool_reminder,
-                active = badge != null,
+                active = mark != null,
                 tag = TAG_TOOL_REMINDER,
-                icon = if (badge == null) R.drawable.ic_tool_reminder else null,
+                icon = if (mark == null) R.drawable.ic_tool_reminder else null,
                 dimmed = fields.due == null,
-                clear = if (badge != null) ClearAction(R.string.clear_reminders, TAG_CLEAR_REMINDERS) { onEdit(FieldEdit.SetReminders(emptyList())) } else null,
+                clear = if (mark != null) ClearAction(R.string.clear_reminders, TAG_CLEAR_REMINDERS) { onEdit(FieldEdit.SetReminders(emptyList())) } else null,
                 content = {
-                    if (badge != null) {
-                        ReminderIcon(badge, LocalToolButtonSize.current * ICON_SHARE, tint = colors.accent, badgeColor = colors.reminderBadge, glyphColor = colors.accent)
+                    if (mark != null) {
+                        ReminderIcon(mark, LocalToolButtonSize.current * ICON_SHARE, tint = colors.accent, dotColor = colors.accent)
                     }
                 },
             ) { menu = ToolMenu.Reminder }

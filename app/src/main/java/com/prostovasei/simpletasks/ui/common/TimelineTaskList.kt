@@ -1,7 +1,6 @@
 package com.prostovasei.simpletasks.ui.common
 
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -34,7 +33,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -42,15 +40,12 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.prostovasei.simpletasks.R
-import com.prostovasei.simpletasks.designsystem.components.DUST_DELAY_MS
-import com.prostovasei.simpletasks.designsystem.components.DUST_MS
 import com.prostovasei.simpletasks.designsystem.components.GHOST_ALPHA
 import com.prostovasei.simpletasks.designsystem.components.ListSquare
-import com.prostovasei.simpletasks.designsystem.components.dust
-import com.prostovasei.simpletasks.designsystem.components.dustParticles
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
 import com.prostovasei.simpletasks.domain.model.Priority
@@ -104,7 +99,11 @@ fun rememberNowMinute(): Int {
     return minute
 }
 
-/** Строка задачи: время | линия с кружком | плашка. У периода — строка выше и вытянутое кольцо. */
+/**
+ * Строка задачи: время | линия с кружком | плашка. У периода — строка выше, капсула на шкале и плашка той же высоты.
+ * Выполненная (итерация 27) остаётся на месте до полуночи: кружок залит цветом приоритета с белой галочкой,
+ * название зачёркнуто, плашка со значками бледнее; переход — [DONE_FADE_MS].
+ */
 @Composable
 fun LazyItemScope.TimelineTaskRow(
     row: WidgetRow.Task,
@@ -118,17 +117,9 @@ fun LazyItemScope.TimelineTaskRow(
 ) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
-    val sizes = AppTheme.sizes
     val item = row.item
     val testTag = "task:${item.id}"
-    val dissolving = item.isCompleting
-    val dust = remember { Animatable(0f) }
-    LaunchedEffect(dissolving) {
-        if (dissolving) dust.animateTo(1f, tween(DUST_MS, delayMillis = DUST_DELAY_MS, easing = LinearEasing)) else dust.snapTo(0f)
-    }
-    val particles = remember(item.title) { dustParticles(item.title.hashCode()) }
-    val particleSize = with(LocalDensity.current) { sizes.dustParticle.toPx() }
-    val dustColors = listOf(colors.textSecondary, colors.inactive, colors.textPrimary)
+    val done by animateFloatAsState(if (item.showsDone) 1f else 0f, tween(DONE_FADE_MS), label = "done")
     val faded = row.past || item.isGhost
     val height = if (row.isPeriod) SizeTokens.WIDGET_PERIOD_ROW.dp else SizeTokens.WIDGET_ROW.dp
     Row(
@@ -141,13 +132,13 @@ fun LazyItemScope.TimelineTaskRow(
             .testTag(testTag),
     ) {
         TimeColumn(row, isOverdue, faded, dayLabels)
-        Rail(row, top, bottom, isOverdue, faded, testTag, onToggle)
+        Rail(row, top, bottom, isOverdue, faded, done, testTag, onToggle)
         Row(
             Modifier
                 .weight(1f)
                 .fillMaxHeight()
                 .padding(vertical = SizeTokens.WIDGET_CARD_INSET.dp)
-                .dust({ dust.value }, particles, particleSize, dustColors)
+                .alpha(1f - (1f - DONE_ALPHA) * done)
                 .clip(AppTheme.shapes.medium)
                 .background(colors.surface)
                 .clickable(onClick = onClick)
@@ -159,26 +150,27 @@ fun LazyItemScope.TimelineTaskRow(
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold,
                 color = if (faded) colors.textSecondary else colors.textPrimary,
+                textDecoration = if (item.showsDone) TextDecoration.LineThrough else null,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
             )
-            item.reminder?.let {
-                ReminderIcon(
-                    badge = it,
-                    size = SizeTokens.WIDGET_REMINDER_ICON.dp,
-                    tint = colors.textSecondary,
-                    badgeColor = colors.reminderBadge,
-                    glyphColor = colors.textSecondary,
-                    modifier = Modifier.padding(start = spacing.xxs).testTag("$testTag:reminder"),
-                )
-            }
+            // Значки справа налево (итерация 27): список, колокольчик, повтор.
             if (item.isRecurring) {
                 Icon(
                     painterResource(R.drawable.ic_tool_repeat),
                     null,
                     tint = colors.textSecondary,
                     modifier = Modifier.padding(start = spacing.xxs).size(SizeTokens.WIDGET_META_ICON.dp).testTag("$testTag:repeat"),
+                )
+            }
+            item.reminder?.let {
+                ReminderIcon(
+                    mark = it,
+                    size = SizeTokens.WIDGET_REMINDER_ICON.dp,
+                    tint = colors.textSecondary,
+                    dotColor = colors.accent,
+                    modifier = Modifier.padding(start = spacing.xxs).testTag("$testTag:reminder"),
                 )
             }
             if (showList) {
@@ -212,20 +204,24 @@ private fun TimeColumn(row: WidgetRow.Task, isOverdue: Boolean, faded: Boolean, 
     }
 }
 
-/** Линия шкалы с кружком приоритета (у повторяющейся — значок повтора, у периода — вытянутое кольцо); нажатие — «выполнено». */
+/**
+ * Линия шкалы с кружком приоритета (у периода — капсула во всю высоту плашки); нажатие — «выполнено» или, у выполненной,
+ * вернуть. У повторяющейся тоже обычный кружок — значок повтора только в плашке (итерация 27). [done] — доля перехода
+ * к выполненной: кольцо заливается цветом и появляется белая галочка.
+ */
 @Composable
-private fun Rail(row: WidgetRow.Task, top: Boolean, bottom: Boolean, isOverdue: Boolean, faded: Boolean, testTag: String, onToggle: () -> Unit) {
+private fun Rail(row: WidgetRow.Task, top: Boolean, bottom: Boolean, isOverdue: Boolean, faded: Boolean, done: Float, testTag: String, onToggle: () -> Unit) {
     val colors = AppTheme.colors
     val item = row.item
     val ring = when {
         isOverdue -> colors.overdue
-        faded -> colors.inactive
+        faded && !item.showsDone -> colors.inactive
         item.priority == Priority.HIGH -> colors.checkRings.high
         item.priority == Priority.MEDIUM -> colors.checkRings.medium
         item.priority == Priority.LOW -> colors.checkRings.low
         else -> colors.inactive
     }
-    val label = stringResource(R.string.widget_complete)
+    val label = stringResource(if (item.showsDone) R.string.task_uncomplete else R.string.widget_complete)
     val tap = if (item.isGhost) {
         Modifier
     } else {
@@ -237,26 +233,28 @@ private fun Rail(row: WidgetRow.Task, top: Boolean, bottom: Boolean, isOverdue: 
     ) {
         if (row.isPeriod) {
             Segment(top, Modifier.height(SizeTokens.WIDGET_PERIOD_STUB.dp))
-            Box(
-                Modifier
-                    .width(SizeTokens.WIDGET_NODE.dp)
-                    .weight(1f)
-                    .border(SizeTokens.CHECKBOX_STROKE.dp, ring, CircleShape),
-            )
+            Node(ring, done, Modifier.width(SizeTokens.WIDGET_NODE.dp).weight(1f))
             Segment(bottom, Modifier.height(SizeTokens.WIDGET_PERIOD_STUB.dp))
         } else {
             Segment(top, Modifier.weight(1f))
-            when {
-                item.isCompleting -> Box(Modifier.size(SizeTokens.WIDGET_NODE.dp).background(colors.accent, CircleShape))
-                item.isRecurring -> Icon(
-                    painterResource(R.drawable.ic_tool_repeat),
-                    null,
-                    tint = colors.textSecondary,
-                    modifier = Modifier.size(SizeTokens.WIDGET_META_ICON.dp),
-                )
-                else -> Box(Modifier.size(SizeTokens.WIDGET_NODE.dp).border(SizeTokens.CHECKBOX_STROKE.dp, ring, CircleShape))
-            }
+            Node(ring, done, Modifier.size(SizeTokens.WIDGET_NODE.dp))
             Segment(bottom, Modifier.weight(1f))
+        }
+    }
+}
+
+/** Кружок или капсула: кольцо цвета [ring]; при [done] → 1 заливается тем же цветом, по центру белая галочка. */
+@Composable
+private fun Node(ring: Color, done: Float, modifier: Modifier) {
+    Box(modifier.border(SizeTokens.CHECKBOX_STROKE.dp, ring, CircleShape), contentAlignment = Alignment.Center) {
+        if (done > 0f) {
+            Box(Modifier.matchParentSize().alpha(done).background(ring, CircleShape))
+            Icon(
+                painterResource(R.drawable.ic_node_check),
+                null,
+                tint = AppTheme.colors.onAccent,
+                modifier = Modifier.size(SizeTokens.NODE_CHECK.dp).alpha(done),
+            )
         }
     }
 }
@@ -293,6 +291,10 @@ fun LazyItemScope.TimelineNowRow(nowMinute: Int, top: Boolean, bottom: Boolean) 
         Box(Modifier.weight(1f).height(AppTheme.sizes.hairline).background(colors.accent))
     }
 }
+
+/** Переход к выполненной (решение PM: плавно, 0,3 с) и бледность выполненной плашки (70%). */
+const val DONE_FADE_MS = 300
+const val DONE_ALPHA = 0.7f
 
 private const val MINUTES_PER_HOUR = 60
 private const val SECONDS_PER_MINUTE = 60

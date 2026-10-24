@@ -23,11 +23,17 @@ object WidgetColors {
     val onAccent = ColorTokens.onAccent.toProvider()
     val overdue = ColorTokens.overdue.toProvider()
     val divider = ColorTokens.divider.toProvider()
-    val reminderBadge = ColorTokens.reminderBadge.toProvider()
     val selected = ColorTokens.selected.toProvider()
     val inactive = ColorTokens.inactive.toProvider()
     val inboxList = ColorTokens.inboxList.toProvider()
     val onListSquare = ColorTokens.onListSquare.toProvider()
+
+    /** Выполненная задача (итерация 27): название, значки и квадратик списка бледнее — 70%. */
+    val textDone = ColorTokens.textPrimary.toProvider(DONE_OPACITY)
+    val iconDone = ColorTokens.textSecondary.toProvider(DONE_OPACITY)
+    val accentDone = ColorTokens.accent.toProvider(DONE_OPACITY)
+    val inboxListDone = ColorTokens.inboxList.toProvider(DONE_OPACITY)
+    val inactiveDone = ColorTokens.inactive.toProvider(DONE_OPACITY)
 
     val checkHigh = WidgetCheckTokens.high.toProviders()
     val checkMedium = WidgetCheckTokens.medium.toProviders()
@@ -44,7 +50,10 @@ data class WidgetCheckColors(val ring: ColorProvider, val fill: ColorProvider)
 
 data class WidgetPriorityColors(val container: ColorProvider, val content: ColorProvider)
 
-private fun ThemedColor.toProvider(): ColorProvider = ColorProvider(day = Color(light), night = Color(dark))
+private fun ThemedColor.toProvider(alpha: Float = 1f): ColorProvider =
+    ColorProvider(day = Color(light).copy(alpha = alpha), night = Color(dark).copy(alpha = alpha))
+
+private const val DONE_OPACITY = 0.7f
 
 private fun PriorityColorTokens.toProviders() = WidgetPriorityColors(container.toProvider(), content.toProvider())
 

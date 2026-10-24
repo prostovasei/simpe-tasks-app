@@ -15,7 +15,6 @@ import com.prostovasei.simpletasks.data.repository.RoomProjectRepository
 import com.prostovasei.simpletasks.data.repository.RoomTaskRepository
 import com.prostovasei.simpletasks.domain.model.NewTask
 import com.prostovasei.simpletasks.domain.model.TaskDue
-import com.prostovasei.simpletasks.testing.FakeProjectRepository
 import com.prostovasei.simpletasks.testing.FakeTimeProvider
 import com.prostovasei.simpletasks.testing.task
 import kotlinx.coroutines.runBlocking
@@ -37,20 +36,19 @@ class AndroidRemindersTest {
 
     private fun notifications() = AndroidReminderNotifications(
         app,
-        FakeProjectRepository(),
         FakeTimeProvider(now = Instant.parse("2026-10-14T05:00:00Z"), zone = ZoneOffset.UTC),
     )
 
     @Test
-    fun notificationHasTitleTextAndTwoButtons() = runBlocking {
+    fun notificationHasTitleTimeAndCompleteButton() = runBlocking {
         shadowOf(app).grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
         notifications().show(task("t1", title = "Позвонить маме", due = TaskDue.AtTime(Instant.parse("2026-10-14T18:30:00Z"))))
 
         val posted = shadowOf(notificationManager).allNotifications.single()
         val shadow = shadowOf(posted)
         assertEquals("Позвонить маме", shadow.contentTitle)
-        assertEquals("Сегодня, 18:30 · Входящие", shadow.contentText)
-        assertEquals(listOf("Выполнить", "На завтра"), posted.actions.map { it.title.toString() })
+        assertEquals("Итерация 27: только срок, без списка", "Сегодня, 18:30", shadow.contentText)
+        assertEquals(listOf("Выполнить"), posted.actions.map { it.title.toString() })
         assertEquals(AndroidReminderNotifications.CHANNEL_ID, posted.channelId)
         val channel = notificationManager.getNotificationChannel(AndroidReminderNotifications.CHANNEL_ID)
         assertTrue("Вибрация включена", channel.shouldVibrate())
@@ -59,9 +57,9 @@ class AndroidRemindersTest {
         val open = shadowOf(posted.contentIntent).savedIntent
         assertEquals("Задача открывается поверх, без приложения", com.prostovasei.simpletasks.TaskPopupActivity::class.java.name, open.component?.className)
         assertEquals("t1", open.getStringExtra(MainActivity.EXTRA_TASK_ID))
-        val tomorrow = shadowOf(posted.actions[1].actionIntent).savedIntent
-        assertEquals(ReminderReceiver.ACTION_TOMORROW, tomorrow.action)
-        assertEquals("t1", tomorrow.getStringExtra(ReminderReceiver.EXTRA_TASK_ID))
+        val complete = shadowOf(posted.actions[0].actionIntent).savedIntent
+        assertEquals(ReminderReceiver.ACTION_COMPLETE, complete.action)
+        assertEquals("t1", complete.getStringExtra(ReminderReceiver.EXTRA_TASK_ID))
 
         notifications().cancel("t1")
         assertTrue(shadowOf(notificationManager).allNotifications.isEmpty())

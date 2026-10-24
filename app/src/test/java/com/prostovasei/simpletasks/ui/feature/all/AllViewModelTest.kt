@@ -79,26 +79,43 @@ class AllViewModelTest {
     }
 
     @Test
-    fun completedTaskStaysWhileDissolvingThenDisappears() = runTest(dispatcher) {
+    fun completedTaskStaysDoneUntilMidnight() = runTest(dispatcher) {
         val vm = viewModel()
         runCurrent()
 
         vm.onIntent(TaskListIntent.ToggleComplete("allday"))
         runCurrent()
         assertEquals(listOf("allday" to true), tasks.completedCalls)
-        assertTrue(vm.state.value.todayAllDay.single().isCompleting)
-
-        advanceTimeBy(CompletionTracker.HIDE_DELAY_MS - 100)
+        advanceTimeBy(5_000)
         runCurrent()
-        assertEquals(listOf("allday"), vm.state.value.todayAllDay.map { it.id })
+        // Итерация 27: выполненная остаётся на месте — с галочкой, до полуночи.
+        val done = vm.state.value.todayAllDay.single()
+        assertEquals("allday", done.id)
+        assertTrue(done.isDone)
+        assertTrue(done.showsDone)
 
-        advanceTimeBy(200)
+        day.value = today.plusDays(1)
         runCurrent()
-        assertTrue(vm.state.value.todayAllDay.isEmpty())
+        assertFalse("В полночь выполненная уходит", vm.state.value.dayGroupsIds().contains("allday"))
     }
 
     @Test
-    fun recurringTaskMovesAfterDissolveAndCanBeUndone() = runTest(dispatcher) {
+    fun tapOnDoneTaskReturnsIt() = runTest(dispatcher) {
+        val vm = viewModel()
+        runCurrent()
+        vm.onIntent(TaskListIntent.ToggleComplete("allday"))
+        runCurrent()
+
+        val done = vm.state.value.todayAllDay.single()
+        vm.onIntent(TaskListIntent.ToggleComplete(done.id, done.isRecurring, done.showsDone))
+        runCurrent()
+
+        assertEquals(listOf("allday" to true, "allday" to false), tasks.completedCalls)
+        assertFalse(vm.state.value.todayAllDay.single().showsDone)
+    }
+
+    @Test
+    fun recurringTaskLeavesDoneCopyMovesAndCanBeUndone() = runTest(dispatcher) {
         tasks.tasks.value = listOf(task("gym", due = TaskDue.AllDay(today)).copy(rrule = "FREQ=WEEKLY;BYDAY=TU,FR"))
         val vm = viewModel()
         runCurrent()
@@ -107,27 +124,31 @@ class AllViewModelTest {
         vm.effects.test {
             vm.onIntent(TaskListIntent.ToggleComplete("gym", recurring = true))
             runCurrent()
-            // Пока плашка «рассыпается», задача на месте и в БД не менялась.
-            assertTrue(vm.state.value.todayAllDay.single().isCompleting)
+            // Сначала задача показывается выполненной на месте, в БД не менялась.
+            assertTrue(vm.state.value.todayAllDay.single().showsDone)
             assertTrue(tasks.completedCalls.isEmpty())
 
-            advanceTimeBy(CompletionTracker.HIDE_DELAY_MS + 1)
+            advanceTimeBy(CompletionTracker.RECURRING_DELAY_MS + 1)
             runCurrent()
             val effect = awaitItem() as TaskListEffect.ShowUndo
             assertEquals(DayLabel.Date(LocalDate.of(2026, 10, 16), showYear = false), effect.next!!.day)
         }
-        assertTrue("Сегодня задачи больше нет", vm.state.value.todayAllDay.isEmpty())
+        val todayItems = vm.state.value.todayAllDay
+        assertEquals("На месте — выполненный раз", listOf("done-gym"), todayItems.map { it.id })
+        assertTrue(todayItems.single().isDone)
         val moved = vm.state.value.upcoming.filterNot { it.isGhost }
         assertEquals(listOf("gym"), moved.map { it.id })
-        assertFalse("Без зачёркивания: задача не выполнена, а перенесена", moved.single().isCompleting)
+        assertFalse("Следующий раз не выполнен", moved.single().showsDone)
 
-        vm.onIntent(TaskListIntent.Undo("gym"))
+        // Нажатие на выполненный раз возвращает серию на прежний срок.
+        vm.onIntent(TaskListIntent.ToggleComplete("done-gym", recurring = false, done = true))
         runCurrent()
         assertEquals(listOf("gym"), vm.state.value.todayAllDay.map { it.id })
+        assertFalse(vm.state.value.todayAllDay.single().showsDone)
     }
 
     @Test
-    fun recurringTaskTappedAgainDuringDissolveIsNotWritten() = runTest(dispatcher) {
+    fun recurringTaskTappedAgainBeforeMoveIsNotWritten() = runTest(dispatcher) {
         tasks.tasks.value = listOf(task("gym", due = TaskDue.AllDay(today)).copy(rrule = "FREQ=WEEKLY;BYDAY=TU,FR"))
         val vm = viewModel()
         runCurrent()
@@ -135,12 +156,12 @@ class AllViewModelTest {
         vm.onIntent(TaskListIntent.ToggleComplete("gym", recurring = true))
         runCurrent()
         vm.onIntent(TaskListIntent.ToggleComplete("gym", recurring = true))
-        advanceTimeBy(CompletionTracker.HIDE_DELAY_MS * 2)
+        advanceTimeBy(CompletionTracker.RECURRING_DELAY_MS * 2)
         runCurrent()
 
         assertTrue(tasks.completedCalls.isEmpty())
         assertTrue(tasks.undone.isEmpty())
-        assertFalse(vm.state.value.todayAllDay.single().isCompleting)
+        assertFalse(vm.state.value.todayAllDay.single().showsDone)
     }
 
     @Test
@@ -174,24 +195,22 @@ class AllViewModelTest {
         runCurrent()
 
         assertEquals(listOf("timed" to true, "timed" to false), tasks.completedCalls)
-        assertFalse(vm.state.value.todayTimed.single().isCompleting)
-        advanceTimeBy(CompletionTracker.HIDE_DELAY_MS * 2)
-        runCurrent()
-        assertEquals(listOf("timed"), vm.state.value.todayTimed.map { it.id })
+        assertFalse(vm.state.value.todayTimed.single().showsDone)
     }
 
     @Test
-    fun secondTapOnFadedTaskCancelsCompletion() = runTest(dispatcher) {
+    fun secondTapOnDoneTaskCancelsCompletion() = runTest(dispatcher) {
         val vm = viewModel()
         runCurrent()
 
         vm.onIntent(TaskListIntent.ToggleComplete("next"))
         runCurrent()
-        vm.onIntent(TaskListIntent.ToggleComplete("next"))
+        val done = vm.state.value.upcoming.single()
+        vm.onIntent(TaskListIntent.ToggleComplete(done.id, done.isRecurring, done.showsDone))
         runCurrent()
 
         assertEquals(listOf("next" to true, "next" to false), tasks.completedCalls)
-        assertFalse(vm.state.value.upcoming.single().isCompleting)
+        assertFalse(vm.state.value.upcoming.single().showsDone)
     }
 
     @Test
@@ -215,10 +234,13 @@ class AllViewModelTest {
         assertEquals(setOf("allday", "next", "nodate", "work-undated"), vm.state.value.tasks.map { it.id }.toSet())
 
         vm.onIntent(TaskListIntent.ToggleComplete("nodate"))
+        advanceTimeBy(5_000)
         runCurrent()
-        assertTrue(vm.state.value.tasks.first { it.id == "nodate" }.isCompleting)
-        advanceTimeBy(CompletionTracker.HIDE_DELAY_MS + 1)
+        assertTrue("Итерация 27: выполненная остаётся до полуночи", vm.state.value.tasks.first { it.id == "nodate" }.isDone)
+        day.value = today.plusDays(1)
         runCurrent()
         assertFalse(vm.state.value.tasks.any { it.id == "nodate" })
     }
+
+    private fun AllState.dayGroupsIds(): List<String> = (overdue + todayAllDay + todayTimed + upcoming).map { it.id }
 }

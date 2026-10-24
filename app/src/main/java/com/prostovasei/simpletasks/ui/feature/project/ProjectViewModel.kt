@@ -13,10 +13,14 @@ import com.prostovasei.simpletasks.ui.common.toItem
 import com.prostovasei.simpletasks.ui.feature.all.mergeWithPending
 import com.prostovasei.simpletasks.ui.mvi.MviViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class ProjectViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
@@ -35,10 +39,9 @@ class ProjectViewModel @Inject constructor(
         viewModelScope.launch {
             combine(
                 projects.observeProject(projectId),
-                tasks.observeProjectTasks(projectId),
-                dayTicker.today(),
+                dayTicker.today().flatMapLatest { day -> tasks.observeProjectTasks(projectId, day).map { day to it } },
                 completion.pending,
-            ) { project, list, day, pending ->
+            ) { project, (day, list), pending ->
                 if (project == null) return@combine null
                 val byId = mapOf(project.id to project)
                 Triple(project, pending, list.map { it.toItem(byId, day, time.zone(), pending) })
@@ -65,7 +68,7 @@ class ProjectViewModel @Inject constructor(
 
     override fun onIntent(intent: TaskListIntent) {
         when (intent) {
-            is TaskListIntent.ToggleComplete -> completion.toggle(intent.taskId, intent.recurring) { sendEffect(it) }
+            is TaskListIntent.ToggleComplete -> completion.toggle(intent.taskId, intent.recurring, intent.done) { sendEffect(it) }
             is TaskListIntent.Undo -> completion.undo(intent.taskId)
             is ProjectIntent.OpenDialog -> setState { copy(dialog = intent.dialog) }
             ProjectIntent.DismissDialog -> setState { copy(dialog = ProjectDialog.None) }

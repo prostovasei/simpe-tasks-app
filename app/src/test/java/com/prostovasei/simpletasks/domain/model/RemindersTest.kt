@@ -75,21 +75,18 @@ class RemindersTest {
     }
 
     @Test
-    fun badgeShowsKindOfReminder() {
+    fun markIsBellOrBellWithDot() {
         val timed = TaskDue.AtTime(local(15, 18))
         val allDay = TaskDue.AllDay(LocalDate.of(2026, 10, 15))
-        assertEquals(ReminderBadge.AtDue, Reminders.badge(timed, listOf("PT0S")))
-        assertEquals(ReminderBadge.Before(BeforeLabel.MINUTES_30), Reminders.badge(timed, listOf("-PT30M")))
-        assertEquals(ReminderBadge.Before(BeforeLabel.DAYS_3), Reminders.badge(timed, listOf("-PT72H")))
-        assertEquals("Старый вариант «за 5 минут» — вручную", ReminderBadge.Custom, Reminders.badge(timed, listOf("-PT5M")))
-        assertEquals(ReminderBadge.AtDayPart(DayPart.MORNING), Reminders.badge(allDay, listOf("P0DT10H0M0S")))
-        assertEquals(ReminderBadge.AtDayPart(DayPart.NIGHT), Reminders.badge(allDay, listOf("P0DT22H0M0S")))
-        assertEquals(ReminderBadge.Before(BeforeLabel.DAY_1), Reminders.badge(allDay, listOf("-P0DT14H0M0S")))
-        assertEquals(ReminderBadge.Custom, Reminders.badge(allDay, listOf("-P6DT14H0M0S")))
-        assertEquals(ReminderBadge.Several(2), Reminders.badge(timed, listOf("PT0S", "-PT1H")))
-        assertEquals("Одинаковые в разной записи — одно", ReminderBadge.AtDue, Reminders.badge(timed, listOf("PT0S", "-PT0S")))
-        assertNull(Reminders.badge(timed, emptyList()))
-        assertNull(Reminders.badge(null, listOf("PT0S")))
+        assertEquals(ReminderMark.AT_DUE, Reminders.mark(timed, listOf("PT0S")))
+        assertEquals(ReminderMark.EARLY, Reminders.mark(timed, listOf("-PT30M")))
+        assertEquals(ReminderMark.EARLY, Reminders.mark(timed, listOf("-PT5M")))
+        assertEquals("Утро в день срока — не заранее", ReminderMark.AT_DUE, Reminders.mark(allDay, listOf("P0DT10H0M0S")))
+        assertEquals("Накануне в 10:00 — заранее", ReminderMark.EARLY, Reminders.mark(allDay, listOf("-P0DT14H0M0S")))
+        assertEquals("Хоть одно заранее — точка", ReminderMark.EARLY, Reminders.mark(timed, listOf("PT0S", "-PT1H")))
+        assertEquals(ReminderMark.AT_DUE, Reminders.mark(timed, listOf("PT0S", "-PT0S")))
+        assertNull(Reminders.mark(timed, emptyList()))
+        assertNull(Reminders.mark(null, listOf("PT0S")))
     }
 
     @Test
