@@ -18,9 +18,11 @@ import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.TaskPopupActivity
 import com.prostovasei.simpletasks.core.time.TimeProvider
 import com.prostovasei.simpletasks.domain.model.Task
+import com.prostovasei.simpletasks.domain.repository.ProjectRepository
 import com.prostovasei.simpletasks.ui.common.DayNames
 import com.prostovasei.simpletasks.ui.common.DueFormatter
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.first
 import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -50,15 +52,24 @@ class AndroidReminderAlarm @Inject constructor(@param:ApplicationContext private
     }
 }
 
-/** Уведомление (итерация 27, решение PM): название, срок и кнопка «Выполнить»; нажатие открывает задачу. */
+/**
+ * Уведомление (итерация 27, решение PM): название, срок и кнопка «Выполнить»; нажатие открывает задачу.
+ * Если включена полоска поверх приложений и её можно показать — вместо уведомления полоска (T-69).
+ */
 @Singleton
 class AndroidReminderNotifications @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val time: TimeProvider,
+    private val projects: ProjectRepository,
+    private val popup: ReminderPopup,
 ) : ReminderNotifications {
     private val manager = NotificationManagerCompat.from(context)
 
     override suspend fun show(task: Task) {
+        if (popup.canShow()) {
+            popup.show(PopupStrip(task.id, task.title, popupSubtitle(task)))
+            return
+        }
         if (!canPost()) return
         ensureChannel()
         val days = DayNames(context.getString(R.string.day_today), context.getString(R.string.day_tomorrow), context.getString(R.string.day_yesterday))
@@ -90,7 +101,18 @@ class AndroidReminderNotifications @Inject constructor(
         manager.notify(id, notification)
     }
 
-    override fun cancel(taskId: String) = manager.cancel(notificationId(taskId))
+    override fun cancel(taskId: String) {
+        manager.cancel(notificationId(taskId))
+        popup.dismiss(taskId)
+    }
+
+    /** Подпись полоски (решение PM): «Сегодня, 18:00 · Дом». */
+    private suspend fun popupSubtitle(task: Task): String {
+        val days = DayNames(context.getString(R.string.day_today), context.getString(R.string.day_tomorrow), context.getString(R.string.day_yesterday))
+        val due = DueFormatter.format(task.due, task.start, time.today(), time.zone())?.let(days::format)
+        val list = projects.observeProject(task.projectId).first()?.let { if (it.isInbox) context.getString(R.string.inbox_list_name) else it.name }
+        return listOfNotNull(due, list).joinToString(SEPARATOR)
+    }
 
     private fun canPost(): Boolean =
         manager.areNotificationsEnabled() &&
@@ -122,6 +144,7 @@ class AndroidReminderNotifications @Inject constructor(
 
     companion object {
         const val CHANNEL_ID = "reminders_vibrate"
+        private const val SEPARATOR = " · "
         private const val OLD_CHANNEL_ID = "reminders"
 
         /** Пауза, импульс, пауза, импульс (мс). */
