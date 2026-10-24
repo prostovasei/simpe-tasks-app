@@ -28,7 +28,6 @@
     <string name="day_tomorrow">Завтра</string>
     <string name="day_yesterday">Вчера</string>
     <string name="inbox_list_name">Входящие</string>
-    <string name="meta_separator">\u0020·\u0020</string>
 
     <string name="task_completed">Задача выполнена</string>
     <string name="task_undo">Отмена</string>
@@ -173,11 +172,6 @@
     <string name="reminder_after_at">Через %1$s в %2$s</string>
     <string name="reminder_none">Без напоминания</string>
     <string name="reminder_at_due_short">В срок</string>
-    <string name="reminder_badge_30m">30</string>
-    <string name="reminder_badge_1h">1ч</string>
-    <string name="reminder_badge_1d">1д</string>
-    <string name="reminder_badge_3d">3д</string>
-    <string name="reminder_badge_many">%d+</string>
     <string name="reminder_custom">Вручную…</string>
     <string name="reminder_custom_title">Своё напоминание</string>
     <string name="reminder_custom_days">Дней до срока</string>
@@ -288,10 +282,9 @@
     <string name="sample_task_overdue_meta">Вчера · Работа</string>
     <string name="sample_task_today">Созвон с командой</string>
     <string name="sample_task_today_meta">15:00 · Работа</string>
-    <string name="task_rescheduled">Следующий раз: %1$s</string>
+    <string name="task_rescheduled">Следующий повтор: %1$s</string>
     <string name="notification_channel">Напоминания</string>
     <string name="notification_complete">Выполнить</string>
-    <string name="notification_tomorrow">На завтра</string>
     <string name="settings_notifications_title">Напоминания</string>
     <string name="settings_notifications_off">Уведомления выключены — напоминания не придут.</string>
     <string name="settings_notifications_enable">Включить уведомления</string>
@@ -301,6 +294,7 @@
     <string name="widget_all_hint">Просроченные и ближайшие 30 дней</string>
     <string name="widget_empty">Задач нет</string>
     <string name="widget_complete">Выполнить</string>
+    <string name="task_uncomplete">Снять отметку «выполнено»</string>
     <string name="widget_open_app">Открыть приложение</string>
     <string name="widget_log_title">Журнал виджета</string>
     <string name="update_title">Обновление</string>

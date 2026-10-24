@@ -40,10 +40,10 @@ class RoomTaskRepository @Inject constructor(
     override fun observeAllScreen(today: LocalDate): Flow<AllScreenTasks> {
         val day = DayWindow.of(today, time.zone())
         return combine(
-            taskDao.observeOverdue(day.allDayStart, day.start),
-            taskDao.observeTodayAllDay(day.allDayStart, day.allDayEnd),
-            taskDao.observeTodayTimed(day.start, day.end),
-            taskDao.observeUpcoming(day.allDayEnd, day.end),
+            taskDao.observeOverdue(day.allDayStart, day.start, day.start),
+            taskDao.observeTodayAllDay(day.allDayStart, day.allDayEnd, day.start),
+            taskDao.observeTodayTimed(day.start, day.end, day.start),
+            taskDao.observeUpcoming(day.allDayEnd, day.end, day.start),
         ) { overdue, allDay, timed, upcoming ->
             AllScreenTasks(
                 overdue = overdue.map { it.toDomain() },
@@ -54,11 +54,11 @@ class RoomTaskRepository @Inject constructor(
         }.distinctUntilChanged()
     }
 
-    override fun observeInbox(): Flow<List<Task>> =
-        taskDao.observeInbox().map { tasks -> tasks.map { it.toDomain() } }.distinctUntilChanged()
+    override fun observeInbox(today: LocalDate): Flow<List<Task>> =
+        taskDao.observeInbox(doneSince(today)).map { tasks -> tasks.map { it.toDomain() } }.distinctUntilChanged()
 
-    override fun observeProjectTasks(projectId: String): Flow<List<Task>> =
-        taskDao.observeActiveByProject(projectId).map { tasks -> tasks.map { it.toDomain() } }.distinctUntilChanged()
+    override fun observeProjectTasks(projectId: String, today: LocalDate): Flow<List<Task>> =
+        taskDao.observeActiveByProject(projectId, doneSince(today)).map { tasks -> tasks.map { it.toDomain() } }.distinctUntilChanged()
 
     override fun observeTaskDetails(taskId: String): Flow<TaskDetails?> =
         combine(taskDao.observeById(taskId), checklistDao.observeByTask(taskId)) { task, items ->
@@ -249,4 +249,7 @@ class RoomTaskRepository @Inject constructor(
     }
 
     private fun nowMillis() = time.now().toEpochMilli()
+
+    /** Начало дня [today]: выполненные с этого момента остаются в списках до полуночи (итерация 27). */
+    private fun doneSince(today: LocalDate) = today.atStartOfDay(time.zone()).toInstant().toEpochMilli()
 }

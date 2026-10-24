@@ -43,7 +43,7 @@ import com.prostovasei.simpletasks.designsystem.components.ListSquare
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.designsystem.theme.parseListColor
 import com.prostovasei.simpletasks.domain.model.Priority
-import com.prostovasei.simpletasks.domain.model.ReminderBadge
+import com.prostovasei.simpletasks.domain.model.ReminderMark
 import com.prostovasei.simpletasks.domain.model.Reminders
 import com.prostovasei.simpletasks.domain.model.TaskDue
 import com.prostovasei.simpletasks.domain.model.allDayReminder
@@ -61,7 +61,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 /**
- * Пункты меню напоминаний (итерация 23): у каждого — его значок, у заданных — галочка справа; заданные вручную —
+ * Пункты меню напоминаний (итерация 23): у каждого — колокольчик (с точкой — заранее, итерация 27), у заданных — галочка справа; заданные вручную —
  * сверху, дальше готовые варианты и «Вручную…» ([onCustom]). Отметка пункта меню не закрывает; [onDone] закрывает
  * его после «Вручную…» и «Без напоминания».
  */
@@ -76,7 +76,7 @@ fun ReminderMenuItems(due: TaskDue, reminders: List<String>, onEdit: (FieldEdit)
         val checked = option in reminders
         DropdownMenuItem(
             text = { Text(reminderText(option, allDay), color = colors.textPrimary) },
-            leadingIcon = { MenuReminderIcon(Reminders.badgeOf(due, option)) },
+            leadingIcon = { MenuReminderIcon(if (Reminders.isEarly(option)) ReminderMark.EARLY else ReminderMark.AT_DUE) },
             trailingIcon = if (checked) { { Icon(Icons.Default.Check, null, tint = colors.accent) } } else null,
             // Меню не закрывается (0.23.2): можно отметить сразу несколько; закрывается нажатием вне меню.
             onClick = { onEdit(FieldEdit.SetReminders(if (checked) reminders - option else reminders + option)) },
@@ -85,7 +85,7 @@ fun ReminderMenuItems(due: TaskDue, reminders: List<String>, onEdit: (FieldEdit)
     }
     DropdownMenuItem(
         text = { Text(stringResource(R.string.reminder_custom), color = colors.textPrimary) },
-        leadingIcon = { MenuReminderIcon(ReminderBadge.Custom) },
+        leadingIcon = { MenuReminderIcon(ReminderMark.EARLY) },
         onClick = { onDone(); onCustom() },
         modifier = Modifier.testTag(TAG_REMINDER_CUSTOM),
     )
@@ -93,9 +93,9 @@ fun ReminderMenuItems(due: TaskDue, reminders: List<String>, onEdit: (FieldEdit)
 }
 
 @Composable
-private fun MenuReminderIcon(badge: ReminderBadge) {
+private fun MenuReminderIcon(mark: ReminderMark) {
     val colors = AppTheme.colors
-    ReminderIcon(badge, AppTheme.sizes.icon, tint = colors.textSecondary, badgeColor = colors.reminderBadge, glyphColor = colors.textSecondary)
+    ReminderIcon(mark, AppTheme.sizes.icon, tint = colors.textSecondary, dotColor = colors.accent)
 }
 
 /**

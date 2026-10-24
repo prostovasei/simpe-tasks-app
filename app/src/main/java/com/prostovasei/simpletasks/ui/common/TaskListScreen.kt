@@ -41,7 +41,7 @@ fun FlatTaskList(
             nowMinute = null,
             isOverdue = { false },
             showList = showList,
-            onToggle = { onIntent(TaskListIntent.ToggleComplete(it.id, it.isRecurring)) },
+            onToggle = { onIntent(TaskListIntent.ToggleComplete(it.id, it.isRecurring, it.showsDone)) },
             onOpen = { onOpenTask(it.taskId) },
             dayLabels = true,
         )

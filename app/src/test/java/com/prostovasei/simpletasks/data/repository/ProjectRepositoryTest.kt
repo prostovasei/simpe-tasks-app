@@ -69,7 +69,7 @@ class ProjectRepositoryTest : DatabaseTest() {
         assertTrue(tree.groups.isEmpty())
         assertEquals(list, tree.ungrouped.single().project.id)
         assertNull(tree.ungrouped.single().project.groupId)
-        assertEquals(1, tasks.observeProjectTasks(list).first().size)
+        assertEquals(1, tasks.observeProjectTasks(list, time.today()).first().size)
     }
 
     @Test
@@ -86,7 +86,7 @@ class ProjectRepositoryTest : DatabaseTest() {
         assertTrue(projects.observeProjectTree().first().ungrouped.isEmpty())
         val sections = tasks.observeAllScreen(today).first()
         assertTrue(sections.todayAllDay.isEmpty())
-        assertTrue(tasks.observeInbox().first().isEmpty())
+        assertTrue(tasks.observeInbox(time.today()).first().isEmpty())
         assertNull(tasks.observeTaskDetails(dated).first())
         val item = db.checklistDao().getById(itemId)!!
         assertTrue(item.isDeleted)

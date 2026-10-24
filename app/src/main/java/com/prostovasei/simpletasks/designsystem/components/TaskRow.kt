@@ -48,7 +48,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.designsystem.theme.PriorityColors
 import com.prostovasei.simpletasks.domain.model.Priority
-import com.prostovasei.simpletasks.domain.model.ReminderBadge
+import com.prostovasei.simpletasks.domain.model.ReminderMark
 import com.prostovasei.simpletasks.ui.common.ReminderIcon
 
 /**
@@ -72,7 +72,7 @@ fun TaskRow(
     testTag: String = "",
     onClick: (() -> Unit)? = null,
     isRecurring: Boolean = false,
-    reminder: ReminderBadge? = null,
+    reminder: ReminderMark? = null,
     isGhost: Boolean = false,
     isOverdue: Boolean = false,
     trailing: List<String> = emptyList(),
@@ -165,11 +165,10 @@ fun TaskRow(
             }
             reminder?.let {
                 ReminderIcon(
-                    badge = it,
+                    mark = it,
                     size = sizes.reminderIcon,
                     tint = colors.textSecondary,
-                    badgeColor = colors.reminderBadge,
-                    glyphColor = colors.textSecondary,
+                    dotColor = colors.accent,
                     modifier = Modifier.padding(start = spacing.xxs).testTag("$testTag:reminder"),
                 )
             }

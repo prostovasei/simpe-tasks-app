@@ -55,7 +55,7 @@ class AllViewModel @Inject constructor(
 
     override fun onIntent(intent: TaskListIntent) {
         when (intent) {
-            is TaskListIntent.ToggleComplete -> completion.toggle(intent.taskId, intent.recurring) { sendEffect(it) }
+            is TaskListIntent.ToggleComplete -> completion.toggle(intent.taskId, intent.recurring, intent.done) { sendEffect(it) }
             is TaskListIntent.Undo -> completion.undo(intent.taskId)
             else -> Unit
         }

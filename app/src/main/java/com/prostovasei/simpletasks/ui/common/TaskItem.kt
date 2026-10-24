@@ -2,7 +2,7 @@ package com.prostovasei.simpletasks.ui.common
 
 import com.prostovasei.simpletasks.domain.model.Priority
 import com.prostovasei.simpletasks.domain.model.Project
-import com.prostovasei.simpletasks.domain.model.ReminderBadge
+import com.prostovasei.simpletasks.domain.model.ReminderMark
 import com.prostovasei.simpletasks.domain.model.Reminders
 import com.prostovasei.simpletasks.domain.model.Task
 import com.prostovasei.simpletasks.domain.model.TaskDue
@@ -19,8 +19,10 @@ data class TaskItem(
     val listName: String?,
     val listColor: String?,
     val isInboxList: Boolean,
-    /** Отмечена только что: плашка «рассыпается в пыль», затем пропадает (SPEC.md §4.1, итерация 15). */
+    /** Отмечена только что, а БД ещё не ответила: показывается выполненной сразу (итерация 27). */
     val isCompleting: Boolean = false,
+    /** Выполнена (сегодня): остаётся в списке до полуночи — с галочкой, зачёркнутая и бледнее (итерация 27). */
+    val isDone: Boolean = false,
     val hasChecklist: Boolean = false,
     /** Повторяющаяся: при отметке переезжает на следующий раз. */
     val isRecurring: Boolean = false,
@@ -28,10 +30,13 @@ data class TaskItem(
     val ghostOf: String? = null,
     /** Значок списка — ключ из [ListIcons] (у «Входящих» свой). */
     val listIcon: String? = null,
-    /** Значок напоминаний (итерация 23): колокольчик со значком вида; null — напоминаний нет. */
-    val reminder: ReminderBadge? = null,
+    /** Колокольчик (итерация 27): в момент срока или с точкой — заранее; null — напоминаний нет. */
+    val reminder: ReminderMark? = null,
 ) {
     val isGhost: Boolean get() = ghostOf != null
+
+    /** Показывается выполненной: уже в БД или только что отмечена. */
+    val showsDone: Boolean get() = isDone || isCompleting
 
     /** Задача, которую открывает нажатие. */
     val taskId: String get() = ghostOf ?: id
@@ -48,10 +53,11 @@ fun Task.toItem(projects: Map<String, Project>, today: LocalDate, zone: ZoneId, 
         listColor = project?.color,
         isInboxList = project?.isInbox == true,
         isCompleting = id in pending,
+        isDone = isCompleted,
         isRecurring = rrule != null && due != null,
         ghostOf = id.takeIf { ghostIndex != null },
         listIcon = if (project?.isInbox == true) ListIcons.INBOX else project?.icon,
-        reminder = Reminders.badge(due, reminders),
+        reminder = Reminders.mark(due, reminders),
     )
 }
 

@@ -41,6 +41,7 @@ import androidx.glance.semantics.semantics
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextAlign
+import androidx.glance.text.TextDecoration
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.prostovasei.simpletasks.MainActivity
@@ -51,7 +52,8 @@ import com.prostovasei.simpletasks.designsystem.tokens.RadiusTokens
 import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
 import com.prostovasei.simpletasks.designsystem.tokens.SpacingTokens
 import com.prostovasei.simpletasks.domain.model.Priority
-import com.prostovasei.simpletasks.domain.model.ReminderBadge
+import com.prostovasei.simpletasks.domain.model.ReminderMark
+import com.prostovasei.simpletasks.ui.common.DONE_ALPHA
 import com.prostovasei.simpletasks.ui.common.DayNames
 import com.prostovasei.simpletasks.ui.common.ListIcons
 import com.prostovasei.simpletasks.ui.common.ReminderIconMasks
@@ -115,7 +117,6 @@ private const val TAIL_ID = Long.MIN_VALUE
 
 private val WidgetDay.id: Long
     get() = when (this) {
-        WidgetDay.Overdue -> -1L
         WidgetDay.NoDate -> -2L
         is WidgetDay.On -> date.toEpochDay()
     }
@@ -126,9 +127,10 @@ private val WidgetDay.id: Long
  */
 @Composable
 private fun DayBlock(block: WidgetDayBlock, isFirst: Boolean, model: WidgetModel, days: DayNames, liveClock: Boolean) {
-    val overdue = block.day == WidgetDay.Overdue
+    // Прошедший день (итерация 27): красные подпись, время и кружки, раскладка — как у остальных дней.
+    val overdue = (block.day as? WidgetDay.On)?.date?.let { it < model.today } == true
     val nowMinute = model.nowMinute.takeIf { block.day == WidgetDay.On(model.today) }
-    val rows = WidgetTimeline.rows(block.items, overdue, nowMinute, days)
+    val rows = WidgetTimeline.rows(block.items, overdue = false, nowMinute = nowMinute, days = days)
     // Правое поле плашек; за ним, у самого края виджета, — полоска прокрутки.
     Column(GlanceModifier.fillMaxWidth().padding(end = SizeTokens.WIDGET_LIST_EDGE.dp)) {
         DayTitle(block.day, model.today, isFirst)
@@ -168,11 +170,14 @@ internal fun <T> rowChunks(items: List<T>, limit: Int): List<List<T>>? =
 /** Предел детей у Row/Column в Glance. */
 internal const val MAX_CHILDREN = 10
 
-/** «Просрочено», «ПТ, 16 окт» + белая метка «Сегодня» / «Завтра» (итерация 14, как в приложении), «Без даты». */
+/**
+ * «ПТ, 16 окт» + белая метка «Сегодня» / «Завтра» / «Вчера» (итерации 14, 27 — как в приложении), «Без даты».
+ * Прошедший день — красным.
+ */
 @Composable
 private fun DayTitle(day: WidgetDay, today: LocalDate, isFirst: Boolean) {
     val title = widgetDayTitle(LocalContext.current, day, today)
-    val color = if (day == WidgetDay.Overdue) WidgetColors.overdue else WidgetColors.textPrimary
+    val color = if (title.isPast) WidgetColors.overdue else WidgetColors.textPrimary
     // Итерация 25 (вариант PM «А»): дата группы крупнее — 14 sp, метка «Сегодня» — 12 sp.
     val style = TextStyle(color = color, fontSize = 14.sp, fontWeight = FontWeight.Bold)
     Row(
@@ -198,33 +203,40 @@ private fun DayTitle(day: WidgetDay, today: LocalDate, isFirst: Boolean) {
     }
 }
 
-/** Подпись дня: [text] — «ПТ, 16 ОКТ»; [relative] — «СЕГОДНЯ» / «ЗАВТРА» или null. */
-data class WidgetDayTitle(val text: String, val relative: String?, val isToday: Boolean)
+/** Подпись дня: [text] — «ПТ, 16 ОКТ»; [relative] — «Сегодня» / «Завтра» / «Вчера» или null; [isPast] — день прошёл. */
+data class WidgetDayTitle(val text: String, val relative: String?, val isToday: Boolean, val isPast: Boolean = false)
 
 fun widgetDayTitle(context: Context, day: WidgetDay, today: LocalDate): WidgetDayTitle = when (day) {
-    WidgetDay.Overdue -> WidgetDayTitle(context.getString(R.string.all_overdue), null, false)
     WidgetDay.NoDate -> WidgetDayTitle(context.getString(R.string.date_none), null, false)
     is WidgetDay.On -> WidgetDayTitle(
         text = WidgetDates.header(day.date),
         relative = when (day.date) {
             today -> context.getString(R.string.day_today)
             today.plusDays(1) -> context.getString(R.string.day_tomorrow)
+            today.minusDays(1) -> context.getString(R.string.day_yesterday)
             else -> null
         },
         isToday = day.date == today,
+        isPast = day.date < today,
     )
 }
 
 /**
- * Строка шкалы: слева время (у периода — начало и конец, у задачи на весь день — пусто, у просроченной — день),
- * по центру линия с кружком приоритета (нажатие — «выполнено»), справа плашка: название, будильник, повтор, список.
+ * Строка шкалы: слева время (у периода — начало и конец, у задачи на весь день — пусто), по центру линия с кружком
+ * приоритета (нажатие — «выполнено», у выполненной — вернуть), справа плашка: название и значки справа налево —
+ * список, колокольчик, повтор (итерация 27). Выполненная — зачёркнутая и бледнее, кружок залит с белой галочкой.
  */
 @Composable
 private fun TimelineRow(row: WidgetRow.Task, line: Line, overdue: Boolean, filter: WidgetFilter) {
     val context = LocalContext.current
     val item = row.item
+    val done = item.showsDone
     val faded = row.past || item.isGhost
-    val textColor = if (faded) WidgetColors.textSecondary else WidgetColors.textPrimary
+    val textColor = when {
+        done -> WidgetColors.textDone
+        faded -> WidgetColors.textSecondary
+        else -> WidgetColors.textPrimary
+    }
     val height = if (row.isPeriod) SizeTokens.WIDGET_PERIOD_ROW else SizeTokens.WIDGET_ROW
     Row(GlanceModifier.fillMaxWidth().height(height.dp), verticalAlignment = Alignment.CenterVertically) {
         TimeColumn(row, overdue, textColor)
@@ -241,15 +253,20 @@ private fun TimelineRow(row: WidgetRow.Task, line: Line, overdue: Boolean, filte
             ) {
                 Text(
                     item.title,
-                    style = TextStyle(color = textColor, fontSize = 14.sp, fontWeight = FontWeight.Bold),
+                    style = TextStyle(
+                        color = textColor,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        textDecoration = if (done) TextDecoration.LineThrough else null,
+                    ),
                     maxLines = 1,
                     modifier = GlanceModifier.defaultWeight(),
                 )
-                item.reminder?.let { ReminderIcon(it) }
-                if (item.isRecurring) MetaIcon(R.drawable.ic_tool_repeat)
+                if (item.isRecurring) MetaIcon(R.drawable.ic_tool_repeat, done)
+                item.reminder?.let { ReminderIcon(it, done) }
                 if (filter !is WidgetFilter.ProjectList) {
                     Spacer(GlanceModifier.width(SpacingTokens.XS.dp))
-                    ListSquare(item)
+                    ListSquare(item, done)
                 }
             }
         }
@@ -279,46 +296,68 @@ private fun TimeColumn(row: WidgetRow.Task, overdue: Boolean, textColor: ColorPr
 }
 
 /**
- * Колонка шкалы: линия сверху и снизу, между ними кружок приоритета (у повторяющейся — значок повтора,
- * у периода — вытянутое кольцо). Нажатие на колонку отмечает задачу выполненной; у будущего повтора — нет.
+ * Колонка шкалы: линия сверху и снизу, между ними кружок приоритета (у периода — капсула во всю высоту плашки).
+ * У повторяющейся тоже кружок — значок повтора только в плашке (итерация 27). Выполненная — кружок или капсула залиты
+ * с белой галочкой. Нажатие на колонку отмечает задачу или возвращает выполненную; у будущего повтора — ничего.
  */
 @Composable
 private fun Rail(row: WidgetRow.Task, line: Line, overdue: Boolean) {
     val context = LocalContext.current
     val item = row.item
+    val done = item.showsDone
     val color = when {
         overdue -> WidgetColors.overdue
-        row.past || item.isGhost -> WidgetColors.inactive
+        (row.past || item.isGhost) && !done -> WidgetColors.inactive
         else -> widgetCheckColors(item.priority).ring
     }
-    val action = if (item.isGhost) GlanceModifier else GlanceModifier.clickable(actionSendBroadcast(WidgetActions.complete(context, item.id)))
-    val label = if (item.isGhost) null else context.getString(R.string.widget_complete)
+    val action = when {
+        item.isGhost -> GlanceModifier
+        done -> GlanceModifier.clickable(actionSendBroadcast(WidgetActions.uncomplete(context, item.id)))
+        else -> GlanceModifier.clickable(actionSendBroadcast(WidgetActions.complete(context, item.id)))
+    }
+    val label = if (item.isGhost) null else context.getString(if (done) R.string.task_uncomplete else R.string.widget_complete)
     Column(
         modifier = GlanceModifier.width(SizeTokens.WIDGET_RAIL.dp).fillMaxHeight().then(action),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         if (row.isPeriod) {
             LineSegment(line.top, GlanceModifier.height(SizeTokens.WIDGET_PERIOD_STUB.dp))
-            Image(
-                ImageProvider(R.drawable.widget_period_ring),
-                contentDescription = label,
-                colorFilter = ColorFilter.tint(color),
-                contentScale = ContentScale.FillBounds,
-                modifier = GlanceModifier.width(SizeTokens.WIDGET_NODE.dp).defaultWeight(),
-            )
+            Box(GlanceModifier.width(SizeTokens.WIDGET_NODE.dp).defaultWeight(), contentAlignment = Alignment.Center) {
+                Image(
+                    ImageProvider(if (done) R.drawable.widget_period_fill else R.drawable.widget_period_ring),
+                    contentDescription = label,
+                    colorFilter = ColorFilter.tint(color),
+                    contentScale = ContentScale.FillBounds,
+                    modifier = GlanceModifier.fillMaxSize(),
+                )
+                if (done) NodeCheck()
+            }
             LineSegment(line.bottom, GlanceModifier.height(SizeTokens.WIDGET_PERIOD_STUB.dp))
         } else {
             LineSegment(line.top, GlanceModifier.defaultWeight())
-            val repeat = item.isRecurring
-            Image(
-                ImageProvider(if (repeat) R.drawable.ic_tool_repeat else R.drawable.ic_widget_node_ring),
-                contentDescription = label,
-                colorFilter = ColorFilter.tint(if (repeat) WidgetColors.textSecondary else color),
-                modifier = GlanceModifier.size((if (repeat) SizeTokens.WIDGET_META_ICON else SizeTokens.WIDGET_NODE).dp),
-            )
+            Box(GlanceModifier.size(SizeTokens.WIDGET_NODE.dp), contentAlignment = Alignment.Center) {
+                Image(
+                    ImageProvider(if (done) R.drawable.ic_widget_node_fill else R.drawable.ic_widget_node_ring),
+                    contentDescription = label,
+                    colorFilter = ColorFilter.tint(color),
+                    modifier = GlanceModifier.size(SizeTokens.WIDGET_NODE.dp),
+                )
+                if (done) NodeCheck()
+            }
             LineSegment(line.bottom, GlanceModifier.defaultWeight())
         }
     }
+}
+
+/** Белая галочка в залитом кружке или капсуле. */
+@Composable
+private fun NodeCheck() {
+    Image(
+        ImageProvider(R.drawable.ic_node_check),
+        contentDescription = null,
+        colorFilter = ColorFilter.tint(WidgetColors.onAccent),
+        modifier = GlanceModifier.size(SizeTokens.NODE_CHECK.dp),
+    )
 }
 
 /** Отрезок линии шкалы ([visible] = false — пустое место той же высоты: у первой и последней строки дня). */
@@ -364,29 +403,28 @@ private fun NowRow(line: Line, nowMinute: Int?, liveClock: Boolean) {
 
 private const val MINUTES_PER_HOUR = 60
 
-/** Значок в плашке справа от названия: будильник или повтор. */
+/** Значок повтора в плашке; [done] — у выполненной бледнее. */
 @Composable
-private fun MetaIcon(icon: Int) {
+private fun MetaIcon(icon: Int, done: Boolean) {
     Spacer(GlanceModifier.width(SpacingTokens.XXS.dp))
     Image(
         ImageProvider(icon),
         contentDescription = null,
-        colorFilter = ColorFilter.tint(WidgetColors.textSecondary),
+        colorFilter = ColorFilter.tint(if (done) WidgetColors.iconDone else WidgetColors.textSecondary),
         modifier = GlanceModifier.size(SizeTokens.WIDGET_META_ICON.dp),
     )
 }
 
-/** Колокольчик напоминаний со значком (итерация 23): три маски, каждая со своим цветом темы. */
+/** Колокольчик (итерация 27): без цифр, с точкой — напоминание заранее; две маски, каждая со своим цветом темы. */
 @Composable
-private fun ReminderIcon(badge: ReminderBadge) {
+private fun ReminderIcon(mark: ReminderMark, done: Boolean) {
     val context = LocalContext.current
     val size = SizeTokens.WIDGET_REMINDER_ICON
-    val masks = ReminderIconMasks.of(context, badge, (size * context.resources.displayMetrics.density).roundToInt())
+    val masks = ReminderIconMasks.of(mark, (size * context.resources.displayMetrics.density).roundToInt())
     Spacer(GlanceModifier.width(SpacingTokens.XXS.dp))
     Box(GlanceModifier.size(size.dp)) {
-        MaskImage(masks.bell, WidgetColors.textSecondary, size)
-        masks.pill?.let { MaskImage(it, WidgetColors.reminderBadge, size) }
-        masks.glyph?.let { MaskImage(it, WidgetColors.textSecondary, size) }
+        MaskImage(masks.bell, if (done) WidgetColors.iconDone else WidgetColors.textSecondary, size)
+        masks.dot?.let { MaskImage(it, if (done) WidgetColors.accentDone else WidgetColors.accent, size) }
     }
 }
 
@@ -395,10 +433,14 @@ private fun MaskImage(mask: Bitmap, color: ColorProvider, size: Int) {
     Image(ImageProvider(mask), contentDescription = null, colorFilter = ColorFilter.tint(color), modifier = GlanceModifier.size(size.dp))
 }
 
-/** Квадратик цвета списка со значком (как в приложении). */
+/** Квадратик цвета списка со значком (как в приложении); [done] — у выполненной бледнее (70%). */
 @Composable
-private fun ListSquare(item: TaskItem) {
-    val color = if (item.isInboxList) WidgetColors.inboxList else parseListColor(item.listColor)?.let { ColorProvider(it) } ?: WidgetColors.inactive
+private fun ListSquare(item: TaskItem, done: Boolean) {
+    val color = when {
+        item.isInboxList -> if (done) WidgetColors.inboxListDone else WidgetColors.inboxList
+        else -> parseListColor(item.listColor)?.let { ColorProvider(if (done) it.copy(alpha = DONE_ALPHA) else it) }
+            ?: if (done) WidgetColors.inactiveDone else WidgetColors.inactive
+    }
     Box(
         modifier = GlanceModifier.size(SizeTokens.WIDGET_LIST_SQUARE.dp).background(color).cornerRadius(RadiusTokens.SM.dp),
         contentAlignment = Alignment.Center,

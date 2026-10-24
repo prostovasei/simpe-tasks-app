@@ -51,38 +51,16 @@ object Reminders {
     }
 
     /**
-     * Значок напоминаний задачи (решение PM, итерация 23): несколько — число, одно — его вид; без срока
-     * или без напоминаний — null.
+     * Значок напоминаний задачи (итерация 27, решение PM): колокольчик без цифр; с точкой — если хоть одно
+     * напоминание раньше срока (у задачи на весь день — раньше дня срока). Без срока или без напоминаний — null.
      */
-    fun badge(due: TaskDue?, reminders: List<String>): ReminderBadge? {
-        if (due == null) return null
-        val distinct = reminders.fold(emptyList<String>()) { acc, r -> if (acc.any { sameMoment(it, r) }) acc else acc + r }
-        return when (distinct.size) {
-            0 -> null
-            1 -> badgeOf(due, distinct.single())
-            else -> ReminderBadge.Several(distinct.size)
-        }
+    fun mark(due: TaskDue?, reminders: List<String>): ReminderMark? {
+        if (due == null || reminders.isEmpty()) return null
+        return if (reminders.any(::isEarly)) ReminderMark.EARLY else ReminderMark.AT_DUE
     }
 
-    /** Вид одного напоминания: готовый вариант — свой значок, любое другое — «вручную». */
-    fun badgeOf(due: TaskDue, trigger: String): ReminderBadge {
-        val (presets, badges) = when (due) {
-            is TaskDue.AtTime -> TIMED_PRESETS to TIMED_BADGES
-            is TaskDue.AllDay -> ALL_DAY_PRESETS to ALL_DAY_BADGES
-        }
-        val index = presets.indexOfFirst { sameMoment(it, trigger) }
-        return if (index >= 0) badges[index] else ReminderBadge.Custom
-    }
-
-    private val TIMED_BADGES = listOf(
-        ReminderBadge.AtDue,
-        ReminderBadge.Before(BeforeLabel.MINUTES_30),
-        ReminderBadge.Before(BeforeLabel.HOUR_1),
-        ReminderBadge.Before(BeforeLabel.DAY_1),
-        ReminderBadge.Before(BeforeLabel.DAYS_3),
-    )
-    private val ALL_DAY_BADGES = DayPart.entries.map { ReminderBadge.AtDayPart(it) } +
-        listOf(ReminderBadge.Before(BeforeLabel.DAY_1), ReminderBadge.Before(BeforeLabel.DAYS_3))
+    /** Напоминание раньше срока: отрицательное смещение («-PT30M», «-P0DT14H0M0S»). */
+    fun isEarly(trigger: String): Boolean = parseReminder(trigger)?.isNegative == true
 
     /** Одинаковые напоминания в разной записи («PT0S» и «-PT0S») считаются одним. */
     fun sameMoment(a: String, b: String): Boolean = parseReminder(a)?.let { it == parseReminder(b) } ?: (a == b)
@@ -104,28 +82,8 @@ object Reminders {
     }
 }
 
-/** Значок напоминаний: колокольчик и серый значок в углу (решение PM, итерация 23). */
-sealed interface ReminderBadge {
-    /** В момент срока — колокольчик без значка. */
-    data object AtDue : ReminderBadge
-
-    /** Готовое «за …»: «30», «1ч», «1д», «3д» справа внизу. */
-    data class Before(val label: BeforeLabel) : ReminderBadge
-
-    /** Задача на весь день: время суток кругом-заливкой (ночь — луна) справа внизу. */
-    data class AtDayPart(val part: DayPart) : ReminderBadge
-
-    /** Заданное вручную — часики справа внизу. */
-    data object Custom : ReminderBadge
-
-    /** Несколько напоминаний — их число справа вверху. */
-    data class Several(val count: Int) : ReminderBadge
-}
-
-enum class BeforeLabel { MINUTES_30, HOUR_1, DAY_1, DAYS_3 }
-
-/** Время суток напоминания задачи на весь день: 10, 13, 16, 19 и 22 часа. */
-enum class DayPart { MORNING, NOON, AFTERNOON, EVENING, NIGHT }
+/** Значок напоминаний (итерация 27): колокольчик в момент срока или с точкой — напоминание заранее. */
+enum class ReminderMark { AT_DUE, EARLY }
 
 /** Смещение напоминания задачи на весь день: «за [daysBefore] дн. в [minuteOfDay]». */
 data class AllDayReminder(val daysBefore: Int, val minuteOfDay: Int)

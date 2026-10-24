@@ -46,6 +46,12 @@ class WidgetActionReceiver : BroadcastReceiver() {
                     context.widgetEntryPoint().tasks().complete(taskId)
                     WidgetRenderer.renderAll(context, "галочка")
                 }
+                WidgetActions.UNCOMPLETE -> {
+                    val taskId = intent.getStringExtra(WidgetActions.EXTRA_TASK_ID) ?: return
+                    WidgetLog.add(context, "галочка: отметка снята")
+                    context.widgetEntryPoint().tasks().setCompleted(taskId, completed = false)
+                    WidgetRenderer.renderAll(context, "галочка")
+                }
                 WidgetActions.MIDNIGHT -> WidgetRenderer.renderAll(context, "время")
             }
         }
@@ -55,6 +61,7 @@ class WidgetActionReceiver : BroadcastReceiver() {
 object WidgetActions {
     const val SWITCH = "com.prostovasei.simpletasks.widget.SWITCH"
     const val COMPLETE = "com.prostovasei.simpletasks.widget.COMPLETE"
+    const val UNCOMPLETE = "com.prostovasei.simpletasks.widget.UNCOMPLETE"
     const val MIDNIGHT = "com.prostovasei.simpletasks.WIDGET_MIDNIGHT"
     const val EXTRA_WIDGET_ID = "widget_id"
     const val EXTRA_FILTER = "filter"
@@ -70,5 +77,11 @@ object WidgetActions {
     fun complete(context: Context, taskId: String): Intent = Intent(context, WidgetActionReceiver::class.java)
         .setAction(COMPLETE)
         .setData("simpletasks://widget/complete/$taskId".toUri())
+        .putExtra(EXTRA_TASK_ID, taskId)
+
+    /** Снять отметку с выполненной (итерация 27): выполненная остаётся в виджете до полуночи. */
+    fun uncomplete(context: Context, taskId: String): Intent = Intent(context, WidgetActionReceiver::class.java)
+        .setAction(UNCOMPLETE)
+        .setData("simpletasks://widget/uncomplete/$taskId".toUri())
         .putExtra(EXTRA_TASK_ID, taskId)
 }

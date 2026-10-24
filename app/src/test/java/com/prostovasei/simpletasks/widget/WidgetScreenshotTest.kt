@@ -10,10 +10,8 @@ import androidx.glance.appwidget.compose
 import androidx.glance.appwidget.provideContent
 import androidx.test.core.app.ApplicationProvider
 import com.github.takahirom.roborazzi.captureRoboImage
-import com.prostovasei.simpletasks.domain.model.BeforeLabel
-import com.prostovasei.simpletasks.domain.model.DayPart
 import com.prostovasei.simpletasks.domain.model.Priority
-import com.prostovasei.simpletasks.domain.model.ReminderBadge
+import com.prostovasei.simpletasks.domain.model.ReminderMark
 import com.prostovasei.simpletasks.ui.common.DayLabel
 import com.prostovasei.simpletasks.ui.common.DueText
 import com.prostovasei.simpletasks.ui.common.TaskItem
@@ -45,10 +43,11 @@ class WidgetScreenshotTest {
         list: String? = "Работа",
         ghostOf: String? = null,
         priority: Priority = Priority.NONE,
-        reminder: ReminderBadge? = null,
+        reminder: ReminderMark? = null,
+        done: Boolean = false,
     ) = TaskItem(
         id, title, priority, due, list, LIST_COLORS[list], isInboxList = list == null, isRecurring = ghostOf != null || id == "gym", ghostOf = ghostOf,
-        listIcon = LIST_ICONS[list ?: "Inbox"], reminder = reminder,
+        listIcon = LIST_ICONS[list ?: "Inbox"], reminder = reminder, isDone = done,
     )
 
     // Цвета и значки списков в тестовых данных (итерация 14).
@@ -62,21 +61,28 @@ class WidgetScreenshotTest {
         null,
         today,
         listOf(
-            WidgetDayBlock(WidgetDay.Overdue, listOf(item("late", "Отправить отчёт", DueText(DayLabel.Yesterday, null), priority = Priority.HIGH))),
+            // Итерация 27: просроченные — по своим дням, выполненные остаются до полуночи (галочка, зачёркнуты, бледнее).
+            WidgetDayBlock(
+                WidgetDay.On(today.minusDays(1)),
+                listOf(
+                    item("late", "Отправить отчёт", DueText(DayLabel.Yesterday, null), priority = Priority.HIGH),
+                    item("cafe", "Кафе", DueText(DayLabel.Yesterday, "18:00–21:00"), list = "Дом", reminder = ReminderMark.EARLY, done = true),
+                ),
+            ),
             WidgetDayBlock(
                 WidgetDay.On(today),
                 listOf(
-                    item("food", "Купить продукты", DueText(DayLabel.Today, null), list = "Дом", priority = Priority.LOW, reminder = ReminderBadge.AtDayPart(DayPart.NOON)),
-                    item("gym", "Зарядка", DueText(DayLabel.Today, "08:00"), list = null, reminder = ReminderBadge.AtDue),
-                    item("call", "Созвон с командой", DueText(DayLabel.Today, "10:00–11:00"), priority = Priority.MEDIUM, reminder = ReminderBadge.Several(2)),
-                    item("doc", "Позвонить врачу", DueText(DayLabel.Today, "12:30"), list = "Здоровье", priority = Priority.HIGH, reminder = ReminderBadge.Before(BeforeLabel.MINUTES_30)),
+                    item("food", "Купить продукты", DueText(DayLabel.Today, null), list = "Дом", priority = Priority.LOW, reminder = ReminderMark.AT_DUE),
+                    item("gym", "Зарядка", DueText(DayLabel.Today, "08:00"), list = null, reminder = ReminderMark.AT_DUE, done = true),
+                    item("call", "Созвон с командой", DueText(DayLabel.Today, "10:00–11:00"), priority = Priority.MEDIUM, reminder = ReminderMark.EARLY),
+                    item("doc", "Позвонить врачу", DueText(DayLabel.Today, "12:30"), list = "Здоровье", priority = Priority.HIGH, reminder = ReminderMark.EARLY),
                 ),
             ),
             WidgetDayBlock(
                 WidgetDay.On(today.plusDays(1)),
                 listOf(
                     item("gym@0", "Зарядка", DueText(DayLabel.Tomorrow, "08:00"), list = null, ghostOf = "gym"),
-                    item("net", "Оплатить интернет", DueText(DayLabel.Tomorrow, null), reminder = ReminderBadge.Custom),
+                    item("net", "Оплатить интернет", DueText(DayLabel.Tomorrow, null), reminder = ReminderMark.EARLY),
                 ),
             ),
             WidgetDayBlock(

@@ -14,13 +14,17 @@ import com.prostovasei.simpletasks.ui.feature.all.mergeWithPending
 import com.prostovasei.simpletasks.ui.feature.all.projectsById
 import com.prostovasei.simpletasks.ui.mvi.MviViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class InboxState(val tasks: List<TaskItem> = emptyList(), val isLoading: Boolean = true)
 
 /** «Входящие» (SPEC.md §4.2): задачи системного списка и задачи без срока из всех списков (решение PM). */
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class InboxViewModel @Inject constructor(
     tasks: TaskRepository,
@@ -33,7 +37,8 @@ class InboxViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            combine(tasks.observeInbox(), projects.observeProjectTree(), dayTicker.today(), completion.pending) { list, tree, day, pending ->
+            val inbox = dayTicker.today().flatMapLatest { day -> tasks.observeInbox(day).map { day to it } }
+            combine(inbox, projects.observeProjectTree(), completion.pending) { (day, list), tree, pending ->
                 val byId = tree.projectsById()
                 pending to list.map { it.toItem(byId, day, time.zone(), pending) }
             }.collect { (pending, fresh) ->
@@ -44,7 +49,7 @@ class InboxViewModel @Inject constructor(
 
     override fun onIntent(intent: TaskListIntent) {
         when (intent) {
-            is TaskListIntent.ToggleComplete -> completion.toggle(intent.taskId, intent.recurring) { sendEffect(it) }
+            is TaskListIntent.ToggleComplete -> completion.toggle(intent.taskId, intent.recurring, intent.done) { sendEffect(it) }
             is TaskListIntent.Undo -> completion.undo(intent.taskId)
             else -> Unit
         }

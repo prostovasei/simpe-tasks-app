@@ -35,9 +35,11 @@ sealed interface WidgetFilter {
     }
 }
 
-/** Блок ленты виджета: просроченные, один день или задачи без даты (решение PM: лента по дням). */
+/**
+ * Блок ленты виджета: один день или задачи без даты (решение PM: лента по дням). Просроченные — тоже по своим дням,
+ * как в приложении (итерация 27).
+ */
 sealed interface WidgetDay {
-    data object Overdue : WidgetDay
     data class On(val date: LocalDate) : WidgetDay
     data object NoDate : WidgetDay
 }
@@ -94,23 +96,13 @@ object WidgetModels {
 
     private const val LIST_TABS = 2
 
-    /** Блоки по дням: просроченные → дни по порядку → без даты. Внутри блока порядок задач сохраняется. */
+    /**
+     * Блоки по дням: просроченные — каждый в своём дне (итерация 27) → дни по порядку → без даты.
+     * Внутри блока порядок задач сохраняется.
+     */
     fun byDay(overdue: List<TaskItem>, rest: List<TaskItem>, today: LocalDate): List<WidgetDayBlock> {
-        val groups = (overdue.map { WidgetDay.Overdue to it } + rest.map { item ->
-            val date = item.due?.day?.toDate(today)
-            when {
-                date == null -> WidgetDay.NoDate
-                date < today -> WidgetDay.Overdue
-                else -> WidgetDay.On(date)
-            } to item
-        }).groupBy({ it.first }, { it.second })
-        val order = compareBy<WidgetDay> {
-            when (it) {
-                WidgetDay.Overdue -> 0
-                is WidgetDay.On -> 1
-                WidgetDay.NoDate -> 2
-            }
-        }.thenBy { (it as? WidgetDay.On)?.date }
+        val groups = (overdue + rest).groupBy { item -> item.due?.day?.toDate(today)?.let { WidgetDay.On(it) } ?: WidgetDay.NoDate }
+        val order = compareBy<WidgetDay> { if (it is WidgetDay.On) 0 else 1 }.thenBy { (it as? WidgetDay.On)?.date }
         return groups.keys.sortedWith(order).map { WidgetDayBlock(it, groups.getValue(it)) }
     }
 

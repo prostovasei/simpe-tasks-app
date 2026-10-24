@@ -53,7 +53,7 @@ class FakeTaskRepository(private val today: LocalDate = LocalDate.of(2026, 10, 1
     val movedToTomorrow = mutableListOf<String>()
 
     override fun observeAllScreen(today: LocalDate): Flow<AllScreenTasks> = tasks.map { all ->
-        val active = all.filter { it.status == TaskStatus.ACTIVE && it.due != null }
+        val active = all.filter { it.shownOn(today) && it.due != null }
         fun TaskDue.date() = when (this) {
             is TaskDue.AllDay -> date
             is TaskDue.AtTime -> instant.atZone(ZoneOffset.UTC).toLocalDate()
@@ -66,11 +66,15 @@ class FakeTaskRepository(private val today: LocalDate = LocalDate.of(2026, 10, 1
         )
     }
 
-    override fun observeInbox(): Flow<List<Task>> =
-        tasks.map { all -> all.filter { it.status == TaskStatus.ACTIVE && (it.projectId == "inbox" || it.due == null) } }
+    override fun observeInbox(today: LocalDate): Flow<List<Task>> =
+        tasks.map { all -> all.filter { it.shownOn(today) && (it.projectId == "inbox" || it.due == null) } }
 
-    override fun observeProjectTasks(projectId: String): Flow<List<Task>> =
-        tasks.map { all -> all.filter { it.status == TaskStatus.ACTIVE && it.projectId == projectId } }
+    override fun observeProjectTasks(projectId: String, today: LocalDate): Flow<List<Task>> =
+        tasks.map { all -> all.filter { it.shownOn(today) && it.projectId == projectId } }
+
+    /** Как в БД: активные и выполненные сегодня (итерация 27). */
+    private fun Task.shownOn(today: LocalDate): Boolean =
+        status == TaskStatus.ACTIVE || (status == TaskStatus.COMPLETED && completedAt?.atZone(ZoneOffset.UTC)?.toLocalDate()?.let { it >= today } == true)
 
     override fun observeTaskDetails(taskId: String): Flow<TaskDetails?> =
         tasks.map { all -> all.firstOrNull { it.id == taskId }?.let { TaskDetails(it, emptyList()) } }
@@ -125,7 +129,8 @@ class FakeTaskRepository(private val today: LocalDate = LocalDate.of(2026, 10, 1
     override suspend fun setCompleted(taskId: String, completed: Boolean) {
         completedCalls += taskId to completed
         val status = if (completed) TaskStatus.COMPLETED else TaskStatus.ACTIVE
-        tasks.update { all -> all.map { if (it.id == taskId) it.copy(status = status) else it } }
+        val at = if (completed) doneAt() else null
+        tasks.update { all -> all.map { if (it.id == taskId) it.copy(status = status, completedAt = at) else it } }
     }
 
     override suspend fun deleteTask(taskId: String) {
@@ -148,17 +153,24 @@ class FakeTaskRepository(private val today: LocalDate = LocalDate.of(2026, 10, 1
             return Completion.Done(taskId)
         }
         completedCalls += taskId to true
-        tasks.update { all -> all.map { if (it.id == taskId) next else it } }
-        return Completion.Rescheduled(taskId, previous = task, next = next, doneCopyId = "done-$taskId", checkedItemIds = emptyList())
+        // Как в БД: выполненный раз — отдельная задача со старым сроком, остаётся в списке до полуночи.
+        val copy = task.copy(id = "done-$taskId", status = TaskStatus.COMPLETED, completedAt = doneAt(), rrule = null)
+        tasks.update { all -> all.map { if (it.id == taskId) next else it } + copy }
+        return Completion.Rescheduled(taskId, previous = task, next = next, doneCopyId = copy.id, checkedItemIds = emptyList())
     }
 
     override suspend fun undo(completion: Completion) {
         undone += completion
         when (completion) {
             is Completion.Done -> setCompleted(completion.taskId, completed = false)
-            is Completion.Rescheduled -> tasks.update { all -> all.map { if (it.id == completion.taskId) completion.previous else it } }
+            is Completion.Rescheduled -> tasks.update { all ->
+                all.filterNot { it.id == completion.doneCopyId }.map { if (it.id == completion.taskId) completion.previous else it }
+            }
         }
     }
+
+    /** Время выполнения в фейке — полдень [today] по UTC. */
+    private fun doneAt(): Instant = today.atStartOfDay(ZoneOffset.UTC).plusHours(12).toInstant()
 
     override suspend fun moveToTomorrow(taskId: String) {
         movedToTomorrow += taskId

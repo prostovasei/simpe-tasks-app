@@ -77,7 +77,7 @@ fun AllScreen(
                     nowMinute = nowMinute.takeIf { group.relative == DayLabel.Today },
                     isOverdue = { it.id in group.overdueIds },
                     showList = true,
-                    onToggle = { onIntent(TaskListIntent.ToggleComplete(it.id, it.isRecurring)) },
+                    onToggle = { onIntent(TaskListIntent.ToggleComplete(it.id, it.isRecurring, it.showsDone)) },
                     onOpen = { onOpenTask(it.taskId) },
                 )
             }

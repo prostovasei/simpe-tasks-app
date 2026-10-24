@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.Flow
  * Параметры дня для выборок экрана «Все» (см. DayWindow):
  * allDayStart/allDayEnd — границы дня для задач «на весь день» (UTC-полночь даты),
  * start/end — границы дня в часовом поясе пользователя для задач со временем.
+ * doneSince — начало сегодняшнего дня: выполненные с этого момента остаются в списках до полуночи (итерация 27).
  */
 @Dao
 interface TaskDao {
@@ -61,61 +62,61 @@ interface TaskDao {
     @Query(
         """
         SELECT * FROM tasks
-        WHERE is_deleted = 0 AND status = 0 AND due_date IS NOT NULL
+        WHERE is_deleted = 0 AND (status = 0 OR (status = 2 AND completed_at >= :doneSince)) AND due_date IS NOT NULL
           AND ((is_all_day = 1 AND due_date < :allDayStart) OR (is_all_day = 0 AND due_date < :start))
         ORDER BY due_date, priority DESC, sort_order, created_at
         """,
     )
-    fun observeOverdue(allDayStart: Long, start: Long): Flow<List<TaskEntity>>
+    fun observeOverdue(allDayStart: Long, start: Long, doneSince: Long): Flow<List<TaskEntity>>
 
     @Query(
         """
         SELECT * FROM tasks
-        WHERE is_deleted = 0 AND status = 0 AND is_all_day = 1
+        WHERE is_deleted = 0 AND (status = 0 OR (status = 2 AND completed_at >= :doneSince)) AND is_all_day = 1
           AND due_date >= :allDayStart AND due_date < :allDayEnd
         ORDER BY priority DESC, sort_order, created_at
         """,
     )
-    fun observeTodayAllDay(allDayStart: Long, allDayEnd: Long): Flow<List<TaskEntity>>
+    fun observeTodayAllDay(allDayStart: Long, allDayEnd: Long, doneSince: Long): Flow<List<TaskEntity>>
 
     @Query(
         """
         SELECT * FROM tasks
-        WHERE is_deleted = 0 AND status = 0 AND is_all_day = 0
+        WHERE is_deleted = 0 AND (status = 0 OR (status = 2 AND completed_at >= :doneSince)) AND is_all_day = 0
           AND due_date >= :start AND due_date < :end
         ORDER BY COALESCE(start_date, due_date), priority DESC, sort_order, created_at
         """,
     )
-    fun observeTodayTimed(start: Long, end: Long): Flow<List<TaskEntity>>
+    fun observeTodayTimed(start: Long, end: Long, doneSince: Long): Flow<List<TaskEntity>>
 
     @Query(
         """
         SELECT * FROM tasks
-        WHERE is_deleted = 0 AND status = 0 AND due_date IS NOT NULL
+        WHERE is_deleted = 0 AND (status = 0 OR (status = 2 AND completed_at >= :doneSince)) AND due_date IS NOT NULL
           AND ((is_all_day = 1 AND due_date >= :allDayEnd) OR (is_all_day = 0 AND due_date >= :end))
         ORDER BY due_date, priority DESC, sort_order, created_at
         """,
     )
-    fun observeUpcoming(allDayEnd: Long, end: Long): Flow<List<TaskEntity>>
+    fun observeUpcoming(allDayEnd: Long, end: Long, doneSince: Long): Flow<List<TaskEntity>>
 
     @Query(
         """
         SELECT t.* FROM tasks t
         JOIN projects p ON p.id = t.project_id
-        WHERE t.is_deleted = 0 AND t.status = 0 AND (p.is_inbox = 1 OR t.due_date IS NULL)
+        WHERE t.is_deleted = 0 AND (t.status = 0 OR (t.status = 2 AND t.completed_at >= :doneSince)) AND (p.is_inbox = 1 OR t.due_date IS NULL)
         ORDER BY t.sort_order, t.created_at
         """,
     )
-    fun observeInbox(): Flow<List<TaskEntity>>
+    fun observeInbox(doneSince: Long): Flow<List<TaskEntity>>
 
     @Query(
         """
         SELECT * FROM tasks
-        WHERE project_id = :projectId AND is_deleted = 0 AND status = 0
+        WHERE project_id = :projectId AND is_deleted = 0 AND (status = 0 OR (status = 2 AND completed_at >= :doneSince))
         ORDER BY sort_order, created_at
         """,
     )
-    fun observeActiveByProject(projectId: String): Flow<List<TaskEntity>>
+    fun observeActiveByProject(projectId: String, doneSince: Long): Flow<List<TaskEntity>>
 
     /**
      * Задачи со временем для сетки недели (итерация 16): попадающие в промежуток [start, end) и все активные
