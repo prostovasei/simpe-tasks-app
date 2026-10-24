@@ -61,7 +61,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 /**
- * Пункты меню напоминаний (итерация 23): у каждого — колокольчик (с точкой — заранее, итерация 27), у заданных — галочка справа; заданные вручную —
+ * Пункты меню напоминаний (итерация 23): у каждого — колокольчик (со стрелкой назад — заранее, итерации 27, 27.1), у заданных — галочка справа; заданные вручную —
  * сверху, дальше готовые варианты и «Вручную…» ([onCustom]). Отметка пункта меню не закрывает; [onDone] закрывает
  * его после «Вручную…» и «Без напоминания».
  */
@@ -95,7 +95,7 @@ fun ReminderMenuItems(due: TaskDue, reminders: List<String>, onEdit: (FieldEdit)
 @Composable
 private fun MenuReminderIcon(mark: ReminderMark) {
     val colors = AppTheme.colors
-    ReminderIcon(mark, AppTheme.sizes.icon, tint = colors.textSecondary, dotColor = colors.accent)
+    ReminderIcon(mark, AppTheme.sizes.icon, tint = colors.textSecondary, earlyColor = colors.accent)
 }
 
 /**

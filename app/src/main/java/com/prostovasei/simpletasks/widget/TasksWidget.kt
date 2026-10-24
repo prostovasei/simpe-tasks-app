@@ -240,7 +240,7 @@ private fun TimelineRow(row: WidgetRow.Task, line: Line, overdue: Boolean, filte
     val height = if (row.isPeriod) SizeTokens.WIDGET_PERIOD_ROW else SizeTokens.WIDGET_ROW
     Row(GlanceModifier.fillMaxWidth().height(height.dp), verticalAlignment = Alignment.CenterVertically) {
         TimeColumn(row, overdue, textColor)
-        Rail(row, line, overdue)
+        Rail(row, line)
         Box(GlanceModifier.defaultWeight().fillMaxHeight().padding(vertical = SizeTokens.WIDGET_CARD_INSET.dp)) {
             Row(
                 modifier = GlanceModifier
@@ -301,12 +301,12 @@ private fun TimeColumn(row: WidgetRow.Task, overdue: Boolean, textColor: ColorPr
  * с белой галочкой. Нажатие на колонку отмечает задачу или возвращает выполненную; у будущего повтора — ничего.
  */
 @Composable
-private fun Rail(row: WidgetRow.Task, line: Line, overdue: Boolean) {
+private fun Rail(row: WidgetRow.Task, line: Line) {
     val context = LocalContext.current
     val item = row.item
     val done = item.showsDone
+    // Итерация 27.1 (вариант PM «А»): кружок всегда цвета приоритета, просрочка — красными подписью дня и временем.
     val color = when {
-        overdue -> WidgetColors.overdue
         (row.past || item.isGhost) && !done -> WidgetColors.inactive
         else -> widgetCheckColors(item.priority).ring
     }
@@ -415,7 +415,7 @@ private fun MetaIcon(icon: Int, done: Boolean) {
     )
 }
 
-/** Колокольчик (итерация 27): без цифр, с точкой — напоминание заранее; две маски, каждая со своим цветом темы. */
+/** Колокольчик (итерация 27): без цифр, со стрелкой назад — напоминание заранее (0.27.1); две маски, каждая со своим цветом темы. */
 @Composable
 private fun ReminderIcon(mark: ReminderMark, done: Boolean) {
     val context = LocalContext.current
@@ -424,7 +424,7 @@ private fun ReminderIcon(mark: ReminderMark, done: Boolean) {
     Spacer(GlanceModifier.width(SpacingTokens.XXS.dp))
     Box(GlanceModifier.size(size.dp)) {
         MaskImage(masks.bell, if (done) WidgetColors.iconDone else WidgetColors.textSecondary, size)
-        masks.dot?.let { MaskImage(it, if (done) WidgetColors.accentDone else WidgetColors.accent, size) }
+        masks.early?.let { MaskImage(it, if (done) WidgetColors.accentDone else WidgetColors.accent, size) }
     }
 }
 

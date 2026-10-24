@@ -132,7 +132,7 @@ fun LazyItemScope.TimelineTaskRow(
             .testTag(testTag),
     ) {
         TimeColumn(row, isOverdue, faded, dayLabels)
-        Rail(row, top, bottom, isOverdue, faded, done, testTag, onToggle)
+        Rail(row, top, bottom, faded, done, testTag, onToggle)
         Row(
             Modifier
                 .weight(1f)
@@ -169,7 +169,7 @@ fun LazyItemScope.TimelineTaskRow(
                     mark = it,
                     size = SizeTokens.WIDGET_REMINDER_ICON.dp,
                     tint = colors.textSecondary,
-                    dotColor = colors.accent,
+                    earlyColor = colors.accent,
                     modifier = Modifier.padding(start = spacing.xxs).testTag("$testTag:reminder"),
                 )
             }
@@ -210,11 +210,11 @@ private fun TimeColumn(row: WidgetRow.Task, isOverdue: Boolean, faded: Boolean, 
  * к выполненной: кольцо заливается цветом и появляется белая галочка.
  */
 @Composable
-private fun Rail(row: WidgetRow.Task, top: Boolean, bottom: Boolean, isOverdue: Boolean, faded: Boolean, done: Float, testTag: String, onToggle: () -> Unit) {
+private fun Rail(row: WidgetRow.Task, top: Boolean, bottom: Boolean, faded: Boolean, done: Float, testTag: String, onToggle: () -> Unit) {
     val colors = AppTheme.colors
     val item = row.item
+    // Итерация 27.1 (вариант PM «А»): кружок всегда цвета приоритета, просрочка — красными подписью дня и временем.
     val ring = when {
-        isOverdue -> colors.overdue
         faded && !item.showsDone -> colors.inactive
         item.priority == Priority.HIGH -> colors.checkRings.high
         item.priority == Priority.MEDIUM -> colors.checkRings.medium

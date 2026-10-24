@@ -405,7 +405,7 @@ private fun SheetToolbar(
                 clear = if (mark != null) ClearAction(R.string.clear_reminders, TAG_CLEAR_REMINDERS) { onEdit(FieldEdit.SetReminders(emptyList())) } else null,
                 content = {
                     if (mark != null) {
-                        ReminderIcon(mark, LocalToolButtonSize.current * ICON_SHARE, tint = colors.accent, dotColor = colors.accent)
+                        ReminderIcon(mark, LocalToolButtonSize.current * ICON_SHARE, tint = colors.accent, earlyColor = colors.accent)
                     }
                 },
             ) { menu = ToolMenu.Reminder }
