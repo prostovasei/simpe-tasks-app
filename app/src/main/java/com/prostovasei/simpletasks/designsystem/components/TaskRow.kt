@@ -98,8 +98,8 @@ fun TaskRow(
         isGhost -> GHOST_ALPHA
         else -> 1f
     }
+    // Кружок — всегда цвет приоритета (итерация 27.1), просрочка — красным временем.
     val ring = when {
-        isOverdue -> colors.overdue
         priority == Priority.HIGH -> colors.checkRings.high
         priority == Priority.MEDIUM -> colors.checkRings.medium
         priority == Priority.LOW -> colors.checkRings.low
@@ -168,7 +168,7 @@ fun TaskRow(
                     mark = it,
                     size = sizes.reminderIcon,
                     tint = colors.textSecondary,
-                    dotColor = colors.accent,
+                    earlyColor = colors.accent,
                     modifier = Modifier.padding(start = spacing.xxs).testTag("$testTag:reminder"),
                 )
             }

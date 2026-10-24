@@ -5,7 +5,7 @@
 
 ## 1. Где мы
 
-- Последний релиз — **0.27.0**, итерация 27 «Единый вид задач» (T-55…T-64, §4.30 архитектуры).
+- Последний релиз — **0.27.1**: итерация 27 «Единый вид задач» (T-55…T-64) и доработка T-65…T-68 (§4.30 архитектуры).
 - Рабочая ветка `ccr-e96cb7da-dfol69` пересоздаётся от свежего `main` после каждого мержа.
 - Открытой итерации нет, дальше ничего не запланировано. Корзину из плана убрали (решение PM); T-35/T-36 остались в бэклоге идеями.
 - Сейчас идёт **поиск нового визуального стиля** (раздел 3). Решение не принято, кодом не начато.
@@ -16,7 +16,7 @@
 |---|---|---|
 | Холст с макетами | https://claude.ai/artifact/4G8GPUfah2Q9nqvm5jpFwU | Раздел 4 |
 | Чек-лист ручной проверки | https://claude.ai/artifact/LfCQHWnhLob8u75CP2vaMS | После релиза: снять старые `isNew: true`, выставить `const NEW_IN`, добавить область с новыми пунктами (id уникальны, сейчас 184) перед областью «Перетаскивание и интервалы (0.17)». Плюс документ прогона в коллекции `runs` (doc_id `v0-X-Y-buildN`, поля `version`, `kind:"new"`, `createdAt`, `updatedAt`, `results:{}`, `notes:{}`) |
-| Бэклог | https://claude.ai/artifact/EoNYmmboC6gG13ju3MnEid | Коллекция `items` (поля `c, e, i, r, num, iteration, section, source, status, title, why, createdAt, updatedAt`). Последний `num` = 64 |
+| Бэклог | https://claude.ai/artifact/EoNYmmboC6gG13ju3MnEid | Коллекция `items` (поля `c, e, i, r, num, iteration, section, source, status, title, why, createdAt, updatedAt`). Последний `num` = 68 |
 
 Перед записью в артефакт — прочитать его (`Artifact read` / `ArtifactData get`) и писать с `if_version`.
 
@@ -66,6 +66,7 @@
 | `reflib.py` | Общие куски: шрифт Manrope из `app/src/main/res/font` (встраивается в макет), градиент карточки, кружки-кнопки, плитки |
 | `ref_structure.py` | Доски `VariantS1` / `VariantS2`: наша структура + визуал рефа (список, создание, виджет) |
 | `tasks_polish.py` | Доска `VariantT1` «Единый вид задач» (итерация 27): список, виджет, уведомление, состояния. `shot.mjs` с `W=1980 H=1100` |
+| `prio_overdue.py` | Доски `VariantP1–P3` «Просрочка и высокий приоритет» (PM выбрал «А») |
 | `ref_dashboard.py` | Доски `VariantR1–R3`: главный экран по рефу (дашборд, карточка + лента, тёмная) |
 | `sheetlib.py` | Иконки (`ico`, пути `P_*`) и старый шаблон доски `page()` |
 | `shot.mjs` | PNG-превью досок: `DIR=<папка> KS=S1,S2 node shot.mjs` → `<папка>/shot_S1.png` |

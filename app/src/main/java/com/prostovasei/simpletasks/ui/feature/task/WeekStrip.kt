@@ -70,10 +70,11 @@ fun DayTiles(
     val outside = selectedDate?.takeIf { it !in days }
     val list = rememberLazyListState()
     val density = LocalDensity.current
-    // Выбранный день дальше третьей плитки — подвинуть ленту, чтобы он был виден.
+    // Выбранный день дальше третьей плитки — подвинуть ленту, чтобы он был виден. Дата дальше двух недель стоит
+    // отдельной плиткой после значка — лента тогда в начале, с сегодняшнего дня (0.27.1: раньше уезжала в конец).
     LaunchedEffect(selectedDate) {
-        val index = selectedDate?.let { ChronoUnit.DAYS.between(today, it).toInt() } ?: -1
-        if (index >= VISIBLE_TILES) list.animateScrollToItem(index - 1)
+        val index = selectedDate?.takeIf { it in days }?.let { ChronoUnit.DAYS.between(today, it).toInt() } ?: -1
+        if (index >= VISIBLE_TILES) list.animateScrollToItem(index - 1) else if (outside != null) list.scrollToItem(0)
     }
     // Размер плитки — от ширины экрана (0.22.3): значок, 3 дня целиком и узкий край четвёртого на любом телефоне.
     // Текст в плитке — доли её стороны (0.22.2), поэтому всегда помещается.

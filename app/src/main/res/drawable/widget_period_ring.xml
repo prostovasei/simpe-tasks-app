@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Вытянутое кольцо периода на шкале дня виджета (итерация 20): растягивается на высоту плашки, цвет — оттенком. -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-    <corners android:radius="8dp" />
+    <corners android:radius="10dp" />
     <!-- Прозрачная заливка явно: без неё оттенок закрашивает кольцо целиком. -->
     <solid android:color="@android:color/transparent" />
     <stroke android:width="2dp" android:color="@android:color/white" />
