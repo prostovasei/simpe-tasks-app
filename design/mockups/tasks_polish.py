@@ -8,7 +8,6 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from reflib import FACES
 from sheetlib import ico, P_CAL, P_INBOX, P_BELL, P_REP, P_CHECK
 
-OUT = sys.argv[1]
 A, INK, T2, BG, INACT, OVD, LINE = '#15803D', '#15161F', '#5F6474', '#F6F7F6', '#A8B3AB', '#C62828', '#D5E0D8'
 BLUE, SEL = '#3D8BFD', '#E4F2E8'
 PRI = {'none': INACT, 'low': '#2E7DD7', 'mid': '#E08A00', 'high': '#C62828'}
@@ -162,27 +161,29 @@ def legend():
             f'<div style="font-size:18px;font-weight:700;color:{INK};margin-top:22px;">Состояния</div>{states}</div>')
 
 
-lab = lambda s: f'<div style="font-size:15px;font-weight:700;color:{INK};margin-bottom:10px;">{s}</div>'
-body = (f'<div style="width:1980px;height:1100px;box-sizing:border-box;background:#EEF0EE;padding:36px 40px;font-family:Manrope,sans-serif;">'
-        f'<div style="font-size:28px;font-weight:700;color:{INK};letter-spacing:-.5px;">Единый вид задач: приложение, виджет, уведомление</div>'
-        f'<div style="font-size:15px;color:{T2};margin:6px 0 22px;">Все решения по 10 пунктам PM. Сегодня — СБ, 24 окт. Размеры в dp, 1:1.</div>'
-        f'<div style="display:flex;gap:30px;"><div>{lab("Список в приложении")}{screen_app()}</div><div>{lab("Виджет")}{screen_widget()}</div>'
-        f'<div>{lab("Уведомления")}{screen_notif()}</div>{legend()}</div></div>')
-html = f'''<!doctype html>
-<html lang="ru"><head><meta charset="utf-8"><title>Единый вид задач</title><script src="./support.js"></script></head>
-<body><x-dc><helmet><style>{FACES}body{{margin:0}}</style></helmet>
-{body}
-</x-dc>
-<script type="text/x-dc" data-dc-script data-props='{{"$preview":{{"width":1980,"height":1100}}}}'>
-class Component extends DCLogic {{ renderVals() {{ return {{}}; }} }}
-</script></body></html>'''
-open(os.path.join(OUT, 'VariantT1.dc.html'), 'w').write(html)
+if __name__ == '__main__':
+    OUT = sys.argv[1]
+    lab = lambda s: f'<div style="font-size:15px;font-weight:700;color:{INK};margin-bottom:10px;">{s}</div>'
+    body = (f'<div style="width:1980px;height:1100px;box-sizing:border-box;background:#EEF0EE;padding:36px 40px;font-family:Manrope,sans-serif;">'
+            f'<div style="font-size:28px;font-weight:700;color:{INK};letter-spacing:-.5px;">Единый вид задач: приложение, виджет, уведомление</div>'
+            f'<div style="font-size:15px;color:{T2};margin:6px 0 22px;">Все решения по 10 пунктам PM. Сегодня — СБ, 24 окт. Размеры в dp, 1:1.</div>'
+            f'<div style="display:flex;gap:30px;"><div>{lab("Список в приложении")}{screen_app()}</div><div>{lab("Виджет")}{screen_widget()}</div>'
+            f'<div>{lab("Уведомления")}{screen_notif()}</div>{legend()}</div></div>')
+    html = f'''<!doctype html>
+    <html lang="ru"><head><meta charset="utf-8"><title>Единый вид задач</title><script src="./support.js"></script></head>
+    <body><x-dc><helmet><style>{FACES}body{{margin:0}}</style></helmet>
+    {body}
+    </x-dc>
+    <script type="text/x-dc" data-dc-script data-props='{{"$preview":{{"width":1980,"height":1100}}}}'>
+    class Component extends DCLogic {{ renderVals() {{ return {{}}; }} }}
+    </script></body></html>'''
+    open(os.path.join(OUT, 'VariantT1.dc.html'), 'w').write(html)
 
-c = json.load(open(os.path.join(OUT, 'canvas.json')))
-old = {k: v for k, v in c['boards'].items() if k != 'VariantT1.dc.html'}
-for i, v in enumerate(old.values()):
-    v['y'] = 1220 + i * 1120
-c['boards'] = {'VariantT1.dc.html': {'x': 0, 'y': 0, 'w': 1980, 'h': 1100, 'title': 'Единый вид задач (итерация 27)'}, **old}
-c['order'] = list(c['boards'])
-c['notes']['head'] = {'x': 0, 'y': -300, 'text': 'Единый вид задач (сверху) · ниже — прежний поиск стиля', 'kind': 'title1', 'maxW': 1400}
-json.dump(c, open(os.path.join(OUT, 'canvas.json'), 'w'), ensure_ascii=False, indent=2)
+    c = json.load(open(os.path.join(OUT, 'canvas.json')))
+    old = {k: v for k, v in c['boards'].items() if k != 'VariantT1.dc.html'}
+    for i, v in enumerate(old.values()):
+        v['y'] = 1220 + i * 1120
+    c['boards'] = {'VariantT1.dc.html': {'x': 0, 'y': 0, 'w': 1980, 'h': 1100, 'title': 'Единый вид задач (итерация 27)'}, **old}
+    c['order'] = list(c['boards'])
+    c['notes']['head'] = {'x': 0, 'y': -300, 'text': 'Единый вид задач (сверху) · ниже — прежний поиск стиля', 'kind': 'title1', 'maxW': 1400}
+    json.dump(c, open(os.path.join(OUT, 'canvas.json'), 'w'), ensure_ascii=False, indent=2)
