@@ -15,7 +15,7 @@ import com.prostovasei.simpletasks.domain.model.NewTask
 import com.prostovasei.simpletasks.domain.model.SearchableTask
 import com.prostovasei.simpletasks.domain.model.Task
 import com.prostovasei.simpletasks.domain.model.TaskDetails
-import com.prostovasei.simpletasks.domain.model.TaskDue
+import com.prostovasei.simpletasks.domain.model.movedTo
 import com.prostovasei.simpletasks.domain.model.TaskStatus
 import com.prostovasei.simpletasks.domain.model.nextOccurrence
 import com.prostovasei.simpletasks.domain.model.withDue
@@ -153,13 +153,7 @@ class RoomTaskRepository @Inject constructor(
 
     override suspend fun moveToTomorrow(taskId: String) {
         val task = getTask(taskId) ?: return
-        val zone = time.zone()
-        val tomorrow = time.today().plusDays(1)
-        val newDue = when (val due = task.due) {
-            null, is TaskDue.AllDay -> TaskDue.AllDay(tomorrow)
-            is TaskDue.AtTime -> TaskDue.AtTime(due.instant.atZone(zone).toLocalTime().atDate(tomorrow).atZone(zone).toInstant())
-        }
-        updateTask(task.withDue(newDue))
+        updateTask(task.withDue(task.due.movedTo(time.today().plusDays(1), time.zone())))
     }
 
     override fun observeTimedInRange(from: Instant, to: Instant): Flow<List<Task>> =
