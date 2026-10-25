@@ -295,11 +295,12 @@ fun highlighted(text: String, query: String?, background: Color): AnnotatedStrin
 /** Частица пыли: место на плашке (доли ширины и высоты), куда улетает (доли) и оттенок. */
 internal class DustParticle(val x: Float, val y: Float, val dx: Float, val dy: Float, val shade: Int, val scale: Float)
 
-internal fun dustParticles(seed: Int): List<DustParticle> {
+/** [lift] — насколько высот плашки частица взлетает (минус — вверх). */
+internal fun dustParticles(seed: Int, lift: ClosedFloatingPointRange<Float> = -0.9f..0.2f): List<DustParticle> {
     val random = kotlin.random.Random(seed)
     fun between(from: Float, to: Float) = from + random.nextFloat() * (to - from)
     return List(DUST_PARTICLES) {
-        DustParticle(random.nextFloat(), random.nextFloat(), between(0.06f, 0.22f), between(-0.9f, 0.2f), it % 3, between(0.6f, 1.3f))
+        DustParticle(random.nextFloat(), random.nextFloat(), between(0.06f, 0.22f), between(lift.start, lift.endInclusive), it % 3, between(0.6f, 1.3f))
     }
 }
 

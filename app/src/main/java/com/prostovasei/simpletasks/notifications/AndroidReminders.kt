@@ -18,6 +18,7 @@ import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.TaskPopupActivity
 import com.prostovasei.simpletasks.core.time.TimeProvider
 import com.prostovasei.simpletasks.domain.model.Task
+import com.prostovasei.simpletasks.domain.model.movedTo
 import com.prostovasei.simpletasks.domain.repository.ProjectRepository
 import com.prostovasei.simpletasks.ui.common.DayNames
 import com.prostovasei.simpletasks.ui.common.DueFormatter
@@ -67,7 +68,7 @@ class AndroidReminderNotifications @Inject constructor(
 
     override suspend fun show(task: Task) {
         if (popup.canShow()) {
-            popup.show(PopupStrip(task.id, task.title, popupSubtitle(task)))
+            popup.show(popupStrip(task))
             return
         }
         if (!canPost()) return
@@ -107,11 +108,15 @@ class AndroidReminderNotifications @Inject constructor(
     }
 
     /** Подпись полоски (решение PM): «Сегодня, 18:00 · Дом». */
-    private suspend fun popupSubtitle(task: Task): String {
+    /** Полоска: подпись «Сегодня, 18:00 · Дом» и «Завтра, 18:00» — её показывает анимация переноса на завтра. */
+    private suspend fun popupStrip(task: Task): PopupStrip {
         val days = DayNames(context.getString(R.string.day_today), context.getString(R.string.day_tomorrow), context.getString(R.string.day_yesterday))
-        val due = DueFormatter.format(task.due, task.start, time.today(), time.zone())?.let(days::format)
+        val today = time.today()
+        val zone = time.zone()
+        val due = DueFormatter.format(task.due, task.start, today, zone)?.let(days::format)
         val list = projects.observeProject(task.projectId).first()?.let { if (it.isInbox) context.getString(R.string.inbox_list_name) else it.name }
-        return listOfNotNull(due, list).joinToString(SEPARATOR)
+        val later = DueFormatter.format(task.due.movedTo(today.plusDays(1), zone), null, today, zone)?.let(days::format).orEmpty()
+        return PopupStrip(task.id, task.title, listOfNotNull(due, list).joinToString(SEPARATOR), later)
     }
 
     private fun canPost(): Boolean =

@@ -22,7 +22,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
-/** Полоска напоминания (T-69): стопка до трёх, «ещё N», кнопки и смахивание вниз. */
+/** Полоска напоминания (T-69): стопка до трёх, «ещё N», кнопки, смахивание вниз и анимации (0.28.1). */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(qualifiers = "w400dp-h400dp-xhdpi")
@@ -33,7 +33,7 @@ class ReminderStripsTest {
 
     private val events = mutableListOf<String>()
 
-    private fun strip(id: String, title: String) = PopupStrip(id, title, "Сегодня, 18:00 · Дом")
+    private fun strip(id: String, title: String) = PopupStrip(id, title, "Сегодня, 18:00 · Дом", "Завтра, 18:00")
 
     private fun show(strips: List<PopupStrip>) {
         composeRule.setContent {
@@ -63,12 +63,45 @@ class ReminderStripsTest {
 
     @Test
     fun buttonsAndSwipe() {
-        show(listOf(strip("a", "Забрать посылку")))
+        // Выполнить и «на завтра» срабатывают после анимации, поэтому у каждого действия своя полоска.
+        show(listOf(strip("a", "Забрать посылку"), strip("b", "Позвонить маме"), strip("c", "Оплатить интернет")))
         composeRule.onNodeWithTag("$TAG_POPUP_DONE:a").performClick()
-        composeRule.onNodeWithTag("$TAG_POPUP_TOMORROW:a").performClick()
-        composeRule.onNodeWithTag("$TAG_POPUP_OPEN:a").performClick()
-        composeRule.onNodeWithTag("$TAG_POPUP:a").performTouchInput { swipeDown(startY = top, endY = bottom + height * 2) }
+        composeRule.onNodeWithTag("$TAG_POPUP_TOMORROW:b").performClick()
+        composeRule.onNodeWithTag("$TAG_POPUP_OPEN:c").performClick()
+        composeRule.onNodeWithTag("$TAG_POPUP:c").performTouchInput { swipeDown(startY = top, endY = bottom + height * 2) }
         composeRule.waitForIdle()
-        assertEquals(listOf("done:a", "tomorrow:a", "open:a", "dismiss:a"), events)
+        assertEquals(listOf("done:a", "tomorrow:b", "open:c", "dismiss:c"), events)
+    }
+
+    @Test
+    fun tomorrowFlipsToLaterThenActs() {
+        show(listOf(strip("a", "Забрать посылку")))
+        composeRule.waitForIdle()
+        composeRule.mainClock.autoAdvance = false
+        composeRule.onNodeWithTag("$TAG_POPUP_TOMORROW:a").performClick()
+        composeRule.mainClock.advanceTimeBy(FLIPPED_MS)
+        composeRule.onNodeWithText("Завтра, 18:00").assertExists()
+        assertEquals(emptyList<String>(), events)
+        composeRule.mainClock.advanceTimeBy(FINISHED_MS)
+        assertEquals(listOf("tomorrow:a"), events)
+    }
+
+    @Test
+    fun doneActsOnceAfterDust() {
+        show(listOf(strip("a", "Забрать посылку")))
+        composeRule.waitForIdle()
+        composeRule.mainClock.autoAdvance = false
+        composeRule.onNodeWithTag("$TAG_POPUP_DONE:a").performClick()
+        composeRule.onNodeWithTag("$TAG_POPUP_DONE:a").performClick()
+        composeRule.mainClock.advanceTimeBy(HALF_DUST_MS)
+        assertEquals(emptyList<String>(), events)
+        composeRule.mainClock.advanceTimeBy(FINISHED_MS)
+        assertEquals(listOf("done:a"), events)
+    }
+
+    private companion object {
+        const val FLIPPED_MS = 600L
+        const val HALF_DUST_MS = 300L
+        const val FINISHED_MS = 2000L
     }
 }
