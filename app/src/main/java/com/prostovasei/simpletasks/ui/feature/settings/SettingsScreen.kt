@@ -1,12 +1,8 @@
 package com.prostovasei.simpletasks.ui.feature.settings
 
-import androidx.lifecycle.compose.LifecycleResumeEffect
-import androidx.core.app.NotificationManagerCompat
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.mutableStateOf
-import android.provider.Settings
+import android.app.TimePickerDialog
 import android.content.Intent
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
@@ -30,31 +26,38 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.core.app.NotificationManagerCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.prostovasei.simpletasks.BuildConfig
 import com.prostovasei.simpletasks.R
-import com.prostovasei.simpletasks.notifications.ExactPrefs
-import com.prostovasei.simpletasks.notifications.PopupPrefs
-import com.prostovasei.simpletasks.widget.WidgetLog
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.domain.model.DataStats
 import com.prostovasei.simpletasks.domain.model.ImportReport
+import com.prostovasei.simpletasks.notifications.ExactPrefs
+import com.prostovasei.simpletasks.notifications.PopupPrefs
+import com.prostovasei.simpletasks.notifications.SummaryPrefs
+import com.prostovasei.simpletasks.widget.WidgetLog
 
 /** Экран «Настройки» с ViewModel. */
 @Composable
@@ -76,6 +79,8 @@ fun SettingsRoute(viewModel: SettingsViewModel = hiltViewModel()) {
     var popupOn by remember { mutableStateOf(PopupPrefs.enabled(context)) }
     var popupAllowed by remember { mutableStateOf(PopupPrefs.allowed(context)) }
     var exactOn by remember { mutableStateOf(ExactPrefs.enabled(context)) }
+    var summaryOn by remember { mutableStateOf(SummaryPrefs.enabled(context)) }
+    var summaryMinute by remember { mutableIntStateOf(SummaryPrefs.minute(context)) }
     LifecycleResumeEffect(Unit) {
         notificationsOff = !NotificationManagerCompat.from(context).areNotificationsEnabled()
         popupAllowed = PopupPrefs.allowed(context)
@@ -109,6 +114,26 @@ fun SettingsRoute(viewModel: SettingsViewModel = hiltViewModel()) {
                 exactOn = on
             },
         ),
+        summary = SummarySettings(
+            enabled = summaryOn,
+            minute = summaryMinute,
+            onToggle = { on ->
+                SummaryPrefs.set(context, on, summaryMinute)
+                summaryOn = on
+            },
+            onPickTime = {
+                TimePickerDialog(
+                    context,
+                    { _, hour, minute ->
+                        summaryMinute = hour * MINUTES_IN_HOUR + minute
+                        SummaryPrefs.set(context, summaryOn, summaryMinute)
+                    },
+                    summaryMinute / MINUTES_IN_HOUR,
+                    summaryMinute % MINUTES_IN_HOUR,
+                    true,
+                ).show()
+            },
+        ),
         widgetLog = WidgetLogActions(
             read = { WidgetLog.read(context) },
             share = { text ->
@@ -131,6 +156,7 @@ fun SettingsScreen(
     onEnableNotifications: () -> Unit = {},
     popup: PopupSettings = PopupSettings(),
     exact: ExactSettings = ExactSettings(),
+    summary: SummarySettings = SummarySettings(),
     widgetLog: WidgetLogActions = WidgetLogActions.None,
 ) {
     var logText by remember { mutableStateOf<String?>(null) }
@@ -177,6 +203,7 @@ fun SettingsScreen(
             }
             PopupSection(popup)
             ExactSection(exact)
+            SummarySection(summary)
             HorizontalDivider(color = colors.divider, modifier = Modifier.padding(vertical = spacing.xs))
 
             UpdateSection(state.update, onIntent)
@@ -432,6 +459,33 @@ data class PopupSettings(
 /** «Точное время напоминаний» (0.29.2): напоминание как будильник — без задержки Samsung, со значком в строке состояния. */
 data class ExactSettings(val enabled: Boolean = true, val onToggle: (Boolean) -> Unit = {})
 
+/** Утренняя сводка (итерация 30): включена ли и во сколько ([minute] — минута дня). */
+data class SummarySettings(
+    val enabled: Boolean = true,
+    val minute: Int = SummaryPrefs.DEFAULT_MINUTE,
+    val onToggle: (Boolean) -> Unit = {},
+    val onPickTime: () -> Unit = {},
+)
+
+@Composable
+private fun SummarySection(summary: SummarySettings) {
+    val colors = AppTheme.colors
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm)) {
+        Column(Modifier.weight(1f)) {
+            Text(stringResource(R.string.settings_summary_title), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold, color = colors.textPrimary)
+            Text(stringResource(R.string.settings_summary_hint), style = MaterialTheme.typography.bodySmall, color = colors.textSecondary)
+        }
+        if (summary.enabled) {
+            TextButton(onClick = summary.onPickTime, modifier = Modifier.testTag(TAG_SUMMARY_TIME)) {
+                Text("%02d:%02d".format(summary.minute / MINUTES_IN_HOUR, summary.minute % MINUTES_IN_HOUR), fontWeight = FontWeight.Bold)
+            }
+        }
+        Switch(checked = summary.enabled, onCheckedChange = summary.onToggle, modifier = Modifier.testTag(TAG_SUMMARY_SWITCH))
+    }
+}
+
+private const val MINUTES_IN_HOUR = 60
+
 @Composable
 private fun ExactSection(exact: ExactSettings) {
     val colors = AppTheme.colors
@@ -502,6 +556,8 @@ const val TAG_CLEAR_BUTTON = "settings_clear"
 const val TAG_NOTIFICATIONS_BUTTON = "settings_notifications"
 const val TAG_POPUP_SWITCH = "settings_popup"
 const val TAG_EXACT_SWITCH = "settings_exact"
+const val TAG_SUMMARY_SWITCH = "settings_summary"
+const val TAG_SUMMARY_TIME = "settings_summary_time"
 const val TAG_POPUP_ALLOW = "settings_popup_allow"
 
 internal val previewReport = ImportReport(

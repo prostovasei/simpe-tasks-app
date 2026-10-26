@@ -83,9 +83,12 @@ class AndroidRemindersTest {
             // T-69: только полоска (и вибрация), обычного уведомления нет.
             assertTrue(shadowOf(notificationManager).allNotifications.isEmpty())
             assertEquals(listOf("t1"), popup.shown())
+            // 0.30.0: пока полоска на экране, приложение не засыпает (сервис переднего плана).
+            assertEquals(PopupService::class.java.name, shadowOf(app).nextStartedService?.component?.className)
 
             notifications().cancel("t1")
             assertTrue("Выполнили в другом месте — полоска уходит", popup.shown().isEmpty())
+            assertEquals(PopupService::class.java.name, shadowOf(app).nextStoppedService?.component?.className)
         } finally {
             PopupPrefs.setEnabled(app, false)
             org.robolectric.shadows.ShadowSettings.setCanDrawOverlays(false)
@@ -118,10 +121,10 @@ class AndroidRemindersTest {
         val alarm = AndroidReminderAlarm(app)
         val at = Instant.parse("2030-01-01T10:00:00Z")
         alarm.setAt(at)
-        val scheduled = shadowOf(app.getSystemService(AlarmManager::class.java)).peekNextScheduledAlarm()
+        val scheduled = shadowOf(app.getSystemService(AlarmManager::class.java)).reminderAlarm()
         assertEquals(at.toEpochMilli(), scheduled!!.triggerAtMs)
         alarm.setAt(null)
-        assertEquals(null, shadowOf(app.getSystemService(AlarmManager::class.java)).peekNextScheduledAlarm())
+        assertEquals(null, shadowOf(app.getSystemService(AlarmManager::class.java)).reminderAlarm())
     }
 
     /** Системное событие (перезагрузка) доходит до приложения: зависимости внедрены, будильник поставлен. */
@@ -146,12 +149,12 @@ class AndroidRemindersTest {
 
         val alarms = shadowOf(app.getSystemService(AlarmManager::class.java))
         val deadline = System.currentTimeMillis() + 10_000
-        while (alarms.peekNextScheduledAlarm()?.triggerAtMs != due.minus(Duration.ofMinutes(30)).toEpochMilli() && System.currentTimeMillis() < deadline) {
+        while (alarms.reminderAlarm()?.triggerAtMs != due.minus(Duration.ofMinutes(30)).toEpochMilli() && System.currentTimeMillis() < deadline) {
             Thread.sleep(50)
             shadowOf(Looper.getMainLooper()).idle()
         }
-        assertNotNull(alarms.peekNextScheduledAlarm())
-        assertEquals(due.minus(Duration.ofMinutes(30)).toEpochMilli(), alarms.peekNextScheduledAlarm()!!.triggerAtMs)
+        assertNotNull(alarms.reminderAlarm())
+        assertEquals(due.minus(Duration.ofMinutes(30)).toEpochMilli(), alarms.reminderAlarm()!!.triggerAtMs)
     }
 
     private fun retryWhileLocked(block: () -> Unit) {

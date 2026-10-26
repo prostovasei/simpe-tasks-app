@@ -159,6 +159,7 @@ object SizeTokens {
     const val POPUP_PULSE = 8
     const val POPUP_UNDO_LINE = 3
     const val SHEET_REVEAL_BLUR = 8
+    const val WIDGET_PROGRESS = 4
 
     /** Квадратная плитка дня в шторке (итерация 22): «чт / 22 / окт» и время. */
     const val DAY_TILE = 72

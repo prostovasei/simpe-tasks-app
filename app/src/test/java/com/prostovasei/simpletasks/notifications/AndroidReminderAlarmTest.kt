@@ -24,12 +24,12 @@ class AndroidReminderAlarmTest {
         val at = Instant.parse("2026-10-26T15:00:00Z")
         AndroidReminderAlarm(context).setAt(at)
 
-        val alarm = alarms.peekNextScheduledAlarm()
+        val alarm = alarms.reminderAlarm()
         assertNotNull(alarm)
         assertEquals(at.toEpochMilli(), alarm!!.alarmClockInfo!!.triggerTime)
 
         AndroidReminderAlarm(context).setAt(null)
-        assertNull(alarms.peekNextScheduledAlarm())
+        assertNull(alarms.reminderAlarm())
     }
 
     @Test
@@ -39,7 +39,7 @@ class AndroidReminderAlarmTest {
         val at = Instant.parse("2026-10-26T15:00:00Z")
         AndroidReminderAlarm(context).setAt(at)
 
-        val alarm = alarms.peekNextScheduledAlarm()
+        val alarm = alarms.reminderAlarm()
         assertEquals(at.toEpochMilli(), alarm!!.triggerAtTime)
         assertNull(alarm.alarmClockInfo)
     }
