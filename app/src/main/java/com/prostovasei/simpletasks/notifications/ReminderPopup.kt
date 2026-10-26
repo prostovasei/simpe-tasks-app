@@ -157,6 +157,8 @@ class ReminderPopup @Inject constructor(
         strips.removeAll { it.taskId == strip.taskId }
         strips += strip
         if (window == null) window = Overlay(context) { Content() }.also { it.attach() }
+        // Пока полоска на экране, Samsung не должен «заморозить» приложение — иначе она не появится до касания.
+        PopupService.start(context, strip.title)
         vibrate()
     }
 
@@ -172,6 +174,7 @@ class ReminderPopup @Inject constructor(
         strips.removeAll { it.taskId == taskId }
         if (strips.isEmpty()) {
             window?.detach()
+            PopupService.stop(context)
             window = null
         }
     }

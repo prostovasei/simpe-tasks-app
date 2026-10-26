@@ -83,9 +83,12 @@ class AndroidRemindersTest {
             // T-69: только полоска (и вибрация), обычного уведомления нет.
             assertTrue(shadowOf(notificationManager).allNotifications.isEmpty())
             assertEquals(listOf("t1"), popup.shown())
+            // 0.30.0: пока полоска на экране, приложение не засыпает (сервис переднего плана).
+            assertEquals(PopupService::class.java.name, shadowOf(app).nextStartedService?.component?.className)
 
             notifications().cancel("t1")
             assertTrue("Выполнили в другом месте — полоска уходит", popup.shown().isEmpty())
+            assertEquals(PopupService::class.java.name, shadowOf(app).nextStoppedService?.component?.className)
         } finally {
             PopupPrefs.setEnabled(app, false)
             org.robolectric.shadows.ShadowSettings.setCanDrawOverlays(false)
