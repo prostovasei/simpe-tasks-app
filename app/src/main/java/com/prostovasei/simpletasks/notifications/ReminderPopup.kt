@@ -8,6 +8,8 @@ import android.os.PowerManager
 import android.provider.Settings
 import android.view.Gravity
 import android.view.WindowManager
+import android.widget.FrameLayout
+import android.view.MotionEvent
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.LinearEasing
@@ -154,6 +156,7 @@ class ReminderPopup @Inject constructor(
         strips += strip
         if (window == null) window = Overlay(context) { Content() }.also { it.attach() }
         // Пока полоска на экране, Samsung не должен «заморозить» приложение — иначе она не появится до касания.
+        PopupTrace.add(context, "показ «${strip.title}», важность процесса ${PopupTrace.importance()}")
         PopupService.start(context, strip.title)
     }
 
@@ -231,10 +234,25 @@ class ReminderPopup @Inject constructor(
 private class Overlay(private val context: Context, private val content: @Composable () -> Unit) {
     private val manager = context.getSystemService(WindowManager::class.java)
     private val owner = OverlayOwner()
-    private val view = ComposeView(context).apply {
+    private var draws = 0
+    private var touched = false
+
+    // Диагностика 0.30.2: первые кадры окна и первое касание — в журнал.
+    private val view = object : FrameLayout(context) {
+        override fun dispatchTouchEvent(event: MotionEvent): Boolean {
+            if (!touched) {
+                touched = true
+                PopupTrace.add(context, "касание окна полоски")
+            }
+            return super.dispatchTouchEvent(event)
+        }
+    }.apply {
         setViewTreeLifecycleOwner(owner)
         setViewTreeSavedStateRegistryOwner(owner)
-        setContent { content() }
+        addView(ComposeView(context).apply { setContent { content() } })
+        viewTreeObserver.addOnDrawListener {
+            if (draws < TRACE_DRAWS) PopupTrace.add(context, "кадр ${++draws}")
+        }
     }
 
     fun attach() {
@@ -247,6 +265,7 @@ private class Overlay(private val context: Context, private val content: @Compos
             PixelFormat.TRANSLUCENT,
         ).apply { gravity = Gravity.BOTTOM }
         manager.addView(view, params)
+        PopupTrace.add(context, "окно добавлено")
     }
 
     fun detach() {
@@ -254,6 +273,8 @@ private class Overlay(private val context: Context, private val content: @Compos
         owner.stop()
     }
 }
+
+private const val TRACE_DRAWS = 5
 
 private class OverlayOwner : LifecycleOwner, SavedStateRegistryOwner {
     private val registry = LifecycleRegistry(this)
@@ -347,8 +368,10 @@ private fun Strip(strip: PopupStrip, onDone: (String) -> Unit, onTomorrow: (Stri
     val dustColors = listOf(colors.accent, colors.accentSoft, colors.accent.copy(alpha = DUST_FADED))
 
     LaunchedEffect(Unit) {
+        PopupTrace.add(context, "анимация появления: старт (анимации ${if (animate) "вкл" else "выкл"})")
         if (!animate) return@LaunchedEffect
         enter.animateTo(1f, tween(ENTER_MS, easing = LinearOutSlowInEasing))
+        PopupTrace.add(context, "анимация появления: полоска на месте")
         pulse.animateTo(PULSES, tween(PULSE_MS, easing = LinearEasing))
     }
 

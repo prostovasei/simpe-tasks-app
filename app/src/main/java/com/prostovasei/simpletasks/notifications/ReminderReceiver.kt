@@ -25,6 +25,7 @@ class ReminderReceiver : BroadcastReceiver() {
     // Вызов super.onReceive (внедрение зависимостей) добавляет плагин Hilt.
     override fun onReceive(context: Context, intent: Intent) {
         val taskId = intent.getStringExtra(EXTRA_TASK_ID)
+        PopupTrace.add(context, "будильник: ${intent.action?.substringAfterLast('.')}")
         val pending = goAsync()
         appScope.launch {
             try {
