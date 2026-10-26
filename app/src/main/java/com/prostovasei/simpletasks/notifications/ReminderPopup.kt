@@ -4,6 +4,8 @@ import android.app.KeyguardManager
 import android.content.Context
 import android.content.Intent
 import android.graphics.PixelFormat
+import android.os.Handler
+import android.os.Looper
 import android.os.PowerManager
 import android.provider.Settings
 import android.view.Gravity
@@ -236,6 +238,7 @@ private class Overlay(private val context: Context, private val content: @Compos
     private val owner = OverlayOwner()
     private var draws = 0
     private var touched = false
+    private val main = Handler(Looper.getMainLooper())
 
     // Диагностика 0.30.2: первые кадры окна и первое касание — в журнал.
     private val view = object : FrameLayout(context) {
@@ -251,7 +254,7 @@ private class Overlay(private val context: Context, private val content: @Compos
         setViewTreeSavedStateRegistryOwner(owner)
         addView(ComposeView(context).apply { setContent { content() } })
         viewTreeObserver.addOnDrawListener {
-            if (draws < TRACE_DRAWS) PopupTrace.add(context, "кадр ${++draws}")
+            if (++draws <= TRACE_DRAWS) PopupTrace.add(context, "кадр $draws")
         }
     }
 
@@ -266,15 +269,20 @@ private class Overlay(private val context: Context, private val content: @Compos
         ).apply { gravity = Gravity.BOTTOM }
         manager.addView(view, params)
         PopupTrace.add(context, "окно добавлено")
+        // Пульс процесса: идёт — приложение живо (застряли только кадры); молчит — Samsung его заморозил.
+        repeat(TRACE_PULSES) { i -> main.postDelayed({ PopupTrace.add(context, "пульс ${i + 1}: кадров $draws") }, TRACE_PULSE_MS * (i + 1)) }
     }
 
     fun detach() {
+        main.removeCallbacksAndMessages(null)
         runCatching { manager.removeView(view) }
         owner.stop()
     }
 }
 
 private const val TRACE_DRAWS = 5
+private const val TRACE_PULSES = 6
+private const val TRACE_PULSE_MS = 500L
 
 private class OverlayOwner : LifecycleOwner, SavedStateRegistryOwner {
     private val registry = LifecycleRegistry(this)
@@ -564,8 +572,11 @@ private const val FLIP_IN_MS = 220
 private const val LATER_HOLD_MS = 700
 private const val DROP_MS = 280
 
-/** Откуда выезжает и куда уезжает — в высотах полоски, за нижний край окна. */
-private const val ENTER_DEPTH = 1.6f
+/**
+ * Откуда выезжает и куда уезжает — в высотах полоски. Выезд — с половины высоты, а не из-за края окна (0.30.3):
+ * пока окно целиком прозрачное, Samsung перестаёт давать ему кадры, и полоска застревала до касания (журнал PM).
+ */
+private const val ENTER_DEPTH = 0.5f
 private const val DROP_DEPTH = 1.7f
 private const val HALF = 0.5f
 private const val QUARTER_TURN = 90f
