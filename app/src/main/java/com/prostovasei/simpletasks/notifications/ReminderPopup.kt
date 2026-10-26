@@ -4,11 +4,7 @@ import android.app.KeyguardManager
 import android.content.Context
 import android.content.Intent
 import android.graphics.PixelFormat
-import android.os.Build
 import android.os.PowerManager
-import android.os.VibrationEffect
-import android.os.Vibrator
-import android.os.VibratorManager
 import android.provider.Settings
 import android.view.Gravity
 import android.view.WindowManager
@@ -140,6 +136,7 @@ class ReminderPopup @Inject constructor(
 ) {
     private val strips = mutableStateListOf<PopupStrip>()
     private var window: Overlay? = null
+    private val watch = WatchNotice(context)
 
     /** Как вернуть задачу, пока на полоске «Отменить»: результат действия придёт, когда оно запишется в базу. */
     private val reverts = mutableMapOf<String, Deferred<suspend () -> Unit>>()
@@ -152,14 +149,17 @@ class ReminderPopup @Inject constructor(
         return power.isInteractive && !keyguard.isKeyguardLocked
     }
 
-    /** Показывает полоску (повторное напоминание той же задачи — заменяет её) с вибрацией. */
+    /**
+     * Показывает полоску (повторное напоминание той же задачи — заменяет её). Телефон не вибрирует (0.30.1, решение PM),
+     * а на часы уходит тихое уведомление — там оно вибрирует.
+     */
     suspend fun show(strip: PopupStrip) = withContext(Dispatchers.Main.immediate) {
         strips.removeAll { it.taskId == strip.taskId }
         strips += strip
         if (window == null) window = Overlay(context) { Content() }.also { it.attach() }
         // Пока полоска на экране, Samsung не должен «заморозить» приложение — иначе она не появится до касания.
         PopupService.start(context, strip.title)
-        vibrate()
+        watch.show(strip)
     }
 
     /** Задачи на полосках сейчас, по порядку прихода. */
@@ -170,6 +170,7 @@ class ReminderPopup @Inject constructor(
     }
 
     private fun remove(taskId: String) {
+        watch.cancel(taskId)
         reverts.remove(taskId)
         strips.removeAll { it.taskId == taskId }
         if (strips.isEmpty()) {
@@ -217,6 +218,7 @@ class ReminderPopup @Inject constructor(
         val index = strips.indexOfFirst { it.taskId == taskId }
         if (index < 0) return
         strips[index] = strips[index].copy(undo = done)
+        watch.cancel(taskId)
         reverts[taskId] = appScope.async { action() }
     }
 
@@ -226,16 +228,6 @@ class ReminderPopup @Inject constructor(
         val index = strips.indexOfFirst { it.taskId == taskId }
         if (index >= 0) strips[index] = strips[index].copy(undo = null)
         appScope.launch { revert.await().invoke() }
-    }
-
-    private fun vibrate() {
-        val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            context.getSystemService(VibratorManager::class.java).defaultVibrator
-        } else {
-            @Suppress("DEPRECATION")
-            context.getSystemService(Vibrator::class.java)
-        }
-        vibrator.vibrate(VibrationEffect.createWaveform(AndroidReminderNotifications.VIBRATION, -1))
     }
 }
 

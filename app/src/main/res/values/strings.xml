@@ -289,6 +289,7 @@
     <string name="popup_more">ещё %1$d</string>
     <string name="popup_done">Выполнено</string>
     <string name="popup_channel">Полоска на экране</string>
+    <string name="watch_channel">Напоминания для часов</string>
     <string name="popup_service_title">Напоминание на экране</string>
     <string name="widget_progress">%1$d из %2$d</string>
     <string name="summary_channel">Утренняя сводка</string>

@@ -80,14 +80,20 @@ class AndroidRemindersTest {
         org.robolectric.shadows.ShadowSettings.setCanDrawOverlays(true)
         try {
             notifications().show(task("t1", title = "Забрать посылку", due = TaskDue.AtTime(Instant.parse("2026-10-14T18:00:00Z"))))
-            // T-69: только полоска (и вибрация), обычного уведомления нет.
-            assertTrue(shadowOf(notificationManager).allNotifications.isEmpty())
+            // T-69: полоска вместо уведомления; 0.30.1 — плюс тихое уведомление для часов (на телефоне без звука и вибрации).
+            val shown = shadowOf(notificationManager).allNotifications
+            assertEquals(listOf(WatchNotice.CHANNEL_ID), shown.map { it.channelId })
+            assertEquals("Забрать посылку", shown.single().extras.getString(android.app.Notification.EXTRA_TITLE))
+            val channel = notificationManager.getNotificationChannel(WatchNotice.CHANNEL_ID)
+            assertEquals(null, channel.sound)
+            assertTrue(!channel.shouldVibrate())
             assertEquals(listOf("t1"), popup.shown())
             // 0.30.0: пока полоска на экране, приложение не засыпает (сервис переднего плана).
             assertEquals(PopupService::class.java.name, shadowOf(app).nextStartedService?.component?.className)
 
             notifications().cancel("t1")
             assertTrue("Выполнили в другом месте — полоска уходит", popup.shown().isEmpty())
+            assertTrue("И уведомление с часов", shadowOf(notificationManager).allNotifications.isEmpty())
             assertEquals(PopupService::class.java.name, shadowOf(app).nextStoppedService?.component?.className)
         } finally {
             PopupPrefs.setEnabled(app, false)
