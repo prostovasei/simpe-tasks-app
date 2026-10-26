@@ -48,7 +48,7 @@ fun QuickAddRoute(onClose: () -> Unit, viewModel: QuickAddViewModel = hiltViewMo
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect -> if (effect == QuickAddEffect.Close) motion.close() }
     }
-    QuickAddScreen(state, viewModel::onIntent, motion.close, progress = motion.progress)
+    QuickAddScreen(state, viewModel::onIntent, motion.close, progress = motion.progress, reveal = motion.reveal)
 }
 
 /**
@@ -62,6 +62,7 @@ fun QuickAddScreen(
     onClose: () -> Unit,
     autoFocus: Boolean = true,
     progress: () -> Float = { 1f },
+    reveal: () -> Float = { 1f },
 ) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
@@ -94,6 +95,7 @@ fun QuickAddScreen(
         checklistActive = state.checklist != null,
         onChecklist = { onIntent(QuickAddIntent.AddChecklist) },
         progress = progress,
+        reveal = reveal,
         actions = { SheetConfirmButton(R.string.quick_add_save, enabled = state.canSave, tag = TAG_QUICK_SAVE) { onIntent(QuickAddIntent.Save) } },
     ) {
         CompactField(

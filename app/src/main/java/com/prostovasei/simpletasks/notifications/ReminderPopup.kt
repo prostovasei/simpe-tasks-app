@@ -49,6 +49,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -89,7 +90,9 @@ import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
 import com.prostovasei.simpletasks.domain.repository.TaskRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -122,9 +125,12 @@ object PopupPrefs {
         Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, "package:${context.packageName}".toUri())
 }
 
-/** Полоска одной задачи: название, подпись «Сегодня, 18:00 · Дом» и [later] — когда напомнит после «на завтра». */
+/**
+ * Полоска одной задачи: название, подпись «Сегодня, 18:00 · Дом» и [later] — когда напомнит после «на завтра».
+ * [undo] — полоска уже сменилась на «Выполнено · Отменить» или «Завтра, 18:00 · Отменить» (0.29, П1).
+ */
 @Immutable
-data class PopupStrip(val taskId: String, val title: String, val subtitle: String, val later: String = "")
+data class PopupStrip(val taskId: String, val title: String, val subtitle: String, val later: String = "", val undo: String? = null)
 
 @Singleton
 class ReminderPopup @Inject constructor(
@@ -134,6 +140,9 @@ class ReminderPopup @Inject constructor(
 ) {
     private val strips = mutableStateListOf<PopupStrip>()
     private var window: Overlay? = null
+
+    /** Как вернуть задачу, пока на полоске «Отменить»: результат действия придёт, когда оно запишется в базу. */
+    private val reverts = mutableMapOf<String, Deferred<suspend () -> Unit>>()
 
     /** Полоску можно показать: включена, есть разрешение, экран включён и разблокирован. */
     fun canShow(): Boolean {
@@ -159,6 +168,7 @@ class ReminderPopup @Inject constructor(
     }
 
     private fun remove(taskId: String) {
+        reverts.remove(taskId)
         strips.removeAll { it.taskId == taskId }
         if (strips.isEmpty()) {
             window?.detach()
@@ -171,8 +181,21 @@ class ReminderPopup @Inject constructor(
         AppTheme {
             ReminderStrips(
                 strips = strips,
-                onDone = { id -> act(id) { tasks.complete(id) } },
-                onTomorrow = { id -> act(id) { tasks.moveToTomorrow(id) } },
+                onDone = { id ->
+                    act(id, context.getString(R.string.popup_done)) {
+                        val completion = tasks.complete(id)
+                        suspend { tasks.undo(completion) }
+                    }
+                },
+                onTomorrow = { id ->
+                    act(id, strips.find { it.taskId == id }?.later.orEmpty().ifEmpty { context.getString(R.string.popup_tomorrow) }) {
+                        val before = tasks.getTask(id)
+                        tasks.moveToTomorrow(id)
+                        suspend { if (before != null) tasks.updateTask(before) }
+                    }
+                },
+                onUndo = ::undo,
+                onExpire = ::remove,
                 onOpen = { id ->
                     remove(id)
                     context.startActivity(
@@ -186,9 +209,20 @@ class ReminderPopup @Inject constructor(
         }
     }
 
-    private fun act(taskId: String, action: suspend () -> Unit) {
-        remove(taskId)
-        appScope.launch { action() }
+    /** Действие с полоски: полоска сменяется на «… · Отменить» (П1), задача меняется сразу. */
+    private fun act(taskId: String, done: String, action: suspend () -> (suspend () -> Unit)) {
+        val index = strips.indexOfFirst { it.taskId == taskId }
+        if (index < 0) return
+        strips[index] = strips[index].copy(undo = done)
+        reverts[taskId] = appScope.async { action() }
+    }
+
+    /** «Отменить»: задача возвращается как была, полоска — снова с кнопками. */
+    private fun undo(taskId: String) {
+        val revert = reverts.remove(taskId) ?: return
+        val index = strips.indexOfFirst { it.taskId == taskId }
+        if (index >= 0) strips[index] = strips[index].copy(undo = null)
+        appScope.launch { revert.await().invoke() }
     }
 
     private fun vibrate() {
@@ -261,6 +295,8 @@ fun ReminderStrips(
     onOpen: (String) -> Unit,
     onDismiss: (String) -> Unit,
     modifier: Modifier = Modifier,
+    onUndo: (String) -> Unit = {},
+    onExpire: (String) -> Unit = {},
 ) {
     val shown = strips.take(POPUP_VISIBLE)
     val more = strips.size - shown.size
@@ -286,7 +322,10 @@ fun ReminderStrips(
             )
         }
         shown.asReversed().forEach { strip ->
-            key(strip.taskId) { Strip(strip, onDone, onTomorrow, onOpen, onDismiss) }
+            // Своя «личность» у «Отменить»: после отмены полоска появляется заново, с анимацией появления.
+            key(strip.taskId, strip.undo != null) {
+                if (strip.undo != null) UndoStrip(strip, onUndo, onExpire) else Strip(strip, onDone, onTomorrow, onOpen, onDismiss)
+            }
         }
     }
 }
@@ -410,6 +449,64 @@ private fun Strip(strip: PopupStrip, onDone: (String) -> Unit, onTomorrow: (Stri
     }
 }
 
+/**
+ * «Выполнено · Отменить» (0.29, П1): 3 секунды на случай промаха пальцем. Тонкая линия внизу показывает, сколько
+ * осталось, потом полоска уезжает вниз и закрывается.
+ */
+@Composable
+private fun UndoStrip(strip: PopupStrip, onUndo: (String) -> Unit, onExpire: (String) -> Unit) {
+    val colors = AppTheme.colors
+    val spacing = AppTheme.spacing
+    val context = LocalContext.current
+    val animate = remember { animationsEnabled(context) }
+    val appear = remember { Animatable(if (animate) 0f else 1f) }
+    val left = remember { Animatable(1f) }
+    val drop = remember { Animatable(0f) }
+    LaunchedEffect(Unit) {
+        appear.animateTo(1f, tween(UNDO_APPEAR_MS, easing = LinearOutSlowInEasing))
+        left.animateTo(0f, tween(UNDO_MS, easing = LinearEasing))
+        if (animate) drop.animateTo(1f, tween(DROP_MS, easing = FastOutLinearInEasing))
+        onExpire(strip.taskId)
+    }
+    val undoLabel = stringResource(R.string.popup_undo)
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .height(SizeTokens.POPUP_STRIP.dp)
+            .graphicsLayer {
+                alpha = appear.value
+                translationY = drop.value * DROP_DEPTH * size.height
+            }
+            .clip(CircleShape)
+            .background(colors.accent)
+            .drawWithContent {
+                drawContent()
+                // Сколько осталось до закрытия — линия внизу, тает справа налево.
+                val line = SizeTokens.POPUP_UNDO_LINE.dp.toPx()
+                drawRect(colors.onAccent.copy(alpha = UNDO_LINE_ALPHA), Offset(0f, size.height - line), Size(size.width * left.value, line))
+            }
+            .padding(start = spacing.md, end = spacing.xs)
+            .testTag("$TAG_POPUP_UNDO_STRIP:${strip.taskId}"),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(spacing.sm),
+    ) {
+        Icon(painterResource(R.drawable.ic_node_check), null, tint = colors.onAccent, modifier = Modifier.size(SizeTokens.POPUP_ICON.dp))
+        Text(strip.undo.orEmpty(), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = colors.onAccent, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+        Text(
+            undoLabel,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold,
+            color = colors.accent,
+            modifier = Modifier
+                .clip(CircleShape)
+                .background(colors.surface)
+                .clickable { onUndo(strip.taskId) }
+                .padding(horizontal = spacing.md, vertical = spacing.xs)
+                .testTag("$TAG_POPUP_UNDO:${strip.taskId}"),
+        )
+    }
+}
+
 /** Кольцо «Пульса»: [phase] от 0 до [PULSES], каждое кольцо расходится на [spread] и тает. */
 private fun DrawScope.pulseRing(phase: Float, spread: Float, color: Color) {
     if (phase <= 0f || phase >= PULSES) return
@@ -429,6 +526,9 @@ private fun animationsEnabled(context: Context): Boolean =
     Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) > 0f
 
 private const val ENTER_MS = 360
+private const val UNDO_APPEAR_MS = 200
+private const val UNDO_MS = 3000
+private const val UNDO_LINE_ALPHA = 0.6f
 private const val PULSE_MS = 1100
 private const val PULSES = 2f
 private const val RING_ALPHA = 0.55f
@@ -457,3 +557,5 @@ const val TAG_POPUP_OPEN = "popup_open"
 const val TAG_POPUP_TOMORROW = "popup_tomorrow"
 const val TAG_POPUP_DONE = "popup_done"
 const val TAG_POPUP_MORE = "popup_more"
+const val TAG_POPUP_UNDO = "popup_undo"
+const val TAG_POPUP_UNDO_STRIP = "popup_undo_strip"

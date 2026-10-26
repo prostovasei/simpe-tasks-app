@@ -287,6 +287,8 @@
     <string name="notification_complete">Выполнить</string>
     <string name="popup_tomorrow">На завтра в это же время</string>
     <string name="popup_more">ещё %1$d</string>
+    <string name="popup_done">Выполнено</string>
+    <string name="popup_undo">Отменить</string>
     <string name="settings_popup_title">Всплывающая полоска</string>
     <string name="settings_popup_hint">Напоминание — зелёной полоской снизу поверх любого приложения, вместо уведомления. На заблокированном экране — обычное уведомление.</string>
     <string name="settings_popup_no_permission">Нет разрешения «Появление поверх других приложений» — полоска не появится, придёт обычное уведомление.</string>

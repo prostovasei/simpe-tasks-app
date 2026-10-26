@@ -10,5 +10,7 @@
     <style name="Theme.SimpleTasks.Overlay">
         <item name="android:windowIsTranslucent">true</item>
         <item name="android:windowBackground">@android:color/transparent</item>
+        <!-- Окно задачи анимирует себя само (выезд снизу или рост из плашки виджета, 0.29) — без системной анимации. -->
+        <item name="android:windowAnimationStyle">@null</item>
     </style>
 </resources>

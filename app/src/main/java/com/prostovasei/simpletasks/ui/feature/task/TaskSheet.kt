@@ -69,6 +69,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.lerp
+import androidx.compose.ui.graphics.BlurEffect
+import androidx.compose.ui.graphics.TileMode
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
@@ -94,6 +104,7 @@ import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.components.ListSquare
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.designsystem.theme.parseListColor
+import com.prostovasei.simpletasks.designsystem.tokens.RadiusTokens
 import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
 import com.prostovasei.simpletasks.domain.model.Priority
 import com.prostovasei.simpletasks.domain.model.Reminders
@@ -104,14 +115,29 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 import kotlinx.coroutines.launch
 
-/** Открытие и закрытие шторки: [progress] 0 → 1 при открытии; [close] увозит её вниз и вызывает закрытие экрана. */
+/**
+ * Открытие и закрытие шторки: [progress] 0 → 1 — окно на месте (выехало снизу или выросло из плашки виджета),
+ * [reveal] 0 → 1 — содержимое проявилось; [close] прячет окно и вызывает закрытие экрана.
+ */
 @Stable
-class SheetMotion(val progress: () -> Float, val close: () -> Unit)
+class SheetMotion(val progress: () -> Float, val reveal: () -> Float, val close: () -> Unit)
 
-/** Анимация шторки, «Назад» и своё затемнение вместо системного (окно диалога навигации). */
+/**
+ * Откуда окно «вырастает» (0.29, Р1 — выбор PM в прототипе): плашка задачи или «+» в виджете, в координатах экрана
+ * (`Intent.sourceBounds` от рабочего стола). null — окно выезжает снизу, как раньше.
+ */
+val LocalSheetOrigin = compositionLocalOf<android.graphics.Rect?> { null }
+
+/**
+ * Анимация шторки, «Назад» и своё затемнение вместо системного (окно диалога навигации).
+ * Из виджета (0.29, Р1): плашка растягивается в окно, при закрытии сжимается обратно. Содержимое — С5:
+ * проявляется из лёгкого размытия, когда окно на месте.
+ */
 @Composable
 fun rememberSheetMotion(onClosed: () -> Unit): SheetMotion {
     val progress = remember { Animatable(0f) }
+    val reveal = remember { Animatable(0f) }
+    val morph = LocalSheetOrigin.current != null
     val scope = rememberCoroutineScope()
     val keyboard = LocalSoftwareKeyboardController.current
     val currentOnClosed by rememberUpdatedState(onClosed)
@@ -119,19 +145,28 @@ fun rememberSheetMotion(onClosed: () -> Unit): SheetMotion {
     val motion = remember {
         SheetMotion(
             progress = { progress.value },
+            reveal = { reveal.value },
             close = {
                 if (!closing) {
                     closing = true
                     keyboard?.hide()
                     scope.launch {
-                        progress.animateTo(0f, tween(CLOSE_MS, easing = FastOutLinearInEasing))
+                        if (morph) {
+                            reveal.animateTo(0f, tween(HIDE_MS))
+                            progress.animateTo(0f, tween(MORPH_CLOSE_MS, easing = MORPH_EASING))
+                        } else {
+                            progress.animateTo(0f, tween(CLOSE_MS, easing = FastOutLinearInEasing))
+                        }
                         currentOnClosed()
                     }
                 }
             },
         )
     }
-    LaunchedEffect(Unit) { progress.animateTo(1f, tween(OPEN_MS, easing = SHEET_EASING)) }
+    LaunchedEffect(Unit) {
+        progress.animateTo(1f, if (morph) tween(MORPH_MS, easing = MORPH_EASING) else tween(OPEN_MS, easing = SHEET_EASING))
+        reveal.animateTo(1f, tween(REVEAL_MS))
+    }
     BackHandler(onBack = motion.close)
     val window = (LocalView.current.parent as? DialogWindowProvider)?.window
     SideEffect { window?.setDimAmount(0f) }
@@ -156,6 +191,7 @@ fun TaskSheet(
     onChecklist: () -> Unit,
     modifier: Modifier = Modifier,
     progress: () -> Float = { 1f },
+    reveal: () -> Float = { 1f },
     overlay: @Composable BoxScope.() -> Unit = {},
     actionCount: Int = 1,
     actions: @Composable RowScope.() -> Unit,
@@ -181,7 +217,22 @@ fun TaskSheet(
     }
     BackHandler(enabled = timelineDay != null, onBack = closeTimeline)
 
-    Box(modifier.fillMaxSize()) {
+    // Р1: откуда растёт окно — плашка виджета в координатах этого экрана; куда — само окно.
+    val origin = LocalSheetOrigin.current
+    val view = LocalView.current
+    var screen by remember { mutableStateOf<Rect?>(null) }
+    var card by remember { mutableStateOf<Rect?>(null) }
+    val start = remember(origin, screen) {
+        val at = screen ?: return@remember null
+        origin?.let {
+            val location = IntArray(2).also(view::getLocationOnScreen)
+            Rect(Offset((it.left - location[0]).toFloat(), (it.top - location[1]).toFloat()), Size(it.width().toFloat(), it.height().toFloat()))
+                .translate(-at.topLeft)
+        }
+    }
+    val blur = with(LocalDensity.current) { SizeTokens.SHEET_REVEAL_BLUR.dp.toPx() }
+
+    Box(modifier.fillMaxSize().onGloballyPositioned { screen = it.boundsInRoot() }) {
         Box(
             Modifier
                 .fillMaxSize()
@@ -191,6 +242,20 @@ fun TaskSheet(
                 .semantics { contentDescription = closeLabel }
                 .testTag(TAG_QUICK_SCRIM),
         )
+        if (start != null) {
+            // Пока окно растёт или сжимается — вместо него белая «плашка», которая меняет место, размер и скругление.
+            val surface = colors.surface
+            val radius = with(LocalDensity.current) { RadiusTokens.SM.dp.toPx() to RadiusTokens.NAV.dp.toPx() }
+            Box(
+                Modifier.fillMaxSize().drawBehind {
+                    val p = progress()
+                    val end = card?.translate(-(screen?.topLeft ?: Offset.Zero)) ?: return@drawBehind
+                    if (p <= 0f || p >= 1f) return@drawBehind
+                    val now = lerp(start, end, p)
+                    drawRoundRect(surface, now.topLeft, now.size, CornerRadius(radius.first + (radius.second - radius.first) * p))
+                },
+            )
+        }
         BoxWithConstraints(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars)) {
             val density = LocalDensity.current
             val opened = timelineDay?.let { LocalDate.ofEpochDay(it) }
@@ -207,11 +272,22 @@ fun TaskSheet(
                     .align(Alignment.BottomCenter)
                     .padding(bottom = lift)
                     .then(if (opened != null) Modifier.fillMaxWidth().fillMaxHeight(TIMELINE_FRACTION) else Modifier.fillMaxWidth().padding(horizontal = spacing.xs))
-                    .graphicsLayer { translationY = (1f - progress()) * (size.height + lift.toPx()) }
+                    .onGloballyPositioned { card = it.boundsInRoot() }
+                    .graphicsLayer {
+                        // Из виджета окно появляется, только когда «плашка» доросла до него.
+                        if (start != null) alpha = if (progress() >= 1f) 1f else 0f else translationY = (1f - progress()) * (size.height + lift.toPx())
+                    }
                     .shadow(sizes.navShadow, shape)
                     .background(colors.surface, shape)
                     // Нажатия по пустому месту шторки не должны доходить до затемнения.
                     .pointerInput(Unit) { detectTapGestures { } }
+                    // С5: содержимое проявляется из размытия.
+                    .graphicsLayer {
+                        val r = reveal()
+                        alpha = r
+                        val radius = (1f - r) * blur
+                        renderEffect = if (radius > MIN_BLUR) BlurEffect(radius, radius, TileMode.Decal) else null
+                    }
                     .testTag(TAG_QUICK_CARD),
             ) {
                 Box(
@@ -531,14 +607,16 @@ private fun ToolButtonBody(
     val sizes = AppTheme.sizes
     val shape = AppTheme.shapes.large
     val description = stringResource(label)
+    val jelly = rememberJelly()
     // Итерация 24: кнопки крупнее (50 dp, скругление как у плиток дней), обводка тоньше — в 1 dp (вариант PM «А»).
     Box(
         Modifier
             .size(LocalToolButtonSize.current)
+            .jelly(jelly)
             .clip(shape)
             .background(if (active) colors.selected else colors.surface)
             .border(sizes.hairline, if (active) colors.selected else colors.divider, shape)
-            .clickable(role = Role.Button, onClick = onClick)
+            .jellyClick(jelly, onClick = onClick)
             .semantics {
                 contentDescription = description
                 selected = active
@@ -560,12 +638,14 @@ private fun ToolButtonBody(
 fun SheetConfirmButton(label: Int, enabled: Boolean, tag: String, onClick: () -> Unit) {
     val colors = AppTheme.colors
     val description = stringResource(label)
+    val jelly = rememberJelly()
     Box(
         Modifier
             .size(LocalToolButtonSize.current)
+            .jelly(jelly)
             .clip(AppTheme.shapes.large)
             .background(if (enabled) colors.accent else colors.inactive)
-            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+            .jellyClick(jelly, enabled = enabled, onClick = onClick)
             .semantics { contentDescription = description }
             .testTag(tag),
         contentAlignment = Alignment.Center,
@@ -607,6 +687,12 @@ fun CompactField(
 }
 
 private val SHEET_EASING = CubicBezierEasing(0.32f, 0.72f, 0f, 1f)
+private val MORPH_EASING = CubicBezierEasing(0.2f, 0f, 0f, 1f)
+private const val MORPH_MS = 400
+private const val MORPH_CLOSE_MS = 340
+private const val HIDE_MS = 110
+private const val REVEAL_MS = 300
+private const val MIN_BLUR = 0.5f
 private const val OPEN_MS = 340
 private const val CLOSE_MS = 220
 /** Таймлайн занимает почти весь экран; верхняя часть шторки (поля, чек-лист) — не больше этой доли экрана. */
