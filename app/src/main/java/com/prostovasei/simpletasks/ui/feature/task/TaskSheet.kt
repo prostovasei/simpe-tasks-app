@@ -694,14 +694,15 @@ fun CompactField(
 }
 
 private val SHEET_EASING = CubicBezierEasing(0.32f, 0.72f, 0f, 1f)
+/** Окно из виджета — быстро (итерация 30, №73: 0,2 с рост и 0,09 с проявление; было 0,32 + 0,16). */
 private val MORPH_EASING = CubicBezierEasing(0.2f, 0f, 0f, 1f)
-private const val MORPH_MS = 320
-private const val MORPH_CLOSE_MS = 340
-private const val HIDE_MS = 110
-private const val REVEAL_MS = 160
+private const val MORPH_MS = 200
+private const val MORPH_CLOSE_MS = 200
+private const val HIDE_MS = 60
+private const val REVEAL_MS = 90
 private const val MIN_BLUR = 0.5f
-private const val OPEN_MS = 340
-private const val CLOSE_MS = 220
+private const val OPEN_MS = 240
+private const val CLOSE_MS = 160
 /** Таймлайн занимает почти весь экран; верхняя часть шторки (поля, чек-лист) — не больше этой доли экрана. */
 private const val TIMELINE_FRACTION = 0.97f
 private const val HEADER_FRACTION = 0.45f

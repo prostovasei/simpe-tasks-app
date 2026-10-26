@@ -5,6 +5,8 @@ import com.prostovasei.simpletasks.domain.model.TaskDue
 import com.prostovasei.simpletasks.testing.project
 import com.prostovasei.simpletasks.testing.task
 import com.prostovasei.simpletasks.ui.feature.task.ProjectOption
+import com.prostovasei.simpletasks.ui.common.TaskItem
+import com.prostovasei.simpletasks.domain.model.Priority
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -112,5 +114,13 @@ class WidgetModelTest {
             assertEquals(it, WidgetFilter.decode(it.encode()))
         }
         assertEquals("По умолчанию — «Все»", WidgetFilter.All, WidgetFilter.decode(null))
+    }
+
+    @Test
+    fun dayProgressCountsDone() {
+        fun item(id: String, done: Boolean) = TaskItem(id, id, Priority.NONE, null, null, null, isInboxList = true, isDone = done)
+        assertEquals(DayProgress(2, 3), DayProgress.of(listOf(item("a", true), item("b", false), item("c", true))))
+        assertEquals(2f / 3, DayProgress(2, 3).fraction, 0.001f)
+        assertEquals(null, DayProgress.of(emptyList()))
     }
 }

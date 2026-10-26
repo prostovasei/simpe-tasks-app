@@ -10,6 +10,9 @@
     <!-- Полоска напоминания поверх других приложений (T-69); включается переключателем в «Настройках». -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Озвучка плана дня (итерация 30): читает и при выключенном экране, как плеер. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <!-- Точное время: на Android 12 — без запроса у пользователя, с Android 13 — разрешение для приложений-напоминалок. -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
@@ -41,6 +44,11 @@
             android:taskAffinity="com.prostovasei.simpletasks.popup"
             android:theme="@style/Theme.SimpleTasks.Overlay"
             android:windowSoftInputMode="adjustResize" />
+
+        <service
+            android:name=".notifications.SpeechService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
 
         <receiver
             android:name=".notifications.ReminderReceiver"

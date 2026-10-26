@@ -17,6 +17,7 @@ import androidx.glance.LocalContext
 import androidx.glance.action.Action
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.AndroidRemoteViews
+import androidx.glance.appwidget.LinearProgressIndicator
 import androidx.glance.appwidget.action.actionSendBroadcast
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.cornerRadius
@@ -28,6 +29,7 @@ import androidx.glance.layout.Box
 import androidx.glance.layout.Column
 import androidx.glance.layout.ContentScale
 import androidx.glance.layout.Row
+import androidx.glance.layout.RowScope
 import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxHeight
 import androidx.glance.layout.fillMaxSize
@@ -132,8 +134,9 @@ private fun DayBlock(block: WidgetDayBlock, isFirst: Boolean, model: WidgetModel
     val nowMinute = model.nowMinute.takeIf { block.day == WidgetDay.On(model.today) }
     val rows = WidgetTimeline.rows(block.items, overdue = false, nowMinute = nowMinute, days = days)
     // Правое поле плашек; за ним, у самого края виджета, — полоска прокрутки.
+    val progress = DayProgress.of(block.items).takeIf { block.day == WidgetDay.On(model.today) }
     Column(GlanceModifier.fillMaxWidth().padding(end = SizeTokens.WIDGET_LIST_EDGE.dp)) {
-        DayTitle(block.day, model.today, isFirst)
+        DayTitle(block.day, model.today, isFirst, progress)
         // Одно место в колонке дня занимает подпись.
         ManyRows(rows.withIndex().toList(), limit = MAX_CHILDREN - 1) { (index, row) ->
             val line = Line(top = index > 0, bottom = index < rows.lastIndex)
@@ -175,7 +178,7 @@ internal const val MAX_CHILDREN = 10
  * Прошедший день — красным.
  */
 @Composable
-private fun DayTitle(day: WidgetDay, today: LocalDate, isFirst: Boolean) {
+private fun DayTitle(day: WidgetDay, today: LocalDate, isFirst: Boolean, progress: DayProgress? = null) {
     val title = widgetDayTitle(LocalContext.current, day, today)
     val color = if (title.isPast) WidgetColors.overdue else WidgetColors.textPrimary
     // Итерация 25 (вариант PM «А»): дата группы крупнее — 14 sp, метка «Сегодня» — 12 sp.
@@ -200,7 +203,30 @@ private fun DayTitle(day: WidgetDay, today: LocalDate, isFirst: Boolean) {
                 Text(title.relative, style = style.copy(fontSize = 12.sp), maxLines = 1)
             }
         }
+        if (progress != null) DayProgressBar(progress)
     }
+}
+
+/**
+ * Прогресс дня у «Сегодня» (итерация 30): тонкая зелёная линия до правого края и «3 из 7».
+ * Всё выполнено — линия полностью зелёная.
+ */
+@Composable
+private fun RowScope.DayProgressBar(progress: DayProgress) {
+    val context = LocalContext.current
+    Spacer(GlanceModifier.width(SpacingTokens.XS.dp))
+    LinearProgressIndicator(
+        progress = progress.fraction,
+        modifier = GlanceModifier.defaultWeight().height(SizeTokens.WIDGET_PROGRESS.dp).cornerRadius(RadiusTokens.SM.dp),
+        color = WidgetColors.accent,
+        backgroundColor = WidgetColors.divider,
+    )
+    Spacer(GlanceModifier.width(SpacingTokens.XS.dp))
+    Text(
+        context.getString(R.string.widget_progress, progress.done, progress.total),
+        style = TextStyle(color = WidgetColors.textSecondary, fontSize = 12.sp, fontWeight = FontWeight.Medium),
+        maxLines = 1,
+    )
 }
 
 /** Подпись дня: [text] — «ПТ, 16 ОКТ»; [relative] — «Сегодня» / «Завтра» / «Вчера» или null; [isPast] — день прошёл. */

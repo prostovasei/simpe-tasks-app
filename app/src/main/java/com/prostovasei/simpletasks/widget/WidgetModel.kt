@@ -49,6 +49,15 @@ data class WidgetDayBlock(val day: WidgetDay, val items: List<TaskItem>)
 /** Вкладка списка внизу виджета. [name] и [color] — у своего списка (у «Все» и «Входящих» — null). */
 data class WidgetTab(val filter: WidgetFilter, val name: String? = null, val color: String? = null)
 
+/** Прогресс дня (итерация 30): сколько из задач дня уже выполнено — у «Сегодня» в виджете. */
+data class DayProgress(val done: Int, val total: Int) {
+    val fraction: Float get() = if (total == 0) 0f else done.toFloat() / total
+
+    companion object {
+        fun of(items: List<TaskItem>): DayProgress? = items.takeIf { it.isNotEmpty() }?.let { DayProgress(it.count(TaskItem::isDone), it.size) }
+    }
+}
+
 /**
  * Данные виджета. [title] — имя списка (null — «Все» или «Входящие», подпись из ресурсов);
  * [today] — дата в нижней строке и точка отсчёта для подписей дней; [tabs] — вкладки списков внизу.
