@@ -293,6 +293,8 @@
     <string name="settings_popup_hint">Напоминание — зелёной полоской снизу поверх любого приложения, вместо уведомления. На заблокированном экране — обычное уведомление.</string>
     <string name="settings_popup_no_permission">Нет разрешения «Появление поверх других приложений» — полоска не появится, придёт обычное уведомление.</string>
     <string name="settings_popup_allow">Разрешить</string>
+    <string name="settings_exact_title">Точное время напоминаний</string>
+    <string name="settings_exact_hint">Напоминание приходит секунда в секунду. Android считает его будильником и показывает значок ⏰ в строке состояния — звонка нет. Выключено — Samsung может задерживать напоминания на 20–30 секунд.</string>
     <string name="settings_notifications_title">Напоминания</string>
     <string name="settings_notifications_off">Уведомления выключены — напоминания не придут.</string>
     <string name="settings_notifications_enable">Включить уведомления</string>

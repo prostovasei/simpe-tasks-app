@@ -11,7 +11,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
-import androidx.compose.ui.test.swipeDown
+import androidx.compose.ui.test.swipeRight
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import org.junit.Assert.assertEquals
@@ -22,7 +22,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
-/** Полоска напоминания (T-69): стопка до трёх, «ещё N», кнопки, смахивание вниз и анимации (0.28.1). */
+/** Полоска напоминания (T-69): стопка до трёх, «ещё N», кнопки, смахивание вправо (0.29.2) и анимации (0.28.1). */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(qualifiers = "w400dp-h400dp-xhdpi")
@@ -68,7 +68,7 @@ class ReminderStripsTest {
         composeRule.onNodeWithTag("$TAG_POPUP_DONE:a").performClick()
         composeRule.onNodeWithTag("$TAG_POPUP_TOMORROW:b").performClick()
         composeRule.onNodeWithTag("$TAG_POPUP_OPEN:c").performClick()
-        composeRule.onNodeWithTag("$TAG_POPUP:c").performTouchInput { swipeDown(startY = top, endY = bottom + height * 2) }
+        composeRule.onNodeWithTag("$TAG_POPUP:c").performTouchInput { swipeRight(startX = left, endX = right) }
         composeRule.waitForIdle()
         assertEquals(listOf("done:a", "tomorrow:b", "open:c", "dismiss:c"), events)
     }

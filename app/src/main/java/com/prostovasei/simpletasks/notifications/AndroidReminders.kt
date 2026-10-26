@@ -28,7 +28,25 @@ import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Будильник через AlarmManager: точный, срабатывает и в режиме сна. */
+/**
+ * «Точное время напоминаний» в настройках (0.29.2, вариант PM «В»; по умолчанию включено). Включено — напоминание
+ * ставится как будильник (`setAlarmClock`): система его не откладывает, но показывает значок будильника в строке
+ * состояния (звонка нет). Выключено — обычный точный будильник, который Samsung откладывает на 20–30 секунд.
+ */
+object ExactPrefs {
+    private const val PREFS = "reminders"
+    private const val KEY = "exact_alarm_clock"
+
+    fun enabled(context: Context): Boolean = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY, true)
+
+    /** Сохраняет выбор и сразу переставляет ближайший будильник по-новому. */
+    fun setEnabled(context: Context, value: Boolean) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit { putBoolean(KEY, value) }
+        context.sendBroadcast(Intent(context, ReminderReceiver::class.java).setAction(ReminderReceiver.ACTION_FIRE))
+    }
+}
+
+/** Будильник через AlarmManager: точный, срабатывает и в режиме сна; как будильник — если включено [ExactPrefs]. */
 @Singleton
 class AndroidReminderAlarm @Inject constructor(@param:ApplicationContext private val context: Context) : ReminderAlarm {
     private val alarms = context.getSystemService(AlarmManager::class.java)
@@ -45,7 +63,11 @@ class AndroidReminderAlarm @Inject constructor(@param:ApplicationContext private
             return
         }
         val exact = Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarms.canScheduleExactAlarms()
-        if (exact) {
+        if (exact && ExactPrefs.enabled(context)) {
+            // Нажатие на «Следующий будильник» в шторке открывает приложение.
+            val show = PendingIntent.getActivity(context, 0, Intent(context, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
+            alarms.setAlarmClock(AlarmManager.AlarmClockInfo(at.toEpochMilli(), show), intent)
+        } else if (exact) {
             alarms.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at.toEpochMilli(), intent)
         } else {
             alarms.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at.toEpochMilli(), intent)

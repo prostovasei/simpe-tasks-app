@@ -49,6 +49,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.prostovasei.simpletasks.BuildConfig
 import com.prostovasei.simpletasks.R
+import com.prostovasei.simpletasks.notifications.ExactPrefs
 import com.prostovasei.simpletasks.notifications.PopupPrefs
 import com.prostovasei.simpletasks.widget.WidgetLog
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
@@ -74,6 +75,7 @@ fun SettingsRoute(viewModel: SettingsViewModel = hiltViewModel()) {
     // Полоска напоминания (T-69): переключатель и разрешение «поверх других приложений» — тоже при каждом возвращении.
     var popupOn by remember { mutableStateOf(PopupPrefs.enabled(context)) }
     var popupAllowed by remember { mutableStateOf(PopupPrefs.allowed(context)) }
+    var exactOn by remember { mutableStateOf(ExactPrefs.enabled(context)) }
     LifecycleResumeEffect(Unit) {
         notificationsOff = !NotificationManagerCompat.from(context).areNotificationsEnabled()
         popupAllowed = PopupPrefs.allowed(context)
@@ -100,6 +102,13 @@ fun SettingsRoute(viewModel: SettingsViewModel = hiltViewModel()) {
             },
             onAllow = { context.startActivity(PopupPrefs.permissionIntent(context)) },
         ),
+        exact = ExactSettings(
+            enabled = exactOn,
+            onToggle = { on ->
+                ExactPrefs.setEnabled(context, on)
+                exactOn = on
+            },
+        ),
         widgetLog = WidgetLogActions(
             read = { WidgetLog.read(context) },
             share = { text ->
@@ -121,6 +130,7 @@ fun SettingsScreen(
     notificationsOff: Boolean = false,
     onEnableNotifications: () -> Unit = {},
     popup: PopupSettings = PopupSettings(),
+    exact: ExactSettings = ExactSettings(),
     widgetLog: WidgetLogActions = WidgetLogActions.None,
 ) {
     var logText by remember { mutableStateOf<String?>(null) }
@@ -166,6 +176,7 @@ fun SettingsScreen(
                 }
             }
             PopupSection(popup)
+            ExactSection(exact)
             HorizontalDivider(color = colors.divider, modifier = Modifier.padding(vertical = spacing.xs))
 
             UpdateSection(state.update, onIntent)
@@ -418,6 +429,21 @@ data class PopupSettings(
     val onAllow: () -> Unit = {},
 )
 
+/** «Точное время напоминаний» (0.29.2): напоминание как будильник — без задержки Samsung, со значком в строке состояния. */
+data class ExactSettings(val enabled: Boolean = true, val onToggle: (Boolean) -> Unit = {})
+
+@Composable
+private fun ExactSection(exact: ExactSettings) {
+    val colors = AppTheme.colors
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm)) {
+        Column(Modifier.weight(1f)) {
+            Text(stringResource(R.string.settings_exact_title), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold, color = colors.textPrimary)
+            Text(stringResource(R.string.settings_exact_hint), style = MaterialTheme.typography.bodySmall, color = colors.textSecondary)
+        }
+        Switch(checked = exact.enabled, onCheckedChange = exact.onToggle, modifier = Modifier.testTag(TAG_EXACT_SWITCH))
+    }
+}
+
 @Composable
 private fun PopupSection(popup: PopupSettings) {
     val colors = AppTheme.colors
@@ -475,6 +501,7 @@ const val TAG_EXPORT_BUTTON = "settings_export"
 const val TAG_CLEAR_BUTTON = "settings_clear"
 const val TAG_NOTIFICATIONS_BUTTON = "settings_notifications"
 const val TAG_POPUP_SWITCH = "settings_popup"
+const val TAG_EXACT_SWITCH = "settings_exact"
 const val TAG_POPUP_ALLOW = "settings_popup_allow"
 
 internal val previewReport = ImportReport(

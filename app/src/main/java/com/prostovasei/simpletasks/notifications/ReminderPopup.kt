@@ -19,7 +19,7 @@ import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -102,7 +102,7 @@ import kotlin.math.roundToInt
 
 /*
  * Полоска напоминания поверх других приложений (T-69, вариант PM «В»): зелёная, снизу, висит, пока не уберут.
- * Часы — на завтра в то же время, галочка — выполнено, название — окно задачи поверх, смахнуть вниз — закрыть.
+ * Часы — на завтра в то же время, галочка — выполнено, название — окно задачи поверх, смахнуть вправо — закрыть.
  * Несколько сразу — до трёх полосок друг над другом, остальные — «ещё N». Вместо обычного уведомления:
  * оно приходит, только если полоску показать нельзя (выключено, нет разрешения, экран заблокирован).
  */
@@ -378,16 +378,28 @@ private fun Strip(strip: PopupStrip, onDone: (String) -> Unit, onTomorrow: (Stri
             .fillMaxWidth()
             .height(SizeTokens.POPUP_STRIP.dp)
             // Жест — до сдвига: координаты пальца считаются от неподвижного места, а не от уезжающей полоски.
+            // Закрыть — смахнуть вправо (0.29.2, решение PM: вниз неудобно); дальше порога — улетает за край экрана.
             .pointerInput(strip.taskId) {
-                detectVerticalDragGestures(
-                    onDragEnd = { if (offset.value > threshold) onDismiss(strip.taskId) else scope.launch { offset.animateTo(0f) } },
+                detectHorizontalDragGestures(
+                    onDragEnd = {
+                        scope.launch {
+                            if (offset.value > threshold) {
+                                leaving = true
+                                offset.animateTo(size.width.toFloat(), tween(SWIPE_OUT_MS, easing = FastOutLinearInEasing))
+                                onDismiss(strip.taskId)
+                            } else {
+                                offset.animateTo(0f)
+                            }
+                        }
+                    },
                     onDragCancel = { scope.launch { offset.animateTo(0f) } },
-                ) { change, dy ->
+                ) { change, dx ->
                     change.consume()
-                    if (!leaving) scope.launch { offset.snapTo((offset.value + dy).coerceAtLeast(0f)) }
+                    if (!leaving) scope.launch { offset.snapTo((offset.value + dx).coerceAtLeast(0f)) }
                 }
             }
-            .offset { IntOffset(0, offset.value.roundToInt()) }
+            .offset { IntOffset(offset.value.roundToInt(), 0) }
+            .graphicsLayer { alpha = 1f - (offset.value / size.width).coerceIn(0f, 1f) * SWIPE_FADE }
             .graphicsLayer {
                 translationY = ((1f - enter.value) * ENTER_DEPTH + drop.value * DROP_DEPTH) * size.height
                 rotationX = if (flip.value < HALF) flip.value / HALF * QUARTER_TURN else (flip.value / HALF - 2f) * QUARTER_TURN
@@ -450,7 +462,7 @@ private fun Strip(strip: PopupStrip, onDone: (String) -> Unit, onTomorrow: (Stri
 }
 
 /**
- * «Выполнено · Отменить» (0.29, П1): 3 секунды на случай промаха пальцем. Тонкая линия внизу показывает, сколько
+ * «Выполнено · Отменить» (0.29, П1): полторы секунды на случай промаха пальцем. Тонкая линия внизу показывает, сколько
  * осталось, потом полоска уезжает вниз и закрывается.
  */
 @Composable
@@ -527,7 +539,10 @@ private fun animationsEnabled(context: Context): Boolean =
 
 private const val ENTER_MS = 360
 private const val UNDO_APPEAR_MS = 200
-private const val UNDO_MS = 3000
+/** Сколько висит «Отменить» (0.29.2: было 3 с — долго, решение PM). */
+private const val UNDO_MS = 1500
+private const val SWIPE_OUT_MS = 180
+private const val SWIPE_FADE = 0.7f
 private const val UNDO_LINE_ALPHA = 0.6f
 private const val PULSE_MS = 1100
 private const val PULSES = 2f
