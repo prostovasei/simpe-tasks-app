@@ -164,8 +164,15 @@ fun rememberSheetMotion(onClosed: () -> Unit): SheetMotion {
         )
     }
     LaunchedEffect(Unit) {
-        progress.animateTo(1f, if (morph) tween(MORPH_MS, easing = MORPH_EASING) else tween(OPEN_MS, easing = SHEET_EASING))
-        reveal.animateTo(1f, tween(REVEAL_MS))
+        if (morph) {
+            // Окно видно, только когда «плашка» доросла, — содержимое проявляется следом.
+            progress.animateTo(1f, tween(MORPH_MS, easing = MORPH_EASING))
+            reveal.animateTo(1f, tween(REVEAL_MS))
+        } else {
+            // Выезд снизу: содержимое проявляется, пока окно ещё доезжает (0.29.1 — быстрее, решение PM).
+            launch { reveal.animateTo(1f, tween(REVEAL_MS, delayMillis = OPEN_MS - REVEAL_MS)) }
+            progress.animateTo(1f, tween(OPEN_MS, easing = SHEET_EASING))
+        }
     }
     BackHandler(onBack = motion.close)
     val window = (LocalView.current.parent as? DialogWindowProvider)?.window
@@ -688,10 +695,10 @@ fun CompactField(
 
 private val SHEET_EASING = CubicBezierEasing(0.32f, 0.72f, 0f, 1f)
 private val MORPH_EASING = CubicBezierEasing(0.2f, 0f, 0f, 1f)
-private const val MORPH_MS = 400
+private const val MORPH_MS = 320
 private const val MORPH_CLOSE_MS = 340
 private const val HIDE_MS = 110
-private const val REVEAL_MS = 300
+private const val REVEAL_MS = 160
 private const val MIN_BLUR = 0.5f
 private const val OPEN_MS = 340
 private const val CLOSE_MS = 220
