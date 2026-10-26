@@ -4,11 +4,7 @@ import android.app.KeyguardManager
 import android.content.Context
 import android.content.Intent
 import android.graphics.PixelFormat
-import android.os.Build
 import android.os.PowerManager
-import android.os.VibrationEffect
-import android.os.Vibrator
-import android.os.VibratorManager
 import android.provider.Settings
 import android.view.Gravity
 import android.view.WindowManager
@@ -152,14 +148,13 @@ class ReminderPopup @Inject constructor(
         return power.isInteractive && !keyguard.isKeyguardLocked
     }
 
-    /** Показывает полоску (повторное напоминание той же задачи — заменяет её) с вибрацией. */
+    /** Показывает полоску (повторное напоминание той же задачи — заменяет её). Без вибрации (0.30.1, решение PM). */
     suspend fun show(strip: PopupStrip) = withContext(Dispatchers.Main.immediate) {
         strips.removeAll { it.taskId == strip.taskId }
         strips += strip
         if (window == null) window = Overlay(context) { Content() }.also { it.attach() }
         // Пока полоска на экране, Samsung не должен «заморозить» приложение — иначе она не появится до касания.
         PopupService.start(context, strip.title)
-        vibrate()
     }
 
     /** Задачи на полосках сейчас, по порядку прихода. */
@@ -226,16 +221,6 @@ class ReminderPopup @Inject constructor(
         val index = strips.indexOfFirst { it.taskId == taskId }
         if (index >= 0) strips[index] = strips[index].copy(undo = null)
         appScope.launch { revert.await().invoke() }
-    }
-
-    private fun vibrate() {
-        val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            context.getSystemService(VibratorManager::class.java).defaultVibrator
-        } else {
-            @Suppress("DEPRECATION")
-            context.getSystemService(Vibrator::class.java)
-        }
-        vibrator.vibrate(VibrationEffect.createWaveform(AndroidReminderNotifications.VIBRATION, -1))
     }
 }
 

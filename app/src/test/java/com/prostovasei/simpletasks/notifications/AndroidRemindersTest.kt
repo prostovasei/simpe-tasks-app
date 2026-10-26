@@ -80,7 +80,7 @@ class AndroidRemindersTest {
         org.robolectric.shadows.ShadowSettings.setCanDrawOverlays(true)
         try {
             notifications().show(task("t1", title = "Забрать посылку", due = TaskDue.AtTime(Instant.parse("2026-10-14T18:00:00Z"))))
-            // T-69: только полоска (и вибрация), обычного уведомления нет.
+            // T-69: только полоска, обычного уведомления нет (0.30.1 — и без вибрации).
             assertTrue(shadowOf(notificationManager).allNotifications.isEmpty())
             assertEquals(listOf("t1"), popup.shown())
             // 0.30.0: пока полоска на экране, приложение не засыпает (сервис переднего плана).
