@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,6 +26,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
+import com.prostovasei.simpletasks.ui.feature.task.LocalSheetOrigin
 import com.prostovasei.simpletasks.ui.feature.task.QuickAddRoute
 import com.prostovasei.simpletasks.ui.feature.task.TaskDetailRoute
 import com.prostovasei.simpletasks.ui.navigation.QuickAddDestination
@@ -48,7 +50,8 @@ class TaskPopupActivity : ComponentActivity() {
         }
         setContent {
             AppTheme {
-                TaskPopup(start, onDismiss = ::finish)
+                // Р1: окно растёт из плашки или «+», на которые нажали в виджете (рабочий стол передаёт их место).
+                TaskPopup(start, onDismiss = ::finish, origin = intent.sourceBounds)
             }
         }
     }
@@ -59,7 +62,7 @@ class TaskPopupActivity : ComponentActivity() {
  * Нажатие на затемнение или «Назад» закрывает окно.
  */
 @Composable
-fun TaskPopup(start: Any, onDismiss: () -> Unit, navController: NavHostController = rememberNavController()) {
+fun TaskPopup(start: Any, onDismiss: () -> Unit, origin: android.graphics.Rect? = null, navController: NavHostController = rememberNavController()) {
     val close: () -> Unit = { if (!navController.popBackStack()) onDismiss() }
     NavHost(
         navController,
@@ -70,9 +73,14 @@ fun TaskPopup(start: Any, onDismiss: () -> Unit, navController: NavHostControlle
         popEnterTransition = { EnterTransition.None },
         popExitTransition = { ExitTransition.None },
     ) {
+        // Растёт из виджета только первое окно; подзадача, открытая из него, выезжает снизу.
         composable<TaskDetailDestination> {
-            TaskDetailRoute(onClose = close, onOpenTask = { navController.navigate(TaskDetailDestination(it)) })
+            CompositionLocalProvider(LocalSheetOrigin provides origin.takeIf { navController.previousBackStackEntry == null }) {
+                TaskDetailRoute(onClose = close, onOpenTask = { navController.navigate(TaskDetailDestination(it)) })
+            }
         }
-        composable<QuickAddDestination> { QuickAddRoute(onClose = close) }
+        composable<QuickAddDestination> {
+            CompositionLocalProvider(LocalSheetOrigin provides origin.takeIf { navController.previousBackStackEntry == null }) { QuickAddRoute(onClose = close) }
+        }
     }
 }

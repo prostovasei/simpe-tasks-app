@@ -1,5 +1,6 @@
 package com.prostovasei.simpletasks.ui.feature.task
 
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertIsFocused
@@ -453,6 +454,17 @@ class TaskScreensUiTest {
             intents.filterNot { it is TaskDetailIntent.Grid },
         )
         assertEquals("s1", opened)
+    }
+
+    /** Р1 (0.29): из виджета окно растёт из плашки — посередине пути белая «плашка» между ней и окном, текста ещё нет. */
+    @Test
+    fun screenshotQuickAddGrowing() {
+        show {
+            CompositionLocalProvider(LocalSheetOrigin provides android.graphics.Rect(40, 120, 560, 200)) {
+                QuickAddScreen(quickState, {}, {}, autoFocus = false, progress = { 0.5f }, reveal = { 0f })
+            }
+        }
+        composeRule.onRoot().captureRoboImage("screenshots/quick_add_growing.png")
     }
 
     @Test

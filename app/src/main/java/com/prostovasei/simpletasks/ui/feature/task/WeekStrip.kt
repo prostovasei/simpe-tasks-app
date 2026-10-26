@@ -2,7 +2,6 @@ package com.prostovasei.simpletasks.ui.feature.task
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -106,13 +105,15 @@ fun DayTiles(
 private fun CalendarTile(tile: Dp, onClick: () -> Unit) {
     val colors = AppTheme.colors
     val label = stringResource(R.string.strip_pick_date)
+    val jelly = rememberJelly()
     Box(
         Modifier
             .size(tile)
+            .jelly(jelly)
             .clip(AppTheme.shapes.large)
             .background(colors.surface)
             .border(AppTheme.sizes.hairline, colors.divider, AppTheme.shapes.large)
-            .clickable(role = Role.Button, onClick = onClick)
+            .jellyClick(jelly, onClick = onClick)
             .semantics { contentDescription = label }
             .testTag(TAG_DAY_CALENDAR),
         contentAlignment = Alignment.Center,
@@ -149,13 +150,15 @@ private fun DayTileBody(date: LocalDate, time: List<String>, selected: Boolean, 
     val main = if (selected) colors.accent else colors.textPrimary
     val minor = if (selected) colors.accent.copy(alpha = MINOR_ON_ACCENT) else colors.textSecondary
     val big = text.day.copy(color = main)
+    val jelly = rememberJelly()
     Row(
         Modifier
             .size(tile)
+            .jelly(jelly)
             .clip(AppTheme.shapes.large)
             .background(if (selected) colors.selected else colors.surface)
             .border(AppTheme.sizes.hairline, if (selected) colors.selected else colors.divider, AppTheme.shapes.large)
-            .clickable(role = Role.Button, onClick = onClick)
+            .jellyClick(jelly, onClick = onClick)
             .semantics { this.selected = selected }
             .padding(start = AppTheme.spacing.xs, end = AppTheme.spacing.xs, top = tile * TOP_PAD)
             .testTag("$TAG_DAY_TILE:$date"),

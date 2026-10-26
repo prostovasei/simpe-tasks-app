@@ -69,7 +69,7 @@ fun TaskDetailRoute(onClose: () -> Unit, onOpenTask: (String) -> Unit, viewModel
             }
         }
     }
-    TaskDetailScreen(state, viewModel::onIntent, motion.close, onOpenTask, progress = motion.progress) {
+    TaskDetailScreen(state, viewModel::onIntent, motion.close, onOpenTask, progress = motion.progress, reveal = motion.reveal) {
         // Подсказка «Следующий раз» — сверху, над шторкой: внизу её закрыла бы панель кнопок.
         SnackbarHost(snackbar, Modifier.align(Alignment.TopCenter).statusBarsPadding())
     }
@@ -87,6 +87,7 @@ fun TaskDetailScreen(
     onClose: () -> Unit,
     onOpenTask: (String) -> Unit,
     progress: () -> Float = { 1f },
+    reveal: () -> Float = { 1f },
     overlay: @Composable androidx.compose.foundation.layout.BoxScope.() -> Unit = {},
 ) {
     val colors = AppTheme.colors
@@ -119,6 +120,7 @@ fun TaskDetailScreen(
             focusAdd = true
         },
         progress = progress,
+        reveal = reveal,
         overlay = overlay,
         actionCount = 2,
         actions = {

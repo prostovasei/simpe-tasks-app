@@ -99,7 +99,35 @@ class ReminderStripsTest {
         assertEquals(listOf("done:a"), events)
     }
 
+    @Test
+    fun undoStripUndoesOrExpires() {
+        // Без автопрокрутки времени: иначе ожидание покоя доиграет 3 секунды «Отменить» до нажатия.
+        composeRule.mainClock.autoAdvance = false
+        composeRule.setContent {
+            AppTheme {
+                ReminderStrips(
+                    strips = listOf(strip("a", "Забрать посылку").copy(undo = "Выполнено"), strip("b", "Позвонить маме").copy(undo = "Завтра, 18:00")),
+                    onDone = {},
+                    onTomorrow = {},
+                    onOpen = {},
+                    onDismiss = {},
+                    onUndo = { events += "undo:$it" },
+                    onExpire = { events += "expire:$it" },
+                )
+            }
+        }
+        composeRule.mainClock.advanceTimeBy(UNDO_SHOWN_MS)
+        composeRule.onNodeWithText("Выполнено").assertExists()
+        composeRule.onNodeWithTag("$TAG_POPUP_DONE:a").assertDoesNotExist()
+        composeRule.onNodeWithTag("$TAG_POPUP_UNDO:a").performClick()
+        assertEquals(listOf("undo:a"), events)
+        composeRule.mainClock.advanceTimeBy(UNDO_GONE_MS)
+        assertEquals(setOf("undo:a", "expire:a", "expire:b"), events.toSet())
+    }
+
     private companion object {
+        const val UNDO_SHOWN_MS = 300L
+        const val UNDO_GONE_MS = 4000L
         const val FLIPPED_MS = 600L
         const val HALF_DUST_MS = 300L
         const val FINISHED_MS = 2000L
