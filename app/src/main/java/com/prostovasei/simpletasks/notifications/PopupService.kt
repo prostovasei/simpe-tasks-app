@@ -22,6 +22,7 @@ class PopupService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        PopupTrace.add(this, "сервис «не засыпать» запущен")
         val manager = getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(NotificationChannel(CHANNEL_ID, getString(R.string.popup_channel), NotificationManager.IMPORTANCE_MIN))
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
@@ -31,7 +32,12 @@ class PopupService : Service() {
             .setPriority(NotificationCompat.PRIORITY_MIN)
             .setSilent(true)
             .build()
-        ServiceCompat.startForeground(this, NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+        runCatching { ServiceCompat.startForeground(this, NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE) }
+            .onSuccess { PopupTrace.add(this, "сервис «не засыпать» на переднем плане, важность ${PopupTrace.importance()}") }
+            .onFailure {
+                PopupTrace.add(this, "сервис «не засыпать» НЕ вышел на передний план: $it")
+                stopSelf()
+            }
         return START_NOT_STICKY
     }
 
@@ -44,7 +50,7 @@ class PopupService : Service() {
         fun start(context: Context, title: String) {
             runCatching {
                 ContextCompat.startForegroundService(context, Intent(context, PopupService::class.java).putExtra(EXTRA_TITLE, title))
-            }
+            }.onFailure { PopupTrace.add(context, "сервис «не засыпать» НЕ запущен: $it") }
         }
 
         fun stop(context: Context) {
