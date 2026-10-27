@@ -1,31 +1,18 @@
 package com.prostovasei.simpletasks.ui.feature.task
 
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TimePicker
-import androidx.compose.material3.rememberDatePickerState
-import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -35,72 +22,118 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import com.prostovasei.simpletasks.R
-import com.prostovasei.simpletasks.data.local.DueDateCodec
 import com.prostovasei.simpletasks.designsystem.components.ListSquare
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.designsystem.theme.parseListColor
 import com.prostovasei.simpletasks.domain.model.Priority
-import com.prostovasei.simpletasks.domain.model.ReminderMark
 import com.prostovasei.simpletasks.domain.model.Reminders
 import com.prostovasei.simpletasks.domain.model.TaskDue
-import com.prostovasei.simpletasks.domain.model.allDayReminder
-import com.prostovasei.simpletasks.domain.model.parseReminder
 import com.prostovasei.simpletasks.ui.common.DayLabel
-import com.prostovasei.simpletasks.ui.common.DueFormatter
 import com.prostovasei.simpletasks.ui.common.ListIcons
-import com.prostovasei.simpletasks.ui.common.ReminderIcon
 import com.prostovasei.simpletasks.ui.common.reminderText
-import com.prostovasei.simpletasks.ui.common.repeatSummary
-import java.time.LocalDate
-import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 /**
- * Пункты меню напоминаний (итерация 23): у каждого — колокольчик (со стрелкой назад — заранее, итерации 27, 27.1), у заданных — галочка справа; заданные вручную —
- * сверху, дальше готовые варианты и «Вручную…» ([onCustom]). Отметка пункта меню не закрывает; [onDone] закрывает
- * его после «Вручную…» и «Без напоминания».
+ * Окно уведомлений (итерация 31, ТЗ PM). Можно отметить несколько. Блоки «Основные» (готовые варианты) и «Созданные
+ * вручную»: общая история ([ReminderHistory]), назначенные задаче свои варианты (даже выпавшие из истории) и только что
+ * созданные — сверху. Справа — когда сработает. Снятие галочки вариант не удаляет. «Вручную…» добавляет отмеченный
+ * вариант; в историю он попадает только по общему «Готово». Без даты — подсказка «Сначала выберите день».
  */
 @Composable
-fun ReminderMenuItems(due: TaskDue, reminders: List<String>, onEdit: (FieldEdit) -> Unit, onDone: () -> Unit, onCustom: () -> Unit) {
-    val colors = AppTheme.colors
+fun RemindersDialog(due: TaskDue?, start: TaskDue?, zone: ZoneId, reminders: List<String>, onConfirm: (List<String>) -> Unit, onDismiss: () -> Unit) {
+    val title = stringResource(R.string.reminders_title)
+    if (due == null) {
+        SheetDialog(title, TAG_REMINDERS_DIALOG, onDismiss, onDone = null, dismissLabel = R.string.dialog_understood) {
+            DialogText(stringResource(R.string.quick_reminder_need_day), TAG_REMINDER_NEED_DAY)
+        }
+        return
+    }
+    val context = LocalContext.current
     val allDay = due is TaskDue.AllDay
+    val history = remember(allDay) { ReminderHistory.load(context, allDay) }
+    var draft by remember { mutableStateOf(reminders) }
+    // Созданные в этом окне через «Вручную…» — по порядку создания.
+    var created by remember { mutableStateOf(emptyList<String>()) }
+    var custom by remember { mutableStateOf(false) }
     val presets = Reminders.presets(due)
-    val custom = reminders.filter { r -> presets.none { Reminders.sameMoment(it, r) } }
-    val options = custom + presets.map { preset -> reminders.firstOrNull { Reminders.sameMoment(it, preset) } ?: preset }
-    options.forEach { option ->
-        val checked = option in reminders
-        DropdownMenuItem(
-            text = { Text(reminderText(option, allDay), color = colors.textPrimary) },
-            leadingIcon = { MenuReminderIcon(if (Reminders.isEarly(option)) ReminderMark.EARLY else ReminderMark.AT_DUE) },
-            trailingIcon = if (checked) { { Icon(Icons.Default.Check, null, tint = colors.accent) } } else null,
-            // Меню не закрывается (0.23.2): можно отметить сразу несколько; закрывается нажатием вне меню.
-            onClick = { onEdit(FieldEdit.SetReminders(if (checked) reminders - option else reminders + option)) },
-            modifier = Modifier.testTag("$TAG_REMINDER_OPTION:$option"),
+    val isPreset = { r: String -> presets.any { Reminders.sameMoment(it, r) } }
+    val manual = (created.reversed() + history + reminders.filterNot(isPreset))
+        .fold(emptyList<String>()) { list, r -> if (list.any { Reminders.sameMoment(it, r) }) list else list + r }
+    val toggle = { option: String ->
+        draft = if (draft.any { Reminders.sameMoment(it, option) }) draft.filterNot { Reminders.sameMoment(it, option) } else draft + option
+    }
+
+    SheetDialog(
+        title = title,
+        tag = TAG_REMINDERS_DIALOG,
+        onDismiss = onDismiss,
+        onDone = {
+            ReminderHistory.add(context, allDay, created)
+            onConfirm(draft)
+        },
+    ) {
+        @Composable
+        fun Option(option: String) {
+            // Вариант показывается в записи задачи, если она отличается («-PT60M» вместо «-PT1H»).
+            val shown = draft.firstOrNull { Reminders.sameMoment(it, option) } ?: option
+            DialogOption(
+                title = reminderText(shown, allDay),
+                selected = draft.any { Reminders.sameMoment(it, option) },
+                tag = "$TAG_REMINDER_OPTION:$option",
+                onClick = { toggle(shown) },
+                hint = firesHint(due, start, option, zone),
+                multi = true,
+            )
+        }
+        DialogSection(stringResource(R.string.reminders_main))
+        presets.forEach { Option(it) }
+        DialogDivider()
+        DialogSection(stringResource(R.string.reminders_manual))
+        manual.forEach { Option(it) }
+        TextButton(
+            onClick = { custom = true },
+            modifier = Modifier.padding(horizontal = AppTheme.spacing.sm).testTag(TAG_REMINDER_CUSTOM),
+        ) {
+            Icon(Icons.Default.Add, null, tint = AppTheme.colors.accent)
+            Text(stringResource(R.string.reminder_custom), color = AppTheme.colors.accent, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = AppTheme.spacing.xs))
+        }
+    }
+    if (custom) {
+        CustomReminderDialog(
+            due = due,
+            start = start,
+            zone = zone,
+            onConfirm = { trigger ->
+                custom = false
+                if (!isPreset(trigger)) created = created.filterNot { Reminders.sameMoment(it, trigger) } + trigger
+                if (draft.none { Reminders.sameMoment(it, trigger) }) draft = draft + trigger
+            },
+            onDismiss = { custom = false },
         )
     }
-    DropdownMenuItem(
-        text = { Text(stringResource(R.string.reminder_custom), color = colors.textPrimary) },
-        leadingIcon = { MenuReminderIcon(ReminderMark.EARLY) },
-        onClick = { onDone(); onCustom() },
-        modifier = Modifier.testTag(TAG_REMINDER_CUSTOM),
-    )
-    if (reminders.isNotEmpty()) MenuItem(R.string.reminder_none) { onDone(); onEdit(FieldEdit.SetReminders(emptyList())) }
 }
 
-@Composable
-private fun MenuReminderIcon(mark: ReminderMark) {
-    val colors = AppTheme.colors
-    ReminderIcon(mark, AppTheme.sizes.icon, tint = colors.textSecondary, earlyColor = colors.accent)
+/** Когда сработает: «17:30» в день срока, иначе «вт 18:00». */
+private fun firesHint(due: TaskDue, start: TaskDue?, trigger: String, zone: ZoneId): String? {
+    val at = Reminders.instant(due, start, trigger, zone)?.atZone(zone) ?: return null
+    val day = when (due) {
+        is TaskDue.AllDay -> due.date
+        is TaskDue.AtTime -> due.instant.atZone(zone).toLocalDate()
+    }
+    return (if (at.toLocalDate() == day) HINT_TIME else HINT_DAY_TIME).format(at)
 }
 
 /**
- * Своё напоминание (итерация 23). У задачи со временем — за сколько дней, часов и минут до срока; у задачи
- * на весь день — за сколько дней и во сколько. Снизу — когда именно сработает.
+ * «Вручную» (итерация 23, с 31 — в едином окне). У задачи со временем — за сколько дней, часов и минут до срока; у задачи
+ * на весь день — за сколько дней и во сколько. Снизу — когда именно сработает. «Готово» возвращает вариант в окно уведомлений.
  */
 @Composable
 fun CustomReminderDialog(due: TaskDue, start: TaskDue?, zone: ZoneId, onConfirm: (String) -> Unit, onDismiss: () -> Unit) {
@@ -115,34 +148,28 @@ fun CustomReminderDialog(due: TaskDue, start: TaskDue?, zone: ZoneId, onConfirm:
         Reminders.timed((days * HOURS_PER_DAY + hours) * MINUTES_PER_HOUR.toLong() + minutes)
     }
     val fires = Reminders.instant(due, start, trigger, zone)?.atZone(zone)?.let { FIRES_FORMAT.format(it) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = colors.surface,
-        title = { Text(stringResource(R.string.reminder_custom_title), color = colors.textPrimary) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.xs)) {
-                Stepper(stringResource(if (allDay) R.string.reminder_custom_days_before else R.string.reminder_custom_days), days, 0, CUSTOM_MAX_DAYS, 1, TAG_CUSTOM_DAYS) { days = it }
-                Stepper(stringResource(if (allDay) R.string.reminder_custom_hour else R.string.reminder_custom_hours), hours, 0, HOURS_PER_DAY - 1, 1, TAG_CUSTOM_HOURS) { hours = it }
-                Stepper(stringResource(if (allDay) R.string.reminder_custom_minute else R.string.reminder_custom_minutes), minutes, 0, MINUTES_PER_HOUR - CUSTOM_MINUTE_STEP, CUSTOM_MINUTE_STEP, TAG_CUSTOM_MINUTES) { minutes = it }
-                fires?.let {
-                    Text(
-                        stringResource(R.string.reminder_custom_fires, it),
-                        color = colors.textSecondary,
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.testTag(TAG_CUSTOM_FIRES),
-                    )
-                }
+    SheetDialog(
+        title = stringResource(R.string.reminder_custom_title),
+        tag = TAG_CUSTOM_DIALOG,
+        onDismiss = onDismiss,
+        onDone = { onConfirm(trigger) },
+        subtitle = stringResource(if (allDay) R.string.reminder_custom_subtitle_all_day else R.string.reminder_custom_subtitle),
+    ) {
+        Column(Modifier.padding(horizontal = AppTheme.spacing.lg), verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.xxs)) {
+            Stepper(stringResource(if (allDay) R.string.reminder_custom_days_before else R.string.reminder_custom_days), days, 0, CUSTOM_MAX_DAYS, 1, TAG_CUSTOM_DAYS) { days = it }
+            Stepper(stringResource(if (allDay) R.string.reminder_custom_hour else R.string.reminder_custom_hours), hours, 0, HOURS_PER_DAY - 1, 1, TAG_CUSTOM_HOURS) { hours = it }
+            Stepper(stringResource(if (allDay) R.string.reminder_custom_minute else R.string.reminder_custom_minutes), minutes, 0, MINUTES_PER_HOUR - CUSTOM_MINUTE_STEP, CUSTOM_MINUTE_STEP, TAG_CUSTOM_MINUTES) { minutes = it }
+            fires?.let {
+                Text(
+                    stringResource(R.string.reminder_custom_fires, it),
+                    color = colors.accent,
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(vertical = AppTheme.spacing.xs).testTag(TAG_CUSTOM_FIRES),
+                )
             }
-        },
-        confirmButton = {
-            TextButton(onClick = { onConfirm(trigger) }, modifier = Modifier.testTag(TAG_CUSTOM_ADD)) {
-                Text(stringResource(R.string.reminder_custom_add), color = colors.accent)
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel), color = colors.textSecondary) }
-        },
-    )
+        }
+    }
 }
 
 /** Строка «Часов   −  2  +». */
@@ -174,43 +201,55 @@ private const val MINUTES_PER_HOUR = 60
 private const val HOURS_PER_DAY = 24
 private const val STEP_MINUS = "−"
 private const val STEP_PLUS = "+"
-private val FIRES_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("EEE, d MMM, HH:mm", Locale.forLanguageTag("ru"))
+private val RU = Locale.forLanguageTag("ru")
+private val FIRES_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("EEE, d MMM, HH:mm", RU)
+private val HINT_TIME: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm", RU)
+private val HINT_DAY_TIME: DateTimeFormatter = DateTimeFormatter.ofPattern("EEE HH:mm", RU)
 
-/** Пункты меню списков: квадратик цвета со значком, у выбранного — галочка. */
+/** Окно списков (итерация 31): квадратик цвета со значком, выбранный — галочкой; применяется по «Готово». */
 @Composable
-fun ProjectMenuItems(projectId: String, projects: List<ProjectOption>, onEdit: (FieldEdit) -> Unit, onDone: () -> Unit) {
+fun ProjectDialog(projectId: String, projects: List<ProjectOption>, onConfirm: (String) -> Unit, onDismiss: () -> Unit) {
+    var draft by remember { mutableStateOf(projectId) }
     val inboxName = stringResource(R.string.inbox_list_name)
-    projects.forEach { option ->
-        DropdownMenuItem(
-            text = { Text(if (option.isInbox) inboxName else option.name, color = AppTheme.colors.textPrimary) },
-            leadingIcon = {
-                ListSquare(
-                    color = parseListColor(option.color) ?: AppTheme.colors.inactive,
-                    icon = ListIcons.drawable(if (option.isInbox) ListIcons.INBOX else option.icon),
-                )
-            },
-            trailingIcon = if (option.id == projectId) { { Icon(Icons.Default.Check, null, tint = AppTheme.colors.accent) } } else null,
-            onClick = { onDone(); onEdit(FieldEdit.Project(option.id)) },
-            modifier = Modifier.testTag("$TAG_PROJECT_OPTION:${option.id}"),
-        )
+    SheetDialog(stringResource(R.string.quick_tool_list), TAG_PROJECT_DIALOG, onDismiss, onDone = { onConfirm(draft) }) {
+        projects.forEach { option ->
+            DialogOption(
+                title = if (option.isInbox) inboxName else option.name,
+                selected = option.id == draft,
+                tag = "$TAG_PROJECT_OPTION:${option.id}",
+                onClick = { draft = option.id },
+                leading = {
+                    ListSquare(
+                        color = parseListColor(option.color) ?: AppTheme.colors.inactive,
+                        icon = ListIcons.drawable(if (option.isInbox) ListIcons.INBOX else option.icon),
+                    )
+                },
+            )
+        }
     }
 }
 
-/** Пункты меню приоритета; у выбранного — галочка. */
+/** Окно приоритета (итерация 31): флажок цвета приоритета, выбранный — галочкой; применяется по «Готово». */
 @Composable
-fun PriorityMenuItems(priority: Priority, onEdit: (FieldEdit) -> Unit, onDone: () -> Unit) {
-    listOf(
-        R.string.priority_p1 to Priority.HIGH,
-        R.string.priority_p2 to Priority.MEDIUM,
-        R.string.priority_p3 to Priority.LOW,
-        R.string.priority_p0 to Priority.NONE,
-    ).forEach { (label, value) ->
-        DropdownMenuItem(
-            text = { Text(stringResource(label), color = AppTheme.colors.textPrimary) },
-            trailingIcon = if (value == priority) { { Icon(Icons.Default.Check, null, tint = AppTheme.colors.accent) } } else null,
-            onClick = { onDone(); onEdit(FieldEdit.SetPriority(value)) },
-            modifier = Modifier.testTag("$TAG_PRIORITY_OPTION:${value.name}"),
-        )
+fun PriorityDialog(priority: Priority, onConfirm: (Priority) -> Unit, onDismiss: () -> Unit) {
+    var draft by remember { mutableStateOf(priority) }
+    // Цвета — как у кружков задач в ленте.
+    val rings = AppTheme.colors.checkRings
+    SheetDialog(stringResource(R.string.quick_tool_priority), TAG_PRIORITY_DIALOG, onDismiss, onDone = { onConfirm(draft) }) {
+        listOf(
+            Triple(R.string.priority_p1, Priority.HIGH, rings.high),
+            Triple(R.string.priority_p2, Priority.MEDIUM, rings.medium),
+            Triple(R.string.priority_p3, Priority.LOW, rings.low),
+            Triple(R.string.priority_p0, Priority.NONE, AppTheme.colors.inactive),
+        ).forEach { (label, value, color) ->
+            DialogOption(
+                title = stringResource(label),
+                selected = value == draft,
+                tag = "$TAG_PRIORITY_OPTION:${value.name}",
+                onClick = { draft = value },
+                leading = { Icon(painterResource(R.drawable.ic_tool_priority), null, tint = color, modifier = Modifier.size(AppTheme.sizes.icon)) },
+            )
+        }
     }
 }
 
@@ -236,11 +275,6 @@ fun AppChip(label: String, selected: Boolean, tag: String, icon: ImageVector? = 
 }
 
 @Composable
-private fun MenuItem(label: Int, onClick: () -> Unit) {
-    DropdownMenuItem(text = { Text(stringResource(label), color = AppTheme.colors.textPrimary) }, onClick = onClick)
-}
-
-@Composable
 internal fun dayLabelText(day: DayLabel): String = when (day) {
     DayLabel.Today -> stringResource(R.string.day_today)
     DayLabel.Tomorrow -> stringResource(R.string.day_tomorrow)
@@ -248,12 +282,16 @@ internal fun dayLabelText(day: DayLabel): String = when (day) {
     is DayLabel.Date -> DateTimeFormatter.ofPattern(if (day.showYear) "d MMM yyyy" else "d MMM", Locale.forLanguageTag("ru")).format(day.date)
 }
 
+const val TAG_REMINDERS_DIALOG = "reminders_dialog"
 const val TAG_REMINDER_OPTION = "reminder_option"
 const val TAG_REMINDER_CUSTOM = "reminder_custom"
+const val TAG_CUSTOM_DIALOG = "custom_reminder"
 const val TAG_CUSTOM_DAYS = "custom_days"
 const val TAG_CUSTOM_HOURS = "custom_hours"
 const val TAG_CUSTOM_MINUTES = "custom_minutes"
 const val TAG_CUSTOM_FIRES = "custom_fires"
-const val TAG_CUSTOM_ADD = "custom_add"
+const val TAG_CUSTOM_ADD = "$TAG_CUSTOM_DIALOG:$TAG_DIALOG_DONE"
+const val TAG_PROJECT_DIALOG = "project_dialog"
 const val TAG_PROJECT_OPTION = "project_option"
+const val TAG_PRIORITY_DIALOG = "priority_dialog"
 const val TAG_PRIORITY_OPTION = "priority_option"

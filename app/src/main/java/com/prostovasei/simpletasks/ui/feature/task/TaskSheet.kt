@@ -43,13 +43,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -66,7 +63,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.draw.drawBehind
@@ -347,21 +343,35 @@ fun TaskSheet(
     }
 }
 
-/** Календарь на месяц (значок слева от плиток): выбранный день сразу открывает таймлайн. */
+/**
+ * Календарь на месяц (значок слева от плиток), с итерации 31 — в едином окне: «Готово» открывает таймлайн
+ * с выбранным днём. Окно шире остальных — чтобы месяц поместился и на узком экране.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DateDialog(initial: LocalDate, onPick: (LocalDate) -> Unit, onDismiss: () -> Unit) {
+    val colors = AppTheme.colors
     val state = rememberDatePickerState(initialSelectedDateMillis = initial.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli())
-    DatePickerDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            TextButton(
-                onClick = { state.selectedDateMillis?.let { onPick(Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate()) } ?: onDismiss() },
-                modifier = Modifier.testTag(TAG_DATE_DIALOG_OK),
-            ) { Text(stringResource(R.string.sheet_done)) }
-        },
+    SheetDialog(
+        title = stringResource(R.string.date_dialog_title),
+        tag = TAG_DATE_DIALOG,
+        onDismiss = onDismiss,
+        onDone = { state.selectedDateMillis?.let { onPick(Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate()) } ?: onDismiss() },
+        edge = AppTheme.spacing.xs,
     ) {
-        DatePicker(state = state, showModeToggle = false)
+        DatePicker(
+            state = state,
+            showModeToggle = false,
+            title = null,
+            headline = null,
+            colors = DatePickerDefaults.colors(
+                containerColor = colors.surface,
+                selectedDayContainerColor = colors.accent,
+                selectedDayContentColor = colors.onAccent,
+                todayDateBorderColor = colors.accent,
+                todayContentColor = colors.accent,
+            ),
+        )
     }
 }
 
@@ -435,10 +445,16 @@ private fun SheetToolbar(
 ) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
-    var menu by remember { mutableStateOf(ToolMenu.None) }
-    var repeatDialog by remember { mutableStateOf(false) }
-    var customReminder by remember { mutableStateOf(false) }
-    val close = { menu = ToolMenu.None }
+    val focus = LocalFocusManager.current
+    val keyboard = LocalSoftwareKeyboardController.current
+    var dialog by remember { mutableStateOf(ToolDialog.None) }
+    val close = { dialog = ToolDialog.None }
+    // Итерация 31 (ТЗ PM): перед окном клавиатура прячется — окно по центру экрана, ничем не закрыто.
+    val open = { which: ToolDialog ->
+        focus.clearFocus()
+        keyboard?.hide()
+        dialog = which
+    }
     BoxWithConstraints(modifier.fillMaxWidth().padding(horizontal = spacing.sm, vertical = spacing.xs)) {
     val count = TOOLBAR_TOOLS + actionCount
     val fit = ((maxWidth - spacing.xs * (count - 1)) / count).coerceAtMost(SizeTokens.TOOL_BUTTON.dp)
@@ -450,23 +466,18 @@ private fun SheetToolbar(
     ) {
         val project = fields.projects.firstOrNull { it.id == fields.projectId }
         val inbox = fields.projects.firstOrNull { it.isInbox }
-        Box {
-            ToolButton(
-                R.string.quick_tool_list,
-                active = project?.isInbox == false,
-                tag = TAG_TOOL_LIST,
-                clear = if (project?.isInbox == false && inbox != null) ClearAction(R.string.clear_list, TAG_CLEAR_LIST) { onEdit(FieldEdit.Project(inbox.id)) } else null,
-                content = {
-                    ListSquare(
-                        color = parseListColor(project?.color) ?: colors.inactive,
-                        icon = ListIcons.drawable(if (project?.isInbox != false) ListIcons.INBOX else project.icon),
-                    )
-                },
-            ) { menu = ToolMenu.List }
-            DropdownMenu(expanded = menu == ToolMenu.List, onDismissRequest = close, containerColor = colors.surface) {
-                ProjectMenuItems(fields.projectId, fields.projects, onEdit, close)
-            }
-        }
+        ToolButton(
+            R.string.quick_tool_list,
+            active = project?.isInbox == false,
+            tag = TAG_TOOL_LIST,
+            clear = if (project?.isInbox == false && inbox != null) ClearAction(R.string.clear_list, TAG_CLEAR_LIST) { onEdit(FieldEdit.Project(inbox.id)) } else null,
+            content = {
+                ListSquare(
+                    color = parseListColor(project?.color) ?: colors.inactive,
+                    icon = ListIcons.drawable(if (project?.isInbox != false) ListIcons.INBOX else project.icon),
+                )
+            },
+        ) { open(ToolDialog.List) }
         ToolButton(
             R.string.quick_tool_repeat,
             active = fields.rrule != null,
@@ -474,83 +485,71 @@ private fun SheetToolbar(
             icon = R.drawable.ic_tool_repeat,
             dimmed = fields.due == null,
             clear = if (fields.rrule != null) ClearAction(R.string.clear_repeat, TAG_CLEAR_REPEAT) { onEdit(FieldEdit.Repeat(null)) } else null,
-        ) {
-            repeatDialog = true
-        }
-        Box {
-            val mark = Reminders.mark(fields.due, fields.reminders)
-            ToolButton(
-                R.string.quick_tool_reminder,
-                active = mark != null,
-                tag = TAG_TOOL_REMINDER,
-                icon = if (mark == null) R.drawable.ic_tool_reminder else null,
-                dimmed = fields.due == null,
-                clear = if (mark != null) ClearAction(R.string.clear_reminders, TAG_CLEAR_REMINDERS) { onEdit(FieldEdit.SetReminders(emptyList())) } else null,
-                content = {
-                    if (mark != null) {
-                        ReminderIcon(mark, LocalToolButtonSize.current * ICON_SHARE, tint = colors.accent, earlyColor = colors.accent)
-                    }
-                },
-            ) { menu = ToolMenu.Reminder }
-            DropdownMenu(expanded = menu == ToolMenu.Reminder, onDismissRequest = close, containerColor = colors.surface) {
-                val due = fields.due
-                if (due == null) {
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.quick_reminder_need_day), color = colors.textSecondary) },
-                        onClick = close,
-                        modifier = Modifier.testTag(TAG_REMINDER_NEED_DAY),
-                    )
-                } else {
-                    ReminderMenuItems(due, fields.reminders, onEdit, close, onCustom = { customReminder = true })
+        ) { open(ToolDialog.Repeat) }
+        val mark = Reminders.mark(fields.due, fields.reminders)
+        ToolButton(
+            R.string.quick_tool_reminder,
+            active = mark != null,
+            tag = TAG_TOOL_REMINDER,
+            icon = if (mark == null) R.drawable.ic_tool_reminder else null,
+            dimmed = fields.due == null,
+            clear = if (mark != null) ClearAction(R.string.clear_reminders, TAG_CLEAR_REMINDERS) { onEdit(FieldEdit.SetReminders(emptyList())) } else null,
+            content = {
+                if (mark != null) {
+                    ReminderIcon(mark, LocalToolButtonSize.current * ICON_SHARE, tint = colors.accent, earlyColor = colors.accent)
                 }
-            }
-        }
-        Box {
-            ToolButton(
-                R.string.quick_tool_priority,
-                active = fields.priority != Priority.NONE,
-                tag = TAG_TOOL_PRIORITY,
-                icon = R.drawable.ic_tool_priority,
-                clear = if (fields.priority != Priority.NONE) ClearAction(R.string.clear_priority, TAG_CLEAR_PRIORITY) { onEdit(FieldEdit.SetPriority(Priority.NONE)) } else null,
-            ) {
-                menu = ToolMenu.Priority
-            }
-            DropdownMenu(expanded = menu == ToolMenu.Priority, onDismissRequest = close, containerColor = colors.surface) {
-                PriorityMenuItems(fields.priority, onEdit, close)
-            }
-        }
+            },
+        ) { open(ToolDialog.Reminder) }
+        ToolButton(
+            R.string.quick_tool_priority,
+            active = fields.priority != Priority.NONE,
+            tag = TAG_TOOL_PRIORITY,
+            icon = R.drawable.ic_tool_priority,
+            clear = if (fields.priority != Priority.NONE) ClearAction(R.string.clear_priority, TAG_CLEAR_PRIORITY) { onEdit(FieldEdit.SetPriority(Priority.NONE)) } else null,
+        ) { open(ToolDialog.Priority) }
         ToolButton(R.string.quick_tool_checklist, active = checklistActive, tag = TAG_TOOL_CHECKLIST, icon = R.drawable.ic_tool_checklist, onClick = onChecklist)
         Spacer(Modifier.weight(1f))
         actions()
     }
     }
     }
-    val due = fields.due
-    if (customReminder && due != null) {
-        CustomReminderDialog(
-            due = due,
-            start = fields.start,
-            zone = fields.zone,
-            onConfirm = { trigger ->
-                customReminder = false
-                if (fields.reminders.none { Reminders.sameMoment(it, trigger) }) onEdit(FieldEdit.SetReminders(fields.reminders + trigger))
-            },
-            onDismiss = { customReminder = false },
+    // Окна меняют задачу только по «Готово» и только если выбор изменился.
+    when (dialog) {
+        ToolDialog.None -> Unit
+        ToolDialog.List -> ProjectDialog(
+            projectId = fields.projectId,
+            projects = fields.projects,
+            onConfirm = { if (it != fields.projectId) onEdit(FieldEdit.Project(it)); close() },
+            onDismiss = close,
         )
-    }
-    if (repeatDialog) {
-        RepeatDialog(
+        ToolDialog.Repeat -> RepeatDialog(
             rrule = fields.rrule,
             due = fields.selectedDate,
-            onConfirm = { onEdit(FieldEdit.Repeat(it)); repeatDialog = false },
-            onDismiss = { repeatDialog = false },
+            onConfirm = { if (it != fields.rrule) onEdit(FieldEdit.Repeat(it)); close() },
+            onDismiss = close,
+        )
+        ToolDialog.Reminder -> RemindersDialog(
+            due = fields.due,
+            start = fields.start,
+            zone = fields.zone,
+            reminders = fields.reminders,
+            onConfirm = { if (it != fields.reminders) onEdit(FieldEdit.SetReminders(it)); close() },
+            onDismiss = close,
+        )
+        ToolDialog.Priority -> PriorityDialog(
+            priority = fields.priority,
+            onConfirm = { if (it != fields.priority) onEdit(FieldEdit.SetPriority(it)); close() },
+            onDismiss = close,
         )
     }
 }
 
-private enum class ToolMenu { None, List, Reminder, Priority }
+private enum class ToolDialog { None, List, Repeat, Reminder, Priority }
 
-/** Квадратная кнопка панели (макет PM): выбранная — залита акцентом; [dimmed] — бледная, пока нет даты. */
+/**
+ * Квадратная кнопка панели (макет PM): выбранная — залита акцентом; [dimmed] — пока нет даты: фон и рамка те же,
+ * бледная только иконка (итерация 31, ТЗ PM — раньше бледнела вся кнопка и сливалась с фоном).
+ */
 @Composable
 fun ToolButton(
     label: Int,
@@ -628,12 +627,16 @@ private fun ToolButtonBody(
                 contentDescription = description
                 selected = active
             }
-            .then(if (dimmed) Modifier.alpha(DIMMED_ALPHA) else Modifier)
             .testTag(tag),
         contentAlignment = Alignment.Center,
     ) {
         if (icon != null) {
-            Icon(painterResource(icon), null, tint = if (active) colors.accent else tint ?: colors.textSecondary, modifier = Modifier.size(LocalToolButtonSize.current * ICON_SHARE))
+            val iconTint = when {
+                active -> colors.accent
+                dimmed -> colors.inactive
+                else -> tint ?: colors.textSecondary
+            }
+            Icon(painterResource(icon), null, tint = iconTint, modifier = Modifier.size(LocalToolButtonSize.current * ICON_SHARE))
         } else {
             content()
         }
@@ -709,7 +712,6 @@ private const val HEADER_FRACTION = 0.45f
 
 /** Пока клавиатура ни разу не открывалась — её высота примерно 40% экрана. */
 private const val KEYBOARD_FALLBACK = 0.4f
-private const val DIMMED_ALPHA = 0.45f
 
 const val TAG_QUICK_CARD = "quick_card"
 const val TAG_QUICK_SCRIM = "quick_scrim"
@@ -727,7 +729,8 @@ const val TAG_CLEAR_REPEAT = "clear_repeat"
 const val TAG_CLEAR_REMINDERS = "clear_reminders"
 const val TAG_CLEAR_PRIORITY = "clear_priority"
 const val TAG_CLEAR_DATE = "clear_date"
-const val TAG_DATE_DIALOG_OK = "date_dialog_ok"
+const val TAG_DATE_DIALOG = "date_dialog"
+const val TAG_DATE_DIALOG_OK = "$TAG_DATE_DIALOG:$TAG_DIALOG_DONE"
 
 
 /**

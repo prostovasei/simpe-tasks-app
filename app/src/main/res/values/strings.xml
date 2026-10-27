@@ -127,6 +127,27 @@
     <string name="repeat_complex">Особый повтор из TickTick</string>
     <string name="repeat_complex_hint">Это правило сложнее конструктора. Оно сохранится как есть. Чтобы изменить, задайте новое ниже.</string>
     <string name="repeat_needs_date">Повтор начинается от даты задачи — сначала выберите дату.</string>
+    <string name="repeat_option_none">Нет</string>
+    <string name="repeat_option_daily">Ежедневно</string>
+    <string name="repeat_option_weekly">Еженедельно</string>
+    <string name="repeat_option_weekly_on">по %s</string>
+    <string-array name="repeat_weekdays_on">
+        <item>понедельникам</item>
+        <item>вторникам</item>
+        <item>средам</item>
+        <item>четвергам</item>
+        <item>пятницам</item>
+        <item>субботам</item>
+        <item>воскресеньям</item>
+    </string-array>
+    <string name="repeat_option_monthly">Ежемесячно</string>
+    <string name="repeat_option_monthly_on">%d числа</string>
+    <string name="repeat_option_yearly">Ежегодно</string>
+    <string name="repeat_option_workdays">Каждый рабочий день</string>
+    <string name="repeat_option_workdays_on">пн–пт</string>
+    <string name="repeat_option_custom">Произвольно…</string>
+    <string name="repeat_option_custom_hint">Каждые N дней, недель, месяцев или лет</string>
+    <string name="repeat_custom_title">Произвольно</string>
     <string name="repeat_until">до %s</string>
     <string name="repeat_on_day">%d-го</string>
     <plurals name="repeat_days">
@@ -173,7 +194,14 @@
     <string name="reminder_none">Без напоминания</string>
     <string name="reminder_at_due_short">В срок</string>
     <string name="reminder_custom">Вручную…</string>
-    <string name="reminder_custom_title">Своё напоминание</string>
+    <string name="reminder_custom_title">Вручную</string>
+    <string name="reminder_custom_subtitle">За сколько до срока напомнить</string>
+    <string name="reminder_custom_subtitle_all_day">За сколько дней и во сколько напомнить</string>
+    <string name="reminders_title">Уведомления</string>
+    <string name="reminders_main">Основные</string>
+    <string name="reminders_manual">Созданные вручную</string>
+    <string name="dialog_understood">Понятно</string>
+    <string name="date_dialog_title">Дата</string>
     <string name="reminder_custom_days">Дней до срока</string>
     <string name="reminder_custom_hours">Часов</string>
     <string name="reminder_custom_minutes">Минут</string>
