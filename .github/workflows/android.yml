@@ -42,6 +42,9 @@ jobs:
           name: simple-tasks-debug-apk
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+          # Хранилище Actions на бесплатном тарифе — 0,5 ГБ, а APK ~15 МБ на каждую сборку (PR и main): по умолчанию
+          # 90 дней копились сотни МБ. Для установки есть релизы (simple-tasks-releases), здесь копия нужна на день.
+          retention-days: 1
 
       # Обновление по кнопке (итерация 10): после мержа в main APK уходит релизом в публичный репозиторий
       # prostovasei/simple-tasks-releases (только файлы, без кода). Нужен секрет RELEASES_TOKEN — без него шаг пропускается.
@@ -73,6 +76,7 @@ jobs:
         with:
           name: screenshots
           path: app/screenshots/*.png
+          retention-days: 7
 
       - name: Отчёты (при ошибке)
         if: failure()
@@ -82,3 +86,4 @@ jobs:
           path: |
             app/build/reports/
             app/build/test-results/
+          retention-days: 7
