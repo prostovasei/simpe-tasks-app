@@ -3,9 +3,12 @@ package com.prostovasei.simpletasks.ui.feature.task
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsNotFocused
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextContains
@@ -20,6 +23,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
+import androidx.test.core.app.ApplicationProvider
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.domain.model.ChecklistItem
@@ -102,9 +106,13 @@ class TaskScreensUiTest {
         composeRule.onNodeWithTag(TAG_TOOL_LIST).assertIsNotSelected()
         composeRule.onNodeWithTag(TAG_QUICK_SAVE).assertIsNotEnabled()
 
-        // Без даты напоминание не выбрать: меню подсказывает выбрать день.
+        // Без даты напоминание и повтор не выбрать: кнопки нажимаются, окно подсказывает выбрать день.
         composeRule.onNodeWithTag(TAG_TOOL_REMINDER).performClick()
         composeRule.onNodeWithText("Сначала выберите день").assertExists()
+        composeRule.onNodeWithText("Понятно").performClick()
+        composeRule.onNodeWithTag(TAG_REMINDERS_DIALOG).assertDoesNotExist()
+        composeRule.onNodeWithTag(TAG_TOOL_REPEAT).performClick()
+        composeRule.onNodeWithText("Повтор начинается от даты задачи — сначала выберите дату.").assertExists()
     }
 
     @Test
@@ -250,10 +258,18 @@ class TaskScreensUiTest {
     fun toolbarMenusSendEdits() {
         show { QuickAddScreen(quickState.copy(due = null, priority = Priority.NONE, checklist = null), { intents += it }, {}, autoFocus = false) }
 
+        // Выбор в окне меняет задачу только по «Готово»; «Отмена» — без изменений.
         composeRule.onNodeWithTag(TAG_TOOL_LIST).performClick()
         composeRule.onNodeWithTag("$TAG_PROJECT_OPTION:inbox").performClick()
+        assertTrue(intents.none { it is QuickAddIntent.Edit })
+        composeRule.onNodeWithTag("$TAG_PROJECT_DIALOG:$TAG_DIALOG_DONE").performClick()
         composeRule.onNodeWithTag(TAG_TOOL_PRIORITY).performClick()
+        composeRule.onNodeWithText("P2 Средний").performClick()
+        composeRule.onNodeWithTag("$TAG_PRIORITY_DIALOG:$TAG_DIALOG_CANCEL").performClick()
+        composeRule.onNodeWithTag(TAG_TOOL_PRIORITY).performClick()
+        composeRule.onNodeWithTag("$TAG_PRIORITY_OPTION:NONE").assertIsSelected()
         composeRule.onNodeWithText("P1 Высокий").performClick()
+        composeRule.onNodeWithTag("$TAG_PRIORITY_DIALOG:$TAG_DIALOG_DONE").performClick()
         composeRule.onNodeWithTag(TAG_TOOL_CHECKLIST).performClick()
 
         assertEquals(
@@ -267,16 +283,76 @@ class TaskScreensUiTest {
     }
 
     @Test
-    fun repeatToolOpensConstructor() {
+    fun repeatToolOpensListWithCustomRule() {
         show { QuickAddScreen(quickState, { intents += it }, {}, autoFocus = false) }
         composeRule.onNodeWithTag(TAG_TOOL_REPEAT).performClick()
+        // Правило не из готовых — отмечено «Произвольно…» с описанием; конструктор открывается с ним же.
+        composeRule.onNodeWithTag("$TAG_REPEAT_OPTION:CUSTOM").assertIsSelected()
+        composeRule.onNodeWithText("Каждые 2 недели: вт, чт").assertExists()
+        composeRule.onNodeWithTag("$TAG_REPEAT_OPTION:CUSTOM").performClick()
         composeRule.onNodeWithTag(TAG_REPEAT_PREVIEW).assertTextEquals("Каждые 2 недели: вт, чт")
+    }
+
+    @Test
+    fun repeatPresetsFollowTaskDate() {
+        var result: String? = "не задано"
+        var dismissed = false
+        show { RepeatDialog(rrule = null, due = today, onConfirm = { result = it }, onDismiss = { dismissed = true }) }
+
+        // 14.10.2026 — среда.
+        composeRule.onNodeWithTag("$TAG_REPEAT_OPTION:NONE").assertIsSelected()
+        composeRule.onNodeWithText("по средам").assertExists()
+        composeRule.onNodeWithText("14 числа").assertExists()
+        composeRule.onNodeWithText("14 октября").assertExists()
+        composeRule.onNodeWithText("пн–пт").assertExists()
+        composeRule.onNodeWithTag("$TAG_REPEAT_OPTION:WORKDAYS").performClick()
+        composeRule.onNodeWithTag("$TAG_REPEAT_OPTION:WORKDAYS").assertIsSelected()
+        composeRule.onNodeWithTag("$TAG_REPEAT_OPTION:NONE").assertIsNotSelected()
+        assertEquals("не задано", result)
+        composeRule.onNodeWithTag("$TAG_REPEAT_DIALOG:$TAG_DIALOG_DONE").performClick()
+
+        assertEquals("FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR", result)
+        assertTrue(!dismissed)
+    }
+
+    @Test
+    fun repeatCancelKeepsRule() {
+        var result: String? = "не задано"
+        var dismissed = false
+        show { RepeatDialog(rrule = "FREQ=DAILY", due = today, onConfirm = { result = it }, onDismiss = { dismissed = true }) }
+        composeRule.onNodeWithTag("$TAG_REPEAT_OPTION:DAILY").assertIsSelected()
+        composeRule.onNodeWithTag("$TAG_REPEAT_OPTION:YEARLY").performClick()
+        composeRule.onNodeWithTag("$TAG_REPEAT_DIALOG:$TAG_DIALOG_CANCEL").performClick()
+        assertEquals("не задано", result)
+        assertTrue(dismissed)
+    }
+
+    @Test
+    fun customRepeatReturnsToList() {
+        var result: String? = "не задано"
+        show { RepeatDialog(rrule = "FREQ=DAILY", due = today, onConfirm = { result = it }, onDismiss = {}) }
+        composeRule.onNodeWithTag("$TAG_REPEAT_OPTION:CUSTOM").performClick()
+
+        // «Отмена» в конструкторе — назад к списку без изменений.
+        composeRule.onNodeWithTag("repeat_freq:WEEKLY").performClick()
+        composeRule.onNodeWithTag("$TAG_REPEAT_CUSTOM_DIALOG:$TAG_DIALOG_CANCEL").performClick()
+        composeRule.onNodeWithTag("$TAG_REPEAT_OPTION:DAILY").assertIsSelected()
+
+        // «Готово» — правило конструктора отмечено «Произвольно…»; задача меняется только общим «Готово».
+        composeRule.onNodeWithTag("$TAG_REPEAT_OPTION:CUSTOM").performClick()
+        composeRule.onNodeWithTag(TAG_REPEAT_PLUS).performClick()
+        composeRule.onNodeWithTag("$TAG_REPEAT_CUSTOM_DIALOG:$TAG_DIALOG_DONE").performClick()
+        composeRule.onNodeWithTag("$TAG_REPEAT_OPTION:CUSTOM").assertIsSelected()
+        composeRule.onNodeWithText("Каждые 2 дня").assertExists()
+        assertEquals("не задано", result)
+        composeRule.onNodeWithTag("$TAG_REPEAT_DIALOG:$TAG_DIALOG_DONE").performClick()
+        assertEquals("FREQ=DAILY;INTERVAL=2", result)
     }
 
     @Test
     fun repeatConstructorBuildsWeeklyRule() {
         var result: String? = "не задано"
-        show { RepeatDialog(rrule = null, due = today, onConfirm = { result = it }, onDismiss = {}) }
+        show { CustomRepeatDialog(rrule = null, due = today, onConfirm = { result = it }, onDismiss = {}) }
 
         composeRule.onNodeWithTag("repeat_freq:WEEKLY").performClick()
         composeRule.onNodeWithTag(TAG_REPEAT_PLUS).performClick()
@@ -290,7 +366,7 @@ class TaskScreensUiTest {
 
     @Test
     fun repeatConstructorOpensSimpleRuleForEditing() {
-        show { RepeatDialog(rrule = "FREQ=MONTHLY;INTERVAL=1;BYMONTHDAY=14", due = today, onConfirm = {}, onDismiss = {}) }
+        show { CustomRepeatDialog(rrule = "FREQ=MONTHLY;INTERVAL=1;BYMONTHDAY=14", due = today, onConfirm = {}, onDismiss = {}) }
         composeRule.onNodeWithTag(TAG_REPEAT_PREVIEW).assertTextEquals("Каждый месяц")
         composeRule.onNodeWithText("Особый повтор из TickTick").assertDoesNotExist()
     }
@@ -300,8 +376,10 @@ class TaskScreensUiTest {
         var result: String? = "не задано"
         show { RepeatDialog(rrule = "FREQ=MONTHLY;BYDAY=-1FR", due = today, onConfirm = { result = it }, onDismiss = {}) }
 
+        composeRule.onNodeWithTag("$TAG_REPEAT_OPTION:CUSTOM").assertIsSelected()
         composeRule.onNodeWithText("Особый повтор из TickTick").assertExists()
-        composeRule.onNodeWithText("Не повторять").performClick()
+        composeRule.onNodeWithTag("$TAG_REPEAT_OPTION:NONE").performClick()
+        composeRule.onNodeWithTag("$TAG_REPEAT_DIALOG:$TAG_DIALOG_DONE").performClick()
         assertEquals(null, result)
     }
 
@@ -344,18 +422,35 @@ class TaskScreensUiTest {
         show { TaskDetailScreen(detailState, { intents += it }, {}, {}) }
 
         composeRule.onNodeWithTag(TAG_TOOL_REMINDER).performClick()
+        // Своё напоминание задачи — в «Созданных вручную», хотя истории ещё нет; рядом — когда сработает.
+        composeRule.onNodeWithText("СОЗДАННЫЕ ВРУЧНУЮ").assertExists()
         composeRule.onNodeWithText("За 1 неделю в 10:00").assertExists()
+        composeRule.onNodeWithTag("$TAG_REMINDER_OPTION:-P6DT14H0M0S").assertIsOn()
         composeRule.onNodeWithText("За 1 день в 10:00").performClick()
-        // Меню не закрылось — сразу «Без напоминания».
-        composeRule.onNodeWithText("Без напоминания").performClick()
+        composeRule.onNodeWithTag("$TAG_REMINDER_OPTION:P0DT10H0M0S").performClick()
+        // Снятая галочка не убирает вариант из окна.
+        composeRule.onNodeWithTag("$TAG_REMINDER_OPTION:P0DT10H0M0S").assertIsOff()
+        assertTrue(intents.none { it is TaskDetailIntent.Edit })
+        composeRule.onNodeWithTag("$TAG_REMINDERS_DIALOG:$TAG_DIALOG_DONE").performClick()
 
         assertEquals(
-            listOf<Any>(
-                TaskDetailIntent.Edit(FieldEdit.SetReminders(listOf("P0DT10H0M0S", "-P6DT14H0M0S", "-P0DT14H0M0S"))),
-                TaskDetailIntent.Edit(FieldEdit.SetReminders(emptyList())),
-            ),
+            listOf<Any>(TaskDetailIntent.Edit(FieldEdit.SetReminders(listOf("-P6DT14H0M0S", "-P0DT14H0M0S")))),
             intents.filterNot { it is TaskDetailIntent.Grid },
         )
+    }
+
+    @Test
+    fun reminderCancelChangesNothing() {
+        show { TaskDetailScreen(detailState, { intents += it }, {}, {}) }
+        composeRule.onNodeWithTag(TAG_TOOL_REMINDER).performClick()
+        composeRule.onNodeWithText("За 1 день в 10:00").performClick()
+        composeRule.onNodeWithTag(TAG_REMINDER_CUSTOM).performClick()
+        composeRule.onNodeWithTag(TAG_CUSTOM_ADD).performClick()
+        composeRule.onNodeWithTag("$TAG_REMINDERS_DIALOG:$TAG_DIALOG_CANCEL").performClick()
+
+        assertTrue(intents.none { it is TaskDetailIntent.Edit })
+        // Созданный, но отменённый общей «Отменой» вариант в историю не попал.
+        assertEquals(emptyList<String>(), ReminderHistory.load(ApplicationProvider.getApplicationContext(), allDay = true))
     }
 
     @Test
@@ -404,8 +499,9 @@ class TaskScreensUiTest {
     fun quickAddReminderMenu() {
         show { QuickAddScreen(quickState, { intents += it }, {}, autoFocus = false) }
         composeRule.onNodeWithTag(TAG_TOOL_REMINDER).assertIsSelected().performClick()
-        composeRule.onNodeWithTag("$TAG_REMINDER_OPTION:PT0S").assertExists()
+        composeRule.onNodeWithTag("$TAG_REMINDER_OPTION:PT0S").assertIsOn()
         composeRule.onNodeWithTag("$TAG_REMINDER_OPTION:-PT30M").performClick()
+        composeRule.onNodeWithTag("$TAG_REMINDERS_DIALOG:$TAG_DIALOG_DONE").performClick()
         assertEquals(
             listOf<Any>(QuickAddIntent.Edit(FieldEdit.SetReminders(listOf("PT0S", "-PT30M")))),
             intents.filterNot { it is QuickAddIntent.Grid && it.action is GridAction.FirstDay },
@@ -432,10 +528,26 @@ class TaskScreensUiTest {
         composeRule.onNodeWithTag(TAG_REMINDER_CUSTOM).performClick()
         composeRule.onNodeWithTag(TAG_CUSTOM_DAYS).assertTextEquals("01")
         composeRule.onNodeWithTag(TAG_CUSTOM_ADD).performClick()
+        // Вариант вернулся в окно уведомлений отмеченным; задача меняется общим «Готово».
+        composeRule.onNodeWithTag("$TAG_REMINDER_OPTION:-P0DT15H0M0S").assertIsOn()
+        assertTrue(intents.none { it is TaskDetailIntent.Edit })
+        composeRule.onNodeWithTag("$TAG_REMINDERS_DIALOG:$TAG_DIALOG_DONE").performClick()
         assertEquals(
             listOf<Any>(TaskDetailIntent.Edit(FieldEdit.SetReminders(listOf("P0DT10H0M0S", "-P6DT14H0M0S", "-P0DT15H0M0S")))),
             intents.filterNot { it is TaskDetailIntent.Grid },
         )
+        assertEquals(listOf("-P0DT15H0M0S"), ReminderHistory.load(ApplicationProvider.getApplicationContext(), allDay = true))
+    }
+
+    @Test
+    fun reminderHistoryIsSharedAndKeepsAssigned() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        ReminderHistory.add(context, allDay = false, created = listOf("-PT2H", "-PT3H", "-PT4H", "-PT45M"))
+        // У задачи назначено «за 2 часа» — оно выпало из тройки истории, но видно и отмечено.
+        show { QuickAddScreen(quickState.copy(customReminders = listOf("-PT2H")), { intents += it }, {}, autoFocus = false) }
+        composeRule.onNodeWithTag(TAG_TOOL_REMINDER).performClick()
+        listOf("-PT45M", "-PT4H", "-PT3H").forEach { composeRule.onNodeWithTag("$TAG_REMINDER_OPTION:$it").assertIsOff() }
+        composeRule.onNodeWithTag("$TAG_REMINDER_OPTION:-PT2H").assertIsOn()
     }
 
     @Test
@@ -508,7 +620,52 @@ class TaskScreensUiTest {
 
     @Test
     fun screenshotRepeatDialog() {
-        show { RepeatDialog(rrule = "FREQ=WEEKLY;INTERVAL=2;BYDAY=TU,TH", due = today, onConfirm = {}, onDismiss = {}) }
+        show { RepeatDialog(rrule = "FREQ=WEEKLY", due = today, onConfirm = {}, onDismiss = {}) }
         composeRule.onRoot().captureRoboImage("screenshots/repeat_dialog_light.png")
+    }
+
+    @Test
+    fun screenshotRepeatCustomDialog() {
+        show { CustomRepeatDialog(rrule = "FREQ=WEEKLY;INTERVAL=2;BYDAY=TU,TH", due = today, onConfirm = {}, onDismiss = {}) }
+        composeRule.onRoot().captureRoboImage("screenshots/repeat_custom_dialog_light.png")
+    }
+
+    @Test
+    fun screenshotRemindersDialog() {
+        ReminderHistory.add(ApplicationProvider.getApplicationContext(), allDay = false, created = listOf("-PT2H", "-PT45M"))
+        show { RemindersDialog(quickState.due, null, zone, listOf("PT0S", "-PT1H", "-PT2H15M"), {}, {}) }
+        composeRule.onRoot().captureRoboImage("screenshots/reminders_dialog_light.png")
+    }
+
+    @Test
+    fun screenshotRemindersDialogDark() {
+        show(dark = true) { RemindersDialog(quickState.due, null, zone, listOf("PT0S"), {}, {}) }
+        composeRule.onRoot().captureRoboImage("screenshots/reminders_dialog_dark.png")
+    }
+
+    @Test
+    fun screenshotProjectDialog() {
+        show { ProjectDialog("work", projects, {}, {}) }
+        composeRule.onRoot().captureRoboImage("screenshots/project_dialog_light.png")
+    }
+
+    @Test
+    fun screenshotDateDialog() {
+        show { QuickAddScreen(quickState, {}, {}, autoFocus = false) }
+        composeRule.onNodeWithTag(TAG_DAY_CALENDAR).performClick()
+        composeRule.onNodeWithTag(TAG_DATE_DIALOG).captureRoboImage("screenshots/date_dialog_light.png")
+    }
+
+    /** Маленький экран и крупный шрифт (ТЗ PM): длинный список прокручивается, «Отмена» и «Готово» видны. */
+    @Test
+    @Config(qualifiers = "w320dp-h480dp-mdpi", fontScale = 1.5f)
+    fun smallScreenLargeFontKeepsButtons() {
+        ReminderHistory.add(ApplicationProvider.getApplicationContext(), allDay = false, created = listOf("-PT2H", "-PT45M", "-PT4H"))
+        show { RemindersDialog(quickState.due, null, zone, listOf("PT0S"), {}, {}) }
+        composeRule.onNodeWithTag("$TAG_REMINDERS_DIALOG:$TAG_DIALOG_DONE").assertIsDisplayed()
+        composeRule.onNodeWithTag("$TAG_REMINDERS_DIALOG:$TAG_DIALOG_CANCEL").assertIsDisplayed()
+        composeRule.onNodeWithTag(TAG_REMINDER_CUSTOM).performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("$TAG_REMINDERS_DIALOG:$TAG_DIALOG_DONE").assertIsDisplayed()
+        composeRule.onRoot().captureRoboImage("screenshots/reminders_dialog_small_large_font.png")
     }
 }

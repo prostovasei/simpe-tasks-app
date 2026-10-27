@@ -1,0 +1,195 @@
+package com.prostovasei.simpletasks.ui.feature.task
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import com.prostovasei.simpletasks.R
+import com.prostovasei.simpletasks.designsystem.theme.AppTheme
+
+/**
+ * Единое окно шторки задачи (итерация 31, ТЗ PM): по центру экрана над затемнением — заголовок, содержимое
+ * (длинное прокручивается) и внизу всегда «Отмена» и «Готово». «Назад» и нажатие мимо окна — как «Отмена».
+ * Выбор внутри окна меняет только черновик; задача меняется по [onDone]. Без [onDone] — одна кнопка [dismissLabel]
+ * (подсказка «Сначала выберите день»).
+ */
+@Composable
+fun SheetDialog(
+    title: String,
+    tag: String,
+    onDismiss: () -> Unit,
+    onDone: (() -> Unit)?,
+    subtitle: String? = null,
+    dismissLabel: Int = R.string.action_cancel,
+    edge: Dp = AppTheme.spacing.lg,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val colors = AppTheme.colors
+    val spacing = AppTheme.spacing
+    val sizes = AppTheme.sizes
+    val shape = AppTheme.shapes.large
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        Column(
+            Modifier
+                .padding(horizontal = edge, vertical = spacing.lg)
+                .widthIn(max = sizes.dialogMaxWidth)
+                .fillMaxWidth()
+                .clip(AppTheme.shapes.nav)
+                .background(colors.surface)
+                .testTag(tag),
+        ) {
+            Column(Modifier.padding(start = spacing.lg, end = spacing.lg, top = spacing.lg, bottom = spacing.xs)) {
+                Text(title, color = colors.textPrimary, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                subtitle?.let { Text(it, color = colors.textSecondary, style = MaterialTheme.typography.bodyMedium) }
+            }
+            // Содержимое занимает остаток высоты и прокручивается; кнопки ниже всегда видны.
+            Column(
+                Modifier
+                    .weight(1f, fill = false)
+                    .verticalScroll(rememberScrollState())
+                    .padding(vertical = spacing.xxs),
+                content = content,
+            )
+            HorizontalDivider(color = colors.divider)
+            Row(
+                Modifier.fillMaxWidth().padding(spacing.md),
+                horizontalArrangement = Arrangement.spacedBy(spacing.sm),
+            ) {
+                OutlinedButton(
+                    onClick = onDismiss,
+                    shape = shape,
+                    border = BorderStroke(sizes.hairline, colors.divider),
+                    modifier = Modifier.weight(1f).height(sizes.toolButton).testTag("$tag:$TAG_DIALOG_CANCEL"),
+                ) {
+                    Text(stringResource(dismissLabel), color = colors.textPrimary, fontWeight = FontWeight.Bold)
+                }
+                if (onDone != null) {
+                    Button(
+                        onClick = onDone,
+                        shape = shape,
+                        colors = ButtonDefaults.buttonColors(containerColor = colors.accent, contentColor = colors.onAccent),
+                        modifier = Modifier.weight(1f).height(sizes.toolButton).testTag("$tag:$TAG_DIALOG_DONE"),
+                    ) {
+                        Text(stringResource(R.string.sheet_done), fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Вариант в окне: название, подпись под ним и [hint] справа (когда сработает напоминание).
+ * Один из многих ([multi] = false) — выбранный подсвечен и с галочкой справа; несколько сразу — квадрат-галочка слева.
+ */
+@Composable
+fun DialogOption(
+    title: String,
+    selected: Boolean,
+    tag: String,
+    onClick: () -> Unit,
+    subtitle: String? = null,
+    hint: String? = null,
+    multi: Boolean = false,
+    leading: (@Composable () -> Unit)? = null,
+) {
+    val colors = AppTheme.colors
+    val spacing = AppTheme.spacing
+    val select = if (multi) {
+        Modifier.toggleable(value = selected, role = Role.Checkbox, onValueChange = { onClick() })
+    } else {
+        Modifier.selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
+    }
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .heightIn(min = AppTheme.sizes.dialogRow)
+            .then(if (selected && !multi) Modifier.background(colors.selected) else Modifier)
+            .then(select)
+            .padding(horizontal = spacing.lg, vertical = spacing.xxs)
+            .testTag(tag),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(spacing.sm),
+    ) {
+        if (multi) {
+            Checkbox(
+                checked = selected,
+                onCheckedChange = null,
+                colors = CheckboxDefaults.colors(checkedColor = colors.accent, uncheckedColor = colors.inactive, checkmarkColor = colors.onAccent),
+            )
+        }
+        leading?.invoke()
+        Column(Modifier.weight(1f)) {
+            Text(title, color = colors.textPrimary, style = MaterialTheme.typography.bodyLarge, fontWeight = if (selected) FontWeight.Bold else FontWeight.SemiBold)
+            subtitle?.let { Text(it, color = colors.textSecondary, style = MaterialTheme.typography.bodySmall) }
+        }
+        hint?.let { Text(it, color = colors.textSecondary, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold) }
+        if (!multi && selected) Icon(Icons.Default.Check, null, tint = colors.accent)
+    }
+}
+
+/** Подпись блока вариантов: «Основные», «Созданные вручную». */
+@Composable
+fun DialogSection(text: String) {
+    val spacing = AppTheme.spacing
+    Text(
+        text.uppercase(),
+        color = AppTheme.colors.textSecondary,
+        style = MaterialTheme.typography.labelMedium,
+        fontWeight = FontWeight.Bold,
+        modifier = Modifier.padding(start = spacing.lg, end = spacing.lg, top = spacing.sm, bottom = spacing.xxs),
+    )
+}
+
+/** Тонкий разделитель между группами вариантов. */
+@Composable
+fun DialogDivider() {
+    HorizontalDivider(color = AppTheme.colors.divider, modifier = Modifier.padding(horizontal = AppTheme.spacing.lg, vertical = AppTheme.spacing.xxs))
+}
+
+/** Текст-подсказка внутри окна (например, «Сначала выберите день»). */
+@Composable
+fun DialogText(text: String, tag: String? = null) {
+    Text(
+        text,
+        color = AppTheme.colors.textSecondary,
+        style = MaterialTheme.typography.bodyLarge,
+        modifier = Modifier.padding(horizontal = AppTheme.spacing.lg, vertical = AppTheme.spacing.xs).then(if (tag != null) Modifier.testTag(tag) else Modifier),
+    )
+}
+
+const val TAG_DIALOG_DONE = "done"
+const val TAG_DIALOG_CANCEL = "cancel"

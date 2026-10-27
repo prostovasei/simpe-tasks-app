@@ -73,4 +73,6 @@ data class AppSizes(
     val clearGlyph: Dp = SizeTokens.CLEAR_GLYPH.dp,
     val weekKnob: Dp = SizeTokens.WEEK_KNOB.dp,
     val dayTile: Dp = SizeTokens.DAY_TILE.dp,
+    val dialogMaxWidth: Dp = SizeTokens.DIALOG_MAX_WIDTH.dp,
+    val dialogRow: Dp = SizeTokens.DIALOG_ROW.dp,
 )
