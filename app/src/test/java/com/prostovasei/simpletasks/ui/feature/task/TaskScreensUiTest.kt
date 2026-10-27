@@ -633,7 +633,7 @@ class TaskScreensUiTest {
     @Test
     fun screenshotRemindersDialog() {
         ReminderHistory.add(ApplicationProvider.getApplicationContext(), allDay = false, created = listOf("-PT2H", "-PT45M"))
-        show { RemindersDialog(quickState.due, null, zone, listOf("PT0S", "-PT1H", "-PT2H15M"), {}, {}) }
+        show { RemindersDialog(quickState.due, null, zone, listOf("PT0S", "-PT1H", "-P0DT2H15M0S"), {}, {}) }
         composeRule.onRoot().captureRoboImage("screenshots/reminders_dialog_light.png")
     }
 

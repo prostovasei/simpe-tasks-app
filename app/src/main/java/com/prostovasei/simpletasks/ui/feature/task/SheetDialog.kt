@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
@@ -61,6 +61,8 @@ fun SheetDialog(
     val spacing = AppTheme.spacing
     val sizes = AppTheme.sizes
     val shape = AppTheme.shapes.large
+    // Узкие поля: «Отмена» и «Готово» помещаются и на маленьком экране с крупным шрифтом.
+    val buttonPadding = PaddingValues(horizontal = spacing.xs, vertical = spacing.xxs)
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Column(
             Modifier
@@ -92,7 +94,8 @@ fun SheetDialog(
                     onClick = onDismiss,
                     shape = shape,
                     border = BorderStroke(sizes.hairline, colors.divider),
-                    modifier = Modifier.weight(1f).height(sizes.toolButton).testTag("$tag:$TAG_DIALOG_CANCEL"),
+                    contentPadding = buttonPadding,
+                    modifier = Modifier.weight(1f).heightIn(min = sizes.toolButton).testTag("$tag:$TAG_DIALOG_CANCEL"),
                 ) {
                     Text(stringResource(dismissLabel), color = colors.textPrimary, fontWeight = FontWeight.Bold)
                 }
@@ -101,7 +104,8 @@ fun SheetDialog(
                         onClick = onDone,
                         shape = shape,
                         colors = ButtonDefaults.buttonColors(containerColor = colors.accent, contentColor = colors.onAccent),
-                        modifier = Modifier.weight(1f).height(sizes.toolButton).testTag("$tag:$TAG_DIALOG_DONE"),
+                        contentPadding = buttonPadding,
+                        modifier = Modifier.weight(1f).heightIn(min = sizes.toolButton).testTag("$tag:$TAG_DIALOG_DONE"),
                     ) {
                         Text(stringResource(R.string.sheet_done), fontWeight = FontWeight.Bold)
                     }
