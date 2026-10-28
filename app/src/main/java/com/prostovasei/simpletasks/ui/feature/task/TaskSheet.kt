@@ -457,7 +457,9 @@ private fun SheetToolbar(
     }
     BoxWithConstraints(modifier.fillMaxWidth().padding(horizontal = spacing.sm, vertical = spacing.xs)) {
     val count = TOOLBAR_TOOLS + actionCount
-    val fit = ((maxWidth - spacing.xs * (count - 1)) / count).coerceAtMost(SizeTokens.TOOL_BUTTON.dp)
+    // В строке ещё и распорка между кнопками и действиями — поэтому щелей на одну больше, чем кнопок (0.31.2: раньше
+    // не считалась, и у созданной задачи корзина прижималась к галочке).
+    val fit = ((maxWidth - spacing.xs * count) / count).coerceAtMost(SizeTokens.TOOL_BUTTON.dp)
     CompositionLocalProvider(LocalToolButtonSize provides fit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -633,7 +635,7 @@ private fun ToolButtonBody(
         if (icon != null) {
             val iconTint = when {
                 active -> colors.accent
-                dimmed -> colors.inactive
+                dimmed -> colors.inactive.copy(alpha = DIMMED_ICON_ALPHA)
                 else -> tint ?: colors.textSecondary
             }
             Icon(painterResource(icon), null, tint = iconTint, modifier = Modifier.size(LocalToolButtonSize.current * ICON_SHARE))
@@ -712,6 +714,9 @@ private const val HEADER_FRACTION = 0.45f
 
 /** Пока клавиатура ни разу не открывалась — её высота примерно 40% экрана. */
 private const val KEYBOARD_FALLBACK = 0.4f
+
+/** Иконка недоступной кнопки (нет даты) заметно бледнее доступных (0.31.2, решение PM). */
+private const val DIMMED_ICON_ALPHA = 0.6f
 
 const val TAG_QUICK_CARD = "quick_card"
 const val TAG_QUICK_SCRIM = "quick_scrim"

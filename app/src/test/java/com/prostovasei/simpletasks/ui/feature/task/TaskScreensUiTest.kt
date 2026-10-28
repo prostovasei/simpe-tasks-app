@@ -14,6 +14,7 @@ import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.click
+import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -454,6 +455,34 @@ class TaskScreensUiTest {
     }
 
     @Test
+    fun detailToolbarKeepsGapsAndDoneCircleStaysAtLeftEdge() {
+        show { TaskDetailScreen(detailState, { intents += it }, {}, {}) }
+
+        // Корзина не прижата к галочке: щель не меньше обычной между кнопками (8 dp, с допуском на округление).
+        val list = composeRule.onNodeWithTag(TAG_TOOL_LIST).getBoundsInRoot()
+        val checklist = composeRule.onNodeWithTag(TAG_TOOL_CHECKLIST).getBoundsInRoot()
+        val delete = composeRule.onNodeWithTag(TAG_DETAIL_DELETE).getBoundsInRoot()
+        val close = composeRule.onNodeWithTag(TAG_DETAIL_CLOSE).getBoundsInRoot()
+        val gap = (close.left - delete.right).value
+        assertTrue("щель корзина–галочка $gap dp", gap >= 7.5f)
+        assertTrue("щель между кнопками панели", (composeRule.onNodeWithTag(TAG_TOOL_REPEAT).getBoundsInRoot().left - list.right).value >= 7.5f)
+        assertTrue("корзина не наезжает на чек-лист", delete.left >= checklist.right)
+        assertTrue("кнопки в пределах окна", close.right <= composeRule.onNodeWithTag(TAG_QUICK_CARD).getBoundsInRoot().right)
+
+        // Отметка «выполнено» — вплотную к левому краю текста, как описание под названием.
+        val done = composeRule.onNodeWithTag(TAG_DETAIL_DONE).getBoundsInRoot()
+        val content = composeRule.onNodeWithTag(TAG_DETAIL_CONTENT).getBoundsInRoot()
+        assertEquals(content.left.value, done.left.value, 0.5f)
+    }
+
+    @Test
+    fun doneCircleToggles() {
+        show { TaskDetailScreen(detailState, { intents += it }, {}, {}) }
+        composeRule.onNodeWithTag(TAG_DETAIL_DONE).assertIsOff().performClick()
+        assertEquals(listOf<Any>(TaskDetailIntent.ToggleCompleted), intents.filterNot { it is TaskDetailIntent.Grid })
+    }
+
+    @Test
     fun clearBadgesResetOnlyTheirField() {
         show { TaskDetailScreen(detailState, { intents += it }, {}, {}) }
         composeRule.onNodeWithTag(TAG_CLEAR_REMINDERS).performClick()
@@ -598,6 +627,13 @@ class TaskScreensUiTest {
     fun screenshotQuickAddLargeFont() {
         show { QuickAddScreen(quickState.copy(checklist = null, start = TaskDue.AtTime(Instant.parse("2026-10-15T10:00:00Z")), due = TaskDue.AtTime(Instant.parse("2026-10-15T11:30:00Z"))), {}, {}, autoFocus = false) }
         composeRule.onRoot().captureRoboImage("screenshots/quick_add_large_font.png")
+    }
+
+    /** Без даты: иконки повтора и уведомлений бледнее остальных (0.31.2). */
+    @Test
+    fun screenshotQuickAddNoDate() {
+        show { QuickAddScreen(QuickAddState(title = "Купить хлеб", projectId = "inbox", projects = projects, today = today, zone = zone), {}, {}, autoFocus = false) }
+        composeRule.onRoot().captureRoboImage("screenshots/quick_add_no_date.png")
     }
 
     @Test
