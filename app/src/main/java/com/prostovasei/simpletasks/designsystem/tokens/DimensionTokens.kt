@@ -163,6 +163,19 @@ object SizeTokens {
     /** Квадратная плитка дня в шторке (итерация 22): «чт / 22 / окт» и время. */
     const val DAY_TILE = 72
 
+    /**
+     * Полоска даты в шторке (итерация 33): высота, кнопки повтора и уведомлений в ней, значки, разделитель.
+     * Окно даты: ячейка дня в блоке «2 недели», кружок дня, круглые стрелки листания и наименьший час сетки.
+     */
+    const val STRIP_HEIGHT = 54
+    const val STRIP_BUTTON = 40
+    const val STRIP_ICON = 22
+    const val STRIP_DIVIDER = 28
+    const val DATE_CELL = 40
+    const val DATE_DAY = 34
+    const val DATE_ARROW = 34
+    const val WEEK_HOUR_MIN = 32
+
     /** Круглая отметка «выполнено» у названия задачи (0.31.2) и галочка в ней. */
     const val DONE_CIRCLE = 22
     const val DONE_CHECK = 14

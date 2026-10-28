@@ -36,6 +36,12 @@ sealed interface GridAction {
     /** Нажатие на день в шапке: «на весь день»; повторное — убрать дату. */
     data class DayTap(val date: LocalDate) : GridAction
 
+    /**
+     * Выбор дня в блоке «2 недели» и в календаре (итерация 33): день меняется, выбранное время остаётся; без времени —
+     * просто день. Повторное нажатие на выбранный день ничего не меняет (убрать дату — кнопка «без даты»).
+     */
+    data class PickDay(val date: LocalDate) : GridAction
+
     /** Нажатие на сетку: время [minute] (от начала суток) в день [date]; внутри выбранного блока — ничего. */
     data class SlotTap(val date: LocalDate, val minute: Int) : GridAction
 
@@ -79,6 +85,15 @@ fun Schedule.after(action: GridAction, zone: ZoneId): Schedule {
     return when (action) {
         is GridAction.DayTap -> when {
             date == action.date -> Schedule(null, null)
+            start is TaskDue.AllDay && due is TaskDue.AllDay -> {
+                val days = ChronoUnit.DAYS.between(start.date, action.date)
+                Schedule(TaskDue.AllDay(due.date.plusDays(days)), TaskDue.AllDay(action.date))
+            }
+            else -> Schedule(TaskDue.AllDay(action.date), null)
+        }
+        is GridAction.PickDay -> when {
+            date == action.date -> this
+            minute != null -> timed(action.date, minute, duration, zone)
             start is TaskDue.AllDay && due is TaskDue.AllDay -> {
                 val days = ChronoUnit.DAYS.between(start.date, action.date)
                 Schedule(TaskDue.AllDay(due.date.plusDays(days)), TaskDue.AllDay(action.date))

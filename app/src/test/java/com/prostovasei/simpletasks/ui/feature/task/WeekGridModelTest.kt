@@ -48,16 +48,46 @@ class WeekGridModelTest {
     }
 
     @Test
-    fun tileTimeLines() {
-        val zone = java.time.ZoneOffset.UTC
-        fun at(h: Int, m: Int) = com.prostovasei.simpletasks.domain.model.TaskDue.AtTime(today.atTime(h, m).toInstant(zone))
-        fun fields(due: com.prostovasei.simpletasks.domain.model.TaskDue?, start: com.prostovasei.simpletasks.domain.model.TaskDue? = null) =
+    fun stripText() {
+        fun at(h: Int, m: Int) = TaskDue.AtTime(today.atTime(h, m).toInstant(zone))
+        fun fields(due: TaskDue?, start: TaskDue? = null, today: LocalDate = this.today) =
             SheetFields(due, start, "p", com.prostovasei.simpletasks.domain.model.Priority.NONE, null, emptyList(), emptyList(), today, zone, 0, emptyList())
-        assertEquals(emptyList<String>(), DayStripMath.timeLines(fields(null)))
-        assertEquals(emptyList<String>(), DayStripMath.timeLines(fields(com.prostovasei.simpletasks.domain.model.TaskDue.AllDay(today))))
-        assertEquals(listOf("09:30"), DayStripMath.timeLines(fields(at(9, 30))))
-        // Период — начало и конец столбиком.
-        assertEquals(listOf("15:00", "16:30"), DayStripMath.timeLines(fields(at(16, 30), at(15, 0))))
+        assertEquals(null, sheetDateText(fields(null)))
+        assertEquals("ср, 14 окт", sheetDateText(fields(TaskDue.AllDay(today))))
+        assertEquals("ср, 14 окт · 09:30", sheetDateText(fields(at(9, 30))))
+        // Период — «начало–конец».
+        assertEquals("ср, 14 окт · 15:00–16:30", sheetDateText(fields(at(16, 30), at(15, 0))))
+        // Другой год — год в подписи.
+        assertEquals("ср, 14 окт 2026", sheetDateText(fields(TaskDue.AllDay(today), today = LocalDate.of(2025, 12, 31))))
+    }
+
+    @Test
+    fun windowOpensAtTenOrAtSelectedHour() {
+        assertEquals("Новая задача без времени — с 10:00", 10 * 60, WeekGridMath.openMinute(null))
+        assertEquals("Со временем — с его часа", 15 * 60, WeekGridMath.openMinute(15 * 60 + 40))
+        assertEquals("Раньше десяти — с этого часа, выше прокручивается", 6 * 60, WeekGridMath.openMinute(6 * 60 + 15))
+    }
+
+    @Test
+    fun weekBlockStaysInsideTwoWeeksAndFollowsFarDays() {
+        // 14.10.2026 — среда, неделя с понедельника 12.10.
+        val base = LocalDate.of(2026, 10, 12)
+        assertEquals(base, WeekBlockMath.monday(today))
+        assertEquals(base, WeekBlockMath.first(today, null, null))
+        assertEquals("Внутри двух недель блок не прыгает", base, WeekBlockMath.first(today, today.plusDays(10), null))
+        assertEquals("Дальше — неделя выбранного дня", LocalDate.of(2026, 11, 16), WeekBlockMath.first(today, LocalDate.of(2026, 11, 19), base))
+        assertEquals("Стрелкой уехали вперёд — остались", base.plusDays(14), WeekBlockMath.first(today, today.plusDays(16), base.plusDays(14)))
+    }
+
+    @Test
+    fun pickDayMovesDateKeepingTime() {
+        val at = Schedule(TaskDue.AtTime(today.atTime(10, 30).toInstant(zone)), null)
+        val moved = at.after(GridAction.PickDay(today.plusDays(3)), zone)
+        assertEquals(Schedule(TaskDue.AtTime(today.plusDays(3).atTime(10, 30).toInstant(zone)), null), moved)
+        assertEquals("Тот же день — без изменений", at, at.after(GridAction.PickDay(today), zone))
+        assertEquals("Без даты — просто день", Schedule(TaskDue.AllDay(today.plusDays(1)), null), Schedule(null, null).after(GridAction.PickDay(today.plusDays(1)), zone))
+        val period = Schedule(TaskDue.AtTime(today.atTime(12, 0).toInstant(zone)), TaskDue.AtTime(today.atTime(10, 0).toInstant(zone)))
+        assertEquals("Период переезжает целиком", Schedule(TaskDue.AtTime(today.plusDays(2).atTime(12, 0).toInstant(zone)), TaskDue.AtTime(today.plusDays(2).atTime(10, 0).toInstant(zone))), period.after(GridAction.PickDay(today.plusDays(2)), zone))
     }
 
     @Test
