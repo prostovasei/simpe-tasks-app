@@ -8,6 +8,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.PowerManager
 import android.provider.Settings
+import android.view.Choreographer
 import android.view.Gravity
 import android.view.WindowManager
 import android.widget.FrameLayout
@@ -270,10 +271,23 @@ private class Overlay(private val context: Context, private val content: @Compos
         manager.addView(view, params)
         PopupTrace.add(context, "окно добавлено")
         // Пульс процесса: идёт — приложение живо (застряли только кадры); молчит — Samsung его заморозил.
-        repeat(TRACE_PULSES) { i -> main.postDelayed({ PopupTrace.add(context, "пульс ${i + 1}: кадров $draws") }, TRACE_PULSE_MS * (i + 1)) }
+        // Тики (0.31.1) — сигналы экрана «пора рисовать», которые приложение просит каждый кадр: тики идут, а кадров
+        // нет — окно не перерисовывается; тиков нет — телефон не даёт их приложению.
+        Choreographer.getInstance().postFrameCallback(tick)
+        repeat(TRACE_PULSES) { i ->
+            main.postDelayed({ PopupTrace.add(context, "пульс ${i + 1}: кадров $draws, тиков $ticks") }, TRACE_PULSE_MS * (i + 1))
+        }
+    }
+
+    private var ticks = 0
+    private val tick = object : Choreographer.FrameCallback {
+        override fun doFrame(frameTimeNanos: Long) {
+            if (++ticks < TRACE_TICKS) Choreographer.getInstance().postFrameCallback(this)
+        }
     }
 
     fun detach() {
+        Choreographer.getInstance().removeFrameCallback(tick)
         main.removeCallbacksAndMessages(null)
         runCatching { manager.removeView(view) }
         owner.stop()
@@ -283,6 +297,9 @@ private class Overlay(private val context: Context, private val content: @Compos
 private const val TRACE_DRAWS = 5
 private const val TRACE_PULSES = 6
 private const val TRACE_PULSE_MS = 500L
+
+/** Тики считаются примерно 3 с (при 60–120 Гц), дальше не просим — не тратить батарею. */
+private const val TRACE_TICKS = 360
 
 private class OverlayOwner : LifecycleOwner, SavedStateRegistryOwner {
     private val registry = LifecycleRegistry(this)
@@ -360,7 +377,6 @@ private fun Strip(strip: PopupStrip, onDone: (String) -> Unit, onTomorrow: (Stri
     val context = LocalContext.current
     val animate = remember { animationsEnabled(context) }
     val offset = remember { Animatable(0f) }
-    val enter = remember { Animatable(if (animate) 0f else 1f) }
     val pulse = remember { Animatable(0f) }
     val dust = remember { Animatable(0f) }
     val flip = remember { Animatable(0f) }
@@ -375,12 +391,13 @@ private fun Strip(strip: PopupStrip, onDone: (String) -> Unit, onTomorrow: (Stri
     val particles = remember(strip.taskId) { dustParticles(strip.taskId.hashCode(), lift = DUST_LIFT) }
     val dustColors = listOf(colors.accent, colors.accentSoft, colors.accent.copy(alpha = DUST_FADED))
 
+    // 0.31.1 (журнал PM): полоска сразу на месте, без выезда — окну поверх чужого приложения телефон может не давать
+    // кадров до касания, и выезд застревал на полпути. Кольцо «Пульс» — украшение: нет кадров — его просто не видно.
     LaunchedEffect(Unit) {
-        PopupTrace.add(context, "анимация появления: старт (анимации ${if (animate) "вкл" else "выкл"})")
+        PopupTrace.add(context, "полоска на месте сразу; кольцо: старт (анимации ${if (animate) "вкл" else "выкл"})")
         if (!animate) return@LaunchedEffect
-        enter.animateTo(1f, tween(ENTER_MS, easing = LinearOutSlowInEasing))
-        PopupTrace.add(context, "анимация появления: полоска на месте")
         pulse.animateTo(PULSES, tween(PULSE_MS, easing = LinearEasing))
+        PopupTrace.add(context, "кольцо доиграло")
     }
 
     fun leave(action: (String) -> Unit, motion: suspend () -> Unit) {
@@ -420,7 +437,7 @@ private fun Strip(strip: PopupStrip, onDone: (String) -> Unit, onTomorrow: (Stri
             .offset { IntOffset(offset.value.roundToInt(), 0) }
             .graphicsLayer { alpha = 1f - (offset.value / size.width).coerceIn(0f, 1f) * SWIPE_FADE }
             .graphicsLayer {
-                translationY = ((1f - enter.value) * ENTER_DEPTH + drop.value * DROP_DEPTH) * size.height
+                translationY = drop.value * DROP_DEPTH * size.height
                 rotationX = if (flip.value < HALF) flip.value / HALF * QUARTER_TURN else (flip.value / HALF - 2f) * QUARTER_TURN
                 cameraDistance = CAMERA_DISTANCE * density.density
             }
@@ -556,7 +573,6 @@ private fun DrawScope.pulseRing(phase: Float, spread: Float, color: Color) {
 private fun animationsEnabled(context: Context): Boolean =
     Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) > 0f
 
-private const val ENTER_MS = 360
 private const val UNDO_APPEAR_MS = 200
 /** Сколько висит «Отменить» (0.29.2: было 3 с — долго, решение PM). */
 private const val UNDO_MS = 1500
@@ -572,11 +588,7 @@ private const val FLIP_IN_MS = 220
 private const val LATER_HOLD_MS = 700
 private const val DROP_MS = 280
 
-/**
- * Откуда выезжает и куда уезжает — в высотах полоски. Выезд — с половины высоты, а не из-за края окна (0.30.3):
- * пока окно целиком прозрачное, Samsung перестаёт давать ему кадры, и полоска застревала до касания (журнал PM).
- */
-private const val ENTER_DEPTH = 0.5f
+/** Куда уезжает после «на завтра» и «Отменить» — в высотах полоски. */
 private const val DROP_DEPTH = 1.7f
 private const val HALF = 0.5f
 private const val QUARTER_TURN = 90f
