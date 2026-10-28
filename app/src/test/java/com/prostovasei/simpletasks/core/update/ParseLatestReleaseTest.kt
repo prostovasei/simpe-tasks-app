@@ -12,12 +12,12 @@ class ParseLatestReleaseTest {
     private val json = """
         {"tag_name": "build-40", "name": "0.10.1 (сборка 40)",
          "assets": [{"name": "notes.txt", "browser_download_url": "https://x/notes.txt"},
-                    {"name": "simple-tasks-0.10.1-build40.apk", "browser_download_url": "https://x/simple-tasks-0.10.1-build40.apk"}]}
+                    {"name": "simple-tasks-0.10.1-build40.apk", "size": 16783831, "browser_download_url": "https://x/simple-tasks-0.10.1-build40.apk"}]}
     """.trimIndent()
 
     @Test
     fun newerBuildIsAnUpdate() {
-        assertEquals(AvailableUpdate(40, "0.10.1", "https://x/simple-tasks-0.10.1-build40.apk"), parseLatestRelease(json, currentBuild = 34))
+        assertEquals(AvailableUpdate(40, "0.10.1", "https://x/simple-tasks-0.10.1-build40.apk", 16_783_831), parseLatestRelease(json, currentBuild = 34))
     }
 
     @Test

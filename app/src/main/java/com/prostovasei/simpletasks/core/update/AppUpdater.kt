@@ -1,9 +1,10 @@
 package com.prostovasei.simpletasks.core.update
 
 import org.json.JSONObject
+import java.io.File
 
-/** Новая версия на GitHub: [build] — номер сборки (versionCode), [apkUrl] — файл для скачивания. */
-data class AvailableUpdate(val build: Int, val versionName: String, val apkUrl: String)
+/** Новая версия на GitHub: [build] — номер сборки (versionCode), [apkUrl] — файл для скачивания, [sizeBytes] — его размер (0 — неизвестен). */
+data class AvailableUpdate(val build: Int, val versionName: String, val apkUrl: String, val sizeBytes: Long = 0)
 
 sealed interface InstallStart {
     /** Скачано, Android показывает окно «Обновить приложение?». */
@@ -21,8 +22,24 @@ interface AppUpdater {
     /** Есть ли сборка новее установленной; null — обновлений нет. Ошибка сети — исключение. */
     suspend fun check(): AvailableUpdate?
 
-    /** Скачать и передать установщику Android. [onProgress] — проценты 0..100. */
-    suspend fun install(update: AvailableUpdate, onProgress: (Int) -> Unit): InstallStart
+    /**
+     * Только скачать, не устанавливая (окно обновления на виджете, итерация 32). [onProgress] — проценты 0..100.
+     * null — сначала нужно разрешение устанавливать обновления. Отмена корутины останавливает скачивание.
+     */
+    suspend fun download(update: AvailableUpdate, onProgress: (Int) -> Unit): File?
+
+    /** Передать скачанный файл установщику Android; окно «Обновить приложение?» покажет [UpdateInstallReceiver]. */
+    suspend fun commit(apk: File)
+
+    /** Приложению уже разрешено устанавливать обновления. */
+    fun canInstall(): Boolean
+
+    /** Скачать и сразу передать установщику Android (кнопка в «Настройках»). [onProgress] — проценты 0..100. */
+    suspend fun install(update: AvailableUpdate, onProgress: (Int) -> Unit): InstallStart {
+        val apk = download(update, onProgress) ?: return InstallStart.NeedsPermission
+        commit(apk)
+        return InstallStart.Started
+    }
 
     /** Открыть системный экран «Установка неизвестных приложений» для нашего приложения. */
     fun openInstallPermissionSettings()
@@ -43,5 +60,5 @@ fun parseLatestRelease(json: String, currentBuild: Int): AvailableUpdate? {
     val assets = release.optJSONArray("assets") ?: return null
     val apk = (0 until assets.length()).map { assets.getJSONObject(it) }.firstOrNull { it.optString("name").endsWith(".apk") } ?: return null
     val versionName = release.optString("name").substringBefore(" (").ifBlank { "сборка $build" }
-    return AvailableUpdate(build, versionName, apk.getString("browser_download_url"))
+    return AvailableUpdate(build, versionName, apk.getString("browser_download_url"), apk.optLong("size"))
 }

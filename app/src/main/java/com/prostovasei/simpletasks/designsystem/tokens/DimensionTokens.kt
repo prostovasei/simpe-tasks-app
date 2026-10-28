@@ -170,4 +170,13 @@ object SizeTokens {
     /** Окна шторки задачи (итерация 31): наибольшая ширина (планшет, телефон боком) и высота строки варианта. */
     const val DIALOG_MAX_WIDTH = 420
     const val DIALOG_ROW = 52
+
+    /** Круглый значок над заголовком окна обновления (итерация 32) и сам значок. */
+    const val DIALOG_BADGE = 48
+    const val DIALOG_BADGE_ICON = 26
+
+    /** Кнопка обновления в нижней строке виджета (итерация 32): сторона, значок в ней и щель до «+». */
+    const val WIDGET_UPDATE = 44
+    const val WIDGET_UPDATE_ICON = 22
+    const val WIDGET_UPDATE_GAP = 8
 }
