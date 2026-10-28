@@ -47,6 +47,15 @@
             android:theme="@style/Theme.SimpleTasks.Overlay"
             android:windowSoftInputMode="adjustResize" />
 
+        <!-- Окно обновления поверх рабочего стола (кнопка в виджете): та же отдельная задача, без «недавних». -->
+        <activity
+            android:name=".UpdateActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:launchMode="singleTop"
+            android:taskAffinity="com.prostovasei.simpletasks.popup"
+            android:theme="@style/Theme.SimpleTasks.Overlay" />
+
         <service
             android:name=".notifications.SpeechService"
             android:exported="false"

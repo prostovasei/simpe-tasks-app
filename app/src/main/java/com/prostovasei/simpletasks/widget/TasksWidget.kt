@@ -49,6 +49,7 @@ import androidx.glance.unit.ColorProvider
 import com.prostovasei.simpletasks.MainActivity
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.TaskPopupActivity
+import com.prostovasei.simpletasks.UpdateActivity
 import com.prostovasei.simpletasks.designsystem.theme.parseListColor
 import com.prostovasei.simpletasks.designsystem.tokens.RadiusTokens
 import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
@@ -521,6 +522,24 @@ private fun BottomBar(model: WidgetModel, appWidgetId: Int) {
                 .clickable(actionStartActivity(openAppIntent(context)))
                 .semantics { contentDescription = openApp },
         ) {}
+        // Итерация 32: кнопка обновления слева от «+» — открывает окно проверки и загрузки новой версии поверх рабочего стола.
+        val update = context.getString(R.string.widget_update)
+        Box(
+            modifier = GlanceModifier
+                .size(SizeTokens.WIDGET_UPDATE.dp)
+                .background(WidgetColors.surface)
+                .cornerRadius(RadiusTokens.MD.dp)
+                .clickable(actionStartActivity(updateIntent(context))),
+            contentAlignment = Alignment.Center,
+        ) {
+            Image(
+                ImageProvider(R.drawable.ic_widget_update),
+                contentDescription = update,
+                colorFilter = ColorFilter.tint(WidgetColors.textSecondary),
+                modifier = GlanceModifier.size(SizeTokens.WIDGET_UPDATE_ICON.dp),
+            )
+        }
+        Spacer(GlanceModifier.width(SizeTokens.WIDGET_UPDATE_GAP.dp))
         Box(
             modifier = GlanceModifier
                 .size(SizeTokens.WIDGET_ADD.dp)
@@ -582,6 +601,9 @@ fun quickAddIntent(context: Context, filter: WidgetFilter): Intent = Intent(cont
     .putExtra(MainActivity.EXTRA_QUICK_ADD_TODAY, filter == WidgetFilter.All)
     .putExtra(MainActivity.EXTRA_QUICK_ADD_PROJECT, (filter as? WidgetFilter.ProjectList)?.projectId)
     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+
+/** Окно обновления поверх рабочего стола (кнопка в нижней строке виджета). */
+fun updateIntent(context: Context): Intent = Intent(context, UpdateActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
 fun pickerIntent(context: Context, appWidgetId: Int): Intent = Intent(context, WidgetConfigActivity::class.java)
     .setData("simpletasks://widget/$appWidgetId".toUri())

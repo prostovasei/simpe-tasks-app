@@ -2,8 +2,11 @@ package com.prostovasei.simpletasks.ui.feature.task
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.PaddingValues
@@ -46,6 +49,7 @@ import com.prostovasei.simpletasks.designsystem.theme.AppTheme
  * Выбор внутри окна меняет только черновик; задача меняется по [onDone]. Без [onDone] — одна кнопка [dismissLabel]
  * (подсказка «Сначала выберите день»).
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SheetDialog(
     title: String,
@@ -54,7 +58,11 @@ fun SheetDialog(
     onDone: (() -> Unit)?,
     subtitle: String? = null,
     dismissLabel: Int = R.string.action_cancel,
+    doneLabel: Int = R.string.sheet_done,
     edge: Dp = AppTheme.spacing.lg,
+    // Кнопка «Отмена» по умолчанию — то же, что «Назад» и нажатие мимо; окно обновления разводит их (загрузку не обрывать случайно).
+    onCancel: () -> Unit = onDismiss,
+    icon: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val colors = AppTheme.colors
@@ -74,6 +82,7 @@ fun SheetDialog(
                 .testTag(tag),
         ) {
             Column(Modifier.padding(start = spacing.lg, end = spacing.lg, top = spacing.lg, bottom = spacing.xs)) {
+                icon?.let { Box(Modifier.padding(bottom = spacing.sm)) { it() } }
                 Text(title, color = colors.textPrimary, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                 subtitle?.let { Text(it, color = colors.textSecondary, style = MaterialTheme.typography.bodyMedium) }
             }
@@ -86,12 +95,15 @@ fun SheetDialog(
                 content = content,
             )
             HorizontalDivider(color = colors.divider)
-            Row(
+            // Две кнопки в ряд; если слово не помещается (крупный шрифт на маленьком экране) — вторая уходит на строку ниже,
+            // а не рвёт слово посередине.
+            FlowRow(
                 Modifier.fillMaxWidth().padding(spacing.md),
                 horizontalArrangement = Arrangement.spacedBy(spacing.sm),
+                verticalArrangement = Arrangement.spacedBy(spacing.sm),
             ) {
                 OutlinedButton(
-                    onClick = onDismiss,
+                    onClick = onCancel,
                     shape = shape,
                     border = BorderStroke(sizes.hairline, colors.divider),
                     contentPadding = buttonPadding,
@@ -107,7 +119,7 @@ fun SheetDialog(
                         contentPadding = buttonPadding,
                         modifier = Modifier.weight(1f).heightIn(min = sizes.toolButton).testTag("$tag:$TAG_DIALOG_DONE"),
                     ) {
-                        Text(stringResource(R.string.sheet_done), fontWeight = FontWeight.Bold)
+                        Text(stringResource(doneLabel), fontWeight = FontWeight.Bold)
                     }
                 }
             }

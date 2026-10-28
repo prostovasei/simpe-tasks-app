@@ -9,6 +9,8 @@ import android.os.Build
 import android.provider.Settings
 import com.prostovasei.simpletasks.BuildConfig
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
@@ -33,14 +35,14 @@ class GitHubAppUpdater(private val context: Context, private val io: CoroutineDi
         }
     }
 
-    override suspend fun install(update: AvailableUpdate, onProgress: (Int) -> Unit): InstallStart {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !context.packageManager.canRequestPackageInstalls()) {
-            return InstallStart.NeedsPermission
-        }
-        val apk = withContext(io) { download(update.apkUrl, onProgress) }
-        withContext(io) { commit(apk) }
-        return InstallStart.Started
+    override suspend fun download(update: AvailableUpdate, onProgress: (Int) -> Unit): File? {
+        if (!canInstall()) return null
+        return withContext(io) { download(update.apkUrl, onProgress) }
     }
+
+    override suspend fun commit(apk: File) = withContext(io) { commitSession(apk) }
+
+    override fun canInstall(): Boolean = Build.VERSION.SDK_INT < Build.VERSION_CODES.O || context.packageManager.canRequestPackageInstalls()
 
     override fun openInstallPermissionSettings() {
         val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:${context.packageName}"))
@@ -48,7 +50,8 @@ class GitHubAppUpdater(private val context: Context, private val io: CoroutineDi
         context.startActivity(intent)
     }
 
-    private fun download(url: String, onProgress: (Int) -> Unit): File {
+    /** Скачивание в `cacheDir`; отмена корутины ([ensureActive] на каждом куске) обрывает его и удаляет недокачанный файл. */
+    private fun CoroutineScope.download(url: String, onProgress: (Int) -> Unit): File {
         val file = File(context.cacheDir, "update.apk")
         val connection = open(url)
         try {
@@ -59,6 +62,7 @@ class GitHubAppUpdater(private val context: Context, private val io: CoroutineDi
                     val buffer = ByteArray(BUFFER)
                     var done = 0L
                     while (true) {
+                        ensureActive()
                         val read = input.read(buffer)
                         if (read < 0) break
                         output.write(buffer, 0, read)
@@ -67,6 +71,9 @@ class GitHubAppUpdater(private val context: Context, private val io: CoroutineDi
                     }
                 }
             }
+        } catch (e: Throwable) {
+            file.delete()
+            throw e
         } finally {
             connection.disconnect()
         }
@@ -74,7 +81,7 @@ class GitHubAppUpdater(private val context: Context, private val io: CoroutineDi
     }
 
     /** Передать файл установщику; окно «Обновить?» покажет [UpdateInstallReceiver]. */
-    private fun commit(apk: File) {
+    private fun commitSession(apk: File) {
         val installer = context.packageManager.packageInstaller
         val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL).apply {
             setAppPackageName(context.packageName)

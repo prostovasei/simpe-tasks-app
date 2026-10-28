@@ -82,6 +82,9 @@ class SettingsViewModelTest {
             onProgress(50)
             return result
         }
+        override suspend fun download(update: AvailableUpdate, onProgress: (Int) -> Unit): java.io.File? = error("не используется в «Настройках»")
+        override suspend fun commit(apk: java.io.File) = error("не используется в «Настройках»")
+        override fun canInstall(): Boolean = true
         override fun openInstallPermissionSettings() {
             permissionScreens++
         }

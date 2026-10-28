@@ -71,7 +71,8 @@ class WidgetUiTest {
         provideComposable { WidgetContent(model, appWidgetId = 7) }
 
         // Нижняя строка (итерация 25): «Все», «Входящие», открыть приложение и «+»; даты и «⋯» нет.
-        listOf("Все", "Входящие", "Открыть приложение", "Новая задача").forEach { onNode(hasContentDescription(it)).assertExists() }
+        // Итерация 32: слева от «+» — кнопка обновления.
+        listOf("Все", "Входящие", "Открыть приложение", "Обновление приложения", "Новая задача").forEach { onNode(hasContentDescription(it)).assertExists() }
         onNode(hasTextEqualTo("пт, 16 окт")).assertDoesNotExist()
         onAllNodes(hasText("2")).assertCountEquals(0)
         // Подписи дней как в приложении: просроченные — по дням (итерация 27), «ЧТ, 15 окт» + «Вчера»,
