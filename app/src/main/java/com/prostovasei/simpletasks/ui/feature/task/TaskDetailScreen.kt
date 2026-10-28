@@ -1,5 +1,7 @@
 package com.prostovasei.simpletasks.ui.feature.task
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -8,7 +10,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
@@ -29,10 +34,14 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextDecoration
@@ -131,7 +140,7 @@ fun TaskDetailScreen(
         },
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            SheetCheckbox(done, Modifier.testTag(TAG_DETAIL_DONE)) { onIntent(TaskDetailIntent.ToggleCompleted) }
+            DoneCircle(done, Modifier.testTag(TAG_DETAIL_DONE)) { onIntent(TaskDetailIntent.ToggleCompleted) }
             CompactField(
                 value = task.title,
                 onValueChange = { onIntent(TaskDetailIntent.Title(it)) },
@@ -198,6 +207,30 @@ fun TaskDetailScreen(
             onConfirm = { onIntent(TaskDetailIntent.RenameItem(it)) },
             onDismiss = { onIntent(TaskDetailIntent.DismissRename) },
         )
+    }
+}
+
+/**
+ * Отметка «выполнено» у названия (0.31.2, решение PM): круглая и вплотную к левому краю — как описание под ней.
+ * Видимый кружок небольшой, зона нажатия шире него (поля вокруг входят в нажатие).
+ */
+@Composable
+private fun DoneCircle(checked: Boolean, modifier: Modifier = Modifier, onToggle: () -> Unit) {
+    val colors = AppTheme.colors
+    val sizes = AppTheme.sizes
+    val spacing = AppTheme.spacing
+    val description = stringResource(R.string.notification_complete)
+    Box(
+        modifier
+            .toggleable(value = checked, role = Role.Checkbox, onValueChange = { onToggle() })
+            .semantics { contentDescription = description }
+            .padding(end = spacing.xs, top = spacing.xs, bottom = spacing.xs)
+            .size(sizes.doneCircle)
+            .clip(CircleShape)
+            .then(if (checked) Modifier.background(colors.accent) else Modifier.border(sizes.checkboxStroke, colors.textSecondary, CircleShape)),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (checked) Icon(Icons.Default.Check, null, tint = colors.onAccent, modifier = Modifier.size(sizes.doneCheck))
     }
 }
 

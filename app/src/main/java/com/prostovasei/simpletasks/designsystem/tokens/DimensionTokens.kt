@@ -156,13 +156,16 @@ object SizeTokens {
     const val POPUP_EDGE = 12
     const val POPUP_GAP = 8
     const val POPUP_SWIPE = 56
-    const val POPUP_PULSE = 8
     const val POPUP_UNDO_LINE = 3
     const val SHEET_REVEAL_BLUR = 8
     const val WIDGET_PROGRESS = 4
 
     /** Квадратная плитка дня в шторке (итерация 22): «чт / 22 / окт» и время. */
     const val DAY_TILE = 72
+
+    /** Круглая отметка «выполнено» у названия задачи (0.31.2) и галочка в ней. */
+    const val DONE_CIRCLE = 22
+    const val DONE_CHECK = 14
 
     /** Окна шторки задачи (итерация 31): наибольшая ширина (планшет, телефон боком) и высота строки варианта. */
     const val DIALOG_MAX_WIDTH = 420

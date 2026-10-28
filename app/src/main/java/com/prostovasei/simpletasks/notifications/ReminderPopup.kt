@@ -8,7 +8,6 @@ import android.os.Handler
 import android.os.Looper
 import android.os.PowerManager
 import android.provider.Settings
-import android.view.Choreographer
 import android.view.Gravity
 import android.view.WindowManager
 import android.widget.FrameLayout
@@ -49,13 +48,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.ComposeView
@@ -98,7 +93,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.math.floor
 import kotlin.math.roundToInt
 
 /*
@@ -271,23 +265,10 @@ private class Overlay(private val context: Context, private val content: @Compos
         manager.addView(view, params)
         PopupTrace.add(context, "окно добавлено")
         // Пульс процесса: идёт — приложение живо (застряли только кадры); молчит — Samsung его заморозил.
-        // Тики (0.31.1) — сигналы экрана «пора рисовать», которые приложение просит каждый кадр: тики идут, а кадров
-        // нет — окно не перерисовывается; тиков нет — телефон не даёт их приложению.
-        Choreographer.getInstance().postFrameCallback(tick)
-        repeat(TRACE_PULSES) { i ->
-            main.postDelayed({ PopupTrace.add(context, "пульс ${i + 1}: кадров $draws, тиков $ticks") }, TRACE_PULSE_MS * (i + 1))
-        }
-    }
-
-    private var ticks = 0
-    private val tick = object : Choreographer.FrameCallback {
-        override fun doFrame(frameTimeNanos: Long) {
-            if (++ticks < TRACE_TICKS) Choreographer.getInstance().postFrameCallback(this)
-        }
+        repeat(TRACE_PULSES) { i -> main.postDelayed({ PopupTrace.add(context, "пульс ${i + 1}: кадров $draws") }, TRACE_PULSE_MS * (i + 1)) }
     }
 
     fun detach() {
-        Choreographer.getInstance().removeFrameCallback(tick)
         main.removeCallbacksAndMessages(null)
         runCatching { manager.removeView(view) }
         owner.stop()
@@ -297,9 +278,6 @@ private class Overlay(private val context: Context, private val content: @Compos
 private const val TRACE_DRAWS = 5
 private const val TRACE_PULSES = 6
 private const val TRACE_PULSE_MS = 500L
-
-/** Тики считаются примерно 3 с (при 60–120 Гц), дальше не просим — не тратить батарею. */
-private const val TRACE_TICKS = 360
 
 private class OverlayOwner : LifecycleOwner, SavedStateRegistryOwner {
     private val registry = LifecycleRegistry(this)
@@ -377,7 +355,6 @@ private fun Strip(strip: PopupStrip, onDone: (String) -> Unit, onTomorrow: (Stri
     val context = LocalContext.current
     val animate = remember { animationsEnabled(context) }
     val offset = remember { Animatable(0f) }
-    val pulse = remember { Animatable(0f) }
     val dust = remember { Animatable(0f) }
     val flip = remember { Animatable(0f) }
     val drop = remember { Animatable(0f) }
@@ -386,19 +363,13 @@ private fun Strip(strip: PopupStrip, onDone: (String) -> Unit, onTomorrow: (Stri
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
     val threshold = with(density) { SizeTokens.POPUP_SWIPE.dp.toPx() }
-    val spread = with(density) { SizeTokens.POPUP_PULSE.dp.toPx() }
     val particleSize = with(density) { AppTheme.sizes.dustParticle.toPx() }
     val particles = remember(strip.taskId) { dustParticles(strip.taskId.hashCode(), lift = DUST_LIFT) }
     val dustColors = listOf(colors.accent, colors.accentSoft, colors.accent.copy(alpha = DUST_FADED))
 
     // 0.31.1 (журнал PM): полоска сразу на месте, без выезда — окну поверх чужого приложения телефон может не давать
-    // кадров до касания, и выезд застревал на полпути. Кольцо «Пульс» — украшение: нет кадров — его просто не видно.
-    LaunchedEffect(Unit) {
-        PopupTrace.add(context, "полоска на месте сразу; кольцо: старт (анимации ${if (animate) "вкл" else "выкл"})")
-        if (!animate) return@LaunchedEffect
-        pulse.animateTo(PULSES, tween(PULSE_MS, easing = LinearEasing))
-        PopupTrace.add(context, "кольцо доиграло")
-    }
+    // кадров до касания, и выезд застревал на полпути. 0.31.2: кольцо «Пульс» убрано — оно играло с опозданием.
+    LaunchedEffect(Unit) { PopupTrace.add(context, "полоска на месте сразу (анимации ${if (animate) "вкл" else "выкл"})") }
 
     fun leave(action: (String) -> Unit, motion: suspend () -> Unit) {
         if (leaving) return
@@ -441,7 +412,6 @@ private fun Strip(strip: PopupStrip, onDone: (String) -> Unit, onTomorrow: (Stri
                 rotationX = if (flip.value < HALF) flip.value / HALF * QUARTER_TURN else (flip.value / HALF - 2f) * QUARTER_TURN
                 cameraDistance = CAMERA_DISTANCE * density.density
             }
-            .drawBehind { pulseRing(pulse.value, spread, colors.accent) }
             .dust({ dust.value }, particles, particleSize, dustColors)
             .clip(CircleShape)
             .background(colors.accent)
@@ -555,20 +525,6 @@ private fun UndoStrip(strip: PopupStrip, onUndo: (String) -> Unit, onExpire: (St
     }
 }
 
-/** Кольцо «Пульса»: [phase] от 0 до [PULSES], каждое кольцо расходится на [spread] и тает. */
-private fun DrawScope.pulseRing(phase: Float, spread: Float, color: Color) {
-    if (phase <= 0f || phase >= PULSES) return
-    val t = phase - floor(phase)
-    val grow = t * spread
-    drawRoundRect(
-        color = color,
-        topLeft = Offset(-grow, -grow),
-        size = Size(size.width + grow * 2, size.height + grow * 2),
-        cornerRadius = CornerRadius(size.height / 2 + grow),
-        alpha = RING_ALPHA * (1f - t),
-    )
-}
-
 /** Анимации выключены в настройках телефона («Масштаб анимации» — откл.). */
 private fun animationsEnabled(context: Context): Boolean =
     Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) > 0f
@@ -579,9 +535,6 @@ private const val UNDO_MS = 1500
 private const val SWIPE_OUT_MS = 180
 private const val SWIPE_FADE = 0.7f
 private const val UNDO_LINE_ALPHA = 0.6f
-private const val PULSE_MS = 1100
-private const val PULSES = 2f
-private const val RING_ALPHA = 0.55f
 private const val STRIP_DUST_MS = 600
 private const val FLIP_OUT_MS = 200
 private const val FLIP_IN_MS = 220

@@ -75,4 +75,6 @@ data class AppSizes(
     val dayTile: Dp = SizeTokens.DAY_TILE.dp,
     val dialogMaxWidth: Dp = SizeTokens.DIALOG_MAX_WIDTH.dp,
     val dialogRow: Dp = SizeTokens.DIALOG_ROW.dp,
+    val doneCircle: Dp = SizeTokens.DONE_CIRCLE.dp,
+    val doneCheck: Dp = SizeTokens.DONE_CHECK.dp,
 )
