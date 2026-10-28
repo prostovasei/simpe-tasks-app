@@ -24,7 +24,7 @@ import com.prostovasei.simpletasks.domain.model.ReminderMark
 
 /**
  * Колокольчик напоминаний (итерация 27, решение PM): без цифр. В момент срока — просто колокольчик,
- * заранее — со стрелкой назад справа вверху (0.27.1, было — точка).
+ * заранее — со стрелкой назад справа вверху (0.27.1, было — точка), несколько — стрелка и точка справа внизу (итерация 33).
  *
  * Рисуется двумя белыми масками — колокольчик и стрелка — и каждая красится своим цветом. Так один рисунок работает
  * и в приложении, и в виджете (там цвет подставляет система под светлую или тёмную тему). Вокруг стрелки колокольчик
@@ -63,7 +63,13 @@ object ReminderIconMasks {
         // И всё внутри загиба — без обрывка колокольчика между стрелкой и хвостом.
         bellCanvas.drawRect(HOOK_LEFT * scale, HOOK_TOP * scale, HOOK_RIGHT * scale, HOOK_BOTTOM * scale, Paint().apply { xfermode = clear })
         val early = bitmap()
-        Canvas(early).drawPath(arrow, stroke(ARROW_STROKE))
+        val earlyCanvas = Canvas(early)
+        earlyCanvas.drawPath(arrow, stroke(ARROW_STROKE))
+        if (mark == ReminderMark.MULTI) {
+            // Итерация 33 (решение PM, вариант «Г»): несколько напоминаний — точка справа внизу, вокруг неё колокольчик вырезан.
+            bellCanvas.drawCircle(DOT_X * scale, DOT_Y * scale, DOT_CUT * scale, Paint(Paint.ANTI_ALIAS_FLAG).apply { xfermode = clear })
+            earlyCanvas.drawCircle(DOT_X * scale, DOT_Y * scale, DOT_RADIUS * scale, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = WHITE })
+        }
         return Masks(bell, early)
     }
 
@@ -71,6 +77,12 @@ object ReminderIconMasks {
 
     /** Стрелка назад справа вверху: уголок влево и хвост, загнутый вниз (как «отменить»). Сетка 24×24. */
     private val ARROW_PATH: Path = PathParser.createPathFromPathData("M15.4,2.4L13.2,4.6L15.4,6.8 M13.6,4.6H18.8a2.9,2.9 0 0 1 0,5.8H17.6")
+
+    /** Точка «несколько»: центр, радиус и вырез вокруг неё. Сетка 24×24. */
+    private const val DOT_X = 19.2f
+    private const val DOT_Y = 19.2f
+    private const val DOT_RADIUS = 3.1f
+    private const val DOT_CUT = 5.0f
 
     private const val VIEWPORT = 24f
     private const val BELL_STROKE = 1.9f

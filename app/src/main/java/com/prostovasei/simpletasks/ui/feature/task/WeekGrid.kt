@@ -109,6 +109,10 @@ fun WeekGrid(
     onInteract: () -> Unit,
     modifier: Modifier = Modifier,
     visibleDays: Int = WeekGridMath.VISIBLE_DAYS,
+    /** Сколько часов поместить в высоту сетки сразу (итерация 33: 10:00–24:00); 0 — час фиксированной высоты. */
+    fitHours: Int = 0,
+    /** С какой минуты открыть сетку (верх окна); null — как раньше, около выбранного времени или «сейчас». */
+    startMinute: Int? = null,
 ) {
     val colors = AppTheme.colors
     val sizes = AppTheme.sizes
@@ -123,7 +127,9 @@ fun WeekGrid(
     BoxWithConstraints(modifier.background(colors.surface)) {
         val dayWidth = (maxWidth - sizes.weekGutter) / visibleDays
         val dayPx = with(density) { dayWidth.toPx() }
-        val hourPx = with(density) { sizes.weekHour.toPx() }
+        // Час подгоняется под высоту окна, но не меньше [AppSizes.weekHourMin]: на низком экране остальное — прокруткой.
+        val hourHeight = if (fitHours > 0) ((maxHeight - sizes.weekHeader - sizes.hairline) / fitHours).coerceAtLeast(sizes.weekHourMin) else sizes.weekHour
+        val hourPx = with(density) { hourHeight.toPx() }
         val gapPx = with(density) { sizes.cardGap.toPx() }
         val visible = (first - 1)..(first + visibleDays)
         val limit = WeekGridMath.MAX_DAYS_AWAY.toFloat()
@@ -167,15 +173,19 @@ fun WeekGrid(
             val vertical = rememberScrollState()
             LaunchedEffect(Unit) {
                 withFrameNanos { }
-                val target = selectedMinute ?: if (selectedDate == null || selectedDate == today) nowMinute else MORNING_MINUTE
-                vertical.scrollTo(((target / MINUTES_PER_HOUR - 1f) * hourPx).roundToInt().coerceAtLeast(0))
+                if (startMinute != null) {
+                    vertical.scrollTo((startMinute / MINUTES_PER_HOUR * hourPx).roundToInt().coerceAtLeast(0))
+                } else {
+                    val target = selectedMinute ?: if (selectedDate == null || selectedDate == today) nowMinute else MORNING_MINUTE
+                    vertical.scrollTo(((target / MINUTES_PER_HOUR - 1f) * hourPx).roundToInt().coerceAtLeast(0))
+                }
             }
             Row(Modifier.weight(1f).fillMaxWidth().verticalScroll(vertical)) {
-                HourLabels(Modifier.width(sizes.weekGutter))
+                HourLabels(Modifier.width(sizes.weekGutter), hourHeight)
                 Box(
                     Modifier
                         .weight(1f)
-                        .height(sizes.weekHour * HOURS)
+                        .height(hourHeight * HOURS)
                         .clipToBounds()
                         .then(horizontal)
                         .pointerInput(dayPx, hourPx, today) {
@@ -211,7 +221,7 @@ fun WeekGrid(
                                 BusyBlock(
                                     slot = slot,
                                     width = dayWidth - sizes.cardGap,
-                                    height = sizes.weekHour * ((slot.endMinute - slot.startMinute) / MINUTES_PER_HOUR) - sizes.hairline,
+                                    height = hourHeight * ((slot.endMinute - slot.startMinute) / MINUTES_PER_HOUR) - sizes.hairline,
                                     modifier = Modifier.offset {
                                         IntOffset(columnX(index) + (gapPx / 2).roundToInt(), (slot.startMinute / MINUTES_PER_HOUR * hourPx).roundToInt())
                                     },
@@ -276,10 +286,10 @@ private fun DayHeader(date: LocalDate, isToday: Boolean, isSelected: Boolean, wi
 
 /** Часы слева: подпись у верхней линии каждого часа. */
 @Composable
-private fun HourLabels(modifier: Modifier) {
+private fun HourLabels(modifier: Modifier, hourHeight: Dp) {
     Column(modifier) {
         repeat(HOURS) { hour ->
-            Box(Modifier.fillMaxWidth().height(AppTheme.sizes.weekHour)) {
+            Box(Modifier.fillMaxWidth().height(hourHeight)) {
                 Text(
                     HOUR_LABEL.format(hour),
                     style = MaterialTheme.typography.labelSmall,

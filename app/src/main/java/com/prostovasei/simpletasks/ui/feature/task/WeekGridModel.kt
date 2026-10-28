@@ -31,6 +31,15 @@ object WeekGridMath {
     const val VISIBLE_DAYS = 7
     const val TIMELINE_DAYS = 3
 
+    /** Окно даты открывается с 10:00 и сразу показывает 10:00–24:00 (итерация 33, решение PM). */
+    const val OPEN_MINUTE = 10 * 60
+    const val OPEN_HOURS = 14
+
+    /**
+     * С какой минуты открыть сетку: у задачи со временем — с её часа, у новой (без времени) — всегда с 10:00.
+     */
+    fun openMinute(selectedMinute: Int?): Int = selectedMinute?.let { it / 60 * 60 } ?: OPEN_MINUTE
+
     /** Насколько далеко можно уйти свайпом от сегодняшнего дня (в днях). */
     const val MAX_DAYS_AWAY = 730
 

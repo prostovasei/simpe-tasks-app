@@ -1,10 +1,10 @@
 package com.prostovasei.simpletasks.ui.navigation
 
-import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.performTouchInput
@@ -13,7 +13,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.prostovasei.simpletasks.TaskPopupActivity
 import com.prostovasei.simpletasks.domain.model.NewTask
 import com.prostovasei.simpletasks.ui.feature.task.TAG_QUICK_SCRIM
-import com.prostovasei.simpletasks.ui.feature.task.TAG_DAY_TILE
+import com.prostovasei.simpletasks.ui.feature.task.TAG_DATE_STRIP_TEXT
 import com.prostovasei.simpletasks.ui.feature.task.TAG_DETAIL_TITLE
 import com.prostovasei.simpletasks.ui.feature.task.TAG_QUICK_TITLE
 import com.prostovasei.simpletasks.widget.WidgetFilter
@@ -42,7 +42,9 @@ class LaunchFromWidgetTest {
     fun plusFromAllWidgetOpensQuickAddForToday() {
         ActivityScenario.launch<TaskPopupActivity>(quickAddIntent(context, WidgetFilter.All)).use {
             composeRule.waitUntil(LAUNCH_TIMEOUT_MS) { composeRule.onAllNodesWithTag(TAG_QUICK_TITLE).fetchSemanticsNodes().isNotEmpty() }
-            composeRule.onNodeWithTag("$TAG_DAY_TILE:${context.widgetEntryPoint().time().today()}").assertIsSelected()
+            // «+» в «Все» — задача на сегодня: в полоске дата, а не подсказка «Дата и время».
+            composeRule.onNodeWithTag(TAG_DATE_STRIP_TEXT, useUnmergedTree = true).assertExists()
+            composeRule.onNodeWithText("Дата и время").assertDoesNotExist()
         }
     }
 

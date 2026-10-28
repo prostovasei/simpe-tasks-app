@@ -52,11 +52,17 @@ object Reminders {
 
     /**
      * Значок напоминаний задачи (итерация 27, решение PM): колокольчик без цифр; со стрелкой назад (0.27.1) — если хоть одно
-     * напоминание раньше срока (у задачи на весь день — раньше дня срока). Без срока или без напоминаний — null.
+     * напоминание раньше срока (у задачи на весь день — раньше дня срока); со стрелкой и точкой (итерация 33) — если их несколько.
+     * Без срока или без напоминаний — null.
      */
     fun mark(due: TaskDue?, reminders: List<String>): ReminderMark? {
         if (due == null || reminders.isEmpty()) return null
-        return if (reminders.any(::isEarly)) ReminderMark.EARLY else ReminderMark.AT_DUE
+        return when {
+            // Итерация 33 (решение PM, вариант «Г»): несколько разных напоминаний — стрелка и точка справа внизу.
+            reminders.distinctBy { parseReminder(it) ?: it }.size > 1 -> ReminderMark.MULTI
+            reminders.any(::isEarly) -> ReminderMark.EARLY
+            else -> ReminderMark.AT_DUE
+        }
     }
 
     /** Напоминание раньше срока: отрицательное смещение («-PT30M», «-P0DT14H0M0S»). */
@@ -82,8 +88,11 @@ object Reminders {
     }
 }
 
-/** Значок напоминаний (итерация 27): колокольчик в момент срока или со стрелкой назад — напоминание заранее. */
-enum class ReminderMark { AT_DUE, EARLY }
+/**
+ * Значок напоминаний (итерация 27): колокольчик в момент срока или со стрелкой назад — напоминание заранее;
+ * [MULTI] (итерация 33) — настроено несколько напоминаний: стрелка и точка справа внизу.
+ */
+enum class ReminderMark { AT_DUE, EARLY, MULTI }
 
 /** Смещение напоминания задачи на весь день: «за [daysBefore] дн. в [minuteOfDay]». */
 data class AllDayReminder(val daysBefore: Int, val minuteOfDay: Int)

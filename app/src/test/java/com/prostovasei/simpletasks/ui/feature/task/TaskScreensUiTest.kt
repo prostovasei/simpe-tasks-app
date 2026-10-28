@@ -4,6 +4,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsNotFocused
@@ -69,6 +70,11 @@ class TaskScreensUiTest {
         composeRule.setContent { AppTheme(darkTheme = dark) { content() } }
     }
 
+    /** Нажатие на подпись в полоске даты: центр самой полоски может попасть на крестик «убрать дату». */
+    private fun openDateWindow() {
+        composeRule.onNodeWithTag(TAG_DATE_STRIP_TEXT, useUnmergedTree = true).performClick()
+    }
+
     private val quickState = QuickAddState(
         title = "Созвон с командой",
         projectId = "work",
@@ -85,14 +91,14 @@ class TaskScreensUiTest {
     fun quickAddShowsChosenFields() {
         show { QuickAddScreen(quickState, { intents += it }, {}, autoFocus = false) }
 
-        // В шторке — плитки дней (итерация 22): выбранный день зелёный, на нём время; сетки нет.
-        composeRule.onNodeWithTag("$TAG_DAY_TILE:${today.plusDays(1)}").assertIsSelected()
-        composeRule.onNodeWithTag("$TAG_DAY_TILE:$today").assertIsNotSelected()
-        composeRule.onNodeWithText("10:00").assertExists()
+        // В шторке — полоска даты (итерация 33): день и время одной строкой, повтор и уведомления справа; сетки нет.
+        composeRule.onNodeWithTag(TAG_DATE_STRIP_TEXT, useUnmergedTree = true).assertTextEquals("чт, 15 окт · 10:00")
         composeRule.onNodeWithTag(TAG_WEEK_GRID).assertDoesNotExist()
         composeRule.onNodeWithTag(TAG_TOOL_LIST).assertIsSelected()
         composeRule.onNodeWithTag(TAG_TOOL_PRIORITY).assertIsSelected()
-        composeRule.onNodeWithTag(TAG_TOOL_REPEAT).assertIsSelected()
+        composeRule.onNodeWithTag(TAG_STRIP_REPEAT).assertIsSelected()
+        composeRule.onNodeWithTag(TAG_TOOL_REPEAT).assertDoesNotExist()
+        composeRule.onNodeWithTag(TAG_TOOL_REMINDER).assertDoesNotExist()
         composeRule.onNodeWithTag(TAG_TOOL_CHECKLIST).assertIsSelected()
         composeRule.onNodeWithText("Повестка").assertExists()
     }
@@ -100,19 +106,19 @@ class TaskScreensUiTest {
     @Test
     fun quickAddWithoutDate() {
         show { QuickAddScreen(QuickAddState(projectId = "inbox", projects = projects, today = today, zone = zone), { intents += it }, {}, autoFocus = false) }
-        // По умолчанию ни один день не выбран, времени на плитках нет; подсказки — примеры.
-        (0L until 3L).forEach { composeRule.onNodeWithTag("$TAG_DAY_TILE:${today.plusDays(it)}").assertIsNotSelected() }
-        composeRule.onNodeWithTag(TAG_DAY_TIME, useUnmergedTree = true).assertDoesNotExist()
+        // По умолчанию даты нет: в полоске бледная подсказка и нет крестика; подсказки полей — примеры.
+        composeRule.onNodeWithTag(TAG_DATE_STRIP_TEXT, useUnmergedTree = true).assertTextEquals("Дата и время")
+        composeRule.onNodeWithTag(TAG_CLEAR_DATE).assertDoesNotExist()
         composeRule.onNodeWithText("Купить билеты на концерт").assertExists()
         composeRule.onNodeWithTag(TAG_TOOL_LIST).assertIsNotSelected()
         composeRule.onNodeWithTag(TAG_QUICK_SAVE).assertIsNotEnabled()
 
         // Без даты напоминание и повтор не выбрать: кнопки нажимаются, окно подсказывает выбрать день.
-        composeRule.onNodeWithTag(TAG_TOOL_REMINDER).performClick()
+        composeRule.onNodeWithTag(TAG_STRIP_REMINDER).performClick()
         composeRule.onNodeWithText("Сначала выберите день").assertExists()
         composeRule.onNodeWithText("Понятно").performClick()
         composeRule.onNodeWithTag(TAG_REMINDERS_DIALOG).assertDoesNotExist()
-        composeRule.onNodeWithTag(TAG_TOOL_REPEAT).performClick()
+        composeRule.onNodeWithTag(TAG_STRIP_REPEAT).performClick()
         composeRule.onNodeWithText("Повтор начинается от даты задачи — сначала выберите дату.").assertExists()
     }
 
@@ -127,63 +133,110 @@ class TaskScreensUiTest {
     }
 
     @Test
-    fun stripDayOpensTimelineCenteredOnIt() {
+    fun stripOpensWindowAndBlockDayMovesGrid() {
         show { QuickAddScreen(quickState.copy(due = TaskDue.AllDay(today)), { intents += it }, {}, autoFocus = false) }
-        composeRule.onNodeWithTag("$TAG_DAY_TILE:$today").assertIsSelected()
+        composeRule.onNodeWithTag(TAG_DATE_STRIP_TEXT, useUnmergedTree = true).assertTextEquals("ср, 14 окт")
 
-        // Нажали на «послезавтра» — таймлайн на 3 дня: завтра, послезавтра (в центре), день после.
-        composeRule.onNodeWithTag("$TAG_DAY_TILE:${today.plusDays(2)}").performClick()
+        // Нажали на полоску — окно даты на весь экран: сетка, блок «2 недели», повтор и уведомления внизу.
+        openDateWindow()
         composeRule.onNodeWithTag(TAG_WEEK_GRID).assertExists()
-        composeRule.onNodeWithTag(TAG_TOOL_REPEAT).assertDoesNotExist()
+        composeRule.onNodeWithTag(TAG_STRIP_REPEAT).assertDoesNotExist()
+        composeRule.onNodeWithTag(TAG_TOOL_REPEAT).assertExists()
+        composeRule.onNodeWithTag(TAG_TOOL_REMINDER).assertExists()
+        composeRule.onNodeWithTag(TAG_DATE_RANGE).assertTextEquals("12 окт – 25 окт")
+
+        // День в блоке — выбирается сразу, сетка переезжает к нему (послезавтра в центре: завтра, послезавтра, день после).
+        composeRule.onNodeWithTag("$TAG_DATE_CELL:${today.plusDays(2)}").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("$TAG_GRID_DAY:${today.plusDays(1)}").assertExists()
         composeRule.onNodeWithTag("$TAG_GRID_DAY:${today.plusDays(2)}").performClick()
-        // Точка в начале первой колонки (завтра), 2:00 по высоте часа (сетка прокручена к полуночи — «сейчас» в состоянии 0:00).
-        val hour = 44f
-        composeRule.onNodeWithTag(TAG_WEEK_GRID).performTouchInput {
-            val dp = density
-            click(Offset(5f * dp, (2 * hour + 2f) * dp))
-        }
         assertEquals(
-            listOf<Any>(QuickAddIntent.Grid(GridAction.DayTap(today.plusDays(2))), QuickAddIntent.Grid(GridAction.SlotTap(today.plusDays(1), 2 * 60))),
+            listOf<Any>(QuickAddIntent.Grid(GridAction.PickDay(today.plusDays(2))), QuickAddIntent.Grid(GridAction.DayTap(today.plusDays(2)))),
             intents.filterNot { it is QuickAddIntent.Grid && it.action is GridAction.FirstDay },
         )
 
         // Галочка — снова шторка, занятость — с сегодняшнего дня.
         composeRule.onNodeWithTag(TAG_TIMELINE_DONE).performClick()
         composeRule.onNodeWithTag(TAG_WEEK_GRID).assertDoesNotExist()
-        composeRule.onNodeWithTag(TAG_TOOL_REPEAT).assertExists()
+        composeRule.onNodeWithTag(TAG_STRIP_REPEAT).assertExists()
         assertEquals(QuickAddIntent.Grid(GridAction.FirstDay(today)), intents.last())
     }
 
     @Test
-    fun calendarOpensMonthThenTimeline() {
-        show { QuickAddScreen(quickState.copy(due = null), { intents += it }, {}, autoFocus = false) }
-        // Значок календаря — месяц; «Готово» — таймлайн с выбранным днём.
-        composeRule.onNodeWithTag(TAG_DAY_CALENDAR).performClick()
-        composeRule.onNodeWithTag(TAG_DATE_DIALOG_OK).performClick()
-        composeRule.onNodeWithTag(TAG_WEEK_GRID).assertExists()
-        composeRule.onNodeWithTag("$TAG_GRID_DAY:$today").assertExists()
+    fun blockArrowsPageByTwoWeeksAndStayInTheFuture() {
+        show { QuickAddScreen(quickState.copy(due = TaskDue.AllDay(today)), { intents += it }, {}, autoFocus = false) }
+        openDateWindow()
+        // На первой странице назад не листать — в прошлое нельзя.
+        composeRule.onNodeWithTag(TAG_DATE_PREV).assertIsNotEnabled()
+        composeRule.onNodeWithTag(TAG_DATE_NEXT).performClick()
+        composeRule.onNodeWithTag(TAG_DATE_RANGE).assertTextEquals("26 окт – 8 ноя")
+        composeRule.onNodeWithTag(TAG_DATE_PREV).performClick()
+        composeRule.onNodeWithTag(TAG_DATE_RANGE).assertTextEquals("12 окт – 25 окт")
+        // Прошедший день бледный и недоступен.
+        composeRule.onNodeWithTag("$TAG_DATE_CELL:${today.minusDays(1)}").assertIsNotEnabled()
+        composeRule.onNodeWithTag("$TAG_DATE_CELL:$today").assertIsEnabled()
     }
 
     @Test
-    fun farDateShowsAsTileAfterCalendar() {
+    fun calendarPicksDayAtOnceAndCloses() {
+        show { QuickAddScreen(quickState.copy(due = null), { intents += it }, {}, autoFocus = false) }
+        openDateWindow()
+        composeRule.onNodeWithTag(TAG_DATE_CALENDAR).performClick()
+        // Два месяца — октябрь и ноябрь; «Готово» нет, только «Закрыть».
+        composeRule.onNodeWithTag("$TAG_CALENDAR_MONTH:2026-10").assertExists()
+        composeRule.onNodeWithTag("$TAG_CALENDAR_MONTH:2026-11").assertExists()
+        composeRule.onNodeWithTag("$TAG_CALENDAR_DIALOG:$TAG_DIALOG_DONE").assertDoesNotExist()
+        // 20 ноября — вне блока «2 недели», поэтому такая ячейка одна, в календаре.
+        composeRule.onNodeWithTag("$TAG_DATE_CELL:${LocalDate.of(2026, 11, 20)}").performClick()
+        composeRule.onNodeWithTag(TAG_CALENDAR_DIALOG).assertDoesNotExist()
+        assertEquals(
+            listOf<Any>(QuickAddIntent.Grid(GridAction.PickDay(LocalDate.of(2026, 11, 20)))),
+            intents.filterNot { it is QuickAddIntent.Grid && it.action is GridAction.FirstDay },
+        )
+    }
+
+    @Test
+    fun calendarCloseKeepsDate() {
+        show { QuickAddScreen(quickState, { intents += it }, {}, autoFocus = false) }
+        openDateWindow()
+        composeRule.onNodeWithTag(TAG_DATE_CALENDAR).performClick()
+        composeRule.onNodeWithTag("$TAG_CALENDAR_DIALOG:$TAG_DIALOG_CANCEL").performClick()
+        composeRule.onNodeWithTag(TAG_CALENDAR_DIALOG).assertDoesNotExist()
+        assertTrue(intents.none { it is QuickAddIntent.Grid && it.action is GridAction.PickDay })
+    }
+
+    @Test
+    fun stripClearsDate() {
+        show { QuickAddScreen(quickState, { intents += it }, {}, autoFocus = false) }
+        composeRule.onNodeWithTag(TAG_CLEAR_DATE).performClick()
+        assertEquals(listOf<Any>(QuickAddIntent.Grid(GridAction.ClearDate)), intents.filterNot { it is QuickAddIntent.Grid && it.action is GridAction.FirstDay })
+    }
+
+    @Test
+    fun farDateShowsInStrip() {
         val far = today.plusDays(30)
         show { QuickAddScreen(quickState.copy(due = TaskDue.AtTime(far.atTime(9, 0).toInstant(zone))), { intents += it }, {}, autoFocus = false) }
-        composeRule.onNodeWithTag("$TAG_DAY_TILE:$far").assertIsSelected()
-        composeRule.onNodeWithText("09:00").assertExists()
+        composeRule.onNodeWithTag(TAG_DATE_STRIP_TEXT, useUnmergedTree = true).assertTextEquals("пт, 13 ноя · 09:00")
     }
 
     @Test
-    fun periodTimeIsStackedOnTile() {
+    fun periodTimeIsShownInStrip() {
         show { QuickAddScreen(quickState.copy(start = TaskDue.AtTime(Instant.parse("2026-10-15T10:00:00Z")), due = TaskDue.AtTime(Instant.parse("2026-10-15T11:30:00Z"))), { intents += it }, {}, autoFocus = false) }
-        // Период — начало над концом, без чёрточки.
-        composeRule.onNodeWithText("10:00").assertExists()
-        composeRule.onNodeWithText("11:30").assertExists()
+        composeRule.onNodeWithTag(TAG_DATE_STRIP_TEXT, useUnmergedTree = true).assertTextEquals("чт, 15 окт · 10:00–11:30")
+    }
+
+    @Test
+    fun windowRepeatOpensFromBottomRow() {
+        show { QuickAddScreen(quickState, { intents += it }, {}, autoFocus = false) }
+        openDateWindow()
+        composeRule.onNodeWithTag(TAG_TOOL_REPEAT).assertIsSelected().performClick()
+        composeRule.onNodeWithTag("$TAG_REPEAT_OPTION:CUSTOM").assertIsSelected()
     }
 
     @Test
     fun timelineButtons() {
         show { QuickAddScreen(quickState, { intents += it }, {}, autoFocus = false) }
-        composeRule.onNodeWithTag("$TAG_DAY_TILE:${today.plusDays(1)}").performClick()
+        openDateWindow()
         // Крестик на блоке — убрать время; стрелок и подписи сверху нет.
         composeRule.onNodeWithTag(TAG_GRID_CLEAR, useUnmergedTree = true).performClick()
         composeRule.onNodeWithTag(TAG_TIMELINE_NO_DATE).assertExists()
@@ -199,11 +252,11 @@ class TaskScreensUiTest {
     @Test
     fun intervalBlockResizeAndMove() {
         show { QuickAddScreen(quickState.copy(start = TaskDue.AtTime(Instant.parse("2026-10-15T10:00:00Z")), due = TaskDue.AtTime(Instant.parse("2026-10-15T11:30:00Z"))), { intents += it }, {}, autoFocus = false) }
-        // Таймлайн с завтрашним днём в центре: сегодня, завтра, послезавтра (колонка ≈ 125 dp).
-        composeRule.onNodeWithTag("$TAG_DAY_TILE:${today.plusDays(1)}").performClick()
+        // Окно с завтрашним днём в центре: сегодня, завтра, послезавтра (колонка ≈ 125 dp).
+        openDateWindow()
         composeRule.onNodeWithText("10:00\n11:30", useUnmergedTree = true).assertExists()
 
-        // Ручка: вниз на час (44dp) — +60 минут.
+        // Ручка: вниз на час (≈ 43 dp: час подогнан под высоту окна) — +60 минут.
         composeRule.onNodeWithTag(TAG_GRID_RESIZE, useUnmergedTree = true).performTouchInput {
             down(center)
             moveBy(Offset(0f, 10f * density))
@@ -286,7 +339,7 @@ class TaskScreensUiTest {
     @Test
     fun repeatToolOpensListWithCustomRule() {
         show { QuickAddScreen(quickState, { intents += it }, {}, autoFocus = false) }
-        composeRule.onNodeWithTag(TAG_TOOL_REPEAT).performClick()
+        composeRule.onNodeWithTag(TAG_STRIP_REPEAT).performClick()
         // Правило не из готовых — отмечено «Произвольно…» с описанием; конструктор открывается с ним же.
         composeRule.onNodeWithTag("$TAG_REPEAT_OPTION:CUSTOM").assertIsSelected()
         composeRule.onNodeWithText("Каждые 2 недели: вт, чт").assertExists()
@@ -408,9 +461,9 @@ class TaskScreensUiTest {
         show { TaskDetailScreen(detailState, { intents += it }, {}, {}) }
 
         composeRule.onNodeWithText("Подготовить отчёт").assertExists()
-        composeRule.onNodeWithTag("$TAG_DAY_TILE:$today").assertIsSelected()
-        composeRule.onNodeWithTag(TAG_TOOL_REPEAT).assertIsSelected()
-        composeRule.onNodeWithTag(TAG_TOOL_REMINDER).assertIsSelected()
+        composeRule.onNodeWithTag(TAG_DATE_STRIP_TEXT, useUnmergedTree = true).assertTextEquals("ср, 14 окт")
+        composeRule.onNodeWithTag(TAG_STRIP_REPEAT).assertIsSelected()
+        composeRule.onNodeWithTag(TAG_STRIP_REMINDER).assertIsSelected()
         composeRule.onNodeWithTag(TAG_TOOL_LIST).assertIsSelected()
         composeRule.onNodeWithTag(TAG_TOOL_CHECKLIST).assertIsSelected()
         composeRule.onNodeWithText("Собрать данные").assertExists()
@@ -422,7 +475,7 @@ class TaskScreensUiTest {
     fun detailReminderMenuTogglesOptions() {
         show { TaskDetailScreen(detailState, { intents += it }, {}, {}) }
 
-        composeRule.onNodeWithTag(TAG_TOOL_REMINDER).performClick()
+        composeRule.onNodeWithTag(TAG_STRIP_REMINDER).performClick()
         // Своё напоминание задачи — в «Созданных вручную», хотя истории ещё нет; рядом — когда сработает.
         composeRule.onNodeWithText("СОЗДАННЫЕ ВРУЧНУЮ").assertExists()
         composeRule.onNodeWithText("За 1 неделю в 10:00").assertExists()
@@ -443,7 +496,7 @@ class TaskScreensUiTest {
     @Test
     fun reminderCancelChangesNothing() {
         show { TaskDetailScreen(detailState, { intents += it }, {}, {}) }
-        composeRule.onNodeWithTag(TAG_TOOL_REMINDER).performClick()
+        composeRule.onNodeWithTag(TAG_STRIP_REMINDER).performClick()
         composeRule.onNodeWithText("За 1 день в 10:00").performClick()
         composeRule.onNodeWithTag(TAG_REMINDER_CUSTOM).performClick()
         composeRule.onNodeWithTag(TAG_CUSTOM_ADD).performClick()
@@ -465,7 +518,7 @@ class TaskScreensUiTest {
         val close = composeRule.onNodeWithTag(TAG_DETAIL_CLOSE).getBoundsInRoot()
         val gap = (close.left - delete.right).value
         assertTrue("щель корзина–галочка $gap dp", gap >= 7.5f)
-        assertTrue("щель между кнопками панели", (composeRule.onNodeWithTag(TAG_TOOL_REPEAT).getBoundsInRoot().left - list.right).value >= 7.5f)
+        assertTrue("щель между кнопками панели", (composeRule.onNodeWithTag(TAG_TOOL_PRIORITY).getBoundsInRoot().left - list.right).value >= 7.5f)
         assertTrue("корзина не наезжает на чек-лист", delete.left >= checklist.right)
         assertTrue("кнопки в пределах окна", close.right <= composeRule.onNodeWithTag(TAG_QUICK_CARD).getBoundsInRoot().right)
 
@@ -485,15 +538,11 @@ class TaskScreensUiTest {
     @Test
     fun clearBadgesResetOnlyTheirField() {
         show { TaskDetailScreen(detailState, { intents += it }, {}, {}) }
-        composeRule.onNodeWithTag(TAG_CLEAR_REMINDERS).performClick()
-        composeRule.onNodeWithTag(TAG_CLEAR_REPEAT).performClick()
         composeRule.onNodeWithTag(TAG_CLEAR_PRIORITY).performClick()
         composeRule.onNodeWithTag(TAG_CLEAR_LIST).performClick()
         composeRule.onNodeWithTag(TAG_CLEAR_DATE).performClick()
         assertEquals(
             listOf<Any>(
-                TaskDetailIntent.Edit(FieldEdit.SetReminders(emptyList())),
-                TaskDetailIntent.Edit(FieldEdit.Repeat(null)),
                 TaskDetailIntent.Edit(FieldEdit.SetPriority(Priority.NONE)),
                 TaskDetailIntent.Edit(FieldEdit.Project(projects.first { it.isInbox }.id)),
                 TaskDetailIntent.Grid(GridAction.ClearDate),
@@ -506,11 +555,12 @@ class TaskScreensUiTest {
     fun detailGridAndClose() {
         var closed = false
         show { TaskDetailScreen(detailState, { intents += it }, { closed = true }, {}) }
-        // Другой день, затем «Без времени» в таймлайне — только этот день, снова шторка.
-        composeRule.onNodeWithTag("$TAG_DAY_TILE:${today.plusDays(1)}").performClick()
+        // Другой день в блоке окна даты, затем «Без времени» — снова шторка.
+        openDateWindow()
+        composeRule.onNodeWithTag("$TAG_DATE_CELL:${today.plusDays(1)}").performClick()
         composeRule.onNodeWithTag(TAG_TIMELINE_NO_TIME).performClick()
         composeRule.onNodeWithTag(TAG_DETAIL_CLOSE).performClick()
-        assertEquals(listOf<Any>(TaskDetailIntent.Grid(GridAction.DayTap(today.plusDays(1)))), intents.filterNot { it is TaskDetailIntent.Grid && it.action is GridAction.FirstDay })
+        assertEquals(listOf<Any>(TaskDetailIntent.Grid(GridAction.PickDay(today.plusDays(1)))), intents.filterNot { it is TaskDetailIntent.Grid && it.action is GridAction.FirstDay })
         assertTrue(closed)
     }
 
@@ -527,7 +577,7 @@ class TaskScreensUiTest {
     @Test
     fun quickAddReminderMenu() {
         show { QuickAddScreen(quickState, { intents += it }, {}, autoFocus = false) }
-        composeRule.onNodeWithTag(TAG_TOOL_REMINDER).assertIsSelected().performClick()
+        composeRule.onNodeWithTag(TAG_STRIP_REMINDER).assertIsSelected().performClick()
         composeRule.onNodeWithTag("$TAG_REMINDER_OPTION:PT0S").assertIsOn()
         composeRule.onNodeWithTag("$TAG_REMINDER_OPTION:-PT30M").performClick()
         composeRule.onNodeWithTag("$TAG_REMINDERS_DIALOG:$TAG_DIALOG_DONE").performClick()
@@ -553,7 +603,7 @@ class TaskScreensUiTest {
     @Test
     fun reminderMenuOffersCustom() {
         show { TaskDetailScreen(detailState, { intents += it }, {}, {}) }
-        composeRule.onNodeWithTag(TAG_TOOL_REMINDER).performClick()
+        composeRule.onNodeWithTag(TAG_STRIP_REMINDER).performClick()
         composeRule.onNodeWithTag(TAG_REMINDER_CUSTOM).performClick()
         composeRule.onNodeWithTag(TAG_CUSTOM_DAYS).assertTextEquals("01")
         composeRule.onNodeWithTag(TAG_CUSTOM_ADD).performClick()
@@ -574,7 +624,7 @@ class TaskScreensUiTest {
         ReminderHistory.add(context, allDay = false, created = listOf("-PT2H", "-PT3H", "-PT4H", "-PT45M"))
         // У задачи назначено «за 2 часа» — оно выпало из тройки истории, но видно и отмечено.
         show { QuickAddScreen(quickState.copy(customReminders = listOf("-PT2H")), { intents += it }, {}, autoFocus = false) }
-        composeRule.onNodeWithTag(TAG_TOOL_REMINDER).performClick()
+        composeRule.onNodeWithTag(TAG_STRIP_REMINDER).performClick()
         listOf("-PT45M", "-PT4H", "-PT3H").forEach { composeRule.onNodeWithTag("$TAG_REMINDER_OPTION:$it").assertIsOff() }
         composeRule.onNodeWithTag("$TAG_REMINDER_OPTION:-PT2H").assertIsOn()
     }
@@ -617,7 +667,7 @@ class TaskScreensUiTest {
     @Test
     fun screenshotTimeline() {
         show { QuickAddScreen(quickState.copy(busy = busy, start = TaskDue.AtTime(Instant.parse("2026-10-15T10:00:00Z")), due = TaskDue.AtTime(Instant.parse("2026-10-15T11:30:00Z"))), {}, {}, autoFocus = false) }
-        composeRule.onNodeWithTag("$TAG_DAY_TILE:${today.plusDays(1)}").performClick()
+        openDateWindow()
         composeRule.onRoot().captureRoboImage("screenshots/quick_add_timeline_light.png")
     }
 
@@ -686,10 +736,29 @@ class TaskScreensUiTest {
     }
 
     @Test
-    fun screenshotDateDialog() {
+    fun screenshotCalendarDialog() {
         show { QuickAddScreen(quickState, {}, {}, autoFocus = false) }
-        composeRule.onNodeWithTag(TAG_DAY_CALENDAR).performClick()
-        composeRule.onNodeWithTag(TAG_DATE_DIALOG).captureRoboImage("screenshots/date_dialog_light.png")
+        openDateWindow()
+        composeRule.onNodeWithTag(TAG_DATE_CALENDAR).performClick()
+        composeRule.onNodeWithTag(TAG_CALENDAR_DIALOG).captureRoboImage("screenshots/calendar_dialog_light.png")
+    }
+
+    /** Маленький экран и крупный шрифт: окно даты — сетка, блок и нижняя строка помещаются. */
+    @Test
+    @Config(qualifiers = "w360dp-h640dp-xhdpi", fontScale = 1.3f)
+    fun screenshotWindowSmallLargeFont() {
+        show { QuickAddScreen(quickState.copy(busy = busy), {}, {}, autoFocus = false) }
+        openDateWindow()
+        composeRule.onNodeWithTag(TAG_TIMELINE_DONE).assertIsDisplayed()
+        composeRule.onNodeWithTag(TAG_DATE_CALENDAR).assertIsDisplayed()
+        composeRule.onRoot().captureRoboImage("screenshots/date_window_small_large_font.png")
+    }
+
+    /** Несколько уведомлений — колокольчик со стрелкой и точкой в полоске (вариант «Г»). */
+    @Test
+    fun screenshotStripMultipleReminders() {
+        show { QuickAddScreen(quickState.copy(customReminders = listOf("PT0S", "-PT30M")), {}, {}, autoFocus = false) }
+        composeRule.onRoot().captureRoboImage("screenshots/quick_add_strip_multi.png")
     }
 
     /** Маленький экран и крупный шрифт (ТЗ PM): длинный список прокручивается, «Отмена» и «Готово» видны. */

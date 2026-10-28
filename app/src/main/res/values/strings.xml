@@ -9,8 +9,6 @@
     <string name="search_hint">Поиск задач</string>
     <string name="search_clear">Очистить</string>
     <string name="clear_date">Убрать дату</string>
-    <string name="clear_reminders">Убрать напоминания</string>
-    <string name="clear_repeat">Убрать повтор</string>
     <string name="clear_priority">Убрать приоритет</string>
     <string name="clear_list">Вернуть во «Входящие»</string>
     <string name="search_start">Начните вводить — задачи появятся сразу</string>
@@ -201,7 +199,12 @@
     <string name="reminders_main">Основные</string>
     <string name="reminders_manual">Созданные вручную</string>
     <string name="dialog_understood">Понятно</string>
-    <string name="date_dialog_title">Дата</string>
+    <string name="date_strip_hint">Дата и время</string>
+    <string name="date_block_previous">Предыдущие 2 недели</string>
+    <string name="date_block_next">Следующие 2 недели</string>
+    <string name="date_block_calendar">Календарь</string>
+    <string name="calendar_title">Календарь</string>
+    <string name="calendar_subtitle">Нажмите на день — окно закроется</string>
     <string name="reminder_custom_days">Дней до срока</string>
     <string name="reminder_custom_hours">Часов</string>
     <string name="reminder_custom_minutes">Минут</string>
