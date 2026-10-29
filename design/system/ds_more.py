@@ -623,11 +623,78 @@ def danger_dialog(title, text, ok):
 
 
 
+# ---------------------------------------------------------------- итерация 40: массовое редактирование
+
+def sel_row(left, color, title, selected=False, done=False, ghost=False, rep=False, rem=None, top=True, bottom=True, list_color='var(--inbox-list)', list_icon='ic_list_inbox', sub=None):
+    """Строка шкалы в режиме выбора: кружок → зелёная галочка, плашка подсвечена; будущий повтор бледный и не выбирается."""
+    lines = left if isinstance(left, list) else [left]
+    wide = len(lines) > 1 or (lines and len(lines[0]) > 6)
+    h = 58 if sub else 46
+    tcol = 'var(--text-secondary)' if done or ghost else 'var(--text-primary)'
+    t = (f'<div style="width:{48 if wide else 38}px;text-align:right;font-size:{11 if wide else 12}px;line-height:{15 if wide else 16}px;font-weight:700;color:{tcol};display:flex;flex-direction:column;justify-content:center;flex-shrink:0">'
+         + ''.join(f'<span>{x}</span>' for x in lines) + '</div>')
+    if selected:
+        node = f'<span style="width:20px;height:20px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center">{mi("check", 14)}</span>'
+    else:
+        node = B.node(color, done, 20)
+    rail = (f'<div style="width:26px;display:flex;flex-direction:column;align-items:center;flex-shrink:0"><span style="width:1px;flex:1;background:{"var(--divider)" if top else "transparent"}"></span>'
+            f'{node}<span style="width:1px;flex:1;background:{"var(--divider)" if bottom else "transparent"}"></span></div>')
+    icons = (f'<span style="color:var(--text-secondary);margin-left:4px;display:flex">{svg("ic_tool_repeat", 18)}</span>' if rep else '') + (f'<span style="margin-left:4px;display:flex">{bell(18, rem)}</span>' if rem else '')
+    lsq = f'<span class="list-sq" style="background:{list_color};margin-left:8px">{svg(list_icon, 12)}</span>'
+    subh = f'<div style="font-size:12px;line-height:14px;font-weight:500;color:var(--text-secondary)">{sub}</div>' if sub else ''
+    bg = 'var(--selected)' if selected else 'var(--surface)'
+    ring = 'box-shadow:inset 0 0 0 2px var(--accent);' if selected else ''
+    plaque = (f'<div style="flex:1;min-width:0;margin:3px 0;border-radius:var(--radius-md);background:{bg};{ring}display:flex;align-items:center;padding:0 12px;opacity:{.5 if ghost else (.7 if done else 1)}">'
+              f'<div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;{"text-decoration:line-through;color:var(--text-secondary)" if done else ""}">{title}</div>{subh}</div>{icons}{lsq}</div>')
+    return f'<div style="display:flex;height:{h}px;padding-right:8px">{t}{rail}{plaque}</div>'
+
+
+def select_bar(count, all_label='Выбрать все'):
+    return (f'<div style="position:absolute;left:0;right:0;top:0;height:60px;background:var(--surface);border-bottom:1px solid var(--divider);display:flex;align-items:center;padding:8px 4px 0 4px;z-index:2">'
+            f'<span style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:var(--text-primary)">{mi("close", 24)}</span>'
+            f'<span style="flex:1;font-size:20px;line-height:28px;font-weight:700">Выбрано: {count}</span>'
+            f'<span style="padding:10px 12px;font-size:14px;line-height:20px;font-weight:700;color:var(--accent)">{all_label}</span></div>')
+
+
+ACTIONS = [('ic_node_check', 'Выполнить'), ('ic_popup_tomorrow', 'На завтра'), ('ic_widget_all', 'На другой день'), ('ic_list_inbox', 'В список'),
+           ('ic_tool_priority', 'Приоритет'), ('ic_snack_restore', 'Вернуть'), ('ic_tool_delete', 'Удалить')]
+
+
+def ribbon(actions=ACTIONS, dim=(), danger=('Удалить', 'Удалить навсегда')):
+    btn = lambda ic, t: (f'<span style="flex-shrink:0;min-width:76px;padding:0 8px;box-sizing:border-box;height:56px;border-radius:var(--radius-lg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;'
+                         f'color:{"var(--danger)" if t in danger else "var(--text-primary)"};opacity:{.35 if t in dim else 1}">{svg(ic, 24)}<span style="font-size:11px;line-height:14px;font-weight:700;white-space:nowrap">{t}</span></span>')
+    fade = '<span style="position:absolute;right:0;top:0;bottom:0;width:36px;background:linear-gradient(to right,transparent,var(--surface));border-radius:0 var(--radius-nav) var(--radius-nav) 0"></span>'
+    return (f'<div style="position:absolute;left:0;right:0;bottom:0;padding:12px"><div style="position:relative;height:64px;border-radius:var(--radius-nav);background:var(--surface);{SHADOW};overflow:hidden;'
+            f'display:flex;align-items:center;gap:2px;padding:0 6px">{"".join(btn(i, t) for i, t in actions)}{fade}</div></div>')
+
+
+def all_selected():
+    rows = (day_header('СР, 28 окт', 'Вчера', True).replace('padding:12px 0 4px 12px', 'padding:70px 0 4px 12px')
+            + sel_row('11:00', 'var(--inactive)', 'Отчёт за неделю', selected=True, top=False, bottom=False)
+            + day_header('ЧТ, 29 окт', 'Сегодня')
+            + sel_row('09:00', 'var(--ring-high)', 'Зарядка', done=True, top=False)
+            + sel_row('12:30', 'var(--ring-medium)', 'Созвон с командой', selected=True, rep=True, rem='at')
+            + sel_row('18:00', 'var(--ring-low)', 'Оплатить интернет', selected=True, rem='early', bottom=False)
+            + day_header('ПТ, 30 окт', 'Завтра')
+            + sel_row('10:00', 'var(--inactive)', 'Созвон с командой', ghost=True, rep=True, top=False, bottom=False)
+            + sel_row('15:00', 'var(--ring-low)', 'Купить билеты', top=False, bottom=False))
+    return frame(f'{select_bar(3)}<div>{rows}</div>{ribbon(dim=("Вернуть",))}', 680)
+
+
+
+def p_selection():
+    body = ('<div style="width:412px;display:flex;flex-direction:column;gap:12px"><div style="position:relative;height:64px">' + select_bar(3) + '</div>'
+            + '<div style="position:relative;height:88px">' + ribbon(dim=("Вернуть",)) + '</div>'
+            + '<div style="position:relative;height:88px">' + ribbon([("ic_snack_restore", "Восстановить"), ("ic_tool_delete", "Удалить навсегда")]) + '</div>'
+            + sel_row('12:30', 'var(--ring-medium)', 'Выбранная задача', selected=True, top=False) + sel_row('15:00', 'var(--ring-low)', 'Невыбранная задача', bottom=False) + '</div>')
+    return doc('Список и виджет', 380, 'Режим выбора: «Выбрано: N», лента действий, выбранная и невыбранная плашка', body)
+
+
 PREVIEWS = {
     'UpdateDialog': p_update_dialog, 'ListPriorityDialogs': p_list_priority_dialogs, 'CustomDialogs': p_custom_dialogs, 'AlertDialogs': p_alert_dialogs,
     'ChecklistRows': p_checklist, 'ChipsAndButtons': p_chips_fab, 'SettingsRow': p_switch_rows,
     'Headers': p_headers, 'EmptyTasks': p_empty, 'TaskRow': p_task_row, 'ListRows': p_list_rows, 'SearchField': p_search_field, 'BottomBar': p_bottom_bar,
-    'ReminderStrip': p_reminder_strip, 'ScreenTrash': lambda: screens(trash_screen, 730, 'Экран «Корзина»: удалённые задачи как в списке, «Восстановить все» и «Удалить все»'), 'TrashTask': lambda: doc('Окна', 730, 'Задача в корзине: только чтение, «⋮» — восстановить или удалить навсегда', f'<div class="row" style="align-items:flex-start">{readonly_task(True)}</div>'), 'DangerDialog': p_danger, 'OverdueHeader': p_overdue_header, 'UndoSnackbar': p_snackbar, 'RecentSearches': p_recent_searches, 'TaskDraft': p_draft, 'ReminderNotification': p_notification, 'Widget': p_widget_bar, 'WidgetBar': p_widget_bar_only,
+    'ReminderStrip': p_reminder_strip, 'SelectionMode': p_selection, 'ScreenSelection': lambda: screens(all_selected, 730, 'Экран «Все» в режиме выбора: сверху «Выбрано: N», снизу лента действий'), 'ScreenTrash': lambda: screens(trash_screen, 730, 'Экран «Корзина»: удалённые задачи как в списке, «Восстановить все» и «Удалить все»'), 'TrashTask': lambda: doc('Окна', 730, 'Задача в корзине: только чтение, «⋮» — восстановить или удалить навсегда', f'<div class="row" style="align-items:flex-start">{readonly_task(True)}</div>'), 'DangerDialog': p_danger, 'OverdueHeader': p_overdue_header, 'UndoSnackbar': p_snackbar, 'RecentSearches': p_recent_searches, 'TaskDraft': p_draft, 'ReminderNotification': p_notification, 'Widget': p_widget_bar, 'WidgetBar': p_widget_bar_only,
     'ScreenAll': lambda: screens(all_screen, 730, 'Экран «Все»: лента по дням со шкалой и нижней панелью'),
     'ScreenInbox': lambda: screens(inbox_screen, 730, 'Экран «Входящие»: плоский список, слева день и время'),
     'ScreenLists': lambda: screens(lists_screen, 730, 'Экран «Списки»'),
@@ -639,6 +706,8 @@ PREVIEWS = {
 }
 
 README_MORE = {
+    'SelectionMode': ('Режим выбора: верхняя строка «Выбрано: N», лента действий, выбранная плашка (0.40).', 'Включается долгим нажатием на плашку (будущий повтор выбрать нельзя), дальше нажатие на плашку или кружок отмечает и снимает. Сверху строка `surface` высотой `size-selection-bar` (56): «✕» (закрыть режим, как и «Назад»), «Выбрано: N» (`title-large` Bold), «Выбрать все» (`accent`). Внизу на месте панели вкладок лента: высота `size-nav-bar`, радиус `radius-nav`, тень; кнопки не уже `size-ribbon-button` (76) и высотой `size-ribbon-button-height` (56): значок 24 и подпись `label-small` Bold; ряд прокручивается пальцем, у правого края затухание. Действия: «Выполнить», «На завтра», «На другой день» (календарь), «В список», «Приоритет», «Вернуть», «Удалить» (`danger`); неподходящие бледные (35%). В корзине: «Восстановить» и «Удалить навсегда» (с подтверждением `DangerDialog`). Выбранная плашка: фон `selected`, рамка `accent` 2, в кружке зелёная галочка. После действия режим закрывается, внизу `UndoSnackbar` («Выполнено: 3 · Отмена» и т. п.). Источник: `designsystem/components/Selection.kt`, `ui/feature/bulk/SelectionFrame.kt`, `BulkActions.kt`.'),
+    'ScreenSelection': ('Экран «Все» в режиме выбора (0.40).', 'Строка «Выбрано: N» поверх верха экрана, лента действий на месте нижней панели («+» и вкладки на это время скрыты). Список прокручивается выше ленты. То же во «Входящих», списках, «Поиске», «Выполненных» и «Корзине»; в виджете режима нет.'),
     'ScreenTrash': ('Экран «Корзина» (0.39).', 'Сверху «назад» и название `title-large` Bold; под ним «ЗАДАЧ: N» (`label-medium` Bold, `text-secondary`), справа «Восстановить все» (`accent`) и «Удалить все» (`danger`). Ниже плашки как в обычном списке (слева срок, справа список) с мелкой подписью «удалена 28 окт» (`body-small`, `text-secondary`); строка выше обычной на `size-trash-row-extra` (14). Новые удалённые сверху. Нажатие открывает задачу только для чтения (`TrashTask`); кружок ничего не отмечает. Пусто: «Корзина пуста» и подсказка по центру. Вход — строка «Корзина» на экране «Списки» под «Выполненными»: значок корзины, название, число задач (при нуле числа нет). Источник: `ui/feature/trash/TrashScreen.kt`.'),
     'TrashTask': ('Задача в корзине: та же шторка, но только для чтения (0.39).', 'Над шторкой плашка `selected` «В корзине · удалена 28 окт» со значком корзины. Название, описание, срок, список, значки повтора и уведомлений, чек-лист и подзадачи показываются как есть, править нельзя: кнопок панели, крестиков у полей и галочки «Готово» нет. «⋮» справа от названия: «Восстановить» и «Удалить навсегда» (`danger`, после подтверждения `DangerDialog`). Затемнение и «Назад» закрывают. Восстановленная задача возвращается в прежний список (если его нет — во «Входящие») вместе с подзадачами и чек-листами, подсказка `UndoSnackbar` «Задача восстановлена · Отмена». Источник: `ui/feature/trash/TrashTaskScreen.kt`.'),
     'DangerDialog': ('Окно необратимого действия: красная кнопка (0.39).', 'Строится на `SheetDialog` с `danger = true`: вторая кнопка залита `danger` вместо `accent`. «Удалить навсегда?» у одной задачи из корзины и «Удалить все навсегда?» у всей корзины; первая кнопка «Отмена». «Восстановить» и «Восстановить все» подтверждения не просят, но дают подсказку «Отмена».'),

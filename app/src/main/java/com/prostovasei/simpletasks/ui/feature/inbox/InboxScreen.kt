@@ -1,5 +1,8 @@
 package com.prostovasei.simpletasks.ui.feature.inbox
 
+import com.prostovasei.simpletasks.ui.feature.bulk.rememberSelection
+import com.prostovasei.simpletasks.ui.feature.bulk.Selectable
+import com.prostovasei.simpletasks.ui.feature.bulk.SelectionFrame
 import com.prostovasei.simpletasks.designsystem.components.UndoSnackbarHost
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
@@ -41,7 +44,10 @@ fun InboxScreen(
         contentWindowInsets = WindowInsets(0),
         snackbarHost = { UndoSnackbarHost(snackbarHostState) },
     ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding)) {
+        // Итерация 40: долгое нажатие на плашку — режим выбора.
+        val selection = rememberSelection()
+        SelectionFrame(selection, state.tasks.filterNot { it.isGhost }.map { Selectable(it.id, it.isDone) }, Modifier.padding(padding)) {
+        Column(Modifier.fillMaxSize()) {
             ScreenTitle(stringResource(R.string.inbox_title))
             FlatTaskList(
                 tasks = state.tasks,
@@ -51,7 +57,9 @@ fun InboxScreen(
                 // Все задачи здесь из «Входящих» — квадратик списка лишний.
                 showList = false,
                 onOpenTask = onOpenTask,
+                selection = selection,
             )
+        }
         }
     }
 }

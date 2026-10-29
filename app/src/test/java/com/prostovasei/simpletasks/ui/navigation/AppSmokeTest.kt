@@ -43,6 +43,12 @@ import com.prostovasei.simpletasks.ui.feature.trash.TAG_TRASH_EMPTY
 import com.prostovasei.simpletasks.ui.feature.trash.TAG_TRASH_TASK_BANNER
 import com.prostovasei.simpletasks.ui.feature.trash.TAG_TRASH_TASK_MENU
 import com.prostovasei.simpletasks.ui.feature.trash.TAG_TRASH_TASK_RESTORE
+import com.prostovasei.simpletasks.designsystem.components.TAG_SELECTION_BAR
+import com.prostovasei.simpletasks.designsystem.components.TAG_SELECTION_COUNT
+import com.prostovasei.simpletasks.designsystem.components.TAG_ACTION_RIBBON
+import com.prostovasei.simpletasks.ui.feature.bulk.TAG_BULK_DELETE
+import androidx.compose.ui.test.longClick
+import androidx.compose.ui.test.swipeLeft
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -164,6 +170,35 @@ class AppSmokeTest {
         composeRule.onNodeWithText("Отмена").performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_OVERDUE_HEADER).fetchSemanticsNodes().isNotEmpty() }
         assertEquals(TaskDue.AllDay(past), runBlocking { entry.tasks().getTask(id) }?.due)
+    }
+
+    /** Итерация 40: долгое нажатие — выбор; вместо вкладок лента; «Удалить» убирает выбранные в корзину, «Отмена» возвращает. */
+    @Test
+    fun bulkDeleteFromSelectionAndUndo() {
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Всё сделано") }
+        listOf("Первая", "Вторая").forEach { title ->
+            composeRule.onNodeWithTag(TAG_ADD_TASK).performClick()
+            composeRule.onNodeWithTag(TAG_QUICK_TITLE).performTextReplacement(title)
+            composeRule.onNodeWithTag(TAG_QUICK_SAVE).performClick()
+            composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_QUICK_TITLE).fetchSemanticsNodes().isEmpty() }
+            composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists(title) }
+        }
+
+        composeRule.onNodeWithText("Первая").performTouchInput { longClick() }
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_SELECTION_BAR).fetchSemanticsNodes().isNotEmpty() }
+        composeRule.onNodeWithTag("tab:ALL").assertDoesNotExist()
+        composeRule.onNodeWithText("Вторая").performClick()
+        composeRule.onNodeWithTag(TAG_SELECTION_COUNT).assertTextEquals("Выбрано: 2")
+
+        composeRule.onNodeWithTag(TAG_ACTION_RIBBON).performTouchInput { swipeLeft() }
+        composeRule.onNodeWithTag(TAG_BULK_DELETE).performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Удалено: 2") }
+        composeRule.onNodeWithTag(TAG_SELECTION_BAR).assertDoesNotExist()
+        composeRule.onNodeWithTag("tab:ALL").assertExists()
+        composeRule.waitUntil(5_000) { !composeRule.onAllNodesWithTextExists("Первая") }
+
+        composeRule.onNodeWithText("Отмена").performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Первая") && composeRule.onAllNodesWithTextExists("Вторая") }
     }
 
     /** Итерация 39: удалённая задача лежит в «Корзине» (строка в «Списках» со счётчиком), открывается без правки и возвращается из «⋮». */

@@ -1,5 +1,10 @@
 package com.prostovasei.simpletasks.ui.feature.trash
 
+import com.prostovasei.simpletasks.ui.feature.bulk.selectionBottomInset
+import com.prostovasei.simpletasks.ui.feature.bulk.rememberSelection
+import com.prostovasei.simpletasks.ui.feature.bulk.SelectionScope
+import com.prostovasei.simpletasks.ui.feature.bulk.Selectable
+import com.prostovasei.simpletasks.ui.feature.bulk.SelectionFrame
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -54,8 +59,11 @@ fun TrashScreen(state: TrashState, onIntent: (TrashIntent) -> Unit, onBack: () -
     val spacing = AppTheme.spacing
     val days = DayNames(stringResource(R.string.day_today), stringResource(R.string.day_tomorrow), stringResource(R.string.day_yesterday))
     var confirmDeleteAll by rememberSaveable { mutableStateOf(false) }
+    // Итерация 40: долгое нажатие на плашку — выбор; лента: «Восстановить» и «Удалить навсегда».
+    val selection = rememberSelection()
     Scaffold(containerColor = colors.background, contentWindowInsets = WindowInsets(0)) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding)) {
+        SelectionFrame(selection, state.items.map { Selectable(it.id, isDone = false) }, Modifier.padding(padding), scope = SelectionScope.Trash) {
+        Column(Modifier.fillMaxSize()) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                 IconButton(onClick = onBack) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.project_back), tint = colors.textPrimary)
@@ -96,7 +104,7 @@ fun TrashScreen(state: TrashState, onIntent: (TrashIntent) -> Unit, onBack: () -
                         val on = state.deletedOn[item.id]
                         if (on == null) item else item.copy(subtitle = stringResource(R.string.trash_deleted_on, WidgetDates.short(on)))
                     }
-                    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(vertical = spacing.xs), verticalArrangement = Arrangement.Top) {
+                    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(top = spacing.xs, bottom = selectionBottomInset(selection)), verticalArrangement = Arrangement.Top) {
                         timelineItems(
                             items = deletedText,
                             keyPrefix = "trash",
@@ -108,10 +116,13 @@ fun TrashScreen(state: TrashState, onIntent: (TrashIntent) -> Unit, onBack: () -
                             onToggle = {},
                             onOpen = { onOpenTask(it.taskId) },
                             dayLabels = true,
+                            selection = selection.takeIf { it.active }?.ids,
+                            onSelect = { selection.toggle(it.id) },
                         )
                     }
                 }
             }
+        }
         }
     }
     if (confirmDeleteAll) {

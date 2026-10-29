@@ -1,5 +1,7 @@
 package com.prostovasei.simpletasks.ui.common
 
+import com.prostovasei.simpletasks.ui.feature.bulk.selectionBottomInset
+import com.prostovasei.simpletasks.ui.feature.bulk.SelectionState
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
@@ -23,6 +25,8 @@ fun FlatTaskList(
     modifier: Modifier = Modifier,
     onOpenTask: (String) -> Unit = {},
     emptyArrowLift: Dp = AppTheme.spacing.xxs,
+    /** Режим выбора экрана (итерация 40); null — выбирать нельзя. */
+    selection: SelectionState? = null,
 ) {
     if (!isLoading && tasks.isEmpty()) {
         EmptyTasks(emptyText, stringResource(R.string.empty_hint), modifier, emptyArrowLift)
@@ -32,7 +36,7 @@ fun FlatTaskList(
     // Итерация 26: как в виджете; слева день и время — подписей дней в плоском списке нет.
     LazyColumn(
         modifier.fillMaxSize(),
-        contentPadding = PaddingValues(vertical = AppTheme.spacing.xs),
+        contentPadding = PaddingValues(top = AppTheme.spacing.xs, bottom = selection?.let { selectionBottomInset(it) } ?: AppTheme.spacing.xs),
     ) {
         timelineItems(
             items = tasks,
@@ -44,6 +48,8 @@ fun FlatTaskList(
             onToggle = { onIntent(TaskListIntent.ToggleComplete(it.id, it.isRecurring, it.showsDone)) },
             onOpen = { onOpenTask(it.taskId) },
             dayLabels = true,
+            selection = selection?.takeIf { it.active }?.ids,
+            onSelect = selection?.let { s -> { item: TaskItem -> s.toggle(item.id) } },
         )
     }
 }

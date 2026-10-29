@@ -1,5 +1,8 @@
 package com.prostovasei.simpletasks.ui.feature.project
 
+import com.prostovasei.simpletasks.ui.feature.bulk.rememberSelection
+import com.prostovasei.simpletasks.ui.feature.bulk.Selectable
+import com.prostovasei.simpletasks.ui.feature.bulk.SelectionFrame
 import com.prostovasei.simpletasks.designsystem.components.UndoSnackbarHost
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -71,13 +74,16 @@ fun ProjectScreen(
     val colors = AppTheme.colors
     val inboxName = stringResource(R.string.inbox_list_name)
     val title = if (state.isInbox) inboxName else state.name
+    // Итерация 40: долгое нажатие на плашку — режим выбора; «+» на это время прячется — внизу лента действий.
+    val selection = rememberSelection()
     Scaffold(
         containerColor = colors.background,
         contentWindowInsets = WindowInsets(0),
         snackbarHost = { UndoSnackbarHost(snackbarHostState) },
-        floatingActionButton = { AddTaskButton(onAddTask) },
+        floatingActionButton = { if (!selection.active) AddTaskButton(onAddTask) },
     ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding)) {
+        SelectionFrame(selection, state.tasks.filterNot { it.isGhost }.map { Selectable(it.id, it.isDone) }, Modifier.padding(padding)) {
+        Column(Modifier.fillMaxSize()) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(end = AppTheme.spacing.xxs),
                 verticalAlignment = Alignment.CenterVertically,
@@ -113,7 +119,9 @@ fun ProjectScreen(
                 onOpenTask = onOpenTask,
                 // «+» здесь плавает над списком в правом нижнем углу — стрелка над ним.
                 emptyArrowLift = AppTheme.sizes.navBar + AppTheme.spacing.md,
+                selection = selection,
             )
+        }
         }
     }
     ProjectDialogs(state, onIntent)

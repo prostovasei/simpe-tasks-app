@@ -37,6 +37,11 @@ import androidx.compose.runtime.Composable
 import kotlinx.coroutines.launch
 import com.prostovasei.simpletasks.ui.feature.task.TaskDeletionsHost
 import com.prostovasei.simpletasks.ui.common.showUndo
+import androidx.compose.runtime.CompositionLocalProvider
+import com.prostovasei.simpletasks.ui.feature.bulk.LocalSelectionMode
+import com.prostovasei.simpletasks.ui.feature.bulk.LocalBulkActions
+import com.prostovasei.simpletasks.ui.feature.bulk.BulkTexts
+import com.prostovasei.simpletasks.ui.feature.bulk.BulkActionsHost
 import com.prostovasei.simpletasks.ui.feature.all.OverdueMovesHost
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -150,12 +155,24 @@ fun AppNavHost(
         }
     }
 
+    // Массовое редактирование (итерация 40): подсказка «Выполнено: N · Отмена» и т. п.; в режиме выбора нижней панели нет — там лента действий.
+    val bulk = hiltViewModel<BulkActionsHost>()
+    val selectionMode = remember { mutableStateOf(false) }
+    val bulkTexts = BulkTexts.load()
+    LaunchedEffect(bulk) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            bulk.actions.events.collect { result ->
+                launch { snackbar.showUndo(bulkTexts.text(result), undoText, bulkTexts.kind(result)) { bulk.actions.undo(result) } }
+            }
+        }
+    }
+
     Scaffold(
         containerColor = AppTheme.colors.background,
         snackbarHost = { UndoSnackbarHost(snackbar) },
         bottomBar = {
-            // На экране списка нижний бар скрыт: это вложенный экран с кнопкой «Назад».
-            if (destination == null || currentTab != null) {
+            // На экране списка нижний бар скрыт: это вложенный экран с кнопкой «Назад». В режиме выбора — тоже.
+            if (!selectionMode.value && (destination == null || currentTab != null)) {
                 val selected = currentTab ?: Tab.ALL
                 BottomBar(
                     selected = selected,
@@ -168,6 +185,7 @@ fun AppNavHost(
     ) { padding ->
         // consumeWindowInsets: экраны с клавиатурой (imePadding) не добавляют отступ панели навигации второй раз.
         // Переход между экранами — сдвиг вбок в сторону нажатой вкладки; вложенный экран — справа (итерация 15, C2).
+        CompositionLocalProvider(LocalBulkActions provides bulk, LocalSelectionMode provides selectionMode) {
         NavHost(
             navController,
             startDestination = AllDestination,
@@ -207,6 +225,7 @@ fun AppNavHost(
             dialog<TaskDetailDestination>(dialogProperties = SHEET_DIALOG) {
                 TaskDetailRoute(onClose = { navController.popBackStack() }, onOpenTask = openTask)
             }
+        }
         }
     }
 }

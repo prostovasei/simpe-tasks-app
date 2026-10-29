@@ -197,6 +197,11 @@ object SizeTokens {
     const val WIDGET_UPDATE_ICON = 22
     const val WIDGET_UPDATE_GAP = 8
 
+    /** Режим выбора (итерация 40): кнопка ленты действий (ширина не меньше, высота) и высота верхней строки «Выбрано: N». */
+    const val RIBBON_BUTTON = 76
+    const val RIBBON_BUTTON_HEIGHT = 56
+    const val SELECTION_BAR = 56
+
     /** Корзина (итерация 39): строка с подписью «удалена …» выше обычной на это число dp. */
     const val TRASH_ROW_EXTRA = 14
 

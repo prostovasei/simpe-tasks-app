@@ -1,5 +1,9 @@
 package com.prostovasei.simpletasks.ui.feature.all
 
+import com.prostovasei.simpletasks.ui.feature.bulk.selectionBottomInset
+import com.prostovasei.simpletasks.ui.feature.bulk.rememberSelection
+import com.prostovasei.simpletasks.ui.feature.bulk.Selectable
+import com.prostovasei.simpletasks.ui.feature.bulk.SelectionFrame
 import com.prostovasei.simpletasks.designsystem.components.UndoSnackbarHost
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
@@ -57,9 +61,13 @@ fun AllScreen(
             EmptyTasks(stringResource(R.string.all_empty), stringResource(R.string.empty_hint), Modifier.padding(padding))
             return@Scaffold
         }
+        // Итерация 40: долгое нажатие на плашку — режим выбора (будущие повторы не выбираются).
+        val selection = rememberSelection()
+        val allItems = state.overdue + state.todayAllDay + state.todayTimed + state.upcoming
+        SelectionFrame(selection, allItems.filterNot { it.isGhost }.map { Selectable(it.id, it.isDone) }, Modifier.padding(padding)) {
         LazyColumn(
-            Modifier.fillMaxSize().padding(padding),
-            contentPadding = PaddingValues(bottom = AppTheme.spacing.xs),
+            Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = selectionBottomInset(selection)),
         ) {
             val groups = state.dayGroups()
             // «Просрочено · N» над первым прошедшим днём (итерация 37): стрелка сворачивает все прошедшие дни, значок — переносит на сегодня.
@@ -97,8 +105,11 @@ fun AllScreen(
                     showList = true,
                     onToggle = { onIntent(TaskListIntent.ToggleComplete(it.id, it.isRecurring, it.showsDone)) },
                     onOpen = { onOpenTask(it.taskId) },
+                    selection = selection.takeIf { it.active }?.ids,
+                    onSelect = { selection.toggle(it.id) },
                 )
             }
+        }
         }
     }
 }
