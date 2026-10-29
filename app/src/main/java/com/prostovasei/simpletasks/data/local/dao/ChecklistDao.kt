@@ -62,6 +62,21 @@ interface ChecklistDao {
     )
     suspend fun softDeleteByTaskTree(taskId: String, now: Long): Int
 
+    /** Возвращает пункты, удалённые вместе с задачей в момент [deletedAt]. */
+    @Query(
+        """
+        UPDATE checklist_items SET is_deleted = 0, updated_at = :now
+        WHERE is_deleted = 1 AND updated_at = :deletedAt AND task_id IN (
+            WITH RECURSIVE tree(id) AS (
+                SELECT :taskId
+                UNION SELECT t.id FROM tasks t JOIN tree ON t.parent_id = tree.id
+            )
+            SELECT id FROM tree
+        )
+        """,
+    )
+    suspend fun restoreByTaskTree(taskId: String, deletedAt: Long, now: Long): Int
+
     @Query(
         """
         UPDATE checklist_items SET is_deleted = 1, updated_at = :now

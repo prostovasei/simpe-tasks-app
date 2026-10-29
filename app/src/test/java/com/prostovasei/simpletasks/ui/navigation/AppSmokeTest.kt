@@ -12,6 +12,8 @@ import com.prostovasei.simpletasks.designsystem.components.TAG_NAME_FIELD
 import com.prostovasei.simpletasks.ui.common.TAG_ADD_TASK
 import com.prostovasei.simpletasks.ui.feature.lists.TAG_NEW_LIST
 import com.prostovasei.simpletasks.ui.feature.task.TAG_DETAIL_CLOSE
+import com.prostovasei.simpletasks.ui.feature.task.TAG_DETAIL_DELETE
+import com.prostovasei.simpletasks.ui.feature.task.TAG_DETAIL_MENU
 import com.prostovasei.simpletasks.ui.feature.task.TAG_DETAIL_TITLE
 import com.prostovasei.simpletasks.ui.feature.task.TAG_QUICK_SAVE
 import com.prostovasei.simpletasks.ui.feature.task.TAG_QUICK_TITLE
@@ -89,6 +91,28 @@ class AppSmokeTest {
 
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_DETAIL_TITLE).fetchSemanticsNodes().isEmpty() }
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Купить продукты на неделю") }
+    }
+
+    /** Итерация 36: удаление из шторки — без вопроса; под шторкой «Задача удалена · Отмена», «Отмена» возвращает задачу. */
+    @Test
+    fun deleteTaskShowsUndoAndUndoBringsItBack() {
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Всё сделано") }
+        composeRule.onNodeWithTag(TAG_ADD_TASK).performClick()
+        composeRule.onNodeWithTag(TAG_QUICK_TITLE).performTextReplacement("Лишняя задача")
+        composeRule.onNodeWithTag(TAG_QUICK_SAVE).performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Лишняя задача") }
+
+        composeRule.onNodeWithText("Лишняя задача").performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_DETAIL_TITLE).fetchSemanticsNodes().isNotEmpty() }
+        composeRule.onNodeWithTag(TAG_DETAIL_MENU).performClick()
+        composeRule.onNodeWithTag(TAG_DETAIL_DELETE).performClick()
+
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Задача удалена") }
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_DETAIL_TITLE).fetchSemanticsNodes().isEmpty() }
+        composeRule.onNodeWithText("Лишняя задача").assertDoesNotExist()
+
+        composeRule.onNodeWithText("Отмена").performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Лишняя задача") }
     }
 }
 

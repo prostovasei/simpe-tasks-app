@@ -2,6 +2,7 @@ package com.prostovasei.simpletasks.domain.repository
 
 import com.prostovasei.simpletasks.domain.model.AllScreenTasks
 import com.prostovasei.simpletasks.domain.model.Completion
+import com.prostovasei.simpletasks.domain.model.Deletion
 import com.prostovasei.simpletasks.domain.model.NewTask
 import com.prostovasei.simpletasks.domain.model.SearchableTask
 import com.prostovasei.simpletasks.domain.model.Task
@@ -77,6 +78,9 @@ interface TaskRepository {
     /** «На завтра» из уведомления: срок — завтра, время дня то же. */
     suspend fun moveToTomorrow(taskId: String)
 
-    /** Мягкое удаление задачи вместе с её подзадачами и их чек-листами. */
-    suspend fun deleteTask(taskId: String)
+    /** Мягкое удаление задачи вместе с её подзадачами и их чек-листами; результат нужен для [undoDelete]. */
+    suspend fun deleteTask(taskId: String): Deletion
+
+    /** «Отмена» удаления: возвращает задачу, подзадачи и чек-листы, удалённые именно этим [deletion]. */
+    suspend fun undoDelete(deletion: Deletion)
 }

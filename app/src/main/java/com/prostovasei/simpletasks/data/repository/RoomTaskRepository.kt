@@ -11,6 +11,7 @@ import com.prostovasei.simpletasks.data.local.entity.TaskEntity
 import com.prostovasei.simpletasks.data.mapper.toDomain
 import com.prostovasei.simpletasks.domain.model.AllScreenTasks
 import com.prostovasei.simpletasks.domain.model.Completion
+import com.prostovasei.simpletasks.domain.model.Deletion
 import com.prostovasei.simpletasks.domain.model.NewTask
 import com.prostovasei.simpletasks.domain.model.SearchableTask
 import com.prostovasei.simpletasks.domain.model.Task
@@ -193,11 +194,20 @@ class RoomTaskRepository @Inject constructor(
         }
     }
 
-    override suspend fun deleteTask(taskId: String) {
+    override suspend fun deleteTask(taskId: String): Deletion {
         val now = nowMillis()
         db.withTransaction {
             checklistDao.softDeleteByTaskTree(taskId, now)
             taskDao.softDeleteWithSubtasks(taskId, now)
+        }
+        return Deletion(taskId, now)
+    }
+
+    override suspend fun undoDelete(deletion: Deletion) {
+        val now = nowMillis()
+        db.withTransaction {
+            taskDao.restoreWithSubtasks(deletion.taskId, deletion.at, now)
+            checklistDao.restoreByTaskTree(deletion.taskId, deletion.at, now)
         }
     }
 

@@ -227,6 +227,21 @@ interface TaskDao {
     )
     suspend fun softDeleteWithSubtasks(id: String, now: Long): Int
 
+    /** Возвращает то, что удалил `softDeleteWithSubtasks` в момент [deletedAt]: ранее удалённые подзадачи остаются удалёнными. */
+    @Query(
+        """
+        UPDATE tasks SET is_deleted = 0, updated_at = :now
+        WHERE is_deleted = 1 AND updated_at = :deletedAt AND id IN (
+            WITH RECURSIVE tree(id) AS (
+                SELECT :id
+                UNION SELECT t.id FROM tasks t JOIN tree ON t.parent_id = tree.id
+            )
+            SELECT id FROM tree
+        )
+        """,
+    )
+    suspend fun restoreWithSubtasks(id: String, deletedAt: Long, now: Long): Int
+
     @Query("UPDATE tasks SET is_deleted = 1, updated_at = :now WHERE project_id = :projectId AND is_deleted = 0")
     suspend fun softDeleteByProject(projectId: String, now: Long): Int
 }

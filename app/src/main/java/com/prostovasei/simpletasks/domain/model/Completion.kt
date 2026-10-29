@@ -20,3 +20,6 @@ sealed interface Completion {
         val checkedItemIds: List<String>,
     ) : Completion
 }
+
+/** Результат удаления задачи: [at] — момент, которым помечено всё удалённое (задача, подзадачи, чек-листы); с ним возвращают именно это. */
+data class Deletion(val taskId: String, val at: Long)

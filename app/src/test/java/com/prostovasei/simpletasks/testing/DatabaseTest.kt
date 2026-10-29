@@ -11,7 +11,10 @@ import org.junit.Before
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
-/** Основа тестов БД: настоящая Room-база в памяти, управляемое время. */
+/**
+ * Основа тестов БД: настоящая Room-база в памяти, управляемое время. Запросы идут в потоке теста (прямой исполнитель):
+ * у Room нет фоновых потоков, которые могли бы упасть после закрытия базы уже во время следующего теста (бэклог №54).
+ */
 @RunWith(RobolectricTestRunner::class)
 abstract class DatabaseTest {
     protected val time = FakeTimeProvider()
@@ -22,7 +25,7 @@ abstract class DatabaseTest {
 
     @Before
     fun openDatabase() {
-        db = AppDatabase.build(ApplicationProvider.getApplicationContext(), time, inMemory = true)
+        db = AppDatabase.build(ApplicationProvider.getApplicationContext(), time, inMemory = true, executor = { it.run() })
         val ids = UuidIdGenerator()
         tasks = RoomTaskRepository(db, time, ids)
         projects = RoomProjectRepository(db, time, ids)

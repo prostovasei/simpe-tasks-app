@@ -15,6 +15,7 @@ import com.prostovasei.simpletasks.data.local.entity.ChecklistItemEntity
 import com.prostovasei.simpletasks.data.local.entity.ProjectEntity
 import com.prostovasei.simpletasks.data.local.entity.ProjectGroupEntity
 import com.prostovasei.simpletasks.data.local.entity.TaskEntity
+import java.util.concurrent.Executor
 
 @Database(
     entities = [
@@ -38,12 +39,15 @@ abstract class AppDatabase : RoomDatabase() {
         const val NAME = "simple_tasks.db"
 
         /** Единая точка создания БД: в приложении и в тестах подключается один и тот же InboxSeed. */
-        fun build(context: Context, time: TimeProvider, inMemory: Boolean = false): AppDatabase {
+        fun build(context: Context, time: TimeProvider, inMemory: Boolean = false, executor: Executor? = null): AppDatabase {
             val builder = if (inMemory) {
                 Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
             } else {
                 Room.databaseBuilder(context, AppDatabase::class.java, NAME)
             }
+            // [executor] — только для тестов: запросы и транзакции идут в том же потоке, без фоновых потоков Room,
+            // которые могли пережить тест и уронить следующий (бэклог №54).
+            if (executor != null) builder.allowMainThreadQueries().setQueryExecutor(executor).setTransactionExecutor(executor)
             return builder.addCallback(InboxSeed(time)).build()
         }
     }

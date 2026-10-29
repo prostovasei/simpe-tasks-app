@@ -3,6 +3,8 @@ package com.prostovasei.simpletasks.ui.navigation
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.geometry.Offset
@@ -14,6 +16,8 @@ import com.prostovasei.simpletasks.TaskPopupActivity
 import com.prostovasei.simpletasks.domain.model.NewTask
 import com.prostovasei.simpletasks.ui.feature.task.TAG_QUICK_SCRIM
 import com.prostovasei.simpletasks.ui.feature.task.TAG_DATE_TEXT
+import com.prostovasei.simpletasks.ui.feature.task.TAG_DETAIL_DELETE
+import com.prostovasei.simpletasks.ui.feature.task.TAG_DETAIL_MENU
 import com.prostovasei.simpletasks.ui.feature.task.TAG_DETAIL_TITLE
 import com.prostovasei.simpletasks.ui.feature.task.TAG_QUICK_TITLE
 import com.prostovasei.simpletasks.widget.WidgetFilter
@@ -21,6 +25,7 @@ import com.prostovasei.simpletasks.widget.openTaskIntent
 import com.prostovasei.simpletasks.widget.quickAddIntent
 import com.prostovasei.simpletasks.widget.widgetEntryPoint
 import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -64,6 +69,34 @@ class LaunchFromWidgetTest {
             composeRule.onNodeWithTag(TAG_QUICK_SCRIM).performTouchInput { click(Offset(centerX, bottom - 5f)) }
             composeRule.waitUntil(LAUNCH_TIMEOUT_MS) { checkNotNull(activity).isFinishing }
             assertTrue(checkNotNull(activity).isFinishing)
+        }
+    }
+
+    /** Итерация 36: из виджета удаление без вопроса; окно остаётся с подсказкой «Задача удалена · Отмена», «Отмена» возвращает задачу. */
+    @Test
+    fun deleteFromPopupShowsUndoAndUndoRestoresTask() {
+        val (id, tasks) = runBlocking {
+            val entry = context.widgetEntryPoint()
+            entry.tasks().createTask(NewTask(entry.projects().getInbox().id, "Удалить и вернуть")) to entry.tasks()
+        }
+        ActivityScenario.launch<TaskPopupActivity>(openTaskIntent(context, id)).use { scenario ->
+            var activity: TaskPopupActivity? = null
+            scenario.onActivity { activity = it }
+            composeRule.waitUntil(LAUNCH_TIMEOUT_MS) { composeRule.onAllNodesWithTag(TAG_DETAIL_TITLE).fetchSemanticsNodes().isNotEmpty() }
+            composeRule.onNodeWithTag(TAG_DETAIL_MENU).performClick()
+            composeRule.onNodeWithTag(TAG_DETAIL_DELETE).performClick()
+            composeRule.waitUntil(LAUNCH_TIMEOUT_MS) {
+                shadowOf(Looper.getMainLooper()).idle()
+                composeRule.onAllNodesWithText("Задача удалена").fetchSemanticsNodes().isNotEmpty()
+            }
+            assertTrue("Пока подсказка на экране, окно не закрыто", !checkNotNull(activity).isFinishing)
+            assertEquals(null, runBlocking { tasks.getTask(id) })
+            composeRule.onNodeWithText("Отмена").performClick()
+            composeRule.waitUntil(LAUNCH_TIMEOUT_MS) {
+                shadowOf(Looper.getMainLooper()).idle()
+                runBlocking { tasks.getTask(id) } != null
+            }
+            assertEquals("Удалить и вернуть", runBlocking { tasks.getTask(id) }?.title)
         }
     }
 

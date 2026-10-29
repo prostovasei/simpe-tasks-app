@@ -50,7 +50,6 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.prostovasei.simpletasks.R
-import com.prostovasei.simpletasks.designsystem.components.ConfirmDeleteDialog
 import com.prostovasei.simpletasks.designsystem.components.NameDialog
 import com.prostovasei.simpletasks.designsystem.components.PriorityBadge
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
@@ -87,7 +86,7 @@ fun TaskDetailRoute(onClose: () -> Unit, onOpenTask: (String) -> Unit, viewModel
 /**
  * Созданная задача — та же шторка с сеткой недели, что и новая (итерация 19, решения PM): все правки сохраняются сразу,
  * галочка «Готово» и затемнение просто закрывают. Круг у названия (цвет приоритета) — выполнить; «⋮» справа от названия —
- * «Удалить» (с подтверждением) и дата создания (итерация 34). Чек-лист: отметить, переименовать (нажатие на пункт), «⋮» — выше, ниже, удалить. Подзадачи из TickTick.
+ * «Удалить» (сразу, с «Отменой» под шторкой, итерация 36) и дата создания (итерация 34). Чек-лист: отметить, переименовать (нажатие на пункт), «⋮» — выше, ниже, удалить. Подзадачи из TickTick.
  */
 @Composable
 fun TaskDetailScreen(
@@ -178,16 +177,6 @@ fun TaskDetailScreen(
         if (state.subtasks.isNotEmpty()) SubtasksSection(state.subtasks, onIntent, onOpenTask)
     }
 
-    if (state.showDeleteConfirm) {
-        ConfirmDeleteDialog(
-            title = stringResource(R.string.detail_delete_title),
-            text = stringResource(R.string.detail_delete_text),
-            confirmLabel = stringResource(R.string.action_delete),
-            cancelLabel = stringResource(R.string.action_cancel),
-            onConfirm = { onIntent(TaskDetailIntent.ConfirmDelete) },
-            onDismiss = { onIntent(TaskDetailIntent.DismissDelete) },
-        )
-    }
     state.renamingItem?.let { item ->
         NameDialog(
             title = stringResource(R.string.detail_item_rename),
