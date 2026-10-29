@@ -111,6 +111,7 @@ SIZE_PICK = {
     'WIDGET_ROW': ('widget-row', 'Высота строки задачи на шкале.'), 'WIDGET_PERIOD_ROW': ('widget-period-row', 'Высота строки периода.'),
     'WIDGET_TIME': ('widget-time', 'Колонка времени слева.'), 'WIDGET_RAIL': ('widget-rail', 'Колонка линии шкалы с кружком.'), 'WIDGET_NODE': ('widget-node', 'Кружок приоритета на шкале.'),
     'WIDGET_BAR': ('widget-bar', 'Нижняя строка виджета.'), 'WIDGET_ADD': ('widget-add', 'Кнопка «+» виджета.'), 'WIDGET_UPDATE': ('widget-update', 'Кнопка обновления виджета.'),
+    'WIDGET_FOLD_ICON': ('widget-fold-icon', 'Стрелка «свернуть» и значок «перенести на сегодня» у подписи «Просрочено» в виджете.'),
     'WIDGET_CARD_INSET': ('widget-card-inset', 'Щель плашки внутри строки шкалы (сверху и снизу).'),
     'POPUP_STRIP': ('popup-strip', 'Полоска напоминания поверх других приложений.'), 'POPUP_BUTTON': ('popup-button', 'Круглая кнопка в ней.'),
 }
@@ -335,7 +336,7 @@ def preview_list_square():
 
 def preview_icons():
     names = ['ic_tool_checklist', 'ic_tool_priority', 'ic_tool_reminder', 'ic_tool_repeat', 'ic_tool_delete', 'ic_no_date', 'ic_time', 'ic_widget_all',
-             'ic_widget_inbox', 'ic_widget_list', 'ic_widget_add', 'ic_widget_update']
+             'ic_widget_inbox', 'ic_widget_list', 'ic_widget_add', 'ic_widget_update', 'ic_fold_open', 'ic_fold_closed', 'ic_move_today']
     cells = ''.join(f'<div class="col" style="width:92px"><span style="color:var(--text-primary)">{svg(n, 32)}</span><div class="cap">{n.removeprefix("ic_")}</div></div>' for n in names)
     return doc('Основы', 220, 'Контурные значки 24 dp, линия 2, скругления: цвет задаёт оттенок', f'<div class="row" style="align-items:flex-start;gap:6px">{cells}</div>')
 
@@ -581,12 +582,12 @@ COMP_README = {
     'Icons': ('Контурные значки приложения: сетка 24, линия 2, круглые концы.',
               '''Бери только значки из превью и ресурсов `ic_*`; цвет задавай оттенком (`text-secondary`, `accent`, `inactive`). Не рисуй новые значки другой толщины линии.
 Назначение: `tool_checklist` — чек-лист, `tool_priority` — флаг приоритета, `tool_reminder` — уведомления, `tool_repeat` — повтор, `tool_delete` — удалить, `no_date` — без даты,
-`time` — поле времени, `widget_all`/`widget_inbox`/`widget_list` — вкладки и календарь, `widget_add` — «+», `widget_update` — обновление.'''),
+`time` — поле времени, `widget_all`/`widget_inbox`/`widget_list` — вкладки и календарь, `widget_add` — «+», `widget_update` — обновление, `fold_open`/`fold_closed` — стрелка «свернуть» у «Просрочено», `move_today` — «перенести на сегодня».'''),
     'SheetCard': ('Шторка задачи: название, описание, поля даты и времени, панель кнопок и галочка «Готово».',
                   '''Карточка `surface`, радиус `radius-nav`, ручка `size-sheet-handle-width`×`size-sheet-handle-height` цвета `divider`, поля по бокам `space-md`. Над панелью клавиатуры карточка стоит прямо над ней.
 Название — `headline-small`, описание — `body-large` (Medium, `text-secondary`), подсказки полей — `inactive`.
 Новая задача: круга «выполнено» нет, повтор и уведомления бледные, пока нет даты. Созданная задача: круг цвета приоритета слева, «⋮» справа от названия.
-Меню «⋮» содержит «Удалить» (`danger`, с подтверждением) и под чертой «создано …»; корзины в панели нет.
+Меню «⋮» содержит «Удалить» (`danger`, без подтверждения: после нажатия окно закрывается, внизу `UndoSnackbar` «Задача удалена · Отмена») и под чертой «создано …»; корзины в панели нет.
 Панель: список, приоритет, чек-лист, повтор, уведомления, справа галочка. Кнопки сжимаются на узком экране, но не меньше своего минимума.'''),
     'SheetDialog': ('Окно по центру экрана: заголовок, варианты, «Отмена» и «Готово».',
                     '''Ширина не больше `size-dialog-max-width` (420), радиус `radius-nav`, поля `space-lg`. Заголовок — `title-large`, подзаголовок — `body-medium` (`text-secondary`).
@@ -654,7 +655,7 @@ def main():
     index = {
         'v': 3, 'layout': 'files', 'createdOnFiles': {'v': 1, 'at': now}, 'title': 'Simple Tasks', 'namespace': 'SimpleTasks', 'libraries': [],
         'sections': {}, 'groups': [], 'assetGroups': {}, 'blobs': {}, 'docs': {'readme': 'project/README.md', 'sections': []},
-        'lastChange': {'by': 'Ilya', 'at': now, 'via': 'Claude Code', 'note': 'Первая версия: токены, компоненты и превью из кода приложения (0.34.0).'},
+        'lastChange': {'by': 'Ilya', 'at': now, 'via': 'Claude Code', 'note': 'Обновление до 0.37.0: OverdueHeader, UndoSnackbar, ReminderNotification, «⋮» без подтверждения.'},
     }
     (OUT / 'design-system.json').write_text(json.dumps(index, ensure_ascii=False, indent=1))
     # Контраст пар из описаний (WCAG 2): печатаем таблицу для проверки, не пишем в файлы.

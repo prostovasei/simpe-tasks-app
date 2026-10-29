@@ -23,9 +23,9 @@
 | Что | Ссылка | Как обновлять |
 |---|---|---|
 | Холст с макетами | https://claude.ai/artifact/4G8GPUfah2Q9nqvm5jpFwU | Раздел 4 |
-| Дизайн-система (Claude Design) | https://claude.ai/artifact/RuxztJRqXQEhfpxHE46w1w | Цвета, шрифт, отступы, размеры, 31 компонент и 8 экранов с превью (окна, списки, виджет, полоска напоминания); значения берутся из кода. Обновлять: `python3 design/system/build_design_system.py <папка>`, дальше `Artifact publish` с `root` (по `SKILL.md` типа «Design System»), индекс `design-system.json` — последним |
+| Дизайн-система (Claude Design) | https://claude.ai/artifact/RuxztJRqXQEhfpxHE46w1w | Цвета, шрифт, отступы, размеры, 34 компонента и 8 экранов с превью (окна, списки, виджет, полоска напоминания, «Просрочено», подсказка «Отмена», уведомление); значения берутся из кода. Обновлять: `python3 design/system/build_design_system.py <папка>`, дальше `Artifact publish` с `root` (по `SKILL.md` типа «Design System»), индекс `design-system.json` — последним |
 | Чек-лист ручной проверки | https://claude.ai/artifact/LfCQHWnhLob8u75CP2vaMS | После релиза: снять старые `isNew: true`, выставить `const NEW_IN`, добавить область с новыми пунктами (id уникальны, сейчас 184) перед областью «Перетаскивание и интервалы (0.17)». Плюс документ прогона в коллекции `runs` (doc_id `v0-X-Y-buildN`, поля `version`, `kind:"new"`, `createdAt`, `updatedAt`, `results:{}`, `notes:{}`) |
-| Бэклог | https://claude.ai/artifact/EoNYmmboC6gG13ju3MnEid | Коллекция `items` (поля `c, e, i, r, num, iteration, section, source, status, title, why, createdAt, updatedAt`). Последний `num` = 81 |
+| Бэклог | https://claude.ai/artifact/EoNYmmboC6gG13ju3MnEid | Коллекция `items` (поля `c, e, i, r, num, iteration, section, source, status, title, why, createdAt, updatedAt`). Последний `num` = 82 |
 
 Перед записью в артефакт — прочитать его (`Artifact read` / `ArtifactData get`) и писать с `if_version`.
 
