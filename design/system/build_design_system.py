@@ -178,6 +178,11 @@ def build_tokens():
 # ---------------------------------------------------------------- значки из drawable
 
 
+def viewport(name):
+    xml = (RES / 'drawable' / f'{name}.xml').read_text()
+    return float(re.search(r'android:viewportWidth="([\d.]+)"', xml)[1]), float(re.search(r'android:viewportHeight="([\d.]+)"', xml)[1])
+
+
 def icon_paths(name):
     xml = (RES / 'drawable' / f'{name}.xml').read_text()
     items = []
@@ -199,7 +204,8 @@ def svg(name, size=24, extra=''):
             parts += f'<path d="{d}" fill="currentColor" stroke="currentColor" stroke-width="{sw}" stroke-linecap="round" stroke-linejoin="round"/>'
         else:
             parts += f'<path d="{d}" fill="none" stroke="currentColor" stroke-width="{sw or 2}" stroke-linecap="round" stroke-linejoin="round"/>'
-    return f'<svg width="{size}" height="{size}" viewBox="0 0 24 24" aria-hidden="true" {extra}>{parts}</svg>'
+    vw, vh = viewport(name)
+    return f'<svg width="{size}" height="{size}" viewBox="0 0 {vw:g} {vh:g}" aria-hidden="true" {extra}>{parts}</svg>'
 
 
 _mask = [0]
@@ -364,17 +370,7 @@ def preview_timeline_row():
     return doc('Список и виджет', 460, 'Строка шкалы: время, кружок приоритета, плашка. Просрочка, выполнено, период', body)
 
 
-def preview_widget_bar():
-    sw = lambda ic, sel: f'<span style="width:46px;height:42px;border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:center;background:{"var(--selected)" if sel else "transparent"};color:{"var(--accent)" if sel else "var(--text-secondary)"}">{svg(ic, 26)}</span>'
-    body = ('<div class="row" style="gap:8px;align-items:center">'
-            f'<span style="display:flex;padding:4px;border-radius:var(--radius-xl);background:var(--surface);border:1px solid var(--divider)">{sw("ic_widget_all", True)}{sw("ic_widget_inbox", False)}</span>'
-            f'<span style="width:44px;height:44px;border-radius:50%;background:var(--surface);border:1px solid var(--divider);color:var(--text-secondary);display:flex;align-items:center;justify-content:center">{svg("ic_widget_update", 22)}</span>'
-            f'<span style="width:46px;height:46px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center">{svg("ic_widget_add", 24)}</span></div>'
-            '<div class="cap" style="max-width:none;text-align:left;margin-top:10px">переключатель «Все» / «Входящие» · обновление (слева от «+») · «+»</div>')
-    return doc('Список и виджет', 120, 'Нижняя строка виджета', body)
-
-
-def sheet_card(created):
+def sheet_card(created, width=388):
     handle = '<div style="display:flex;justify-content:center;padding:8px 0 4px"><span style="width:36px;height:4px;border-radius:var(--radius-sm);background:var(--divider)"></span></div>'
     dots = '<span style="color:var(--text-secondary);display:flex"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"><path d="M12 5h.01M12 12h.01M12 19h.01"/></svg></span>'
     circle = f'<span style="width:22px;height:22px;border-radius:50%;border:2px solid var(--ring-high);flex-shrink:0"></span>'
@@ -392,7 +388,7 @@ def sheet_card(created):
         fields = f'<span class="field empty">{cal}<span>Без даты и времени</span></span>'
         tools = (tool('<span class="list-sq" style="background:var(--inbox-list);width:25px;height:25px;border-radius:var(--radius-md)">' + svg('ic_list_inbox', 16) + '</span>')
                  + tool(svg('ic_tool_priority', 25)) + tool(svg('ic_tool_checklist', 25)) + tool(svg('ic_tool_repeat', 25), 'dim') + tool(bell(25, 'at', 'color-mix(in srgb,var(--inactive) 60%,transparent)'), 'dim'))
-    return (f'<div style="width:388px;border-radius:var(--radius-nav);background:var(--surface);padding:0 16px 14px;box-shadow:0 2px 10px color-mix(in srgb,var(--text-primary) 12%,transparent)">'
+    return (f'<div style="width:{width}px;border-radius:var(--radius-nav);background:var(--surface);padding:0 16px 14px;box-shadow:0 2px 10px color-mix(in srgb,var(--text-primary) 12%,transparent)">'
             f'{handle}{title}{desc}<div style="display:flex;align-items:center;gap:24px;height:54px;margin-top:8px">{fields}</div>'
             f'<div style="display:flex;gap:8px;align-items:center;margin-top:6px">{tools}<span style="flex:1"></span><span class="confirm">{CHECK}</span></div></div>')
 
@@ -556,11 +552,7 @@ README = '''## Содержание и язык
 - Контурные, сетка 24 dp, линия 2, круглые концы и углы. Цвет задаёт оттенок: `text-secondary` по умолчанию, `accent` у выбранного, `inactive` (60%) у недоступного.
 - Значки списков — белые на квадратике цвета списка (`list-*`), у «Входящие» — `inbox-list`. Колокольчик со знаками собирается маской: вырез вокруг стрелки и точки.
 
-## Компоненты
-
-Шторка задачи (`SheetCard`), поля даты (`DateFields`), кнопка панели (`ToolButton`), круг «выполнено» (`DoneCircle`), колокольчик (`ReminderBell`), окна по центру (`SheetDialog`),
-окно даты (`DateWindow`), календарь (`CalendarDialog`), строка шкалы (`TimelineRow`), нижняя строка виджета (`WidgetBar`), квадратики списков (`ListSquare`), значки (`Icons`).
-Компонент рисуется по его превью. Если в превью нет нужного состояния, не придумывай его: добавь в систему.
+@@COMPONENTS@@
 '''
 
 COMP_README = {
@@ -615,9 +607,6 @@ COMP_README = {
 Плашка — `surface`, радиус `radius-md`, щель сверху и снизу `size-widget-card-inset` (3), внутри `space-sm`. Название — `body-medium` Bold; справа повтор, колокольчик, квадратик списка.
 Период: кружок растягивается в капсулу на всю высоту плашки, конец периода серым под началом. Просрочка: время и день красные (`overdue`), кружок `inactive`.
 Выполнена: кружок залит цветом приоритета с белой галочкой, плашка 70%, название зачёркнуто. Тот же вид в приложении и в виджете.'''),
-    'WidgetBar': ('Нижняя строка виджета: переключатель «Все» / «Входящие», кнопка обновления, «+».',
-                  '''Высота строки `size-widget-bar` (58). Переключатель — две кнопки 46×42, выбранная залита `selected` со значком `accent`. Кнопка обновления `size-widget-update` (44) стоит слева от «+», серый значок на `surface`.
-«+» — круг `size-widget-add` (46), заливка `accent`. Градиенты и размытие в виджете недоступны: фоны — готовыми картинками или сплошным цветом.'''),
 }
 
 
@@ -630,12 +619,29 @@ def main():
         shutil.copy(RES / 'font' / f'manrope_{w}.ttf', OUT / 'fonts')
     tokens = build_tokens()
     (OUT / 'tokens.json').write_text(json.dumps(tokens, ensure_ascii=False, indent=1))
-    (OUT / 'README.md').write_text(README)
     previews = {
         'ToolButton': preview_tool_button, 'DateFields': preview_date_fields, 'DoneCircle': preview_done_circle, 'ReminderBell': preview_bell,
         'ListSquare': preview_list_square, 'Icons': preview_icons, 'SheetCard': preview_sheet_card, 'SheetDialog': preview_dialog,
-        'DateWindow': preview_date_window, 'CalendarDialog': preview_calendar, 'TimelineRow': preview_timeline_row, 'WidgetBar': preview_widget_bar,
+        'DateWindow': preview_date_window, 'CalendarDialog': preview_calendar, 'TimelineRow': preview_timeline_row,
     }
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import ds_more
+    previews.update(ds_more.PREVIEWS)
+    COMP_README.update(ds_more.README_MORE)
+    COMP_README['WidgetBar'] = ('Нижняя строка виджета: переключатель «Все» / «Входящие», кнопка обновления, «+».',
+                                '''Высота `size-widget-bar` (58), поля по бокам 6. Слева капсула `surface` (радиус `radius-lg`, поля 4) с двумя кнопками 46×42 (радиус `radius-md`): выбранная залита `selected` со значком `accent` 26, другая `surface` со значком `text-secondary`.
+Место между капсулой и кнопками нажимается как «открыть приложение». Справа квадратная кнопка обновления `size-widget-update` (44, радиус `radius-md`, `surface`, значок 22 `text-secondary`), щель 8 и «+» `size-widget-add` (46, радиус `radius-md`, `accent`, значок 24 `on-accent`).''')
+    groups = {}
+    for name, fn in previews.items():
+        html = fn()
+        groups.setdefault(re.search(r'group="([^"]+)"', html)[1], []).append(name)
+    order = ['Основы', 'Панель и поля', 'Окна', 'Список и виджет', 'Напоминания и виджет', 'Экраны']
+    lines = ['## Компоненты', '', 'Компонент рисуется по его превью. Если в превью нет нужного состояния, не придумывай его: добавь в систему. Источник каждого — в README компонента.', '']
+    for g in order:
+        lines.append(f'**{g}**')
+        lines += [f'- `{n}` — {COMP_README[n][0]}' for n in groups.get(g, [])]
+        lines.append('')
+    (OUT / 'README.md').write_text(README.replace('@@COMPONENTS@@', '\n'.join(lines)))
     for name, fn in previews.items():
         folder = OUT / 'components' / name
         folder.mkdir()
