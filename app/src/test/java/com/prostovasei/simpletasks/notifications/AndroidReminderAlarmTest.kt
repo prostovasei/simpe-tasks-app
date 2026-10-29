@@ -5,6 +5,8 @@ import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.After
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -17,25 +19,39 @@ import java.time.Instant
 class AndroidReminderAlarmTest {
     private val context = ApplicationProvider.getApplicationContext<android.content.Context>()
     private val alarms = shadowOf(context.getSystemService(AlarmManager::class.java))
+    private val prefs = context.getSharedPreferences("reminders", android.content.Context.MODE_PRIVATE)
+
+    /** Тест не зависит от порядка и от соседей: настройка «как будильник» по умолчанию включена, чужих будильников нет, право на точные есть. */
+    @Before
+    fun setUp() {
+        prefs.edit().clear().commit()
+        ShadowAlarmManager.setCanScheduleExactAlarms(true)
+        AndroidReminderAlarm(context).setAt(null)
+    }
+
+    @After
+    fun tearDown() {
+        prefs.edit().clear().commit()
+        ShadowAlarmManager.reset()
+    }
 
     @Test
     fun setsAlarmClockAndCancels() {
-        ShadowAlarmManager.setCanScheduleExactAlarms(true)
         val at = Instant.parse("2026-10-26T15:00:00Z")
         AndroidReminderAlarm(context).setAt(at)
 
         val alarm = alarms.reminderAlarm()
-        assertNotNull(alarm)
-        assertEquals(at.toEpochMilli(), alarm!!.alarmClockInfo!!.triggerTime)
+        assertNotNull("Будильник напоминаний не поставлен; все: ${alarms.scheduledAlarms}", alarm)
+        assertNotNull("Включено «как будильник» — нужен AlarmClockInfo", alarm!!.alarmClockInfo)
+        assertEquals(at.toEpochMilli(), alarm.alarmClockInfo!!.triggerTime)
 
         AndroidReminderAlarm(context).setAt(null)
-        assertNull(alarms.reminderAlarm())
+        assertNull("Будильник не снят; все: ${alarms.scheduledAlarms}", alarms.reminderAlarm())
     }
 
     @Test
     fun exactOffSetsPlainExactAlarm() {
-        ShadowAlarmManager.setCanScheduleExactAlarms(true)
-        context.getSharedPreferences("reminders", android.content.Context.MODE_PRIVATE).edit().putBoolean("exact_alarm_clock", false).commit()
+        prefs.edit().putBoolean("exact_alarm_clock", false).commit()
         val at = Instant.parse("2026-10-26T15:00:00Z")
         AndroidReminderAlarm(context).setAt(at)
 
