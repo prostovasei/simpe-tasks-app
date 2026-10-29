@@ -23,3 +23,8 @@ sealed interface Completion {
 
 /** Результат удаления задачи: [at] — момент, которым помечено всё удалённое (задача, подзадачи, чек-листы); с ним возвращают именно это. */
 data class Deletion(val taskId: String, val at: Long)
+
+/** Результат «Перенести на сегодня» (итерация 37): задачи такими, какими они были до переноса, — для «Отмены». */
+data class Rescheduling(val previous: List<Task>) {
+    val count: Int get() = previous.size
+}

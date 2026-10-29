@@ -25,6 +25,10 @@ data object SettingsDestination
 @Serializable
 data class QuickAddDestination(val projectId: String? = null, val today: Boolean = false)
 
+/** Прозрачное окно «Перенести просроченные на сегодня» поверх рабочего стола (итерация 37, из виджета). */
+@Serializable
+data object MoveOverdueDestination
+
 /** Выполненные задачи (итерация 11). */
 @Serializable
 data object CompletedDestination

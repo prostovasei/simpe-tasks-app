@@ -14,6 +14,7 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import com.prostovasei.simpletasks.TaskPopupActivity
 import com.prostovasei.simpletasks.domain.model.NewTask
+import com.prostovasei.simpletasks.domain.model.TaskDue
 import com.prostovasei.simpletasks.ui.feature.task.TAG_QUICK_SCRIM
 import com.prostovasei.simpletasks.ui.feature.task.TAG_DATE_TEXT
 import com.prostovasei.simpletasks.ui.feature.task.TAG_DETAIL_DELETE
@@ -21,6 +22,7 @@ import com.prostovasei.simpletasks.ui.feature.task.TAG_DETAIL_MENU
 import com.prostovasei.simpletasks.ui.feature.task.TAG_DETAIL_TITLE
 import com.prostovasei.simpletasks.ui.feature.task.TAG_QUICK_TITLE
 import com.prostovasei.simpletasks.widget.WidgetFilter
+import com.prostovasei.simpletasks.widget.moveOverdueIntent
 import com.prostovasei.simpletasks.widget.openTaskIntent
 import com.prostovasei.simpletasks.widget.quickAddIntent
 import com.prostovasei.simpletasks.widget.widgetEntryPoint
@@ -97,6 +99,42 @@ class LaunchFromWidgetTest {
                 runBlocking { tasks.getTask(id) } != null
             }
             assertEquals("Удалить и вернуть", runBlocking { tasks.getTask(id) }?.title)
+        }
+    }
+
+    /** Итерация 37: «Перенести на сегодня» из виджета — прозрачное окно переносит, показывает «Перенесено на сегодня: 1 · Отмена». */
+    @Test
+    fun moveOverdueFromWidgetShowsUndoAndUndoBringsBack() {
+        val entry = context.widgetEntryPoint()
+        val past = entry.time().today().minusDays(2)
+        val id = runBlocking { entry.tasks().createTask(NewTask(entry.projects().getInbox().id, "Давно", due = TaskDue.AllDay(past))) }
+        ActivityScenario.launch<TaskPopupActivity>(moveOverdueIntent(context)).use { scenario ->
+            var activity: TaskPopupActivity? = null
+            scenario.onActivity { activity = it }
+            composeRule.waitUntil(LAUNCH_TIMEOUT_MS) {
+                shadowOf(Looper.getMainLooper()).idle()
+                composeRule.onAllNodesWithText("Перенесено на сегодня: 1").fetchSemanticsNodes().isNotEmpty()
+            }
+            assertTrue("Пока подсказка на экране, окно не закрыто", !checkNotNull(activity).isFinishing)
+            assertEquals(TaskDue.AllDay(entry.time().today()), runBlocking { entry.tasks().getTask(id) }?.due)
+            composeRule.onNodeWithText("Отмена").performClick()
+            composeRule.waitUntil(LAUNCH_TIMEOUT_MS) {
+                shadowOf(Looper.getMainLooper()).idle()
+                runBlocking { entry.tasks().getTask(id) }?.due == TaskDue.AllDay(past)
+            }
+        }
+    }
+
+    @Test
+    fun moveOverdueFromWidgetWithNothingToMoveClosesAtOnce() {
+        ActivityScenario.launch<TaskPopupActivity>(moveOverdueIntent(context)).use { scenario ->
+            var activity: TaskPopupActivity? = null
+            scenario.onActivity { activity = it }
+            composeRule.waitUntil(LAUNCH_TIMEOUT_MS) {
+                shadowOf(Looper.getMainLooper()).idle()
+                checkNotNull(activity).isFinishing
+            }
+            assertTrue(checkNotNull(activity).isFinishing)
         }
     }
 

@@ -52,6 +52,11 @@ class WidgetActionReceiver : BroadcastReceiver() {
                     context.widgetEntryPoint().tasks().setCompleted(taskId, completed = false)
                     WidgetRenderer.renderAll(context, "галочка")
                 }
+                WidgetActions.TOGGLE_OVERDUE -> {
+                    WidgetLog.add(context, "просрочено: свернуть/развернуть")
+                    context.widgetEntryPoint().overdueFold().toggle()
+                    WidgetRenderer.renderAll(context, "просрочено")
+                }
                 WidgetActions.MIDNIGHT -> WidgetRenderer.renderAll(context, "время")
             }
         }
@@ -62,6 +67,7 @@ object WidgetActions {
     const val SWITCH = "com.prostovasei.simpletasks.widget.SWITCH"
     const val COMPLETE = "com.prostovasei.simpletasks.widget.COMPLETE"
     const val UNCOMPLETE = "com.prostovasei.simpletasks.widget.UNCOMPLETE"
+    const val TOGGLE_OVERDUE = "com.prostovasei.simpletasks.widget.TOGGLE_OVERDUE"
     const val MIDNIGHT = "com.prostovasei.simpletasks.WIDGET_MIDNIGHT"
     const val EXTRA_WIDGET_ID = "widget_id"
     const val EXTRA_FILTER = "filter"
@@ -78,6 +84,11 @@ object WidgetActions {
         .setAction(COMPLETE)
         .setData("simpletasks://widget/complete/$taskId".toUri())
         .putExtra(EXTRA_TASK_ID, taskId)
+
+    /** Свернуть или развернуть «Просрочено» (итерация 37). */
+    fun toggleOverdue(context: Context): Intent = Intent(context, WidgetActionReceiver::class.java)
+        .setAction(TOGGLE_OVERDUE)
+        .setData("simpletasks://widget/overdue/toggle".toUri())
 
     /** Снять отметку с выполненной (итерация 27): выполненная остаётся в виджете до полуночи. */
     fun uncomplete(context: Context, taskId: String): Intent = Intent(context, WidgetActionReceiver::class.java)

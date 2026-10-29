@@ -77,7 +77,10 @@ class WidgetUiTest {
         onAllNodes(hasText("2")).assertCountEquals(0)
         // Подписи дней как в приложении: просроченные — по дням (итерация 27), «ЧТ, 15 окт» + «Вчера»,
         // «ПТ, 16 окт» + метка «Сегодня», «СБ, 17 окт» + «Завтра», «ПН, 19 окт».
-        onNode(hasTextEqualTo("Просрочено")).assertDoesNotExist()
+        // Итерация 37: над прошедшими днями — «Просрочено · 1» (выполненная не считается), со стрелкой и значком переноса.
+        onNode(hasTextEqualTo("Просрочено · 1")).assertExists()
+        onNode(hasContentDescription("Свернуть просроченные")).assertExists()
+        onNode(hasContentDescription("Перенести просроченные на сегодня")).assertExists()
         onNode(hasTextEqualTo("ЧТ, 15 окт")).assertExists()
         onNode(hasTextEqualTo("ПТ, 16 окт")).assertExists()
         onNode(hasTextEqualTo("Сегодня")).assertExists()
@@ -93,6 +96,19 @@ class WidgetUiTest {
         onAllNodes(hasContentDescription("Выполнить")).assertCountEquals(3)
         onAllNodes(hasContentDescription("Снять отметку «выполнено»")).assertCountEquals(1)
         onNode(hasTextEqualTo("Оплатить свет")).assertExists()
+    }
+
+    @Test
+    fun collapsedOverdueHidesPastDays() = runGlanceAppWidgetUnitTest {
+        setAppWidgetSize(DpSize(320.dp, 400.dp))
+        setContext(context)
+        provideComposable { WidgetContent(model.copy(overdueCollapsed = true), appWidgetId = 7) }
+
+        onNode(hasTextEqualTo("Просрочено · 1")).assertExists()
+        onNode(hasContentDescription("Развернуть просроченные")).assertExists()
+        onNode(hasTextEqualTo("ЧТ, 15 окт")).assertDoesNotExist()
+        onNode(hasTextEqualTo("Отправить отчёт")).assertDoesNotExist()
+        onNode(hasTextEqualTo("ПТ, 16 окт")).assertExists()
     }
 
     @Test

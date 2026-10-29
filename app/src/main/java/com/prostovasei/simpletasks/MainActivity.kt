@@ -73,6 +73,7 @@ class MainActivity : ComponentActivity() {
         }
 
         const val EXTRA_TASK_ID = "open_task_id"
+        const val EXTRA_MOVE_OVERDUE = "move_overdue"
         const val EXTRA_QUICK_ADD = "quick_add"
         const val EXTRA_QUICK_ADD_PROJECT = "quick_add_project"
         const val EXTRA_QUICK_ADD_TODAY = "quick_add_today"

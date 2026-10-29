@@ -13,6 +13,8 @@ import com.prostovasei.simpletasks.domain.model.AllScreenTasks
 import com.prostovasei.simpletasks.domain.model.Completion
 import com.prostovasei.simpletasks.domain.model.Deletion
 import com.prostovasei.simpletasks.domain.model.NewTask
+import com.prostovasei.simpletasks.domain.model.Rescheduling
+import com.prostovasei.simpletasks.domain.model.TaskDue
 import com.prostovasei.simpletasks.domain.model.SearchableTask
 import com.prostovasei.simpletasks.domain.model.Task
 import com.prostovasei.simpletasks.domain.model.TaskDetails
@@ -24,6 +26,7 @@ import com.prostovasei.simpletasks.domain.repository.TaskRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.time.Instant
 import java.time.LocalDate
@@ -155,6 +158,27 @@ class RoomTaskRepository @Inject constructor(
     override suspend fun moveToTomorrow(taskId: String) {
         val task = getTask(taskId) ?: return
         updateTask(task.withDue(task.due.movedTo(time.today().plusDays(1), time.zone())))
+    }
+
+    override suspend fun moveOverdueToToday(): Rescheduling {
+        val today = time.today()
+        val zone = time.zone()
+        val day = DayWindow.of(today, zone)
+        val overdue = taskDao.observeOverdue(day.allDayStart, day.start, day.start).first().map { it.toDomain() }.filter { task ->
+            val anchor = task.start ?: task.due
+            val date = when (anchor) {
+                is TaskDue.AllDay -> anchor.date
+                is TaskDue.AtTime -> anchor.instant.atZone(zone).toLocalDate()
+                null -> null
+            }
+            !task.isCompleted && date != null && date < today
+        }
+        db.withTransaction { overdue.forEach { updateTask(it.withDue(it.due.movedTo(today, zone))) } }
+        return Rescheduling(overdue)
+    }
+
+    override suspend fun undoReschedule(rescheduling: Rescheduling) {
+        db.withTransaction { rescheduling.previous.forEach { updateTask(it) } }
     }
 
     override fun observeTimedInRange(from: Instant, to: Instant): Flow<List<Task>> =

@@ -13,6 +13,12 @@ interface TaskListIntent {
     /** [done] — задача уже выполнена: нажатие возвращает её (итерация 27). */
     data class ToggleComplete(val taskId: String, val recurring: Boolean = false, val done: Boolean = false) : TaskListIntent
     data class Undo(val taskId: String) : TaskListIntent
+
+    /** Свернуть или раскрыть блок «Просрочено» (итерация 37). */
+    data object ToggleOverdue : TaskListIntent
+
+    /** «Перенести просроченные на сегодня» (итерация 37). */
+    data object MoveOverdue : TaskListIntent
 }
 
 interface TaskListEffect {

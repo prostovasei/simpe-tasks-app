@@ -12,6 +12,8 @@ data class AllState(
     val isLoading: Boolean = true,
     /** Сегодняшняя дата — для подписей дней «ПТ, 16 окт». */
     val today: LocalDate? = null,
+    /** Блок «Просрочено» свёрнут (итерация 37). */
+    val overdueCollapsed: Boolean = false,
 ) {
     val isEmpty: Boolean get() = overdue.isEmpty() && todayAllDay.isEmpty() && todayTimed.isEmpty() && upcoming.isEmpty()
 }

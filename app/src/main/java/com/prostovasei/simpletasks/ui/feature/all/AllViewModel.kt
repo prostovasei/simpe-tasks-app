@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 import javax.inject.Inject
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -30,6 +31,8 @@ class AllViewModel @Inject constructor(
     projects: ProjectRepository,
     dayTicker: DayTicker,
     private val time: TimeProvider,
+    private val fold: OverdueFold,
+    private val moves: OverdueMoves,
 ) : MviViewModel<AllState, TaskListIntent, TaskListEffect>(AllState()) {
 
     private val completion = CompletionTracker(viewModelScope, tasks, time)
@@ -37,17 +40,18 @@ class AllViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             val sections = dayTicker.today().flatMapLatest { day -> tasks.observeAllScreen(day).map { day to it } }
-            combine(sections, projects.observeProjectTree(), completion.pending) { (day, all), tree, pending ->
+            combine(sections, projects.observeProjectTree(), completion.pending, fold.collapsed) { (day, all), tree, pending, collapsed ->
                 val byId = tree.projectsById()
                 val zone = time.zone()
                 val everything = all.overdue + all.todayAllDay + all.todayTimed + all.upcoming
-                Triple(day, pending, listOf(all.overdue, all.todayAllDay, all.todayTimed).map { section -> section.map { it.toItem(byId, day, zone, pending) } } +
-                    listOf(upcomingWithRepeats(all.upcoming, everything, byId, day, zone, pending)))
-            }.collect { (day, pending, fresh) ->
+                val fresh = listOf(all.overdue, all.todayAllDay, all.todayTimed).map { section -> section.map { it.toItem(byId, day, zone, pending) } } +
+                    listOf(upcomingWithRepeats(all.upcoming, everything, byId, day, zone, pending))
+                SectionsUpdate(day, pending, collapsed, fresh)
+            }.collect { (day, pending, collapsed, fresh) ->
                 setState {
                     val merged = listOf(overdue, todayAllDay, todayTimed, upcoming)
                         .zip(fresh) { previous, current -> mergeWithPending(previous, current, pending) }
-                    copy(overdue = merged[0], todayAllDay = merged[1], todayTimed = merged[2], upcoming = merged[3], isLoading = false, today = day)
+                    copy(overdue = merged[0], todayAllDay = merged[1], todayTimed = merged[2], upcoming = merged[3], isLoading = false, today = day, overdueCollapsed = collapsed)
                 }
             }
         }
@@ -57,10 +61,14 @@ class AllViewModel @Inject constructor(
         when (intent) {
             is TaskListIntent.ToggleComplete -> completion.toggle(intent.taskId, intent.recurring, intent.done) { sendEffect(it) }
             is TaskListIntent.Undo -> completion.undo(intent.taskId)
+            TaskListIntent.ToggleOverdue -> fold.toggle()
+            TaskListIntent.MoveOverdue -> moves.run()
             else -> Unit
         }
     }
 }
+
+private data class SectionsUpdate(val day: LocalDate, val pending: Set<String>, val collapsed: Boolean, val fresh: List<List<TaskItem>>)
 
 /** Свежий список + только что отмеченные задачи на прежних местах, с актуальным признаком «отмечается». */
 fun mergeWithPending(previous: List<TaskItem>, current: List<TaskItem>, pending: Set<String>): List<TaskItem> =

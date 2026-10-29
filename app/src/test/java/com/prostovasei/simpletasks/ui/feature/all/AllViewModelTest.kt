@@ -18,6 +18,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
@@ -58,7 +59,45 @@ class AllViewModelTest {
     @After
     fun tearDown() = Dispatchers.resetMain()
 
-    private fun viewModel() = AllViewModel(tasks, projects, DayTicker { day }, time)
+    private val fold = OverdueFold(initial = false, save = {})
+
+    private val moves = OverdueMoves(tasks, TestScope(dispatcher))
+
+    private fun viewModel() = AllViewModel(tasks, projects, DayTicker { day }, time, fold, moves)
+
+    @Test
+    fun toggleOverdueFlipsCollapsedFlag() = runTest(dispatcher) {
+        val vm = viewModel()
+        runCurrent()
+        assertFalse(vm.state.value.overdueCollapsed)
+
+        vm.onIntent(TaskListIntent.ToggleOverdue)
+        runCurrent()
+        assertTrue(vm.state.value.overdueCollapsed)
+
+        vm.onIntent(TaskListIntent.ToggleOverdue)
+        runCurrent()
+        assertFalse(vm.state.value.overdueCollapsed)
+    }
+
+    @Test
+    fun moveOverdueMovesPastTasksAndOffersUndo() = runTest(dispatcher) {
+        val vm = viewModel()
+        runCurrent()
+        moves.events.test {
+            vm.onIntent(TaskListIntent.MoveOverdue)
+            runCurrent()
+            val moved = awaitItem()
+            assertEquals(listOf("late"), moved.previous.map { it.id })
+            runCurrent()
+            assertTrue(vm.state.value.overdue.isEmpty())
+            assertEquals(listOf("allday", "late"), vm.state.value.todayAllDay.map { it.id }.sorted())
+
+            moves.undo(moved)
+            runCurrent()
+            assertEquals(listOf("late"), vm.state.value.overdue.map { it.id })
+        }
+    }
 
     @Test
     fun buildsSectionsWithLabels() = runTest(dispatcher) {

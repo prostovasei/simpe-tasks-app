@@ -45,6 +45,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 
 /** Заголовок экрана. */
@@ -100,6 +101,57 @@ fun DayHeader(text: String, relative: String?, isOverdue: Boolean, modifier: Mod
         }
     }
 }
+
+/**
+ * Подпись блока «Просрочено · N» со стрелкой «свернуть» и значком «перенести на сегодня» рядом (итерация 37).
+ * [onMoveToday] = null — переносить нечего, значка нет.
+ */
+@Composable
+fun OverdueHeader(
+    text: String,
+    collapsed: Boolean,
+    foldDescription: String,
+    moveDescription: String,
+    onToggle: () -> Unit,
+    onMoveToday: (() -> Unit)?,
+    modifier: Modifier = Modifier,
+) {
+    val colors = AppTheme.colors
+    val spacing = AppTheme.spacing
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier.padding(start = spacing.sm, top = spacing.xs).testTag(TAG_OVERDUE_HEADER),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.clickable(onClickLabel = foldDescription, onClick = onToggle).padding(vertical = spacing.xs).testTag(TAG_OVERDUE_TOGGLE),
+        ) {
+            Text(text, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = colors.overdue)
+            Icon(
+                painterResource(if (collapsed) R.drawable.ic_fold_closed else R.drawable.ic_fold_open),
+                contentDescription = foldDescription,
+                tint = colors.overdue,
+                modifier = Modifier.padding(start = spacing.xxs).size(AppTheme.sizes.icon),
+            )
+        }
+        if (onMoveToday != null) {
+            Icon(
+                painterResource(R.drawable.ic_move_today),
+                contentDescription = moveDescription,
+                tint = colors.overdue,
+                modifier = Modifier
+                    .clickable(onClickLabel = moveDescription, onClick = onMoveToday)
+                    .padding(spacing.xs)
+                    .size(AppTheme.sizes.icon)
+                    .testTag(TAG_OVERDUE_MOVE),
+            )
+        }
+    }
+}
+
+const val TAG_OVERDUE_HEADER = "overdue_header"
+const val TAG_OVERDUE_TOGGLE = "overdue_toggle"
+const val TAG_OVERDUE_MOVE = "overdue_move"
 
 @Composable
 fun BlockHeader(text: String, modifier: Modifier = Modifier) {

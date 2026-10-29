@@ -96,18 +96,21 @@ fun WidgetContent(model: WidgetModel, appWidgetId: Int, scrollable: Boolean = tr
                 }
             } else {
                 val days = DayNames(context.getString(R.string.day_today), context.getString(R.string.day_tomorrow), context.getString(R.string.day_yesterday))
-                val blocks = model.days.filter { it.items.isNotEmpty() }
+                val entries = model.entries()
                 @Composable
-                fun Block(block: WidgetDayBlock) = DayBlock(block, isFirst = block == blocks.first(), model, days, liveClock)
+                fun Entry(entry: WidgetEntry) = when (entry) {
+                    is WidgetEntry.Overdue -> OverdueTitle(entry, isFirst = entry == entries.first())
+                    is WidgetEntry.Day -> DayBlock(entry.block, isFirst = entry == entries.first(), model, days, liveClock)
+                }
                 // Место под панелью в конце списка: последние задачи можно докрутить выше неё.
                 val tail = @Composable { Spacer(GlanceModifier.fillMaxWidth().height(SizeTokens.WIDGET_FADE.dp)) }
                 if (scrollable) {
                     LazyColumn(GlanceModifier.fillMaxSize()) {
-                        items(blocks, itemId = { it.day.id }) { Block(it) }
+                        items(entries, itemId = { it.id }) { Entry(it) }
                         item(itemId = TAIL_ID) { tail() }
                     }
                 } else {
-                    Column(GlanceModifier.fillMaxSize()) { blocks.forEach { Block(it) } }
+                    Column(GlanceModifier.fillMaxSize()) { entries.forEach { Entry(it) } }
                 }
             }
         }
@@ -117,6 +120,14 @@ fun WidgetContent(model: WidgetModel, appWidgetId: Int, scrollable: Boolean = tr
 }
 
 private const val TAIL_ID = Long.MIN_VALUE
+
+private val WidgetEntry.id: Long
+    get() = when (this) {
+        is WidgetEntry.Overdue -> OVERDUE_ID
+        is WidgetEntry.Day -> block.day.id
+    }
+
+private const val OVERDUE_ID = -3L
 
 private val WidgetDay.id: Long
     get() = when (this) {
@@ -145,6 +156,46 @@ private fun DayBlock(block: WidgetDayBlock, isFirst: Boolean, model: WidgetModel
                 is WidgetRow.Task -> TimelineRow(row, line, overdue, model.filter)
                 WidgetRow.Now -> NowRow(line, nowMinute, liveClock)
             }
+        }
+    }
+}
+
+/**
+ * «Просрочено · N» (итерация 37): красная подпись над прошедшими днями; нажатие на подпись со стрелкой сворачивает их,
+ * значок рядом — переносит все просроченные на сегодня (окно с «Отменой» поверх рабочего стола).
+ */
+@Composable
+private fun OverdueTitle(entry: WidgetEntry.Overdue, isFirst: Boolean) {
+    val context = LocalContext.current
+    val style = TextStyle(color = WidgetColors.overdue, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+    val text = if (entry.count > 0) context.getString(R.string.overdue_count, entry.count) else context.getString(R.string.overdue_title)
+    val fold = context.getString(if (entry.collapsed) R.string.overdue_fold_closed else R.string.overdue_fold_open)
+    Row(
+        modifier = GlanceModifier.fillMaxWidth().padding(
+            start = SizeTokens.WIDGET_EDGE.dp,
+            top = if (isFirst) SizeTokens.WIDGET_DAY_GAP.dp else SizeTokens.WIDGET_EDGE.dp,
+            bottom = SizeTokens.WIDGET_DAY_GAP.dp,
+        ),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Row(GlanceModifier.clickable(actionSendBroadcast(WidgetActions.toggleOverdue(context))), verticalAlignment = Alignment.CenterVertically) {
+            Text(text, style = style, maxLines = 1)
+            Spacer(GlanceModifier.width(SpacingTokens.XXS.dp))
+            Image(
+                ImageProvider(if (entry.collapsed) R.drawable.ic_fold_closed else R.drawable.ic_fold_open),
+                contentDescription = fold,
+                colorFilter = ColorFilter.tint(WidgetColors.overdue),
+                modifier = GlanceModifier.size(SizeTokens.WIDGET_FOLD_ICON.dp),
+            )
+        }
+        if (entry.count > 0) {
+            Spacer(GlanceModifier.width(SpacingTokens.SM.dp))
+            Image(
+                ImageProvider(R.drawable.ic_move_today),
+                contentDescription = context.getString(R.string.overdue_move_today),
+                colorFilter = ColorFilter.tint(WidgetColors.overdue),
+                modifier = GlanceModifier.size(SizeTokens.WIDGET_FOLD_ICON.dp).clickable(actionStartActivity(moveOverdueIntent(context))),
+            )
         }
     }
 }
@@ -600,6 +651,12 @@ fun quickAddIntent(context: Context, filter: WidgetFilter): Intent = Intent(cont
     .putExtra(MainActivity.EXTRA_QUICK_ADD, true)
     .putExtra(MainActivity.EXTRA_QUICK_ADD_TODAY, filter == WidgetFilter.All)
     .putExtra(MainActivity.EXTRA_QUICK_ADD_PROJECT, (filter as? WidgetFilter.ProjectList)?.projectId)
+    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+
+/** «Перенести просроченные на сегодня»: прозрачное окно поверх рабочего стола переносит и показывает «Отмена» (итерация 37). */
+fun moveOverdueIntent(context: Context): Intent = Intent(context, TaskPopupActivity::class.java)
+    .setData("simpletasks://overdue/move".toUri())
+    .putExtra(MainActivity.EXTRA_MOVE_OVERDUE, true)
     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
 
 /** Окно обновления поверх рабочего стола (кнопка в нижней строке виджета). */

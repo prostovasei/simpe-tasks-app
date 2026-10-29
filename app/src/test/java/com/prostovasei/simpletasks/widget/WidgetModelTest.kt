@@ -123,4 +123,25 @@ class WidgetModelTest {
         assertEquals(2f / 3, DayProgress(2, 3).fraction, 0.001f)
         assertEquals(null, DayProgress.of(emptyList()))
     }
+
+    @Test
+    fun overdueHeaderStandsAboveFirstPastDayAndCollapseHidesPastDays() {
+        val all = AllScreenTasks(
+            overdue = listOf(task("late1", due = day(-3)), task("late2", due = day(-1)), task("done", due = day(-1)).copy(status = com.prostovasei.simpletasks.domain.model.TaskStatus.COMPLETED)),
+            todayAllDay = listOf(task("gym", due = day(0))),
+            todayTimed = emptyList(),
+            upcoming = emptyList(),
+        )
+        val model = WidgetModels.all(all, projects, today, ZoneOffset.UTC)
+
+        assertEquals("Выполненная не считается", 2, model.overdueCount)
+        val shape = { m: WidgetModel -> m.entries().map { if (it is WidgetEntry.Day) (it.block.day as WidgetDay.On).date.toString() else "overdue" } }
+        assertEquals(listOf("overdue", "2026-10-11", "2026-10-13", "2026-10-14"), shape(model))
+        assertEquals(listOf("overdue", "2026-10-14"), shape(model.copy(overdueCollapsed = true)))
+        assertEquals(
+            "В списке подписи «Просрочено» нет",
+            listOf("2026-10-11", "2026-10-13", "2026-10-14"),
+            shape(model.copy(filter = WidgetFilter.Inbox)),
+        )
+    }
 }

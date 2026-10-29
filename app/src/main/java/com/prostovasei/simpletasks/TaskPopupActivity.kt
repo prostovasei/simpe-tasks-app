@@ -18,7 +18,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import com.prostovasei.simpletasks.ui.feature.task.TaskDeletionsHost
 import com.prostovasei.simpletasks.ui.common.showUndo
-import com.prostovasei.simpletasks.domain.model.Deletion
+import com.prostovasei.simpletasks.ui.feature.all.OverdueMovesHost
+import com.prostovasei.simpletasks.ui.navigation.MoveOverdueDestination
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.setValue
@@ -55,7 +57,7 @@ class TaskPopupActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        val start = MainActivity.routeFrom(intent)
+        val start = if (intent.getBooleanExtra(MainActivity.EXTRA_MOVE_OVERDUE, false)) MoveOverdueDestination else MainActivity.routeFrom(intent)
         if (start == null) {
             finish()
             return
@@ -75,20 +77,27 @@ class TaskPopupActivity : ComponentActivity() {
  */
 @Composable
 fun TaskPopup(start: Any, onDismiss: () -> Unit, origin: android.graphics.Rect? = null, navController: NavHostController = rememberNavController()) {
-    // Задачу удалили (итерация 36): шторка закрылась, окно остаётся прозрачным на время подсказки «Задача удалена · Отмена»,
-    // нажатие мимо подсказки закрывает окно сразу (отмена тогда уже невозможна).
+    // Задачу удалили (итерация 36) или перенесли просроченные (итерация 37): шторка закрылась, окно остаётся прозрачным на время
+    // подсказки «Задача удалена · Отмена», нажатие мимо подсказки закрывает окно сразу (отмена тогда уже невозможна).
     val deletions = hiltViewModel<TaskDeletionsHost>().deletions
-    var deleted by remember { mutableStateOf<Deletion?>(null) }
-    LaunchedEffect(deletions) { deletions.events.collect { deleted = it } }
-    val snackbar = remember { SnackbarHostState() }
+    val moves = hiltViewModel<OverdueMovesHost>().moves
+    var offer by remember { mutableStateOf<UndoOffer?>(null) }
     val deletedText = stringResource(R.string.task_deleted)
+    val movedText = stringResource(R.string.overdue_moved)
+    LaunchedEffect(deletions) { deletions.events.collect { deletion -> offer = UndoOffer(deletedText) { deletions.undo(deletion) } } }
+    LaunchedEffect(moves) {
+        moves.events.collect { moved ->
+            if (moved.count == 0) onDismiss() else offer = UndoOffer(movedText.format(moved.count)) { moves.undo(moved) }
+        }
+    }
+    val snackbar = remember { SnackbarHostState() }
     val undoText = stringResource(R.string.task_undo)
-    LaunchedEffect(deleted) {
-        val deletion = deleted ?: return@LaunchedEffect
-        snackbar.showUndo(deletedText, undoText) { deletions.undo(deletion) }
+    LaunchedEffect(offer) {
+        val shown = offer ?: return@LaunchedEffect
+        snackbar.showUndo(shown.text, undoText, shown.undo)
         onDismiss()
     }
-    val close: () -> Unit = { if (deleted == null && !navController.popBackStack()) onDismiss() }
+    val close: () -> Unit = { if (offer == null && !navController.popBackStack()) onDismiss() }
     Box(Modifier.fillMaxSize()) {
         NavHost(
             navController,
@@ -105,13 +114,26 @@ fun TaskPopup(start: Any, onDismiss: () -> Unit, origin: android.graphics.Rect? 
                     TaskDetailRoute(onClose = close, onOpenTask = { navController.navigate(TaskDetailDestination(it)) })
                 }
             }
+            composable<MoveOverdueDestination> {
+                // Перенос запускается один раз: при повороте экрана окно не переносит заново.
+                var started by rememberSaveable { mutableStateOf(false) }
+                LaunchedEffect(Unit) {
+                    if (!started) {
+                        started = true
+                        moves.run()
+                    }
+                }
+            }
             composable<QuickAddDestination> {
                 CompositionLocalProvider(LocalSheetOrigin provides origin.takeIf { navController.previousBackStackEntry == null }) { QuickAddRoute(onClose = close) }
             }
         }
-        if (deleted != null) {
+        if (offer != null) {
             Box(Modifier.fillMaxSize().clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onDismiss))
             SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).navigationBarsPadding())
         }
     }
 }
+
+/** Подсказка с «Отменой» в прозрачном окне: [text] и что сделать по нажатию. */
+private class UndoOffer(val text: String, val undo: () -> Unit)

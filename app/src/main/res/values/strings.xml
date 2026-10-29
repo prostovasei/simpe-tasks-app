@@ -29,6 +29,12 @@
 
     <string name="task_completed">Задача выполнена</string>
     <string name="task_undo">Отмена</string>
+    <string name="overdue_title">Просрочено</string>
+    <string name="overdue_count">Просрочено · %1$d</string>
+    <string name="overdue_fold_open">Свернуть просроченные</string>
+    <string name="overdue_fold_closed">Развернуть просроченные</string>
+    <string name="overdue_move_today">Перенести просроченные на сегодня</string>
+    <string name="overdue_moved">Перенесено на сегодня: %1$d</string>
 
     <string name="all_title">Все</string>
     <string name="all_overdue">Просрочено</string>

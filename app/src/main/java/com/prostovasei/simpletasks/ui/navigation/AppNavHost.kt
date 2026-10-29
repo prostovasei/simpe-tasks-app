@@ -35,6 +35,7 @@ import androidx.compose.runtime.Composable
 import kotlinx.coroutines.launch
 import com.prostovasei.simpletasks.ui.feature.task.TaskDeletionsHost
 import com.prostovasei.simpletasks.ui.common.showUndo
+import com.prostovasei.simpletasks.ui.feature.all.OverdueMovesHost
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
@@ -119,6 +120,16 @@ fun AppNavHost(
     LaunchedEffect(deletions) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             deletions.events.collect { deletion -> launch { snackbar.showUndo(deletedText, undoText) { deletions.undo(deletion) } } }
+        }
+    }
+    // «Перенести просроченные на сегодня» — под экраном «Перенесено на сегодня: N · Отмена» (итерация 37).
+    val moves = hiltViewModel<OverdueMovesHost>().moves
+    val movedText = stringResource(R.string.overdue_moved)
+    LaunchedEffect(moves) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            moves.events.collect { moved ->
+                if (moved.count > 0) launch { snackbar.showUndo(movedText.format(moved.count), undoText) { moves.undo(moved) } }
+            }
         }
     }
 

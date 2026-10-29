@@ -5,6 +5,7 @@ import com.prostovasei.simpletasks.core.time.DayTicker
 import com.prostovasei.simpletasks.core.time.TimeProvider
 import com.prostovasei.simpletasks.domain.repository.ProjectRepository
 import com.prostovasei.simpletasks.domain.repository.TaskRepository
+import com.prostovasei.simpletasks.ui.feature.all.OverdueFold
 import com.prostovasei.simpletasks.ui.feature.all.projectsById
 import com.prostovasei.simpletasks.ui.feature.task.options
 import dagger.hilt.EntryPoint
@@ -25,6 +26,7 @@ interface WidgetEntryPoint {
     fun projects(): ProjectRepository
     fun time(): TimeProvider
     fun dayTicker(): DayTicker
+    fun overdueFold(): OverdueFold
 }
 
 fun Context.widgetEntryPoint(): WidgetEntryPoint = EntryPointAccessors.fromApplication(applicationContext, WidgetEntryPoint::class.java)
@@ -47,7 +49,7 @@ fun WidgetEntryPoint.observeModel(filter: WidgetFilter): Flow<WidgetModel> = day
     model.map { (m, t) ->
         val now = time().now().atZone(zone)
         val nowMinute = if (now.toLocalDate() == today) now.hour * MINUTES_PER_HOUR + now.minute else null
-        m.copy(tabs = WidgetModels.tabs(m.filter, t.options()), nowMinute = nowMinute)
+        m.copy(tabs = WidgetModels.tabs(m.filter, t.options()), nowMinute = nowMinute, overdueCollapsed = overdueFold().collapsed.value)
     }
 }
 

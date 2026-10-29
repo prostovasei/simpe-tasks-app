@@ -3,6 +3,7 @@ package com.prostovasei.simpletasks.domain.repository
 import com.prostovasei.simpletasks.domain.model.AllScreenTasks
 import com.prostovasei.simpletasks.domain.model.Completion
 import com.prostovasei.simpletasks.domain.model.Deletion
+import com.prostovasei.simpletasks.domain.model.Rescheduling
 import com.prostovasei.simpletasks.domain.model.NewTask
 import com.prostovasei.simpletasks.domain.model.SearchableTask
 import com.prostovasei.simpletasks.domain.model.Task
@@ -77,6 +78,15 @@ interface TaskRepository {
 
     /** «На завтра» из уведомления: срок — завтра, время дня то же. */
     suspend fun moveToTomorrow(taskId: String)
+
+    /**
+     * «Перенести на сегодня» (итерация 37): все невыполненные задачи прошедших дней — на сегодня, время дня то же.
+     * Результат нужен для [undoReschedule]; пустой, если переносить нечего.
+     */
+    suspend fun moveOverdueToToday(): Rescheduling
+
+    /** «Отмена» переноса: задачи снова такие, какими были до него. */
+    suspend fun undoReschedule(rescheduling: Rescheduling)
 
     /** Мягкое удаление задачи вместе с её подзадачами и их чек-листами; результат нужен для [undoDelete]. */
     suspend fun deleteTask(taskId: String): Deletion
