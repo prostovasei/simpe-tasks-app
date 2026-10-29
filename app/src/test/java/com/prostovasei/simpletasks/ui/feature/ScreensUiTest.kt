@@ -6,6 +6,13 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onAllNodesWithTag
+import com.prostovasei.simpletasks.ui.feature.search.TAG_SEARCH_RECENT_CLEAR
+import com.prostovasei.simpletasks.ui.common.showUndo
+import com.prostovasei.simpletasks.designsystem.components.TAG_UNDO_ACTION
+import com.prostovasei.simpletasks.designsystem.components.TAG_UNDO_SNACKBAR
+import com.prostovasei.simpletasks.designsystem.components.UndoSnackbarHost
+import com.prostovasei.simpletasks.designsystem.components.UndoKind
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
@@ -145,6 +152,14 @@ class ScreensUiTest {
         assertEquals(listOf<Any>(TaskListIntent.ToggleOverdue, TaskListIntent.MoveOverdue), intents.toList())
     }
 
+    /** Перенос на сегодня: Room обновляет разделы не разом, и задача на миг в двух днях — экран не должен вылетать («Key was already used»). */
+    @Test
+    fun sameTaskInTwoDaysDuringMoveDoesNotCrash() {
+        val moved = allState.overdue.first()
+        show { AllScreen(allState.copy(todayAllDay = allState.todayAllDay + moved), { intents += it }) }
+        composeRule.onAllNodesWithText(moved.title).assertCountEquals(2)
+    }
+
     @Test
     fun collapsedOverdueHidesPastDaysButKeepsHeader() {
         show { AllScreen(allState.copy(overdueCollapsed = true), { intents += it }) }
@@ -198,7 +213,7 @@ class ScreensUiTest {
         composeRule.onNodeWithText("Позвонить врачу").performClick()
 
         assertEquals(
-            listOf<Any>(SearchIntent.Toggle("s1", isDone = false), SearchIntent.Toggle("s3", isDone = true), SearchIntent.Query("")),
+            listOf<Any>(SearchIntent.Toggle("s1", isDone = false), SearchIntent.Toggle("s3", isDone = true), SearchIntent.Query(""), SearchIntent.Submit),
             intents,
         )
         assertEquals("s3", opened)
@@ -210,6 +225,44 @@ class ScreensUiTest {
         composeRule.onNodeWithText("Начните вводить — задачи появятся сразу").assertExists()
         composeRule.onNodeWithTag(TAG_SEARCH_FIELD).performTextInput("молоко")
         assertEquals(listOf<Any>(SearchIntent.Query("молоко")), intents)
+    }
+
+    /** Итерация 38: пока поле пустое — «Недавние»: нажатие ищет, крестик убирает один запрос, «Очистить» — все. */
+    @Test
+    fun searchRecentsPickRemoveAndClear() {
+        show { SearchScreen(SearchState(isLoading = false, recents = listOf("отчёт", "бюджет")), { intents += it }, autoFocus = false) }
+
+        composeRule.onNodeWithText("НЕДАВНИЕ").assertExists()
+        composeRule.onNodeWithText("Начните вводить — задачи появятся сразу").assertDoesNotExist()
+        composeRule.onNodeWithTag("search_recent:отчёт").performClick()
+        composeRule.onNodeWithTag("search_recent_remove:бюджет").performClick()
+        composeRule.onNodeWithTag(TAG_SEARCH_RECENT_CLEAR).performClick()
+        assertEquals(listOf<Any>(SearchIntent.PickRecent("отчёт"), SearchIntent.RemoveRecent("бюджет"), SearchIntent.ClearRecents), intents)
+    }
+
+    @Test
+    fun screenshotSearchRecents() {
+        show { SearchScreen(SearchState(isLoading = false, recents = listOf("отчёт", "купить продукты", "бюджет", "врач", "зарядка")), {}, autoFocus = false) }
+        composeRule.onRoot().captureRoboImage("screenshots/search_recent_light.png")
+    }
+
+    /** Итерация 38: подсказка «Отмена» — белая полупрозрачная карточка со значком. */
+    @Test
+    fun screenshotUndoSnackbars() {
+        val kinds = listOf(UndoKind.Done to "Задача выполнена", UndoKind.Repeat to "Следующий повтор: сб, 17 окт", UndoKind.Deleted to "Задача удалена", UndoKind.Moved to "Перенесено на сегодня: 3")
+        show {
+            androidx.compose.foundation.layout.Column {
+                kinds.forEach { (kind, text) ->
+                    val host = androidx.compose.runtime.remember { androidx.compose.material3.SnackbarHostState() }
+                    androidx.compose.runtime.LaunchedEffect(Unit) { host.showUndo(text, "Отмена", kind) {} }
+                    UndoSnackbarHost(host)
+                }
+            }
+        }
+        composeRule.waitForIdle()
+        composeRule.onAllNodesWithTag(TAG_UNDO_SNACKBAR).assertCountEquals(4)
+        composeRule.onAllNodesWithTag(TAG_UNDO_ACTION).assertCountEquals(4)
+        composeRule.onRoot().captureRoboImage("screenshots/undo_snackbar_light.png")
     }
 
     @Test

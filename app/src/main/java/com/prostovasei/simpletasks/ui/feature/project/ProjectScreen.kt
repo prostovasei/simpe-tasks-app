@@ -1,5 +1,6 @@
 package com.prostovasei.simpletasks.ui.feature.project
 
+import com.prostovasei.simpletasks.designsystem.components.UndoSnackbarHost
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
@@ -15,7 +16,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -74,7 +74,7 @@ fun ProjectScreen(
     Scaffold(
         containerColor = colors.background,
         contentWindowInsets = WindowInsets(0),
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { UndoSnackbarHost(snackbarHostState) },
         floatingActionButton = { AddTaskButton(onAddTask) },
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {

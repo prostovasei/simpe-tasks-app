@@ -12,12 +12,22 @@ data class SearchState(
     val active: List<SearchResult> = emptyList(),
     val done: List<SearchResult> = emptyList(),
     val isLoading: Boolean = true,
+    /** Недавние запросы (итерация 38): показываются, пока поле пустое. */
+    val recents: List<String> = emptyList(),
 ) {
     val found: Int get() = active.size + done.size
 }
 
 sealed interface SearchIntent {
     data class Query(val text: String) : SearchIntent
+
+    /** Запрос закончен: нажали «поиск» на клавиатуре или открыли найденную задачу — он запоминается в недавних. */
+    data object Submit : SearchIntent
+
+    /** Нажали недавний запрос: он встаёт в поле и сразу ищется. */
+    data class PickRecent(val text: String) : SearchIntent
+    data class RemoveRecent(val text: String) : SearchIntent
+    data object ClearRecents : SearchIntent
 
     /** Выполнить найденную задачу или вернуть выполненную. */
     data class Toggle(val taskId: String, val isDone: Boolean) : SearchIntent

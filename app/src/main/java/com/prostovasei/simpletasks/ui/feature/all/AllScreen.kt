@@ -1,5 +1,6 @@
 package com.prostovasei.simpletasks.ui.feature.all
 
+import com.prostovasei.simpletasks.designsystem.components.UndoSnackbarHost
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -7,7 +8,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -51,7 +51,7 @@ fun AllScreen(
     Scaffold(
         containerColor = colors.background,
         contentWindowInsets = WindowInsets(0),
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { UndoSnackbarHost(snackbarHostState) },
     ) { padding ->
         if (!state.isLoading && state.isEmpty) {
             EmptyTasks(stringResource(R.string.all_empty), stringResource(R.string.empty_hint), Modifier.padding(padding))

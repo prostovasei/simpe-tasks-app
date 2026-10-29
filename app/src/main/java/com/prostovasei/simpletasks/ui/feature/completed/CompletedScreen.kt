@@ -1,5 +1,7 @@
 package com.prostovasei.simpletasks.ui.feature.completed
 
+import com.prostovasei.simpletasks.designsystem.components.UndoKind
+import com.prostovasei.simpletasks.designsystem.components.UndoSnackbarHost
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,7 +17,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -49,7 +50,7 @@ fun CompletedRoute(onBack: () -> Unit, onOpenTask: (String) -> Unit, viewModel: 
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
             when (effect) {
-                CompletedEffect.Restored -> launch { snackbar.showUndo(message, action) { viewModel.onIntent(CompletedIntent.Undo) } }
+                CompletedEffect.Restored -> launch { snackbar.showUndo(message, action, UndoKind.Restored) { viewModel.onIntent(CompletedIntent.Undo) } }
             }
         }
     }
@@ -70,7 +71,7 @@ fun CompletedScreen(
     Scaffold(
         containerColor = colors.background,
         contentWindowInsets = WindowInsets(0),
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { UndoSnackbarHost(snackbarHostState) },
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {

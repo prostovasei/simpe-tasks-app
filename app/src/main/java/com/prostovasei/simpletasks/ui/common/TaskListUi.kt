@@ -1,6 +1,7 @@
 package com.prostovasei.simpletasks.ui.common
 
-import androidx.compose.material3.SnackbarDuration
+import com.prostovasei.simpletasks.designsystem.components.UndoKind
+import com.prostovasei.simpletasks.designsystem.components.UndoVisuals
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
@@ -58,9 +59,9 @@ private val DATE: DateTimeFormatter = DateTimeFormatter.ofPattern("d MMMM", RUSS
 private val DATE_WITH_YEAR: DateTimeFormatter = DateTimeFormatter.ofPattern("d MMMM yyyy", RUSSIAN)
 
 /** Snackbar «Задача выполнена · Отмена». Новый заменяет предыдущий. */
-suspend fun SnackbarHostState.showUndo(message: String, actionLabel: String, onUndo: () -> Unit) {
+suspend fun SnackbarHostState.showUndo(message: String, actionLabel: String, kind: UndoKind = UndoKind.Done, onUndo: () -> Unit) {
     currentSnackbarData?.dismiss()
-    if (showSnackbar(message, actionLabel, withDismissAction = false, duration = SnackbarDuration.Short) == SnackbarResult.ActionPerformed) {
+    if (showSnackbar(UndoVisuals(message, actionLabel, kind)) == SnackbarResult.ActionPerformed) {
         onUndo()
     }
 }

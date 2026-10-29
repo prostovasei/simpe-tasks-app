@@ -6,6 +6,16 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import com.prostovasei.simpletasks.ui.feature.task.TAG_QUICK_SCRIM
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.click
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.test.performImeAction
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.performTextReplacement
 import com.prostovasei.simpletasks.MainActivity
 import com.prostovasei.simpletasks.designsystem.components.TAG_NAME_FIELD
@@ -148,6 +158,43 @@ class AppSmokeTest {
         composeRule.onNodeWithText("Отмена").performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_OVERDUE_HEADER).fetchSemanticsNodes().isNotEmpty() }
         assertEquals(TaskDue.AllDay(past), runBlocking { entry.tasks().getTask(id) }?.due)
+    }
+
+    /** Итерация 38: закрыли карточку новой задачи, не сохранив, — следующее «+» открывается с тем же названием. */
+    @Test
+    fun draftOfNewTaskComesBackOnNextPlus() {
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Всё сделано") }
+        composeRule.onNodeWithTag(TAG_ADD_TASK).performClick()
+        composeRule.onNodeWithTag(TAG_QUICK_TITLE).performTextReplacement("Купить билеты")
+        // Нажатие на затемнение под карточкой закрывает её без сохранения (как «Назад»).
+        composeRule.onNodeWithTag(TAG_QUICK_SCRIM).performTouchInput { click(Offset(centerX, bottom - 5f)) }
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_QUICK_TITLE).fetchSemanticsNodes().isEmpty() }
+
+        composeRule.onNodeWithTag(TAG_ADD_TASK).performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_QUICK_TITLE).fetchSemanticsNodes().isNotEmpty() }
+        composeRule.onNodeWithTag(TAG_QUICK_TITLE).assert(SemanticsMatcher.expectValue(SemanticsProperties.EditableText, AnnotatedString("Купить билеты")))
+
+        // Сохранили — черновика больше нет.
+        composeRule.onNodeWithTag(TAG_QUICK_SAVE).performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_QUICK_TITLE).fetchSemanticsNodes().isEmpty() }
+        composeRule.onNodeWithTag(TAG_ADD_TASK).performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_QUICK_TITLE).fetchSemanticsNodes().isNotEmpty() }
+        composeRule.onNodeWithTag(TAG_QUICK_TITLE).assert(SemanticsMatcher.expectValue(SemanticsProperties.EditableText, AnnotatedString("")))
+    }
+
+    /** Итерация 38: запрос запоминается по «поиску» на клавиатуре; при пустом поле он в «Недавних», нажатие ищет. */
+    @Test
+    fun searchRemembersQueriesAndRepeatsThem() {
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Всё сделано") }
+        composeRule.onNodeWithTag("tab:SEARCH").performClick()
+        composeRule.onNodeWithTag(TAG_SEARCH_FIELD).performTextReplacement("молоко")
+        composeRule.onNodeWithTag(TAG_SEARCH_FIELD).performImeAction()
+        composeRule.onNodeWithTag(TAG_SEARCH_FIELD).performTextReplacement("")
+
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("НЕДАВНИЕ") }
+        composeRule.onNodeWithTag("search_recent:молоко").performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Ничего не найдено") }
+        composeRule.onNodeWithTag(TAG_SEARCH_FIELD).assertTextEquals("молоко")
     }
 }
 

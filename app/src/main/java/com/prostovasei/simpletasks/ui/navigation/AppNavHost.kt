@@ -1,5 +1,7 @@
 package com.prostovasei.simpletasks.ui.navigation
 
+import com.prostovasei.simpletasks.designsystem.components.UndoKind
+import com.prostovasei.simpletasks.designsystem.components.UndoSnackbarHost
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.EnterTransition
@@ -41,7 +43,6 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -119,7 +120,7 @@ fun AppNavHost(
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     LaunchedEffect(deletions) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-            deletions.events.collect { deletion -> launch { snackbar.showUndo(deletedText, undoText) { deletions.undo(deletion) } } }
+            deletions.events.collect { deletion -> launch { snackbar.showUndo(deletedText, undoText, UndoKind.Deleted) { deletions.undo(deletion) } } }
         }
     }
     // «Перенести просроченные на сегодня» — под экраном «Перенесено на сегодня: N · Отмена» (итерация 37).
@@ -128,14 +129,14 @@ fun AppNavHost(
     LaunchedEffect(moves) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             moves.events.collect { moved ->
-                if (moved.count > 0) launch { snackbar.showUndo(movedText.format(moved.count), undoText) { moves.undo(moved) } }
+                if (moved.count > 0) launch { snackbar.showUndo(movedText.format(moved.count), undoText, UndoKind.Moved) { moves.undo(moved) } }
             }
         }
     }
 
     Scaffold(
         containerColor = AppTheme.colors.background,
-        snackbarHost = { SnackbarHost(snackbar) },
+        snackbarHost = { UndoSnackbarHost(snackbar) },
         bottomBar = {
             // На экране списка нижний бар скрыт: это вложенный экран с кнопкой «Назад».
             if (destination == null || currentTab != null) {

@@ -21,11 +21,13 @@ class SearchViewModel @Inject constructor(
     projects: ProjectRepository,
     dayTicker: DayTicker,
     private val time: TimeProvider,
+    private val recents: RecentSearches,
 ) : MviViewModel<SearchState, SearchIntent, Nothing>(SearchState()) {
 
     private val query = MutableStateFlow("")
 
     init {
+        viewModelScope.launch { recents.items.collect { list -> setState { copy(recents = list) } } }
         viewModelScope.launch {
             combine(tasks.observeSearchable(), projects.observeProjectTree(), dayTicker.today(), query) { all, tree, day, q ->
                 val byId = tree.projectsById()
@@ -49,6 +51,14 @@ class SearchViewModel @Inject constructor(
                 setState { copy(query = intent.text) }
                 query.value = intent.text
             }
+            SearchIntent.Submit -> recents.add(currentState.query)
+            is SearchIntent.PickRecent -> {
+                setState { copy(query = intent.text) }
+                query.value = intent.text
+                recents.add(intent.text)
+            }
+            is SearchIntent.RemoveRecent -> recents.remove(intent.text)
+            SearchIntent.ClearRecents -> recents.clear()
             is SearchIntent.Toggle -> viewModelScope.launch {
                 if (intent.isDone) tasks.restore(intent.taskId) else tasks.complete(intent.taskId)
             }

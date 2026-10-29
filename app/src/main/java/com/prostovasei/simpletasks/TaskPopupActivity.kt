@@ -1,5 +1,7 @@
 package com.prostovasei.simpletasks
 
+import com.prostovasei.simpletasks.designsystem.components.UndoKind
+import com.prostovasei.simpletasks.designsystem.components.UndoSnackbarHost
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -28,8 +30,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -84,17 +86,17 @@ fun TaskPopup(start: Any, onDismiss: () -> Unit, origin: android.graphics.Rect? 
     var offer by remember { mutableStateOf<UndoOffer?>(null) }
     val deletedText = stringResource(R.string.task_deleted)
     val movedText = stringResource(R.string.overdue_moved)
-    LaunchedEffect(deletions) { deletions.events.collect { deletion -> offer = UndoOffer(deletedText) { deletions.undo(deletion) } } }
+    LaunchedEffect(deletions) { deletions.events.collect { deletion -> offer = UndoOffer(deletedText, UndoKind.Deleted) { deletions.undo(deletion) } } }
     LaunchedEffect(moves) {
         moves.events.collect { moved ->
-            if (moved.count == 0) onDismiss() else offer = UndoOffer(movedText.format(moved.count)) { moves.undo(moved) }
+            if (moved.count == 0) onDismiss() else offer = UndoOffer(movedText.format(moved.count), UndoKind.Moved) { moves.undo(moved) }
         }
     }
     val snackbar = remember { SnackbarHostState() }
     val undoText = stringResource(R.string.task_undo)
     LaunchedEffect(offer) {
         val shown = offer ?: return@LaunchedEffect
-        snackbar.showUndo(shown.text, undoText, shown.undo)
+        snackbar.showUndo(shown.text, undoText, shown.kind, shown.undo)
         onDismiss()
     }
     val close: () -> Unit = { if (offer == null && !navController.popBackStack()) onDismiss() }
@@ -130,10 +132,10 @@ fun TaskPopup(start: Any, onDismiss: () -> Unit, origin: android.graphics.Rect? 
         }
         if (offer != null) {
             Box(Modifier.fillMaxSize().clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onDismiss))
-            SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).navigationBarsPadding())
+            UndoSnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = AppTheme.spacing.lg))
         }
     }
 }
 
 /** Подсказка с «Отменой» в прозрачном окне: [text] и что сделать по нажатию. */
-private class UndoOffer(val text: String, val undo: () -> Unit)
+private class UndoOffer(val text: String, val kind: UndoKind, val undo: () -> Unit)

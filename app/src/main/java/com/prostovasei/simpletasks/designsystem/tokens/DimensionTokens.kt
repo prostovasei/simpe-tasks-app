@@ -197,6 +197,16 @@ object SizeTokens {
     const val WIDGET_UPDATE_ICON = 22
     const val WIDGET_UPDATE_GAP = 8
 
+    /** Строка недавнего запроса в поиске (итерация 38): высота, значок «часы» слева, зона нажатия крестика справа. */
+    const val RECENT_ROW = 48
+    const val RECENT_ICON = 22
+    const val RECENT_CLEAR_TOUCH = 48
+
+    /** Подсказка «Отмена» (итерация 38): наименьшая высота, значок слева и зона нажатия кнопки. */
+    const val SNACKBAR_MIN_HEIGHT = 56
+    const val SNACKBAR_ICON = 22
+    const val SNACKBAR_ACTION_MIN = 40
+
     /** Стрелка «свернуть» и значок «перенести на сегодня» у подписи «Просрочено» в виджете (итерация 37). */
     const val WIDGET_FOLD_ICON = 20
 }

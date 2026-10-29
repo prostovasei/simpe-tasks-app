@@ -73,7 +73,10 @@ class SearchTest {
     @After
     fun tearDown() = Dispatchers.resetMain()
 
-    private fun viewModel() = SearchViewModel(tasks, FakeProjectRepository(), { flowOf(today) }, FakeTimeProvider(zone = ZoneOffset.UTC))
+    private val saved = mutableListOf<List<String>>()
+    private val recents = RecentSearches(initial = emptyList(), persist = { saved += it })
+
+    private fun viewModel() = SearchViewModel(tasks, FakeProjectRepository(), { flowOf(today) }, FakeTimeProvider(zone = ZoneOffset.UTC), recents)
 
     @Test
     fun resultsFollowQueryAndToggleCompletesOrRestores() = runTest(dispatcher) {
@@ -97,5 +100,40 @@ class SearchTest {
         runCurrent()
         assertEquals(listOf("called"), tasks.restored)
         assertTrue(vm.state.value.active.any { it.item.id == "called" })
+    }
+
+    /** Итерация 38: запрос запоминается по «поиску» на клавиатуре и по открытию найденной задачи; нажатие ищет; крестик и «Очистить». */
+    @Test
+    fun recentQueriesAreRememberedPickedAndRemoved() = runTest(dispatcher) {
+        val vm = viewModel()
+        runCurrent()
+        vm.onIntent(SearchIntent.Query("врач"))
+        runCurrent()
+        assertEquals("Пока не нажали «поиск», в недавние не попадает", emptyList<String>(), vm.state.value.recents)
+
+        vm.onIntent(SearchIntent.Submit)
+        runCurrent()
+        assertEquals(listOf("врач"), vm.state.value.recents)
+
+        vm.onIntent(SearchIntent.Query("книга"))
+        vm.onIntent(SearchIntent.Submit)
+        runCurrent()
+        assertEquals(listOf("книга", "врач"), vm.state.value.recents)
+
+        vm.onIntent(SearchIntent.Query(""))
+        vm.onIntent(SearchIntent.PickRecent("врач"))
+        runCurrent()
+        assertEquals("врач", vm.state.value.query)
+        assertEquals(listOf("doctor", "book"), vm.state.value.active.map { it.item.id })
+        assertEquals("Выбранный встаёт наверх", listOf("врач", "книга"), vm.state.value.recents)
+
+        vm.onIntent(SearchIntent.RemoveRecent("книга"))
+        runCurrent()
+        assertEquals(listOf("врач"), vm.state.value.recents)
+
+        vm.onIntent(SearchIntent.ClearRecents)
+        runCurrent()
+        assertEquals(emptyList<String>(), vm.state.value.recents)
+        assertEquals(emptyList<String>(), saved.last())
     }
 }

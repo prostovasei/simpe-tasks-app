@@ -1,5 +1,6 @@
 package com.prostovasei.simpletasks.ui.common
 
+import com.prostovasei.simpletasks.designsystem.components.UndoKind
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -45,7 +46,7 @@ fun TaskListEffects(
             when (effect) {
                 is TaskListEffect.ShowUndo -> launch {
                     val text = effect.next?.let { rescheduled.format(days.format(it)) } ?: message
-                    snackbar.showUndo(text, action) { viewModel.onIntent(TaskListIntent.Undo(effect.taskId)) }
+                    snackbar.showUndo(text, action, if (effect.next != null) UndoKind.Repeat else UndoKind.Done) { viewModel.onIntent(TaskListIntent.Undo(effect.taskId)) }
                 }
                 else -> onOtherEffect(effect)
             }
