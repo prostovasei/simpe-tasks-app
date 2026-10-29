@@ -48,17 +48,26 @@ class WeekGridModelTest {
     }
 
     @Test
-    fun stripText() {
+    fun fieldTexts() {
         fun at(h: Int, m: Int) = TaskDue.AtTime(today.atTime(h, m).toInstant(zone))
         fun fields(due: TaskDue?, start: TaskDue? = null, today: LocalDate = this.today) =
             SheetFields(due, start, "p", com.prostovasei.simpletasks.domain.model.Priority.NONE, null, emptyList(), emptyList(), today, zone, 0, emptyList())
-        assertEquals(null, sheetDateText(fields(null)))
-        assertEquals("ср, 14 окт", sheetDateText(fields(TaskDue.AllDay(today))))
-        assertEquals("ср, 14 окт · 09:30", sheetDateText(fields(at(9, 30))))
+        assertEquals(null, sheetDayText(fields(null)))
+        assertEquals(null, sheetTimeText(fields(null)))
+        assertEquals("ср, 14 окт", sheetDayText(fields(TaskDue.AllDay(today))))
+        assertEquals("Без времени — поля времени нет", null, sheetTimeText(fields(TaskDue.AllDay(today))))
+        assertEquals("09:30", sheetTimeText(fields(at(9, 30))))
         // Период — «начало–конец».
-        assertEquals("ср, 14 окт · 15:00–16:30", sheetDateText(fields(at(16, 30), at(15, 0))))
-        // Другой год — год в подписи.
-        assertEquals("ср, 14 окт 2026", sheetDateText(fields(TaskDue.AllDay(today), today = LocalDate.of(2025, 12, 31))))
+        assertEquals("15:00–16:30", sheetTimeText(fields(at(16, 30), at(15, 0))))
+        // Другой год — год в подписи дня.
+        assertEquals("ср, 14 окт 2026", sheetDayText(fields(TaskDue.AllDay(today), today = LocalDate.of(2025, 12, 31))))
+        assertEquals("чт, 01 янв 2026", createdText(LocalDate.of(2026, 1, 1)))
+    }
+
+    @Test
+    fun weekRangeUsesTwoDigitDays() {
+        assertEquals("26 окт – 08 ноя", WeekBlockMath.range(LocalDate.of(2026, 10, 26)))
+        assertEquals("12 окт – 25 окт", WeekBlockMath.range(LocalDate.of(2026, 10, 12)))
     }
 
     @Test
@@ -87,6 +96,7 @@ class WeekGridModelTest {
         assertEquals("Тот же день — без изменений", at, at.after(GridAction.PickDay(today), zone))
         assertEquals("Без даты — просто день", Schedule(TaskDue.AllDay(today.plusDays(1)), null), Schedule(null, null).after(GridAction.PickDay(today.plusDays(1)), zone))
         val period = Schedule(TaskDue.AtTime(today.atTime(12, 0).toInstant(zone)), TaskDue.AtTime(today.atTime(10, 0).toInstant(zone)))
+        assertEquals("«←» возвращает прежний срок", at, Schedule(null, null).after(GridAction.Restore(at), zone))
         assertEquals("Период переезжает целиком", Schedule(TaskDue.AtTime(today.plusDays(2).atTime(12, 0).toInstant(zone)), TaskDue.AtTime(today.plusDays(2).atTime(10, 0).toInstant(zone))), period.after(GridAction.PickDay(today.plusDays(2)), zone))
     }
 

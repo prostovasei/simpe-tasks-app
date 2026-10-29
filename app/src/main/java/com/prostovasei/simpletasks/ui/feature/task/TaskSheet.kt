@@ -75,6 +75,7 @@ import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
@@ -175,9 +176,9 @@ fun rememberSheetMotion(onClosed: () -> Unit): SheetMotion {
 
 /**
  * Шторка задачи снизу (итерации 16–19, с итерации 21 — макет PM N2) — и для новой, и для созданной задачи.
- * Сверху [header] (название, описание, чек-лист…), потом полоска даты (итерация 33: дата и время, повтор и уведомления)
- * и панель кнопок: список, приоритет, чек-лист и справа [actions].
- * Нажатие на дату открывает окно даты и времени на весь экран: сетка на 3 дня, блок «2 недели» и календарь на 2 месяца.
+ * Сверху [header] (название, описание, чек-лист…), потом два поля — дата и время (итерация 34) — и панель кнопок:
+ * список, приоритет, чек-лист, повтор, уведомления и справа [actions].
+ * Нажатие на дату или время открывает окно даты и времени на весь экран: сетка на 3 дня, блок «2 недели» и календарь на 2 месяца.
  * Нажатие на затемнение или «Назад» — [onClose]; «Назад» в таймлайне возвращает к задаче.
  */
 @Composable
@@ -213,12 +214,18 @@ fun TaskSheet(
         hideKeyboard()
         tool = which
     }
+    // Срок и начало на момент открытия окна даты: «←» и «Назад» возвращают их (решение PM — отмена изменений).
+    var opened by remember { mutableStateOf<Schedule?>(null) }
     val closeTimeline = {
         timelineOpen = false
         // Занятость снова нужна для строки недели — с сегодняшнего дня.
         onGrid(GridAction.FirstDay(fields.today))
     }
-    BackHandler(enabled = timelineOpen, onBack = closeTimeline)
+    val cancelTimeline = {
+        opened?.let { onGrid(GridAction.Restore(it)) }
+        closeTimeline()
+    }
+    BackHandler(enabled = timelineOpen, onBack = cancelTimeline)
 
     // Р1: откуда растёт окно — плашка виджета в координатах этого экрана; куда — само окно.
     val origin = LocalSheetOrigin.current
@@ -300,7 +307,7 @@ fun TaskSheet(
                         .background(colors.divider, AppTheme.shapes.small),
                 )
                 if (timelineOpen) {
-                    Timeline(fields, onGrid, hideKeyboard, closeTimeline, openTool, Modifier.weight(1f).windowInsetsPadding(WindowInsets.navigationBars))
+                    Timeline(fields, onGrid, hideKeyboard, closeTimeline, cancelTimeline, Modifier.weight(1f).windowInsetsPadding(WindowInsets.navigationBars))
                 } else {
                     Column(
                         Modifier
@@ -309,16 +316,16 @@ fun TaskSheet(
                             .padding(horizontal = spacing.md),
                         content = header,
                     )
-                    DateStrip(
+                    DateRow(
                         fields = fields,
                         onOpenDate = {
                             hideKeyboard()
+                            opened = Schedule(fields.due, fields.start)
                             timelineOpen = true
                         },
                         onClearDate = { onGrid(GridAction.ClearDate) },
-                        onOpenRepeat = { openTool(ToolDialog.Repeat) },
-                        onOpenReminders = { openTool(ToolDialog.Reminder) },
-                        modifier = Modifier.padding(start = spacing.md, end = spacing.md, bottom = spacing.xs),
+                        onClearTime = { onGrid(GridAction.ClearTime) },
+                        modifier = Modifier.padding(start = spacing.md, end = spacing.md),
                     )
                     SheetToolbar(fields, onEdit, checklistActive, onChecklist, actionCount, actions, openTool, Modifier.padding(bottom = spacing.xxs))
                 }
@@ -330,21 +337,20 @@ fun TaskSheet(
 }
 
 /**
- * Окно даты и времени (итерация 33, макет `VariantC3`): сетка на 3 дня с часом, подогнанным под высоту (10:00–24:00
- * видно сразу), под ней блок «2 недели» со стрелками и «Календарь», внизу «Без даты», «Без времени», повтор,
- * уведомления и зелёная галочка «Готово». Свайп по сетке листает дни; день в блоке переносит сетку к нему.
+ * Окно даты и времени (итерации 33–34, макет `VariantC4`): сетка на 3 дня с часом, подогнанным под высоту (10:00–24:00
+ * видно сразу), под ней блок «2 недели», внизу «←» (отмена), «без даты», листание недель, «Календарь» и зелёная галочка.
+ * Свайп по сетке листает дни; день в блоке выбирается сразу и переносит сетку к нему.
  */
 @Composable
 private fun Timeline(
     fields: SheetFields,
     onGrid: (GridAction) -> Unit,
     onInteract: () -> Unit,
-    onBack: () -> Unit,
-    onOpen: (ToolDialog) -> Unit,
+    onApply: () -> Unit,
+    onCancel: () -> Unit,
     modifier: Modifier,
 ) {
     val spacing = AppTheme.spacing
-    val colors = AppTheme.colors
     val today = fields.today
     val scroll = remember { GridScroll(WeekGridMath.timelineScroll(today, fields.selectedDate ?: today)) }
     val scope = rememberCoroutineScope()
@@ -379,56 +385,22 @@ private fun Timeline(
             startMinute = WeekGridMath.openMinute(fields.selectedMinute),
             modifier = Modifier.weight(1f).fillMaxWidth(),
         )
-        WeekBlock(
-            today = today,
-            selected = fields.selectedDate,
-            gridFirst = gridFirst,
+        WeekBlock(today = today, selected = fields.selectedDate, gridFirst = gridFirst, first = blockFirst, onPick = pick)
+        WindowBar(
             first = blockFirst,
+            canGoBack = blockFirst > WeekBlockMath.monday(today),
+            onCancel = onCancel,
+            onNoDate = {
+                onGrid(GridAction.ClearDate)
+                onApply()
+            },
             onFirstChange = { blockFirst = it },
-            onPick = pick,
             onCalendar = {
                 onInteract()
                 calendar = true
             },
+            onDone = onApply,
         )
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = spacing.sm, vertical = spacing.xs),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(spacing.xs),
-        ) {
-            ToolButton(R.string.quick_when_none, active = false, tag = TAG_TIMELINE_NO_DATE, icon = R.drawable.ic_no_date) {
-                onGrid(GridAction.ClearDate)
-                onBack()
-            }
-            ToolButton(R.string.strip_no_time, active = false, tag = TAG_TIMELINE_NO_TIME, icon = R.drawable.ic_no_time) {
-                // Без даты — день посередине сетки, без времени; с датой и временем — просто убрать время.
-                when {
-                    fields.selectedDate == null -> onGrid(GridAction.DayTap(gridFirst.plusDays(1)))
-                    fields.selectedMinute != null -> onGrid(GridAction.ClearTime)
-                }
-                onBack()
-            }
-            ToolButton(
-                R.string.quick_tool_repeat,
-                active = fields.rrule != null,
-                tag = TAG_TOOL_REPEAT,
-                icon = R.drawable.ic_tool_repeat,
-                dimmed = fields.due == null,
-            ) { onOpen(ToolDialog.Repeat) }
-            val mark = Reminders.mark(fields.due, fields.reminders)
-            ToolButton(
-                R.string.quick_tool_reminder,
-                active = mark != null,
-                tag = TAG_TOOL_REMINDER,
-                icon = if (mark == null) R.drawable.ic_tool_reminder else null,
-                dimmed = fields.due == null,
-                content = {
-                    if (mark != null) ReminderIcon(mark, LocalToolButtonSize.current * ICON_SHARE, tint = colors.accent, earlyColor = colors.accent)
-                },
-            ) { onOpen(ToolDialog.Reminder) }
-            Spacer(Modifier.weight(1f))
-            SheetConfirmButton(R.string.sheet_done, enabled = true, tag = TAG_TIMELINE_DONE, onClick = onBack)
-        }
     }
     if (calendar) {
         CalendarDialog(
@@ -487,9 +459,31 @@ private fun SheetToolbar(
             active = fields.priority != Priority.NONE,
             tag = TAG_TOOL_PRIORITY,
             icon = R.drawable.ic_tool_priority,
+            activeTint = priorityColor(fields.priority),
             clear = if (fields.priority != Priority.NONE) ClearAction(R.string.clear_priority, TAG_CLEAR_PRIORITY) { onEdit(FieldEdit.SetPriority(Priority.NONE)) } else null,
         ) { open(ToolDialog.Priority) }
         ToolButton(R.string.quick_tool_checklist, active = checklistActive, tag = TAG_TOOL_CHECKLIST, icon = R.drawable.ic_tool_checklist, onClick = onChecklist)
+        // Повтор и уведомления доступны, если есть дата; без неё бледные, а в их окнах — подсказка «Сначала выберите день».
+        ToolButton(
+            R.string.quick_tool_repeat,
+            active = fields.rrule != null,
+            tag = TAG_TOOL_REPEAT,
+            icon = R.drawable.ic_tool_repeat,
+            dimmed = fields.due == null,
+        ) { open(ToolDialog.Repeat) }
+        val mark = Reminders.mark(fields.due, fields.reminders)
+        ToolButton(
+            R.string.quick_tool_reminder,
+            active = mark != null,
+            tag = TAG_TOOL_REMINDER,
+            icon = if (mark == null) R.drawable.ic_tool_reminder else null,
+            dimmed = fields.due == null,
+            content = {
+                if (mark != null) {
+                    ReminderIcon(mark, LocalToolButtonSize.current * ICON_SHARE, tint = colors.accent, earlyColor = colors.accent)
+                }
+            },
+        ) { open(ToolDialog.Reminder) }
         Spacer(Modifier.weight(1f))
         actions()
     }
@@ -544,12 +538,13 @@ fun ToolButton(
     @DrawableRes icon: Int? = null,
     dimmed: Boolean = false,
     tint: Color? = null,
+    activeTint: Color? = null,
     clear: ClearAction? = null,
     content: @Composable () -> Unit = {},
     onClick: () -> Unit,
 ) {
     Box {
-        ToolButtonBody(label, active, tag, icon, dimmed, tint, content, onClick)
+        ToolButtonBody(label, active, tag, icon, dimmed, tint, activeTint, content, onClick)
         // Крестик в правом верхнем углу выбранной кнопки (0.23.2): сбрасывает только это свойство.
         clear?.let { ClearBadge(it, Modifier.align(Alignment.TopEnd).offset(x = AppTheme.sizes.weekClear, y = -AppTheme.sizes.weekClear)) }
     }
@@ -592,6 +587,7 @@ private fun ToolButtonBody(
     @DrawableRes icon: Int?,
     dimmed: Boolean,
     tint: Color?,
+    activeTint: Color?,
     content: @Composable () -> Unit,
     onClick: () -> Unit,
 ) {
@@ -600,14 +596,20 @@ private fun ToolButtonBody(
     val shape = AppTheme.shapes.large
     val description = stringResource(label)
     val jelly = rememberJelly()
+    // Выбранная кнопка залита светлым оттенком акцента, а если у неё свой цвет ([activeTint], приоритет) — его светлым оттенком.
+    val fill = when {
+        !active -> colors.surface
+        activeTint != null -> activeTint.copy(alpha = ACTIVE_FILL_ALPHA).compositeOver(colors.surface)
+        else -> colors.selected
+    }
     // Итерация 24: кнопки крупнее (50 dp, скругление как у плиток дней), обводка тоньше — в 1 dp (вариант PM «А»).
     Box(
         Modifier
             .size(LocalToolButtonSize.current)
             .jelly(jelly)
             .clip(shape)
-            .background(if (active) colors.selected else colors.surface)
-            .border(sizes.hairline, if (active) colors.selected else colors.divider, shape)
+            .background(fill)
+            .border(sizes.hairline, if (active) fill else colors.divider, shape)
             .jellyClick(jelly, onClick = onClick)
             .semantics {
                 contentDescription = description
@@ -618,7 +620,7 @@ private fun ToolButtonBody(
     ) {
         if (icon != null) {
             val iconTint = when {
-                active -> colors.accent
+                active -> activeTint ?: colors.accent
                 dimmed -> colors.inactive.copy(alpha = DIMMED_ICON_ALPHA)
                 else -> tint ?: colors.textSecondary
             }
@@ -701,6 +703,9 @@ private const val KEYBOARD_FALLBACK = 0.4f
 /** Иконка недоступной кнопки (нет даты) заметно бледнее доступных (0.31.2, решение PM). */
 private const val DIMMED_ICON_ALPHA = 0.6f
 
+/** Прозрачность цвета приоритета в заливке выбранной кнопки панели. */
+private const val ACTIVE_FILL_ALPHA = 0.16f
+
 const val TAG_QUICK_CARD = "quick_card"
 const val TAG_QUICK_SCRIM = "quick_scrim"
 const val TAG_TOOL_LIST = "tool_list"
@@ -710,12 +715,23 @@ const val TAG_TOOL_PRIORITY = "tool_priority"
 const val TAG_TOOL_CHECKLIST = "tool_checklist"
 const val TAG_REMINDER_NEED_DAY = "reminder_need_day"
 const val TAG_TIMELINE_DONE = "timeline_done"
-const val TAG_TIMELINE_NO_TIME = "timeline_no_time"
 const val TAG_TIMELINE_NO_DATE = "timeline_no_date"
 const val TAG_CLEAR_LIST = "clear_list"
 const val TAG_CLEAR_PRIORITY = "clear_priority"
 const val TAG_CLEAR_DATE = "clear_date"
 
+
+/** Цвет приоритета (как у кружка в ленте) или null, если приоритета нет. */
+@Composable
+fun priorityColor(priority: Priority): Color? {
+    val rings = AppTheme.colors.checkRings
+    return when (priority) {
+        Priority.HIGH -> rings.high
+        Priority.MEDIUM -> rings.medium
+        Priority.LOW -> rings.low
+        Priority.NONE -> null
+    }
+}
 
 /**
  * Размер квадратных кнопок панели (итерация 24): 50 dp, а если все кнопки и действия справа не помещаются
@@ -726,5 +742,5 @@ val LocalToolButtonSize = compositionLocalOf { SizeTokens.TOOL_BUTTON.dp }
 /** Иконка занимает половину кнопки (20 из 40, 25 из 50). */
 private const val ICON_SHARE = 0.5f
 
-/** Кнопки панели слева: список, приоритет, чек-лист (повтор и уведомления — в полоске даты). */
-private const val TOOLBAR_TOOLS = 3
+/** Кнопки панели слева: список, приоритет, чек-лист, повтор, уведомления. */
+private const val TOOLBAR_TOOLS = 5

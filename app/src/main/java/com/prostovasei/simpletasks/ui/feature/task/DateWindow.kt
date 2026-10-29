@@ -6,7 +6,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -15,16 +17,20 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.annotation.DrawableRes
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -37,9 +43,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
-import com.prostovasei.simpletasks.domain.model.Reminders
 import com.prostovasei.simpletasks.domain.model.TaskDue
-import com.prostovasei.simpletasks.ui.common.ReminderIcon
 import com.prostovasei.simpletasks.ui.common.shortDay
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -48,128 +52,72 @@ import java.time.format.TextStyle
 import java.util.Locale
 
 /*
- * Окно даты и времени (итерация 33, решения PM, макеты `VariantC2`/`VariantC3`): в шторке задачи вместо плиток дней и значка
- * месяца — одна полоска, а по её нажатию — окно на весь экран: сетка на 3 дня со временем, блок «2 недели» со стрелками
- * и кнопкой «Календарь» (2 месяца), внизу «без даты», «без времени», повтор и уведомления.
+ * Окно даты и времени (итерации 33–34, макеты `VariantC3`/`VariantC4`): в шторке задачи два поля — дата и время; по нажатию
+ * окно на весь экран: сетка на 3 дня со временем, блок «2 недели» и внизу «←» (отмена), «без даты», листание недель,
+ * «Календарь» (2 месяца) и галочка.
  */
 
-/** Дата и время для полоски: «чт, 29 окт · 11:30» или «… · 10:00–11:30»; без времени — только день; без даты — null. */
-fun sheetDateText(fields: SheetFields): String? {
+/** День для поля даты: «чт, 29 окт» (другой год — с годом); без даты — null. */
+fun sheetDayText(fields: SheetFields): String? {
     val date = fields.selectedDate ?: return null
     val year = if (date.year != fields.today.year) " ${date.year}" else ""
-    val day = "${shortDay(date.dayOfWeek)}, ${date.dayOfMonth} ${MONTHS[date.monthValue - 1]}$year"
-    val minute = fields.selectedMinute ?: return day
-    val isPeriod = fields.start is TaskDue.AtTime
-    val time = if (isPeriod) "${clock(minute)}–${clock(minute + fields.durationMinutes)}" else clock(minute)
-    return "$day · $time"
+    return "${shortDay(date.dayOfWeek)}, ${date.dayOfMonth} ${MONTHS[date.monthValue - 1]}$year"
 }
+
+/** Время для поля времени: «11:30» или период «10:00–11:30»; без времени — null. */
+fun sheetTimeText(fields: SheetFields): String? {
+    val minute = fields.selectedMinute ?: return null
+    return if (fields.start is TaskDue.AtTime) "${clock(minute)}–${clock(minute + fields.durationMinutes)}" else clock(minute)
+}
+
+/** Когда создана задача — для меню «⋮»: «чт, 01 окт 2026». */
+fun createdText(date: LocalDate): String = "${shortDay(date.dayOfWeek)}, %02d ${MONTHS[date.monthValue - 1]} ${date.year}".format(date.dayOfMonth)
 
 private fun clock(minute: Int): String = "%02d:%02d".format(minute / MINUTES_PER_HOUR % HOURS_PER_DAY, minute % MINUTES_PER_HOUR)
 
 /**
- * Полоска даты в шторке: слева дата и время (нажать — окно даты) и крестик «убрать дату», справа повтор и уведомления
- * (нажать — их окна). Без даты повтор и уведомления бледные; выбранные — зелёные на белой плашке; колокольчик — со знаком
- * «заранее» или «несколько».
+ * Два поля вместо плиток дней (итерация 34): слева дата, рядом время; каждое со своим крестиком — у даты он убирает дату вместе
+ * со временем, у времени — только время. Нажатие на любое поле открывает окно даты. Без даты — серая подпись «Без даты и времени».
  */
 @Composable
-fun DateStrip(
+fun DateRow(
     fields: SheetFields,
     onOpenDate: () -> Unit,
     onClearDate: () -> Unit,
-    onOpenRepeat: () -> Unit,
-    onOpenReminders: () -> Unit,
+    onClearTime: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = AppTheme.colors
-    val sizes = AppTheme.sizes
     val spacing = AppTheme.spacing
-    val text = sheetDateText(fields)
-    val has = text != null
-    val shape = AppTheme.shapes.extraLarge
-    val openLabel = stringResource(R.string.strip_pick_date)
-    val hint = stringResource(R.string.date_strip_hint)
-    Row(
-        modifier
-            .fillMaxWidth()
-            .height(sizes.stripHeight)
-            .clip(shape)
-            .background(if (has) colors.selected else colors.surface)
-            .border(sizes.hairline, if (has) colors.selected else colors.divider, shape),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
+    val day = sheetDayText(fields)
+    val time = sheetTimeText(fields)
+    Row(modifier.fillMaxWidth().height(AppTheme.sizes.stripHeight), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(spacing.sm)) {
+        if (day == null) {
+            DateField(R.drawable.ic_widget_all, stringResource(R.string.date_empty), colors.textSecondary, TAG_DATE_FIELD, TAG_DATE_TEXT, null, onOpenDate)
+        } else {
+            DateField(R.drawable.ic_widget_all, day, colors.accent, TAG_DATE_FIELD, TAG_DATE_TEXT, ClearAction(R.string.clear_date, TAG_CLEAR_DATE, onClearDate), onOpenDate)
+            if (time != null) {
+                DateField(R.drawable.ic_time, time, colors.accent, TAG_TIME_FIELD, TAG_TIME_TEXT, ClearAction(R.string.quick_clear_time, TAG_CLEAR_TIME, onClearTime), onOpenDate)
+            }
+        }
+    }
+}
+
+/** Поле даты или времени: значок и текст открывают окно; крестик стоит рядом, вне нажатия на поле. */
+@Composable
+private fun DateField(@DrawableRes icon: Int, text: String, tint: Color, tag: String, textTag: String, clear: ClearAction?, onClick: () -> Unit) {
+    val sizes = AppTheme.sizes
+    Row(verticalAlignment = Alignment.CenterVertically) {
         Row(
-            Modifier
-                .weight(1f)
-                .fillMaxHeight()
-                .clickable(role = Role.Button, onClick = onOpenDate)
-                .semantics { contentDescription = openLabel }
-                .padding(start = spacing.md)
-                .testTag(TAG_DATE_STRIP),
+            Modifier.heightIn(min = sizes.stripHeight).clickable(role = Role.Button, onClick = onClick).testTag(tag),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(spacing.xs),
+            horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.xs),
         ) {
-            Icon(painterResource(R.drawable.ic_widget_all), null, tint = if (has) colors.accent else colors.textPrimary, modifier = Modifier.size(sizes.stripIcon))
-            Text(
-                text ?: hint,
-                color = if (has) colors.accent else colors.inactive,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = if (has) FontWeight.Bold else FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f, fill = false).testTag(TAG_DATE_STRIP_TEXT),
-            )
-            if (has) ClearBadge(ClearAction(R.string.clear_date, TAG_CLEAR_DATE, onClearDate))
+            Icon(painterResource(icon), null, tint = tint, modifier = Modifier.size(sizes.stripIcon))
+            Text(text, color = tint, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, maxLines = 1, modifier = Modifier.testTag(textTag))
         }
-        Box(Modifier.size(sizes.hairline, sizes.stripDivider).background(if (has) colors.accentSoft else colors.divider))
-        Row(Modifier.padding(horizontal = spacing.xxs), verticalAlignment = Alignment.CenterVertically) {
-            val repeatSelected = has && fields.rrule != null
-            StripButton(repeatSelected, TAG_STRIP_REPEAT, R.string.quick_tool_repeat, onOpenRepeat) {
-                Icon(
-                    painterResource(R.drawable.ic_tool_repeat),
-                    null,
-                    tint = stripTint(repeatSelected, has),
-                    modifier = Modifier.size(sizes.stripIcon),
-                )
-            }
-            val mark = Reminders.mark(fields.due, fields.reminders)
-            StripButton(mark != null, TAG_STRIP_REMINDER, R.string.quick_tool_reminder, onOpenReminders) {
-                if (mark != null) {
-                    ReminderIcon(mark, sizes.stripIcon, tint = colors.accent, earlyColor = colors.accent)
-                } else {
-                    Icon(painterResource(R.drawable.ic_tool_reminder), null, tint = stripTint(false, has), modifier = Modifier.size(sizes.stripIcon))
-                }
-            }
-        }
+        clear?.let { ClearBadge(it) }
     }
-}
-
-/** Значок в полоске: выбранный — зелёный, доступный — серый, без даты — совсем бледный. */
-@Composable
-private fun stripTint(selected: Boolean, available: Boolean): Color {
-    val colors = AppTheme.colors
-    return when {
-        selected -> colors.accent
-        available -> colors.textSecondary
-        else -> colors.inactive.copy(alpha = DIMMED_STRIP_ALPHA)
-    }
-}
-
-@Composable
-private fun StripButton(selected: Boolean, tag: String, label: Int, onClick: () -> Unit, content: @Composable () -> Unit) {
-    val description = stringResource(label)
-    Box(
-        Modifier
-            .size(AppTheme.sizes.stripButton)
-            .clip(AppTheme.shapes.large)
-            .background(if (selected) AppTheme.colors.surface else Color.Transparent)
-            .clickable(role = Role.Button, onClick = onClick)
-            .semantics {
-                contentDescription = description
-                this.selected = selected
-            }
-            .testTag(tag),
-        contentAlignment = Alignment.Center,
-    ) { content() }
 }
 
 /** Блок «2 недели»: недели с понедельника, их первая неделя и листание на 2 недели. */
@@ -188,14 +136,20 @@ object WeekBlockMath {
         if (selected == null || (selected >= start && selected < start.plusDays(DAYS))) return start
         return maxOf(monday(selected), base)
     }
+
+    /** Подпись двух недель: «26 окт – 08 ноя» (число с нулём, решение PM). */
+    fun range(first: LocalDate): String {
+        val last = first.plusDays(DAYS - 1)
+        return "%02d ${MONTHS[first.monthValue - 1]} – %02d ${MONTHS[last.monthValue - 1]}".format(first.dayOfMonth, last.dayOfMonth)
+    }
 }
 
 /** Часть светлой подложки под тремя днями, что сейчас видны в сетке: первый, средний или последний из трёх. */
 private enum class Band { NONE, FIRST, MIDDLE, LAST }
 
 /**
- * Блок «2 недели» окна даты (макет `VariantC2`): над ним «‹ 26 окт – 8 ноя ›» и кнопка «Календарь», ниже недели
- * пн–вс. Прошедшие дни бледные и недоступны, сегодня в кольце, выбранный зелёный; три дня сетки — под светлой подложкой.
+ * Блок «2 недели» окна даты (макет `VariantC4`): недели пн–вс с понедельника [first]. Прошедшие дни бледные и недоступны,
+ * сегодня в кольце, выбранный зелёный; три дня сетки — под светлой подложкой. Листание и подпись — в нижней строке ([WindowBar]).
  */
 @Composable
 fun WeekBlock(
@@ -203,35 +157,12 @@ fun WeekBlock(
     selected: LocalDate?,
     gridFirst: LocalDate,
     first: LocalDate,
-    onFirstChange: (LocalDate) -> Unit,
     onPick: (LocalDate) -> Unit,
-    onCalendar: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
-    val last = first.plusDays(WeekBlockMath.DAYS - 1)
-    val canGoBack = first > WeekBlockMath.monday(today)
-    val previous = stringResource(R.string.date_block_previous)
-    val next = stringResource(R.string.date_block_next)
     Column(modifier.fillMaxWidth().padding(horizontal = spacing.sm, vertical = spacing.xs)) {
-        Row(Modifier.fillMaxWidth().padding(bottom = spacing.xs), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(spacing.xs)) {
-            // «Календарь» занимает своё место первым, а стрелки и подпись делят остаток — на узком экране сжимается подпись.
-            Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(spacing.xs)) {
-                RoundArrow(Icons.AutoMirrored.Filled.KeyboardArrowLeft, previous, TAG_DATE_PREV, canGoBack) { onFirstChange(first.minusDays(WeekBlockMath.DAYS)) }
-                Text(
-                    "${first.dayOfMonth} ${MONTHS[first.monthValue - 1]} – ${last.dayOfMonth} ${MONTHS[last.monthValue - 1]}",
-                    color = colors.textPrimary,
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false).testTag(TAG_DATE_RANGE),
-                )
-                RoundArrow(Icons.AutoMirrored.Filled.KeyboardArrowRight, next, TAG_DATE_NEXT, true) { onFirstChange(first.plusDays(WeekBlockMath.DAYS)) }
-            }
-            CalendarChip(onCalendar)
-        }
         Row(Modifier.fillMaxWidth()) {
             DayOfWeek.entries.forEach { day ->
                 Text(
@@ -262,41 +193,68 @@ fun WeekBlock(
     }
 }
 
+/**
+ * Нижняя строка окна даты (макет `VariantC4`): «←» отменяет изменения и возвращает в шторку, «без даты», листание недель
+ * «‹ 26 окт – 08 ноя ›» (на первой странице назад нельзя), «Календарь» значком и зелёная галочка. Кнопки сжимаются на узком
+ * экране, чтобы подпись недель помещалась.
+ */
 @Composable
-private fun RoundArrow(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, tag: String, enabled: Boolean, onClick: () -> Unit) {
+fun WindowBar(
+    first: LocalDate,
+    canGoBack: Boolean,
+    onCancel: () -> Unit,
+    onNoDate: () -> Unit,
+    onFirstChange: (LocalDate) -> Unit,
+    onCalendar: () -> Unit,
+    onDone: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val spacing = AppTheme.spacing
+    val colors = AppTheme.colors
+    BoxWithConstraints(modifier.fillMaxWidth().padding(horizontal = spacing.sm, vertical = spacing.xs)) {
+        val buttons = WINDOW_BUTTONS
+        // Подпись недель растёт вместе с крупным шрифтом — под неё отводится больше места, кнопки сжимаются.
+        val range = AppTheme.sizes.dateRangeMin * LocalDensity.current.fontScale
+        val fit = ((maxWidth - spacing.xs * buttons - range) / buttons).coerceIn(AppTheme.sizes.dateButtonMin, AppTheme.sizes.toolButton)
+        CompositionLocalProvider(LocalToolButtonSize provides fit) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(spacing.xs)) {
+                ToolButton(R.string.detail_back, active = false, tag = TAG_TIMELINE_BACK, content = {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = colors.textSecondary)
+                }, onClick = onCancel)
+                ToolButton(R.string.quick_when_none, active = false, tag = TAG_TIMELINE_NO_DATE, icon = R.drawable.ic_no_date, onClick = onNoDate)
+                Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+                    Chevron(Icons.AutoMirrored.Filled.KeyboardArrowLeft, stringResource(R.string.date_block_previous), TAG_DATE_PREV, canGoBack) { onFirstChange(first.minusDays(WeekBlockMath.DAYS)) }
+                    Text(
+                        WeekBlockMath.range(first),
+                        color = colors.textPrimary,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false).testTag(TAG_DATE_RANGE),
+                    )
+                    Chevron(Icons.AutoMirrored.Filled.KeyboardArrowRight, stringResource(R.string.date_block_next), TAG_DATE_NEXT, true) { onFirstChange(first.plusDays(WeekBlockMath.DAYS)) }
+                }
+                ToolButton(R.string.date_block_calendar, active = false, tag = TAG_DATE_CALENDAR, icon = R.drawable.ic_widget_all, tint = colors.accent, onClick = onCalendar)
+                SheetConfirmButton(R.string.sheet_done, enabled = true, tag = TAG_TIMELINE_DONE, onClick = onDone)
+            }
+        }
+    }
+}
+
+@Composable
+private fun Chevron(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, tag: String, enabled: Boolean, onClick: () -> Unit) {
     val colors = AppTheme.colors
     Box(
         Modifier
             .size(AppTheme.sizes.dateArrow)
             .clip(CircleShape)
-            .background(colors.surface)
-            .border(AppTheme.sizes.hairline, colors.divider, CircleShape)
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
             .semantics { contentDescription = label }
             .testTag(tag),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(icon, null, tint = if (enabled) colors.textPrimary else colors.inactive.copy(alpha = DIMMED_STRIP_ALPHA))
-    }
-}
-
-@Composable
-private fun CalendarChip(onClick: () -> Unit) {
-    val colors = AppTheme.colors
-    val spacing = AppTheme.spacing
-    Row(
-        Modifier
-            .height(AppTheme.sizes.dateArrow)
-            .clip(CircleShape)
-            .background(colors.selected)
-            .clickable(role = Role.Button, onClick = onClick)
-            .padding(horizontal = spacing.sm)
-            .testTag(TAG_DATE_CALENDAR),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(spacing.xs),
-    ) {
-        Icon(painterResource(R.drawable.ic_widget_all), null, tint = colors.accent, modifier = Modifier.size(AppTheme.sizes.reminderIcon))
-        Text(stringResource(R.string.date_block_calendar), color = colors.accent, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, maxLines = 1)
+        Icon(icon, null, tint = if (enabled) colors.textPrimary else colors.inactive.copy(alpha = DIMMED_ALPHA))
     }
 }
 
@@ -337,7 +295,7 @@ private fun DayCell(date: LocalDate, today: LocalDate, selected: Boolean, band: 
                 date.dayOfMonth.toString(),
                 color = when {
                     selected -> colors.onAccent
-                    past -> colors.inactive.copy(alpha = DIMMED_STRIP_ALPHA)
+                    past -> colors.inactive.copy(alpha = DIMMED_ALPHA)
                     else -> colors.textPrimary
                 },
                 style = MaterialTheme.typography.bodyLarge,
@@ -425,12 +383,17 @@ private val MONTHS = listOf("янв", "фев", "мар", "апр", "мая", "�
 private const val MINUTES_PER_HOUR = 60
 private const val HOURS_PER_DAY = 24
 private const val HALF = 50
-private const val DIMMED_STRIP_ALPHA = 0.6f
 
-const val TAG_DATE_STRIP = "date_strip"
-const val TAG_DATE_STRIP_TEXT = "date_strip_text"
-const val TAG_STRIP_REPEAT = "strip_repeat"
-const val TAG_STRIP_REMINDER = "strip_reminder"
+/** Кнопок в нижней строке окна даты: «←», «без даты», «Календарь», галочка. */
+private const val WINDOW_BUTTONS = 4
+private const val DIMMED_ALPHA = 0.6f
+
+const val TAG_DATE_FIELD = "date_field"
+const val TAG_DATE_TEXT = "date_text"
+const val TAG_TIME_FIELD = "time_field"
+const val TAG_TIME_TEXT = "time_text"
+const val TAG_CLEAR_TIME = "clear_time"
+const val TAG_TIMELINE_BACK = "timeline_back"
 const val TAG_DATE_PREV = "date_prev"
 const val TAG_DATE_NEXT = "date_next"
 const val TAG_DATE_RANGE = "date_range"
