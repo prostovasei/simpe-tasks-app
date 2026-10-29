@@ -244,4 +244,110 @@ interface TaskDao {
 
     @Query("UPDATE tasks SET is_deleted = 1, updated_at = :now WHERE project_id = :projectId AND is_deleted = 0")
     suspend fun softDeleteByProject(projectId: String, now: Long): Int
+
+    // ---- Корзина (итерация 39, бэклог №35) ----
+
+    /** Корни удалённых деревьев, новые сверху. Подзадачи, удалённые вместе с родителем (тот же момент), отдельно не показываются. */
+    @Query(
+        """
+        SELECT t.* FROM tasks t
+        WHERE t.is_deleted = 1 AND NOT EXISTS (
+            SELECT 1 FROM tasks p WHERE p.id = t.parent_id AND p.is_deleted = 1 AND p.updated_at = t.updated_at
+        )
+        ORDER BY t.updated_at DESC, t.created_at DESC
+        """,
+    )
+    fun observeTrash(): Flow<List<TaskEntity>>
+
+    @Query(
+        """
+        SELECT t.* FROM tasks t
+        WHERE t.is_deleted = 1 AND NOT EXISTS (
+            SELECT 1 FROM tasks p WHERE p.id = t.parent_id AND p.is_deleted = 1 AND p.updated_at = t.updated_at
+        )
+        ORDER BY t.updated_at DESC, t.created_at DESC
+        """,
+    )
+    suspend fun getTrash(): List<TaskEntity>
+
+    @Query(
+        """
+        SELECT COUNT(*) FROM tasks t
+        WHERE t.is_deleted = 1 AND NOT EXISTS (
+            SELECT 1 FROM tasks p WHERE p.id = t.parent_id AND p.is_deleted = 1 AND p.updated_at = t.updated_at
+        )
+        """,
+    )
+    fun observeTrashCount(): Flow<Int>
+
+    @Query("SELECT * FROM tasks WHERE id = :id AND is_deleted = 1")
+    fun observeTrashedById(id: String): Flow<TaskEntity?>
+
+    /** Подзадачи, удалённые вместе с родителем в момент [deletedAt]. */
+    @Query("SELECT * FROM tasks WHERE parent_id = :parentId AND is_deleted = 1 AND updated_at = :deletedAt ORDER BY sort_order, created_at")
+    fun observeTrashedSubtasks(parentId: String, deletedAt: Long): Flow<List<TaskEntity>>
+
+    /** Вернувшиеся из корзины задачи дерева из удалённого списка переезжают в [inboxId] («Входящие»). */
+    @Query(
+        """
+        UPDATE tasks SET project_id = :inboxId, updated_at = :now
+        WHERE project_id = :oldProjectId AND id IN (
+            WITH RECURSIVE tree(id) AS (
+                SELECT :id
+                UNION SELECT t.id FROM tasks t JOIN tree ON t.parent_id = tree.id
+            )
+            SELECT id FROM tree
+        )
+        """,
+    )
+    suspend fun moveTreeToProject(id: String, oldProjectId: String, inboxId: String, now: Long): Int
+
+    /** Живые подзадачи стираемого дерева теряют родителя: внешний ключ не даёт удалить родителя, пока на него ссылаются. */
+    @Query(
+        """
+        UPDATE tasks SET parent_id = NULL
+        WHERE is_deleted = 0 AND parent_id IN (
+            WITH RECURSIVE tree(id) AS (
+                SELECT :id
+                UNION SELECT t.id FROM tasks t JOIN tree ON t.parent_id = tree.id
+            )
+            SELECT id FROM tree
+        )
+        """,
+    )
+    suspend fun detachLiveChildrenOfTree(id: String): Int
+
+    @Query(
+        """
+        DELETE FROM tasks WHERE is_deleted = 1 AND id IN (
+            WITH RECURSIVE tree(id) AS (
+                SELECT :id
+                UNION SELECT t.id FROM tasks t JOIN tree ON t.parent_id = tree.id
+            )
+            SELECT id FROM tree
+        )
+        """,
+    )
+    suspend fun deleteTrashedTree(id: String): Int
+
+    @Query("UPDATE tasks SET parent_id = NULL WHERE is_deleted = 0 AND parent_id IN (SELECT id FROM tasks WHERE is_deleted = 1)")
+    suspend fun detachLiveChildrenOfTrash(): Int
+
+    @Query("DELETE FROM tasks WHERE is_deleted = 1")
+    suspend fun deleteAllTrashed(): Int
+
+    /** Снова в корзину (отмена восстановления): всё дерево с прежним моментом удаления [at]. */
+    @Query(
+        """
+        UPDATE tasks SET is_deleted = 1, updated_at = :at
+        WHERE is_deleted = 0 AND id IN (
+            WITH RECURSIVE tree(id) AS (
+                SELECT :id
+                UNION SELECT t.id FROM tasks t JOIN tree ON t.parent_id = tree.id
+            )
+            SELECT id FROM tree
+        )
+        """,
+    )
+    suspend fun trashTreeAt(id: String, at: Long): Int
 }

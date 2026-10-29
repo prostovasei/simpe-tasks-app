@@ -197,6 +197,9 @@ object SizeTokens {
     const val WIDGET_UPDATE_ICON = 22
     const val WIDGET_UPDATE_GAP = 8
 
+    /** Корзина (итерация 39): строка с подписью «удалена …» выше обычной на это число dp. */
+    const val TRASH_ROW_EXTRA = 14
+
     /** Строка недавнего запроса в поиске (итерация 38): высота, значок «часы» слева, зона нажатия крестика справа. */
     const val RECENT_ROW = 48
     const val RECENT_ICON = 22

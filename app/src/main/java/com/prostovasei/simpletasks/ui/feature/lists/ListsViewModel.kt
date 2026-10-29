@@ -2,6 +2,7 @@ package com.prostovasei.simpletasks.ui.feature.lists
 
 import androidx.lifecycle.viewModelScope
 import com.prostovasei.simpletasks.domain.repository.ProjectRepository
+import com.prostovasei.simpletasks.domain.repository.TaskRepository
 import com.prostovasei.simpletasks.ui.mvi.MviViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -10,11 +11,15 @@ import javax.inject.Inject
 @HiltViewModel
 class ListsViewModel @Inject constructor(
     private val projects: ProjectRepository,
+    tasks: TaskRepository,
 ) : MviViewModel<ListsState, ListsIntent, ListsEffect>(ListsState()) {
 
     init {
         viewModelScope.launch {
             projects.observeProjectTree().collect { tree -> setState { copy(tree = tree) } }
+        }
+        viewModelScope.launch {
+            tasks.observeTrashCount().collect { count -> setState { copy(trashCount = count) } }
         }
     }
 

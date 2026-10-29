@@ -2,6 +2,7 @@ package com.prostovasei.simpletasks.ui.feature.lists
 
 import app.cash.turbine.test
 import com.prostovasei.simpletasks.testing.FakeProjectRepository
+import com.prostovasei.simpletasks.testing.FakeTaskRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -28,7 +29,7 @@ class ListsViewModelTest {
 
     @Test
     fun foldersCollapseAndExpand() = runTest(dispatcher) {
-        val vm = ListsViewModel(projects)
+        val vm = ListsViewModel(projects, FakeTaskRepository())
         vm.onIntent(ListsIntent.ToggleFolder("g1"))
         assertEquals(setOf("g1"), vm.state.value.collapsedFolders)
         vm.onIntent(ListsIntent.ToggleFolder("g1"))
@@ -37,7 +38,7 @@ class ListsViewModelTest {
 
     @Test
     fun createdListOpensImmediately() = runTest(dispatcher) {
-        val vm = ListsViewModel(projects)
+        val vm = ListsViewModel(projects, FakeTaskRepository())
         runCurrent()
         vm.onIntent(ListsIntent.OpenDialog(ListsDialog.CreateList))
 
@@ -53,7 +54,7 @@ class ListsViewModelTest {
 
     @Test
     fun folderCreateRenameDelete() = runTest(dispatcher) {
-        val vm = ListsViewModel(projects)
+        val vm = ListsViewModel(projects, FakeTaskRepository())
 
         vm.onIntent(ListsIntent.CreateFolder("Личное"))
         runCurrent()
@@ -69,7 +70,7 @@ class ListsViewModelTest {
 
     @Test
     fun renameWithoutOpenDialogIsIgnored() = runTest(dispatcher) {
-        val vm = ListsViewModel(projects)
+        val vm = ListsViewModel(projects, FakeTaskRepository())
         vm.onIntent(ListsIntent.RenameFolder("Х"))
         vm.onIntent(ListsIntent.ConfirmDeleteFolder)
         runCurrent()

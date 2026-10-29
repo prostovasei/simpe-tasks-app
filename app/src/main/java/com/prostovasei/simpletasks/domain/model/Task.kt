@@ -59,6 +59,9 @@ data class TaskDetails(
     val checklist: List<ChecklistItem>,
 )
 
+/** Задача в корзине (итерация 39): [details] — она сама с пунктами чек-листа, [subtasks] — подзадачи, удалённые вместе с ней; удалена в [deletedAt]. */
+data class TrashedTask(val details: TaskDetails, val subtasks: List<Task>, val deletedAt: Instant)
+
 /** Секции экрана «Все» (SPEC.md §4.1). Только активные задачи. */
 data class AllScreenTasks(
     val overdue: List<Task>,

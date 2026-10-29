@@ -4,6 +4,8 @@ import com.prostovasei.simpletasks.domain.model.ProjectTree
 
 /** Экран «Списки» (SPEC.md §4.3): аккордеон папок со списками и счётчиками открытых задач. */
 data class ListsState(
+    /** Сколько задач в корзине (итерация 39): число у строки «Корзина», при нуле не показывается. */
+    val trashCount: Int = 0,
     val tree: ProjectTree? = null,
     val collapsedFolders: Set<String> = emptySet(),
     val dialog: ListsDialog = ListsDialog.None,

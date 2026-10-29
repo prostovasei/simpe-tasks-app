@@ -4,6 +4,8 @@ import com.prostovasei.simpletasks.domain.model.AllScreenTasks
 import com.prostovasei.simpletasks.domain.model.Completion
 import com.prostovasei.simpletasks.domain.model.Deletion
 import com.prostovasei.simpletasks.domain.model.Rescheduling
+import com.prostovasei.simpletasks.domain.model.Restoration
+import com.prostovasei.simpletasks.domain.model.TrashedTask
 import com.prostovasei.simpletasks.domain.model.NewTask
 import com.prostovasei.simpletasks.domain.model.SearchableTask
 import com.prostovasei.simpletasks.domain.model.Task
@@ -93,4 +95,31 @@ interface TaskRepository {
 
     /** «Отмена» удаления: возвращает задачу, подзадачи и чек-листы, удалённые именно этим [deletion]. */
     suspend fun undoDelete(deletion: Deletion)
+
+    // ---- Корзина (итерация 39, бэклог №35) ----
+
+    /** Удалённые задачи (корни деревьев), новые сверху; момент удаления — [Task.updatedAt]. */
+    fun observeTrash(): Flow<List<Task>>
+
+    fun observeTrashCount(): Flow<Int>
+
+    /** Задача из корзины для просмотра; null — её там нет (вернули или стёрли). */
+    fun observeTrashed(taskId: String): Flow<TrashedTask?>
+
+    /**
+     * Возвращает задачу из корзины вместе с подзадачами и чек-листами: в прежний список, а если списка уже нет — во «Входящие».
+     * Результат нужен для [undoRestoreFromTrash]; null — задачи в корзине нет.
+     */
+    suspend fun restoreFromTrash(taskId: String): Restoration?
+
+    suspend fun restoreAllFromTrash(): Restoration
+
+    /** «Отмена» восстановления: задачи снова в корзине с прежним временем удаления. */
+    suspend fun undoRestoreFromTrash(restoration: Restoration)
+
+    /** Стирает задачу из корзины навсегда вместе с подзадачами и чек-листами. */
+    suspend fun deleteForever(taskId: String)
+
+    /** Стирает всю корзину навсегда; возвращает, сколько задач (корней) было. */
+    suspend fun emptyTrash(): Int
 }

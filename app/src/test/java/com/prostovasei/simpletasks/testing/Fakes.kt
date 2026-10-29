@@ -8,6 +8,8 @@ import com.prostovasei.simpletasks.domain.model.Deletion
 import com.prostovasei.simpletasks.domain.model.NewTask
 import com.prostovasei.simpletasks.domain.model.Priority
 import com.prostovasei.simpletasks.domain.model.Rescheduling
+import com.prostovasei.simpletasks.domain.model.Restoration
+import com.prostovasei.simpletasks.domain.model.TrashedTask
 import com.prostovasei.simpletasks.domain.model.withDue
 import com.prostovasei.simpletasks.domain.model.Project
 import com.prostovasei.simpletasks.domain.model.ProjectGroup
@@ -142,7 +144,10 @@ class FakeTaskRepository(private val today: LocalDate = LocalDate.of(2026, 10, 1
 
     override suspend fun deleteTask(taskId: String): Deletion {
         val deletion = Deletion(taskId, ++deletions)
-        tasks.value.firstOrNull { it.id == taskId }?.let { deleted[deletion] = it }
+        tasks.value.firstOrNull { it.id == taskId }?.let {
+            deleted[deletion] = it
+            trash.update { all -> all + it.copy(updatedAt = Instant.ofEpochMilli(deletion.at)) }
+        }
         tasks.update { all -> all.filterNot { it.id == taskId } }
         return deletion
     }
@@ -163,8 +168,45 @@ class FakeTaskRepository(private val today: LocalDate = LocalDate.of(2026, 10, 1
 
     override suspend fun undoDelete(deletion: Deletion) {
         val task = deleted.remove(deletion) ?: return
+        trash.update { all -> all.filterNot { it.id == task.id } }
         tasks.update { all -> all + task }
     }
+
+    // ---- Корзина (итерация 39) ----
+
+    val trash = MutableStateFlow<List<Task>>(emptyList())
+
+    override fun observeTrash(): Flow<List<Task>> = trash
+
+    override fun observeTrashCount(): Flow<Int> = trash.map { it.size }
+
+    override fun observeTrashed(taskId: String): Flow<TrashedTask?> = trash.map { list ->
+        list.firstOrNull { it.id == taskId }?.let { TrashedTask(TaskDetails(it, emptyList()), emptyList(), it.updatedAt) }
+    }
+
+    override suspend fun restoreFromTrash(taskId: String): Restoration? {
+        val task = trash.value.firstOrNull { it.id == taskId } ?: return null
+        trash.update { all -> all.filterNot { it.id == taskId } }
+        tasks.update { all -> all + task }
+        return Restoration(listOf(Deletion(taskId, task.updatedAt.toEpochMilli())))
+    }
+
+    override suspend fun restoreAllFromTrash(): Restoration =
+        Restoration(trash.value.mapNotNull { restoreFromTrash(it.id)?.deletions?.single() })
+
+    override suspend fun undoRestoreFromTrash(restoration: Restoration) {
+        restoration.deletions.forEach { deletion ->
+            val task = tasks.value.firstOrNull { it.id == deletion.taskId } ?: return@forEach
+            tasks.update { all -> all.filterNot { it.id == task.id } }
+            trash.update { all -> all + task }
+        }
+    }
+
+    override suspend fun deleteForever(taskId: String) {
+        trash.update { all -> all.filterNot { it.id == taskId } }
+    }
+
+    override suspend fun emptyTrash(): Int = trash.value.size.also { trash.value = emptyList() }
 
     override suspend fun getTask(taskId: String): Task? = tasks.value.firstOrNull { it.id == taskId }
 

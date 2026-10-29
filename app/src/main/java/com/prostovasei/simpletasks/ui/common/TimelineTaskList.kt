@@ -123,7 +123,8 @@ fun LazyItemScope.TimelineTaskRow(
     val testTag = "task:${item.id}"
     val done by animateFloatAsState(if (item.showsDone) 1f else 0f, tween(DONE_FADE_MS), label = "done")
     val faded = row.past || item.isGhost
-    val height = if (row.isPeriod) SizeTokens.WIDGET_PERIOD_ROW.dp else SizeTokens.WIDGET_ROW.dp
+    val baseHeight = if (row.isPeriod) SizeTokens.WIDGET_PERIOD_ROW else SizeTokens.WIDGET_ROW
+    val height = (baseHeight + if (item.subtitle != null) SizeTokens.TRASH_ROW_EXTRA else 0).dp
     Row(
         Modifier
             .animateItem()
@@ -147,16 +148,27 @@ fun LazyItemScope.TimelineTaskRow(
                 .padding(horizontal = spacing.sm),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                item.title,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Bold,
-                color = if (faded) colors.textSecondary else colors.textPrimary,
-                textDecoration = if (item.showsDone) TextDecoration.LineThrough else null,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
-            )
+            Column(Modifier.weight(1f)) {
+                Text(
+                    item.title,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = if (faded) colors.textSecondary else colors.textPrimary,
+                    textDecoration = if (item.showsDone) TextDecoration.LineThrough else null,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                item.subtitle?.let {
+                    Text(
+                        it,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colors.textSecondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.testTag("$testTag:subtitle"),
+                    )
+                }
+            }
             // Значки справа налево (итерация 27): список, колокольчик, повтор.
             if (item.isRecurring) {
                 Icon(

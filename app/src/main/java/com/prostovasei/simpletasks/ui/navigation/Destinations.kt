@@ -29,6 +29,14 @@ data class QuickAddDestination(val projectId: String? = null, val today: Boolean
 @Serializable
 data object MoveOverdueDestination
 
+/** Корзина (итерация 39). */
+@Serializable
+data object TrashDestination
+
+/** Задача в корзине — шторка только для чтения (итерация 39). Имя поля — ключ аргумента в SavedStateHandle. */
+@Serializable
+data class TrashTaskDestination(val taskId: String)
+
 /** Выполненные задачи (итерация 11). */
 @Serializable
 data object CompletedDestination

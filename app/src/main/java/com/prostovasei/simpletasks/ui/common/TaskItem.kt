@@ -32,6 +32,8 @@ data class TaskItem(
     val listIcon: String? = null,
     /** Колокольчик (итерация 27): в момент срока или со стрелкой назад — заранее (0.27.1); null — напоминаний нет. */
     val reminder: ReminderMark? = null,
+    /** Мелкая подпись под названием (итерация 39): в корзине — «удалена 28 окт». */
+    val subtitle: String? = null,
 ) {
     val isGhost: Boolean get() = ghostOf != null
 

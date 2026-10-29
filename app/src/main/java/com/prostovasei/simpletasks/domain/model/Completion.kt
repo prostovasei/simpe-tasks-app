@@ -28,3 +28,8 @@ data class Deletion(val taskId: String, val at: Long)
 data class Rescheduling(val previous: List<Task>) {
     val count: Int get() = previous.size
 }
+
+/** Результат восстановления из корзины (итерация 39): по одной записи на каждую вернувшуюся задачу — для «Отмены». */
+data class Restoration(val deletions: List<Deletion>) {
+    val count: Int get() = deletions.size
+}
