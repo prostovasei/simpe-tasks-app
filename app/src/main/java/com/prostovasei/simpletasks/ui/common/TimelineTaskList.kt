@@ -75,7 +75,9 @@ fun LazyListScope.timelineItems(
     dayLabels: Boolean = false,
 ) {
     val rows = WidgetTimeline.rows(items, overdue = dayLabels, nowMinute = nowMinute.takeUnless { dayLabels }, days = days)
-    itemsIndexed(rows, key = { _, row -> if (row is WidgetRow.Task) row.item.id else "$keyPrefix-now" }) { index, row ->
+    // Ключ с днём: при переносе между днями Room обновляет списки не одновременно, и одна задача на миг бывает в двух днях сразу —
+    // с одним лишь id это «Key was already used» и вылет.
+    itemsIndexed(rows, key = { _, row -> if (row is WidgetRow.Task) "$keyPrefix:${row.item.id}" else "$keyPrefix-now" }) { index, row ->
         val top = index > 0
         val bottom = index < rows.lastIndex
         when (row) {

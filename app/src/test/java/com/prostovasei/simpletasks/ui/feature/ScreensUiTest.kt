@@ -152,6 +152,14 @@ class ScreensUiTest {
         assertEquals(listOf<Any>(TaskListIntent.ToggleOverdue, TaskListIntent.MoveOverdue), intents.toList())
     }
 
+    /** Перенос на сегодня: Room обновляет разделы не разом, и задача на миг в двух днях — экран не должен вылетать («Key was already used»). */
+    @Test
+    fun sameTaskInTwoDaysDuringMoveDoesNotCrash() {
+        val moved = allState.overdue.first()
+        show { AllScreen(allState.copy(todayAllDay = allState.todayAllDay + moved), { intents += it }) }
+        composeRule.onAllNodesWithText(moved.title).assertCountEquals(2)
+    }
+
     @Test
     fun collapsedOverdueHidesPastDaysButKeepsHeader() {
         show { AllScreen(allState.copy(overdueCollapsed = true), { intents += it }) }
