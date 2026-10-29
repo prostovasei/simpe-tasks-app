@@ -62,8 +62,10 @@ class TaskViewModelsTest {
     private fun QuickAddViewModel.intervalEnd() = (state.value.due as? TaskDue.AtTime)?.instant?.takeIf { state.value.start != null }
 
     private fun detail(scope: CoroutineScope, taskId: String = "t1") = TaskDetailViewModel(
-        SavedStateHandle(mapOf("taskId" to taskId)), tasks, checklist, projects, DayTicker { flowOf(today) }, time, scope,
+        SavedStateHandle(mapOf("taskId" to taskId)), tasks, checklist, projects, DayTicker { flowOf(today) }, time, scope, deletions,
     )
+
+    private val deletions = TaskDeletions(tasks, CoroutineScope(dispatcher))
 
     @Test
     fun quickAddDefaultsToInbox() = runTest(dispatcher) {
@@ -371,14 +373,20 @@ class TaskViewModelsTest {
         runCurrent()
         assertEquals(TaskStatus.COMPLETED, vm.state.value.task!!.status)
 
-        vm.effects.test {
-            vm.onIntent(TaskDetailIntent.RequestDelete)
-            assertTrue(vm.state.value.showDeleteConfirm)
-            vm.onIntent(TaskDetailIntent.ConfirmDelete)
+        // Итерация 36: удаление без вопроса; шторка закрывается после записи, и «Отмена» возвращает задачу.
+        deletions.events.test {
+            vm.effects.test {
+                vm.onIntent(TaskDetailIntent.RequestDelete)
+                runCurrent()
+                assertEquals(TaskDetailEffect.Close, awaitItem())
+            }
+            val deletion = awaitItem()
+            assertEquals("t1", deletion.taskId)
+            assertTrue(tasks.tasks.value.isEmpty())
+            deletions.undo(deletion)
             runCurrent()
-            assertEquals(TaskDetailEffect.Close, awaitItem())
+            assertEquals(listOf("t1"), tasks.tasks.value.map { it.id })
         }
-        assertTrue(tasks.tasks.value.isEmpty())
     }
 
     @Test

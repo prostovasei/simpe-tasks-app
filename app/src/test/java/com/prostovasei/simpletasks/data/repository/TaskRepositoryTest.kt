@@ -143,4 +143,31 @@ class TaskRepositoryTest : DatabaseTest() {
         val result = runCatching { tasks.createTask(NewTask(projectId = projects.getInbox().id, title = "  ")) }
         assertTrue(result.exceptionOrNull() is IllegalArgumentException)
     }
+
+    @Test
+    fun undoDeleteRestoresTaskSubtasksAndChecklist() = runTest {
+        val inbox = projects.getInbox().id
+        val parent = tasks.createTask(NewTask(projectId = inbox, title = "Родитель", checklist = listOf("Пункт 1", "Пункт 2")))
+        val child = tasks.createTask(NewTask(projectId = inbox, title = "Подзадача", checklist = listOf("Дочерний пункт")))
+        tasks.updateTask(tasks.observeTaskDetails(child).first()!!.task.copy(parentId = parent))
+        // Подзадача, удалённая раньше, при «Отмене» не оживает.
+        val old = tasks.createTask(NewTask(projectId = inbox, title = "Старая"))
+        tasks.updateTask(tasks.observeTaskDetails(old).first()!!.task.copy(parentId = parent))
+        tasks.deleteTask(old)
+        time.advance()
+
+        val deletion = tasks.deleteTask(parent)
+        assertNull(tasks.getTask(parent))
+        assertNull(tasks.getTask(child))
+        assertTrue(tasks.observeProjectTasks(inbox, time.today()).first().isEmpty())
+
+        time.advance()
+        tasks.undoDelete(deletion)
+
+        assertEquals("Родитель", tasks.getTask(parent)?.title)
+        assertEquals("Подзадача", tasks.getTask(child)?.title)
+        assertNull("Раньше удалённое осталось удалённым", tasks.getTask(old))
+        assertEquals(listOf("Пункт 1", "Пункт 2"), tasks.observeTaskDetails(parent).first()!!.checklist.map { it.title })
+        assertEquals(listOf("Дочерний пункт"), tasks.observeTaskDetails(child).first()!!.checklist.map { it.title })
+    }
 }

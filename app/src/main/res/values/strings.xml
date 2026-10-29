@@ -239,8 +239,7 @@
 
     <string name="detail_back">Назад</string>
     <string name="detail_menu">Меню задачи</string>
-    <string name="detail_delete_title">Удалить задачу?</string>
-    <string name="detail_delete_text">Задача, её чек-лист и подзадачи будут удалены.</string>
+    <string name="task_deleted">Задача удалена</string>
     <string name="detail_checklist">Чек-лист</string>
     <string name="detail_checklist_add">Добавить пункт</string>
     <string name="detail_subtasks">Подзадачи</string>
@@ -314,6 +313,7 @@
     <string name="task_rescheduled">Следующий повтор: %1$s</string>
     <string name="notification_channel">Напоминания</string>
     <string name="notification_complete">Выполнить</string>
+    <string name="notification_tomorrow">На завтра</string>
     <string name="popup_tomorrow">На завтра в это же время</string>
     <string name="popup_more">ещё %1$d</string>
     <string name="popup_done">Выполнено</string>

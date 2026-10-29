@@ -119,6 +119,8 @@ class AndroidReminderNotifications @Inject constructor(
                 ),
             )
             .addAction(0, context.getString(R.string.notification_complete), action(task.id, ReminderReceiver.ACTION_COMPLETE, id))
+            // Итерация 36: «На завтра» рядом с «Выполнить» — то же, что часы на полоске (задача переезжает на завтра в то же время).
+            .addAction(0, context.getString(R.string.notification_tomorrow), action(task.id, ReminderReceiver.ACTION_TOMORROW, id))
             .build()
         @Suppress("MissingPermission") // проверено в canPost()
         manager.notify(id, notification)

@@ -4,6 +4,7 @@ import com.prostovasei.simpletasks.domain.model.AllScreenTasks
 import com.prostovasei.simpletasks.domain.model.Completion
 import com.prostovasei.simpletasks.domain.model.nextOccurrence
 import com.prostovasei.simpletasks.domain.model.GroupWithProjects
+import com.prostovasei.simpletasks.domain.model.Deletion
 import com.prostovasei.simpletasks.domain.model.NewTask
 import com.prostovasei.simpletasks.domain.model.Priority
 import com.prostovasei.simpletasks.domain.model.Project
@@ -133,8 +134,20 @@ class FakeTaskRepository(private val today: LocalDate = LocalDate.of(2026, 10, 1
         tasks.update { all -> all.map { if (it.id == taskId) it.copy(status = status, completedAt = at) else it } }
     }
 
-    override suspend fun deleteTask(taskId: String) {
+    /** Удалённые и ещё не возвращённые задачи — для проверки «Отмены». */
+    val deleted = mutableMapOf<Deletion, Task>()
+    private var deletions = 0L
+
+    override suspend fun deleteTask(taskId: String): Deletion {
+        val deletion = Deletion(taskId, ++deletions)
+        tasks.value.firstOrNull { it.id == taskId }?.let { deleted[deletion] = it }
         tasks.update { all -> all.filterNot { it.id == taskId } }
+        return deletion
+    }
+
+    override suspend fun undoDelete(deletion: Deletion) {
+        val task = deleted.remove(deletion) ?: return
+        tasks.update { all -> all + task }
     }
 
     override suspend fun getTask(taskId: String): Task? = tasks.value.firstOrNull { it.id == taskId }

@@ -16,6 +16,18 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import com.prostovasei.simpletasks.ui.feature.task.TaskDeletionsHost
+import com.prostovasei.simpletasks.ui.common.showUndo
+import com.prostovasei.simpletasks.domain.model.Deletion
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.compose.ui.res.stringResource
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -63,24 +75,43 @@ class TaskPopupActivity : ComponentActivity() {
  */
 @Composable
 fun TaskPopup(start: Any, onDismiss: () -> Unit, origin: android.graphics.Rect? = null, navController: NavHostController = rememberNavController()) {
-    val close: () -> Unit = { if (!navController.popBackStack()) onDismiss() }
-    NavHost(
-        navController,
-        startDestination = start,
-        modifier = Modifier.fillMaxSize(),
-        enterTransition = { EnterTransition.None },
-        exitTransition = { ExitTransition.None },
-        popEnterTransition = { EnterTransition.None },
-        popExitTransition = { ExitTransition.None },
-    ) {
-        // Растёт из виджета только первое окно; подзадача, открытая из него, выезжает снизу.
-        composable<TaskDetailDestination> {
-            CompositionLocalProvider(LocalSheetOrigin provides origin.takeIf { navController.previousBackStackEntry == null }) {
-                TaskDetailRoute(onClose = close, onOpenTask = { navController.navigate(TaskDetailDestination(it)) })
+    // Задачу удалили (итерация 36): шторка закрылась, окно остаётся прозрачным на время подсказки «Задача удалена · Отмена»,
+    // нажатие мимо подсказки закрывает окно сразу (отмена тогда уже невозможна).
+    val deletions = hiltViewModel<TaskDeletionsHost>().deletions
+    var deleted by remember { mutableStateOf<Deletion?>(null) }
+    LaunchedEffect(deletions) { deletions.events.collect { deleted = it } }
+    val snackbar = remember { SnackbarHostState() }
+    val deletedText = stringResource(R.string.task_deleted)
+    val undoText = stringResource(R.string.task_undo)
+    LaunchedEffect(deleted) {
+        val deletion = deleted ?: return@LaunchedEffect
+        snackbar.showUndo(deletedText, undoText) { deletions.undo(deletion) }
+        onDismiss()
+    }
+    val close: () -> Unit = { if (deleted == null && !navController.popBackStack()) onDismiss() }
+    Box(Modifier.fillMaxSize()) {
+        NavHost(
+            navController,
+            startDestination = start,
+            modifier = Modifier.fillMaxSize(),
+            enterTransition = { EnterTransition.None },
+            exitTransition = { ExitTransition.None },
+            popEnterTransition = { EnterTransition.None },
+            popExitTransition = { ExitTransition.None },
+        ) {
+            // Растёт из виджета только первое окно; подзадача, открытая из него, выезжает снизу.
+            composable<TaskDetailDestination> {
+                CompositionLocalProvider(LocalSheetOrigin provides origin.takeIf { navController.previousBackStackEntry == null }) {
+                    TaskDetailRoute(onClose = close, onOpenTask = { navController.navigate(TaskDetailDestination(it)) })
+                }
+            }
+            composable<QuickAddDestination> {
+                CompositionLocalProvider(LocalSheetOrigin provides origin.takeIf { navController.previousBackStackEntry == null }) { QuickAddRoute(onClose = close) }
             }
         }
-        composable<QuickAddDestination> {
-            CompositionLocalProvider(LocalSheetOrigin provides origin.takeIf { navController.previousBackStackEntry == null }) { QuickAddRoute(onClose = close) }
+        if (deleted != null) {
+            Box(Modifier.fillMaxSize().clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onDismiss))
+            SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).navigationBarsPadding())
         }
     }
 }

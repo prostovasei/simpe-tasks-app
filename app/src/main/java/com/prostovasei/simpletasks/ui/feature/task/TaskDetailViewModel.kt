@@ -42,7 +42,6 @@ data class TaskDetailState(
     val nowMinute: Int = 0,
     /** Занятое другими задачами время в видимых днях сетки. */
     val busy: List<BusySlot> = emptyList(),
-    val showDeleteConfirm: Boolean = false,
     /** Пункт чек-листа, который переименовывается (диалог). */
     val renamingItem: ChecklistItem? = null,
 ) {
@@ -56,9 +55,8 @@ sealed interface TaskDetailIntent {
     data class Edit(val edit: FieldEdit) : TaskDetailIntent
     data class Grid(val action: GridAction) : TaskDetailIntent
     data object ToggleCompleted : TaskDetailIntent
+    /** «Удалить» в меню «⋮»: сразу, без вопроса — под шторкой появится «Задача удалена · Отмена» (итерация 36). */
     data object RequestDelete : TaskDetailIntent
-    data object DismissDelete : TaskDetailIntent
-    data object ConfirmDelete : TaskDetailIntent
     data class AddItem(val title: String) : TaskDetailIntent
     data class ToggleItem(val itemId: String) : TaskDetailIntent
     data class StartRenameItem(val itemId: String) : TaskDetailIntent
@@ -86,6 +84,7 @@ class TaskDetailViewModel @Inject constructor(
     dayTicker: DayTicker,
     private val time: TimeProvider,
     @param:ApplicationScope private val appScope: CoroutineScope,
+    private val deletions: TaskDeletions,
 ) : MviViewModel<TaskDetailState, TaskDetailIntent, TaskDetailEffect>(
     TaskDetailState(
         today = time.today(),
@@ -161,15 +160,7 @@ class TaskDetailViewModel @Inject constructor(
                 }
             }
             TaskDetailIntent.ToggleCompleted -> toggleCompleted()
-            TaskDetailIntent.RequestDelete -> setState { copy(showDeleteConfirm = true) }
-            TaskDetailIntent.DismissDelete -> setState { copy(showDeleteConfirm = false) }
-            TaskDetailIntent.ConfirmDelete -> {
-                setState { copy(showDeleteConfirm = false) }
-                textSaveJob?.cancel()
-                saved = null
-                appScope.launch { tasks.deleteTask(taskId) }
-                close()
-            }
+            TaskDetailIntent.RequestDelete -> delete()
             is TaskDetailIntent.AddItem -> intent.title.trim().takeIf { it.isNotEmpty() }?.let { title ->
                 viewModelScope.launch { checklist.addItem(taskId, title) }
             }
@@ -264,6 +255,16 @@ class TaskDetailViewModel @Inject constructor(
         val reordered = items.toMutableList().apply { add(target, removeAt(index)) }
         setState { copy(checklist = reordered) }
         viewModelScope.launch { checklist.reorder(taskId, reordered.map { it.id }) }
+    }
+
+    /** Удаляет без вопроса; шторка закрывается, когда запись в базе готова и событие для «Отмены» отправлено. */
+    private fun delete() {
+        textSaveJob?.cancel()
+        saved = null
+        appScope.launch {
+            deletions.emit(tasks.deleteTask(taskId))
+            close()
+        }
     }
 
     private fun close() {

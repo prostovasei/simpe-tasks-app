@@ -32,6 +32,15 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import kotlinx.coroutines.launch
+import com.prostovasei.simpletasks.ui.feature.task.TaskDeletionsHost
+import com.prostovasei.simpletasks.ui.common.showUndo
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarHost
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -101,8 +110,21 @@ fun AppNavHost(
     }
     val currentTab = Tab.entries.firstOrNull { destination.isOn(it) }
 
+    // Задачу удалили в шторке — под ней «Задача удалена · Отмена» (итерация 36); пока приложение не на экране, событие не доходит.
+    val deletions = hiltViewModel<TaskDeletionsHost>().deletions
+    val snackbar = remember { SnackbarHostState() }
+    val deletedText = stringResource(R.string.task_deleted)
+    val undoText = stringResource(R.string.task_undo)
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(deletions) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            deletions.events.collect { deletion -> launch { snackbar.showUndo(deletedText, undoText) { deletions.undo(deletion) } } }
+        }
+    }
+
     Scaffold(
         containerColor = AppTheme.colors.background,
+        snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = {
             // На экране списка нижний бар скрыт: это вложенный экран с кнопкой «Назад».
             if (destination == null || currentTab != null) {
