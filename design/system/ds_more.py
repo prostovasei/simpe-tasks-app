@@ -353,7 +353,7 @@ def widget_body(pad_bottom=0):
               '<span style="font-size:12px;font-weight:500;color:var(--text-secondary);padding-left:8px">3 из 7</span></div>')
     now = ('<div style="display:flex;align-items:center;height:14px;padding-right:8px"><span style="width:38px;text-align:right;font-size:11px;font-weight:700;color:var(--accent)">14:40</span>'
            '<span style="width:26px;display:flex;justify-content:center"><span style="width:7px;height:7px;border-radius:50%;background:var(--accent)"></span></span><span style="flex:1;height:1px;background:var(--accent)"></span></div>')
-    rows = (title + frow('11:00', 'var(--inactive)', 'Отчёт за неделю', over=True, top=False, bottom=False, lsq=True) + title2
+    rows = (overdue_header(1, widget=True) + title + frow('11:00', 'var(--inactive)', 'Отчёт за неделю', over=True, top=False, bottom=False, lsq=True) + title2
             + frow('09:00', 'var(--ring-high)', 'Зарядка', done=True, top=False) + frow('12:30', 'var(--ring-medium)', 'Созвон с командой', period=True, end='13:30', rep=True, rem='at') + now
             + frow('18:00', 'var(--ring-low)', 'Оплатить интернет', rem='early', bottom=False))
     bar_sw = lambda ic, sel: f'<span style="width:46px;height:42px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;background:{"var(--selected)" if sel else "var(--surface)"};color:{"var(--accent)" if sel else "var(--text-secondary)"}">{svg(ic, 26)}</span>'
@@ -380,7 +380,7 @@ def p_widget_bar_only():
 # --------------------------------------------------------------- экраны
 
 def all_screen():
-    rows = (day_header('СР, 14 окт', 'Вчера', True) + frow('11:00', 'var(--inactive)', 'Отчёт за неделю', over=True, top=False, bottom=False)
+    rows = (overdue_header(1) + day_header('СР, 14 окт', 'Вчера', True) + frow('11:00', 'var(--inactive)', 'Отчёт за неделю', over=True, top=False, bottom=False)
             + day_header('ЧТ, 15 окт', 'Сегодня') + frow('09:00', 'var(--ring-high)', 'Зарядка', done=True, top=False) + frow('12:30', 'var(--ring-medium)', 'Созвон с командой', period=True, end='13:30', rep=True, rem='at')
             + '<div style="display:flex;align-items:center;height:14px;padding-right:8px"><span style="width:38px;text-align:right;font-size:11px;font-weight:700;color:var(--accent)">14:40</span><span style="width:26px;display:flex;justify-content:center"><span style="width:7px;height:7px;border-radius:50%;background:var(--accent)"></span></span><span style="flex:1;height:1px;background:var(--accent)"></span></div>'
             + frow('18:00', 'var(--ring-low)', 'Оплатить интернет', rem='early', bottom=False)
@@ -457,11 +457,59 @@ def screens(fn, h, subtitle):
     return doc('Экраны', h, subtitle, f'<div class="row" style="align-items:flex-start">{fn()}</div>')
 
 
+# ---------------------------------------------------------------- итерации 36–37: «Просрочено», подсказка «Отмена», кнопки уведомления
+
+def overdue_header(count=1, collapsed=False, move=True, widget=False):
+    """«Просрочено · N» со стрелкой «свернуть» и значком «перенести на сегодня» (итерация 37)."""
+    icon = 20 if widget else 24
+    text = f'Просрочено · {count}' if count else 'Просрочено'
+    arrow = svg('ic_fold_closed' if collapsed else 'ic_fold_open', icon)
+    mv = f'<span style="padding:{4 if widget else 8}px;display:flex">{svg("ic_move_today", icon)}</span>' if move else ''
+    pad = '6px 0 2px 6px' if widget else '8px 0 0 12px'
+    return (f'<div style="display:flex;align-items:center;padding:{pad};color:var(--overdue)"><span style="display:flex;align-items:center;padding:{0 if widget else 8}px 0">'
+            f'<span style="font-size:14px;line-height:20px;font-weight:700">{text}</span><span style="display:flex;padding-left:4px">{arrow}</span></span>'
+            f'<span style="width:{8 if widget else 0}px"></span>{mv}</div>')
+
+
+def p_overdue_header():
+    cap = lambda t: f'<div style="font-size:12px;line-height:16px;color:var(--text-secondary);padding:8px 12px 0">{t}</div>'
+    body = ('<div style="width:412px;display:flex;flex-direction:column">'
+            f'{cap("Приложение, раскрыто")}{overdue_header(3)}{day_header("ВТ, 13 окт", None, True)}'
+            f'{cap("Свёрнуто: прошедшие дни скрыты, счётчик остаётся")}{overdue_header(3, collapsed=True)}'
+            f'{cap("Все просроченные уже выполнены: значка переноса нет")}{overdue_header(0, move=False)}'
+            f'{cap("Виджет: 14 sp, значки 20")}{overdue_header(3, widget=True)}</div>')
+    return doc('Список и виджет', 470, 'Подпись «Просрочено · N»: стрелка «свернуть» и значок «перенести на сегодня»', body)
+
+
+def snackbar(text):
+    return (f'<div style="width:380px;min-height:48px;border-radius:var(--radius-sm);background:#313033;color:#F4EFF4;display:flex;align-items:center;padding:0 8px 0 16px;gap:8px;{SHADOW}">'
+            f'<span style="flex:1;font-size:14px;line-height:20px">{text}</span><span style="min-height:40px;padding:0 12px;display:flex;align-items:center;font-size:14px;font-weight:600;color:#D0BCFF">Отмена</span></div>')
+
+
+def p_snackbar():
+    body = ('<div style="width:412px;padding:12px;display:flex;flex-direction:column;gap:8px">'
+            + ''.join(snackbar(t) for t in ['Задача выполнена', 'Следующий повтор: сб, 17 окт', 'Задача удалена', 'Перенесено на сегодня: 3']) + '</div>')
+    return doc('Список и виджет', 280, 'Подсказка внизу экрана с кнопкой «Отмена»: выполнено, повтор, удалено, перенесено', body)
+
+
+def notif_btn(label):
+    return f'<span style="min-height:36px;padding:0 12px;display:flex;align-items:center;font-size:14px;font-weight:600;color:var(--accent)">{label}</span>'
+
+
+def p_notification():
+    body = ('<div style="width:412px;padding:12px"><div style="border-radius:var(--radius-xl);background:var(--surface);padding:12px 16px;border:1px solid var(--divider)">'
+            '<div style="display:flex;align-items:center;gap:8px;font-size:12px;line-height:16px;color:var(--text-secondary)"><span style="color:var(--accent);display:flex">' + svg('ic_notification', 16) + '</span>Simple Tasks · Напоминания · сейчас</div>'
+            '<div style="font-size:16px;line-height:24px;font-weight:700;padding-top:4px">Созвон с командой</div>'
+            '<div style="font-size:14px;line-height:20px;color:var(--text-secondary)">Сегодня, 18:00 · Дом</div>'
+            f'<div style="display:flex;gap:4px;padding-top:8px;margin-left:-12px">{notif_btn("Выполнить")}{notif_btn("На завтра")}</div></div></div>')
+    return doc('Напоминания и виджет', 190, 'Обычное уведомление-напоминание с кнопками «Выполнить» и «На завтра»', body)
+
+
 PREVIEWS = {
     'UpdateDialog': p_update_dialog, 'ListPriorityDialogs': p_list_priority_dialogs, 'CustomDialogs': p_custom_dialogs, 'AlertDialogs': p_alert_dialogs,
     'ChecklistRows': p_checklist, 'ChipsAndButtons': p_chips_fab, 'SettingsRow': p_switch_rows,
     'Headers': p_headers, 'EmptyTasks': p_empty, 'TaskRow': p_task_row, 'ListRows': p_list_rows, 'SearchField': p_search_field, 'BottomBar': p_bottom_bar,
-    'ReminderStrip': p_reminder_strip, 'Widget': p_widget_bar, 'WidgetBar': p_widget_bar_only,
+    'ReminderStrip': p_reminder_strip, 'OverdueHeader': p_overdue_header, 'UndoSnackbar': p_snackbar, 'ReminderNotification': p_notification, 'Widget': p_widget_bar, 'WidgetBar': p_widget_bar_only,
     'ScreenAll': lambda: screens(all_screen, 730, 'Экран «Все»: лента по дням со шкалой и нижней панелью'),
     'ScreenInbox': lambda: screens(inbox_screen, 730, 'Экран «Входящие»: плоский список, слева день и время'),
     'ScreenLists': lambda: screens(lists_screen, 730, 'Экран «Списки»'),
@@ -473,6 +521,18 @@ PREVIEWS = {
 }
 
 README_MORE = {
+    'OverdueHeader': ('Подпись «Просрочено · N» над прошедшими днями: стрелка «свернуть» и значок «перенести на сегодня» (0.37).',
+                      '''Стоит над первым прошедшим днём в ленте «Все» приложения и на вкладке «Все» виджета; во «Входящих» и списках её нет. Текст `label-large` Bold (в виджете 14 sp), цвет `overdue`; N — невыполненные задачи прошедших дней (сегодняшние с прошедшим временем не входят).
+Справа от текста стрелка 24 (в виджете `size-widget-fold-icon` 20): вниз — раскрыто, вправо — свёрнуто. Нажатие на текст со стрелкой сворачивает все прошедшие дни, счётчик остаётся. Состояние одно на приложение и виджет, запоминается между запусками.
+Рядом значок «→|» (`ic_move_today`): переносит все невыполненные просроченные на сегодня, время дня то же. Если невыполненных нет, значка нет. После переноса — подсказка `UndoSnackbar`; из виджета она показывается в прозрачном окне поверх рабочего стола (~4 с).
+Источник: `designsystem/components/Common.kt` (`OverdueHeader`), `widget/TasksWidget.kt` (`OverdueTitle`).'''),
+    'UndoSnackbar': ('Подсказка внизу экрана с кнопкой «Отмена»: выполнено, повтор, удалено, перенесено.',
+                     '''Стандартный `Snackbar` Material 3, а не токены: тёмная плашка (`inverseSurface` #313033), светлый текст, кнопка «Отмена» цвета `inversePrimary` (светло-сиреневая #D0BCFF). Радиус `radius-sm`. Висит ~4 с, новая заменяет прежнюю.
+Тексты: «Задача выполнена», у повторяющейся «Следующий повтор: сб, 17 окт», «Задача удалена» (0.36, без вопроса «Удалить?»), «Перенесено на сегодня: N» (0.37). «Отмена» возвращает всё как было (удалённое — вместе с подзадачами и чек-листами).
+Из виджета и уведомлений подсказка появляется в прозрачном окне поверх рабочего стола; нажатие мимо закрывает окно сразу (отмена тогда уже невозможна). Источник: `ui/common/TaskListUi.kt` (`showUndo`), `TaskPopupActivity.kt`.'''),
+    'ReminderNotification': ('Обычное уведомление-напоминание: название, срок, кнопки «Выполнить» и «На завтра».',
+                             '''Системное уведомление Android (канал «Напоминания»). Название задачи, под ним срок и список. Две кнопки: «Выполнить» и «На завтра» (0.36): срок переносится на завтра, время дня то же; у задачи без времени — только день.
+Рисует система, поэтому вид зависит от телефона; значок приложения — `ic_notification`. Источник: `notifications/AndroidReminders.kt`.'''),
     'UpdateDialog': ('Окно обновления поверх рабочего стола: проверка, загрузка, установка, ошибки.',
                      '''Строится на `SheetDialog`. Над заголовком круглый значок `size-dialog-badge` (48): зелёный (`selected`, значок `accent`) для хороших исходов, красный (`danger` 12%) для ошибок.
 Состояния: проверка (полоса без процента), «Обновлений нет», «Доступно обновление» («Закрыть» / «Загрузить», версия и размер), загрузка (полоса, «7,2 из 16 МБ», процент, одна кнопка «Отмена»),
@@ -499,7 +559,7 @@ README_MORE = {
                     '''Название `body-large` SemiBold, пояснение `body-small` `text-secondary`, справа переключатель Material 3 (включён — `accent` с белым бегунком; выключен — рамка `inactive`). Предупреждение — `overdue`, действие под ним — заливной кнопкой.
 Секции разделены линией `divider`; заголовок секции — `title-medium` SemiBold.'''),
     'Headers': ('Заголовки: экрана, раздела, дня и день в виджете.',
-                '''Экран: `headline-medium` Bold, поля `space-md` и `space-sm`. Раздел: `label-medium` Bold прописными, `text-secondary`, красным для «Просрочено». День в ленте: `label-large` Bold и белая метка «Сегодня / Завтра / Вчера» (`label-small`, радиус `radius-sm`);
+                '''Экран: `headline-medium` Bold, поля `space-md` и `space-sm`. Раздел: `label-medium` Bold прописными, `text-secondary`, красным для «Просрочено» (с 0.37 над прошедшими днями стоит `OverdueHeader`). День в ленте: `label-large` Bold и белая метка «Сегодня / Завтра / Вчера» (`label-small`, радиус `radius-sm`);
 прошедший день с невыполненными задачами красный. В виджете: 14 sp и метка 12 sp, у «Сегодня» справа зелёная линия прогресса (высота 4) и «3 из 7».'''),
     'EmptyTasks': ('Пустой экран: пунктирная подсказка, силуэты плашек и стрелка к «+».',
                    '''Подсказка — рамка из штрихов `inactive` (штрих 6, толщина `size-stroke`), радиус `space-sm`, внутри `title-medium` ExtraBold и `body-medium`. Силуэты плашек высотой `size-ghost-row` (44): рамка галочки и серая полоска `divider` длиной 70%, 50%, 62%.
