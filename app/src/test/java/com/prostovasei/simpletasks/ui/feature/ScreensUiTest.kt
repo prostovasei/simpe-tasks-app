@@ -13,6 +13,9 @@ import com.github.takahirom.roborazzi.captureRoboImage
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.performTextInput
 import com.prostovasei.simpletasks.designsystem.components.TAG_EMPTY_TASKS
+import com.prostovasei.simpletasks.designsystem.components.TAG_OVERDUE_HEADER
+import com.prostovasei.simpletasks.designsystem.components.TAG_OVERDUE_MOVE
+import com.prostovasei.simpletasks.designsystem.components.TAG_OVERDUE_TOGGLE
 import com.prostovasei.simpletasks.designsystem.components.TaskRow
 import com.prostovasei.simpletasks.ui.feature.search.SearchIntent
 import com.prostovasei.simpletasks.ui.feature.search.SearchResult
@@ -128,6 +131,33 @@ class ScreensUiTest {
         composeRule.onAllNodesWithText("11:00").assertCountEquals(2)
         composeRule.onNodeWithText("09:30").assertExists()
         composeRule.onNodeWithTag("task:t1:repeat", useUnmergedTree = true).assertExists()
+    }
+
+    /** Итерация 37: «Просрочено · N» над прошедшими днями; стрелка сворачивает, значок переносит на сегодня. */
+    @Test
+    fun overdueHeaderTogglesAndMovesToToday() {
+        show { AllScreen(allState, { intents += it }) }
+
+        composeRule.onNodeWithTag(TAG_OVERDUE_HEADER).assertExists()
+        composeRule.onNodeWithText("Просрочено · 1").assertExists()
+        composeRule.onNodeWithTag(TAG_OVERDUE_TOGGLE).performClick()
+        composeRule.onNodeWithTag(TAG_OVERDUE_MOVE).performClick()
+        assertEquals(listOf<Any>(TaskListIntent.ToggleOverdue, TaskListIntent.MoveOverdue), intents.toList())
+    }
+
+    @Test
+    fun collapsedOverdueHidesPastDaysButKeepsHeader() {
+        show { AllScreen(allState.copy(overdueCollapsed = true), { intents += it }) }
+
+        composeRule.onNodeWithText("Просрочено · 1").assertExists()
+        composeRule.onNodeWithText("ЧТ, 15 окт").assertDoesNotExist()
+        composeRule.onNodeWithText("ПТ, 16 окт").assertExists()
+    }
+
+    @Test
+    fun noOverdueNoHeader() {
+        show { AllScreen(allState.copy(overdue = emptyList()), { intents += it }) }
+        composeRule.onNodeWithTag(TAG_OVERDUE_HEADER).assertDoesNotExist()
     }
 
     @Test

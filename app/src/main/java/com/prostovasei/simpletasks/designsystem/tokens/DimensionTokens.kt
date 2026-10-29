@@ -196,4 +196,7 @@ object SizeTokens {
     const val WIDGET_UPDATE = 44
     const val WIDGET_UPDATE_ICON = 22
     const val WIDGET_UPDATE_GAP = 8
+
+    /** Стрелка «свернуть» и значок «перенести на сегодня» у подписи «Просрочено» в виджете (итерация 37). */
+    const val WIDGET_FOLD_ICON = 20
 }

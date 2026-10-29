@@ -170,4 +170,35 @@ class TaskRepositoryTest : DatabaseTest() {
         assertEquals(listOf("Пункт 1", "Пункт 2"), tasks.observeTaskDetails(parent).first()!!.checklist.map { it.title })
         assertEquals(listOf("Дочерний пункт"), tasks.observeTaskDetails(child).first()!!.checklist.map { it.title })
     }
+
+    @Test
+    fun moveOverdueToTodayMovesPastDaysKeepingTimeAndUndoRestores() = runTest {
+        val inbox = projects.getInbox().id
+        val today = time.today()
+        suspend fun create(title: String, due: TaskDue?) = tasks.createTask(NewTask(projectId = inbox, title = title, due = due))
+        val pastAllDay = create("Весь день", TaskDue.AllDay(today.minusDays(3)))
+        val pastTimed = create("Со временем", TaskDue.AtTime(Instant.parse("2026-10-11T07:30:00Z")))
+        val earlierToday = create("Сегодня раньше", TaskDue.AtTime(Instant.parse("2026-10-13T06:00:00Z")))
+        val future = create("Завтра", TaskDue.AllDay(today.plusDays(1)))
+        val noDate = create("Без даты", null)
+        val done = create("Сделана", TaskDue.AllDay(today.minusDays(2)))
+        tasks.setCompleted(done, completed = true)
+
+        val moved = tasks.moveOverdueToToday()
+
+        assertEquals(setOf(pastAllDay, pastTimed), moved.previous.map { it.id }.toSet())
+        assertEquals(2, moved.count)
+        assertEquals(TaskDue.AllDay(today), tasks.getTask(pastAllDay)?.due)
+        assertEquals("Время дня то же (10:30 по Москве)", TaskDue.AtTime(Instant.parse("2026-10-13T07:30:00Z")), tasks.getTask(pastTimed)?.due)
+        assertEquals(TaskDue.AtTime(Instant.parse("2026-10-13T06:00:00Z")), tasks.getTask(earlierToday)?.due)
+        assertEquals(TaskDue.AllDay(today.plusDays(1)), tasks.getTask(future)?.due)
+        assertNull(tasks.getTask(noDate)?.due)
+        assertEquals(TaskDue.AllDay(today.minusDays(2)), tasks.getTask(done)?.due)
+        assertTrue("Второе нажатие ничего не находит", tasks.moveOverdueToToday().previous.isEmpty())
+
+        tasks.undoReschedule(moved)
+
+        assertEquals(TaskDue.AllDay(today.minusDays(3)), tasks.getTask(pastAllDay)?.due)
+        assertEquals(TaskDue.AtTime(Instant.parse("2026-10-11T07:30:00Z")), tasks.getTask(pastTimed)?.due)
+    }
 }

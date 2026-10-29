@@ -19,6 +19,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.components.DayHeader
 import com.prostovasei.simpletasks.designsystem.components.EmptyTasks
+import com.prostovasei.simpletasks.designsystem.components.OverdueHeader
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.ui.common.DayLabel
 import com.prostovasei.simpletasks.ui.common.DayNames
@@ -60,7 +61,24 @@ fun AllScreen(
             Modifier.fillMaxSize().padding(padding),
             contentPadding = PaddingValues(bottom = AppTheme.spacing.xs),
         ) {
-            state.dayGroups().forEach { group ->
+            val groups = state.dayGroups()
+            // «Просрочено · N» над первым прошедшим днём (итерация 37): стрелка сворачивает все прошедшие дни, значок — переносит на сегодня.
+            val overdueCount = groups.filter { it.isOverdue }.sumOf { group -> group.items.count { !it.showsDone } }
+            groups.forEach { group ->
+                if (group.isOverdue && group == groups.first()) {
+                    item(key = "overdue-header") {
+                        OverdueHeader(
+                            text = if (overdueCount > 0) stringResource(R.string.overdue_count, overdueCount) else stringResource(R.string.overdue_title),
+                            collapsed = state.overdueCollapsed,
+                            foldDescription = stringResource(if (state.overdueCollapsed) R.string.overdue_fold_closed else R.string.overdue_fold_open),
+                            moveDescription = stringResource(R.string.overdue_move_today),
+                            onToggle = { onIntent(TaskListIntent.ToggleOverdue) },
+                            onMoveToday = { onIntent(TaskListIntent.MoveOverdue) }.takeIf { overdueCount > 0 },
+                            modifier = Modifier.animateItem(),
+                        )
+                    }
+                }
+                if (group.isOverdue && state.overdueCollapsed) return@forEach
                 item(key = "day-${group.date}") {
                     DayHeader(
                         text = WidgetDates.header(group.date),

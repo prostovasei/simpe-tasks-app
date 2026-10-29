@@ -70,8 +70,36 @@ data class WidgetModel(
     val tabs: List<WidgetTab> = emptyList(),
     /** Минута дня для отметки «сейчас» в блоке «Сегодня» (итерация 20); null — без отметки. */
     val nowMinute: Int? = null,
+    /** Блок «Просрочено» свёрнут (итерация 37): прошедшие дни ленты «Все» скрыты. */
+    val overdueCollapsed: Boolean = false,
 ) {
     val isEmpty: Boolean get() = days.all { it.items.isEmpty() }
+
+    /** Прошедшие дни с задачами — блок «Просрочено» ленты «Все». */
+    val pastDays: List<WidgetDayBlock>
+        get() = days.filter { block -> block.items.isNotEmpty() && (block.day as? WidgetDay.On)?.date?.let { it < today } == true }
+
+    /** Невыполненных задач в прошедших днях — число у подписи «Просрочено». */
+    val overdueCount: Int get() = pastDays.sumOf { block -> block.items.count { !it.isDone } }
+}
+
+/** Что рисует лента виджета (итерация 37): подпись «Просрочено» над прошедшими днями или день. */
+sealed interface WidgetEntry {
+    data class Overdue(val count: Int, val collapsed: Boolean) : WidgetEntry
+    data class Day(val block: WidgetDayBlock) : WidgetEntry
+}
+
+/** Дни ленты; в «Все» над первым прошедшим днём — «Просрочено», свёрнутое скрывает прошедшие дни. */
+fun WidgetModel.entries(): List<WidgetEntry> {
+    val shown = days.filter { it.items.isNotEmpty() }
+    val past = pastDays.takeIf { filter == WidgetFilter.All }.orEmpty()
+    if (past.isEmpty()) return shown.map { WidgetEntry.Day(it) }
+    return shown.flatMap { block ->
+        buildList {
+            if (block == past.first()) add(WidgetEntry.Overdue(overdueCount, overdueCollapsed))
+            if (!(overdueCollapsed && block in past)) add(WidgetEntry.Day(block))
+        }
+    }
 }
 
 object WidgetModels {

@@ -7,6 +7,8 @@ import com.prostovasei.simpletasks.domain.model.GroupWithProjects
 import com.prostovasei.simpletasks.domain.model.Deletion
 import com.prostovasei.simpletasks.domain.model.NewTask
 import com.prostovasei.simpletasks.domain.model.Priority
+import com.prostovasei.simpletasks.domain.model.Rescheduling
+import com.prostovasei.simpletasks.domain.model.withDue
 import com.prostovasei.simpletasks.domain.model.Project
 import com.prostovasei.simpletasks.domain.model.ProjectGroup
 import com.prostovasei.simpletasks.domain.model.ProjectTree
@@ -143,6 +145,20 @@ class FakeTaskRepository(private val today: LocalDate = LocalDate.of(2026, 10, 1
         tasks.value.firstOrNull { it.id == taskId }?.let { deleted[deletion] = it }
         tasks.update { all -> all.filterNot { it.id == taskId } }
         return deletion
+    }
+
+    override suspend fun moveOverdueToToday(): Rescheduling {
+        val overdue = tasks.value.filter { task ->
+            val anchor = task.start ?: task.due
+            !task.isCompleted && anchor is TaskDue.AllDay && anchor.date < today
+        }
+        tasks.update { all -> all.map { task -> if (task in overdue) task.withDue(TaskDue.AllDay(today)) else task } }
+        return Rescheduling(overdue)
+    }
+
+    override suspend fun undoReschedule(rescheduling: Rescheduling) {
+        val back = rescheduling.previous.associateBy { it.id }
+        tasks.update { all -> all.map { back[it.id] ?: it } }
     }
 
     override suspend fun undoDelete(deletion: Deletion) {

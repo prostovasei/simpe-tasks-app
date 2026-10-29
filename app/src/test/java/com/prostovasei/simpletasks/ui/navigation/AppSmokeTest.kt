@@ -18,6 +18,15 @@ import com.prostovasei.simpletasks.ui.feature.task.TAG_DETAIL_TITLE
 import com.prostovasei.simpletasks.ui.feature.task.TAG_QUICK_SAVE
 import com.prostovasei.simpletasks.ui.feature.task.TAG_QUICK_TITLE
 import com.prostovasei.simpletasks.ui.feature.search.TAG_SEARCH_FIELD
+import androidx.test.core.app.ApplicationProvider
+import com.prostovasei.simpletasks.designsystem.components.TAG_OVERDUE_HEADER
+import com.prostovasei.simpletasks.designsystem.components.TAG_OVERDUE_MOVE
+import com.prostovasei.simpletasks.designsystem.components.TAG_OVERDUE_TOGGLE
+import com.prostovasei.simpletasks.domain.model.NewTask
+import com.prostovasei.simpletasks.domain.model.TaskDue
+import com.prostovasei.simpletasks.widget.widgetEntryPoint
+import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -109,10 +118,36 @@ class AppSmokeTest {
 
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Задача удалена") }
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_DETAIL_TITLE).fetchSemanticsNodes().isEmpty() }
-        composeRule.onNodeWithText("Лишняя задача").assertDoesNotExist()
+        // Строка уходит из списка с анимацией — ждём, пока исчезнет.
+        composeRule.waitUntil(5_000) { !composeRule.onAllNodesWithTextExists("Лишняя задача") }
 
         composeRule.onNodeWithText("Отмена").performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Лишняя задача") }
+    }
+
+    /** Итерация 37: «Просрочено · N» — стрелка сворачивает прошедшие дни, значок переносит на сегодня с «Отменой». */
+    @Test
+    fun overdueBlockCollapsesAndMovesToToday() {
+        val entry = ApplicationProvider.getApplicationContext<android.app.Application>().widgetEntryPoint()
+        val past = entry.time().today().minusDays(3)
+        val id = runBlocking { entry.tasks().createTask(NewTask(entry.projects().getInbox().id, "Просроченная", due = TaskDue.AllDay(past))) }
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Просроченная") }
+        composeRule.onNodeWithText("Просрочено · 1").assertExists()
+
+        composeRule.onNodeWithTag(TAG_OVERDUE_TOGGLE).performClick()
+        composeRule.waitUntil(5_000) { !composeRule.onAllNodesWithTextExists("Просроченная") }
+        composeRule.onNodeWithText("Просрочено · 1").assertExists()
+        composeRule.onNodeWithTag(TAG_OVERDUE_TOGGLE).performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Просроченная") }
+
+        composeRule.onNodeWithTag(TAG_OVERDUE_MOVE).performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Перенесено на сегодня: 1") }
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_OVERDUE_HEADER).fetchSemanticsNodes().isEmpty() }
+        assertEquals(TaskDue.AllDay(entry.time().today()), runBlocking { entry.tasks().getTask(id) }?.due)
+
+        composeRule.onNodeWithText("Отмена").performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_OVERDUE_HEADER).fetchSemanticsNodes().isNotEmpty() }
+        assertEquals(TaskDue.AllDay(past), runBlocking { entry.tasks().getTask(id) }?.due)
     }
 }
 

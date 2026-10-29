@@ -11,6 +11,7 @@ import com.prostovasei.simpletasks.core.di.ApplicationScope
 import com.prostovasei.simpletasks.core.time.DayTicker
 import com.prostovasei.simpletasks.core.time.TimeProvider
 import com.prostovasei.simpletasks.domain.repository.TaskRepository
+import com.prostovasei.simpletasks.ui.feature.all.OverdueFold
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
@@ -89,12 +90,13 @@ class WidgetUpdater @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val tasks: TaskRepository,
     private val dayTicker: DayTicker,
+    private val overdueFold: OverdueFold,
     @param:ApplicationScope private val appScope: CoroutineScope,
 ) {
     @OptIn(FlowPreview::class)
     fun start() {
         appScope.launch {
-            combine(tasks.observeDataChanges(), dayTicker.today()) { _, _ -> }.debounce(DEBOUNCE_MS).collect {
+            combine(tasks.observeDataChanges(), dayTicker.today(), overdueFold.collapsed) { _, _, _ -> }.debounce(DEBOUNCE_MS).collect {
                 if (WidgetRenderer.widgetIds(context).isEmpty()) return@collect
                 WidgetRenderer.renderAll(context, "изменились задачи")
             }
