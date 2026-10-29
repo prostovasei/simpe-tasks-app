@@ -37,6 +37,12 @@ import com.prostovasei.simpletasks.domain.model.TaskDue
 import com.prostovasei.simpletasks.widget.widgetEntryPoint
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import com.prostovasei.simpletasks.ui.feature.lists.TAG_TRASH_COUNT
+import com.prostovasei.simpletasks.ui.feature.trash.TAG_TRASH
+import com.prostovasei.simpletasks.ui.feature.trash.TAG_TRASH_EMPTY
+import com.prostovasei.simpletasks.ui.feature.trash.TAG_TRASH_TASK_BANNER
+import com.prostovasei.simpletasks.ui.feature.trash.TAG_TRASH_TASK_MENU
+import com.prostovasei.simpletasks.ui.feature.trash.TAG_TRASH_TASK_RESTORE
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -158,6 +164,39 @@ class AppSmokeTest {
         composeRule.onNodeWithText("Отмена").performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_OVERDUE_HEADER).fetchSemanticsNodes().isNotEmpty() }
         assertEquals(TaskDue.AllDay(past), runBlocking { entry.tasks().getTask(id) }?.due)
+    }
+
+    /** Итерация 39: удалённая задача лежит в «Корзине» (строка в «Списках» со счётчиком), открывается без правки и возвращается из «⋮». */
+    @Test
+    fun deletedTaskGoesToTrashAndComesBack() {
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Всё сделано") }
+        composeRule.onNodeWithTag(TAG_ADD_TASK).performClick()
+        composeRule.onNodeWithTag(TAG_QUICK_TITLE).performTextReplacement("В корзину")
+        composeRule.onNodeWithTag(TAG_QUICK_SAVE).performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("В корзину") }
+        composeRule.onNodeWithText("В корзину").performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_DETAIL_TITLE).fetchSemanticsNodes().isNotEmpty() }
+        composeRule.onNodeWithTag(TAG_DETAIL_MENU).performClick()
+        composeRule.onNodeWithTag(TAG_DETAIL_DELETE).performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_DETAIL_TITLE).fetchSemanticsNodes().isEmpty() }
+
+        composeRule.onNodeWithTag("tab:LISTS").performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_TRASH_COUNT, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
+        composeRule.onNodeWithTag(TAG_TRASH_COUNT, useUnmergedTree = true).assertTextEquals("1")
+        composeRule.onNodeWithTag(TAG_TRASH).performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("В корзину") }
+
+        composeRule.onNodeWithText("В корзину").performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_TRASH_TASK_BANNER).fetchSemanticsNodes().isNotEmpty() }
+        composeRule.onNodeWithTag(TAG_TRASH_TASK_MENU).performClick()
+        composeRule.onNodeWithTag(TAG_TRASH_TASK_RESTORE).performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Задача восстановлена") }
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_TRASH_TASK_BANNER).fetchSemanticsNodes().isEmpty() }
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_TRASH_EMPTY).fetchSemanticsNodes().isNotEmpty() }
+
+        composeRule.onNodeWithContentDescription("Назад").performClick()
+        composeRule.onNodeWithTag("tab:ALL").performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("В корзину") }
     }
 
     /** Итерация 38: закрыли карточку новой задачи, не сохранив, — следующее «+» открывается с тем же названием. */

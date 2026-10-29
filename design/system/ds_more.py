@@ -401,7 +401,8 @@ def lists_screen():
     done = f'<div style="display:flex;align-items:center;padding:12px 16px;color:var(--text-secondary)">{mi("check")}<span style="flex:1;padding-left:12px;font-size:16px;color:var(--text-primary)">Выполненные</span></div>'
     folder = (f'<div style="display:flex;align-items:center;padding-left:8px;color:var(--text-secondary)">{mi("down")}<span style="flex:1;padding-left:8px;font-size:16px;line-height:24px;font-weight:600;color:var(--text-primary)">Дом</span><span style="font-size:14px">7</span>'
               f'<span style="width:48px;height:48px;display:flex;align-items:center;justify-content:center">{mi("more")}</span></div>')
-    body = f'{head}{done}{folder}{proj("Ремонт", "var(--list-orange)", "ic_list_home", 3, True)}{proj("Работа", "var(--list-blue)", "ic_list_work", 12)}{proj("Спорт", "var(--list-teal)", "ic_list_sport", "")}{proj("Учёба", "var(--list-purple)", "ic_list_study", 4)}'
+    trash = f'<div style="display:flex;align-items:center;padding:12px 16px;color:var(--text-secondary)">{TRASH_ICON(24)}<span style="flex:1;padding-left:12px;font-size:16px;line-height:24px;color:var(--text-primary)">Корзина</span><span style="font-size:14px">5</span></div>'
+    body = f'{head}{done}{trash}{folder}{proj("Ремонт", "var(--list-orange)", "ic_list_home", 3, True)}{proj("Работа", "var(--list-blue)", "ic_list_work", 12)}{proj("Спорт", "var(--list-teal)", "ic_list_sport", "")}{proj("Учёба", "var(--list-purple)", "ic_list_study", 4)}'
     return frame(f'<div style="padding-top:8px">{body}</div>{nav_bar(2)}', 680)
 
 
@@ -536,11 +537,97 @@ def p_notification():
     return doc('Напоминания и виджет', 190, 'Обычное уведомление-напоминание с кнопками «Выполнить» и «На завтра»', body)
 
 
+# ---------------------------------------------------------------- итерация 39: «Корзина»
+
+TRASH_ICON = lambda size=22: svg('ic_tool_delete', size)
+
+
+def sub(title, when):
+    return f'{title}<div style="font-size:12px;line-height:14px;font-weight:500;color:var(--text-secondary)">удалена {when}</div>'
+
+
+def trash_rows():
+    rows = [
+        (['Сегодня', '12:30'], 'var(--ring-medium)', 'Позвонить врачу', '28 окт', {'rem': 'early'}),
+        (['16 окт'], 'var(--inactive)', 'Купить продукты', '27 окт', {'rep': True}),
+        (['18 окт', '10:00'], 'var(--ring-low)', 'Записаться на стрижку', '27 окт', {}),
+        (['—'], 'var(--ring-high)', 'Отчёт за квартал', '24 окт', {'list_color': 'var(--list-blue)', 'list_icon': 'ic_list_work'}),
+        (['—'], 'var(--inactive)', 'Заказать оборудование', '12 окт', {'list_color': 'var(--list-blue)', 'list_icon': 'ic_list_work'}),
+    ]
+    out = []
+    for i, (left, ring, title, when, kw) in enumerate(rows):
+        row = frow(left, ring, sub(title, when), top=i > 0, bottom=i < len(rows) - 1, **kw).replace('height:46px', 'height:58px')
+        out.append(row)
+    return ''.join(out)
+
+
+def trash_header(count=5):
+    btn = lambda t, c: f'<span style="padding:10px 12px;font-size:14px;line-height:20px;font-weight:700;color:{c}">{t}</span>'
+    return (f'<div style="display:flex;align-items:center;padding:8px 4px 0 0"><span style="width:48px;height:48px;display:flex;align-items:center;justify-content:center">{mi("back")}</span>'
+            f'<span style="flex:1;font-size:22px;line-height:28px;font-weight:700">Корзина</span></div>'
+            f'<div style="display:flex;align-items:center;padding:4px 4px 4px 16px"><span style="flex:1;font-size:12px;line-height:16px;font-weight:700;letter-spacing:.04em;color:var(--text-secondary)">ЗАДАЧ: {count}</span>'
+            f'{btn("Восстановить все", "var(--accent)")}{btn("Удалить все", "var(--danger)")}</div>')
+
+
+def trash_screen():
+    return frame(f'{trash_header()}<div style="padding-top:4px">{trash_rows()}</div>', 680)
+
+
+def empty_trash():
+    msg = ('<div style="position:absolute;left:0;right:0;top:260px;text-align:center;padding:0 32px"><div style="font-size:16px;line-height:24px;font-weight:800">Корзина пуста</div>'
+           '<div style="font-size:14px;line-height:20px;color:var(--text-secondary);padding-top:4px">Удалённые задачи появятся здесь и будут лежать, пока вы их не вернёте или не сотрёте</div></div>')
+    top = ('<div style="display:flex;align-items:center;padding:8px 4px 0 0"><span style="width:48px;height:48px;display:flex;align-items:center;justify-content:center">' + mi('back') + '</span>'
+           '<span style="flex:1;font-size:22px;line-height:28px;font-weight:700">Корзина</span></div>')
+    return frame(f'{top}{msg}', 680)
+
+
+def lists_with_trash():
+    lsq = lambda c, ic: f'<span style="width:24px;height:24px;border-radius:var(--radius-md);background:{c};color:var(--on-list-square);display:flex;align-items:center;justify-content:center;flex-shrink:0">{svg(ic, 16)}</span>'
+    proj = lambda name, c, ic, n: f'<div style="display:flex;align-items:center;padding:12px 16px">{lsq(c, ic)}<span style="flex:1;padding-left:12px;font-size:16px;line-height:24px">{name}</span><span style="font-size:14px;color:var(--text-secondary)">{n}</span></div>'
+    head = f'<div style="display:flex;align-items:center"><div style="flex:1">{screen_title("Списки")}</div>{btn_text("+ Папка")}{btn_text("+ Список")}</div>'
+    row = lambda ic, t, n='': (f'<div style="display:flex;align-items:center;padding:12px 16px;color:var(--text-secondary)">{ic}<span style="flex:1;padding-left:12px;font-size:16px;line-height:24px;color:var(--text-primary)">{t}</span>'
+                              f'<span style="font-size:14px">{n}</span></div>')
+    body = (head + row(mi('check'), 'Выполненные') + row(TRASH_ICON(24), 'Корзина', 5) + proj('Работа', 'var(--list-blue)', 'ic_list_work', 12)
+            + proj('Спорт', 'var(--list-teal)', 'ic_list_sport', '') + proj('Учёба', 'var(--list-purple)', 'ic_list_study', 4))
+    return frame(f'<div style="padding-top:8px">{body}</div>{nav_bar(2)}', 680)
+
+
+def readonly_task(menu=True):
+    card = B.sheet_card(True, width=396)
+    card = card.replace('<span class="confirm">' + B.CHECK + '</span>', '')
+    card = card.replace('class="tool sel"', 'class="tool dim"').replace('class="tool pri"', 'class="tool pri dim"')
+    card = card.replace(f'<span class="clr" style="position:static">{B.X}</span>', '').replace(f'<span class="clr">{B.X}</span>', '')
+    banner = (f'<div style="margin:0 0 8px;border-radius:var(--radius-lg);background:var(--selected);color:var(--text-primary);display:flex;align-items:center;gap:10px;padding:10px 14px;font-size:14px;line-height:20px;font-weight:600">'
+              f'<span style="display:flex;color:var(--text-secondary)">{TRASH_ICON(20)}</span><span style="flex:1">В корзине · удалена 28 окт</span></div>')
+    popup = ''
+    if menu:
+        item = lambda t, c='var(--text-primary)': f'<div style="min-height:48px;display:flex;align-items:center;padding:0 20px;font-size:16px;line-height:24px;font-weight:600;color:{c}">{t}</div>'
+        popup = ('<div style="position:absolute;right:20px;top:516px;width:240px;border-radius:var(--radius-lg);background:var(--surface);'
+                 'box-shadow:0 4px 16px color-mix(in srgb,var(--text-primary) 18%,transparent);border:1px solid var(--divider);overflow:hidden">'
+                 + item('Восстановить') + '<div style="height:1px;background:var(--divider)"></div>' + item('Удалить навсегда', 'var(--danger)') + '</div>')
+    scrim = '<div style="position:absolute;inset:0;background:var(--scrim)"></div>'
+    base = trash_screen()
+    return (f'<div style="position:relative;width:412px;height:680px;flex-shrink:0">{base}{scrim}'
+            f'<div style="position:absolute;left:8px;right:8px;bottom:16px">{banner}{card}</div>{popup}</div>')
+
+
+def p_danger():
+    body = f'<div class="row" style="align-items:flex-start">{danger_dialog("Удалить навсегда?", "Задача «Позвонить врачу» и её подзадачи будут стёрты. Вернуть их будет нельзя.", "Удалить")}{danger_dialog("Удалить все навсегда?", "Задач в корзине: 5. Все они будут стёрты, вернуть их будет нельзя.", "Удалить все")}</div>'
+    return doc('Окна', 300, 'Окна необратимых действий: красная кнопка', body)
+
+
+def danger_dialog(title, text, ok):
+    d = dlg(title, f'<div style="padding:0 24px 8px;font-size:14px;line-height:20px;color:var(--text-secondary)">{text}</div>', ('Отмена', ok))
+    return d.replace('background:var(--accent);color:var(--on-accent)', 'background:var(--danger);color:var(--on-accent)')
+
+
+
+
 PREVIEWS = {
     'UpdateDialog': p_update_dialog, 'ListPriorityDialogs': p_list_priority_dialogs, 'CustomDialogs': p_custom_dialogs, 'AlertDialogs': p_alert_dialogs,
     'ChecklistRows': p_checklist, 'ChipsAndButtons': p_chips_fab, 'SettingsRow': p_switch_rows,
     'Headers': p_headers, 'EmptyTasks': p_empty, 'TaskRow': p_task_row, 'ListRows': p_list_rows, 'SearchField': p_search_field, 'BottomBar': p_bottom_bar,
-    'ReminderStrip': p_reminder_strip, 'OverdueHeader': p_overdue_header, 'UndoSnackbar': p_snackbar, 'RecentSearches': p_recent_searches, 'TaskDraft': p_draft, 'ReminderNotification': p_notification, 'Widget': p_widget_bar, 'WidgetBar': p_widget_bar_only,
+    'ReminderStrip': p_reminder_strip, 'ScreenTrash': lambda: screens(trash_screen, 730, 'Экран «Корзина»: удалённые задачи как в списке, «Восстановить все» и «Удалить все»'), 'TrashTask': lambda: doc('Окна', 730, 'Задача в корзине: только чтение, «⋮» — восстановить или удалить навсегда', f'<div class="row" style="align-items:flex-start">{readonly_task(True)}</div>'), 'DangerDialog': p_danger, 'OverdueHeader': p_overdue_header, 'UndoSnackbar': p_snackbar, 'RecentSearches': p_recent_searches, 'TaskDraft': p_draft, 'ReminderNotification': p_notification, 'Widget': p_widget_bar, 'WidgetBar': p_widget_bar_only,
     'ScreenAll': lambda: screens(all_screen, 730, 'Экран «Все»: лента по дням со шкалой и нижней панелью'),
     'ScreenInbox': lambda: screens(inbox_screen, 730, 'Экран «Входящие»: плоский список, слева день и время'),
     'ScreenLists': lambda: screens(lists_screen, 730, 'Экран «Списки»'),
@@ -552,6 +639,9 @@ PREVIEWS = {
 }
 
 README_MORE = {
+    'ScreenTrash': ('Экран «Корзина» (0.39).', 'Сверху «назад» и название `title-large` Bold; под ним «ЗАДАЧ: N» (`label-medium` Bold, `text-secondary`), справа «Восстановить все» (`accent`) и «Удалить все» (`danger`). Ниже плашки как в обычном списке (слева срок, справа список) с мелкой подписью «удалена 28 окт» (`body-small`, `text-secondary`); строка выше обычной на `size-trash-row-extra` (14). Новые удалённые сверху. Нажатие открывает задачу только для чтения (`TrashTask`); кружок ничего не отмечает. Пусто: «Корзина пуста» и подсказка по центру. Вход — строка «Корзина» на экране «Списки» под «Выполненными»: значок корзины, название, число задач (при нуле числа нет). Источник: `ui/feature/trash/TrashScreen.kt`.'),
+    'TrashTask': ('Задача в корзине: та же шторка, но только для чтения (0.39).', 'Над шторкой плашка `selected` «В корзине · удалена 28 окт» со значком корзины. Название, описание, срок, список, значки повтора и уведомлений, чек-лист и подзадачи показываются как есть, править нельзя: кнопок панели, крестиков у полей и галочки «Готово» нет. «⋮» справа от названия: «Восстановить» и «Удалить навсегда» (`danger`, после подтверждения `DangerDialog`). Затемнение и «Назад» закрывают. Восстановленная задача возвращается в прежний список (если его нет — во «Входящие») вместе с подзадачами и чек-листами, подсказка `UndoSnackbar` «Задача восстановлена · Отмена». Источник: `ui/feature/trash/TrashTaskScreen.kt`.'),
+    'DangerDialog': ('Окно необратимого действия: красная кнопка (0.39).', 'Строится на `SheetDialog` с `danger = true`: вторая кнопка залита `danger` вместо `accent`. «Удалить навсегда?» у одной задачи из корзины и «Удалить все навсегда?» у всей корзины; первая кнопка «Отмена». «Восстановить» и «Восстановить все» подтверждения не просят, но дают подсказку «Отмена».'),
     'OverdueHeader': ('Подпись «Просрочено · N» над прошедшими днями: стрелка «свернуть» и значок «перенести на сегодня» (0.37).',
                       '''Стоит над первым прошедшим днём в ленте «Все» приложения и на вкладке «Все» виджета; во «Входящих» и списках её нет. Текст `label-large` Bold (в виджете 14 sp), цвет `overdue`; N — невыполненные задачи прошедших дней (сегодняшние с прошедшим временем не входят).
 Справа от текста стрелка 24 (в виджете `size-widget-fold-icon` 20): вниз — раскрыто, вправо — свёрнуто. Нажатие на текст со стрелкой сворачивает все прошедшие дни, счётчик остаётся. Состояние одно на приложение и виджет, запоминается между запусками.

@@ -76,6 +76,9 @@ import com.prostovasei.simpletasks.ui.feature.inbox.InboxRoute
 import com.prostovasei.simpletasks.ui.feature.lists.ListsRoute
 import com.prostovasei.simpletasks.ui.feature.project.ProjectRoute
 import com.prostovasei.simpletasks.ui.feature.completed.CompletedRoute
+import com.prostovasei.simpletasks.ui.feature.trash.TrashRestoresHost
+import com.prostovasei.simpletasks.ui.feature.trash.TrashTaskRoute
+import com.prostovasei.simpletasks.ui.feature.trash.TrashRoute
 import com.prostovasei.simpletasks.ui.feature.search.SearchRoute
 import com.prostovasei.simpletasks.ui.feature.settings.SettingsRoute
 import com.prostovasei.simpletasks.ui.feature.task.QuickAddRoute
@@ -134,6 +137,19 @@ fun AppNavHost(
         }
     }
 
+    // Вернули из корзины — «Задача восстановлена · Отмена» / «Восстановлено: N · Отмена» (итерация 39).
+    val trashRestores = hiltViewModel<TrashRestoresHost>().restores
+    val restoredOne = stringResource(R.string.trash_restored)
+    val restoredMany = stringResource(R.string.trash_restored_many)
+    LaunchedEffect(trashRestores) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            trashRestores.events.collect { restoration ->
+                val text = if (restoration.count == 1) restoredOne else restoredMany.format(restoration.count)
+                launch { snackbar.showUndo(text, undoText, UndoKind.Restored) { trashRestores.undo(restoration) } }
+            }
+        }
+    }
+
     Scaffold(
         containerColor = AppTheme.colors.background,
         snackbarHost = { UndoSnackbarHost(snackbar) },
@@ -169,8 +185,11 @@ fun AppNavHost(
                 AllRoute(onOpenTask = openTask)
             }
             composable<ListsDestination> {
-                ListsRoute(onOpenProject = { navController.navigate(ProjectDestination(it)) }, onOpenCompleted = { navController.navigate(CompletedDestination) })
+                ListsRoute(onOpenProject = { navController.navigate(ProjectDestination(it)) }, onOpenCompleted = { navController.navigate(CompletedDestination) }, onOpenTrash = { navController.navigate(TrashDestination) })
             }
+            composable<TrashDestination> { TrashRoute(onBack = { navController.popBackStack() }, onOpenTask = { navController.navigate(TrashTaskDestination(it)) }) }
+            // Задача в корзине — шторка только для чтения (итерация 39).
+            dialog<TrashTaskDestination>(dialogProperties = SHEET_DIALOG) { TrashTaskRoute(onClose = { navController.popBackStack() }) }
             composable<CompletedDestination> { CompletedRoute(onBack = { navController.popBackStack() }, onOpenTask = openTask) }
             composable<SearchDestination> { SearchRoute(onOpenTask = openTask) }
             composable<SettingsDestination> { SettingsRoute() }
@@ -250,7 +269,7 @@ private val SHEET_DIALOG = DialogProperties(
     dismissOnClickOutside = false,
 )
 
-private fun NavDestination.isSheet() = hasRoute(QuickAddDestination::class) || hasRoute(TaskDetailDestination::class)
+private fun NavDestination.isSheet() = hasRoute(QuickAddDestination::class) || hasRoute(TaskDetailDestination::class) || hasRoute(TrashTaskDestination::class)
 
 /** Порядок экрана слева направо: вкладки по порядку в панели, вложенные экраны — правее всех. */
 private fun NavDestination.order(): Int = Tab.entries.indexOfFirst { isOn(it) }.takeIf { it >= 0 } ?: Tab.entries.size

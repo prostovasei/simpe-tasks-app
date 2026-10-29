@@ -84,4 +84,42 @@ interface ChecklistDao {
         """,
     )
     suspend fun softDeleteByProject(projectId: String, now: Long): Int
+
+    // ---- Корзина (итерация 39) ----
+
+    /** Пункты удалённой задачи: удалённые вместе с ней в момент [deletedAt]. */
+    @Query("SELECT * FROM checklist_items WHERE task_id = :taskId AND is_deleted = 1 AND updated_at = :deletedAt ORDER BY sort_order, created_at")
+    fun observeTrashedByTask(taskId: String, deletedAt: Long): Flow<List<ChecklistItemEntity>>
+
+    /** Стирает пункты задачи и её подзадач навсегда. */
+    @Query(
+        """
+        DELETE FROM checklist_items WHERE task_id IN (
+            WITH RECURSIVE tree(id) AS (
+                SELECT :taskId
+                UNION SELECT t.id FROM tasks t JOIN tree ON t.parent_id = tree.id
+            )
+            SELECT id FROM tree
+        )
+        """,
+    )
+    suspend fun deleteHardByTaskTree(taskId: String): Int
+
+    @Query("DELETE FROM checklist_items WHERE task_id IN (SELECT id FROM tasks WHERE is_deleted = 1)")
+    suspend fun deleteAllOfTrashedTasks(): Int
+
+    /** Снова в корзину (отмена восстановления): пункты дерева с прежним моментом удаления [at]. */
+    @Query(
+        """
+        UPDATE checklist_items SET is_deleted = 1, updated_at = :at
+        WHERE is_deleted = 0 AND task_id IN (
+            WITH RECURSIVE tree(id) AS (
+                SELECT :taskId
+                UNION SELECT t.id FROM tasks t JOIN tree ON t.parent_id = tree.id
+            )
+            SELECT id FROM tree
+        )
+        """,
+    )
+    suspend fun trashByTaskTreeAt(taskId: String, at: Long): Int
 }

@@ -112,6 +112,7 @@ SIZE_PICK = {
     'WIDGET_TIME': ('widget-time', 'Колонка времени слева.'), 'WIDGET_RAIL': ('widget-rail', 'Колонка линии шкалы с кружком.'), 'WIDGET_NODE': ('widget-node', 'Кружок приоритета на шкале.'),
     'WIDGET_BAR': ('widget-bar', 'Нижняя строка виджета.'), 'WIDGET_ADD': ('widget-add', 'Кнопка «+» виджета.'), 'WIDGET_UPDATE': ('widget-update', 'Кнопка обновления виджета.'),
     'SNACKBAR_MIN_HEIGHT': ('snackbar-min-height', 'Подсказка «Отмена»: наименьшая высота.'), 'SNACKBAR_ICON': ('snackbar-icon', 'Значок слева в подсказке «Отмена».'),
+    'TRASH_ROW_EXTRA': ('trash-row-extra', 'Корзина: строка с подписью «удалена …» выше обычной на столько.'),
     'RECENT_ROW': ('recent-row', 'Строка недавнего запроса в поиске.'), 'RECENT_ICON': ('recent-icon', 'Значок «часы» в строке недавнего запроса.'),
     'WIDGET_FOLD_ICON': ('widget-fold-icon', 'Стрелка «свернуть» и значок «перенести на сегодня» у подписи «Просрочено» в виджете.'),
     'WIDGET_CARD_INSET': ('widget-card-inset', 'Щель плашки внутри строки шкалы (сверху и снизу).'),
@@ -657,7 +658,7 @@ def main():
     index = {
         'v': 3, 'layout': 'files', 'createdOnFiles': {'v': 1, 'at': now}, 'title': 'Simple Tasks', 'namespace': 'SimpleTasks', 'libraries': [],
         'sections': {}, 'groups': [], 'assetGroups': {}, 'blobs': {}, 'docs': {'readme': 'project/README.md', 'sections': []},
-        'lastChange': {'by': 'Ilya', 'at': now, 'via': 'Claude Code', 'note': 'Обновление до 0.38.0: подсказка «Отмена» белая полупрозрачная со значками, недавние запросы в поиске, черновик новой задачи.'},
+        'lastChange': {'by': 'Ilya', 'at': now, 'via': 'Claude Code', 'note': 'Обновление до 0.39.0: корзина (экран, задача в корзине, окно необратимого действия), строка «Корзина» в «Списках».'},
     }
     (OUT / 'design-system.json').write_text(json.dumps(index, ensure_ascii=False, indent=1))
     # Контраст пар из описаний (WCAG 2): печатаем таблицу для проверки, не пишем в файлы.

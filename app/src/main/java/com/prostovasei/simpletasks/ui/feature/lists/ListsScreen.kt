@@ -40,6 +40,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import com.prostovasei.simpletasks.ui.feature.trash.TAG_TRASH
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -57,7 +59,7 @@ import com.prostovasei.simpletasks.domain.model.GroupWithProjects
 import com.prostovasei.simpletasks.domain.model.ProjectWithCount
 
 @Composable
-fun ListsRoute(onOpenProject: (String) -> Unit, onOpenCompleted: () -> Unit = {}, viewModel: ListsViewModel = hiltViewModel()) {
+fun ListsRoute(onOpenProject: (String) -> Unit, onOpenCompleted: () -> Unit = {}, onOpenTrash: () -> Unit = {}, viewModel: ListsViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
@@ -66,11 +68,11 @@ fun ListsRoute(onOpenProject: (String) -> Unit, onOpenCompleted: () -> Unit = {}
             }
         }
     }
-    ListsScreen(state, viewModel::onIntent, onOpenProject, onOpenCompleted)
+    ListsScreen(state, viewModel::onIntent, onOpenProject, onOpenCompleted, onOpenTrash)
 }
 
 @Composable
-fun ListsScreen(state: ListsState, onIntent: (ListsIntent) -> Unit, onOpenProject: (String) -> Unit, onOpenCompleted: () -> Unit = {}) {
+fun ListsScreen(state: ListsState, onIntent: (ListsIntent) -> Unit, onOpenProject: (String) -> Unit, onOpenCompleted: () -> Unit = {}, onOpenTrash: () -> Unit = {}) {
     val colors = AppTheme.colors
     Scaffold(containerColor = colors.background, contentWindowInsets = WindowInsets(0)) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
@@ -84,6 +86,7 @@ fun ListsScreen(state: ListsState, onIntent: (ListsIntent) -> Unit, onOpenProjec
                 }
             }
             CompletedRow(onOpenCompleted)
+            TrashRow(state.trashCount, onOpenTrash)
             val tree = state.tree ?: return@Column
             if (tree.groups.isEmpty() && tree.ungrouped.isEmpty()) {
                 EmptyState(stringResource(R.string.lists_empty))
@@ -131,7 +134,32 @@ private fun CompletedRow(onClick: () -> Unit) {
     }
 }
 
+/** «Корзина» — под «Выполненными» (итерация 39): значок, название и число задач (при нуле числа нет). */
+@Composable
+private fun TrashRow(count: Int, onClick: () -> Unit) {
+    val colors = AppTheme.colors
+    val spacing = AppTheme.spacing
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = spacing.md, vertical = spacing.sm)
+            .testTag(TAG_TRASH),
+    ) {
+        Icon(painterResource(R.drawable.ic_tool_delete), contentDescription = null, tint = colors.textSecondary)
+        Text(
+            text = stringResource(R.string.trash_title),
+            style = MaterialTheme.typography.bodyLarge,
+            color = colors.textPrimary,
+            modifier = Modifier.weight(1f).padding(start = spacing.sm),
+        )
+        if (count > 0) Text(count.toString(), style = MaterialTheme.typography.bodyMedium, color = colors.textSecondary, modifier = Modifier.testTag(TAG_TRASH_COUNT))
+    }
+}
+
 const val TAG_COMPLETED = "lists_completed"
+const val TAG_TRASH_COUNT = "lists_trash_count"
 
 @Composable
 private fun FolderRow(group: GroupWithProjects, collapsed: Boolean, onIntent: (ListsIntent) -> Unit) {

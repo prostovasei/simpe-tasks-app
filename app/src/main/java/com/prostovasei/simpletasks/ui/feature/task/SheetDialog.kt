@@ -59,6 +59,8 @@ fun SheetDialog(
     subtitle: String? = null,
     dismissLabel: Int = R.string.action_cancel,
     doneLabel: Int = R.string.sheet_done,
+    /** Необратимое действие (итерация 39): кнопка красная, а не зелёная. */
+    danger: Boolean = false,
     edge: Dp = AppTheme.spacing.lg,
     // Кнопка «Отмена» по умолчанию — то же, что «Назад» и нажатие мимо; окно обновления разводит их (загрузку не обрывать случайно).
     onCancel: () -> Unit = onDismiss,
@@ -115,7 +117,7 @@ fun SheetDialog(
                     Button(
                         onClick = onDone,
                         shape = shape,
-                        colors = ButtonDefaults.buttonColors(containerColor = colors.accent, contentColor = colors.onAccent),
+                        colors = ButtonDefaults.buttonColors(containerColor = if (danger) colors.danger else colors.accent, contentColor = colors.onAccent),
                         contentPadding = buttonPadding,
                         modifier = Modifier.weight(1f).heightIn(min = sizes.toolButton).testTag("$tag:$TAG_DIALOG_DONE"),
                     ) {

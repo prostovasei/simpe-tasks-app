@@ -6,6 +6,24 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
+import com.prostovasei.simpletasks.ui.feature.lists.TAG_TRASH_COUNT
+import com.prostovasei.simpletasks.ui.feature.trash.TAG_TRASH
+import com.prostovasei.simpletasks.domain.model.TaskDetails
+import com.prostovasei.simpletasks.domain.model.TrashedTask
+import com.prostovasei.simpletasks.ui.feature.trash.TAG_TRASH_TASK_DELETE
+import com.prostovasei.simpletasks.ui.feature.trash.TAG_TRASH_TASK_RESTORE
+import com.prostovasei.simpletasks.ui.feature.trash.TAG_TRASH_TASK_MENU
+import com.prostovasei.simpletasks.ui.feature.trash.TAG_TRASH_TASK_TITLE
+import com.prostovasei.simpletasks.ui.feature.trash.TAG_TRASH_TASK_BANNER
+import com.prostovasei.simpletasks.ui.feature.trash.TAG_TRASH_EMPTY
+import com.prostovasei.simpletasks.ui.feature.trash.TAG_TRASH_DELETE_ALL
+import com.prostovasei.simpletasks.ui.feature.trash.TAG_TRASH_RESTORE_ALL
+import com.prostovasei.simpletasks.ui.feature.trash.TrashTaskIntent
+import com.prostovasei.simpletasks.ui.feature.trash.TrashTaskState
+import com.prostovasei.simpletasks.ui.feature.trash.TrashTaskScreen
+import com.prostovasei.simpletasks.ui.feature.trash.TrashIntent
+import com.prostovasei.simpletasks.ui.feature.trash.TrashState
+import com.prostovasei.simpletasks.ui.feature.trash.TrashScreen
 import androidx.compose.ui.test.onAllNodesWithTag
 import com.prostovasei.simpletasks.ui.feature.search.TAG_SEARCH_RECENT_CLEAR
 import com.prostovasei.simpletasks.ui.common.showUndo
@@ -153,6 +171,100 @@ class ScreensUiTest {
     }
 
     /** Перенос на сегодня: Room обновляет разделы не разом, и задача на миг в двух днях — экран не должен вылетать («Key was already used»). */
+    private val trashState = TrashState(
+        items = listOf(
+            item("t1", "Позвонить врачу", DueText(DayLabel.Today, "12:30"), list = "Здоровье", color = "#E5484D"),
+            item("t2", "Купить продукты", DueText(DayLabel.Date(LocalDate.of(2026, 10, 20), false), null), list = null, color = null),
+        ),
+        deletedOn = mapOf("t1" to LocalDate.of(2026, 10, 28), "t2" to LocalDate.of(2026, 10, 27)),
+        isLoading = false,
+    )
+
+    /** Итерация 39: корзина — задачи как в списке с подписью «удалена …»; «Удалить все» просит подтверждение, «Восстановить все» — нет. */
+    @Test
+    fun trashShowsTasksAndAsksBeforeEraseAll() {
+        var opened: String? = null
+        show { TrashScreen(trashState, { intents += it }, onBack = {}, onOpenTask = { opened = it }) }
+
+        composeRule.onNodeWithText("ЗАДАЧ: 2").assertExists()
+        composeRule.onNodeWithTag("task:t1:subtitle", useUnmergedTree = true).assertTextEquals("удалена 28 окт")
+        composeRule.onNodeWithTag("task:t2:subtitle", useUnmergedTree = true).assertTextEquals("удалена 27 окт")
+        composeRule.onNodeWithText("Позвонить врачу").performClick()
+        assertEquals("t1", opened)
+
+        composeRule.onNodeWithTag(TAG_TRASH_RESTORE_ALL).performClick()
+        assertEquals(listOf<Any>(TrashIntent.RestoreAll), intents.toList())
+
+        composeRule.onNodeWithTag(TAG_TRASH_DELETE_ALL).performClick()
+        composeRule.onNodeWithText("Удалить все навсегда?").assertExists()
+        assertEquals("Пока не подтвердили, ничего не стёрто", listOf<Any>(TrashIntent.RestoreAll), intents.toList())
+        composeRule.onNodeWithTag("trash_delete_all_dialog:done").performClick()
+        assertEquals(listOf<Any>(TrashIntent.RestoreAll, TrashIntent.DeleteAll), intents.toList())
+    }
+
+    @Test
+    fun emptyTrashShowsHint() {
+        show { TrashScreen(TrashState(isLoading = false), { intents += it }, onBack = {}, onOpenTask = {}) }
+        composeRule.onNodeWithTag(TAG_TRASH_EMPTY).assertExists()
+        composeRule.onNodeWithText("Корзина пуста").assertExists()
+        composeRule.onNodeWithTag(TAG_TRASH_DELETE_ALL).assertDoesNotExist()
+    }
+
+    @Test
+    fun screenshotTrash() {
+        show { TrashScreen(trashState, {}, onBack = {}, onOpenTask = {}) }
+        composeRule.onRoot().captureRoboImage("screenshots/trash_light.png")
+    }
+
+    /** Задача в корзине: плашка «В корзине», править нельзя, в «⋮» — «Восстановить» и «Удалить навсегда» (с подтверждением). */
+    @Test
+    fun trashedTaskIsReadOnlyWithRestoreAndEraseInMenu() {
+        val task = com.prostovasei.simpletasks.testing.task("t1", title = "Позвонить врачу").copy(content = "Спросить про справку")
+        val trashed = TrashedTask(TaskDetails(task, emptyList()), emptyList(), java.time.Instant.parse("2026-10-28T10:00:00Z"))
+        val state = TrashTaskState(trashed, trashState.items.first(), LocalDate.of(2026, 10, 28), isLoading = false)
+        show { TrashTaskScreen(state, { intents += it }, onClose = {}) }
+
+        composeRule.onNodeWithTag(TAG_TRASH_TASK_BANNER).assertTextEquals("В корзине · удалена 28 окт")
+        composeRule.onNodeWithTag(TAG_TRASH_TASK_TITLE).assertTextEquals("Позвонить врачу")
+        composeRule.onNodeWithText("Спросить про справку").assertExists()
+
+        composeRule.onNodeWithTag(TAG_TRASH_TASK_MENU).performClick()
+        composeRule.onNodeWithTag(TAG_TRASH_TASK_RESTORE).performClick()
+        assertEquals(listOf<Any>(TrashTaskIntent.Restore), intents.toList())
+
+        composeRule.onNodeWithTag(TAG_TRASH_TASK_MENU).performClick()
+        composeRule.onNodeWithTag(TAG_TRASH_TASK_DELETE).performClick()
+        composeRule.onNodeWithText("Удалить навсегда?").assertExists()
+        assertEquals("Без подтверждения ничего не стёрто", 1, intents.size)
+        composeRule.onNodeWithTag("trash_delete_dialog:done").performClick()
+        assertEquals(listOf<Any>(TrashTaskIntent.Restore, TrashTaskIntent.DeleteForever), intents.toList())
+    }
+
+    @Test
+    fun screenshotTrashedTask() {
+        val task = com.prostovasei.simpletasks.testing.task("t1", title = "Позвонить врачу").copy(content = "Спросить про справку")
+        val trashed = TrashedTask(TaskDetails(task, emptyList()), emptyList(), java.time.Instant.parse("2026-10-28T10:00:00Z"))
+        show { TrashTaskScreen(TrashTaskState(trashed, trashState.items.first(), LocalDate.of(2026, 10, 28), isLoading = false), {}, onClose = {}) }
+        composeRule.onRoot().captureRoboImage("screenshots/trash_task_light.png")
+    }
+
+    /** Строка «Корзина» на «Списках»: число задач есть, пока корзина не пуста. */
+    @Test
+    fun listsShowTrashRowWithCountOnlyWhenNotEmpty() {
+        var opened = false
+        show { ListsScreen(ListsState(tree = ProjectTree(null, emptyList(), emptyList()), trashCount = 5), { intents += it }, {}, onOpenTrash = { opened = true }) }
+        composeRule.onNodeWithTag(TAG_TRASH).performClick()
+        composeRule.onNodeWithTag(TAG_TRASH_COUNT, useUnmergedTree = true).assertTextEquals("5")
+        assertTrue(opened)
+    }
+
+    @Test
+    fun listsHideTrashCountWhenEmpty() {
+        show { ListsScreen(ListsState(tree = ProjectTree(null, emptyList(), emptyList()), trashCount = 0), { intents += it }, {}) }
+        composeRule.onNodeWithTag(TAG_TRASH).assertExists()
+        composeRule.onNodeWithTag(TAG_TRASH_COUNT, useUnmergedTree = true).assertDoesNotExist()
+    }
+
     @Test
     fun sameTaskInTwoDaysDuringMoveDoesNotCrash() {
         val moved = allState.overdue.first()

@@ -29,6 +29,26 @@
 
     <string name="task_completed">Задача выполнена</string>
     <string name="task_undo">Отмена</string>
+    <string name="trash_title">Корзина</string>
+    <string name="trash_count">Задач: %1$d</string>
+    <string name="trash_empty">Корзина пуста</string>
+    <string name="trash_empty_hint">Удалённые задачи появятся здесь и будут лежать, пока вы их не вернёте или не сотрёте</string>
+    <string name="trash_restore_all">Восстановить все</string>
+    <string name="trash_delete_all">Удалить все</string>
+    <string name="trash_restore">Восстановить</string>
+    <string name="trash_delete_forever">Удалить навсегда</string>
+    <string name="trash_deleted_on">удалена %1$s</string>
+    <string name="trash_banner">В корзине · удалена %1$s</string>
+    <string name="trash_delete_one_title">Удалить навсегда?</string>
+    <string name="trash_delete_one_text">Задача «%1$s» и её подзадачи будут стёрты. Вернуть их будет нельзя.</string>
+    <string name="trash_delete_all_title">Удалить все навсегда?</string>
+    <string name="trash_delete_all_text">Задач в корзине: %1$d. Все они будут стёрты, вернуть их будет нельзя.</string>
+    <string name="trash_delete_confirm">Удалить</string>
+    <string name="trash_delete_all_confirm">Удалить все</string>
+    <string name="trash_restored">Задача восстановлена</string>
+    <string name="trash_restored_many">Восстановлено: %1$d</string>
+    <string name="trash_checklist">Чек-лист</string>
+    <string name="trash_subtasks">Подзадачи</string>
     <string name="search_recent">Недавние</string>
     <string name="search_recent_clear">Очистить</string>
     <string name="search_recent_remove">Убрать запрос «%1$s»</string>

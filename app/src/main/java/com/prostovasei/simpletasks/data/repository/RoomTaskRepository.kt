@@ -14,6 +14,8 @@ import com.prostovasei.simpletasks.domain.model.Completion
 import com.prostovasei.simpletasks.domain.model.Deletion
 import com.prostovasei.simpletasks.domain.model.NewTask
 import com.prostovasei.simpletasks.domain.model.Rescheduling
+import com.prostovasei.simpletasks.domain.model.Restoration
+import com.prostovasei.simpletasks.domain.model.TrashedTask
 import com.prostovasei.simpletasks.domain.model.TaskDue
 import com.prostovasei.simpletasks.domain.model.SearchableTask
 import com.prostovasei.simpletasks.domain.model.Task
@@ -27,6 +29,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import java.time.Instant
 import java.time.LocalDate
@@ -40,6 +44,7 @@ class RoomTaskRepository @Inject constructor(
 
     private val taskDao = db.taskDao()
     private val checklistDao = db.checklistDao()
+    private val projectDao = db.projectDao()
 
     override fun observeAllScreen(today: LocalDate): Flow<AllScreenTasks> {
         val day = DayWindow.of(today, time.zone())
@@ -280,4 +285,72 @@ class RoomTaskRepository @Inject constructor(
 
     /** Начало дня [today]: выполненные с этого момента остаются в списках до полуночи (итерация 27). */
     private fun doneSince(today: LocalDate) = today.atStartOfDay(time.zone()).toInstant().toEpochMilli()
+
+    // ---- Корзина (итерация 39, бэклог №35) ----
+
+    override fun observeTrash(): Flow<List<Task>> =
+        taskDao.observeTrash().map { rows -> rows.map { it.toDomain() } }.distinctUntilChanged()
+
+    override fun observeTrashCount(): Flow<Int> = taskDao.observeTrashCount().distinctUntilChanged()
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    override fun observeTrashed(taskId: String): Flow<TrashedTask?> = taskDao.observeTrashedById(taskId).flatMapLatest { entity ->
+        if (entity == null) {
+            flowOf(null)
+        } else {
+            combine(
+                checklistDao.observeTrashedByTask(taskId, entity.updatedAt),
+                taskDao.observeTrashedSubtasks(taskId, entity.updatedAt),
+            ) { items, subtasks ->
+                val task = entity.toDomain()
+                TrashedTask(TaskDetails(task, items.map { it.toDomain() }), subtasks.map { it.toDomain() }, task.updatedAt)
+            }
+        }
+    }.distinctUntilChanged()
+
+    override suspend fun restoreFromTrash(taskId: String): Restoration? = db.withTransaction {
+        val entity = taskDao.getById(taskId)?.takeIf { it.isDeleted } ?: return@withTransaction null
+        Restoration(listOf(restoreTree(entity)))
+    }
+
+    override suspend fun restoreAllFromTrash(): Restoration = db.withTransaction {
+        Restoration(taskDao.getTrash().map { restoreTree(it) })
+    }
+
+    /** Возвращает дерево [root]; задача удалённого списка переезжает во «Входящие». */
+    private suspend fun restoreTree(root: TaskEntity): Deletion {
+        val deletion = Deletion(root.id, root.updatedAt)
+        undoDelete(deletion)
+        val project = projectDao.getById(root.projectId)
+        if (project == null || project.isDeleted) {
+            projectDao.getInbox()?.let { taskDao.moveTreeToProject(root.id, root.projectId, it.id, nowMillis()) }
+        }
+        return deletion
+    }
+
+    override suspend fun undoRestoreFromTrash(restoration: Restoration) {
+        db.withTransaction {
+            restoration.deletions.forEach { deletion ->
+                checklistDao.trashByTaskTreeAt(deletion.taskId, deletion.at)
+                taskDao.trashTreeAt(deletion.taskId, deletion.at)
+            }
+        }
+    }
+
+    override suspend fun deleteForever(taskId: String) {
+        db.withTransaction {
+            if (taskDao.getById(taskId)?.isDeleted != true) return@withTransaction
+            taskDao.detachLiveChildrenOfTree(taskId)
+            checklistDao.deleteHardByTaskTree(taskId)
+            taskDao.deleteTrashedTree(taskId)
+        }
+    }
+
+    override suspend fun emptyTrash(): Int = db.withTransaction {
+        val count = taskDao.getTrash().size
+        taskDao.detachLiveChildrenOfTrash()
+        checklistDao.deleteAllOfTrashedTasks()
+        taskDao.deleteAllTrashed()
+        count
+    }
 }
