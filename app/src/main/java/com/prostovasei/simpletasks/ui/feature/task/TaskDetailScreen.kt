@@ -19,6 +19,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -38,6 +39,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -57,8 +59,6 @@ import com.prostovasei.simpletasks.domain.model.Task
 import com.prostovasei.simpletasks.domain.model.TaskStatus
 import com.prostovasei.simpletasks.ui.common.DayNames
 import kotlinx.coroutines.launch
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 @Composable
 fun TaskDetailRoute(onClose: () -> Unit, onOpenTask: (String) -> Unit, viewModel: TaskDetailViewModel = hiltViewModel()) {
@@ -86,8 +86,8 @@ fun TaskDetailRoute(onClose: () -> Unit, onOpenTask: (String) -> Unit, viewModel
 
 /**
  * Созданная задача — та же шторка с сеткой недели, что и новая (итерация 19, решения PM): все правки сохраняются сразу,
- * галочка «Готово» и затемнение просто закрывают. Галочка у названия — выполнить; корзина на панели — удалить
- * с подтверждением. Чек-лист: отметить, переименовать (нажатие на пункт), «⋮» — выше, ниже, удалить. Подзадачи из TickTick.
+ * галочка «Готово» и затемнение просто закрывают. Круг у названия (цвет приоритета) — выполнить; «⋮» справа от названия —
+ * «Удалить» (с подтверждением) и дата создания (итерация 34). Чек-лист: отметить, переименовать (нажатие на пункт), «⋮» — выше, ниже, удалить. Подзадачи из TickTick.
  */
 @Composable
 fun TaskDetailScreen(
@@ -131,16 +131,12 @@ fun TaskDetailScreen(
         progress = progress,
         reveal = reveal,
         overlay = overlay,
-        actionCount = 2,
         actions = {
-            ToolButton(R.string.sheet_delete, active = false, tag = TAG_DETAIL_DELETE, icon = R.drawable.ic_tool_delete, tint = colors.danger) {
-                onIntent(TaskDetailIntent.RequestDelete)
-            }
             SheetConfirmButton(R.string.sheet_done, enabled = true, tag = TAG_DETAIL_CLOSE, onClick = onClose)
         },
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            DoneCircle(done, Modifier.testTag(TAG_DETAIL_DONE)) { onIntent(TaskDetailIntent.ToggleCompleted) }
+            DoneCircle(done, priorityColor(task.priority), Modifier.testTag(TAG_DETAIL_DONE)) { onIntent(TaskDetailIntent.ToggleCompleted) }
             CompactField(
                 value = task.title,
                 onValueChange = { onIntent(TaskDetailIntent.Title(it)) },
@@ -151,7 +147,7 @@ fun TaskDetailScreen(
                 ),
                 modifier = Modifier.weight(1f).testTag(TAG_DETAIL_TITLE),
             )
-            PriorityBadge(task.priority)
+            TaskMenu(createdText(task.createdAt.atZone(state.zone).toLocalDate())) { onIntent(TaskDetailIntent.RequestDelete) }
         }
         CompactField(
             value = task.content,
@@ -180,12 +176,6 @@ fun TaskDetailScreen(
             )
         }
         if (state.subtasks.isNotEmpty()) SubtasksSection(state.subtasks, onIntent, onOpenTask)
-        Text(
-            text = stringResource(R.string.detail_created, CREATED.format(task.createdAt.atZone(state.zone))),
-            style = MaterialTheme.typography.labelSmall,
-            color = colors.textSecondary,
-            modifier = Modifier.padding(vertical = spacing.xs),
-        )
     }
 
     if (state.showDeleteConfirm) {
@@ -212,10 +202,11 @@ fun TaskDetailScreen(
 
 /**
  * Отметка «выполнено» у названия (0.31.2, решение PM): круглая и вплотную к левому краю — как описание под ней.
- * Видимый кружок небольшой, зона нажатия шире него (поля вокруг входят в нажатие).
+ * Видимый кружок небольшой, зона нажатия шире него (поля вокруг входят в нажатие). Цвет — приоритета задачи (итерация 34),
+ * без приоритета — серый контур и зелёная заливка у выполненной.
  */
 @Composable
-private fun DoneCircle(checked: Boolean, modifier: Modifier = Modifier, onToggle: () -> Unit) {
+private fun DoneCircle(checked: Boolean, priority: androidx.compose.ui.graphics.Color?, modifier: Modifier = Modifier, onToggle: () -> Unit) {
     val colors = AppTheme.colors
     val sizes = AppTheme.sizes
     val spacing = AppTheme.spacing
@@ -227,10 +218,40 @@ private fun DoneCircle(checked: Boolean, modifier: Modifier = Modifier, onToggle
             .padding(end = spacing.xs, top = spacing.xs, bottom = spacing.xs)
             .size(sizes.doneCircle)
             .clip(CircleShape)
-            .then(if (checked) Modifier.background(colors.accent) else Modifier.border(sizes.checkboxStroke, colors.textSecondary, CircleShape)),
+            .then(if (checked) Modifier.background(priority ?: colors.accent) else Modifier.border(sizes.checkboxStroke, priority ?: colors.textSecondary, CircleShape)),
         contentAlignment = Alignment.Center,
     ) {
         if (checked) Icon(Icons.Default.Check, null, tint = colors.onAccent, modifier = Modifier.size(sizes.doneCheck))
+    }
+}
+
+/** «⋮» справа от названия: «Удалить» (красным) и под чертой — когда задача создана. */
+@Composable
+private fun TaskMenu(created: String, onDelete: () -> Unit) {
+    val colors = AppTheme.colors
+    var open by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { open = true }, modifier = Modifier.size(AppTheme.sizes.checkboxTouch).testTag(TAG_DETAIL_MENU)) {
+            Icon(Icons.Default.MoreVert, stringResource(R.string.detail_menu), tint = colors.textSecondary)
+        }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }, containerColor = colors.surface) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.action_delete), color = colors.danger, fontWeight = FontWeight.SemiBold) },
+                leadingIcon = { Icon(painterResource(R.drawable.ic_tool_delete), null, tint = colors.danger, modifier = Modifier.size(AppTheme.sizes.icon)) },
+                onClick = {
+                    open = false
+                    onDelete()
+                },
+                modifier = Modifier.testTag(TAG_DETAIL_DELETE),
+            )
+            HorizontalDivider(color = colors.divider, modifier = Modifier.padding(horizontal = AppTheme.spacing.sm))
+            Text(
+                stringResource(R.string.detail_created, created),
+                style = MaterialTheme.typography.bodySmall,
+                color = colors.textSecondary,
+                modifier = Modifier.padding(horizontal = AppTheme.spacing.md, vertical = AppTheme.spacing.sm).testTag(TAG_DETAIL_CREATED),
+            )
+        }
     }
 }
 
@@ -314,11 +335,12 @@ private fun SubtasksSection(subtasks: List<Task>, onIntent: (TaskDetailIntent) -
     }
 }
 
-private val CREATED: DateTimeFormatter = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.forLanguageTag("ru"))
 
 const val TAG_DETAIL_TITLE = "detail_title"
 const val TAG_DETAIL_CONTENT = "detail_content"
 const val TAG_DETAIL_DONE = "detail_done"
 const val TAG_DETAIL_DELETE = "detail_delete"
+const val TAG_DETAIL_MENU = "detail_menu"
+const val TAG_DETAIL_CREATED = "detail_created"
 const val TAG_DETAIL_CLOSE = "detail_close"
 const val TAG_DETAIL_ADD_ITEM = "detail_add_item"

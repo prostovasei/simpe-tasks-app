@@ -42,6 +42,9 @@ sealed interface GridAction {
      */
     data class PickDay(val date: LocalDate) : GridAction
 
+    /** «←» в окне даты: вернуть срок и начало, какими они были при открытии окна. */
+    data class Restore(val schedule: Schedule) : GridAction
+
     /** Нажатие на сетку: время [minute] (от начала суток) в день [date]; внутри выбранного блока — ничего. */
     data class SlotTap(val date: LocalDate, val minute: Int) : GridAction
 
@@ -109,6 +112,7 @@ fun Schedule.after(action: GridAction, zone: ZoneId): Schedule {
         GridAction.ClearTime -> if (date == null) this else Schedule(TaskDue.AllDay(date), null)
         GridAction.ClearDate -> Schedule(null, null)
         is GridAction.FirstDay -> this
+        is GridAction.Restore -> action.schedule
     }
 }
 

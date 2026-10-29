@@ -13,7 +13,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.prostovasei.simpletasks.TaskPopupActivity
 import com.prostovasei.simpletasks.domain.model.NewTask
 import com.prostovasei.simpletasks.ui.feature.task.TAG_QUICK_SCRIM
-import com.prostovasei.simpletasks.ui.feature.task.TAG_DATE_STRIP_TEXT
+import com.prostovasei.simpletasks.ui.feature.task.TAG_DATE_TEXT
 import com.prostovasei.simpletasks.ui.feature.task.TAG_DETAIL_TITLE
 import com.prostovasei.simpletasks.ui.feature.task.TAG_QUICK_TITLE
 import com.prostovasei.simpletasks.widget.WidgetFilter
@@ -42,9 +42,9 @@ class LaunchFromWidgetTest {
     fun plusFromAllWidgetOpensQuickAddForToday() {
         ActivityScenario.launch<TaskPopupActivity>(quickAddIntent(context, WidgetFilter.All)).use {
             composeRule.waitUntil(LAUNCH_TIMEOUT_MS) { composeRule.onAllNodesWithTag(TAG_QUICK_TITLE).fetchSemanticsNodes().isNotEmpty() }
-            // «+» в «Все» — задача на сегодня: в полоске дата, а не подсказка «Дата и время».
-            composeRule.onNodeWithTag(TAG_DATE_STRIP_TEXT, useUnmergedTree = true).assertExists()
-            composeRule.onNodeWithText("Дата и время").assertDoesNotExist()
+            // «+» в «Все» — задача на сегодня: в поле даты дата, а не «Без даты и времени».
+            composeRule.onNodeWithTag(TAG_DATE_TEXT, useUnmergedTree = true).assertExists()
+            composeRule.onNodeWithText("Без даты и времени").assertDoesNotExist()
         }
     }
 

@@ -92,11 +92,9 @@
     <string name="quick_tool_priority">Приоритет</string>
     <string name="quick_tool_checklist">Чек-лист</string>
     <string name="quick_reminder_need_day">Сначала выберите день</string>
-    <string name="strip_no_time">Без времени</string>
     <string name="strip_pick_date">Выбрать дату</string>
     <string name="quick_clear_time">Убрать время</string>
     <string name="quick_when_none">Без даты</string>
-    <string name="sheet_delete">Удалить задачу</string>
     <string name="sheet_done">Готово</string>
     <string name="chip_date">Дата</string>
     <string name="chip_time">Время</string>
@@ -199,7 +197,7 @@
     <string name="reminders_main">Основные</string>
     <string name="reminders_manual">Созданные вручную</string>
     <string name="dialog_understood">Понятно</string>
-    <string name="date_strip_hint">Дата и время</string>
+    <string name="date_empty">Без даты и времени</string>
     <string name="date_block_previous">Предыдущие 2 недели</string>
     <string name="date_block_next">Следующие 2 недели</string>
     <string name="date_block_calendar">Календарь</string>
@@ -246,7 +244,7 @@
     <string name="detail_checklist">Чек-лист</string>
     <string name="detail_checklist_add">Добавить пункт</string>
     <string name="detail_subtasks">Подзадачи</string>
-    <string name="detail_created">Создана %s</string>
+    <string name="detail_created">создано %s</string>
     <string name="detail_item_menu">Меню пункта</string>
     <string name="detail_item_up">Выше</string>
     <string name="detail_item_down">Ниже</string>
