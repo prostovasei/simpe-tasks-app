@@ -5,6 +5,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -73,6 +74,10 @@ fun LazyListScope.timelineItems(
     onToggle: (TaskItem) -> Unit,
     onOpen: (TaskItem) -> Unit,
     dayLabels: Boolean = false,
+    /** Режим выбора (итерация 40): null — выключен; иначе выбранные id. В режиме нажатие и кружок отмечают задачу. */
+    selection: Set<String>? = null,
+    /** Нажатие в режиме выбора и долгое нажатие вне его; null — выбирать на этом экране нельзя. */
+    onSelect: ((TaskItem) -> Unit)? = null,
 ) {
     val rows = WidgetTimeline.rows(items, overdue = dayLabels, nowMinute = nowMinute.takeUnless { dayLabels }, days = days)
     // Ключ с днём: при переносе между днями Room обновляет списки не одновременно, и одна задача на миг бывает в двух днях сразу —
@@ -81,7 +86,20 @@ fun LazyListScope.timelineItems(
         val top = index > 0
         val bottom = index < rows.lastIndex
         when (row) {
-            is WidgetRow.Task -> TimelineTaskRow(row, top, bottom, isOverdue(row.item), showList, { onToggle(row.item) }, { onOpen(row.item) }, dayLabels)
+            is WidgetRow.Task -> {
+                val item = row.item
+                // Будущий повтор выбрать нельзя: это не задача, а её будущий раз.
+                val selectable = onSelect != null && !item.isGhost
+                val selecting = selection != null
+                TimelineTaskRow(
+                    row, top, bottom, isOverdue(item), showList,
+                    onToggle = { if (selecting) { if (selectable) onSelect?.invoke(item) } else onToggle(item) },
+                    onClick = { if (selecting) { if (selectable) onSelect?.invoke(item) } else onOpen(item) },
+                    dayLabels = dayLabels,
+                    selected = if (selecting && !item.isGhost) item.id in selection.orEmpty() else null,
+                    onLongClick = if (selectable && !selecting) { { onSelect?.invoke(item) } } else null,
+                )
+            }
             WidgetRow.Now -> TimelineNowRow(nowMinute ?: 0, top, bottom)
         }
     }
@@ -116,6 +134,9 @@ fun LazyItemScope.TimelineTaskRow(
     onToggle: () -> Unit,
     onClick: () -> Unit,
     dayLabels: Boolean = false,
+    /** Режим выбора (итерация 40): null — выключен; true — строка выбрана (зелёная галочка в кружке, рамка на плашке). */
+    selected: Boolean? = null,
+    onLongClick: (() -> Unit)? = null,
 ) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
@@ -135,7 +156,7 @@ fun LazyItemScope.TimelineTaskRow(
             .testTag(testTag),
     ) {
         TimeColumn(row, isOverdue, faded, dayLabels)
-        Rail(row, top, bottom, faded, done, testTag, onToggle)
+        Rail(row, top, bottom, faded, done, testTag, onToggle, selected)
         Row(
             Modifier
                 .weight(1f)
@@ -143,8 +164,9 @@ fun LazyItemScope.TimelineTaskRow(
                 .padding(vertical = SizeTokens.WIDGET_CARD_INSET.dp)
                 .alpha(1f - (1f - DONE_ALPHA) * done)
                 .clip(AppTheme.shapes.medium)
-                .background(colors.surface)
-                .clickable(onClick = onClick)
+                .background(if (selected == true) colors.selected else colors.surface)
+                .then(if (selected == true) Modifier.border(SizeTokens.CHECKBOX_STROKE.dp, colors.accent, AppTheme.shapes.medium) else Modifier)
+                .combinedClickable(onClick = onClick, onLongClick = onLongClick)
                 .padding(horizontal = spacing.sm),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -224,7 +246,7 @@ private fun TimeColumn(row: WidgetRow.Task, isOverdue: Boolean, faded: Boolean, 
  * к выполненной: кольцо заливается цветом и появляется белая галочка.
  */
 @Composable
-private fun Rail(row: WidgetRow.Task, top: Boolean, bottom: Boolean, faded: Boolean, done: Float, testTag: String, onToggle: () -> Unit) {
+private fun Rail(row: WidgetRow.Task, top: Boolean, bottom: Boolean, faded: Boolean, done: Float, testTag: String, onToggle: () -> Unit, selected: Boolean? = null) {
     val colors = AppTheme.colors
     val item = row.item
     // Итерация 27.1 (вариант PM «А»): кружок всегда цвета приоритета, просрочка — красными подписью дня и временем.
@@ -235,7 +257,13 @@ private fun Rail(row: WidgetRow.Task, top: Boolean, bottom: Boolean, faded: Bool
         item.priority == Priority.LOW -> colors.checkRings.low
         else -> colors.inactive
     }
-    val label = stringResource(if (item.showsDone) R.string.task_uncomplete else R.string.widget_complete)
+    val label = stringResource(
+        when {
+            selected != null -> if (selected) R.string.select_unmark else R.string.select_mark
+            item.showsDone -> R.string.task_uncomplete
+            else -> R.string.widget_complete
+        },
+    )
     val tap = if (item.isGhost) {
         Modifier
     } else {
@@ -247,11 +275,11 @@ private fun Rail(row: WidgetRow.Task, top: Boolean, bottom: Boolean, faded: Bool
     ) {
         if (row.isPeriod) {
             Segment(top, Modifier.height(SizeTokens.WIDGET_PERIOD_STUB.dp))
-            Node(ring, done, Modifier.width(SizeTokens.WIDGET_NODE.dp).weight(1f))
+            Node(if (selected == true) colors.accent else ring, if (selected != null) (if (selected) 1f else 0f) else done, Modifier.width(SizeTokens.WIDGET_NODE.dp).weight(1f))
             Segment(bottom, Modifier.height(SizeTokens.WIDGET_PERIOD_STUB.dp))
         } else {
             Segment(top, Modifier.weight(1f))
-            Node(ring, done, Modifier.size(SizeTokens.WIDGET_NODE.dp))
+            Node(if (selected == true) colors.accent else ring, if (selected != null) (if (selected) 1f else 0f) else done, Modifier.size(SizeTokens.WIDGET_NODE.dp))
             Segment(bottom, Modifier.weight(1f))
         }
     }

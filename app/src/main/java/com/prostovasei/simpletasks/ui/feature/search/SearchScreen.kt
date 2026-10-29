@@ -1,5 +1,10 @@
 package com.prostovasei.simpletasks.ui.feature.search
 
+import com.prostovasei.simpletasks.ui.feature.bulk.selectionBottomInset
+import com.prostovasei.simpletasks.ui.feature.bulk.rememberSelection
+import com.prostovasei.simpletasks.ui.feature.bulk.Selectable
+import com.prostovasei.simpletasks.ui.feature.bulk.SelectionState
+import com.prostovasei.simpletasks.ui.feature.bulk.SelectionFrame
 import androidx.compose.foundation.background
 import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
 import androidx.compose.ui.unit.dp
@@ -74,6 +79,9 @@ fun SearchScreen(state: SearchState, onIntent: (SearchIntent) -> Unit, onOpenTas
             keyboard?.show()
         }
     }
+    // Итерация 40: долгое нажатие на найденную задачу — режим выбора.
+    val selection = rememberSelection()
+    SelectionFrame(selection, (state.active + state.done).map { Selectable(it.item.id, it.isDone) }) {
     Column(Modifier.fillMaxSize().background(colors.background)) {
         TextField(
             value = state.query,
@@ -115,19 +123,20 @@ fun SearchScreen(state: SearchState, onIntent: (SearchIntent) -> Unit, onOpenTas
             state.found == 0 -> EmptyState(stringResource(R.string.search_nothing))
             else -> LazyColumn(
                 Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = spacing.xs),
+                contentPadding = PaddingValues(bottom = selectionBottomInset(selection)),
                 verticalArrangement = Arrangement.spacedBy(AppTheme.sizes.cardGap),
             ) {
                 item(key = "found") {
                     SectionHeader(pluralStringResource(R.plurals.search_found, state.found, state.found), Modifier.animateItem())
                 }
-                items(state.active, key = { it.item.id }) { ResultRow(it, state.query, onIntent, openAndRemember(onIntent, onOpenTask), Modifier.animateItem()) }
+                items(state.active, key = { it.item.id }) { ResultRow(it, state.query, onIntent, openAndRemember(onIntent, onOpenTask), Modifier.animateItem(), selection) }
                 if (state.done.isNotEmpty()) {
                     item(key = "done") { SectionHeader(stringResource(R.string.search_done), Modifier.animateItem()) }
-                    items(state.done, key = { "done:${it.item.id}" }) { ResultRow(it, state.query, onIntent, openAndRemember(onIntent, onOpenTask), Modifier.animateItem()) }
+                    items(state.done, key = { "done:${it.item.id}" }) { ResultRow(it, state.query, onIntent, openAndRemember(onIntent, onOpenTask), Modifier.animateItem(), selection) }
                 }
             }
         }
+    }
     }
 }
 
@@ -182,7 +191,8 @@ private fun RecentList(recents: List<String>, onIntent: (SearchIntent) -> Unit) 
 }
 
 @Composable
-private fun ResultRow(result: SearchResult, query: String, onIntent: (SearchIntent) -> Unit, onOpenTask: (String) -> Unit, modifier: Modifier) {
+private fun ResultRow(result: SearchResult, query: String, onIntent: (SearchIntent) -> Unit, onOpenTask: (String) -> Unit, modifier: Modifier, selection: SelectionState) {
+    val selecting = selection.active
     val item = result.item
     TaskRow(
         title = item.title,
@@ -194,8 +204,10 @@ private fun ResultRow(result: SearchResult, query: String, onIntent: (SearchInte
         isRecurring = item.isRecurring && !result.isDone,
         reminder = item.reminder.takeIf { !result.isDone },
         trailing = if (result.isDone) emptyList() else dueLines(item),
-        onToggle = { onIntent(SearchIntent.Toggle(item.id, result.isDone)) },
-        onClick = { onOpenTask(item.id) },
+        onToggle = { if (selecting) selection.toggle(item.id) else onIntent(SearchIntent.Toggle(item.id, result.isDone)) },
+        onClick = { if (selecting) selection.toggle(item.id) else onOpenTask(item.id) },
+        selected = if (selecting) item.id in selection.ids else null,
+        onLongClick = if (selecting) null else { { selection.toggle(item.id) } },
         highlight = query,
         subtitle = result.match,
         testTag = "search:${item.id}",

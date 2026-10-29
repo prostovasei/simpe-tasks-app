@@ -1,5 +1,10 @@
 package com.prostovasei.simpletasks.ui.feature.completed
 
+import androidx.compose.foundation.layout.PaddingValues
+import com.prostovasei.simpletasks.ui.feature.bulk.selectionBottomInset
+import com.prostovasei.simpletasks.ui.feature.bulk.rememberSelection
+import com.prostovasei.simpletasks.ui.feature.bulk.Selectable
+import com.prostovasei.simpletasks.ui.feature.bulk.SelectionFrame
 import com.prostovasei.simpletasks.designsystem.components.UndoKind
 import com.prostovasei.simpletasks.designsystem.components.UndoSnackbarHost
 import androidx.compose.foundation.layout.Arrangement
@@ -73,7 +78,10 @@ fun CompletedScreen(
         contentWindowInsets = WindowInsets(0),
         snackbarHost = { UndoSnackbarHost(snackbarHostState) },
     ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding)) {
+        // Итерация 40: долгое нажатие — режим выбора («Вернуть», «В список», «Приоритет», «Удалить»).
+        val selection = rememberSelection()
+        SelectionFrame(selection, state.days.flatMap { it.tasks }.map { Selectable(it.id, isDone = true) }, Modifier.padding(padding)) {
+        Column(Modifier.fillMaxSize()) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                 IconButton(onClick = onBack) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.project_back), tint = colors.textPrimary)
@@ -88,7 +96,7 @@ fun CompletedScreen(
             when {
                 state.isLoading -> Unit
                 state.days.isEmpty() -> EmptyState(stringResource(R.string.completed_empty))
-                else -> LazyColumn(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(AppTheme.sizes.cardGap)) {
+                else -> LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = selectionBottomInset(selection)), verticalArrangement = Arrangement.spacedBy(AppTheme.sizes.cardGap)) {
                     state.days.forEach { day ->
                         item(key = "day-${days.day(day.day)}") {
                             DayHeader(text = days.day(day.day), relative = null, isOverdue = false)
@@ -102,14 +110,17 @@ fun CompletedScreen(
                                 animateCompletion = false,
                                 trailing = listOfNotNull(task.time),
                                 listIcon = ListIcons.drawable(task.listIcon),
-                                onToggle = { onIntent(CompletedIntent.Restore(task.id)) },
-                                onClick = { onOpenTask(task.id) },
+                                onToggle = { if (selection.active) selection.toggle(task.id) else onIntent(CompletedIntent.Restore(task.id)) },
+                                onClick = { if (selection.active) selection.toggle(task.id) else onOpenTask(task.id) },
+                                selected = if (selection.active) task.id in selection.ids else null,
+                                onLongClick = if (selection.active) null else { { selection.toggle(task.id) } },
                                 testTag = "completed:${task.id}",
                             )
                         }
                     }
                 }
             }
+        }
         }
     }
 }

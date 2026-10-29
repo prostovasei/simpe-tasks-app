@@ -6,6 +6,19 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.longClick
+import com.prostovasei.simpletasks.ui.feature.bulk.TAG_BULK_DELETE_FOREVER
+import com.prostovasei.simpletasks.ui.feature.bulk.TAG_BULK_RESTORE
+import com.prostovasei.simpletasks.ui.feature.bulk.TAG_BULK_COMPLETE
+import com.prostovasei.simpletasks.ui.feature.bulk.TAG_BULK_REOPEN
+import com.prostovasei.simpletasks.designsystem.components.TAG_ACTION_RIBBON
+import com.prostovasei.simpletasks.designsystem.components.TAG_SELECTION_CLOSE
+import com.prostovasei.simpletasks.designsystem.components.TAG_SELECTION_ALL
+import com.prostovasei.simpletasks.designsystem.components.TAG_SELECTION_COUNT
+import com.prostovasei.simpletasks.designsystem.components.TAG_SELECTION_BAR
 import com.prostovasei.simpletasks.ui.feature.lists.TAG_TRASH_COUNT
 import com.prostovasei.simpletasks.ui.feature.trash.TAG_TRASH
 import com.prostovasei.simpletasks.domain.model.TaskDetails
@@ -263,6 +276,80 @@ class ScreensUiTest {
         show { ListsScreen(ListsState(tree = ProjectTree(null, emptyList(), emptyList()), trashCount = 0), { intents += it }, {}) }
         composeRule.onNodeWithTag(TAG_TRASH).assertExists()
         composeRule.onNodeWithTag(TAG_TRASH_COUNT, useUnmergedTree = true).assertDoesNotExist()
+    }
+
+    /** Итерация 40: долгое нажатие — режим выбора; нажатие отмечает, «Выбрать все» без будущих повторов, «✕» закрывает. */
+    @Test
+    fun longPressStartsSelectionAndRibbonFollowsChoice() {
+        show { AllScreen(allState, { intents += it }) }
+        composeRule.onNodeWithTag(TAG_SELECTION_BAR).assertDoesNotExist()
+
+        composeRule.onNodeWithTag("task:t1").performTouchInput { longClick() }
+        composeRule.onNodeWithTag(TAG_SELECTION_COUNT).assertTextEquals("Выбрано: 1")
+        composeRule.onNodeWithTag(TAG_ACTION_RIBBON).assertExists()
+        composeRule.onNodeWithTag(TAG_BULK_REOPEN).assertIsNotEnabled()
+        composeRule.onNodeWithTag(TAG_BULK_COMPLETE).assertIsEnabled()
+
+        // В режиме нажатие отмечает, а не открывает и не выполняет.
+        composeRule.onNodeWithText("Записаться к врачу").performClick()
+        composeRule.onNodeWithTag(TAG_SELECTION_COUNT).assertTextEquals("Выбрано: 2")
+        composeRule.onNodeWithTag("task:d2:check").performClick()
+        composeRule.onNodeWithTag(TAG_SELECTION_COUNT).assertTextEquals("Выбрано: 3")
+        // «Оплатить интернет» только отмечается (ещё не выполнена в базе) — вернуть пока нечего.
+        composeRule.onNodeWithTag(TAG_BULK_REOPEN).assertIsNotEnabled()
+        assertTrue("Ничего не выполнено и не открыто", intents.isEmpty())
+
+        composeRule.onNodeWithTag(TAG_SELECTION_ALL).performClick()
+        composeRule.onNodeWithTag(TAG_SELECTION_COUNT).assertTextEquals("Выбрано: 5")
+
+        composeRule.onNodeWithTag(TAG_SELECTION_CLOSE).performClick()
+        composeRule.onNodeWithTag(TAG_SELECTION_BAR).assertDoesNotExist()
+        composeRule.onNodeWithTag(TAG_ACTION_RIBBON).assertDoesNotExist()
+    }
+
+    @Test
+    fun futureRepeatCannotBeSelected() {
+        show { AllScreen(allState, { intents += it }) }
+        composeRule.onNodeWithTag("task:t1@0").performTouchInput { longClick() }
+        composeRule.onNodeWithTag(TAG_SELECTION_BAR).assertDoesNotExist()
+    }
+
+    @Test
+    fun screenshotSelection() {
+        show { AllScreen(allState, {}) }
+        composeRule.onNodeWithTag("task:t1").performTouchInput { longClick() }
+        composeRule.onNodeWithText("Записаться к врачу").performClick()
+        composeRule.onRoot().captureRoboImage("screenshots/selection_light.png")
+    }
+
+    @Test
+    fun completedAndSearchAndTrashSelect() {
+        show { CompletedScreen(completedState, { intents += it }, {}, {}) }
+        composeRule.onNodeWithText("Отправить отчёт").performTouchInput { longClick() }
+        composeRule.onNodeWithTag(TAG_SELECTION_COUNT).assertTextEquals("Выбрано: 1")
+        composeRule.onNodeWithTag(TAG_BULK_COMPLETE).assertIsNotEnabled()
+        composeRule.onNodeWithTag(TAG_BULK_REOPEN).assertIsEnabled()
+        assertTrue("Долгое нажатие не возвращает задачу", intents.isEmpty())
+    }
+
+    @Test
+    fun searchResultsSelect() {
+        show { SearchScreen(searchState, { intents += it }, {}, autoFocus = false) }
+        composeRule.onNodeWithText("Вернуть книгу").performTouchInput { longClick() }
+        composeRule.onNodeWithText("Позвонить врачу").performClick()
+        composeRule.onNodeWithTag(TAG_SELECTION_COUNT).assertTextEquals("Выбрано: 2")
+        composeRule.onNodeWithTag(TAG_BULK_COMPLETE).assertIsEnabled()
+        composeRule.onNodeWithTag(TAG_BULK_REOPEN).assertIsEnabled()
+    }
+
+    @Test
+    fun trashSelectionHasRestoreAndEraseForever() {
+        show { TrashScreen(trashState, { intents += it }, onBack = {}, onOpenTask = {}) }
+        composeRule.onNodeWithText("Позвонить врачу").performTouchInput { longClick() }
+        composeRule.onNodeWithTag(TAG_BULK_RESTORE).assertExists()
+        composeRule.onNodeWithTag(TAG_BULK_COMPLETE).assertDoesNotExist()
+        composeRule.onNodeWithTag(TAG_BULK_DELETE_FOREVER).performClick()
+        composeRule.onNodeWithText("Удалить навсегда?").assertExists()
     }
 
     @Test

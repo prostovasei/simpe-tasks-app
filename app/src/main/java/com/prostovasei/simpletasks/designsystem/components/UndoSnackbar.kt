@@ -36,6 +36,10 @@ enum class UndoKind(@DrawableRes val icon: Int) {
     Deleted(R.drawable.ic_tool_delete),
     Moved(R.drawable.ic_move_today),
     Restored(R.drawable.ic_snack_restore),
+    Tomorrow(R.drawable.ic_popup_tomorrow),
+    Calendar(R.drawable.ic_widget_all),
+    List(R.drawable.ic_list_inbox),
+    Priority(R.drawable.ic_tool_priority),
 }
 
 /** Содержимое подсказки с кнопкой: текст, подпись кнопки и [kind] для значка. */

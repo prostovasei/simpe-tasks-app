@@ -4,6 +4,7 @@ import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -80,6 +81,10 @@ fun TaskRow(
     animateCompletion: Boolean = true,
     highlight: String? = null,
     subtitle: String? = null,
+    /** Режим выбора (итерация 40): null — выключен; иначе выбрана ли строка. В режиме нажатие и галочка отмечают, а не выполняют. */
+    selected: Boolean? = null,
+    /** Долгое нажатие включает режим выбора; null — строку выбрать нельзя. */
+    onLongClick: (() -> Unit)? = null,
 ) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
@@ -113,8 +118,14 @@ fun TaskRow(
             .padding(horizontal = spacing.xxs)
             .dust({ dust.value }, particles, particleSize, dustColors)
             .clip(AppTheme.shapes.medium)
-            .background(colors.surface)
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .background(if (selected == true) colors.selected else colors.surface)
+            .then(if (selected == true) Modifier.border(sizes.checkboxStroke, colors.accent, AppTheme.shapes.medium) else Modifier)
+            .then(
+                when {
+                    onClick != null || onLongClick != null -> Modifier.combinedClickable(onClick = { onClick?.invoke() }, onLongClick = onLongClick)
+                    else -> Modifier
+                },
+            )
             .padding(start = spacing.xxs, end = spacing.sm, top = sizes.cardGap, bottom = sizes.cardGap)
             .testTag(testTag),
         verticalAlignment = Alignment.CenterVertically,
@@ -126,7 +137,7 @@ fun TaskRow(
                 .then(if (isGhost) Modifier else Modifier.clickable(onClick = onToggle).testTag("$testTag:check")),
             contentAlignment = Alignment.Center,
         ) {
-            if (!isGhost) SquareCheck(checked = isCompleting, ring = ring)
+            if (!isGhost) SquareCheck(checked = selected ?: isCompleting, ring = ring)
         }
         listColor?.let {
             ListSquare(it, listIcon)
