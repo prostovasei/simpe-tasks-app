@@ -42,6 +42,8 @@ data class QuickAddState(
     /** Занятое другими задачами время в видимых днях сетки (серые плашки). */
     val busy: List<BusySlot> = emptyList(),
     val isSaving: Boolean = false,
+    /** Название подставлено из черновика (итерация 38): при открытии оно выделено, любая буква заменит его. */
+    val draftRestored: Boolean = false,
 ) {
     val canSave: Boolean get() = title.isNotBlank() && projectId.isNotEmpty() && !isSaving
     val reminders: List<String> get() = customReminders ?: Reminders.default(due)
@@ -59,6 +61,9 @@ sealed interface QuickAddIntent {
     data class ChecklistItem(val index: Int, val text: String) : QuickAddIntent
     data class RemoveChecklistItem(val index: Int) : QuickAddIntent
     data object Save : QuickAddIntent
+
+    /** Карточку закрыли без сохранения: название и описание уходят в черновик (итерация 38). */
+    data object Dismiss : QuickAddIntent
 }
 
 sealed interface QuickAddEffect {
@@ -72,6 +77,7 @@ class QuickAddViewModel @Inject constructor(
     private val tasks: TaskRepository,
     projects: ProjectRepository,
     time: TimeProvider,
+    private val drafts: TaskDrafts,
 ) : MviViewModel<QuickAddState, QuickAddIntent, QuickAddEffect>(
     QuickAddState(
         today = time.today(),
@@ -79,8 +85,14 @@ class QuickAddViewModel @Inject constructor(
         // Открыто с экрана «Все» — по умолчанию задача на сегодня.
         due = if (savedStateHandle.get<Boolean>("today") == true) TaskDue.AllDay(time.today()) else null,
         nowMinute = time.now().atZone(time.zone()).let { it.hour * 60 + it.minute },
+        title = drafts.get()?.title.orEmpty(),
+        content = drafts.get()?.content.orEmpty(),
+        draftRestored = drafts.get() != null,
     ),
 ) {
+    /** Задача сохранена или карточку закрыли — черновик уже решён, при уничтожении экрана его не трогаем. */
+    private var finished = false
+
     /** Первый видимый день сетки: по нему подгружается занятое время (с запасом на день по краям). */
     private val gridFirst = MutableStateFlow(time.today())
     /** Список, из которого открыто создание; без него — «Входящие». */
@@ -126,6 +138,7 @@ class QuickAddViewModel @Inject constructor(
                 copy(checklist = checklist?.filterIndexed { i, _ -> i != intent.index }?.takeIf { it.isNotEmpty() })
             }
             QuickAddIntent.Save -> save()
+            QuickAddIntent.Dismiss -> dismiss()
         }
     }
 
@@ -149,6 +162,18 @@ class QuickAddViewModel @Inject constructor(
         is FieldEdit.SetReminders -> copy(customReminders = edit.reminders)
     }
 
+    private fun dismiss() {
+        if (finished) return
+        finished = true
+        drafts.save(currentState.title, currentState.content)
+    }
+
+    /** Закрыли системой (смахнули окно, «Назад» мимо шторки) — черновик всё равно остаётся. */
+    override fun onCleared() {
+        dismiss()
+        super.onCleared()
+    }
+
     private fun save() {
         val state = currentState
         if (!state.canSave) return
@@ -168,6 +193,8 @@ class QuickAddViewModel @Inject constructor(
                     reminders = state.reminders,
                 ),
             )
+            finished = true
+            drafts.clear()
             sendEffect(QuickAddEffect.Close)
         }
     }

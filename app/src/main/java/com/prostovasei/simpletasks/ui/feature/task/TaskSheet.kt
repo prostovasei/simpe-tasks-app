@@ -684,6 +684,38 @@ fun CompactField(
     )
 }
 
+/** То же поле, но с выделением текста (итерация 38): подставленный из черновика текст выделен, любая буква заменит его. */
+@Composable
+fun CompactField(
+    value: androidx.compose.ui.text.input.TextFieldValue,
+    onValueChange: (androidx.compose.ui.text.input.TextFieldValue) -> Unit,
+    hint: String,
+    textStyle: TextStyle,
+    modifier: Modifier = Modifier,
+    singleLine: Boolean = true,
+    imeAction: ImeAction = ImeAction.Default,
+    onImeAction: () -> Unit = {},
+) {
+    val colors = AppTheme.colors
+    val style = if (textStyle.color == Color.Unspecified) textStyle.copy(color = colors.textPrimary) else textStyle
+    BasicTextField(
+        value = value,
+        onValueChange = onValueChange,
+        textStyle = style,
+        singleLine = singleLine,
+        cursorBrush = SolidColor(colors.accent),
+        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = imeAction),
+        keyboardActions = KeyboardActions(onAny = { onImeAction() }),
+        modifier = modifier.fillMaxWidth().padding(vertical = AppTheme.spacing.xxs),
+        decorationBox = { inner ->
+            Box {
+                if (value.text.isEmpty()) Text(hint, style = style.copy(color = colors.inactive))
+                inner()
+            }
+        },
+    )
+}
+
 private val SHEET_EASING = CubicBezierEasing(0.32f, 0.72f, 0f, 1f)
 /** Окно из виджета — быстро (итерация 30, №73: 0,2 с рост и 0,09 с проявление; было 0,32 + 0,16). */
 private val MORPH_EASING = CubicBezierEasing(0.2f, 0f, 0f, 1f)

@@ -1,5 +1,6 @@
 package com.prostovasei.simpletasks.ui.feature.task
 
+import com.prostovasei.simpletasks.designsystem.components.UndoSnackbarHost
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -23,7 +24,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -79,7 +79,7 @@ fun TaskDetailRoute(onClose: () -> Unit, onOpenTask: (String) -> Unit, viewModel
     }
     TaskDetailScreen(state, viewModel::onIntent, motion.close, onOpenTask, progress = motion.progress, reveal = motion.reveal) {
         // Подсказка «Следующий раз» — сверху, над шторкой: внизу её закрыла бы панель кнопок.
-        SnackbarHost(snackbar, Modifier.align(Alignment.TopCenter).statusBarsPadding())
+        UndoSnackbarHost(snackbar, Modifier.align(Alignment.TopCenter).statusBarsPadding())
     }
 }
 

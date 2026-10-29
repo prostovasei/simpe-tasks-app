@@ -21,6 +21,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -87,11 +90,18 @@ fun QuickAddScreen(
         }
         shownCount = checklistCount
     }
+    // Название из черновика выделено: любая буква заменит его, «Удалить» сотрёт (итерация 38).
+    var title by remember {
+        mutableStateOf(TextFieldValue(state.title, if (state.draftRestored) TextRange(0, state.title.length) else TextRange(state.title.length)))
+    }
     TaskSheet(
         fields = state.fields,
         onGrid = { onIntent(QuickAddIntent.Grid(it)) },
         onEdit = { onIntent(QuickAddIntent.Edit(it)) },
-        onClose = onClose,
+        onClose = {
+            onIntent(QuickAddIntent.Dismiss)
+            onClose()
+        },
         checklistActive = state.checklist != null,
         onChecklist = { onIntent(QuickAddIntent.AddChecklist) },
         progress = progress,
@@ -99,8 +109,11 @@ fun QuickAddScreen(
         actions = { SheetConfirmButton(R.string.quick_add_save, enabled = state.canSave, tag = TAG_QUICK_SAVE) { onIntent(QuickAddIntent.Save) } },
     ) {
         CompactField(
-            value = state.title,
-            onValueChange = { onIntent(QuickAddIntent.Title(it)) },
+            value = title,
+            onValueChange = {
+                title = it
+                onIntent(QuickAddIntent.Title(it.text))
+            },
             hint = stringResource(R.string.quick_add_title_hint),
             textStyle = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.ExtraBold),
             imeAction = ImeAction.Done,

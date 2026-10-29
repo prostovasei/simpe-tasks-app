@@ -1,5 +1,6 @@
 package com.prostovasei.simpletasks.ui.feature.settings
 
+import com.prostovasei.simpletasks.designsystem.components.UndoSnackbarHost
 import android.app.TimePickerDialog
 import android.content.Intent
 import android.provider.Settings
@@ -26,7 +27,6 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -173,7 +173,7 @@ fun SettingsScreen(
         modifier = modifier,
         containerColor = colors.background,
         contentWindowInsets = WindowInsets(0),
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { UndoSnackbarHost(snackbarHostState) },
     ) { padding ->
         Column(
             modifier = Modifier

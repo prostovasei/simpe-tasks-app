@@ -481,15 +481,46 @@ def p_overdue_header():
     return doc('Список и виджет', 470, 'Подпись «Просрочено · N»: стрелка «свернуть» и значок «перенести на сегодня»', body)
 
 
-def snackbar(text):
-    return (f'<div style="width:380px;min-height:48px;border-radius:var(--radius-sm);background:#313033;color:#F4EFF4;display:flex;align-items:center;padding:0 8px 0 16px;gap:8px;{SHADOW}">'
-            f'<span style="flex:1;font-size:14px;line-height:20px">{text}</span><span style="min-height:40px;padding:0 12px;display:flex;align-items:center;font-size:14px;font-weight:600;color:#D0BCFF">Отмена</span></div>')
+def snackbar(text, kind='ic_node_check'):
+    """Подсказка «Отмена» (итерация 38): белая полупрозрачная карточка (88%), значок слева, зелёная «Отмена»."""
+    return (f'<div style="width:380px;min-height:56px;border-radius:var(--radius-xl);background:color-mix(in srgb,var(--surface) 88%,transparent);border:1px solid var(--divider);'
+            f'color:var(--text-primary);display:flex;align-items:center;padding:0 4px 0 16px;gap:12px">'
+            f'<span style="display:flex;color:var(--text-secondary)">{svg(kind, 22)}</span>'
+            f'<span style="flex:1;font-size:14px;line-height:20px;font-weight:600;padding:8px 0">{text}</span>'
+            f'<span style="min-height:40px;padding:0 12px;display:flex;align-items:center;font-size:14px;line-height:20px;font-weight:700;color:var(--accent)">Отмена</span></div>')
 
 
 def p_snackbar():
-    body = ('<div style="width:412px;padding:12px;display:flex;flex-direction:column;gap:8px">'
-            + ''.join(snackbar(t) for t in ['Задача выполнена', 'Следующий повтор: сб, 17 окт', 'Задача удалена', 'Перенесено на сегодня: 3']) + '</div>')
-    return doc('Список и виджет', 280, 'Подсказка внизу экрана с кнопкой «Отмена»: выполнено, повтор, удалено, перенесено', body)
+    rows = [('Задача выполнена', 'ic_node_check'), ('Следующий повтор: сб, 17 окт', 'ic_tool_repeat'), ('Задача удалена', 'ic_tool_delete'),
+            ('Перенесено на сегодня: 3', 'ic_move_today'), ('Задача возвращена', 'ic_snack_restore')]
+    body = '<div style="width:412px;padding:12px;display:flex;flex-direction:column;gap:8px">' + ''.join(snackbar(t, k) for t, k in rows) + '</div>'
+    return doc('Список и виджет', 340, 'Подсказка внизу экрана с кнопкой «Отмена»: белая полупрозрачная карточка со значком', body)
+
+
+def recent_row(text):
+    return ('<div style="min-height:48px;display:flex;align-items:center;padding:0 4px 0 16px;gap:16px;color:var(--text-secondary)">'
+            f'<span style="display:flex">{svg("ic_history", 22)}</span><span style="flex:1;font-size:16px;line-height:24px;font-weight:500;color:var(--text-primary)">{text}</span>'
+            f'<span style="width:48px;height:48px;display:flex;align-items:center;justify-content:center">{mi("close", 20)}</span></div>')
+
+
+def p_recent_searches():
+    head = ('<div style="display:flex;align-items:center;padding:16px 16px 4px"><span style="flex:1;font-size:12px;line-height:16px;font-weight:700;letter-spacing:.04em;color:var(--text-secondary)">НЕДАВНИЕ</span>'
+            '<span style="font-size:14px;line-height:20px;font-weight:700;color:var(--accent);padding:8px 0">Очистить</span></div>')
+    body = '<div style="width:412px">' + head + ''.join(recent_row(t) for t in ['отчёт', 'купить продукты', 'бюджет', 'врач', 'зарядка']) + '</div>'
+    return doc('Список и виджет', 360, 'Недавние запросы в поиске: до 5 строк, нажатие ищет, крестик убирает, «Очистить» стирает все', body)
+
+
+def draft_sheet():
+    card = B.sheet_card(False, width=396)
+    sel = '<span style="background:var(--accent-soft);border-radius:2px;padding:0 1px">Купить билеты на конц</span>'
+    card = card.replace('color:var(--inactive)">Купить билеты на концерт', f'">{sel}')
+    card = card.replace('font-weight:500;color:var(--inactive);margin-top:4px">Описание', 'font-weight:500;color:var(--text-secondary);margin-top:4px">Нужно две штуки, ближе к сцене')
+    return card
+
+
+def p_draft():
+    body = f'<div style="width:412px;padding:8px 8px 0">{draft_sheet()}</div>'
+    return doc('Окна', 300, 'Шторка с подставленным черновиком: название выделено, описание на месте', body)
 
 
 def notif_btn(label):
@@ -509,7 +540,7 @@ PREVIEWS = {
     'UpdateDialog': p_update_dialog, 'ListPriorityDialogs': p_list_priority_dialogs, 'CustomDialogs': p_custom_dialogs, 'AlertDialogs': p_alert_dialogs,
     'ChecklistRows': p_checklist, 'ChipsAndButtons': p_chips_fab, 'SettingsRow': p_switch_rows,
     'Headers': p_headers, 'EmptyTasks': p_empty, 'TaskRow': p_task_row, 'ListRows': p_list_rows, 'SearchField': p_search_field, 'BottomBar': p_bottom_bar,
-    'ReminderStrip': p_reminder_strip, 'OverdueHeader': p_overdue_header, 'UndoSnackbar': p_snackbar, 'ReminderNotification': p_notification, 'Widget': p_widget_bar, 'WidgetBar': p_widget_bar_only,
+    'ReminderStrip': p_reminder_strip, 'OverdueHeader': p_overdue_header, 'UndoSnackbar': p_snackbar, 'RecentSearches': p_recent_searches, 'TaskDraft': p_draft, 'ReminderNotification': p_notification, 'Widget': p_widget_bar, 'WidgetBar': p_widget_bar_only,
     'ScreenAll': lambda: screens(all_screen, 730, 'Экран «Все»: лента по дням со шкалой и нижней панелью'),
     'ScreenInbox': lambda: screens(inbox_screen, 730, 'Экран «Входящие»: плоский список, слева день и время'),
     'ScreenLists': lambda: screens(lists_screen, 730, 'Экран «Списки»'),
@@ -526,10 +557,18 @@ README_MORE = {
 Справа от текста стрелка 24 (в виджете `size-widget-fold-icon` 20): вниз — раскрыто, вправо — свёрнуто. Нажатие на текст со стрелкой сворачивает все прошедшие дни, счётчик остаётся. Состояние одно на приложение и виджет, запоминается между запусками.
 Рядом значок «→|» (`ic_move_today`): переносит все невыполненные просроченные на сегодня, время дня то же. Если невыполненных нет, значка нет. После переноса — подсказка `UndoSnackbar`; из виджета она показывается в прозрачном окне поверх рабочего стола (~4 с).
 Источник: `designsystem/components/Common.kt` (`OverdueHeader`), `widget/TasksWidget.kt` (`OverdueTitle`).'''),
-    'UndoSnackbar': ('Подсказка внизу экрана с кнопкой «Отмена»: выполнено, повтор, удалено, перенесено.',
-                     '''Стандартный `Snackbar` Material 3, а не токены: тёмная плашка (`inverseSurface` #313033), светлый текст, кнопка «Отмена» цвета `inversePrimary` (светло-сиреневая #D0BCFF). Радиус `radius-sm`. Висит ~4 с, новая заменяет прежнюю.
-Тексты: «Задача выполнена», у повторяющейся «Следующий повтор: сб, 17 окт», «Задача удалена» (0.36, без вопроса «Удалить?»), «Перенесено на сегодня: N» (0.37). «Отмена» возвращает всё как было (удалённое — вместе с подзадачами и чек-листами).
-Из виджета и уведомлений подсказка появляется в прозрачном окне поверх рабочего стола; нажатие мимо закрывает окно сразу (отмена тогда уже невозможна). Источник: `ui/common/TaskListUi.kt` (`showUndo`), `TaskPopupActivity.kt`.'''),
+    'UndoSnackbar': ('Подсказка внизу экрана с кнопкой «Отмена»: белая полупрозрачная карточка со значком (0.38).',
+                     '''Белая карточка `surface` на 88% (сквозь неё виден список или рабочий стол), рамка `divider` 1 (тени нет: сквозь полупрозрачную карточку она просвечивает), радиус `radius-xl` (16), высота от `size-snackbar-min-height` (56), поля слева `space-md`, справа `space-xxs`.
+Слева значок `size-snackbar-icon` (22) цвета `text-secondary`: галочка («Задача выполнена»), повтор («Следующий повтор: сб, 17 окт»), корзина («Задача удалена»), стрелка к черте («Перенесено на сегодня: N»), круговая стрелка («Задача возвращена»). Справа зелёная «Отмена» (`accent`, Bold) с зоной нажатия от 40.
+Размытия фона нет: на старых телефонах Android оно недоступно. Висит ~4 с, новая заменяет прежнюю. В приложении стоит над нижней панелью с зазором `space-sm`; из виджета и уведомлений появляется в прозрачном окне поверх рабочего стола с отступом от низа `space-lg`; нажатие мимо закрывает окно сразу (отмена тогда уже невозможна).
+Тексты: «Задача удалена» без вопроса «Удалить?» (0.36), «Перенесено на сегодня: N» (0.37). «Отмена» возвращает всё как было (удалённое — вместе с подзадачами и чек-листами). Источник: `designsystem/components/UndoSnackbar.kt`, `ui/common/TaskListUi.kt` (`showUndo`).'''),
+    'RecentSearches': ('Недавние запросы в поиске: пока поле пустое — до 5 строк (0.38).',
+                       '''Блок виден, пока поле поиска пустое и есть запросы; иначе — подсказка «Начните вводить — задачи появятся сразу». Заголовок «НЕДАВНИЕ» (`label-medium` Bold, `text-secondary`), справа «Очистить» (`accent`, Bold) стирает все.
+Строка высотой `size-recent-row` (48): слева значок «часы» `size-recent-icon` (22) цвета `text-secondary`, запрос `body-large` Medium, справа крестик в зоне нажатия 48 убирает один запрос. Нажатие на строку ставит запрос в поле и сразу ищет.
+Запрос запоминается, когда открыли найденную задачу или нажали «поиск» на клавиатуре (не на каждую букву). Последние 5, новые сверху, без повторов (регистр не важен), хранятся на телефоне. Источник: `ui/feature/search/SearchScreen.kt`, `RecentSearches.kt`.'''),
+    'TaskDraft': ('Черновик новой задачи: закрыли карточку, не сохранив, — текст вернётся при следующем «+» (0.38).',
+                  '''Если карточку новой задачи закрыли без сохранения (нажатием мимо, «Назад», смахнули окно), а в названии что-то набрано, название и описание запоминаются. Следующее «+» (с любого экрана и из виджета) открывает шторку с этим текстом: название выделено (`accent-soft`), любая буква заменит его, «Удалить» на клавиатуре сотрёт.
+Дата, список, приоритет, повтор и чек-лист не запоминаются. Черновик один, без срока годности; стирается, когда задачу сохранили или название очистили. Источник: `ui/feature/task/TaskDraft.kt`, `QuickAddViewModel.kt`.'''),
     'ReminderNotification': ('Обычное уведомление-напоминание: название, срок, кнопки «Выполнить» и «На завтра».',
                              '''Системное уведомление Android (канал «Напоминания»). Название задачи, под ним срок и список. Две кнопки: «Выполнить» и «На завтра» (0.36): срок переносится на завтра, время дня то же; у задачи без времени — только день.
 Рисует система, поэтому вид зависит от телефона; значок приложения — `ic_notification`. Источник: `notifications/AndroidReminders.kt`.'''),

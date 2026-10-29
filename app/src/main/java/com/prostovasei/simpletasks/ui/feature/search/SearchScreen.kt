@@ -1,6 +1,15 @@
 package com.prostovasei.simpletasks.ui.feature.search
 
 import androidx.compose.foundation.background
+import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -81,7 +90,10 @@ fun SearchScreen(state: SearchState, onIntent: (SearchIntent) -> Unit, onOpenTas
             singleLine = true,
             textStyle = MaterialTheme.typography.bodyLarge.copy(color = colors.textPrimary),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-            keyboardActions = KeyboardActions(onSearch = { keyboard?.hide() }),
+            keyboardActions = KeyboardActions(onSearch = {
+                onIntent(SearchIntent.Submit)
+                keyboard?.hide()
+            }),
             shape = AppTheme.shapes.large,
             colors = TextFieldDefaults.colors(
                 focusedContainerColor = colors.surface,
@@ -97,6 +109,7 @@ fun SearchScreen(state: SearchState, onIntent: (SearchIntent) -> Unit, onOpenTas
                 .testTag(TAG_SEARCH_FIELD),
         )
         when {
+            state.query.isBlank() && state.recents.isNotEmpty() -> RecentList(state.recents, onIntent)
             state.query.isBlank() -> EmptyState(stringResource(R.string.search_start))
             state.isLoading -> Unit
             state.found == 0 -> EmptyState(stringResource(R.string.search_nothing))
@@ -108,10 +121,60 @@ fun SearchScreen(state: SearchState, onIntent: (SearchIntent) -> Unit, onOpenTas
                 item(key = "found") {
                     SectionHeader(pluralStringResource(R.plurals.search_found, state.found, state.found), Modifier.animateItem())
                 }
-                items(state.active, key = { it.item.id }) { ResultRow(it, state.query, onIntent, onOpenTask, Modifier.animateItem()) }
+                items(state.active, key = { it.item.id }) { ResultRow(it, state.query, onIntent, openAndRemember(onIntent, onOpenTask), Modifier.animateItem()) }
                 if (state.done.isNotEmpty()) {
                     item(key = "done") { SectionHeader(stringResource(R.string.search_done), Modifier.animateItem()) }
-                    items(state.done, key = { "done:${it.item.id}" }) { ResultRow(it, state.query, onIntent, onOpenTask, Modifier.animateItem()) }
+                    items(state.done, key = { "done:${it.item.id}" }) { ResultRow(it, state.query, onIntent, openAndRemember(onIntent, onOpenTask), Modifier.animateItem()) }
+                }
+            }
+        }
+    }
+}
+
+/** Открытие найденной задачи запоминает запрос в недавних (итерация 38). */
+private fun openAndRemember(onIntent: (SearchIntent) -> Unit, onOpenTask: (String) -> Unit): (String) -> Unit = { id ->
+    onIntent(SearchIntent.Submit)
+    onOpenTask(id)
+}
+
+/** «Недавние»: пока поле пустое — последние запросы; нажатие ищет, крестик убирает один, «Очистить» — все (итерация 38). */
+@Composable
+private fun RecentList(recents: List<String>, onIntent: (SearchIntent) -> Unit) {
+    val colors = AppTheme.colors
+    val spacing = AppTheme.spacing
+    LazyColumn(Modifier.fillMaxSize().testTag(TAG_SEARCH_RECENTS)) {
+        item(key = "recent-head") {
+            Row(Modifier.fillMaxWidth().padding(start = spacing.md, end = spacing.md, top = spacing.md, bottom = spacing.xxs), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    stringResource(R.string.search_recent).uppercase(),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = colors.textSecondary,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    stringResource(R.string.search_recent_clear),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = colors.accent,
+                    modifier = Modifier.clickable { onIntent(SearchIntent.ClearRecents) }.padding(vertical = spacing.xs).testTag(TAG_SEARCH_RECENT_CLEAR),
+                )
+            }
+        }
+        items(recents, key = { "recent:$it" }) { query ->
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .defaultMinSize(minHeight = SizeTokens.RECENT_ROW.dp)
+                    .clickable { onIntent(SearchIntent.PickRecent(query)) }
+                    .padding(start = spacing.md)
+                    .testTag("search_recent:$query"),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(painterResource(R.drawable.ic_history), null, tint = colors.textSecondary, modifier = Modifier.size(SizeTokens.RECENT_ICON.dp))
+                Text(query, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, color = colors.textPrimary, maxLines = 1, modifier = Modifier.weight(1f).padding(horizontal = spacing.md))
+                IconButton(onClick = { onIntent(SearchIntent.RemoveRecent(query)) }, modifier = Modifier.size(SizeTokens.RECENT_CLEAR_TOUCH.dp).testTag("search_recent_remove:$query")) {
+                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.search_recent_remove, query), tint = colors.textSecondary, modifier = Modifier.size(AppTheme.sizes.metaIcon))
                 }
             }
         }
@@ -142,3 +205,5 @@ private fun ResultRow(result: SearchResult, query: String, onIntent: (SearchInte
 
 const val TAG_SEARCH_FIELD = "search_field"
 const val TAG_SEARCH_CLEAR = "search_clear"
+const val TAG_SEARCH_RECENTS = "search_recents"
+const val TAG_SEARCH_RECENT_CLEAR = "search_recent_clear"

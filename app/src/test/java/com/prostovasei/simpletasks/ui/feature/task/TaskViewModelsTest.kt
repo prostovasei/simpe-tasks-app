@@ -57,7 +57,9 @@ class TaskViewModelsTest {
     @After
     fun tearDown() = Dispatchers.resetMain()
 
-    private fun quickAdd(vararg args: Pair<String, Any?>) = QuickAddViewModel(SavedStateHandle(mapOf(*args)), tasks, projects, time)
+    private val draftStore = TaskDrafts(initial = null, persist = {})
+
+    private fun quickAdd(vararg args: Pair<String, Any?>) = QuickAddViewModel(SavedStateHandle(mapOf(*args)), tasks, projects, time, draftStore)
 
     private fun QuickAddViewModel.intervalEnd() = (state.value.due as? TaskDue.AtTime)?.instant?.takeIf { state.value.start != null }
 
@@ -412,5 +414,51 @@ class TaskViewModelsTest {
         vm.onIntent(TaskDetailIntent.ToggleSubtask("s1"))
         runCurrent()
         assertEquals("s1" to true, tasks.completedCalls.last())
+    }
+
+    /** Итерация 38: закрыли карточку — название и описание в черновике; следующее «+» подставляет их выделенными. */
+    @Test
+    fun dismissedQuickAddKeepsDraftForNextOne() = runTest(dispatcher) {
+        val first = quickAdd()
+        runCurrent()
+        first.onIntent(QuickAddIntent.Title("Купить билеты"))
+        first.onIntent(QuickAddIntent.Content("Две штуки"))
+        first.onIntent(QuickAddIntent.Edit(FieldEdit.SetPriority(Priority.HIGH)))
+        first.onIntent(QuickAddIntent.Dismiss)
+
+        val second = quickAdd()
+        runCurrent()
+        assertEquals("Купить билеты", second.state.value.title)
+        assertEquals("Две штуки", second.state.value.content)
+        assertTrue(second.state.value.draftRestored)
+        assertEquals("Приоритет не запоминается", Priority.NONE, second.state.value.priority)
+        assertEquals(null, second.state.value.due)
+    }
+
+    @Test
+    fun savedTaskOrBlankTitleClearsDraft() = runTest(dispatcher) {
+        val first = quickAdd()
+        runCurrent()
+        first.onIntent(QuickAddIntent.Title("Черновик"))
+        first.onIntent(QuickAddIntent.Dismiss)
+        assertEquals("Черновик", draftStore.get()?.title)
+
+        val second = quickAdd()
+        runCurrent()
+        second.onIntent(QuickAddIntent.Save)
+        runCurrent()
+        assertEquals("Сохранили — черновика нет", null, draftStore.get())
+        second.onIntent(QuickAddIntent.Dismiss)
+        assertEquals("После сохранения закрытие черновик не возвращает", null, draftStore.get())
+
+        val third = quickAdd()
+        runCurrent()
+        third.onIntent(QuickAddIntent.Title("Опять"))
+        third.onIntent(QuickAddIntent.Dismiss)
+        val fourth = quickAdd()
+        runCurrent()
+        fourth.onIntent(QuickAddIntent.Title("  "))
+        fourth.onIntent(QuickAddIntent.Dismiss)
+        assertEquals("Название очистили — черновика нет", null, draftStore.get())
     }
 }
