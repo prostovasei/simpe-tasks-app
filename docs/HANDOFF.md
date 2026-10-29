@@ -23,6 +23,7 @@
 | Что | Ссылка | Как обновлять |
 |---|---|---|
 | Холст с макетами | https://claude.ai/artifact/4G8GPUfah2Q9nqvm5jpFwU | Раздел 4 |
+| Дизайн-система (Claude Design) | https://claude.ai/artifact/RuxztJRqXQEhfpxHE46w1w | Цвета, шрифт, отступы, размеры и 12 компонентов с превью; значения берутся из кода. Обновлять: `python3 design/system/build_design_system.py <папка>`, дальше `Artifact publish` с `root` (по `SKILL.md` типа «Design System»), индекс `design-system.json` — последним |
 | Чек-лист ручной проверки | https://claude.ai/artifact/LfCQHWnhLob8u75CP2vaMS | После релиза: снять старые `isNew: true`, выставить `const NEW_IN`, добавить область с новыми пунктами (id уникальны, сейчас 184) перед областью «Перетаскивание и интервалы (0.17)». Плюс документ прогона в коллекции `runs` (doc_id `v0-X-Y-buildN`, поля `version`, `kind:"new"`, `createdAt`, `updatedAt`, `results:{}`, `notes:{}`) |
 | Бэклог | https://claude.ai/artifact/EoNYmmboC6gG13ju3MnEid | Коллекция `items` (поля `c, e, i, r, num, iteration, section, source, status, title, why, createdAt, updatedAt`). Последний `num` = 81 |
 
@@ -84,6 +85,7 @@
 | `date_window2.py` | `VariantC2` (итерация 33, круг 2): окно даты со стрелками «2 недели» и кнопкой «Календарь» (2 месяца), колокольчик «несколько уведомлений» (4 варианта значка). `shot.mjs` с `W=1882 H=1700` |
 | `date_window3.py` | `VariantC3` (итерация 33, круг 3): окно даты на весь экран (время 10:00–24:00), календарь без «Готово», повтор и уведомления в полоске даты (колокольчик «несколько» — точка). `shot.mjs` с `W=1882 H=2130` |
 | `date_window4.py` | `VariantC4` «Шторка и окно даты — итог» (итерация 34, макет до кода): два поля даты и времени, повтор и уведомления в панели (доступны при дате), «⋮» вместо корзины, круг «выполнено» с зелёной заливкой, новый низ окна даты. `shot.mjs` с `W=1882 H=2900` |
+| `../system/build_design_system.py` | Генератор дизайн-системы (итерация 35): читает токены из Kotlin, значки из `res/drawable`, шрифт из `res/font`; пишет `project/` для артефакта «Design System» (токены, README, 12 компонентов, обложка) |
 | `shot.mjs` | PNG-превью досок: `DIR=<папка> KS=S1,S2 node shot.mjs` → `<папка>/shot_S1.png` |
 
 Порядок работы с холстом (тип артефакта «Design»):
