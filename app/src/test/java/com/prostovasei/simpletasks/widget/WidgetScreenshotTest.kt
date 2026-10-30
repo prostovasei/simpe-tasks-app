@@ -31,13 +31,9 @@ import org.robolectric.annotation.GraphicsMode
 class WidgetScreenshotTest {
     private val context = ApplicationProvider.getApplicationContext<android.app.Application>()
 
-    private class Preview(
-        private val model: WidgetModel,
-        private val liveClock: Boolean = false,
-        private val scrollable: Boolean = false,
-    ) : GlanceAppWidget() {
+    private class Preview(private val model: WidgetModel, private val liveClock: Boolean = false) : GlanceAppWidget() {
         override suspend fun provideGlance(context: android.content.Context, id: GlanceId) =
-            provideContent { WidgetContent(model, 1, scrollable = scrollable, liveClock = liveClock) }
+            provideContent { WidgetContent(model, 1, scrollable = false, liveClock = liveClock) }
     }
 
     private fun item(
@@ -167,10 +163,12 @@ class WidgetScreenshotTest {
     }
 
     private fun capture(path: String, heightDp: Int = 420, shown: WidgetModel = model, scrollable: Boolean = false) {
-        val views = runBlocking { Preview(shown, scrollable = scrollable).compose(context, size = DpSize(320.dp, heightDp.dp)) }
-        // Строки ленты Android отдаёт списку только внутри контейнера виджета рабочего стола.
-        val parent = android.appwidget.AppWidgetHostView(context)
-        val view = views.apply(context, parent)
+        // Лента Android 12+ — как на телефоне: корень с лентой, нижняя панель Glance поверх, применение в фоне.
+        val view = if (scrollable) {
+            renderWidget(context, shown, DpSize(320.dp, heightDp.dp)).applyLikeLauncher(context)
+        } else {
+            runBlocking { Preview(shown).compose(context, size = DpSize(320.dp, heightDp.dp)) }.apply(context, FrameLayout(context))
+        }
         val density = context.resources.displayMetrics.density
         val width = (320 * density).toInt()
         val height = (heightDp * density).toInt()

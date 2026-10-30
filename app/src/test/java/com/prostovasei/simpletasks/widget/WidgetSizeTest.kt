@@ -1,17 +1,13 @@
 package com.prostovasei.simpletasks.widget
 
-import android.os.Bundle
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import androidx.glance.appwidget.ExperimentalGlanceRemoteViewsApi
-import androidx.glance.appwidget.GlanceRemoteViews
 import androidx.test.core.app.ApplicationProvider
 import com.prostovasei.simpletasks.domain.model.Priority
 import com.prostovasei.simpletasks.domain.model.ReminderMark
 import com.prostovasei.simpletasks.ui.common.DayLabel
 import com.prostovasei.simpletasks.ui.common.DueText
 import com.prostovasei.simpletasks.ui.common.TaskItem
-import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -23,7 +19,6 @@ import java.time.LocalDate
  * Размер пакета виджета (0.41.1, итерация 42): вся лента уходит рабочему столу одним пакетом. На 100+ задачах PM пакет
  * строк Glance (~760 КБ) Nova Launcher не применял; строки на обычных элементах Android должны быть в разы легче.
  */
-@OptIn(ExperimentalGlanceRemoteViewsApi::class)
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = "w400dp-h800dp-xhdpi")
 class WidgetSizeTest {
@@ -46,11 +41,7 @@ class WidgetSizeTest {
         return WidgetModel(WidgetFilter.All, null, today, blocks, nowMinute = 9 * 60)
     }
 
-    private fun bytes(model: WidgetModel): Int = runBlocking {
-        GlanceRemoteViews().compose(context, DpSize(400.dp, 800.dp), appWidgetOptions = Bundle()) {
-            WidgetContent(model, 1, scrollable = true)
-        }.remoteViews.parcelBytes()
-    }
+    private fun bytes(model: WidgetModel): Int = renderWidget(context, model, DpSize(400.dp, 800.dp), liveClock = true).parcelBytes()
 
     @Test
     fun hundredTasksAreLight() {

@@ -30,6 +30,7 @@
     <dimen name="widget_space_sm">12dp</dimen>
     <dimen name="widget_radius_sm">4dp</dimen>
     <dimen name="widget_radius_md">8dp</dimen>
+    <dimen name="widget_radius_xl">16dp</dimen>
 
     <color name="widget_surface">#FFFFFFFF</color>
     <color name="widget_divider">#FFD5E0D8</color>

@@ -49,6 +49,7 @@ class WidgetRowResourcesTest {
             R.dimen.widget_space_sm to SpacingTokens.SM,
             R.dimen.widget_radius_sm to RadiusTokens.SM,
             R.dimen.widget_radius_md to RadiusTokens.MD,
+            R.dimen.widget_radius_xl to RadiusTokens.XL,
         )
         dimens.forEach { (res, token) ->
             assertEquals(context.resources.getResourceEntryName(res), token.toFloat(), context.resources.getDimension(res))
@@ -58,6 +59,7 @@ class WidgetRowResourcesTest {
     private fun colors(dark: Boolean): Map<Int, Long> {
         fun ThemedColor.pick() = if (dark) this.dark else light
         return mapOf(
+            R.color.widget_fade_end to ColorTokens.background.pick(),
             R.color.widget_surface to ColorTokens.surface.pick(),
             R.color.widget_divider to ColorTokens.divider.pick(),
             R.color.widget_now to ColorTokens.accent.pick(),

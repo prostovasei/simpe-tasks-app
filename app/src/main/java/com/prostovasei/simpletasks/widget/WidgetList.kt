@@ -14,7 +14,7 @@ import com.prostovasei.simpletasks.ui.common.DayNames
 
 /*
  * Лента виджета построчно (итерация 42). Каждая строка — отдельный элемент списка на обычных элементах Android ([WidgetRows]);
- * все строки уходят рабочему столу вместе с рамкой одним лёгким пакетом. Раньше (0.9.2–0.41) строки собирал Glance, пакет
+ * все строки уходят рабочему столу вместе с рамкой одним лёгким пакетом ([widgetRootViews]). Раньше (0.9.2–0.41) строки собирал Glance, пакет
  * на 100+ задачах весил ~760 КБ, и Nova Launcher его не применял до возврата из приложения.
  *
  * Нажатия: в строках списка Android понимает только «добавки» к общему шаблону списка — что сделать и с какой задачей;
@@ -83,18 +83,20 @@ fun WidgetModel.lines(days: DayNames, withTail: Boolean = true): List<WidgetLine
 }
 
 /**
- * Список в рамке виджета: строки уходят рабочему столу сразу, вместе с рамкой ([WidgetRows], Android 12+), нажатия строк —
- * через общий шаблон. Не больше [MAX_LINES] строк: дальше 14 дней всё равно не показываем, предел — защита размера пакета.
+ * Весь виджет на Android 12+: фон и лента — обычные элементы прямо в корне ([WidgetRows]), поверх — нижняя панель от Glance
+ * ([overlay], [WidgetContent] с scrollable = true). Ленту нельзя вкладывать в картинку Glance: рабочий стол, применяющий виджет
+ * в фоне (Nova, Android 16–17), оставляет такой список пустым. Нажатия строк — через общий шаблон списка.
+ * Не больше [MAX_LINES] строк: дальше 14 дней всё равно не показываем, предел — защита размера пакета.
  */
 @RequiresApi(Build.VERSION_CODES.S)
-fun widgetListViews(context: Context, appWidgetId: Int, model: WidgetModel, liveClock: Boolean = true): RemoteViews {
-    val all = model.lines(dayNames(context))
-    val lines = if (all.size > MAX_LINES) all.take(MAX_LINES) + WidgetLine.Tail else all
-    val items = RemoteViews.RemoteCollectionItems.Builder()
-        .setHasStableIds(true)
-        .setViewTypeCount(WidgetRows.VIEW_TYPES)
-    lines.forEach { items.addItem(it.key.hashCode().toLong(), WidgetRows.views(context, it, model, liveClock)) }
-    return RemoteViews(context.packageName, R.layout.widget_list).apply {
+fun widgetRootViews(context: Context, appWidgetId: Int, model: WidgetModel, overlay: RemoteViews, liveClock: Boolean = true): RemoteViews =
+    RemoteViews(context.packageName, R.layout.widget_root).apply {
+        val all = if (model.isEmpty) emptyList() else model.lines(dayNames(context))
+        val lines = if (all.size > MAX_LINES) all.take(MAX_LINES) + WidgetLine.Tail else all
+        val items = RemoteViews.RemoteCollectionItems.Builder()
+            .setHasStableIds(true)
+            .setViewTypeCount(WidgetRows.VIEW_TYPES)
+        lines.forEach { items.addItem(it.key.hashCode().toLong(), WidgetRows.views(context, it, model, liveClock)) }
         setRemoteAdapter(R.id.widget_list, items.build())
         setPendingIntentTemplate(
             R.id.widget_list,
@@ -105,8 +107,8 @@ fun widgetListViews(context: Context, appWidgetId: Int, model: WidgetModel, live
                 PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
             ),
         )
+        addView(R.id.widget_overlay, overlay)
     }
-}
 
 /** Предел строк ленты (~150 строк — ~150 КБ пакета). */
 const val MAX_LINES = 150

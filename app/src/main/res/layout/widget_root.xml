@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Корень виджета (итерация 42): фон, лента и поверх — нижняя панель от Glance (widget_overlay).
+  Лента лежит прямо в корне: вложенный в картинку Glance список рабочий стол, применяющий виджет в фоне, оставлял пустым.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_root_bg"
+    android:clipToOutline="true"
+    tools:targetApi="31">
+
+    <ListView
+        android:id="@+id/widget_list"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginStart="@dimen/widget_list_edge"
+        android:layout_marginTop="@dimen/widget_edge"
+        android:divider="@null"
+        android:dividerHeight="0dp"
+        android:listSelector="@android:color/transparent"
+        android:scrollbarStyle="outsideOverlay" />
+
+    <FrameLayout
+        android:id="@+id/widget_overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+</FrameLayout>

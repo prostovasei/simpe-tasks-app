@@ -1,6 +1,5 @@
 package com.prostovasei.simpletasks.widget
 
-import android.appwidget.AppWidgetHostView
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ListView
@@ -21,7 +20,10 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.time.LocalDate
 
-/** Лента на обычных элементах Android (итерация 42): все строки доходят до списка, у задач — текст и обе зоны нажатия. */
+/**
+ * Лента на обычных элементах Android (итерация 42): все строки доходят до списка — после передачи рабочему столу и применения
+ * в фоне, как у Nova; у задач — текст и обе зоны нажатия.
+ */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = "w400dp-h800dp-xhdpi")
 class WidgetListTest {
@@ -52,8 +54,7 @@ class WidgetListTest {
     )
 
     private fun list(shown: WidgetModel = model): ListView {
-        // Строки из пакета Android отдаёт списку только внутри контейнера виджета рабочего стола.
-        val root = widgetListViews(context, 1, shown, liveClock = false).apply(context, AppWidgetHostView(context))
+        val root = renderWidget(context, shown).applyLikeLauncher(context)
         return root.descendants().filterIsInstance<ListView>().single()
     }
 
@@ -101,6 +102,20 @@ class WidgetListTest {
         assertTrue(title.paint.isStrikeThruText || title.text is android.text.Spanned)
         val open = list().rows().map { it.findViewById<TextView?>(R.id.row_title) }.first { it?.text.toString() == "Созвон" }!!
         assertFalse(open.text is android.text.Spanned)
+    }
+
+    /** Нижняя панель Glance лежит поверх ленты и тоже доходит до рабочего стола. */
+    @Test
+    fun bottomBarOverList() {
+        val root = renderWidget(context, model).applyLikeLauncher(context)
+        listOf("Все", "Входящие", "Открыть приложение", "Новая задача").forEach { label ->
+            val found = ArrayList<View>()
+            root.findViewsWithText(found, label, View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
+            assertEquals(label, 1, found.size)
+            // Подпись бывает у значка, нажатие — у кнопки вокруг него.
+            val clickable = generateSequence(found.single()) { it.parent as? View }.take(3).any { it.hasOnClickListeners() }
+            assertTrue("$label нажимается", clickable)
+        }
     }
 
     /** Не больше [MAX_LINES] строк и хвост под нижней панелью в конце. */

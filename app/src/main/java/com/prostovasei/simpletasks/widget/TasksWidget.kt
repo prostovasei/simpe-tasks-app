@@ -4,7 +4,6 @@ import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
-import android.os.Build
 import android.widget.RemoteViews
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
@@ -72,36 +71,28 @@ import kotlin.math.roundToInt
  */
 
 /**
- * [scrollable] = false — блоки без прокрутки, [liveClock] = false — неподвижное время отметки «сейчас»:
- * только для снимков в тестах (там прокручиваемый список и системные часы не рисуются).
+ * [scrollable] = true (Android 12+) — только верхний слой: пустая лента и нижняя панель; фон и ленту рисует
+ * [widgetRootViews] (итерация 42). [scrollable] = false — весь виджет с лентой без прокрутки (Android 10–11 и снимки),
+ * [liveClock] = false — неподвижное время отметки «сейчас» (только для снимков в тестах).
  */
 @Composable
 fun WidgetContent(model: WidgetModel, appWidgetId: Int, scrollable: Boolean = true, liveClock: Boolean = true) {
     val context = LocalContext.current
     // Итерация 25: список идёт до самого низа, нижняя панель лежит поверх — сверху прозрачная, книзу цвета фона.
+    val frame = GlanceModifier.fillMaxSize()
     Box(
-        modifier = GlanceModifier
-            .fillMaxSize()
-            .background(WidgetColors.background)
-            .cornerRadius(RadiusTokens.XL.dp),
+        modifier = if (scrollable) frame else frame.background(WidgetColors.background).cornerRadius(RadiusTokens.XL.dp),
         contentAlignment = Alignment.BottomCenter,
     ) {
-        // Список доходит до самого правого края виджета: полоска прокрутки лежит у края, а не на плашках;
-        // правое поле плашек — у них самих (DayBlock). Слева поле минимальное: время прижато к краю (итерация 20).
+        // Правое поле плашек — у строк; слева поле минимальное: время прижато к краю (итерация 20).
         Box(GlanceModifier.fillMaxSize().padding(start = SizeTokens.WIDGET_LIST_EDGE.dp, top = SizeTokens.WIDGET_EDGE.dp)) {
             if (model.isEmpty) {
                 Box(GlanceModifier.fillMaxSize().padding(bottom = SizeTokens.WIDGET_FADE.dp), contentAlignment = Alignment.Center) {
                     Text(context.getString(R.string.widget_empty), style = TextStyle(color = WidgetColors.textSecondary, fontSize = 14.sp))
                 }
-            } else {
-                if (scrollable && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    // Итерация 42: строки ленты — обычные элементы Android ([WidgetRows]), ~1 КБ на строку вместо ~7 КБ у Glance:
-                    // на 100+ задачах пакет Glance не доходил до Nova Launcher.
-                    AndroidRemoteViews(widgetListViews(context, appWidgetId, model, liveClock), GlanceModifier.fillMaxSize())
-                } else {
-                    val lines = model.lines(dayNames(context), withTail = false)
-                    Column(GlanceModifier.fillMaxSize()) { ManyRows(lines) { WidgetLineContent(it, model, liveClock) } }
-                }
+            } else if (!scrollable) {
+                val lines = model.lines(dayNames(context), withTail = false)
+                Column(GlanceModifier.fillMaxSize()) { ManyRows(lines) { WidgetLineContent(it, model, liveClock) } }
             }
         }
         Box(GlanceModifier.fillMaxWidth().height(SizeTokens.WIDGET_FADE.dp).background(ImageProvider(R.drawable.widget_bar_fade))) {}
