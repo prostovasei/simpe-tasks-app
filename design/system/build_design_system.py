@@ -663,7 +663,7 @@ def main():
     index = {
         'v': 3, 'layout': 'files', 'createdOnFiles': {'v': 1, 'at': now}, 'title': 'Simple Tasks', 'namespace': 'SimpleTasks', 'libraries': [],
         'sections': {}, 'groups': [], 'assetGroups': {}, 'blobs': {}, 'docs': {'readme': 'project/README.md', 'sections': []},
-        'lastChange': {'by': 'Ilya', 'at': now, 'via': 'Claude Code', 'note': 'Обновление до 0.41.0: дата и время в названии (подсветка и чип), выключатель в настройках, колонка дня 56.'},
+        'lastChange': {'by': 'Ilya', 'at': now, 'via': 'Claude Code', 'note': 'Обновление до 0.41.1: объём виджета — 7 дней, 10 просроченных, 30 в списках, не больше 40 плашек.'},
     }
     (OUT / 'design-system.json').write_text(json.dumps(index, ensure_ascii=False, indent=1))
     # Контраст пар из описаний (WCAG 2): печатаем таблицу для проверки, не пишем в файлы.

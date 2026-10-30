@@ -64,7 +64,8 @@ object WidgetRenderer {
             nextChanges[appWidgetId] = nextChange(model, time.zone())
             scheduleRefresh(context, time, nextChanges.filterKeys { it in widgetIds(context) }.values.filterNotNull().minOrNull())
             val tasks = model.days.sumOf { it.items.size }
-            WidgetLog.add(context, "отрисовка $appWidgetId: ${model.filter.encode()}, задач $tasks, ${SystemClock.elapsedRealtime() - started} мс ($reason)")
+            val kb = views.parcelBytes() / BYTES_IN_KB
+            WidgetLog.add(context, "отрисовка $appWidgetId: ${model.filter.encode()}, задач $tasks, ${SystemClock.elapsedRealtime() - started} мс, пакет $kb КБ ($reason)")
         } catch (e: Exception) {
             WidgetLog.error(context, "отрисовка виджета $appWidgetId ($reason)", e)
         }
@@ -97,6 +98,18 @@ object WidgetRenderer {
     }
 
     private val LEGACY_FILTER_KEY = stringPreferencesKey("filter")
+    private const val BYTES_IN_KB = 1024
+}
+
+/** Размер картинки виджета при передаче рабочему столу (0.41.1): у Android лимит на пакет ~1 МБ на всё приложение. */
+fun android.widget.RemoteViews.parcelBytes(): Int {
+    val parcel = android.os.Parcel.obtain()
+    return try {
+        writeToParcel(parcel, 0)
+        parcel.dataSize()
+    } finally {
+        parcel.recycle()
+    }
 }
 
 /** Выбранный в виджете список — свой у каждого виджета на рабочем столе. */
