@@ -96,7 +96,7 @@ fun WidgetContent(model: WidgetModel, appWidgetId: Int, scrollable: Boolean = tr
             }
         }
         Box(GlanceModifier.fillMaxWidth().height(SizeTokens.WIDGET_FADE.dp).background(ImageProvider(R.drawable.widget_bar_fade))) {}
-        BottomBar(model, appWidgetId)
+        BottomBar(model, appWidgetId, imageButtons = scrollable)
     }
 }
 
@@ -505,18 +505,19 @@ fun widgetCheckColors(priority: Priority): WidgetCheckColors = when (priority) {
 }
 
 /**
- * Нижняя строка (итерация 25, вариант PM «Г»): слева белая капсула-переключатель «Все» / «Входящие» (выбранный
+ * Нижняя строка (итерация 25, вариант PM «Г»; 0.42.2 — фоны кнопок картинками со скруглением: скругление Glance при первом
+ * показе виджета не применялось, кнопки были квадратными): слева белая капсула-переключатель «Все» / «Входящие» (выбранный
  * с итерации 26 — светло-зелёный с зелёной иконкой), справа «+»; всё место между ними — открыть приложение. Дата и «⋯» убраны.
  */
 @Composable
-private fun BottomBar(model: WidgetModel, appWidgetId: Int) {
+private fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boolean) {
     val context = LocalContext.current
     Row(
         modifier = GlanceModifier.fillMaxWidth().height(SizeTokens.WIDGET_BAR.dp).padding(horizontal = SizeTokens.WIDGET_EDGE.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(
-            modifier = GlanceModifier.background(WidgetColors.surface).cornerRadius(RadiusTokens.LG.dp).padding(SizeTokens.WIDGET_SWITCH_PAD.dp),
+            modifier = GlanceModifier.button(R.drawable.widget_bar_switch, WidgetColors.surface, RadiusTokens.LG, imageButtons).padding(SizeTokens.WIDGET_SWITCH_PAD.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             listOf(WidgetFilter.All, WidgetFilter.Inbox).forEach { filter ->
@@ -525,6 +526,7 @@ private fun BottomBar(model: WidgetModel, appWidgetId: Int) {
                     label = context.getString(if (filter == WidgetFilter.Inbox) R.string.inbox_list_name else R.string.widget_all),
                     selected = filter == model.filter,
                     action = actionSendBroadcast(WidgetActions.switch(context, appWidgetId, filter)),
+                    imageButtons = imageButtons,
                 )
             }
         }
@@ -541,8 +543,7 @@ private fun BottomBar(model: WidgetModel, appWidgetId: Int) {
         Box(
             modifier = GlanceModifier
                 .size(SizeTokens.WIDGET_UPDATE.dp)
-                .background(WidgetColors.surface)
-                .cornerRadius(RadiusTokens.MD.dp)
+                .button(R.drawable.widget_bar_tab, WidgetColors.surface, RadiusTokens.MD, imageButtons)
                 .clickable(actionStartActivity(updateIntent(context))),
             contentAlignment = Alignment.Center,
         ) {
@@ -557,8 +558,7 @@ private fun BottomBar(model: WidgetModel, appWidgetId: Int) {
         Box(
             modifier = GlanceModifier
                 .size(SizeTokens.WIDGET_ADD.dp)
-                .background(WidgetColors.accent)
-                .cornerRadius(RadiusTokens.MD.dp)
+                .button(R.drawable.widget_bar_add, WidgetColors.accent, RadiusTokens.MD, imageButtons)
                 .clickable(actionStartActivity(quickAddIntent(context, model.filter))),
             contentAlignment = Alignment.Center,
         ) {
@@ -572,15 +572,27 @@ private fun BottomBar(model: WidgetModel, appWidgetId: Int) {
     }
 }
 
+/**
+ * Фон кнопки нижней строки (0.42.2): на Android 12+ — картинка со скруглением (скругление Glance при первом показе виджета
+ * не применялось); в виджете без прокрутки — цвет и скругление Glance: картинка — лишний элемент, а их у Glance не больше ~100.
+ */
+private fun GlanceModifier.button(image: Int, color: ColorProvider, radius: Int, asImage: Boolean): GlanceModifier =
+    if (asImage) background(ImageProvider(image)) else background(color).cornerRadius(radius.dp)
+
 /** Кнопка переключателя: выбранная залита зелёным с белой иконкой, другая — серая иконка на белом. */
 @Composable
-private fun SwitchTab(icon: Int, label: String, selected: Boolean, action: Action) {
+private fun SwitchTab(icon: Int, label: String, selected: Boolean, action: Action, imageButtons: Boolean) {
     Box(
         modifier = GlanceModifier
             .width(SizeTokens.WIDGET_SWITCH_W.dp)
             .height(SizeTokens.WIDGET_SWITCH_H.dp)
-            .background(if (selected) WidgetColors.selected else WidgetColors.surface)
-            .cornerRadius(RadiusTokens.MD.dp)
+            .then(
+                if (selected) {
+                    GlanceModifier.button(R.drawable.widget_bar_tab_selected, WidgetColors.selected, RadiusTokens.MD, imageButtons)
+                } else {
+                    GlanceModifier.button(R.drawable.widget_bar_tab, WidgetColors.surface, RadiusTokens.MD, imageButtons)
+                },
+            )
             .clickable(action),
         contentAlignment = Alignment.Center,
     ) {

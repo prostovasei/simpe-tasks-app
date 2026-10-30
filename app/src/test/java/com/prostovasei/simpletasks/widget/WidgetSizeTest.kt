@@ -48,10 +48,10 @@ class WidgetSizeTest {
         val small = bytes(model(110))
         val huge = bytes(model(300))
         println("WIDGET SIZE: 110 задач — ${small / KB} КБ, 300 задач — ${huge / KB} КБ")
-        // Строки Glance на 110 задачах весили ~760 КБ, обычные элементы — ~120 КБ.
-        assertTrue("110 задач: ${small / KB} КБ", small < 150 * KB)
+        // Строки Glance на 110 задачах весили ~760 КБ, обычные элементы — ~170 КБ (каждая строка пишет свой вид целиком, 0.42.2).
+        assertTrue("110 задач: ${small / KB} КБ", small < 190 * KB)
         // Больше [MAX_LINES] строк не уходит: пакет не растёт без предела.
-        assertTrue("300 задач: ${huge / KB} КБ", huge < 180 * KB)
+        assertTrue("300 задач: ${huge / KB} КБ", huge < 220 * KB)
     }
 
     @Test

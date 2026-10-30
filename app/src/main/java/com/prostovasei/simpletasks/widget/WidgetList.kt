@@ -120,6 +120,9 @@ object WidgetClicks {
     const val TOGGLE_OVERDUE = "t"
     const val OPEN = "o"
     const val MOVE_OVERDUE = "m"
+
+    /** Пустое нажатие: кружок будущего повтора и т. п. — у перекрашенной строки затирает прежнее. */
+    const val NONE = "n"
     private const val SCHEME = "wt"
 
     fun uri(code: String, taskId: String?): Uri = Uri.fromParts(SCHEME, "$code/${taskId.orEmpty()}", null)

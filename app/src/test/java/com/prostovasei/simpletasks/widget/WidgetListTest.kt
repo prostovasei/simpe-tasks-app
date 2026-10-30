@@ -84,9 +84,9 @@ class WidgetListTest {
         rows.forEach { row ->
             assertTrue("плашка открывает задачу", row.findViewById<View>(R.id.row_plaque).hasOnClickListeners())
         }
-        // У будущего повтора кружок не нажимается (как раньше), у остальных — отмечает задачу.
-        val checks = rows.map { it.findViewById<View>(R.id.row_check).hasOnClickListeners() }
-        assertEquals(listOf(true, true, true, false), checks)
+        // У будущего повтора кружок ничего не отмечает (пустое нажатие) и без подписи «Выполнить».
+        val labels = rows.map { it.findViewById<View>(R.id.row_node).contentDescription?.toString() }
+        assertEquals(listOf("Выполнить", "Снять отметку «выполнено»", "Выполнить", null), labels)
     }
 
     @Test
@@ -102,6 +102,48 @@ class WidgetListTest {
         assertTrue(title.paint.isStrikeThruText || title.text is android.text.Spanned)
         val open = list().rows().map { it.findViewById<TextView?>(R.id.row_title) }.first { it?.text.toString() == "Созвон" }!!
         assertFalse(open.text is android.text.Spanned)
+    }
+
+    /**
+     * Android перекрашивает уже показанные строки (прокрутка, обновление): строка «простой» задачи на месте задачи
+     * с повтором, напоминанием и меткой «Сегодня» не должна унаследовать ничего чужого (0.42.2, баг на телефоне PM).
+     */
+    @Test
+    fun recycledRowsKeepNothingFromPreviousTask() {
+        fun task(id: String, rich: Boolean, day: LocalDate) = TaskItem(
+            id, "Задача $id", if (rich) Priority.HIGH else Priority.NONE, DueText(DayLabel.Date(day, false), if (rich) "10:00" else null),
+            "Работа", "#6B5CE7", isInboxList = false, isRecurring = rich, listIcon = "work", reminder = if (rich) ReminderMark.EARLY else null,
+        )
+        val rich = model.copy(days = listOf(WidgetDayBlock(WidgetDay.On(today), listOf(task("a", true, today), task("b", true, today)))), nowMinute = null)
+        val later = today.plusDays(3)
+        val plain = model.copy(days = listOf(WidgetDayBlock(WidgetDay.On(later), listOf(task("c", false, later), task("d", false, later)))), nowMinute = null)
+        val shown = list(rich).rows()
+        val next = list(plain)
+        val rows = shown.mapIndexed { i, old -> next.adapter.getView(i, old, next).also { assertTrue("строка $i перекрашена", it === old) } }
+
+        val title = rows.first { it.findViewById<View>(R.id.title_root) != null }
+        listOf(R.id.title_chip, R.id.title_progress, R.id.title_progress_text).forEach {
+            assertEquals(title.resources.getResourceEntryName(it), View.GONE, title.findViewById<View>(it).visibility)
+        }
+        rows.filter { it.findViewById<View>(R.id.row_plaque) != null }.forEach { row ->
+            listOf(R.id.row_start, R.id.row_repeat, R.id.row_bell).forEach {
+                assertEquals(row.resources.getResourceEntryName(it), View.GONE, row.findViewById<View>(it).visibility)
+            }
+        }
+    }
+
+    /** Баг на телефоне PM: «вернуть» выполненную — кружок снова пустой, без галочки, с подписью «Выполнить». */
+    @Test
+    fun uncompletedTaskLosesCheck() {
+        fun day(done: Boolean) = model.copy(days = listOf(WidgetDayBlock(WidgetDay.On(today), listOf(item("x", "Xgg", DayLabel.Today, null, done = done)))))
+        val doneRow = list(day(true)).rows().first { it.findViewById<View>(R.id.row_plaque) != null }
+        assertEquals(View.VISIBLE, doneRow.findViewById<View>(R.id.row_node_check).visibility)
+        val next = list(day(false))
+        val position = (0 until next.adapter.count).first { next.adapter.getView(it, null, next).findViewById<View>(R.id.row_plaque) != null }
+        val row = next.adapter.getView(position, doneRow, next)
+        assertEquals(View.GONE, row.findViewById<View>(R.id.row_node_check).visibility)
+        assertEquals("Выполнить", row.findViewById<View>(R.id.row_node).contentDescription)
+        assertFalse(row.findViewById<TextView>(R.id.row_title).text is android.text.Spanned)
     }
 
     /** Нижняя панель Glance лежит поверх ленты и тоже доходит до рабочего стола. */

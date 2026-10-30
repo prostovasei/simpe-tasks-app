@@ -8,6 +8,8 @@ import com.prostovasei.simpletasks.designsystem.tokens.RadiusTokens
 import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
 import com.prostovasei.simpletasks.designsystem.tokens.SpacingTokens
 import com.prostovasei.simpletasks.designsystem.tokens.ThemedColor
+import com.prostovasei.simpletasks.ui.common.DONE_ALPHA
+import androidx.compose.ui.graphics.toArgb
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -49,6 +51,7 @@ class WidgetRowResourcesTest {
             R.dimen.widget_space_sm to SpacingTokens.SM,
             R.dimen.widget_radius_sm to RadiusTokens.SM,
             R.dimen.widget_radius_md to RadiusTokens.MD,
+            R.dimen.widget_radius_lg to RadiusTokens.LG,
             R.dimen.widget_radius_xl to RadiusTokens.XL,
         )
         dimens.forEach { (res, token) ->
@@ -61,6 +64,7 @@ class WidgetRowResourcesTest {
         return mapOf(
             R.color.widget_fade_end to ColorTokens.background.pick(),
             R.color.widget_surface to ColorTokens.surface.pick(),
+            R.color.widget_selected to ColorTokens.selected.pick(),
             R.color.widget_divider to ColorTokens.divider.pick(),
             R.color.widget_now to ColorTokens.accent.pick(),
             R.color.widget_text_secondary to ColorTokens.textSecondary.pick(),
@@ -70,8 +74,17 @@ class WidgetRowResourcesTest {
         )
     }
 
-    private fun check(dark: Boolean) = colors(dark).forEach { (res, token) ->
-        assertEquals(context.resources.getResourceEntryName(res), token.toInt(), context.getColor(res))
+    private fun check(dark: Boolean) {
+        colors(dark).forEach { (res, token) ->
+            assertEquals(context.resources.getResourceEntryName(res), token.toInt(), context.getColor(res))
+        }
+        // Выполненная задача (0.42.2): те же цвета на 70%.
+        fun ThemedColor.done() = androidx.compose.ui.graphics.Color(if (dark) this.dark else light).copy(alpha = DONE_ALPHA).toArgb()
+        mapOf(
+            R.color.widget_text_done to ColorTokens.textPrimary.done(),
+            R.color.widget_icon_done to ColorTokens.textSecondary.done(),
+            R.color.widget_accent_done to ColorTokens.accent.done(),
+        ).forEach { (res, token) -> assertEquals(context.resources.getResourceEntryName(res), token, context.getColor(res)) }
     }
 
     @Test
