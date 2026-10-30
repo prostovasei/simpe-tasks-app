@@ -104,8 +104,8 @@ fun WidgetModel.entries(): List<WidgetEntry> {
 object WidgetModels {
     /**
      * «Все»: просроченные → сегодня → ещё 13 дней вместе с будущими повторами, по дням (итерация 42, решение PM: 14 дней;
-     * 0.41.1 — 7 дней и лимиты, до него — 30 дней). С классическим списком лимиты плашек не нужны: строки рабочий стол
-     * запрашивает сам по мере прокрутки.
+     * 0.41.1 — 7 дней и лимиты, до него — 30 дней). Лимиты плашек не нужны: строки — обычные элементы Android (~1 КБ),
+     * страховка размера пакета — не больше [MAX_LINES] строк ленты.
      */
     fun all(all: AllScreenTasks, projects: Map<String, Project>, today: LocalDate, zone: ZoneId): WidgetModel {
         val until = today.plusDays(DAYS - 1L)
