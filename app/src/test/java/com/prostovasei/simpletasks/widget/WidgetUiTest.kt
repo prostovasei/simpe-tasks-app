@@ -68,7 +68,7 @@ class WidgetUiTest {
     fun widgetShowsDayBlocksAndBottomBar() = runGlanceAppWidgetUnitTest {
         setAppWidgetSize(DpSize(320.dp, 400.dp))
         setContext(context)
-        provideComposable { WidgetContent(model, appWidgetId = 7) }
+        provideComposable { WidgetContent(model, appWidgetId = 7, scrollable = false) }
 
         // Нижняя строка (итерация 25): «Все», «Входящие», открыть приложение и «+»; даты и «⋯» нет.
         // Итерация 32: слева от «+» — кнопка обновления.
@@ -102,7 +102,7 @@ class WidgetUiTest {
     fun collapsedOverdueHidesPastDays() = runGlanceAppWidgetUnitTest {
         setAppWidgetSize(DpSize(320.dp, 400.dp))
         setContext(context)
-        provideComposable { WidgetContent(model.copy(overdueCollapsed = true), appWidgetId = 7) }
+        provideComposable { WidgetContent(model.copy(overdueCollapsed = true), appWidgetId = 7, scrollable = false) }
 
         onNode(hasTextEqualTo("Просрочено · 1")).assertExists()
         onNode(hasContentDescription("Развернуть просроченные")).assertExists()

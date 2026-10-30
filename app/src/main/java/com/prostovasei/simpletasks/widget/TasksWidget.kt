@@ -4,6 +4,7 @@ import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.os.Build
 import android.widget.RemoteViews
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
@@ -21,8 +22,6 @@ import androidx.glance.appwidget.LinearProgressIndicator
 import androidx.glance.appwidget.action.actionSendBroadcast
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.cornerRadius
-import androidx.glance.appwidget.lazy.LazyColumn
-import androidx.glance.appwidget.lazy.items
 import androidx.glance.background
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
@@ -95,22 +94,13 @@ fun WidgetContent(model: WidgetModel, appWidgetId: Int, scrollable: Boolean = tr
                     Text(context.getString(R.string.widget_empty), style = TextStyle(color = WidgetColors.textSecondary, fontSize = 14.sp))
                 }
             } else {
-                val days = DayNames(context.getString(R.string.day_today), context.getString(R.string.day_tomorrow), context.getString(R.string.day_yesterday))
-                val entries = model.entries()
-                @Composable
-                fun Entry(entry: WidgetEntry) = when (entry) {
-                    is WidgetEntry.Overdue -> OverdueTitle(entry, isFirst = entry == entries.first())
-                    is WidgetEntry.Day -> DayBlock(entry.block, isFirst = entry == entries.first(), model, days, liveClock)
-                }
-                // Место под панелью в конце списка: последние задачи можно докрутить выше неё.
-                val tail = @Composable { Spacer(GlanceModifier.fillMaxWidth().height(SizeTokens.WIDGET_FADE.dp)) }
-                if (scrollable) {
-                    LazyColumn(GlanceModifier.fillMaxSize()) {
-                        items(entries, itemId = { it.id }) { Entry(it) }
-                        item(itemId = TAIL_ID) { tail() }
-                    }
+                if (scrollable && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    // Итерация 42: строки ленты — обычные элементы Android ([WidgetRows]), ~1 КБ на строку вместо ~7 КБ у Glance:
+                    // на 100+ задачах пакет Glance не доходил до Nova Launcher.
+                    AndroidRemoteViews(widgetListViews(context, appWidgetId, model, liveClock), GlanceModifier.fillMaxSize())
                 } else {
-                    Column(GlanceModifier.fillMaxSize()) { entries.forEach { Entry(it) } }
+                    val lines = model.lines(dayNames(context), withTail = false)
+                    Column(GlanceModifier.fillMaxSize()) { ManyRows(lines) { WidgetLineContent(it, model, liveClock) } }
                 }
             }
         }
@@ -119,44 +109,26 @@ fun WidgetContent(model: WidgetModel, appWidgetId: Int, scrollable: Boolean = tr
     }
 }
 
-private const val TAIL_ID = Long.MIN_VALUE
+fun dayNames(context: Context) =
+    DayNames(context.getString(R.string.day_today), context.getString(R.string.day_tomorrow), context.getString(R.string.day_yesterday))
 
-private val WidgetEntry.id: Long
-    get() = when (this) {
-        is WidgetEntry.Overdue -> OVERDUE_ID
-        is WidgetEntry.Day -> block.day.id
-    }
-
-private const val OVERDUE_ID = -3L
-
-private val WidgetDay.id: Long
-    get() = when (this) {
-        WidgetDay.NoDate -> -2L
-        is WidgetDay.On -> date.toEpochDay()
-    }
-
-/**
- * Блок дня — шкала (итерация 20): подпись дня, под ней строки «время | линия с кружком | плашка». Линия сплошная
- * от первой строки дня до последней, щели между плашками — внутри строк.
- */
+/** Одна строка ленты без прокрутки (Android 10–11 и снимки): подпись «Просрочено», подпись дня, задача, «сейчас», хвост. */
 @Composable
-private fun DayBlock(block: WidgetDayBlock, isFirst: Boolean, model: WidgetModel, days: DayNames, liveClock: Boolean) {
-    // Прошедший день (итерация 27): красные подпись, время и кружки, раскладка — как у остальных дней.
-    val overdue = (block.day as? WidgetDay.On)?.date?.let { it < model.today } == true
-    val nowMinute = model.nowMinute.takeIf { block.day == WidgetDay.On(model.today) }
-    val rows = WidgetTimeline.rows(block.items, overdue = false, nowMinute = nowMinute, days = days)
-    // Правое поле плашек; за ним, у самого края виджета, — полоска прокрутки.
-    val progress = DayProgress.of(block.items).takeIf { block.day == WidgetDay.On(model.today) }
-    Column(GlanceModifier.fillMaxWidth().padding(end = SizeTokens.WIDGET_LIST_EDGE.dp)) {
-        DayTitle(block.day, model.today, isFirst, progress)
-        // Одно место в колонке дня занимает подпись.
-        ManyRows(rows.withIndex().toList(), limit = MAX_CHILDREN - 1) { (index, row) ->
-            val line = Line(top = index > 0, bottom = index < rows.lastIndex)
-            when (row) {
-                is WidgetRow.Task -> TimelineRow(row, line, overdue, model.filter)
-                WidgetRow.Now -> NowRow(line, nowMinute, liveClock)
-            }
+internal fun WidgetLineContent(line: WidgetLine, model: WidgetModel, liveClock: Boolean) {
+    when (line) {
+        is WidgetLine.Overdue -> OverdueTitle(line.entry, line.isFirst)
+        // Правое поле плашек; за ним, у самого края виджета, — полоска прокрутки.
+        is WidgetLine.Title -> Box(GlanceModifier.fillMaxWidth().padding(end = SizeTokens.WIDGET_LIST_EDGE.dp)) {
+            DayTitle(line.day, model.today, line.isFirst, line.progress)
         }
+        is WidgetLine.Task -> Box(GlanceModifier.fillMaxWidth().padding(end = SizeTokens.WIDGET_LIST_EDGE.dp)) {
+            TimelineRow(line.row, line.line, line.overdue, model.filter)
+        }
+        is WidgetLine.Now -> Box(GlanceModifier.fillMaxWidth().padding(end = SizeTokens.WIDGET_LIST_EDGE.dp)) {
+            NowRow(line.line, line.nowMinute, liveClock)
+        }
+        // Место под панелью в конце списка: последние задачи можно докрутить выше неё.
+        WidgetLine.Tail -> Spacer(GlanceModifier.fillMaxWidth().height(SizeTokens.WIDGET_FADE.dp))
     }
 }
 
@@ -194,14 +166,14 @@ private fun OverdueTitle(entry: WidgetEntry.Overdue, isFirst: Boolean) {
                 ImageProvider(R.drawable.ic_move_today),
                 contentDescription = context.getString(R.string.overdue_move_today),
                 colorFilter = ColorFilter.tint(WidgetColors.overdue),
-                modifier = GlanceModifier.size(SizeTokens.WIDGET_FOLD_ICON.dp).clickable(actionStartActivity(moveOverdueIntent(context))),
+                modifier = GlanceModifier.size(SizeTokens.WIDGET_FOLD_ICON.dp).then(GlanceModifier.clickable(actionStartActivity(moveOverdueIntent(context)))),
             )
         }
     }
 }
 
 /** Куда от кружка идёт линия шкалы: вверх (есть строка выше) и вниз (есть строка ниже). */
-private data class Line(val top: Boolean, val bottom: Boolean)
+data class Line(val top: Boolean, val bottom: Boolean)
 
 /**
  * Строки без потерь: в Column виджета помещается не больше [MAX_CHILDREN] элементов, остальные Glance молча
@@ -209,7 +181,7 @@ private data class Line(val top: Boolean, val bottom: Boolean)
  * длинный список раскладывается во вложенные колонки (в них — по 10 и меньше).
  */
 @Composable
-private fun <T> ManyRows(items: List<T>, limit: Int = MAX_CHILDREN, row: @Composable (T) -> Unit) {
+internal fun <T> ManyRows(items: List<T>, limit: Int = MAX_CHILDREN, row: @Composable (T) -> Unit) {
     val chunks = rowChunks(items, limit)
     if (chunks == null) {
         items.forEach { row(it) }
@@ -326,7 +298,7 @@ private fun TimelineRow(row: WidgetRow.Task, line: Line, overdue: Boolean, filte
                     .background(WidgetColors.surface)
                     .cornerRadius(RadiusTokens.MD.dp)
                     .padding(horizontal = SpacingTokens.SM.dp)
-                    .clickable(actionStartActivity(openTaskIntent(context, item.taskId))),
+                    .then(GlanceModifier.clickable(actionStartActivity(openTaskIntent(context, item.taskId)))),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(

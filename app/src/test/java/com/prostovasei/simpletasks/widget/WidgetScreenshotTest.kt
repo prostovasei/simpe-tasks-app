@@ -31,9 +31,13 @@ import org.robolectric.annotation.GraphicsMode
 class WidgetScreenshotTest {
     private val context = ApplicationProvider.getApplicationContext<android.app.Application>()
 
-    private class Preview(private val model: WidgetModel, private val liveClock: Boolean = false) : GlanceAppWidget() {
+    private class Preview(
+        private val model: WidgetModel,
+        private val liveClock: Boolean = false,
+        private val scrollable: Boolean = false,
+    ) : GlanceAppWidget() {
         override suspend fun provideGlance(context: android.content.Context, id: GlanceId) =
-            provideContent { WidgetContent(model, 1, scrollable = false, liveClock = liveClock) }
+            provideContent { WidgetContent(model, 1, scrollable = scrollable, liveClock = liveClock) }
     }
 
     private fun item(
@@ -111,6 +115,14 @@ class WidgetScreenshotTest {
     @Config(qualifiers = "+night")
     fun widgetDark() = capture("screenshots/widget_dark.png")
 
+    /** Лента на обычных элементах Android (итерация 42, как на телефоне): должна совпадать с [widgetLight] 1-в-1. */
+    @Test
+    fun widgetListLight() = capture("screenshots/widget_list_light.png", scrollable = true)
+
+    @Test
+    @Config(qualifiers = "+night")
+    fun widgetListDark() = capture("screenshots/widget_list_dark.png", scrollable = true)
+
     /** Настоящая картинка виджета: Glance молча отбрасывает детей Column сверх 10 — все 25 задач дня должны остаться. */
     @Test
     fun dayWithManyTasksKeepsAll() {
@@ -154,9 +166,10 @@ class WidgetScreenshotTest {
         }
     }
 
-    private fun capture(path: String, heightDp: Int = 420, shown: WidgetModel = model) {
-        val views = runBlocking { Preview(shown).compose(context, size = DpSize(320.dp, heightDp.dp)) }
-        val parent = FrameLayout(context)
+    private fun capture(path: String, heightDp: Int = 420, shown: WidgetModel = model, scrollable: Boolean = false) {
+        val views = runBlocking { Preview(shown, scrollable = scrollable).compose(context, size = DpSize(320.dp, heightDp.dp)) }
+        // Строки ленты Android отдаёт списку только внутри контейнера виджета рабочего стола.
+        val parent = android.appwidget.AppWidgetHostView(context)
         val view = views.apply(context, parent)
         val density = context.resources.displayMetrics.density
         val width = (320 * density).toInt()
