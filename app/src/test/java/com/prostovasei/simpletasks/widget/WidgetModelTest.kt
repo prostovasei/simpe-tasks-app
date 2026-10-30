@@ -19,54 +19,52 @@ class WidgetModelTest {
     private fun day(offset: Long) = TaskDue.AllDay(today.plusDays(offset))
 
     @Test
-    fun allShowsOverdueByDayThenNext14DaysWithRepeats() {
+    fun allShowsOverdueByDayThenNext7DaysWithRepeats() {
         val all = AllScreenTasks(
             overdue = listOf(task("late", due = day(-2))),
-            todayAllDay = listOf(task("gym", due = day(0)).copy(rrule = "FREQ=WEEKLY")),
+            todayAllDay = listOf(task("gym", due = day(0)).copy(rrule = "FREQ=DAILY;INTERVAL=3")),
             todayTimed = emptyList(),
-            upcoming = listOf(task("soon", due = day(5)), task("last", due = day(13)), task("far", due = day(14))),
+            upcoming = listOf(task("soon", due = day(5)), task("week", due = day(6)), task("far", due = day(7))),
         )
         val model = WidgetModels.all(all, projects, today, ZoneOffset.UTC)
 
         assertEquals(
-            "Просроченная — в своём дне (итерация 27); итерация 42: сегодня и ещё 13 дней, повторы тоже только в эти дни",
+            "Просроченная — в своём дне (итерация 27); 0.41.1: сегодня и ещё 6 дней, повторы тоже только в эти дни",
             listOf(
                 WidgetDay.On(today.minusDays(2)) to listOf("late"),
                 WidgetDay.On(today) to listOf("gym"),
+                WidgetDay.On(today.plusDays(3)) to listOf("gym@0"),
                 WidgetDay.On(today.plusDays(5)) to listOf("soon"),
-                WidgetDay.On(today.plusDays(7)) to listOf("gym@0"),
-                WidgetDay.On(today.plusDays(13)) to listOf("last"),
+                WidgetDay.On(today.plusDays(6)) to listOf("week", "gym@1"),
             ),
             model.days.map { block -> block.day to block.items.map { it.id } },
         )
         assertEquals(today, model.today)
     }
 
-    /** Итерация 42: лимитов плашек больше нет — все просроченные и все задачи списка (строки рабочий стол подгружает сам). */
+    /** 0.41.1: просроченных в виджете не больше 10 — ближайшие к сегодня; счётчик «Просрочено · N» — все. */
     @Test
-    fun noLimitsOnOverdueAndLists() {
+    fun overdueKeepsTenNearestButCountsAll() {
         val overdue = (15 downTo 1).map { task("late$it", due = day(-it.toLong())) }
-        val all = WidgetModels.all(AllScreenTasks(overdue, emptyList(), emptyList(), emptyList()), projects, today, ZoneOffset.UTC)
-        assertEquals(15, all.days.sumOf { it.items.size })
-        assertEquals(15, all.overdueCount)
-        val tasks = (1..45).map { task("n$it", projectId = "work") }
-        val list = WidgetModels.list(WidgetFilter.ProjectList("work"), "Работа", tasks, projects, today, ZoneOffset.UTC)
-        assertEquals(45, list.days.sumOf { it.items.size })
+        val model = WidgetModels.all(AllScreenTasks(overdue, emptyList(), emptyList(), emptyList()), projects, today, ZoneOffset.UTC)
+        assertEquals((10 downTo 1).map { "late$it" }, model.days.flatMap { block -> block.items.map { it.id } })
+        assertEquals(15, model.overdueCount)
     }
 
-    /** Итерация 42: лента построчно — подпись дня, строки шкалы с непрерывной линией, хвост под панелью в конце. */
+    /** 0.41.1: всего не больше 40 плашек — иначе рабочий стол не получает картинку (лимит Android на пакет). */
     @Test
-    fun linesFlattenDaysWithContinuousRail() {
-        val all = AllScreenTasks(emptyList(), listOf(task("a", due = day(0)), task("b", due = day(0))), emptyList(), listOf(task("c", due = day(1))))
-        val model = WidgetModels.all(all, projects, today, ZoneOffset.UTC)
-        val lines = model.lines(com.prostovasei.simpletasks.ui.common.DayNames("Сегодня", "Завтра", "Вчера"))
-        assertEquals(
-            listOf("title:$today", "task:a:$today", "task:b:$today", "title:${today.plusDays(1)}", "task:c:${today.plusDays(1)}", "tail"),
-            lines.map { it.key },
-        )
-        val rails = lines.filterIsInstance<WidgetLine.Task>().map { it.line }
-        assertEquals(listOf(Line(false, true), Line(true, false), Line(false, false)), rails)
-        assertTrue("Первая подпись — с отступом сверху", (lines.first() as WidgetLine.Title).isFirst)
+    fun allIsCappedAtFortyItems() {
+        val today0 = (1..50).map { task("t$it", due = day(0)) }
+        val model = WidgetModels.all(AllScreenTasks(emptyList(), today0, emptyList(), emptyList()), projects, today, ZoneOffset.UTC)
+        assertEquals(WidgetModels.ITEMS_MAX, model.days.sumOf { it.items.size })
+    }
+
+    /** 0.41.1: «Входящие» и списки — первые 30 задач в порядке приложения. */
+    @Test
+    fun listShowsFirstThirty() {
+        val tasks = (1..45).map { task("n$it", projectId = "work") }
+        val model = WidgetModels.list(WidgetFilter.ProjectList("work"), "Работа", tasks, projects, today, ZoneOffset.UTC)
+        assertEquals((1..30).map { "n$it" }, model.days.flatMap { block -> block.items.map { it.id } })
     }
 
     @Test

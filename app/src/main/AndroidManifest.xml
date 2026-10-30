@@ -47,21 +47,6 @@
             android:theme="@style/Theme.SimpleTasks.Overlay"
             android:windowSoftInputMode="adjustResize" />
 
-        <!-- Нажатия в строках списка виджета (итерация 42): невидимый переходник, закрывается до показа. -->
-        <activity
-            android:name=".widget.WidgetClickActivity"
-            android:exported="false"
-            android:excludeFromRecents="true"
-            android:noHistory="true"
-            android:taskAffinity="com.prostovasei.simpletasks.widgetclick"
-            android:theme="@android:style/Theme.NoDisplay" />
-
-        <!-- Строки ленты виджета (итерация 42): их запрашивает рабочий стол. -->
-        <service
-            android:name=".widget.WidgetListService"
-            android:exported="false"
-            android:permission="android.permission.BIND_REMOTEVIEWS" />
-
         <!-- Окно обновления поверх рабочего стола (кнопка в виджете): та же отдельная задача, без «недавних». -->
         <activity
             android:name=".UpdateActivity"

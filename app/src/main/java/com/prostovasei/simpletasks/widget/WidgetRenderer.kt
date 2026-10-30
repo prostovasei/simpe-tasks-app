@@ -1,6 +1,5 @@
 package com.prostovasei.simpletasks.widget
 
-import com.prostovasei.simpletasks.R
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
@@ -61,8 +60,6 @@ object WidgetRenderer {
                 }
                 .remoteViews
             manager.updateAppWidget(appWidgetId, views)
-            // Итерация 42: строки ленты рабочий стол запрашивает сам — говорим ему «перечитай».
-            manager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.widget_list)
             val time = context.widgetEntryPoint().time()
             nextChanges[appWidgetId] = nextChange(model, time.zone())
             scheduleRefresh(context, time, nextChanges.filterKeys { it in widgetIds(context) }.values.filterNotNull().minOrNull())
