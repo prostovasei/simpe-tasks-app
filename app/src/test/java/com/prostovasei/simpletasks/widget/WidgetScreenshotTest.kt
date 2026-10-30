@@ -154,6 +154,35 @@ class WidgetScreenshotTest {
         }
     }
 
+    /**
+     * Итерация 42: строки классического списка так, как их собирает рабочий стол (строка за строкой, с зонами нажатий),
+     * на фоне виджета — для сверки 1-в-1 с прежней лентой (`widget_light.png`).
+     */
+    @Test
+    fun widgetListRows() {
+        val density = context.resources.displayMetrics.density
+        val width = (320 * density).toInt()
+        val column = android.widget.LinearLayout(context).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            setBackgroundColor(androidx.core.content.ContextCompat.getColor(context, com.prostovasei.simpletasks.R.color.widget_fade_end))
+            setPadding((SizeTokensForTest.LIST_EDGE * density).toInt(), (SizeTokensForTest.EDGE * density).toInt(), 0, 0)
+        }
+        model.lines(dayNames(context), withTail = false).forEach { line ->
+            column.addView(widgetLineViews(context, line, model, DpSize(320.dp, 420.dp), liveClock = false).apply(context, column))
+        }
+        val height = (420 * density).toInt()
+        column.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY))
+        column.layout(0, 0, width, height)
+        val bitmap = android.graphics.Bitmap.createBitmap(width, height, android.graphics.Bitmap.Config.ARGB_8888)
+        column.draw(android.graphics.Canvas(bitmap))
+        bitmap.captureRoboImage("screenshots/widget_list_rows.png")
+    }
+
+    private object SizeTokensForTest {
+        val LIST_EDGE = com.prostovasei.simpletasks.designsystem.tokens.SizeTokens.WIDGET_LIST_EDGE
+        val EDGE = com.prostovasei.simpletasks.designsystem.tokens.SizeTokens.WIDGET_EDGE
+    }
+
     private fun capture(path: String, heightDp: Int = 420, shown: WidgetModel = model) {
         val views = runBlocking { Preview(shown).compose(context, size = DpSize(320.dp, heightDp.dp)) }
         val parent = FrameLayout(context)

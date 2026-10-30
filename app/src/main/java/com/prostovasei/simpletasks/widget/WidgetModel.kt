@@ -71,8 +71,6 @@ data class WidgetModel(
     val nowMinute: Int? = null,
     /** Блок «Просрочено» свёрнут (итерация 37): прошедшие дни ленты «Все» скрыты. */
     val overdueCollapsed: Boolean = false,
-    /** Просроченные, которые не влезли в виджет (0.41.1): входят в счётчик «Просрочено · N», но плашек нет. */
-    val hiddenOverdue: Int = 0,
 ) {
     val isEmpty: Boolean get() = days.all { it.items.isEmpty() }
 
@@ -81,7 +79,7 @@ data class WidgetModel(
         get() = days.filter { block -> block.items.isNotEmpty() && (block.day as? WidgetDay.On)?.date?.let { it < today } == true }
 
     /** Невыполненных задач в прошедших днях — число у подписи «Просрочено». */
-    val overdueCount: Int get() = pastDays.sumOf { block -> block.items.count { !it.isDone } } + hiddenOverdue
+    val overdueCount: Int get() = pastDays.sumOf { block -> block.items.count { !it.isDone } }
 }
 
 /** Что рисует лента виджета (итерация 37): подпись «Просрочено» над прошедшими днями или день. */
@@ -105,8 +103,9 @@ fun WidgetModel.entries(): List<WidgetEntry> {
 
 object WidgetModels {
     /**
-     * «Все»: просроченные → сегодня → ещё 6 дней вместе с будущими повторами, по дням (0.41.1, решение PM: было 30 дней).
-     * Просроченных — не больше [OVERDUE_MAX], ближайшие к сегодня; остальные только в счётчике. Всего — не больше [ITEMS_MAX].
+     * «Все»: просроченные → сегодня → ещё 13 дней вместе с будущими повторами, по дням (итерация 42, решение PM: 14 дней;
+     * 0.41.1 — 7 дней и лимиты, до него — 30 дней). С классическим списком лимиты плашек не нужны: строки рабочий стол
+     * запрашивает сам по мере прокрутки.
      */
     fun all(all: AllScreenTasks, projects: Map<String, Project>, today: LocalDate, zone: ZoneId): WidgetModel {
         val until = today.plusDays(DAYS - 1L)
@@ -115,37 +114,15 @@ object WidgetModels {
         fun List<Task>.items() = map { it.toItem(projects, today, zone, emptySet()) }
         val rest = (all.todayAllDay + all.todayTimed).items() +
             upcomingWithRepeats(upcoming, everything, projects, today, zone, emptySet()).filter { item -> item.due?.day?.toDate(today)?.let { it <= until } != false }
-        val overdue = all.overdue.items()
-        val shownOverdue = overdue.takeLast(OVERDUE_MAX)
-        return WidgetModel(
-            WidgetFilter.All, null, today, byDay(shownOverdue, rest, today).capped(ITEMS_MAX),
-            hiddenOverdue = overdue.dropLast(OVERDUE_MAX).count { !it.isDone },
-        )
+        return WidgetModel(WidgetFilter.All, null, today, byDay(all.overdue.items(), rest, today))
     }
 
-    /** «Входящие» или список: первые [LIST_MAX] задач как на экране приложения, разложенные по дням; без даты — в конце. */
+    /** «Входящие» или список: задачи как на экране приложения, разложенные по дням; без даты — в конце. */
     fun list(filter: WidgetFilter, title: String?, tasks: List<Task>, projects: Map<String, Project>, today: LocalDate, zone: ZoneId) =
-        WidgetModel(filter, title, today, byDay(emptyList(), tasks.take(LIST_MAX).map { it.toItem(projects, today, zone, emptySet()) }, today))
+        WidgetModel(filter, title, today, byDay(emptyList(), tasks.map { it.toItem(projects, today, zone, emptySet()) }, today))
 
-    /**
-     * Ограничения виджета (0.41.1): весь список уходит рабочему столу одним пакетом, а у Android на него лимит —
-     * больше ~1 МБ система молча не доставляет, и виджет «застывает» до возврата из приложения (на 100+ задачах PM).
-     */
-    const val DAYS = 7
-    const val OVERDUE_MAX = 10
-    const val LIST_MAX = 30
-    const val ITEMS_MAX = 40
-
-    /** Не больше [max] плашек: дни идут по порядку, последний день может обрезаться. */
-    private fun List<WidgetDayBlock>.capped(max: Int): List<WidgetDayBlock> {
-        var left = max
-        return mapNotNull { block ->
-            if (left <= 0) return@mapNotNull null
-            val items = block.items.take(left)
-            left -= items.size
-            WidgetDayBlock(block.day, items)
-        }
-    }
+    /** Сколько дней ленты «Все», считая сегодня (итерация 42, решение PM). */
+    const val DAYS = 14
 
     /**
      * Вкладки внизу (решение PM, итерация 09): «Все», «Входящие» и 2 первых своих списка в порядке экрана «Списки».
