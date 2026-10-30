@@ -68,7 +68,7 @@ object WidgetRenderer {
             scheduleRefresh(context, time, nextChanges.filterKeys { it in widgetIds(context) }.values.filterNotNull().minOrNull())
             val tasks = model.days.sumOf { it.items.size }
             val kb = views.parcelBytes() / BYTES_IN_KB
-            WidgetLog.add(context, "отрисовка $appWidgetId: ${model.filter.encode()}, задач $tasks, ${SystemClock.elapsedRealtime() - started} мс, пакет $kb КБ ($reason)")
+            WidgetLog.add(context, "отрисовка $appWidgetId: ${model.filter.encode()}, задач $tasks, ${SystemClock.elapsedRealtime() - started} мс, пакет $kb КБ, Android ${android.os.Build.VERSION.RELEASE} ($reason)")
         } catch (e: Exception) {
             WidgetLog.error(context, "отрисовка виджета $appWidgetId ($reason)", e)
         }
