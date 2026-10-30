@@ -8,6 +8,7 @@ import com.prostovasei.simpletasks.core.update.AppUpdater
 import com.prostovasei.simpletasks.core.update.InstallStart
 import com.prostovasei.simpletasks.domain.model.InvalidImportFileException
 import com.prostovasei.simpletasks.domain.repository.BackupRepository
+import com.prostovasei.simpletasks.ui.feature.task.SmartDateSetting
 import com.prostovasei.simpletasks.ui.mvi.MviViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
@@ -24,8 +25,9 @@ class SettingsViewModel @Inject constructor(
     @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     time: TimeProvider,
     private val updater: AppUpdater,
+    private val smartDates: SmartDateSetting,
 ) : MviViewModel<SettingsState, SettingsIntent, SettingsEffect>(
-    SettingsState(backupFileName = "simple-tasks-backup-${time.today()}.csv"),
+    SettingsState(backupFileName = "simple-tasks-backup-${time.today()}.csv", smartDates = smartDates.enabled.value),
 ) {
 
     init {
@@ -44,6 +46,10 @@ class SettingsViewModel @Inject constructor(
             SettingsIntent.CheckUpdate -> checkUpdate()
             SettingsIntent.InstallUpdate -> installUpdate()
             SettingsIntent.GrantInstallPermission -> updater.openInstallPermissionSettings()
+            is SettingsIntent.SetSmartDates -> {
+                smartDates.set(intent.enabled)
+                setState { copy(smartDates = intent.enabled) }
+            }
         }
     }
 

@@ -1,5 +1,6 @@
 package com.prostovasei.simpletasks.ui.feature.settings
 
+import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -165,5 +166,14 @@ class SettingsScreenTest {
     fun screenshotClearDialog() {
         show(doneState.copy(showClearConfirmation = true))
         composeRule.onRoot().captureRoboImage("screenshots/settings_clear_dialog_light.png")
+    }
+
+    /** «Дата и время в названии» (итерация 41): включён по умолчанию, нажатие выключает. */
+    @Test
+    fun smartDatesSwitch() {
+        show(doneState)
+        composeRule.onNodeWithText("Дата и время в названии").assertExists()
+        composeRule.onNodeWithTag(TAG_SMART_DATES_SWITCH).assertIsOn().performClick()
+        assertEquals(SettingsIntent.SetSmartDates(false), intents.last())
     }
 }

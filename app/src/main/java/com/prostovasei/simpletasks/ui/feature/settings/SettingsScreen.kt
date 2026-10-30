@@ -190,6 +190,10 @@ fun SettingsScreen(
                 color = colors.textPrimary,
             )
 
+            SectionTitle(R.string.settings_input_title)
+            SmartDatesSection(state.smartDates) { onIntent(SettingsIntent.SetSmartDates(it)) }
+            HorizontalDivider(color = colors.divider, modifier = Modifier.padding(vertical = spacing.xs))
+
             SectionTitle(R.string.settings_notifications_title)
             if (notificationsOff) {
                 Text(
@@ -498,6 +502,19 @@ private fun ExactSection(exact: ExactSettings) {
     }
 }
 
+/** «Дата и время в названии» (итерация 41, бэклог №29). */
+@Composable
+private fun SmartDatesSection(enabled: Boolean, onToggle: (Boolean) -> Unit) {
+    val colors = AppTheme.colors
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.sm)) {
+        Column(Modifier.weight(1f)) {
+            Text(stringResource(R.string.settings_smart_dates_title), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold, color = colors.textPrimary)
+            Text(stringResource(R.string.settings_smart_dates_hint), style = MaterialTheme.typography.bodySmall, color = colors.textSecondary)
+        }
+        Switch(checked = enabled, onCheckedChange = onToggle, modifier = Modifier.testTag(TAG_SMART_DATES_SWITCH))
+    }
+}
+
 @Composable
 private fun PopupSection(popup: PopupSettings) {
     val colors = AppTheme.colors
@@ -555,6 +572,7 @@ const val TAG_EXPORT_BUTTON = "settings_export"
 const val TAG_CLEAR_BUTTON = "settings_clear"
 const val TAG_NOTIFICATIONS_BUTTON = "settings_notifications"
 const val TAG_POPUP_SWITCH = "settings_popup"
+const val TAG_SMART_DATES_SWITCH = "settings_smart_dates"
 const val TAG_EXACT_SWITCH = "settings_exact"
 const val TAG_SUMMARY_SWITCH = "settings_summary"
 const val TAG_SUMMARY_TIME = "settings_summary_time"

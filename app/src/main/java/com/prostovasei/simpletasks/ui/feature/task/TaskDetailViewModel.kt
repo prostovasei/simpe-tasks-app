@@ -44,6 +44,8 @@ data class TaskDetailState(
     val busy: List<BusySlot> = emptyList(),
     /** Пункт чек-листа, который переименовывается (диалог). */
     val renamingItem: ChecklistItem? = null,
+    /** Срок из названия (итерация 41): подсветка фразы и чип под названием. */
+    val smart: SmartTitle = SmartTitle(),
 ) {
     val fields: SheetFields?
         get() = task?.let { SheetFields(it.due, it.start, it.projectId, it.priority, it.rrule, it.reminders, projects, today, zone, nowMinute, busy) }
@@ -51,6 +53,9 @@ data class TaskDetailState(
 
 sealed interface TaskDetailIntent {
     data class Title(val text: String) : TaskDetailIntent
+
+    /** «✕» на чипе срока из названия (итерация 41). */
+    data object DismissSmartDate : TaskDetailIntent
     data class Content(val text: String) : TaskDetailIntent
     data class Edit(val edit: FieldEdit) : TaskDetailIntent
     data class Grid(val action: GridAction) : TaskDetailIntent
@@ -85,6 +90,7 @@ class TaskDetailViewModel @Inject constructor(
     private val time: TimeProvider,
     @param:ApplicationScope private val appScope: CoroutineScope,
     private val deletions: TaskDeletions,
+    private val smartDates: SmartDateSetting,
 ) : MviViewModel<TaskDetailState, TaskDetailIntent, TaskDetailEffect>(
     TaskDetailState(
         today = time.today(),
@@ -121,7 +127,10 @@ class TaskDetailViewModel @Inject constructor(
                     val merged = task?.copy(status = fromDb.status, completedAt = fromDb.completedAt, updatedAt = fromDb.updatedAt) ?: fromDb
                     copy(task = merged, checklist = details.checklist)
                 }
-                if (saved == null) saved = fromDb
+                if (saved == null) {
+                    saved = fromDb
+                    setState { copy(smart = SmartTitle.opened(fromDb.title, today, nowMinute())) }
+                }
             }
         }
         viewModelScope.launch { tasks.observeSubtasks(taskId).collect { setState { copy(subtasks = it) } } }
@@ -140,7 +149,20 @@ class TaskDetailViewModel @Inject constructor(
 
     override fun onIntent(intent: TaskDetailIntent) {
         when (intent) {
-            is TaskDetailIntent.Title -> editText { copy(title = intent.text) }
+            is TaskDetailIntent.Title -> {
+                editText { copy(title = intent.text) }
+                val task = currentState.task ?: return
+                val (next, schedule) = currentState.smart.update(
+                    intent.text, smartDates.enabled.value, currentState.today, nowMinute(), time.zone(), Schedule(task.due, task.start),
+                )
+                setState { copy(smart = next) }
+                schedule?.let(::reschedule)
+            }
+            TaskDetailIntent.DismissSmartDate -> {
+                val (next, schedule) = currentState.smart.dismiss()
+                setState { copy(smart = next) }
+                schedule?.let(::reschedule)
+            }
             is TaskDetailIntent.Content -> editText { copy(content = intent.text) }
             is TaskDetailIntent.Edit -> editNow {
                 when (val edit = intent.edit) {
@@ -209,6 +231,11 @@ class TaskDetailViewModel @Inject constructor(
         }
     }
 
+    private fun nowMinute(): Int = time.now().atZone(time.zone()).let { it.hour * 60 + it.minute }
+
+    /** Срок из названия или возврат прежнего — как выбор на сетке: сохраняется сразу. */
+    private fun reschedule(schedule: Schedule) = editNow { withDue(schedule.due).copy(start = schedule.start).alignedToRepeat(time.zone()) }
+
     /** Название и описание сохраняются через полсекунды после последнего изменения. */
     private fun editText(change: Task.() -> Task) {
         val task = currentState.task ?: return
@@ -237,7 +264,8 @@ class TaskDetailViewModel @Inject constructor(
         textDirty = false
         val draft = currentState.task ?: return
         val base = saved ?: return
-        val toSave = if (draft.title.isBlank()) draft.copy(title = base.title) else draft.copy(title = draft.title.trim())
+        // Фраза срока из названия в базу не попадает (итерация 41); на экране она остаётся до закрытия шторки.
+        val toSave = if (draft.title.isBlank()) draft.copy(title = base.title) else draft.copy(title = currentState.smart.clean(draft.title))
         if (toSave.editableEquals(base)) return
         saved = toSave
         val previous = lastWrite

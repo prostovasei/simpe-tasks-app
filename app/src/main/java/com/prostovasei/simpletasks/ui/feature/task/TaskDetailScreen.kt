@@ -145,9 +145,11 @@ fun TaskDetailScreen(
                     textDecoration = if (done) TextDecoration.LineThrough else null,
                 ),
                 modifier = Modifier.weight(1f).testTag(TAG_DETAIL_TITLE),
+                visualTransformation = smartHighlight(state.smart),
             )
             TaskMenu(createdText(task.createdAt.atZone(state.zone).toLocalDate())) { onIntent(TaskDetailIntent.RequestDelete) }
         }
+        SmartDateLine(state.smart, state.today, state.zone) { onIntent(TaskDetailIntent.DismissSmartDate) }
         CompactField(
             value = task.content,
             onValueChange = { onIntent(TaskDetailIntent.Content(it)) },

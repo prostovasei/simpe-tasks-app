@@ -15,6 +15,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import com.prostovasei.simpletasks.ui.feature.task.SmartDateSetting
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -70,7 +71,10 @@ class SettingsViewModelTest {
         dispatcher,
         FakeTimeProvider(now = Instant.parse("2026-10-13T12:00:00Z")),
         updater,
+        smartDates,
     )
+
+    private val smartDates = SmartDateSetting(initial = true, save = {})
 
     private class FakeUpdater : AppUpdater {
         var available: AvailableUpdate? = null
@@ -253,5 +257,14 @@ class SettingsViewModelTest {
         assertEquals(1, calls)
         assertFalse(vm.state.value.showClearConfirmation)
         gate.complete(Unit)
+    }
+
+    @Test
+    fun smartDatesSwitchIsSaved() {
+        val vm = viewModel()
+        assertTrue(vm.state.value.smartDates)
+        vm.onIntent(SettingsIntent.SetSmartDates(false))
+        assertFalse(vm.state.value.smartDates)
+        assertFalse(smartDates.enabled.value)
     }
 }

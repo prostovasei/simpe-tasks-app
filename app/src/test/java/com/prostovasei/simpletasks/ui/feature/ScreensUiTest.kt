@@ -507,6 +507,20 @@ class ScreensUiTest {
         assertEquals(listOf<Any>(TaskListIntent.ToggleComplete("i1")), intents)
     }
 
+    /** Итерация 41: «Сегодня» слева от плашки не обрезается — и с крупным системным шрифтом (как у PM). */
+    @Test
+    @Config(qualifiers = "w412dp-h915dp-xxhdpi", fontScale = 1.3f)
+    fun screenshotInboxDayColumnLargeFont() {
+        val tasks = listOf(
+            item("i1", "Позвонить врачу", DueText(DayLabel.Today, "12:30"), list = null, color = null, priority = Priority.MEDIUM),
+            item("i2", "Купить продукты", DueText(DayLabel.Tomorrow, null), list = null, color = null),
+            item("i3", "Отчёт за неделю", DueText(DayLabel.Yesterday, "11:00"), list = null, color = null, priority = Priority.LOW),
+        )
+        show { InboxScreen(InboxState(tasks = tasks, isLoading = false), { intents += it }) }
+        composeRule.onNodeWithText("Сегодня").assertExists()
+        composeRule.onRoot().captureRoboImage("screenshots/inbox_day_column_large_font.png")
+    }
+
     private val tree = ProjectTree(
         inbox = ProjectWithCount(project("inbox", "Inbox", isInbox = true), 3),
         groups = listOf(

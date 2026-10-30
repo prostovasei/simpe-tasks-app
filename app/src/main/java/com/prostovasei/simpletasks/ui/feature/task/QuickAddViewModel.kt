@@ -44,6 +44,8 @@ data class QuickAddState(
     val isSaving: Boolean = false,
     /** Название подставлено из черновика (итерация 38): при открытии оно выделено, любая буква заменит его. */
     val draftRestored: Boolean = false,
+    /** Срок из названия (итерация 41): подсветка фразы и чип под названием. */
+    val smart: SmartTitle = SmartTitle(),
 ) {
     val canSave: Boolean get() = title.isNotBlank() && projectId.isNotEmpty() && !isSaving
     val reminders: List<String> get() = customReminders ?: Reminders.default(due)
@@ -62,6 +64,9 @@ sealed interface QuickAddIntent {
     data class RemoveChecklistItem(val index: Int) : QuickAddIntent
     data object Save : QuickAddIntent
 
+    /** «✕» на чипе срока из названия (итерация 41). */
+    data object DismissSmartDate : QuickAddIntent
+
     /** Карточку закрыли без сохранения: название и описание уходят в черновик (итерация 38). */
     data object Dismiss : QuickAddIntent
 }
@@ -76,8 +81,9 @@ class QuickAddViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val tasks: TaskRepository,
     projects: ProjectRepository,
-    time: TimeProvider,
+    private val time: TimeProvider,
     private val drafts: TaskDrafts,
+    private val smartDates: SmartDateSetting,
 ) : MviViewModel<QuickAddState, QuickAddIntent, QuickAddEffect>(
     QuickAddState(
         today = time.today(),
@@ -123,7 +129,15 @@ class QuickAddViewModel @Inject constructor(
 
     override fun onIntent(intent: QuickAddIntent) {
         when (intent) {
-            is QuickAddIntent.Title -> setState { copy(title = intent.text) }
+            is QuickAddIntent.Title -> setState {
+                val nowMinute = time.now().atZone(zone).let { it.hour * 60 + it.minute }
+                val (next, schedule) = smart.update(intent.text, smartDates.enabled.value, today, nowMinute, zone, Schedule(due, start))
+                copy(title = intent.text, smart = next).let { if (schedule != null) it.schedule(schedule) else it }
+            }
+            QuickAddIntent.DismissSmartDate -> setState {
+                val (next, schedule) = smart.dismiss()
+                copy(smart = next).let { if (schedule != null) it.schedule(schedule) else it }
+            }
             is QuickAddIntent.Content -> setState { copy(content = intent.text) }
             is QuickAddIntent.Edit -> setState { edit(intent.edit) }
             is QuickAddIntent.Grid -> when (val action = intent.action) {
@@ -182,7 +196,8 @@ class QuickAddViewModel @Inject constructor(
             tasks.createTask(
                 NewTask(
                     projectId = state.projectId,
-                    title = state.title.trim(),
+                    // Фраза срока из названия уходит (итерация 41): «Созвон завтра 10:00» → «Созвон».
+                    title = state.smart.clean(state.title),
                     content = state.content.trim(),
                     priority = state.priority,
                     // Интервал: начало — выбранное время, срок — конец (как у задач из TickTick).
