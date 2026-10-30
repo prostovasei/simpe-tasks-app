@@ -97,6 +97,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogWindowProvider
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.components.ListSquare
+import com.prostovasei.simpletasks.designsystem.components.SmartDateChip
+import com.prostovasei.simpletasks.designsystem.components.SmartDateHighlight
+import com.prostovasei.simpletasks.designsystem.components.smartDateSpan
+import com.prostovasei.simpletasks.ui.common.DayNames
+import com.prostovasei.simpletasks.ui.common.DueFormatter
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.designsystem.theme.parseListColor
 import com.prostovasei.simpletasks.designsystem.tokens.RadiusTokens
@@ -663,6 +668,7 @@ fun CompactField(
     singleLine: Boolean = true,
     imeAction: ImeAction = ImeAction.Default,
     onImeAction: () -> Unit = {},
+    visualTransformation: androidx.compose.ui.text.input.VisualTransformation = androidx.compose.ui.text.input.VisualTransformation.None,
 ) {
     val colors = AppTheme.colors
     val style = if (textStyle.color == Color.Unspecified) textStyle.copy(color = colors.textPrimary) else textStyle
@@ -672,6 +678,7 @@ fun CompactField(
         textStyle = style,
         singleLine = singleLine,
         cursorBrush = SolidColor(colors.accent),
+        visualTransformation = visualTransformation,
         keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = imeAction),
         keyboardActions = KeyboardActions(onAny = { onImeAction() }),
         modifier = modifier.fillMaxWidth().padding(vertical = AppTheme.spacing.xxs),
@@ -695,6 +702,7 @@ fun CompactField(
     singleLine: Boolean = true,
     imeAction: ImeAction = ImeAction.Default,
     onImeAction: () -> Unit = {},
+    visualTransformation: androidx.compose.ui.text.input.VisualTransformation = androidx.compose.ui.text.input.VisualTransformation.None,
 ) {
     val colors = AppTheme.colors
     val style = if (textStyle.color == Color.Unspecified) textStyle.copy(color = colors.textPrimary) else textStyle
@@ -704,6 +712,7 @@ fun CompactField(
         textStyle = style,
         singleLine = singleLine,
         cursorBrush = SolidColor(colors.accent),
+        visualTransformation = visualTransformation,
         keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = imeAction),
         keyboardActions = KeyboardActions(onAny = { onImeAction() }),
         modifier = modifier.fillMaxWidth().padding(vertical = AppTheme.spacing.xxs),
@@ -713,6 +722,28 @@ fun CompactField(
                 inner()
             }
         },
+    )
+}
+
+/** Подсветка фраз срока в названии (итерация 41); без найденной фразы — обычное поле. */
+@Composable
+fun smartHighlight(smart: SmartTitle): androidx.compose.ui.text.input.VisualTransformation {
+    val ranges = smart.found?.ranges ?: return androidx.compose.ui.text.input.VisualTransformation.None
+    val style = smartDateSpan()
+    return remember(ranges, style) { SmartDateHighlight(ranges, style) }
+}
+
+/** Чип «Завтра, 10:00» под названием, пока в нём найдена фраза срока (итерация 41). */
+@Composable
+fun SmartDateLine(smart: SmartTitle, today: java.time.LocalDate, zone: java.time.ZoneId, onDismiss: () -> Unit) {
+    val found = smart.found ?: return
+    val due = DueFormatter.format(found.due(zone), null, today, zone) ?: return
+    val names = DayNames(stringResource(R.string.day_today), stringResource(R.string.day_tomorrow), stringResource(R.string.day_yesterday))
+    SmartDateChip(
+        text = names.format(due),
+        offLabel = stringResource(R.string.smart_date_off),
+        onDismiss = onDismiss,
+        modifier = Modifier.padding(vertical = AppTheme.spacing.xxs),
     )
 }
 

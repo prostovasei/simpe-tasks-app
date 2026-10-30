@@ -13,6 +13,8 @@ data class SettingsState(
     val showClearConfirmation: Boolean = false,
     val isClearing: Boolean = false,
     val update: UpdateState = UpdateState.Idle,
+    /** «Дата и время в названии» (итерация 41). */
+    val smartDates: Boolean = true,
 ) {
     val isBusy: Boolean get() = import is ImportState.InProgress || export is ExportState.InProgress || isClearing
 }
@@ -63,6 +65,7 @@ sealed interface SettingsIntent {
     data object CheckUpdate : SettingsIntent
     data object InstallUpdate : SettingsIntent
     data object GrantInstallPermission : SettingsIntent
+    data class SetSmartDates(val enabled: Boolean) : SettingsIntent
 }
 
 sealed interface SettingsEffect {

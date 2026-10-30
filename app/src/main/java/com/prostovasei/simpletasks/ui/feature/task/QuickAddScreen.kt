@@ -123,7 +123,9 @@ fun QuickAddScreen(
                 keyboard?.hide()
             },
             modifier = Modifier.focusRequester(titleFocus).testTag(TAG_QUICK_TITLE),
+            visualTransformation = smartHighlight(state.smart),
         )
+        SmartDateLine(state.smart, state.today, state.zone) { onIntent(QuickAddIntent.DismissSmartDate) }
         CompactField(
             value = state.content,
             onValueChange = { onIntent(QuickAddIntent.Content(it)) },

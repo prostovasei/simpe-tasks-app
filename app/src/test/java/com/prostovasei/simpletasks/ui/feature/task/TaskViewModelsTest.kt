@@ -58,13 +58,14 @@ class TaskViewModelsTest {
     fun tearDown() = Dispatchers.resetMain()
 
     private val draftStore = TaskDrafts(initial = null, persist = {})
+    private val smartDates = SmartDateSetting(initial = true, save = {})
 
-    private fun quickAdd(vararg args: Pair<String, Any?>) = QuickAddViewModel(SavedStateHandle(mapOf(*args)), tasks, projects, time, draftStore)
+    private fun quickAdd(vararg args: Pair<String, Any?>) = QuickAddViewModel(SavedStateHandle(mapOf(*args)), tasks, projects, time, draftStore, smartDates)
 
     private fun QuickAddViewModel.intervalEnd() = (state.value.due as? TaskDue.AtTime)?.instant?.takeIf { state.value.start != null }
 
     private fun detail(scope: CoroutineScope, taskId: String = "t1") = TaskDetailViewModel(
-        SavedStateHandle(mapOf("taskId" to taskId)), tasks, checklist, projects, DayTicker { flowOf(today) }, time, scope, deletions,
+        SavedStateHandle(mapOf("taskId" to taskId)), tasks, checklist, projects, DayTicker { flowOf(today) }, time, scope, deletions, smartDates,
     )
 
     private val deletions = TaskDeletions(tasks, CoroutineScope(dispatcher))
@@ -460,5 +461,82 @@ class TaskViewModelsTest {
         fourth.onIntent(QuickAddIntent.Title("  "))
         fourth.onIntent(QuickAddIntent.Dismiss)
         assertEquals("Название очистили — черновика нет", null, draftStore.get())
+    }
+
+    // ---------------------------------------------------------------- итерация 41: дата и время в названии
+
+    @Test
+    fun quickAddTakesDateFromTitleAndCleansIt() = runTest(dispatcher) {
+        val vm = quickAdd()
+        runCurrent()
+        vm.onIntent(QuickAddIntent.Title("Созвон завтра"))
+        assertEquals(TaskDue.AllDay(today.plusDays(1)), vm.state.value.due)
+        vm.onIntent(QuickAddIntent.Title("Созвон завтра в 10:00"))
+        assertEquals(TaskDue.AtTime(Instant.parse("2026-10-15T10:00:00Z")), vm.state.value.due)
+        assertEquals("Фраза подсвечивается", listOf("завтра в 10:00"), vm.state.value.smart.found!!.phrases("Созвон завтра в 10:00"))
+
+        vm.onIntent(QuickAddIntent.Save)
+        runCurrent()
+        val created = tasks.created.single()
+        assertEquals("Фраза уходит из названия", "Созвон", created.title)
+        assertEquals(TaskDue.AtTime(Instant.parse("2026-10-15T10:00:00Z")), created.due)
+    }
+
+    @Test
+    fun quickAddTitleDateWinsOverPresetAndErasingRestoresIt() = runTest(dispatcher) {
+        val vm = quickAdd("today" to true)
+        runCurrent()
+        assertEquals(TaskDue.AllDay(today), vm.state.value.due)
+        vm.onIntent(QuickAddIntent.Title("Билеты 15 ноября"))
+        assertEquals("Дата из названия побеждает", TaskDue.AllDay(LocalDate.of(2026, 11, 15)), vm.state.value.due)
+        vm.onIntent(QuickAddIntent.Title("Билеты 15"))
+        assertEquals("Фразу стёрли — срок прежний", TaskDue.AllDay(today), vm.state.value.due)
+        assertNull(vm.state.value.smart.found)
+    }
+
+    @Test
+    fun quickAddChipCrossKeepsPhraseAndStopsParsing() = runTest(dispatcher) {
+        val vm = quickAdd()
+        runCurrent()
+        vm.onIntent(QuickAddIntent.Title("Сериал в пятницу"))
+        assertEquals(TaskDue.AllDay(LocalDate.of(2026, 10, 16)), vm.state.value.due)
+        vm.onIntent(QuickAddIntent.DismissSmartDate)
+        assertNull("Срок вернулся", vm.state.value.due)
+        vm.onIntent(QuickAddIntent.Title("Сериал в пятницу в 20:00"))
+        assertNull("Для этой задачи больше не разбираем", vm.state.value.due)
+        vm.onIntent(QuickAddIntent.Save)
+        runCurrent()
+        assertEquals("Сериал в пятницу в 20:00", tasks.created.single().title)
+    }
+
+    @Test
+    fun quickAddSettingOffDisablesParsing() = runTest(dispatcher) {
+        smartDates.set(false)
+        val vm = quickAdd()
+        runCurrent()
+        vm.onIntent(QuickAddIntent.Title("Созвон завтра"))
+        assertNull(vm.state.value.due)
+        assertNull(vm.state.value.smart.found)
+    }
+
+    @Test
+    fun detailParsesOnlyNewPhrasesAndSavesCleanTitle() = runTest(dispatcher) {
+        tasks.tasks.value = listOf(task("t1", title = "Отчёт в пятницу", projectId = "work"))
+        val vm = detail(this)
+        runCurrent()
+        vm.onIntent(TaskDetailIntent.Title("Отчёт в пятницу!"))
+        assertNull("Фраза была в названии при открытии — не трогаем", vm.state.value.smart.found)
+        assertNull(vm.state.value.task!!.due)
+
+        vm.onIntent(TaskDetailIntent.Title("Отчёт завтра в 18:00"))
+        runCurrent()
+        assertEquals(TaskDue.AtTime(Instant.parse("2026-10-15T18:00:00Z")), tasks.updated.last().due)
+        assertEquals("В базе — без фразы", "Отчёт", tasks.updated.last().title)
+        assertEquals("На экране фраза остаётся до закрытия", "Отчёт завтра в 18:00", vm.state.value.task!!.title)
+
+        vm.onIntent(TaskDetailIntent.DismissSmartDate)
+        runCurrent()
+        assertNull("«✕» вернул прежний срок", tasks.updated.last().due)
+        assertEquals("Отчёт завтра в 18:00", tasks.updated.last().title)
     }
 }

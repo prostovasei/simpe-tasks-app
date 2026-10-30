@@ -86,8 +86,11 @@ object SizeTokens {
     /** Колонка времени слева и колонка шкалы с кружками. */
     const val WIDGET_TIME = 38
 
-    /** Колонка дня и времени в плоских списках приложения (итерация 26): «Завтра» помещается целиком. */
-    const val TIMELINE_DAY_COLUMN = 48
+    /**
+     * Колонка дня и времени в плоских списках приложения (итерация 26). Итерация 41: 48 → 56 и растёт вместе с системным шрифтом
+     * (умножается на его масштаб) — «Сегодня» на телефоне PM обрезалось до «Сегодн».
+     */
+    const val TIMELINE_DAY_COLUMN = 56
     const val WIDGET_RAIL = 26
 
     /** Высота строки: задача со временем или на весь день, период; отметка «сейчас». */
@@ -201,6 +204,12 @@ object SizeTokens {
     const val RIBBON_BUTTON = 76
     const val RIBBON_BUTTON_HEIGHT = 56
     const val SELECTION_BAR = 56
+
+    /** Чип срока из названия под полем названия (итерация 41): высота, значок календаря, кружок с крестиком. */
+    const val SMART_CHIP = 32
+    const val SMART_CHIP_ICON = 18
+    const val SMART_CHIP_CLOSE = 20
+    const val SMART_CHIP_CLOSE_ICON = 12
 
     /** Корзина (итерация 39): строка с подписью «удалена …» выше обычной на это число dp. */
     const val TRASH_ROW_EXTRA = 14

@@ -115,11 +115,11 @@ def screen_title(text):
 def frow(left, color, title, done=False, over=False, period=False, rep=False, rem=None, lsq=True, end=None, top=True, bottom=True, list_color='var(--inbox-list)', list_icon='ic_list_inbox'):
     """Строка шкалы (TimelineTaskRow). left — 1–2 строки слева: [«Сегодня», «10:00»] в плоских списках или «10:00»."""
     lines = left if isinstance(left, list) else [left]
-    wide = len(lines) > 1 or (lines and len(lines[0]) > 6)
+    wide = len(lines) > 1 or (lines and len(lines[0]) > 5)
     h = 64 if period else 46
     tcol = 'var(--overdue)' if over else ('var(--text-secondary)' if done else 'var(--text-primary)')
     fs = 11 if wide else 12
-    t = (f'<div style="width:{48 if wide else 38}px;text-align:right;font-size:{fs}px;line-height:{fs + 4}px;font-weight:700;color:{tcol};display:flex;flex-direction:column;justify-content:center;flex-shrink:0">'
+    t = (f'<div style="width:{56 if wide else 38}px;text-align:right;font-size:{fs}px;line-height:{fs + 4}px;font-weight:700;color:{tcol};display:flex;flex-direction:column;justify-content:center;flex-shrink:0">'
          + ''.join(f'<span>{x}</span>' for x in lines) + (f'<span style="color:{"var(--overdue)" if over else "var(--text-secondary)"}">{end}</span>' if end else '') + '</div>')
     nh = 58 if period else 20
     rail = (f'<div style="width:26px;display:flex;flex-direction:column;align-items:center;flex-shrink:0"><span style="width:1px;flex:1;background:{"var(--divider)" if top else "transparent"}"></span>'
@@ -438,13 +438,14 @@ def settings_screen():
     divider = '<div style="height:1px;background:var(--divider);margin:4px 0"></div>'
     body = ('<div style="padding:16px;display:flex;flex-direction:column;gap:12px">'
             '<div style="font-size:28px;line-height:36px;font-weight:700">Настройки</div>'
+            f'{title}Ввод задач</div>{sw("Дата и время в названии", "«Созвон завтра 10:00» — срок ставится сам, фраза уходит из названия.", True)}{divider}'
             f'{title}Напоминания</div>{sw("Всплывающая полоска", "Напоминание — зелёной полоской снизу поверх любого приложения.", True)}'
             f'{sw("Точное время напоминаний", "Напоминание приходит секунда в секунду.", True)}{sw("Утренняя сводка", "Каждый день в это время — уведомление с планом на сегодня.", False)}{divider}'
             f'{title}Обновление</div><div style="font-size:14px;line-height:20px">Установлена последняя версия</div><div>{material_button("Проверить обновление", "outlined")}</div>{divider}'
             f'{title}Импорт из TickTick</div><div style="font-size:14px;line-height:20px;color:var(--text-secondary)">Резервную копию (.csv) можно создать в настройках веб-версии TickTick.</div><div>{material_button("Выбрать файл .csv")}</div>{divider}'
             f'{title}Данные</div><div style="font-size:14px;line-height:20px">Задач: 3399 (активных 145)</div><div>{material_button("Очистить все данные", "outlined", "var(--danger)")}</div>'
             '<div style="font-size:12px;line-height:16px;color:var(--text-secondary);padding-top:12px">Версия 0.34.0 (сборка 138)</div></div>')
-    return frame(f'{body}{nav_bar(4)}', 760)
+    return frame(f'{body}{nav_bar(4)}', 850)
 
 
 def sheet_screen():
@@ -628,10 +629,10 @@ def danger_dialog(title, text, ok):
 def sel_row(left, color, title, selected=False, done=False, ghost=False, rep=False, rem=None, top=True, bottom=True, list_color='var(--inbox-list)', list_icon='ic_list_inbox', sub=None):
     """Строка шкалы в режиме выбора: кружок → зелёная галочка, плашка подсвечена; будущий повтор бледный и не выбирается."""
     lines = left if isinstance(left, list) else [left]
-    wide = len(lines) > 1 or (lines and len(lines[0]) > 6)
+    wide = len(lines) > 1 or (lines and len(lines[0]) > 5)
     h = 58 if sub else 46
     tcol = 'var(--text-secondary)' if done or ghost else 'var(--text-primary)'
-    t = (f'<div style="width:{48 if wide else 38}px;text-align:right;font-size:{11 if wide else 12}px;line-height:{15 if wide else 16}px;font-weight:700;color:{tcol};display:flex;flex-direction:column;justify-content:center;flex-shrink:0">'
+    t = (f'<div style="width:{56 if wide else 38}px;text-align:right;font-size:{11 if wide else 12}px;line-height:{15 if wide else 16}px;font-weight:700;color:{tcol};display:flex;flex-direction:column;justify-content:center;flex-shrink:0">'
          + ''.join(f'<span>{x}</span>' for x in lines) + '</div>')
     if selected:
         node = f'<span style="width:20px;height:20px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center">{mi("check", 14)}</span>'
@@ -690,7 +691,42 @@ def p_selection():
     return doc('Список и виджет', 380, 'Режим выбора: «Выбрано: N», лента действий, выбранная и невыбранная плашка', body)
 
 
+# ---------------------------------------------------------------- итерация 41: дата и время в названии
+
+SMART_HL = 'background:var(--accent-soft);color:var(--accent);border-radius:4px;padding:0 2px'
+
+
+def smart_chip(text):
+    """Чип срока из названия: акцентная капсула со значком календаря и крестиком «не разбирать»."""
+    return (f'<span style="display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 4px 0 12px;border-radius:16px;background:var(--accent-soft);'
+            f'color:var(--accent);font-size:14px;line-height:20px;font-weight:700"><span style="display:flex">{svg("ic_widget_all", 18)}</span>{text}'
+            f'<span style="width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--accent-soft)">'
+            f'<span style="width:12px;height:12px;display:flex">{B.X}</span></span></span>')
+
+
+def smart_sheet(before, phrase, after, chip_text, fields):
+    """Шторка новой задачи: фраза срока в названии подсвечена, под названием чип, поля даты и времени заполнены."""
+    card = B.sheet_card(False, width=396)
+    title = f'{before}<span style="{SMART_HL}">{phrase}</span>{after}'
+    card = card.replace('color:var(--inactive)">Купить билеты на концерт', f'">{title}')
+    card = card.replace('margin-top:4px">Описание</div>', f'margin-top:4px">Описание</div><div style="margin-top:8px">{smart_chip(chip_text)}</div>')
+    cal, clock = svg('ic_widget_all', 22), svg('ic_time', 22)
+    clr = f'<span class="clr" style="position:static">{B.X}</span>'
+    filled = ''.join(f'<span class="field">{ic}<span>{t}</span>{clr}</span>' for ic, t in zip((cal, clock), fields))
+    card = card.replace(f'<span class="field empty">{cal}<span>Без даты и времени</span></span>', filled)
+    # Срок есть — повтор и уведомления доступны.
+    card = card.replace('class="tool dim"', 'class="tool"')
+    return card.replace('color-mix(in srgb,var(--inactive) 60%,transparent)', 'var(--text-secondary)')
+
+
+def p_smart_date():
+    body = (f'<div class="row" style="align-items:flex-start;gap:28px">{smart_sheet("Созвон ", "завтра в 10:00", "", "Завтра, 10:00", ("пт, 30 окт", "10:00"))}'
+            f'{smart_sheet("Отчёт ", "в пятницу", "", "пт, 30 окт", ("пт, 30 окт",))}</div>')
+    return doc('Окна', 330, 'Дата и время в названии: фраза подсвечена, под названием чип срока с крестиком', body)
+
+
 PREVIEWS = {
+    'SmartDate': p_smart_date,
     'UpdateDialog': p_update_dialog, 'ListPriorityDialogs': p_list_priority_dialogs, 'CustomDialogs': p_custom_dialogs, 'AlertDialogs': p_alert_dialogs,
     'ChecklistRows': p_checklist, 'ChipsAndButtons': p_chips_fab, 'SettingsRow': p_switch_rows,
     'Headers': p_headers, 'EmptyTasks': p_empty, 'TaskRow': p_task_row, 'ListRows': p_list_rows, 'SearchField': p_search_field, 'BottomBar': p_bottom_bar,
@@ -701,11 +737,12 @@ PREVIEWS = {
     'ScreenProject': lambda: screens(project_screen, 730, 'Экран списка: заголовок со значком, «⋮» и плавающая «+»'),
     'ScreenSearch': lambda: screens(search_screen, 730, 'Экран «Поиск»: запрос, найденное, выполненные'),
     'ScreenCompleted': lambda: screens(completed_screen, 730, 'Экран «Выполненные»: по дням, новые сверху'),
-    'ScreenSettings': lambda: screens(settings_screen, 810, 'Экран «Настройки»'),
+    'ScreenSettings': lambda: screens(settings_screen, 900, 'Экран «Настройки»'),
     'ScreenNewTask': lambda: screens(sheet_screen, 730, 'Окно создания задачи поверх экрана «Все»'),
 }
 
 README_MORE = {
+    'SmartDate': ('Дата и время в названии: подсветка фразы и чип срока (0.41).', 'Пока человек печатает название, явная фраза срока («завтра в 10:00», «в пятницу», «через 3 дня», «15 ноября», «15.11», «в 18», «в 9 утра») подсвечивается: цвет `accent` на фоне `accent-soft`. Под названием чип: высота `size-smart-chip` (32), капсула `accent-soft`, значок календаря `size-smart-chip-icon` (18), текст `body-medium` Bold `accent` («Завтра, 10:00»), справа кружок `size-smart-chip-close` (20) с крестиком — не разбирать дату в названии этой задачи (фраза остаётся обычным текстом, срок возвращается). Поля даты и времени заполняются сразу. При сохранении фраза уходит из названия. Только время — сегодня или завтра, если время прошло; только дата — весь день. Общий выключатель — «Дата и время в названии» в настройках. Источник: `designsystem/components/SmartDateChip.kt`, `domain/smartdate/SmartDate.kt`, `ui/feature/task/SmartTitle.kt`.'),
     'SelectionMode': ('Режим выбора: верхняя строка «Выбрано: N», лента действий, выбранная плашка (0.40).', 'Включается долгим нажатием на плашку (будущий повтор выбрать нельзя), дальше нажатие на плашку или кружок отмечает и снимает. Сверху строка `surface` высотой `size-selection-bar` (56): «✕» (закрыть режим, как и «Назад»), «Выбрано: N» (`title-large` Bold), «Выбрать все» (`accent`). Внизу на месте панели вкладок лента: высота `size-nav-bar`, радиус `radius-nav`, тень; кнопки не уже `size-ribbon-button` (76) и высотой `size-ribbon-button-height` (56): значок 24 и подпись `label-small` Bold; ряд прокручивается пальцем, у правого края затухание. Действия: «Выполнить», «На завтра», «На другой день» (календарь), «В список», «Приоритет», «Вернуть», «Удалить» (`danger`); неподходящие бледные (35%). В корзине: «Восстановить» и «Удалить навсегда» (с подтверждением `DangerDialog`). Выбранная плашка: фон `selected`, рамка `accent` 2, в кружке зелёная галочка. После действия режим закрывается, внизу `UndoSnackbar` («Выполнено: 3 · Отмена» и т. п.). Источник: `designsystem/components/Selection.kt`, `ui/feature/bulk/SelectionFrame.kt`, `BulkActions.kt`.'),
     'ScreenSelection': ('Экран «Все» в режиме выбора (0.40).', 'Строка «Выбрано: N» поверх верха экрана, лента действий на месте нижней панели («+» и вкладки на это время скрыты). Список прокручивается выше ленты. То же во «Входящих», списках, «Поиске», «Выполненных» и «Корзине»; в виджете режима нет.'),
     'ScreenTrash': ('Экран «Корзина» (0.39).', 'Сверху «назад» и название `title-large` Bold; под ним «ЗАДАЧ: N» (`label-medium` Bold, `text-secondary`), справа «Восстановить все» (`accent`) и «Удалить все» (`danger`). Ниже плашки как в обычном списке (слева срок, справа список) с мелкой подписью «удалена 28 окт» (`body-small`, `text-secondary`); строка выше обычной на `size-trash-row-extra` (14). Новые удалённые сверху. Нажатие открывает задачу только для чтения (`TrashTask`); кружок ничего не отмечает. Пусто: «Корзина пуста» и подсказка по центру. Вход — строка «Корзина» на экране «Списки» под «Выполненными»: значок корзины, название, число задач (при нуле числа нет). Источник: `ui/feature/trash/TrashScreen.kt`.'),
@@ -781,7 +818,7 @@ README_MORE = {
                '''Фон `background`, радиус `radius-xl`. Список по дням: подпись дня (красная у прошедшего), строки шкалы как в `TimelineRow`, у «Сегодня» линия прогресса. Отметка «сейчас»: зелёное время слева, точка на линии и линия до края (`size-widget-now-row` 14).
 Внизу переход от прозрачного к `background` высотой 104 и нижняя строка. В виджете нет градиентов и размытия: фон и переходы — готовыми картинками. Цвета те же, что в приложении: Glance сам выбирает светлую или тёмную тему.'''),
     'ScreenAll': ('Экран «Все».', 'Лента по дням на `background`: подпись дня, шкала со строками `TimelineRow`, отметка «сейчас» у сегодняшнего дня; внизу нижняя панель. Пустая лента — `EmptyTasks`. Окно задачи открывается поверх.'),
-    'ScreenInbox': ('Экран «Входящие».', 'Плоский список без подписей дней: слева колонка дня и времени (48 шириной, `label-small`), дальше шкала. Квадратик списка не показывается там, где список один (в «Входящих» он есть: он общий). «+» в нижней панели.'),
+    'ScreenInbox': ('Экран «Входящие».', 'Плоский список без подписей дней: слева колонка дня и времени (`size-timeline-day-column` 56, растёт вместе с системным шрифтом; `label-small`), дальше шкала. Квадратик списка не показывается там, где список один (в «Входящих» он есть: он общий). «+» в нижней панели.'),
     'ScreenLists': ('Экран «Списки».', 'Заголовок и кнопки «+ Папка», «+ Список», строка «Выполненные», папки и списки (`ListRows`). Пусто: «Списков пока нет».'),
     'ScreenProject': ('Экран списка.', 'Сверху «назад», квадратик списка, название `title-large` Bold и «⋮» (переименовать, цвет, значок, удалить; у «Входящих» меню нет). Ниже плоский список без квадратиков списка. Плавающая «+» в правом нижнем углу.'),
     'ScreenSearch': ('Экран «Поиск».', 'Поле поиска, раздел «Найдено: N» с плашками `TaskRow` (найденное подсвечено), ниже «Выполненные» серым; выполненную можно вернуть галочкой.'),

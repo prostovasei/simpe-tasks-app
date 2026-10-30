@@ -44,6 +44,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalDensity
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.components.GHOST_ALPHA
 import com.prostovasei.simpletasks.designsystem.components.ListSquare
@@ -228,7 +229,9 @@ private fun TimeColumn(row: WidgetRow.Task, isOverdue: Boolean, faded: Boolean, 
     }
     Column(
         // С днём («Завтра», «16 окт») колонка шире и мельче — как у просроченных в виджете.
-        Modifier.width(if (dayLabels) SizeTokens.TIMELINE_DAY_COLUMN.dp else SizeTokens.WIDGET_TIME.dp).fillMaxHeight(),
+        // Итерация 41: колонка дня растёт вместе с системным шрифтом — «Сегодня» помещается и с крупным шрифтом.
+        // Множитель шрифта, а не sp: Android 14 увеличивает крупные sp слабее мелкого текста, и колонка отставала бы от подписи.
+        Modifier.width(if (dayLabels) (SizeTokens.TIMELINE_DAY_COLUMN * LocalDensity.current.fontScale).dp else SizeTokens.WIDGET_TIME.dp).fillMaxHeight(),
         horizontalAlignment = Alignment.End,
         verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
     ) {

@@ -114,6 +114,9 @@ SIZE_PICK = {
     'SNACKBAR_MIN_HEIGHT': ('snackbar-min-height', 'Подсказка «Отмена»: наименьшая высота.'), 'SNACKBAR_ICON': ('snackbar-icon', 'Значок слева в подсказке «Отмена».'),
     'RIBBON_BUTTON': ('ribbon-button', 'Режим выбора: наименьшая ширина кнопки ленты действий.'), 'RIBBON_BUTTON_HEIGHT': ('ribbon-button-height', 'Режим выбора: высота кнопки ленты действий.'),
     'SELECTION_BAR': ('selection-bar', 'Режим выбора: высота строки «Выбрано: N».'),
+    'TIMELINE_DAY_COLUMN': ('timeline-day-column', 'Колонка дня и времени слева от плашки в плоских списках; растёт вместе с системным шрифтом.'),
+    'SMART_CHIP': ('smart-chip', 'Чип срока из названия: высота.'), 'SMART_CHIP_ICON': ('smart-chip-icon', 'Значок календаря в чипе.'),
+    'SMART_CHIP_CLOSE': ('smart-chip-close', 'Кружок с крестиком в чипе.'),
     'TRASH_ROW_EXTRA': ('trash-row-extra', 'Корзина: строка с подписью «удалена …» выше обычной на столько.'),
     'RECENT_ROW': ('recent-row', 'Строка недавнего запроса в поиске.'), 'RECENT_ICON': ('recent-icon', 'Значок «часы» в строке недавнего запроса.'),
     'WIDGET_FOLD_ICON': ('widget-fold-icon', 'Стрелка «свернуть» и значок «перенести на сегодня» у подписи «Просрочено» в виджете.'),
@@ -660,7 +663,7 @@ def main():
     index = {
         'v': 3, 'layout': 'files', 'createdOnFiles': {'v': 1, 'at': now}, 'title': 'Simple Tasks', 'namespace': 'SimpleTasks', 'libraries': [],
         'sections': {}, 'groups': [], 'assetGroups': {}, 'blobs': {}, 'docs': {'readme': 'project/README.md', 'sections': []},
-        'lastChange': {'by': 'Ilya', 'at': now, 'via': 'Claude Code', 'note': 'Обновление до 0.40.0: режим выбора и лента массовых действий.'},
+        'lastChange': {'by': 'Ilya', 'at': now, 'via': 'Claude Code', 'note': 'Обновление до 0.41.0: дата и время в названии (подсветка и чип), выключатель в настройках, колонка дня 56.'},
     }
     (OUT / 'design-system.json').write_text(json.dumps(index, ensure_ascii=False, indent=1))
     # Контраст пар из описаний (WCAG 2): печатаем таблицу для проверки, не пишем в файлы.

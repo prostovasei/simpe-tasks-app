@@ -797,4 +797,41 @@ class TaskScreensUiTest {
         composeRule.onNodeWithTag("$TAG_REMINDERS_DIALOG:$TAG_DIALOG_DONE").assertIsDisplayed()
         composeRule.onRoot().captureRoboImage("screenshots/reminders_dialog_small_large_font.png")
     }
+
+    // ---------------------------------------------------------------- итерация 41: дата и время в названии
+
+    private fun smartState(title: String): QuickAddState {
+        val found = com.prostovasei.simpletasks.domain.smartdate.SmartDateParser.parse(title, today, 9 * 60)!!
+        return QuickAddState(
+            title = title, projectId = "inbox", projects = projects, today = today, zone = zone,
+            due = found.due(zone), smart = SmartTitle(found = found),
+        )
+    }
+
+    @Test
+    fun smartDateChipShowsDueAndCrossTurnsItOff() {
+        show { QuickAddScreen(smartState("Созвон завтра в 10:00"), { intents += it }, {}, autoFocus = false) }
+        composeRule.onNodeWithTag(com.prostovasei.simpletasks.designsystem.components.TAG_SMART_CHIP).assertExists()
+        composeRule.onNodeWithText("Завтра, 10:00").assertExists()
+        composeRule.onNodeWithTag(com.prostovasei.simpletasks.designsystem.components.TAG_SMART_CHIP_OFF).performClick()
+        assertEquals(QuickAddIntent.DismissSmartDate, intents.last())
+    }
+
+    @Test
+    fun noSmartChipWithoutPhrase() {
+        show { QuickAddScreen(quickState, { intents += it }, {}, autoFocus = false) }
+        composeRule.onNodeWithTag(com.prostovasei.simpletasks.designsystem.components.TAG_SMART_CHIP).assertDoesNotExist()
+    }
+
+    @Test
+    fun screenshotSmartDate() {
+        show { QuickAddScreen(smartState("Созвон завтра в 10:00"), {}, {}, autoFocus = false) }
+        composeRule.onRoot().captureRoboImage("screenshots/smart_date_light.png")
+    }
+
+    @Test
+    fun screenshotSmartDateDark() {
+        show(dark = true) { QuickAddScreen(smartState("Отчёт в пятницу"), {}, {}, autoFocus = false) }
+        composeRule.onRoot().captureRoboImage("screenshots/smart_date_dark.png")
+    }
 }
