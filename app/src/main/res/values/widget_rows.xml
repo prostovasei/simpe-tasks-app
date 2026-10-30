@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Строки ленты виджета на обычных элементах Android (итерация 42). Значения — копия токенов дизайн-системы
+  (SizeTokens, SpacingTokens, RadiusTokens, ColorTokens): совпадение проверяет WidgetRowResourcesTest.
+-->
+<resources>
+    <dimen name="widget_row">46dp</dimen>
+    <dimen name="widget_period_row">64dp</dimen>
+    <dimen name="widget_now_row">14dp</dimen>
+    <dimen name="widget_time">38dp</dimen>
+    <dimen name="widget_rail">26dp</dimen>
+    <dimen name="widget_node">20dp</dimen>
+    <dimen name="widget_node_check">12dp</dimen>
+    <dimen name="widget_period_stub">3dp</dimen>
+    <dimen name="widget_now_dot">7dp</dimen>
+    <dimen name="widget_meta_icon">18dp</dimen>
+    <dimen name="widget_reminder_icon">22dp</dimen>
+    <dimen name="widget_list_square">18dp</dimen>
+    <dimen name="widget_list_glyph">14dp</dimen>
+    <dimen name="widget_card_inset">3dp</dimen>
+    <dimen name="widget_progress">4dp</dimen>
+    <dimen name="widget_fold_icon">20dp</dimen>
+    <dimen name="widget_fade">104dp</dimen>
+    <dimen name="widget_edge">6dp</dimen>
+    <dimen name="widget_list_edge">3dp</dimen>
+    <dimen name="widget_day_gap">2dp</dimen>
+    <dimen name="widget_hairline">1dp</dimen>
+    <dimen name="widget_space_xxs">4dp</dimen>
+    <dimen name="widget_space_xs">8dp</dimen>
+    <dimen name="widget_space_sm">12dp</dimen>
+    <dimen name="widget_radius_sm">4dp</dimen>
+    <dimen name="widget_radius_md">8dp</dimen>
+    <dimen name="widget_radius_lg">12dp</dimen>
+    <dimen name="widget_radius_xl">16dp</dimen>
+
+    <color name="widget_surface">#FFFFFFFF</color>
+    <color name="widget_divider">#FFD5E0D8</color>
+    <color name="widget_text_secondary">#FF5F6474</color>
+    <color name="widget_overdue">#FFC62828</color>
+    <color name="widget_on_accent">#FFFFFFFF</color>
+    <color name="widget_on_list_square">#FFFFFFFF</color>
+    <color name="widget_text_primary">#FF15161F</color>
+    <color name="widget_ring_none">#FF8B949E</color>
+    <color name="widget_selected">#FFE4F2E8</color>
+    <color name="widget_text_done">#B315161F</color>
+    <color name="widget_icon_done">#B35F6474</color>
+    <color name="widget_accent_done">#B315803D</color>
+</resources>

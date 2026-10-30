@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Плашка выполненной задачи (0.42.2): как widget_row_plaque, но название, значки и квадратик списка бледнее (70%) прямо в разметке.
+  Белая плашка задачи (итерация 42): название и значки справа налево — список, колокольчик, повтор.
+  Нажатие — открыть задачу поверх рабочего стола.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="UselessParent"
+    android:layout_width="0dp"
+    android:layout_height="match_parent"
+    android:layout_weight="1"
+    android:paddingTop="@dimen/widget_card_inset"
+    android:paddingBottom="@dimen/widget_card_inset">
+
+    <LinearLayout
+        android:id="@+id/row_plaque"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/widget_row_plaque"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="@dimen/widget_space_sm"
+        android:paddingEnd="@dimen/widget_space_sm">
+
+        <TextView
+            android:id="@+id/row_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="@color/widget_text_done"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <ImageView
+            android:id="@+id/row_repeat"
+            android:layout_width="@dimen/widget_meta_icon"
+            android:layout_height="@dimen/widget_meta_icon"
+            android:layout_marginStart="@dimen/widget_space_xxs"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_tool_repeat"
+            android:tint="@color/widget_icon_done"
+            android:visibility="gone" />
+
+        <FrameLayout
+            android:id="@+id/row_bell"
+            android:layout_width="@dimen/widget_reminder_icon"
+            android:layout_height="@dimen/widget_reminder_icon"
+            android:layout_marginStart="@dimen/widget_space_xxs"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@+id/row_bell_main"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:contentDescription="@null"
+                android:tint="@color/widget_icon_done" />
+
+            <ImageView
+                android:id="@+id/row_bell_early"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:contentDescription="@null"
+                android:tint="@color/widget_accent_done"
+                android:visibility="gone" />
+        </FrameLayout>
+
+        <FrameLayout
+            android:id="@+id/row_square"
+            android:layout_width="@dimen/widget_list_square"
+            android:layout_height="@dimen/widget_list_square"
+            android:layout_marginStart="@dimen/widget_space_xs">
+
+            <ImageView
+                android:id="@+id/row_square_bg"
+                android:alpha="0.7"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:contentDescription="@null"
+                android:scaleType="fitXY"
+                android:src="@drawable/widget_row_square" />
+
+            <ImageView
+                android:id="@+id/row_square_glyph"
+                android:layout_width="@dimen/widget_list_glyph"
+                android:layout_height="@dimen/widget_list_glyph"
+                android:layout_gravity="center"
+                android:contentDescription="@null"
+                android:tint="@color/widget_on_list_square" />
+        </FrameLayout>
+    </LinearLayout>
+</FrameLayout>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Место под нижней панелью в конце ленты (итерация 42): последние задачи можно докрутить выше неё. -->
+<!-- Обёртка: корень строки списка Android растягивает, высоту держит вложенный элемент. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="UselessLeaf"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/widget_fade" />
+</FrameLayout>

@@ -111,6 +111,14 @@ class WidgetScreenshotTest {
     @Config(qualifiers = "+night")
     fun widgetDark() = capture("screenshots/widget_dark.png")
 
+    /** Лента на обычных элементах Android (итерация 42, как на телефоне): должна совпадать с [widgetLight] 1-в-1. */
+    @Test
+    fun widgetListLight() = capture("screenshots/widget_list_light.png", scrollable = true)
+
+    @Test
+    @Config(qualifiers = "+night")
+    fun widgetListDark() = capture("screenshots/widget_list_dark.png", scrollable = true)
+
     /** Настоящая картинка виджета: Glance молча отбрасывает детей Column сверх 10 — все 25 задач дня должны остаться. */
     @Test
     fun dayWithManyTasksKeepsAll() {
@@ -154,10 +162,13 @@ class WidgetScreenshotTest {
         }
     }
 
-    private fun capture(path: String, heightDp: Int = 420, shown: WidgetModel = model) {
-        val views = runBlocking { Preview(shown).compose(context, size = DpSize(320.dp, heightDp.dp)) }
-        val parent = FrameLayout(context)
-        val view = views.apply(context, parent)
+    private fun capture(path: String, heightDp: Int = 420, shown: WidgetModel = model, scrollable: Boolean = false) {
+        // Лента Android 12+ — как на телефоне: корень с лентой, нижняя панель Glance поверх, применение в фоне.
+        val view = if (scrollable) {
+            renderWidget(context, shown, DpSize(320.dp, heightDp.dp)).applyLikeLauncher(context)
+        } else {
+            runBlocking { Preview(shown).compose(context, size = DpSize(320.dp, heightDp.dp)) }.apply(context, FrameLayout(context))
+        }
         val density = context.resources.displayMetrics.density
         val width = (320 * density).toInt()
         val height = (heightDp * density).toInt()

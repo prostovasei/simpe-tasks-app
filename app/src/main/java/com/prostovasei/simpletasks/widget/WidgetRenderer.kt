@@ -53,19 +53,19 @@ object WidgetRenderer {
             if (model.filter != filter) WidgetSelection.set(context, appWidgetId, model.filter)
             val manager = AppWidgetManager.getInstance(context)
             val options = manager.getAppWidgetOptions(appWidgetId)
-            val views = composers.getOrPut(appWidgetId) { GlanceRemoteViews() }
-                .compose(context, sizeOf(options), appWidgetOptions = options) {
-                    // Прокручиваемый список без сеанса Glance работает только на Android 12+.
-                    WidgetContent(model, appWidgetId, scrollable = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
-                }
+            // Прокручиваемая лента — только Android 12+: корень и строки — обычные элементы, Glance — нижняя панель поверх.
+            val scrollable = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+            val glance = composers.getOrPut(appWidgetId) { GlanceRemoteViews() }
+                .compose(context, sizeOf(options), appWidgetOptions = options) { WidgetContent(model, appWidgetId, scrollable) }
                 .remoteViews
+            val views = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) widgetRootViews(context, appWidgetId, model, glance) else glance
             manager.updateAppWidget(appWidgetId, views)
             val time = context.widgetEntryPoint().time()
             nextChanges[appWidgetId] = nextChange(model, time.zone())
             scheduleRefresh(context, time, nextChanges.filterKeys { it in widgetIds(context) }.values.filterNotNull().minOrNull())
             val tasks = model.days.sumOf { it.items.size }
             val kb = views.parcelBytes() / BYTES_IN_KB
-            WidgetLog.add(context, "отрисовка $appWidgetId: ${model.filter.encode()}, задач $tasks, ${SystemClock.elapsedRealtime() - started} мс, пакет $kb КБ ($reason)")
+            WidgetLog.add(context, "отрисовка $appWidgetId: ${model.filter.encode()}, задач $tasks, ${SystemClock.elapsedRealtime() - started} мс, пакет $kb КБ, Android ${android.os.Build.VERSION.RELEASE} ($reason)")
         } catch (e: Exception) {
             WidgetLog.error(context, "отрисовка виджета $appWidgetId ($reason)", e)
         }

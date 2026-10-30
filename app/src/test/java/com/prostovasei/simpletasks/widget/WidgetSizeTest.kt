@@ -1,17 +1,13 @@
 package com.prostovasei.simpletasks.widget
 
-import android.os.Bundle
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import androidx.glance.appwidget.ExperimentalGlanceRemoteViewsApi
-import androidx.glance.appwidget.GlanceRemoteViews
 import androidx.test.core.app.ApplicationProvider
 import com.prostovasei.simpletasks.domain.model.Priority
 import com.prostovasei.simpletasks.domain.model.ReminderMark
 import com.prostovasei.simpletasks.ui.common.DayLabel
 import com.prostovasei.simpletasks.ui.common.DueText
 import com.prostovasei.simpletasks.ui.common.TaskItem
-import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -20,10 +16,9 @@ import org.robolectric.annotation.Config
 import java.time.LocalDate
 
 /**
- * Размер картинки виджета (0.41.1): весь список уходит рабочему столу одним пакетом, у Android на это лимит ~1 МБ.
- * На 100+ задачах PM пакет не доставлялся, и виджет обновлялся только после возврата из приложения.
+ * Размер пакета виджета (0.41.1, итерация 42): вся лента уходит рабочему столу одним пакетом. На 100+ задачах PM пакет
+ * строк Glance (~760 КБ) Nova Launcher не применял; строки на обычных элементах Android должны быть в разы легче.
  */
-@OptIn(ExperimentalGlanceRemoteViewsApi::class)
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = "w400dp-h800dp-xhdpi")
 class WidgetSizeTest {
@@ -34,58 +29,38 @@ class WidgetSizeTest {
         "t$i", "Задача номер $i с длинным названием", if (i % 4 == 0) Priority.HIGH else Priority.NONE,
         DueText(if (date == today) DayLabel.Today else DayLabel.Date(date, showYear = false), if (i % 2 == 0) "%02d:30".format(8 + i % 12) else null),
         "Другое", "#6B5CE7", isInboxList = false, isRecurring = i % 3 == 0, listIcon = "work",
-        reminder = if (i % 2 == 0) ReminderMark.AT_DUE else null,
+        reminder = if (i % 2 == 0) ReminderMark.AT_DUE else if (i % 5 == 0) ReminderMark.EARLY else null, isDone = i % 7 == 0,
     )
 
-    /** 105 задач на 30 дней вперёд и 5 просроченных — как у PM после импорта из TickTick, без ограничений виджета. */
-    private fun bigModel(): WidgetModel {
-        val days = (-5..29).map { today.plusDays(it.toLong()) }
-        val items = (0 until 110).map { item(it, days[it % days.size]) }
-        val blocks = items.groupBy { it.due!!.day.let { d -> if (d is DayLabel.Date) d.date else today } }.toSortedMap()
+    /** [count] задач на 14 дней (как показывает «Все») и 5 просроченных дней — как у PM после импорта из TickTick. */
+    private fun model(count: Int): WidgetModel {
+        val days = (-5 until WidgetModels.DAYS).map { today.plusDays(it.toLong()) }
+        val blocks = (0 until count).map { item(it, days[it % days.size]) }
+            .groupBy { it.due!!.day.let { d -> if (d is DayLabel.Date) d.date else today } }.toSortedMap()
             .map { (date, list) -> WidgetDayBlock(WidgetDay.On(date), list) }
-        return WidgetModel(WidgetFilter.All, null, today, blocks)
+        return WidgetModel(WidgetFilter.All, null, today, blocks, nowMinute = 9 * 60)
     }
 
-    private fun bytes(model: WidgetModel): Int = runBlocking {
-        GlanceRemoteViews().compose(context, DpSize(400.dp, 800.dp), appWidgetOptions = Bundle()) {
-            WidgetContent(model, 1, scrollable = true)
-        }.remoteViews.parcelBytes()
+    private fun bytes(model: WidgetModel): Int = renderWidget(context, model, DpSize(400.dp, 800.dp), liveClock = true).parcelBytes()
+
+    @Test
+    fun hundredTasksAreLight() {
+        val small = bytes(model(110))
+        val huge = bytes(model(300))
+        println("WIDGET SIZE: 110 задач — ${small / KB} КБ, 300 задач — ${huge / KB} КБ")
+        // Строки Glance на 110 задачах весили ~760 КБ, обычные элементы — ~170 КБ (каждая строка пишет свой вид целиком, 0.42.2).
+        assertTrue("110 задач: ${small / KB} КБ", small < 190 * KB)
+        // Больше [MAX_LINES] строк не уходит: пакет не растёт без предела.
+        assertTrue("300 задач: ${huge / KB} КБ", huge < 220 * KB)
     }
 
     @Test
-    fun cappedWidgetFitsWithMargin() {
-        val all = bytes(bigModel())
-        val capped = bigModel().let { m ->
-            // Как после ограничений 0.41.1: 7 дней, 10 просроченных, не больше 60 плашек.
-            val until = today.plusDays(WidgetModels.DAYS - 1L)
-            val past = m.days.filter { (it.day as WidgetDay.On).date < today }.flatMap { it.items }.takeLast(WidgetModels.OVERDUE_MAX)
-            m.copy(days = m.days.mapNotNull { block ->
-                val date = (block.day as WidgetDay.On).date
-                when {
-                    date < today -> block.copy(items = block.items.filter { it in past }).takeIf { it.items.isNotEmpty() }
-                    date <= until -> block
-                    else -> null
-                }
-            })
-        }
-        val small = bytes(capped)
-        println("WIDGET SIZE: без ограничений ${all / 1024} КБ, с ограничениями ${small / 1024} КБ")
-        assertTrue("С ограничениями пакет должен быть меньше трети лимита (~330 КБ): ${small / 1024} КБ", small < LIMIT / 3)
-        assertTrue("Ограничения уменьшают пакет", small < all)
-    }
-
-    /** Худший случай: все [WidgetModels.ITEMS_MAX] плашек заняты (много задач и повторов в ближайшие 7 дней). */
-    @Test
-    fun fullWidgetFitsWithMargin() {
-        val items = (0 until WidgetModels.ITEMS_MAX).map { item(it, today.plusDays((it % WidgetModels.DAYS).toLong())) }
-        val blocks = items.groupBy { it.due!!.day.let { d -> if (d is DayLabel.Date) d.date else today } }.toSortedMap()
-            .map { (date, list) -> WidgetDayBlock(WidgetDay.On(date), list) }
-        val full = bytes(WidgetModel(WidgetFilter.All, null, today, blocks))
-        println("WIDGET SIZE: заполненный виджет ${full / 1024} КБ")
-        assertTrue("Полный виджет — меньше трети лимита: ${full / 1024} КБ", full < LIMIT / 3)
+    fun linesAreCapped() {
+        val lines = model(300).lines(dayNames(context))
+        assertTrue("строк в модели ${lines.size}", lines.size > MAX_LINES)
     }
 
     private companion object {
-        const val LIMIT = 1024 * 1024
+        const val KB = 1024
     }
 }

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Тёмная тема строк виджета (итерация 42): копия ColorTokens.*.dark, совпадение проверяет WidgetRowResourcesTest. -->
+<resources>
+    <color name="widget_surface">#FF1A231E</color>
+    <color name="widget_divider">#FF2C3731</color>
+    <color name="widget_text_secondary">#FF9DA8A1</color>
+    <color name="widget_overdue">#FFFF6B6B</color>
+    <color name="widget_on_accent">#FF0A1A10</color>
+    <color name="widget_on_list_square">#FFFFFFFF</color>
+    <color name="widget_text_primary">#FFE6EAE7</color>
+    <color name="widget_ring_none">#FF7D8590</color>
+    <color name="widget_selected">#FF1F3A2A</color>
+    <color name="widget_text_done">#B3E6EAE7</color>
+    <color name="widget_icon_done">#B39DA8A1</color>
+    <color name="widget_accent_done">#B34FC07F</color>
+</resources>
