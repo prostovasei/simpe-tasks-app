@@ -470,7 +470,6 @@
     <string name="update_dialog_retry">Повторить</string>
     <string name="update_dialog_later">Не сейчас</string>
     <string name="update_dialog_close">Закрыть</string>
-    <string name="widget_update">Обновление приложения</string>
     <string name="widget_log_empty">Пока пусто</string>
     <string name="widget_log_share">Отправить</string>
     <string name="widget_log_clear">Очистить</string>

@@ -47,7 +47,6 @@ import androidx.glance.unit.ColorProvider
 import com.prostovasei.simpletasks.MainActivity
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.TaskPopupActivity
-import com.prostovasei.simpletasks.UpdateActivity
 import com.prostovasei.simpletasks.designsystem.theme.parseListColor
 import com.prostovasei.simpletasks.designsystem.tokens.RadiusTokens
 import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
@@ -78,7 +77,7 @@ import kotlin.math.roundToInt
 @Composable
 fun WidgetContent(model: WidgetModel, appWidgetId: Int, scrollable: Boolean = true, liveClock: Boolean = true) {
     val context = LocalContext.current
-    // Итерация 25: список идёт до самого низа, нижняя панель лежит поверх — сверху прозрачная, книзу цвета фона.
+    // Список идёт до самого низа, кнопки нижней панели лежат прямо на нём, без подложки и перехода к фону (итерация 43).
     val frame = GlanceModifier.fillMaxSize()
     Box(
         modifier = if (scrollable) frame else frame.background(WidgetColors.background).cornerRadius(RadiusTokens.XL.dp),
@@ -87,7 +86,7 @@ fun WidgetContent(model: WidgetModel, appWidgetId: Int, scrollable: Boolean = tr
         // Правое поле плашек — у строк; слева поле минимальное: время прижато к краю (итерация 20).
         Box(GlanceModifier.fillMaxSize().padding(start = SizeTokens.WIDGET_LIST_EDGE.dp, top = SizeTokens.WIDGET_EDGE.dp)) {
             if (model.isEmpty) {
-                Box(GlanceModifier.fillMaxSize().padding(bottom = SizeTokens.WIDGET_FADE.dp), contentAlignment = Alignment.Center) {
+                Box(GlanceModifier.fillMaxSize().padding(bottom = SizeTokens.WIDGET_TAIL.dp), contentAlignment = Alignment.Center) {
                     Text(context.getString(R.string.widget_empty), style = TextStyle(color = WidgetColors.textSecondary, fontSize = 14.sp))
                 }
             } else if (!scrollable) {
@@ -95,7 +94,6 @@ fun WidgetContent(model: WidgetModel, appWidgetId: Int, scrollable: Boolean = tr
                 Column(GlanceModifier.fillMaxSize()) { ManyRows(lines) { WidgetLineContent(it, model, liveClock) } }
             }
         }
-        Box(GlanceModifier.fillMaxWidth().height(SizeTokens.WIDGET_FADE.dp).background(ImageProvider(R.drawable.widget_bar_fade))) {}
         BottomBar(model, appWidgetId, imageButtons = scrollable)
     }
 }
@@ -110,7 +108,7 @@ internal fun WidgetLineContent(line: WidgetLine, model: WidgetModel, liveClock: 
         is WidgetLine.Overdue -> OverdueTitle(line.entry, line.isFirst)
         // Правое поле плашек; за ним, у самого края виджета, — полоска прокрутки.
         is WidgetLine.Title -> Box(GlanceModifier.fillMaxWidth().padding(end = SizeTokens.WIDGET_LIST_EDGE.dp)) {
-            DayTitle(line.day, model.today, line.isFirst, line.progress)
+            DayTitle(line.day, model.today, line.isFirst, line.progress, line.count)
         }
         is WidgetLine.Task -> Box(GlanceModifier.fillMaxWidth().padding(end = SizeTokens.WIDGET_LIST_EDGE.dp)) {
             TimelineRow(line.row, line.line, line.overdue, model.filter)
@@ -119,7 +117,7 @@ internal fun WidgetLineContent(line: WidgetLine, model: WidgetModel, liveClock: 
             NowRow(line.line, line.nowMinute, liveClock)
         }
         // Место под панелью в конце списка: последние задачи можно докрутить выше неё.
-        WidgetLine.Tail -> Spacer(GlanceModifier.fillMaxWidth().height(SizeTokens.WIDGET_FADE.dp))
+        WidgetLine.Tail -> Spacer(GlanceModifier.fillMaxWidth().height(SizeTokens.WIDGET_TAIL.dp))
     }
 }
 
@@ -190,10 +188,10 @@ internal const val MAX_CHILDREN = 10
 
 /**
  * «ПТ, 16 окт» + белая метка «Сегодня» / «Завтра» / «Вчера» (итерации 14, 27 — как в приложении), «Без даты».
- * Прошедший день — красным.
+ * Прошедший день — красным. Справа — число задач дня (итерация 43); у «Сегодня» вместо него прогресс.
  */
 @Composable
-private fun DayTitle(day: WidgetDay, today: LocalDate, isFirst: Boolean, progress: DayProgress? = null) {
+private fun DayTitle(day: WidgetDay, today: LocalDate, isFirst: Boolean, progress: DayProgress? = null, count: Int? = null) {
     val title = widgetDayTitle(LocalContext.current, day, today)
     val color = if (title.isPast) WidgetColors.overdue else WidgetColors.textPrimary
     // Итерация 25 (вариант PM «А»): дата группы крупнее — 14 sp, метка «Сегодня» — 12 sp.
@@ -218,7 +216,12 @@ private fun DayTitle(day: WidgetDay, today: LocalDate, isFirst: Boolean, progres
                 Text(title.relative, style = style.copy(fontSize = 12.sp), maxLines = 1)
             }
         }
-        if (progress != null) DayProgressBar(progress)
+        if (progress != null) {
+            DayProgressBar(progress)
+        } else if (count != null) {
+            Spacer(GlanceModifier.defaultWeight())
+            Text(count.toString(), style = TextStyle(color = WidgetColors.textSecondary, fontSize = 12.sp, fontWeight = FontWeight.Medium), maxLines = 1)
+        }
     }
 }
 
@@ -505,7 +508,7 @@ fun widgetCheckColors(priority: Priority): WidgetCheckColors = when (priority) {
 }
 
 /**
- * Нижняя строка (итерация 25, вариант PM «Г»; 0.42.2 — фоны кнопок картинками со скруглением: скругление Glance при первом
+ * Нижняя строка (итерация 25, вариант PM «Г»; итерация 43 — кнопки ниже и шире, как клавиша ввода, без подложки; 0.42.2 — фоны кнопок картинками со скруглением: скругление Glance при первом
  * показе виджета не применялось, кнопки были квадратными): слева белая капсула-переключатель «Все» / «Входящие» (выбранный
  * с итерации 26 — светло-зелёный с зелёной иконкой), справа «+»; всё место между ними — открыть приложение. Дата и «⋯» убраны.
  */
@@ -517,7 +520,7 @@ private fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boolea
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(
-            modifier = GlanceModifier.button(R.drawable.widget_bar_switch, WidgetColors.surface, RadiusTokens.LG, imageButtons).padding(SizeTokens.WIDGET_SWITCH_PAD.dp),
+            modifier = GlanceModifier.button(R.drawable.widget_bar_switch, WidgetColors.surface, RadiusTokens.XL, imageButtons).padding(SizeTokens.WIDGET_SWITCH_PAD.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             listOf(WidgetFilter.All, WidgetFilter.Inbox).forEach { filter ->
@@ -538,27 +541,28 @@ private fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boolea
                 .clickable(actionStartActivity(openAppIntent(context)))
                 .semantics { contentDescription = openApp },
         ) {}
-        // Итерация 32: кнопка обновления слева от «+» — открывает окно проверки и загрузки новой версии поверх рабочего стола.
-        val update = context.getString(R.string.widget_update)
+        // Итерация 43: слева от «+» — белая капсула с зелёной галочкой значка приложения (вместо кнопки обновления из итерации 32):
+        // открывает приложение, как и всё пустое место левее.
         Box(
             modifier = GlanceModifier
-                .size(SizeTokens.WIDGET_UPDATE.dp)
-                .button(R.drawable.widget_bar_tab, WidgetColors.surface, RadiusTokens.MD, imageButtons)
-                .clickable(actionStartActivity(updateIntent(context))),
+                .size(width = SizeTokens.WIDGET_OPEN_W.dp, height = SizeTokens.WIDGET_OPEN_H.dp)
+                .button(R.drawable.widget_bar_open, WidgetColors.surface, RadiusTokens.XL, imageButtons)
+                .clickable(actionStartActivity(openAppIntent(context)))
+                .semantics { contentDescription = openApp },
             contentAlignment = Alignment.Center,
         ) {
             Image(
-                ImageProvider(R.drawable.ic_widget_update),
-                contentDescription = update,
-                colorFilter = ColorFilter.tint(WidgetColors.textSecondary),
-                modifier = GlanceModifier.size(SizeTokens.WIDGET_UPDATE_ICON.dp),
+                ImageProvider(R.drawable.ic_widget_open_app),
+                contentDescription = null,
+                colorFilter = ColorFilter.tint(WidgetColors.accent),
+                modifier = GlanceModifier.size(width = SizeTokens.WIDGET_OPEN_ICON_W.dp, height = SizeTokens.WIDGET_OPEN_ICON_H.dp),
             )
         }
         Spacer(GlanceModifier.width(SizeTokens.WIDGET_UPDATE_GAP.dp))
         Box(
             modifier = GlanceModifier
-                .size(SizeTokens.WIDGET_ADD.dp)
-                .button(R.drawable.widget_bar_add, WidgetColors.accent, RadiusTokens.MD, imageButtons)
+                .size(width = SizeTokens.WIDGET_ADD_W.dp, height = SizeTokens.WIDGET_ADD_H.dp)
+                .button(R.drawable.widget_bar_add, WidgetColors.accent, RadiusTokens.XL, imageButtons)
                 .clickable(actionStartActivity(quickAddIntent(context, model.filter))),
             contentAlignment = Alignment.Center,
         ) {
@@ -588,9 +592,9 @@ private fun SwitchTab(icon: Int, label: String, selected: Boolean, action: Actio
             .height(SizeTokens.WIDGET_SWITCH_H.dp)
             .then(
                 if (selected) {
-                    GlanceModifier.button(R.drawable.widget_bar_tab_selected, WidgetColors.selected, RadiusTokens.MD, imageButtons)
+                    GlanceModifier.button(R.drawable.widget_bar_tab_selected, WidgetColors.selected, RadiusTokens.LG, imageButtons)
                 } else {
-                    GlanceModifier.button(R.drawable.widget_bar_tab, WidgetColors.surface, RadiusTokens.MD, imageButtons)
+                    GlanceModifier.button(R.drawable.widget_bar_tab, WidgetColors.surface, RadiusTokens.LG, imageButtons)
                 },
             )
             .clickable(action),
@@ -633,9 +637,6 @@ fun moveOverdueIntent(context: Context): Intent = Intent(context, TaskPopupActiv
     .setData("simpletasks://overdue/move".toUri())
     .putExtra(MainActivity.EXTRA_MOVE_OVERDUE, true)
     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-
-/** Окно обновления поверх рабочего стола (кнопка в нижней строке виджета). */
-fun updateIntent(context: Context): Intent = Intent(context, UpdateActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
 fun pickerIntent(context: Context, appWidgetId: Int): Intent = Intent(context, WidgetConfigActivity::class.java)
     .setData("simpletasks://widget/$appWidgetId".toUri())

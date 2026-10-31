@@ -9,5 +9,5 @@
 
     <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="@dimen/widget_fade" />
+        android:layout_height="@dimen/widget_tail" />
 </FrameLayout>

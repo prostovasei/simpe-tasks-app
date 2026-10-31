@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Галочка значка приложения (форма ic_launcher_foreground) без фона значка, кадр по галочке: 26×22 dp (итерация 43). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="26dp"
+    android:height="22dp"
+    android:viewportWidth="43"
+    android:viewportHeight="36">
+    <path
+        android:pathData="M5,19 L16,30 L38,7"
+        android:strokeWidth="7"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000" />
+</vector>

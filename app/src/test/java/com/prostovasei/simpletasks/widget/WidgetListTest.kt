@@ -146,17 +146,32 @@ class WidgetListTest {
         assertFalse(row.findViewById<TextView>(R.id.row_title).text is android.text.Spanned)
     }
 
+    /** Число задач дня справа у подписи (итерация 43); у «Сегодня» вместо него прогресс. */
+    @Test
+    fun dayTitlesShowTaskCount() {
+        val rows = list().rows()
+        fun count(position: Int) = rows[position].findViewById<TextView>(R.id.title_count)
+        val titles = rows.indices.filter { rows[it].findViewById<View>(R.id.title_root) != null }
+        // Вчера: 1, сегодня: 2 (с прогрессом, без числа), завтра: 1.
+        assertEquals(listOf("1", "2", "1"), titles.map { count(it).text.toString() })
+        assertEquals(listOf(View.VISIBLE, View.GONE, View.VISIBLE), titles.map { count(it).visibility })
+        assertEquals(View.VISIBLE, rows[titles[1]].findViewById<View>(R.id.title_progress_text).visibility)
+    }
+
     /** Нижняя панель Glance лежит поверх ленты и тоже доходит до рабочего стола. */
     @Test
     fun bottomBarOverList() {
         val root = renderWidget(context, model).applyLikeLauncher(context)
-        listOf("Все", "Входящие", "Открыть приложение", "Новая задача").forEach { label ->
+        // «Открыть приложение» — пустое место и капсула с галочкой (итерация 43): два нажимаемых элемента.
+        mapOf("Все" to 1, "Входящие" to 1, "Открыть приложение" to 2, "Новая задача" to 1).forEach { (label, count) ->
             val found = ArrayList<View>()
             root.findViewsWithText(found, label, View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
-            assertEquals(label, 1, found.size)
+            assertEquals(label, count, found.size)
             // Подпись бывает у значка, нажатие — у кнопки вокруг него.
-            val clickable = generateSequence(found.single()) { it.parent as? View }.take(3).any { it.hasOnClickListeners() }
-            assertTrue("$label нажимается", clickable)
+            found.forEach { view ->
+                val clickable = generateSequence(view) { it.parent as? View }.take(3).any { it.hasOnClickListeners() }
+                assertTrue("$label нажимается", clickable)
+            }
         }
     }
 
