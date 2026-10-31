@@ -13,10 +13,10 @@ from tasks_polish import A, INK, T2, BG, SEL, LINE, OVD, INACT, PRI, row, timeli
 
 WALL = 'linear-gradient(165deg,#C5D8F0 0%,#BFD2EE 55%,#9FB8DE 100%)'
 P_DL = 'M12 4v10M8 10l4 4 4-4M5 19h14'
-# Значок приложения (ic_launcher: синий фон ic_launcher_background + белая галочка), кадр — безопасная зона 72 из 108.
-APP_ICON = ('<span style="width:28px;height:28px;border-radius:9px;background:#0969DA;display:flex;align-items:center;justify-content:center;">'
-            '<svg width="28" height="28" viewBox="18 18 72 72"><path d="M38 55L49 66L71 43" stroke="#fff" stroke-width="7" stroke-linecap="round" '
-            'stroke-linejoin="round" fill="none"/></svg></span>')
+# Галочка значка приложения (ic_launcher: белая галочка на синем ic_launcher_background), без синего квадрата.
+def app_check(color):
+    return (f'<svg width="26" height="22" viewBox="33 36 43 36"><path d="M38 55L49 66L71 43" stroke="{color}" stroke-width="7" stroke-linecap="round" '
+            'stroke-linejoin="round" fill="none"/></svg>')
 
 
 def day(label, chip='', red=False, first=False, count=None, progress=None):
@@ -58,7 +58,7 @@ def feed(counts):
     return timeline(r)
 
 
-def buttons(new=False):
+def buttons(new=False, blue=False):
     """Кнопки нижней строки. Было: «+» 46×46, «Обновить» 44×44, вкладки 46×42. Стало: ниже и шире, как клавиша ввода на клавиатуре."""
     tw, th, tr, cap_r = (52, 36, 12, 16) if new else (40, 36, 12, 16)
     uw, uh, pw, ph, br = (56, 40, 64, 40, 16) if new else (44, 44, 50, 44, 15)
@@ -66,8 +66,9 @@ def buttons(new=False):
     sw = (f'<span style="height:{th + 8}px;border-radius:{cap_r}px;background:#fff;display:flex;align-items:center;padding:0 4px;gap:2px;">'
           f'<span style="width:{tw}px;height:{th}px;border-radius:{tr}px;background:{SEL};display:flex;align-items:center;justify-content:center;">{ico(P_CAL, A, 20, 2)}</span>'
           f'<span style="width:{tw}px;height:{th}px;display:flex;align-items:center;justify-content:center;">{ico(P_INBOX, "#6B7280", 20, 2)}</span></span>')
-    upd = (f'<span style="width:{uw}px;height:{uh}px;border-radius:{br}px;background:#fff;display:flex;align-items:center;justify-content:center;margin-right:8px;">'
-           f'{APP_ICON if new else ico(P_DL, "#6B7280", 22, 2)}</span>')
+    ub, uc = ('#0969DA', '#fff') if blue else ('#fff', '#0969DA')  # капсула белая с синей галочкой (А) или синяя с белой (Б)
+    upd = (f'<span style="width:{uw}px;height:{uh}px;border-radius:{br}px;background:{ub if new else "#fff"};display:flex;align-items:center;justify-content:center;margin-right:8px;">'
+           f'{app_check(uc) if new else ico(P_DL, "#6B7280", 22, 2)}</span>')
     plus = (f'<span style="width:{pw}px;height:{ph}px;border-radius:{br}px;background:{A};display:flex;align-items:center;justify-content:center;">'
             f'{ico("M12 5v14M5 12h14", "#fff", 22, 2.4)}</span>')
     return f'<div style="position:absolute;z-index:3;left:10px;right:10px;bottom:{low}px;display:flex;align-items:center;">{sw}<span style="flex:1"></span>{upd}{plus}</div>'
@@ -91,12 +92,13 @@ def legend():
         ('Прошедший день — красным, число серое', day('ЧТ, 29 окт', 'Вчера', red=True, first=True, count=2)),
         ('Без даты', day('Без даты', first=True, count=5)),
     ]
-    bar = lambda new: (f'<div style="position:relative;height:{48 if new else 66}px;margin:0 6px;">{buttons(new).replace("position:absolute;z-index:3;left:10px;right:10px;bottom:4px", "position:absolute;left:0;right:0;bottom:4px").replace("position:absolute;z-index:3;left:10px;right:10px;bottom:10px", "position:absolute;left:0;right:0;bottom:6px")}</div>')
+    bar = lambda new, blue=False: (f'<div style="position:relative;height:{48 if new else 66}px;margin:0 6px;">{buttons(new, blue).replace("position:absolute;z-index:3;left:10px;right:10px;bottom:4px", "position:absolute;left:0;right:0;bottom:4px").replace("position:absolute;z-index:3;left:10px;right:10px;bottom:10px", "position:absolute;left:0;right:0;bottom:6px")}</div>')
     out = ''.join(f'<div style="margin-bottom:14px;"><div style="font-size:12px;color:{T2};font-weight:600;padding-left:12px;">{t}</div>{d}</div>' for t, d in cases)
     bars = (f'<div style="font-size:12px;color:{T2};font-weight:600;padding-left:12px;margin-top:4px;">Кнопки внизу — было</div>{bar(False)}'
-            f'<div style="font-size:12px;color:{T2};font-weight:600;padding-left:12px;margin-top:4px;">Кнопки внизу — стало: ниже и шире (как клавиша ввода)</div>{bar(True)}'
+            f'<div style="font-size:12px;color:{T2};font-weight:600;padding-left:12px;margin-top:4px;">Стало, вариант А: белая капсула, синяя галочка</div>{bar(True)}'
+            f'<div style="font-size:12px;color:{T2};font-weight:600;padding-left:12px;margin-top:4px;">Вариант Б: синяя капсула (цвет значка), белая галочка</div>{bar(True, True)}'
             f'<div style="font-size:13px;color:{T2};line-height:19px;padding:2px 12px 12px;">«+» 46×46 → 64×40, «Обновить» 44×44 → «Открыть приложение» 56×40, вкладки 46×42 → 52×36. Скругление больше: кнопки 8 → 16 (radius-xl), '
-            f'вкладки 8 → 12 (radius-lg), общая капсула 16. Кнопки ниже: отступ от нижнего края 10 → 4, нижняя строка 58 → 48. Значок кнопки — значок приложения (синий с белой галочкой, 28×28, радиус 9) на белом фоне; проверка обновления остаётся в «Настройках» приложения.</div>')
+            f'вкладки 8 → 12 (radius-lg), общая капсула 16. Кнопки ниже: отступ от нижнего края 10 → 4, нижняя строка 58 → 48. На кнопке только галочка со значка приложения (без синего квадрата); проверка обновления остаётся в «Настройках» приложения.</div>')
     note = (f'<div style="font-size:13px;color:{T2};line-height:19px;padding:6px 12px 0;">Число — все задачи дня, считая выполненные и будущие повторы, '
             f'как плашки в ленте. Серый (text-secondary), 12 sp, полужирный; прижато к правому краю плашек.</div>')
     return (f'<div style="width:412px;border-radius:28px;background:{BG};padding:22px 0 18px;box-sizing:border-box;font-family:Manrope,sans-serif;'
@@ -118,7 +120,7 @@ if __name__ == '__main__':
     W, H = 3 * 428 + 2 * 30 + 80, 1170
     body = (f'<div style="width:{W}px;height:{H}px;box-sizing:border-box;background:#EEF0EE;padding:36px 40px;font-family:Manrope,sans-serif;">'
             f'<div style="font-size:28px;font-weight:700;color:{INK};letter-spacing:-.5px;">Виджет: без полосы внизу, число задач у дня, кнопки ниже и шире</div>'
-            f'<div style="font-size:15px;color:{T2};margin:6px 0 22px;line-height:21px;">Решения PM: вместо кнопки обновления — кнопка перехода в приложение со значком приложения; задачи уходят под кнопки (вариант «Б»); число — просто цифра (вариант «а»); кнопки внизу ниже, шире, скруглённее и ближе к нижнему краю, как клавиша ввода на клавиатуре.</div>{rows}</div>')
+            f'<div style="font-size:15px;color:{T2};margin:6px 0 22px;line-height:21px;">Решения PM: вместо кнопки обновления — кнопка перехода в приложение с галочкой значка приложения на такой же капсуле; задачи уходят под кнопки (вариант «Б»); число — просто цифра (вариант «а»); кнопки внизу ниже, шире, скруглённее и ближе к нижнему краю, как клавиша ввода на клавиатуре.</div>{rows}</div>')
     html = f'''<!doctype html>
 <html lang="ru"><head><meta charset="utf-8"><title>Виджет: число задач</title><script src="./support.js"></script></head>
 <body><x-dc><helmet><style>{FACES}body{{margin:0}}</style></helmet>
