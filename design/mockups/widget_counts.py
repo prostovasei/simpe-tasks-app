@@ -1,5 +1,6 @@
 """Макет «Виджет: без подложки внизу и число задач у каждого дня» (итерация 43, решения PM: 1Б, 2а).
 
+0. Кнопки нижней строки ниже и шире, как клавиша ввода на клавиатуре (решение PM): «+» 64×40, «Обновить» 56×40, вкладки 52×36.
 1. Нижний градиент убран: кнопки «Все/Входящие», «Обновить» и «+» лежат прямо на ленте, задачи уходят под них.
 2. У каждого дня справа — число задач серым (у «Сегодня» остаётся «1 из 4» с полоской).
 Телефон 412×860 (dp 1:1). Запуск: python3 widget_counts.py <папка с canvas.json>
@@ -53,13 +54,16 @@ def feed(counts):
     return timeline(r)
 
 
-def buttons():
-    sw = (f'<span style="height:44px;border-radius:16px;background:#fff;display:flex;align-items:center;padding:0 4px;gap:2px;">'
-          f'<span style="width:40px;height:36px;border-radius:12px;background:{SEL};display:flex;align-items:center;justify-content:center;">{ico(P_CAL, A, 20, 2)}</span>'
-          f'<span style="width:40px;height:36px;display:flex;align-items:center;justify-content:center;">{ico(P_INBOX, "#6B7280", 20, 2)}</span></span>')
-    upd = (f'<span style="width:44px;height:44px;border-radius:15px;background:#fff;display:flex;align-items:center;justify-content:center;margin-right:8px;">'
+def buttons(new=False):
+    """Кнопки нижней строки. Было: «+» 46×46, «Обновить» 44×44, вкладки 46×42. Стало: ниже и шире, как клавиша ввода на клавиатуре."""
+    tw, th, tr, cap_r = (52, 36, 10, 14) if new else (40, 36, 12, 16)
+    uw, uh, pw, ph, br = (56, 40, 64, 40, 10) if new else (44, 44, 50, 44, 15)
+    sw = (f'<span style="height:{th + 8}px;border-radius:{cap_r}px;background:#fff;display:flex;align-items:center;padding:0 4px;gap:2px;">'
+          f'<span style="width:{tw}px;height:{th}px;border-radius:{tr}px;background:{SEL};display:flex;align-items:center;justify-content:center;">{ico(P_CAL, A, 20, 2)}</span>'
+          f'<span style="width:{tw}px;height:{th}px;display:flex;align-items:center;justify-content:center;">{ico(P_INBOX, "#6B7280", 20, 2)}</span></span>')
+    upd = (f'<span style="width:{uw}px;height:{uh}px;border-radius:{br}px;background:#fff;display:flex;align-items:center;justify-content:center;margin-right:8px;">'
            f'{ico(P_DL, "#6B7280", 22, 2)}</span>')
-    plus = (f'<span style="width:50px;height:44px;border-radius:15px;background:{A};display:flex;align-items:center;justify-content:center;">'
+    plus = (f'<span style="width:{pw}px;height:{ph}px;border-radius:{br}px;background:{A};display:flex;align-items:center;justify-content:center;">'
             f'{ico("M12 5v14M5 12h14", "#fff", 22, 2.4)}</span>')
     return f'<div style="position:absolute;z-index:3;left:10px;right:10px;bottom:10px;display:flex;align-items:center;">{sw}<span style="flex:1"></span>{upd}{plus}</div>'
 
@@ -68,7 +72,7 @@ def screen(after):
     # Было: переход от прозрачного к фону высотой 70 под кнопками. Стало: перехода нет — только кнопки на ленте.
     fade = '' if after else f'<div style="position:absolute;z-index:2;left:0;right:0;bottom:0;height:70px;background:linear-gradient(rgba(246,247,246,0),{BG} 60%);"></div>'
     wg = (f'<div style="position:absolute;left:10px;right:10px;top:46px;height:598px;border-radius:30px;overflow:hidden;background:{BG};">'
-          f'<div style="padding:12px 0 0 0;">{feed(after)}</div>{fade}{buttons()}</div>')
+          f'<div style="padding:12px 0 0 0;">{feed(after)}</div>{fade}{buttons(after)}</div>')
     apps = ''.join(f'<span style="width:62px;height:62px;border-radius:19px;background:{c};"></span>' for c in ('#F6D90A', '#2AA8E0', '#D6409F', '#3D6FE0'))
     return phone(WALL, status('#fff') + wg + f'<div style="position:absolute;left:0;right:0;bottom:52px;display:flex;justify-content:space-around;padding:0 18px;">{apps}</div>')
 
@@ -82,17 +86,22 @@ def legend():
         ('Прошедший день — красным, число серое', day('ЧТ, 29 окт', 'Вчера', red=True, first=True, count=2)),
         ('Без даты', day('Без даты', first=True, count=5)),
     ]
+    bar = lambda new: (f'<div style="position:relative;height:{58 if new else 66}px;margin:0 6px;">{buttons(new).replace("position:absolute;z-index:3;left:10px;right:10px;bottom:10px", "position:absolute;left:0;right:0;bottom:6px")}</div>')
     out = ''.join(f'<div style="margin-bottom:14px;"><div style="font-size:12px;color:{T2};font-weight:600;padding-left:12px;">{t}</div>{d}</div>' for t, d in cases)
+    bars = (f'<div style="font-size:12px;color:{T2};font-weight:600;padding-left:12px;margin-top:4px;">Кнопки внизу — было</div>{bar(False)}'
+            f'<div style="font-size:12px;color:{T2};font-weight:600;padding-left:12px;margin-top:4px;">Кнопки внизу — стало: ниже и шире (как клавиша ввода)</div>{bar(True)}'
+            f'<div style="font-size:13px;color:{T2};line-height:19px;padding:2px 12px 12px;">«+» 46×46 → 64×40, «Обновить» 44×44 → 56×40, вкладки 46×42 → 52×36; радиус прежний. '
+            f'Значки те же.</div>')
     note = (f'<div style="font-size:13px;color:{T2};line-height:19px;padding:6px 12px 0;">Число — все задачи дня, считая выполненные и будущие повторы, '
             f'как плашки в ленте. Серый (text-secondary), 12 sp, полужирный; прижато к правому краю плашек.</div>')
     return (f'<div style="width:412px;border-radius:28px;background:{BG};padding:22px 0 18px;box-sizing:border-box;font-family:Manrope,sans-serif;'
-            f'border:8px solid #DDE3DE;">{out}{note}</div>')
+            f'border:8px solid #DDE3DE;">{out}{note}<div style="height:14px"></div>{bars}</div>')
 
 
 SCREENS = [
     ('1. Сейчас', 'Внизу полупрозрачная полоса под кнопками; у дней, кроме сегодняшнего, числа нет.', lambda: screen(False)),
-    ('2. Стало', 'Полосы нет: кнопки лежат прямо на ленте, задачи уходят под них. У каждого дня справа — число задач.', lambda: screen(True)),
-    ('3. Строки дней', 'Где стоит число и как выглядит у разных дней.', legend),
+    ('2. Стало', 'Полосы нет: кнопки (ниже и шире) лежат прямо на ленте, задачи уходят под них. У каждого дня справа — число задач.', lambda: screen(True)),
+    ('3. Строки дней и кнопки', 'Где стоит число; размеры кнопок внизу было → стало.', legend),
 ]
 
 if __name__ == '__main__':
@@ -103,8 +112,8 @@ if __name__ == '__main__':
     rows = f'<div style="display:flex;gap:30px;">{"".join(cell(*s) for s in SCREENS)}</div>'
     W, H = 3 * 428 + 2 * 30 + 80, 1130
     body = (f'<div style="width:{W}px;height:{H}px;box-sizing:border-box;background:#EEF0EE;padding:36px 40px;font-family:Manrope,sans-serif;">'
-            f'<div style="font-size:28px;font-weight:700;color:{INK};letter-spacing:-.5px;">Виджет: без полосы внизу и число задач у каждого дня</div>'
-            f'<div style="font-size:15px;color:{T2};margin:6px 0 22px;line-height:21px;">Решения PM: задачи уходят под кнопки (вариант «Б»); число — просто цифра (вариант «а»).</div>{rows}</div>')
+            f'<div style="font-size:28px;font-weight:700;color:{INK};letter-spacing:-.5px;">Виджет: без полосы внизу, число задач у дня, кнопки ниже и шире</div>'
+            f'<div style="font-size:15px;color:{T2};margin:6px 0 22px;line-height:21px;">Решения PM: задачи уходят под кнопки (вариант «Б»); число — просто цифра (вариант «а»); кнопки внизу ниже и шире, как клавиша ввода на клавиатуре.</div>{rows}</div>')
     html = f'''<!doctype html>
 <html lang="ru"><head><meta charset="utf-8"><title>Виджет: число задач</title><script src="./support.js"></script></head>
 <body><x-dc><helmet><style>{FACES}body{{margin:0}}</style></helmet>
@@ -120,7 +129,7 @@ class Component extends DCLogic {{ renderVals() {{ return {{}}; }} }}
     if fresh:  # повторный запуск не сдвигает прежние доски ещё раз
         for v in old.values():
             v['y'] += H + 120
-    c['boards'] = {'VariantW1.dc.html': {'x': 0, 'y': 0, 'w': W, 'h': H, 'title': 'Виджет: число задач у дня, без полосы внизу (итерация 43)'}, **old}
+    c['boards'] = {'VariantW1.dc.html': {'x': 0, 'y': 0, 'w': W, 'h': H, 'title': 'Виджет: число задач у дня, без полосы, кнопки ниже и шире (итерация 43)'}, **old}
     c['order'] = list(c['boards'])
     c['notes']['head'] = {'x': 0, 'y': -300, 'text': 'Виджет: число задач у дня, без полосы внизу (сверху) · ниже — прежние макеты', 'kind': 'title1', 'maxW': 1900}
     json.dump(c, open(os.path.join(OUT, 'canvas.json'), 'w'), ensure_ascii=False, indent=2)
