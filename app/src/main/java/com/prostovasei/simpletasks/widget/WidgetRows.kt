@@ -73,6 +73,9 @@ object WidgetRows {
             setTextViewText(R.id.title_chip, title.relative.orEmpty())
             color(R.id.title_chip, "setTextColor", color)
             val progress = line.progress
+            // Число задач дня; у «Сегодня» вместо него прогресс.
+            visible(R.id.title_count, progress == null)
+            setTextViewText(R.id.title_count, line.count.toString())
             visible(R.id.title_progress, progress != null)
             visible(R.id.title_progress_text, progress != null)
             setProgressBar(R.id.title_progress, PROGRESS_MAX, ((progress?.fraction ?: 0f) * PROGRESS_MAX).roundToInt(), false)

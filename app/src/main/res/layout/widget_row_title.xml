@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Подпись дня (итерация 42): «ПТ, 16 ОКТ» + метка «Сегодня»; у сегодняшнего дня — прогресс «3 из 7». -->
+<!-- Подпись дня (итерация 42): «ПТ, 16 ОКТ» + метка «Сегодня»; справа число задач дня (итерация 43), у сегодняшнего дня — прогресс «3 из 7». -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/title_root"
     android:layout_width="match_parent"
@@ -35,6 +35,17 @@
         android:textSize="12sp"
         android:textStyle="bold"
         android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/title_count"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:fontFamily="sans-serif-medium"
+        android:gravity="end"
+        android:maxLines="1"
+        android:textColor="@color/widget_text_secondary"
+        android:textSize="12sp" />
 
     <ProgressBar
         android:id="@+id/title_progress"

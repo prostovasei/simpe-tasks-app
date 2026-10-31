@@ -56,17 +56,18 @@ object SizeTokens {
     const val PICKER_MAX_HEIGHT = 440
 
     /**
-     * Нижняя панель виджета (итерация 25, вариант PM «А + Г»): высота перехода от прозрачного к фону, строка кнопок,
-     * кнопка переключателя «Все» / «Входящие» и поле капсулы.
+     * Нижняя панель виджета (итерация 25, вариант PM «А + Г»; итерация 43 — кнопки ниже и шире, как клавиша ввода, перехода
+     * к фону нет): место под панелью в конце ленты, строка кнопок, кнопка переключателя «Все» / «Входящие» и поле капсулы.
      */
-    const val WIDGET_FADE = 104
-    const val WIDGET_BAR = 58
-    const val WIDGET_SWITCH_W = 46
-    const val WIDGET_SWITCH_H = 42
+    const val WIDGET_TAIL = 60
+    const val WIDGET_BAR = 48
+    const val WIDGET_SWITCH_W = 52
+    const val WIDGET_SWITCH_H = 36
     const val WIDGET_SWITCH_PAD = 4
 
-    /** Кнопка «+» в нижней строке виджета. */
-    const val WIDGET_ADD = 46
+    /** Кнопка «+» в нижней строке виджета (итерация 43: 64×40). */
+    const val WIDGET_ADD_W = 64
+    const val WIDGET_ADD_H = 40
     const val WIDGET_ADD_ICON = 24
     /** Иконки «Все» и «Входящие» в переключателе. */
     const val WIDGET_TAB_ICON = 26
@@ -195,9 +196,14 @@ object SizeTokens {
     const val DIALOG_BADGE = 48
     const val DIALOG_BADGE_ICON = 26
 
-    /** Кнопка обновления в нижней строке виджета (итерация 32): сторона, значок в ней и щель до «+». */
-    const val WIDGET_UPDATE = 44
-    const val WIDGET_UPDATE_ICON = 22
+    /**
+     * Кнопка «открыть приложение» в нижней строке виджета (итерация 43, вместо кнопки обновления из итерации 32): белая
+     * капсула 56×40 с зелёной галочкой значка приложения 26×22 и щель до «+».
+     */
+    const val WIDGET_OPEN_W = 56
+    const val WIDGET_OPEN_H = 40
+    const val WIDGET_OPEN_ICON_W = 26
+    const val WIDGET_OPEN_ICON_H = 22
     const val WIDGET_UPDATE_GAP = 8
 
     /** Режим выбора (итерация 40): кнопка ленты действий (ширина не меньше, высота) и высота верхней строки «Выбрано: N». */

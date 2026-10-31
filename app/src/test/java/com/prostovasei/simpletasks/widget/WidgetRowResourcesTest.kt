@@ -41,7 +41,7 @@ class WidgetRowResourcesTest {
             R.dimen.widget_card_inset to SizeTokens.WIDGET_CARD_INSET,
             R.dimen.widget_progress to SizeTokens.WIDGET_PROGRESS,
             R.dimen.widget_fold_icon to SizeTokens.WIDGET_FOLD_ICON,
-            R.dimen.widget_fade to SizeTokens.WIDGET_FADE,
+            R.dimen.widget_tail to SizeTokens.WIDGET_TAIL,
             R.dimen.widget_edge to SizeTokens.WIDGET_EDGE,
             R.dimen.widget_list_edge to SizeTokens.WIDGET_LIST_EDGE,
             R.dimen.widget_day_gap to SizeTokens.WIDGET_DAY_GAP,
@@ -62,7 +62,7 @@ class WidgetRowResourcesTest {
     private fun colors(dark: Boolean): Map<Int, Long> {
         fun ThemedColor.pick() = if (dark) this.dark else light
         return mapOf(
-            R.color.widget_fade_end to ColorTokens.background.pick(),
+            R.color.widget_background to ColorTokens.background.pick(),
             R.color.widget_surface to ColorTokens.surface.pick(),
             R.color.widget_selected to ColorTokens.selected.pick(),
             R.color.widget_divider to ColorTokens.divider.pick(),

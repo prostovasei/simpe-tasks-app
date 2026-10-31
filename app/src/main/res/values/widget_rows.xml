@@ -20,7 +20,7 @@
     <dimen name="widget_card_inset">3dp</dimen>
     <dimen name="widget_progress">4dp</dimen>
     <dimen name="widget_fold_icon">20dp</dimen>
-    <dimen name="widget_fade">104dp</dimen>
+    <dimen name="widget_tail">60dp</dimen>
     <dimen name="widget_edge">6dp</dimen>
     <dimen name="widget_list_edge">3dp</dimen>
     <dimen name="widget_day_gap">2dp</dimen>

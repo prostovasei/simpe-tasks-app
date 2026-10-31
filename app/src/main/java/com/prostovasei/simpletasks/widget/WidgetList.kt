@@ -29,7 +29,8 @@ sealed interface WidgetLine {
         override val key get() = "overdue"
     }
 
-    data class Title(val day: WidgetDay, val isFirst: Boolean, val progress: DayProgress?) : WidgetLine {
+    /** [count] — все задачи дня (с выполненными и будущими повторами): число справа у подписи; у «Сегодня» вместо него [progress]. */
+    data class Title(val day: WidgetDay, val isFirst: Boolean, val progress: DayProgress?, val count: Int) : WidgetLine {
         override val key get() = "title:${day.key}"
     }
 
@@ -69,7 +70,7 @@ fun WidgetModel.lines(days: DayNames, withTail: Boolean = true): List<WidgetLine
                 val nowMinute = nowMinute.takeIf { block.day == WidgetDay.On(today) }
                 val rows = WidgetTimeline.rows(block.items, overdue = false, nowMinute = nowMinute, days = days)
                 val progress = DayProgress.of(block.items).takeIf { block.day == WidgetDay.On(today) }
-                listOf(WidgetLine.Title(block.day, isFirst, progress)) + rows.mapIndexed { i, row ->
+                listOf(WidgetLine.Title(block.day, isFirst, progress, block.items.size)) + rows.mapIndexed { i, row ->
                     val line = Line(top = i > 0, bottom = i < rows.lastIndex)
                     when (row) {
                         is WidgetRow.Task -> WidgetLine.Task(row, line, overdue, block.day)

@@ -149,10 +149,11 @@ class WidgetScreenshotTest {
     fun bottomBarKeepsAllButtons() {
         val views = runBlocking { Preview(model).compose(context, size = DpSize(320.dp, 420.dp)) }
         val root = views.apply(context, FrameLayout(context))
-        listOf("Все", "Входящие", "Открыть приложение", "Новая задача").forEach { label ->
+        // «Открыть приложение» — пустое место и капсула с галочкой (итерация 43): два нажимаемых элемента.
+        mapOf("Все" to 1, "Входящие" to 1, "Открыть приложение" to 2, "Новая задача" to 1).forEach { (label, count) ->
             val found = ArrayList<View>()
             root.findViewsWithText(found, label, View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
-            assertEquals(label, 1, found.size)
+            assertEquals(label, count, found.size)
         }
         // Вкладок своих списков и «Другие списки» больше нет.
         listOf("Работа", "Другие списки").forEach { label ->

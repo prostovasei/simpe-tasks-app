@@ -346,7 +346,8 @@ def p_reminder_strip():
 
 def widget_body(pad_bottom=0):
     title = ('<div style="display:flex;align-items:center;gap:4px;padding:2px 6px 2px"><span style="font-size:14px;font-weight:700;color:var(--overdue)">СР, 14 ОКТ</span>'
-             '<span style="font-size:12px;font-weight:700;color:var(--overdue);background:var(--surface);border-radius:var(--radius-sm);padding:1px 4px">Вчера</span></div>')
+             '<span style="font-size:12px;font-weight:700;color:var(--overdue);background:var(--surface);border-radius:var(--radius-sm);padding:1px 4px">Вчера</span>'
+             '<span style="flex:1"></span><span style="font-size:12px;font-weight:500;color:var(--text-secondary)">2</span></div>')
     title2 = ('<div style="display:flex;align-items:center;gap:4px;padding:6px 6px 2px"><span style="font-size:14px;font-weight:700">ЧТ, 15 ОКТ</span>'
               '<span style="font-size:12px;font-weight:700;background:var(--surface);border-radius:var(--radius-sm);padding:1px 4px">Сегодня</span><span style="width:8px"></span>'
               '<span style="flex:1;height:4px;border-radius:var(--radius-sm);background:var(--divider);position:relative"><span style="position:absolute;left:0;top:0;bottom:0;width:43%;border-radius:var(--radius-sm);background:var(--accent)"></span></span>'
@@ -356,12 +357,13 @@ def widget_body(pad_bottom=0):
     rows = (overdue_header(1, widget=True) + title + frow('11:00', 'var(--inactive)', 'Отчёт за неделю', over=True, top=False, bottom=False, lsq=True) + title2
             + frow('09:00', 'var(--ring-high)', 'Зарядка', done=True, top=False) + frow('12:30', 'var(--ring-medium)', 'Созвон с командой', period=True, end='13:30', rep=True, rem='at') + now
             + frow('18:00', 'var(--ring-low)', 'Оплатить интернет', rem='early', bottom=False))
-    bar_sw = lambda ic, sel: f'<span style="width:46px;height:42px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;background:{"var(--selected)" if sel else "var(--surface)"};color:{"var(--accent)" if sel else "var(--text-secondary)"}">{svg(ic, 26)}</span>'
-    bottom = ('<div style="position:absolute;left:0;right:0;bottom:0;height:104px;background:linear-gradient(to bottom,transparent,var(--background) 60%)"></div>'
-              '<div style="position:absolute;left:0;right:0;bottom:0;height:58px;display:flex;align-items:center;padding:0 6px">'
-              f'<span style="display:flex;padding:4px;border-radius:var(--radius-lg);background:var(--surface)">{bar_sw("ic_widget_all", True)}{bar_sw("ic_widget_inbox", False)}</span><span style="flex:1"></span>'
-              f'<span style="width:44px;height:44px;border-radius:var(--radius-md);background:var(--surface);color:var(--text-secondary);display:flex;align-items:center;justify-content:center">{svg("ic_widget_update", 22)}</span><span style="width:8px"></span>'
-              f'<span style="width:46px;height:46px;border-radius:var(--radius-md);background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center">{svg("ic_widget_add", 24)}</span></div>')
+    bar_sw = lambda ic, sel: f'<span style="width:52px;height:36px;border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:center;background:{"var(--selected)" if sel else "var(--surface)"};color:{"var(--accent)" if sel else "var(--text-secondary)"}">{svg(ic, 26)}</span>'
+    check = ('<svg width="26" height="22" viewBox="0 0 43 36"><path d="M5 19L16 30L38 7" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>')
+    # Итерация 43: без подложки и перехода к фону; кнопки ниже, шире и скруглённее.
+    bottom = ('<div style="position:absolute;left:0;right:0;bottom:0;height:48px;display:flex;align-items:center;padding:0 6px">'
+              f'<span style="display:flex;padding:4px;border-radius:var(--radius-xl);background:var(--surface)">{bar_sw("ic_widget_all", True)}{bar_sw("ic_widget_inbox", False)}</span><span style="flex:1"></span>'
+              f'<span style="width:56px;height:40px;border-radius:var(--radius-xl);background:var(--surface);color:var(--accent);display:flex;align-items:center;justify-content:center">{check}</span><span style="width:8px"></span>'
+              f'<span style="width:64px;height:40px;border-radius:var(--radius-xl);background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center">{svg("ic_widget_add", 24)}</span></div>')
     return rows, bottom
 
 
@@ -816,7 +818,7 @@ README_MORE = {
 Состояние «Отменить»: полоска «Выполнено» или «Завтра, 18:00» с белой кнопкой «Отменить» и тонкой линией внизу, которая тает за 1,5 секунды. Без вибрации и без кольца «Пульс». Источник: `notifications/ReminderPopup.kt`.'''),
     'Widget': ('Виджет «Задачи»: лента по дням со шкалой, «сейчас» и нижняя строка.',
                '''Фон `background`, радиус `radius-xl`. Список по дням: подпись дня (красная у прошедшего), строки шкалы как в `TimelineRow`, у «Сегодня» линия прогресса. Отметка «сейчас»: зелёное время слева, точка на линии и линия до края (`size-widget-now-row` 14).
-Внизу переход от прозрачного к `background` высотой 104 и нижняя строка. В виджете нет градиентов и размытия: фон и переходы — готовыми картинками. Цвета те же, что в приложении: Glance сам выбирает светлую или тёмную тему.
+Внизу нижняя строка — кнопки лежат прямо на ленте, без подложки и перехода к фону (итерация 43); справа у подписи каждого дня число задач (у «Сегодня» вместо него прогресс), `text-secondary` 12. В виджете нет градиентов и размытия: фон и скругления — готовыми картинками. Цвета те же, что в приложении: Glance сам выбирает светлую или тёмную тему.
 Объём (итерация 42): во «Всех» — просроченные, сегодня и ещё 13 дней (с повторами); во «Входящих» и списках — все задачи; всего не больше 150 строк ленты. Строки «Ещё N» нет.
 Устройство (итерация 42): на Android 12+ фон и лента — обычные элементы Android прямо в корне виджета (`widget_root`), каждая строка — своя разметка `widget_row_*` (задача, период, у выполненных — `*_done`, подпись дня, «Просрочено», «сейчас», хвост) ~1 КБ; нижняя строка — Glance поверх ленты, фоны кнопок — картинки со скруглением (`widget_bar_*`). Размеры и цвета строк — копия токенов в `res/values*/widget_rows.xml` (проверяет тест). Строка всегда задаёт весь свой вид: Android перекрашивает показанные строки другой задачи. Нажатия строк: кружок — «выполнено»/«вернуть», плашка — открыть задачу. Android 10–11 — лента Glance без прокрутки.'''),
     'ScreenAll': ('Экран «Все».', 'Лента по дням на `background`: подпись дня, шкала со строками `TimelineRow`, отметка «сейчас» у сегодняшнего дня; внизу нижняя панель. Пустая лента — `EmptyTasks`. Окно задачи открывается поверх.'),

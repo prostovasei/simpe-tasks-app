@@ -2,8 +2,6 @@
 <resources>
     <!-- Часы отметки «сейчас» в виджете: совпадает с ColorTokens.accent (тёмная тема). -->
     <color name="widget_now">#4FC07F</color>
-    <!-- Переход нижней панели виджета к фону: ColorTokens.background (тёмная тема). -->
-    <color name="widget_fade_start">#000E1511</color>
-    <color name="widget_fade_center">#D90E1511</color>
-    <color name="widget_fade_end">#FF0E1511</color>
+    <!-- Фон виджета: ColorTokens.background (тёмная тема). -->
+    <color name="widget_background">#0E1511</color>
 </resources>

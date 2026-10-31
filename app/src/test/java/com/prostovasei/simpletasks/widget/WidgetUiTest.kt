@@ -71,10 +71,15 @@ class WidgetUiTest {
         provideComposable { WidgetContent(model, appWidgetId = 7, scrollable = false) }
 
         // Нижняя строка (итерация 25): «Все», «Входящие», открыть приложение и «+»; даты и «⋯» нет.
-        // Итерация 32: слева от «+» — кнопка обновления.
-        listOf("Все", "Входящие", "Открыть приложение", "Обновление приложения", "Новая задача").forEach { onNode(hasContentDescription(it)).assertExists() }
+        // Итерация 43: слева от «+» — капсула с галочкой значка приложения (открыть приложение), вместо кнопки обновления.
+        listOf("Все", "Входящие", "Новая задача").forEach { onNode(hasContentDescription(it)).assertExists() }
+        onAllNodes(hasContentDescription("Открыть приложение")).assertCountEquals(2)
+        onAllNodes(hasContentDescription("Обновление приложения")).assertCountEquals(0)
         onNode(hasTextEqualTo("пт, 16 окт")).assertDoesNotExist()
-        onAllNodes(hasText("2")).assertCountEquals(0)
+        // Итерация 43: у каждого дня справа число задач (у «Сегодня» вместо него прогресс «0 из 1»).
+        onNode(hasTextEqualTo("2")).assertExists()
+        onAllNodes(hasTextEqualTo("1")).assertCountEquals(2)
+        onNode(hasTextEqualTo("0 из 1")).assertExists()
         // Подписи дней как в приложении: просроченные — по дням (итерация 27), «ЧТ, 15 окт» + «Вчера»,
         // «ПТ, 16 окт» + метка «Сегодня», «СБ, 17 окт» + «Завтра», «ПН, 19 окт».
         // Итерация 37: над прошедшими днями — «Просрочено · 1» (выполненная не считается), со стрелкой и значком переноса.
