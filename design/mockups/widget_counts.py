@@ -1,6 +1,6 @@
 """Макет «Виджет: без подложки внизу и число задач у каждого дня» (итерация 43, решения PM: 1Б, 2а).
 
-0. Кнопки нижней строки ниже и шире, как клавиша ввода на клавиатуре, с большим скруглением и ближе к низу (решения PM): «+» 64×40, «Обновить» 56×40, вкладки 52×36, радиус 16 / 12.
+0. Кнопки нижней строки ниже и шире, как клавиша ввода на клавиатуре, с большим скруглением и ближе к низу (решения PM): «+» 64×40, «Открыть приложение» 56×40 (вместо «Обновить»), вкладки 52×36, радиус 16 / 12.
 1. Нижний градиент убран: кнопки «Все/Входящие», «Обновить» и «+» лежат прямо на ленте, задачи уходят под них.
 2. У каждого дня справа — число задач серым (у «Сегодня» остаётся «1 из 4» с полоской).
 Телефон 412×860 (dp 1:1). Запуск: python3 widget_counts.py <папка с canvas.json>
@@ -13,6 +13,7 @@ from tasks_polish import A, INK, T2, BG, SEL, LINE, OVD, INACT, PRI, row, timeli
 
 WALL = 'linear-gradient(165deg,#C5D8F0 0%,#BFD2EE 55%,#9FB8DE 100%)'
 P_DL = 'M12 4v10M8 10l4 4 4-4M5 19h14'
+P_OPEN = 'M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5'  # «открыть приложение»
 
 
 def day(label, chip='', red=False, first=False, count=None, progress=None):
@@ -63,7 +64,7 @@ def buttons(new=False):
           f'<span style="width:{tw}px;height:{th}px;border-radius:{tr}px;background:{SEL};display:flex;align-items:center;justify-content:center;">{ico(P_CAL, A, 20, 2)}</span>'
           f'<span style="width:{tw}px;height:{th}px;display:flex;align-items:center;justify-content:center;">{ico(P_INBOX, "#6B7280", 20, 2)}</span></span>')
     upd = (f'<span style="width:{uw}px;height:{uh}px;border-radius:{br}px;background:#fff;display:flex;align-items:center;justify-content:center;margin-right:8px;">'
-           f'{ico(P_DL, "#6B7280", 22, 2)}</span>')
+           f'{ico(P_OPEN if new else P_DL, "#6B7280", 22, 2)}</span>')
     plus = (f'<span style="width:{pw}px;height:{ph}px;border-radius:{br}px;background:{A};display:flex;align-items:center;justify-content:center;">'
             f'{ico("M12 5v14M5 12h14", "#fff", 22, 2.4)}</span>')
     return f'<div style="position:absolute;z-index:3;left:10px;right:10px;bottom:{low}px;display:flex;align-items:center;">{sw}<span style="flex:1"></span>{upd}{plus}</div>'
@@ -91,8 +92,8 @@ def legend():
     out = ''.join(f'<div style="margin-bottom:14px;"><div style="font-size:12px;color:{T2};font-weight:600;padding-left:12px;">{t}</div>{d}</div>' for t, d in cases)
     bars = (f'<div style="font-size:12px;color:{T2};font-weight:600;padding-left:12px;margin-top:4px;">Кнопки внизу — было</div>{bar(False)}'
             f'<div style="font-size:12px;color:{T2};font-weight:600;padding-left:12px;margin-top:4px;">Кнопки внизу — стало: ниже и шире (как клавиша ввода)</div>{bar(True)}'
-            f'<div style="font-size:13px;color:{T2};line-height:19px;padding:2px 12px 12px;">«+» 46×46 → 64×40, «Обновить» 44×44 → 56×40, вкладки 46×42 → 52×36. Скругление больше: кнопки 8 → 16 (radius-xl), '
-            f'вкладки 8 → 12 (radius-lg), общая капсула 16. Кнопки ниже: отступ от нижнего края 10 → 4, нижняя строка 58 → 48. Значки те же.</div>')
+            f'<div style="font-size:13px;color:{T2};line-height:19px;padding:2px 12px 12px;">«+» 46×46 → 64×40, «Обновить» 44×44 → «Открыть приложение» 56×40, вкладки 46×42 → 52×36. Скругление больше: кнопки 8 → 16 (radius-xl), '
+            f'вкладки 8 → 12 (radius-lg), общая капсула 16. Кнопки ниже: отступ от нижнего края 10 → 4, нижняя строка 58 → 48. Значок новой кнопки — «открыть» (квадрат со стрелкой); проверка обновления остаётся в «Настройках» приложения.</div>')
     note = (f'<div style="font-size:13px;color:{T2};line-height:19px;padding:6px 12px 0;">Число — все задачи дня, считая выполненные и будущие повторы, '
             f'как плашки в ленте. Серый (text-secondary), 12 sp, полужирный; прижато к правому краю плашек.</div>')
     return (f'<div style="width:412px;border-radius:28px;background:{BG};padding:22px 0 18px;box-sizing:border-box;font-family:Manrope,sans-serif;'
@@ -114,7 +115,7 @@ if __name__ == '__main__':
     W, H = 3 * 428 + 2 * 30 + 80, 1170
     body = (f'<div style="width:{W}px;height:{H}px;box-sizing:border-box;background:#EEF0EE;padding:36px 40px;font-family:Manrope,sans-serif;">'
             f'<div style="font-size:28px;font-weight:700;color:{INK};letter-spacing:-.5px;">Виджет: без полосы внизу, число задач у дня, кнопки ниже и шире</div>'
-            f'<div style="font-size:15px;color:{T2};margin:6px 0 22px;line-height:21px;">Решения PM: задачи уходят под кнопки (вариант «Б»); число — просто цифра (вариант «а»); кнопки внизу ниже, шире, скруглённее и ближе к нижнему краю, как клавиша ввода на клавиатуре.</div>{rows}</div>')
+            f'<div style="font-size:15px;color:{T2};margin:6px 0 22px;line-height:21px;">Решения PM: вместо кнопки обновления — кнопка перехода в приложение; задачи уходят под кнопки (вариант «Б»); число — просто цифра (вариант «а»); кнопки внизу ниже, шире, скруглённее и ближе к нижнему краю, как клавиша ввода на клавиатуре.</div>{rows}</div>')
     html = f'''<!doctype html>
 <html lang="ru"><head><meta charset="utf-8"><title>Виджет: число задач</title><script src="./support.js"></script></head>
 <body><x-dc><helmet><style>{FACES}body{{margin:0}}</style></helmet>
@@ -130,7 +131,7 @@ class Component extends DCLogic {{ renderVals() {{ return {{}}; }} }}
     if fresh:  # повторный запуск не сдвигает прежние доски ещё раз
         for v in old.values():
             v['y'] += H + 120
-    c['boards'] = {'VariantW1.dc.html': {'x': 0, 'y': 0, 'w': W, 'h': H, 'title': 'Виджет: число задач у дня, без полосы, кнопки ниже и шире (итерация 43)'}, **old}
+    c['boards'] = {'VariantW1.dc.html': {'x': 0, 'y': 0, 'w': W, 'h': H, 'title': 'Виджет: число задач у дня, без полосы, кнопки ниже и шире, «открыть приложение» (итерация 43)'}, **old}
     c['order'] = list(c['boards'])
     c['notes']['head'] = {'x': 0, 'y': -300, 'text': 'Виджет: число задач у дня, без полосы внизу (сверху) · ниже — прежние макеты', 'kind': 'title1', 'maxW': 1900}
     json.dump(c, open(os.path.join(OUT, 'canvas.json'), 'w'), ensure_ascii=False, indent=2)
