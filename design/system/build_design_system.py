@@ -110,7 +110,10 @@ SIZE_PICK = {
     'DIALOG_BADGE': ('dialog-badge', 'Круглый значок над заголовком окна обновления.'),
     'WIDGET_ROW': ('widget-row', 'Высота строки задачи на шкале.'), 'WIDGET_PERIOD_ROW': ('widget-period-row', 'Высота строки периода.'),
     'WIDGET_TIME': ('widget-time', 'Колонка времени слева.'), 'WIDGET_RAIL': ('widget-rail', 'Колонка линии шкалы с кружком.'), 'WIDGET_NODE': ('widget-node', 'Кружок приоритета на шкале.'),
-    'WIDGET_BAR': ('widget-bar', 'Нижняя строка виджета.'), 'WIDGET_ADD': ('widget-add', 'Кнопка «+» виджета.'), 'WIDGET_UPDATE': ('widget-update', 'Кнопка обновления виджета.'),
+    'WIDGET_BAR': ('widget-bar', 'Нижняя строка виджета.'), 'WIDGET_TAIL': ('widget-tail', 'Место под нижней строкой в конце ленты виджета.'),
+    'WIDGET_ADD_W': ('widget-add-w', 'Кнопка «+» виджета: ширина.'), 'WIDGET_ADD_H': ('widget-add-h', 'Кнопка «+» виджета: высота.'),
+    'WIDGET_OPEN_W': ('widget-open-w', 'Кнопка «открыть приложение» виджета: ширина.'), 'WIDGET_OPEN_H': ('widget-open-h', 'Кнопка «открыть приложение» виджета: высота.'),
+    'WIDGET_SWITCH_W': ('widget-switch-w', 'Кнопка переключателя «Все» / «Входящие»: ширина.'), 'WIDGET_SWITCH_H': ('widget-switch-h', 'Кнопка переключателя: высота.'),
     'SNACKBAR_MIN_HEIGHT': ('snackbar-min-height', 'Подсказка «Отмена»: наименьшая высота.'), 'SNACKBAR_ICON': ('snackbar-icon', 'Значок слева в подсказке «Отмена».'),
     'RIBBON_BUTTON': ('ribbon-button', 'Режим выбора: наименьшая ширина кнопки ленты действий.'), 'RIBBON_BUTTON_HEIGHT': ('ribbon-button-height', 'Режим выбора: высота кнопки ленты действий.'),
     'SELECTION_BAR': ('selection-bar', 'Режим выбора: высота строки «Выбрано: N».'),
@@ -637,9 +640,10 @@ def main():
     import ds_more
     previews.update(ds_more.PREVIEWS)
     COMP_README.update(ds_more.README_MORE)
-    COMP_README['WidgetBar'] = ('Нижняя строка виджета: переключатель «Все» / «Входящие», кнопка обновления, «+».',
-                                '''Высота `size-widget-bar` (58), поля по бокам 6. Слева капсула `surface` (радиус `radius-lg`, поля 4) с двумя кнопками 46×42 (радиус `radius-md`): выбранная залита `selected` со значком `accent` 26, другая `surface` со значком `text-secondary`.
-Место между капсулой и кнопками нажимается как «открыть приложение». Справа квадратная кнопка обновления `size-widget-update` (44, радиус `radius-md`, `surface`, значок 22 `text-secondary`), щель 8 и «+» `size-widget-add` (46, радиус `radius-md`, `accent`, значок 24 `on-accent`).''')
+    COMP_README['WidgetBar'] = ('Нижняя строка виджета: переключатель «Все» / «Входящие», кнопка «открыть приложение», «+».',
+                                '''Кнопки лежат прямо на ленте, без подложки и перехода к фону; задачи уходят под них. Высота строки `size-widget-bar` (48), поля по бокам 6, кнопки по центру (отступ от нижнего края 4). Формы — как клавиша ввода на клавиатуре: ниже и шире, скругление больше.
+Слева капсула `surface` (радиус `radius-xl`, поля 4) с двумя кнопками `size-widget-switch-w` × `size-widget-switch-h` (52×36, радиус `radius-lg`): выбранная залита `selected` со значком `accent` 26, другая `surface` со значком `text-secondary`.
+Место между капсулой и кнопками нажимается как «открыть приложение». Справа капсула «открыть приложение» `size-widget-open-w` × `size-widget-open-h` (56×40, радиус `radius-xl`, `surface`) с зелёной (`accent`) галочкой значка приложения 26×22, щель 8 и «+» `size-widget-add-w` × `size-widget-add-h` (64×40, радиус `radius-xl`, `accent`, значок 24 `on-accent`). Кнопки обновления на виджете больше нет — проверка обновления в «Настройках».''')
     groups = {}
     for name, fn in previews.items():
         html = fn()
