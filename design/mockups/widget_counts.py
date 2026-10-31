@@ -1,6 +1,6 @@
 """Макет «Виджет: без подложки внизу и число задач у каждого дня» (итерация 43, решения PM: 1Б, 2а).
 
-0. Кнопки нижней строки ниже и шире, как клавиша ввода на клавиатуре (решение PM): «+» 64×40, «Обновить» 56×40, вкладки 52×36.
+0. Кнопки нижней строки ниже и шире, как клавиша ввода на клавиатуре, с большим скруглением и ближе к низу (решения PM): «+» 64×40, «Обновить» 56×40, вкладки 52×36, радиус 16 / 12.
 1. Нижний градиент убран: кнопки «Все/Входящие», «Обновить» и «+» лежат прямо на ленте, задачи уходят под них.
 2. У каждого дня справа — число задач серым (у «Сегодня» остаётся «1 из 4» с полоской).
 Телефон 412×860 (dp 1:1). Запуск: python3 widget_counts.py <папка с canvas.json>
@@ -56,8 +56,9 @@ def feed(counts):
 
 def buttons(new=False):
     """Кнопки нижней строки. Было: «+» 46×46, «Обновить» 44×44, вкладки 46×42. Стало: ниже и шире, как клавиша ввода на клавиатуре."""
-    tw, th, tr, cap_r = (52, 36, 10, 14) if new else (40, 36, 12, 16)
-    uw, uh, pw, ph, br = (56, 40, 64, 40, 10) if new else (44, 44, 50, 44, 15)
+    tw, th, tr, cap_r = (52, 36, 12, 16) if new else (40, 36, 12, 16)
+    uw, uh, pw, ph, br = (56, 40, 64, 40, 16) if new else (44, 44, 50, 44, 15)
+    low = 4 if new else 10  # отступ от нижнего края виджета: стало ниже
     sw = (f'<span style="height:{th + 8}px;border-radius:{cap_r}px;background:#fff;display:flex;align-items:center;padding:0 4px;gap:2px;">'
           f'<span style="width:{tw}px;height:{th}px;border-radius:{tr}px;background:{SEL};display:flex;align-items:center;justify-content:center;">{ico(P_CAL, A, 20, 2)}</span>'
           f'<span style="width:{tw}px;height:{th}px;display:flex;align-items:center;justify-content:center;">{ico(P_INBOX, "#6B7280", 20, 2)}</span></span>')
@@ -65,7 +66,7 @@ def buttons(new=False):
            f'{ico(P_DL, "#6B7280", 22, 2)}</span>')
     plus = (f'<span style="width:{pw}px;height:{ph}px;border-radius:{br}px;background:{A};display:flex;align-items:center;justify-content:center;">'
             f'{ico("M12 5v14M5 12h14", "#fff", 22, 2.4)}</span>')
-    return f'<div style="position:absolute;z-index:3;left:10px;right:10px;bottom:10px;display:flex;align-items:center;">{sw}<span style="flex:1"></span>{upd}{plus}</div>'
+    return f'<div style="position:absolute;z-index:3;left:10px;right:10px;bottom:{low}px;display:flex;align-items:center;">{sw}<span style="flex:1"></span>{upd}{plus}</div>'
 
 
 def screen(after):
@@ -86,12 +87,12 @@ def legend():
         ('Прошедший день — красным, число серое', day('ЧТ, 29 окт', 'Вчера', red=True, first=True, count=2)),
         ('Без даты', day('Без даты', first=True, count=5)),
     ]
-    bar = lambda new: (f'<div style="position:relative;height:{58 if new else 66}px;margin:0 6px;">{buttons(new).replace("position:absolute;z-index:3;left:10px;right:10px;bottom:10px", "position:absolute;left:0;right:0;bottom:6px")}</div>')
+    bar = lambda new: (f'<div style="position:relative;height:{48 if new else 66}px;margin:0 6px;">{buttons(new).replace("position:absolute;z-index:3;left:10px;right:10px;bottom:4px", "position:absolute;left:0;right:0;bottom:4px").replace("position:absolute;z-index:3;left:10px;right:10px;bottom:10px", "position:absolute;left:0;right:0;bottom:6px")}</div>')
     out = ''.join(f'<div style="margin-bottom:14px;"><div style="font-size:12px;color:{T2};font-weight:600;padding-left:12px;">{t}</div>{d}</div>' for t, d in cases)
     bars = (f'<div style="font-size:12px;color:{T2};font-weight:600;padding-left:12px;margin-top:4px;">Кнопки внизу — было</div>{bar(False)}'
             f'<div style="font-size:12px;color:{T2};font-weight:600;padding-left:12px;margin-top:4px;">Кнопки внизу — стало: ниже и шире (как клавиша ввода)</div>{bar(True)}'
-            f'<div style="font-size:13px;color:{T2};line-height:19px;padding:2px 12px 12px;">«+» 46×46 → 64×40, «Обновить» 44×44 → 56×40, вкладки 46×42 → 52×36; радиус прежний. '
-            f'Значки те же.</div>')
+            f'<div style="font-size:13px;color:{T2};line-height:19px;padding:2px 12px 12px;">«+» 46×46 → 64×40, «Обновить» 44×44 → 56×40, вкладки 46×42 → 52×36. Скругление больше: кнопки 8 → 16 (radius-xl), '
+            f'вкладки 8 → 12 (radius-lg), общая капсула 16. Кнопки ниже: отступ от нижнего края 10 → 4, нижняя строка 58 → 48. Значки те же.</div>')
     note = (f'<div style="font-size:13px;color:{T2};line-height:19px;padding:6px 12px 0;">Число — все задачи дня, считая выполненные и будущие повторы, '
             f'как плашки в ленте. Серый (text-secondary), 12 sp, полужирный; прижато к правому краю плашек.</div>')
     return (f'<div style="width:412px;border-radius:28px;background:{BG};padding:22px 0 18px;box-sizing:border-box;font-family:Manrope,sans-serif;'
@@ -110,10 +111,10 @@ if __name__ == '__main__':
     sub = lambda s: f'<div style="font-size:13px;color:{T2};line-height:18px;height:56px;width:428px;margin-bottom:10px;">{s}</div>'
     cell = lambda t, d, f: f'<div>{lab(t)}{sub(d)}{f()}</div>'
     rows = f'<div style="display:flex;gap:30px;">{"".join(cell(*s) for s in SCREENS)}</div>'
-    W, H = 3 * 428 + 2 * 30 + 80, 1130
+    W, H = 3 * 428 + 2 * 30 + 80, 1170
     body = (f'<div style="width:{W}px;height:{H}px;box-sizing:border-box;background:#EEF0EE;padding:36px 40px;font-family:Manrope,sans-serif;">'
             f'<div style="font-size:28px;font-weight:700;color:{INK};letter-spacing:-.5px;">Виджет: без полосы внизу, число задач у дня, кнопки ниже и шире</div>'
-            f'<div style="font-size:15px;color:{T2};margin:6px 0 22px;line-height:21px;">Решения PM: задачи уходят под кнопки (вариант «Б»); число — просто цифра (вариант «а»); кнопки внизу ниже и шире, как клавиша ввода на клавиатуре.</div>{rows}</div>')
+            f'<div style="font-size:15px;color:{T2};margin:6px 0 22px;line-height:21px;">Решения PM: задачи уходят под кнопки (вариант «Б»); число — просто цифра (вариант «а»); кнопки внизу ниже, шире, скруглённее и ближе к нижнему краю, как клавиша ввода на клавиатуре.</div>{rows}</div>')
     html = f'''<!doctype html>
 <html lang="ru"><head><meta charset="utf-8"><title>Виджет: число задач</title><script src="./support.js"></script></head>
 <body><x-dc><helmet><style>{FACES}body{{margin:0}}</style></helmet>
