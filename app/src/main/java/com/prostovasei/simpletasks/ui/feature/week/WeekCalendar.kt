@@ -3,6 +3,7 @@ package com.prostovasei.simpletasks.ui.feature.week
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -57,8 +58,12 @@ fun WeekCalendar(
     val spacing = AppTheme.spacing
     val ru = Locale.forLanguageTag("ru")
     val first = month.atDay(1).weekStart()
-    Column(modifier.padding(horizontal = spacing.xs, vertical = spacing.xxs)) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+    // Мини-календарь живёт в ячейке недели, высота которой зависит от экрана: строки недель делят то, что осталось под заголовком.
+    BoxWithConstraints(modifier.padding(horizontal = spacing.xxs, vertical = spacing.xxs)) {
+    val fixed = SizeTokens.WEEKVIEW_CAL_HEAD.dp + SizeTokens.WEEKVIEW_CAL_WEEKDAYS.dp + spacing.xxs * 2
+    val rowHeight = ((maxHeight - fixed) / WEEK_CALENDAR_ROWS).coerceIn(SizeTokens.WEEKVIEW_CAL_ROW_MIN.dp, SizeTokens.WEEKVIEW_CAL_ROW.dp)
+    Column {
+        Row(Modifier.fillMaxWidth().height(SizeTokens.WEEKVIEW_CAL_HEAD.dp), verticalAlignment = Alignment.CenterVertically) {
             MonthArrow(stringResource(R.string.week_prev_month), "week-cal-prev", { onShiftMonth(-1) }) {
                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, null, tint = colors.textSecondary)
             }
@@ -74,7 +79,7 @@ fun WeekCalendar(
                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = colors.textSecondary)
             }
         }
-        Row(Modifier.fillMaxWidth()) {
+        Row(Modifier.fillMaxWidth().height(SizeTokens.WEEKVIEW_CAL_WEEKDAYS.dp)) {
             DayOfWeek.entries.forEach { day ->
                 Text(
                     day.getDisplayName(TextStyle.SHORT, ru),
@@ -92,9 +97,8 @@ fun WeekCalendar(
             val title = "${start.dayOfMonth} ${start.month.getDisplayName(TextStyle.SHORT, ru)}"
             Row(
                 Modifier
-                    .padding(top = AppTheme.sizes.hairline * 2)
                     .fillMaxWidth()
-                    .height(SizeTokens.WEEKVIEW_CAL_ROW.dp)
+                    .height(rowHeight)
                     .clip(AppTheme.shapes.large)
                     .background(if (selected) colors.accentSoft else colors.background)
                     .clickable { onSelectWeek(start) }
@@ -108,6 +112,7 @@ fun WeekCalendar(
                 }
             }
         }
+    }
     }
 }
 

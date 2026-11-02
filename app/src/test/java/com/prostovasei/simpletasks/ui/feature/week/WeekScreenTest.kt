@@ -2,10 +2,12 @@ package com.prostovasei.simpletasks.ui.feature.week
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.domain.model.Priority
@@ -14,12 +16,14 @@ import com.prostovasei.simpletasks.ui.common.DueText
 import com.prostovasei.simpletasks.ui.common.TaskItem
 import com.prostovasei.simpletasks.ui.common.TaskListIntent
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import androidx.compose.ui.unit.dp
 import java.time.LocalDate
 import java.time.YearMonth
 
@@ -34,7 +38,13 @@ class WeekScreenTest {
     private val intents = mutableListOf<Any>()
     private val opened = mutableListOf<String>()
 
-    private fun show(dark: Boolean = false, state: WeekState = weekState, content: @Composable () -> Unit = { WeekScreen(state, { intents += it }, onOpenTask = { opened += it }) }) {
+    private val openedDays = mutableListOf<LocalDate>()
+
+    private fun show(
+        dark: Boolean = false,
+        state: WeekState = weekState,
+        content: @Composable () -> Unit = { WeekScreen(state, { intents += it }, onOpenTask = { opened += it }, onOpenDay = { openedDays += it }) },
+    ) {
         composeRule.setContent { AppTheme(darkTheme = dark) { content() } }
     }
 
@@ -96,7 +106,7 @@ class WeekScreenTest {
     fun futureRepeatHasNoCircleButOpensTheSeriesTask() {
         show()
         composeRule.onNodeWithTag("week-check:f2@0").assertDoesNotExist()
-        composeRule.onNodeWithTag("week-task:f2@0").performScrollTo().performClick()
+        composeRule.onNodeWithTag("week-task:f2@0").performClick()
         assertEquals(listOf("f2"), opened)
     }
 
@@ -105,7 +115,7 @@ class WeekScreenTest {
         show()
         composeRule.onNodeWithTag("week-cal-title").assertIsDisplayed()
         // Октябрь 2026: первая строка — с понедельника 28 сентября.
-        composeRule.onNodeWithTag("week-cal-row:2026-10-05").performScrollTo().performClick()
+        composeRule.onNodeWithTag("week-cal-row:2026-10-05").performClick()
         assertEquals(SelectWeek(LocalDate.of(2026, 10, 5)), intents.last())
         composeRule.onNodeWithTag("week-cal-next").performClick()
         assertEquals(ShiftMonth(1), intents.last())
@@ -118,7 +128,7 @@ class WeekScreenTest {
         // Октябрь 2026 начинается с четверга: строки с 28 сентября по 2 ноября.
         show()
         listOf("2026-09-28", "2026-10-05", "2026-10-12", "2026-10-19", "2026-10-26", "2026-11-02").forEach {
-            composeRule.onNodeWithTag("week-cal-row:$it").performScrollTo().assertExists()
+            composeRule.onNodeWithTag("week-cal-row:$it").assertExists()
         }
         composeRule.onNodeWithTag("week-cal-row:2026-11-09").assertDoesNotExist()
     }
@@ -127,8 +137,43 @@ class WeekScreenTest {
     fun calendarOfAMonthStartingOnSundayReachesSixRows() {
         // Ноябрь 2026 начинается с воскресенья: первая строка — с 26 октября, последняя — с 30 ноября.
         show(state = weekState.copy(month = YearMonth.of(2026, 11)))
-        composeRule.onNodeWithTag("week-cal-row:2026-10-26").performScrollTo().assertExists()
-        composeRule.onNodeWithTag("week-cal-row:2026-11-30").performScrollTo().assertExists()
+        composeRule.onNodeWithTag("week-cal-row:2026-10-26").assertExists()
+        composeRule.onNodeWithTag("week-cal-row:2026-11-30").assertExists()
+    }
+
+    /** Решение PM (0.44.0): все ячейки одинаковой высоты и ширины, неделя помещается на экран без прокрутки. */
+    @Test
+    fun allCellsHaveTheSameSizeAndFitTheScreen() {
+        val crowded = weekState.copy(days = weekState.days.mapIndexed { i, d -> if (i == 4) d.copy(items = (1..12).map { item("x$it", "Задача $it") }) else d })
+        show(state = crowded)
+        val cells = (0L..6L).map { composeRule.onNodeWithTag("week-day:${monday.plusDays(it)}").getUnclippedBoundsInRoot() }
+        assertEquals("высота", 1, cells.map { it.bottom - it.top }.distinct().size)
+        assertEquals("ширина", 1, cells.map { it.right - it.left }.distinct().size)
+        val screen = composeRule.onNodeWithTag("week-screen").getUnclippedBoundsInRoot()
+        assertTrue("неделя помещается", cells.maxOf { it.bottom } <= screen.bottom)
+        // Мини-календарь — в последней ячейке, того же размера.
+        val calendar = composeRule.onNodeWithTag("week-cal-title").getUnclippedBoundsInRoot()
+        assertTrue("календарь $calendar в ячейке ${cells[6]}", calendar.top >= cells[6].top - TOLERANCE && calendar.bottom <= cells[6].bottom + TOLERANCE)
+    }
+
+    @Test
+    fun tasksThatDoNotFitBecomePlusNInTheDateRow() {
+        val crowded = weekState.copy(days = weekState.days.mapIndexed { i, d -> if (i == 4) d.copy(items = (1..12).map { item("x$it", "Задача $it") }) else d })
+        show(state = crowded)
+        val friday = monday.plusDays(4)
+        composeRule.onNodeWithTag("week-more:$friday", useUnmergedTree = true).assertExists()
+        val shown = (1..12).count { composeRule.onAllNodesWithTag("week-task:x$it").fetchSemanticsNodes().isNotEmpty() }
+        assertTrue("часть задач скрыта", shown in 1..11)
+        composeRule.onNodeWithTag("week-more:$friday", useUnmergedTree = true).assertTextEquals("+${12 - shown}")
+        // Там, где всё помещается, «+N» нет.
+        composeRule.onNodeWithTag("week-more:${monday}", useUnmergedTree = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun tapOnDateRowOpensTheDay() {
+        show()
+        composeRule.onNodeWithTag("week-day-open:${monday.plusDays(1)}").performClick()
+        assertEquals(listOf(monday.plusDays(1)), openedDays)
     }
 
     @Test
@@ -141,5 +186,10 @@ class WeekScreenTest {
     fun weekScreenDark() {
         show(dark = true)
         composeRule.onNodeWithTag("week-screen").captureRoboImage("screenshots/week_dark.png")
+    }
+
+    private companion object {
+        /** Ячейка отмечена тегом внутри своих отступов, календарь — ближе к краю строки. */
+        val TOLERANCE = 10.dp
     }
 }

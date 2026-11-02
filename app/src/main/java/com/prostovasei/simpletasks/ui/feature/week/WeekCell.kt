@@ -5,11 +5,12 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -31,6 +32,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.components.GHOST_ALPHA
@@ -44,8 +46,10 @@ import java.time.format.TextStyle
 import java.util.Locale
 
 /**
- * Ячейка дня в виде «Неделя» (итерация 44, макет `VariantK1`): подпись «пн 26» (у сегодня — зелёная, число в метке) и задачи
- * плашками: кружок приоритета, название, время справа. Правая и нижняя линии — сетка между ячейками.
+ * Ячейка дня в виде «Неделя» (итерация 44, макет `VariantK1`): строка даты «пн 26» (у сегодня — зелёная, число в метке) и задачи
+ * плашками: кружок приоритета, название, время справа. Высота ячейки задана снаружи (все ячейки недели одинаковые), поэтому
+ * показывается столько плашек, сколько влезает; остальное — «+N» справа в строке даты. Нажатие на строку даты открывает полный
+ * список дня. Правая и нижняя линии — сетка между ячейками.
  */
 @Composable
 fun WeekCell(
@@ -54,6 +58,7 @@ fun WeekCell(
     isToday: Boolean,
     onToggle: (TaskItem) -> Unit,
     onOpen: (TaskItem) -> Unit,
+    onOpenDay: () -> Unit,
     modifier: Modifier = Modifier,
     today: LocalDate? = null,
 ) {
@@ -61,9 +66,8 @@ fun WeekCell(
     val spacing = AppTheme.spacing
     val divider = colors.divider
     val line = AppTheme.sizes.hairline
-    Column(
+    BoxWithConstraints(
         modifier
-            .heightIn(min = SizeTokens.WEEKVIEW_CELL_MIN.dp)
             .drawBehind {
                 val w = line.toPx()
                 drawLine(divider, Offset(size.width - w / 2, 0f), Offset(size.width - w / 2, size.height), w)
@@ -72,18 +76,27 @@ fun WeekCell(
             .padding(horizontal = spacing.xxs, vertical = spacing.xs)
             .testTag("week-day:$date"),
     ) {
-        WeekDayHeader(date, isToday)
-        items.forEach { item ->
-            WeekTaskRow(item, overdue = today != null && date < today && !item.showsDone, onToggle = { onToggle(item) }, onOpen = { onOpen(item) })
+        val rowHeight = SizeTokens.WEEKVIEW_TASK.dp + spacing.xxs
+        val room = maxHeight - SizeTokens.WEEKVIEW_HEADER.dp
+        val capacity = if (maxHeight == Dp.Infinity) items.size else maxOf(0, (room / rowHeight).toInt())
+        val shown = items.take(capacity)
+        Column {
+            WeekDayHeader(date, isToday, hidden = items.size - shown.size, onClick = onOpenDay)
+            shown.forEach { item ->
+                WeekTaskRow(item, overdue = today != null && date < today && !item.showsDone, onToggle = { onToggle(item) }, onOpen = { onOpen(item) })
+            }
         }
     }
 }
 
 @Composable
-private fun WeekDayHeader(date: LocalDate, isToday: Boolean) {
+private fun WeekDayHeader(date: LocalDate, isToday: Boolean, hidden: Int, onClick: () -> Unit) {
     val colors = AppTheme.colors
     val weekday = date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.forLanguageTag("ru"))
-    Row(Modifier.height(SizeTokens.WEEKVIEW_HEADER.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        Modifier.fillMaxWidth().height(SizeTokens.WEEKVIEW_HEADER.dp).clickable(onClick = onClick).testTag("week-day-open:$date"),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         Text(
             weekday,
             style = MaterialTheme.typography.labelLarge,
@@ -108,6 +121,19 @@ private fun WeekDayHeader(date: LocalDate, isToday: Boolean) {
                 fontWeight = FontWeight.SemiBold,
                 color = colors.textSecondary,
                 modifier = Modifier.padding(start = AppTheme.spacing.xxs),
+            )
+        }
+        if (hidden > 0) {
+            Spacer(Modifier.weight(1f))
+            Text(
+                "+$hidden",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = colors.accent,
+                modifier = Modifier
+                    .background(colors.accentSoft, CircleShape)
+                    .padding(horizontal = AppTheme.spacing.xs, vertical = AppTheme.sizes.hairline)
+                    .testTag("week-more:$date"),
             )
         }
     }

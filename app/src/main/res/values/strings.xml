@@ -6,6 +6,7 @@
     <string name="tab_all">Все</string>
     <string name="tab_week">Неделя</string>
     <string name="tab_lists">Списки</string>
+    <string name="day_empty">На этот день задач нет</string>
     <string name="week_prev_month">Предыдущий месяц</string>
     <string name="week_next_month">Следующий месяц</string>
     <string name="week_pick">Неделя %1$s</string>

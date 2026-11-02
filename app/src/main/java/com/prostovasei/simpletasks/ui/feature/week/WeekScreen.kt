@@ -1,15 +1,12 @@
 package com.prostovasei.simpletasks.ui.feature.week
 
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
@@ -24,18 +21,20 @@ import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.ui.common.TaskItem
 import com.prostovasei.simpletasks.ui.common.TaskListEffects
 import com.prostovasei.simpletasks.ui.common.TaskListIntent
+import java.time.LocalDate
 
 @Composable
-fun WeekRoute(onOpenTask: (String) -> Unit, viewModel: WeekViewModel = hiltViewModel()) {
+fun WeekRoute(onOpenTask: (String) -> Unit, onOpenDay: (LocalDate) -> Unit, viewModel: WeekViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     TaskListEffects(viewModel, snackbar)
-    WeekScreen(state, viewModel::onIntent, snackbar, onOpenTask)
+    WeekScreen(state, viewModel::onIntent, snackbar, onOpenTask, onOpenDay)
 }
 
 /**
- * Вид «Неделя» (итерация 44, макет `VariantK1`): сетка 2×4 — шесть дней, воскресенье и мини-календарь. Ячейки растут по числу
- * задач в самой высокой ячейке строки, экран прокручивается. Заголовка нет: неделя видна по календарю, «+» — в нижней панели.
+ * Вид «Неделя» (итерация 44, макет `VariantK1`): сетка 2×4 — шесть дней, воскресенье и мини-календарь. Все ячейки одинаковые и
+ * помещаются на экран без прокрутки (решение PM); не влезшие задачи — «+N» в строке даты, нажатие на неё открывает день.
+ * Заголовка нет: неделя видна по календарю, «+» — в нижней панели.
  */
 @Composable
 fun WeekScreen(
@@ -43,6 +42,7 @@ fun WeekScreen(
     onIntent: (TaskListIntent) -> Unit,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     onOpenTask: (String) -> Unit = {},
+    onOpenDay: (LocalDate) -> Unit = {},
 ) {
     val colors = AppTheme.colors
     Scaffold(
@@ -56,10 +56,13 @@ fun WeekScreen(
         if (weekStart == null || today == null || month == null) return@Scaffold
         val toggle: (TaskItem) -> Unit = { onIntent(TaskListIntent.ToggleComplete(it.id, it.isRecurring, it.showsDone)) }
         val open: (TaskItem) -> Unit = { onOpenTask(it.taskId) }
-        Column(Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState()).testTag("week-screen")) {
+        // Четыре строки одинаковой высоты делят весь экран: прокрутки нет.
+        Column(Modifier.padding(padding).fillMaxSize().testTag("week-screen")) {
             state.days.chunked(2).forEach { pair ->
-                Row(Modifier.height(IntrinsicSize.Min)) {
-                    pair.forEach { day -> WeekCell(day.date, day.items, day.date == today, toggle, open, Modifier.weight(1f).fillMaxHeight(), today) }
+                Row(Modifier.weight(1f).fillMaxWidth()) {
+                    pair.forEach { day ->
+                        WeekCell(day.date, day.items, day.date == today, toggle, open, { onOpenDay(day.date) }, Modifier.weight(1f).fillMaxHeight(), today)
+                    }
                     // Нечётный день (воскресенье) делит строку с мини-календарём.
                     if (pair.size == 1) {
                         WeekCalendar(
@@ -68,7 +71,7 @@ fun WeekScreen(
                             today = today,
                             onSelectWeek = { onIntent(SelectWeek(it)) },
                             onShiftMonth = { onIntent(ShiftMonth(it)) },
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.weight(1f).fillMaxHeight(),
                         )
                     }
                 }

@@ -14,6 +14,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
@@ -80,6 +81,7 @@ import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.ui.common.TAG_ADD_TASK
 import com.prostovasei.simpletasks.ui.feature.all.AllRoute
+import com.prostovasei.simpletasks.ui.feature.week.DayRoute
 import com.prostovasei.simpletasks.ui.feature.week.WeekRoute
 import com.prostovasei.simpletasks.ui.feature.inbox.InboxRoute
 import com.prostovasei.simpletasks.ui.feature.lists.ListsRoute
@@ -209,8 +211,10 @@ fun AppNavHost(
                 AllRoute(onOpenTask = openTask)
             }
             composable<WeekDestination> {
-                WeekRoute(onOpenTask = openTask)
+                WeekRoute(onOpenTask = openTask, onOpenDay = { navController.navigate(DayDestination(it.toString())) })
             }
+            // Полный список дня: открывается нажатием на строку даты в ячейке недели (итерация 44).
+            composable<DayDestination> { DayRoute(onBack = { navController.popBackStack() }, onOpenTask = openTask) }
             composable<ListsDestination> {
                 ListsRoute(onOpenProject = { navController.navigate(ProjectDestination(it)) }, onOpenCompleted = { navController.navigate(CompletedDestination) }, onOpenTrash = { navController.navigate(TrashDestination) })
             }
@@ -240,38 +244,31 @@ fun AppNavHost(
 }
 
 /**
- * Плавающая нижняя панель (итерация 13, макет PM): иконки вкладок без подписей, открытая — зелёная,
- * в конце — кнопка «+» новой задачи. Поиск — всегда в панели, перед «Настройками» (итерация 15).
+ * Нижняя панель (итерация 13, макет PM; итерация 44 — по референсу PM: не парит, а закреплена внизу на всю ширину, без капсулы и тени,
+ * сверху тонкая линия): иконки вкладок без подписей, открытая — зелёная, в конце — кнопка «+» новой задачи. Поиск — всегда в панели,
+ * перед «Настройками» (итерация 15). Фон панели доходит до низа экрана — под системной панелью навигации.
  */
 @Composable
 fun BottomBar(selected: Tab, onSelect: (Tab) -> Unit, onAdd: () -> Unit = {}) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
     val sizes = AppTheme.sizes
-    Box(
-        Modifier
-            .fillMaxWidth()
-            .windowInsetsPadding(WindowInsets.navigationBars)
-            .padding(horizontal = spacing.sm, vertical = spacing.sm),
-    ) {
+    Column(Modifier.fillMaxWidth().background(colors.surface)) {
+        Box(Modifier.fillMaxWidth().height(sizes.hairline).background(colors.divider))
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .windowInsetsPadding(WindowInsets.navigationBars)
                 .height(sizes.navBar)
-                .shadow(sizes.navShadow, AppTheme.shapes.nav)
-                .background(colors.surface, AppTheme.shapes.nav)
-                .padding(start = spacing.sm, end = spacing.xxs),
+                .padding(start = spacing.xxs, end = spacing.xs),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            // Итерация 44: вкладок шесть — на узком экране (360 dp и меньше) они сжимаются по ширине, а «+» остаётся на месте.
+            // Вкладки делят ширину поровну (их шесть); на очень узком экране сжимаются, «+» остаётся на месте.
             Tab.entries.forEach { tab ->
                 Box(
                     modifier = Modifier
-                        .weight(1f, fill = false)
-                        .widthIn(max = sizes.navTab)
-                        .height(sizes.navTab)
-                        .clip(CircleShape)
+                        .weight(1f)
+                        .height(sizes.navBar)
                         .clickable(role = Role.Button, onClick = { onSelect(tab) })
                         .testTag("tab:${tab.name}"),
                     contentAlignment = Alignment.Center,
@@ -281,7 +278,8 @@ fun BottomBar(selected: Tab, onSelect: (Tab) -> Unit, onAdd: () -> Unit = {}) {
             }
             Box(
                 modifier = Modifier
-                    .size(sizes.navAdd)
+                    .padding(start = spacing.xxs)
+                    .size(width = sizes.navAddWidth, height = sizes.navAddHeight)
                     .clip(AppTheme.shapes.extraLarge)
                     .background(colors.accent)
                     .clickable(onClick = onAdd)
