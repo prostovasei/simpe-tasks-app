@@ -13,4 +13,6 @@
     <color name="widget_text_done">#B3E6EAE7</color>
     <color name="widget_icon_done">#B39DA8A1</color>
     <color name="widget_accent_done">#B34FC07F</color>
+    <color name="widget_inactive">#FF5F6B64</color>
+    <color name="widget_accent_soft">#FF1F4430</color>
 </resources>

@@ -9,7 +9,9 @@ import com.prostovasei.simpletasks.ui.common.TaskItem
 import com.prostovasei.simpletasks.ui.common.toItem
 import com.prostovasei.simpletasks.ui.common.upcomingWithRepeats
 import com.prostovasei.simpletasks.ui.feature.task.ProjectOption
+import com.prostovasei.simpletasks.ui.feature.week.WeekDay
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.ZoneId
 
 /** Что показывает виджет (решение PM: по умолчанию «Все», переключается в самом виджете). */
@@ -19,15 +21,20 @@ sealed interface WidgetFilter {
     data object Inbox : WidgetFilter
     data class ProjectList(val projectId: String) : WidgetFilter
 
+    /** Вид «Неделя» (итерация 45): сетка из семи дней выбранной недели и мини-календарь; задачи всех списков, как во «Все». */
+    data object Week : WidgetFilter
+
     fun encode(): String = when (this) {
         All -> "all"
         Inbox -> "inbox"
+        Week -> "week"
         is ProjectList -> "project:$projectId"
     }
 
     companion object {
         fun decode(value: String?): WidgetFilter = when {
             value == "inbox" -> Inbox
+            value == "week" -> Week
             value?.startsWith("project:") == true -> ProjectList(value.removePrefix("project:"))
             else -> All
         }
@@ -44,6 +51,9 @@ sealed interface WidgetDay {
 }
 
 data class WidgetDayBlock(val day: WidgetDay, val items: List<TaskItem>)
+
+/** Вид «Неделя» в виджете: [weekStart] — понедельник, [month] — месяц мини-календаря, [days] — семь дней с задачами, [today] — сегодняшний день. */
+data class WidgetWeek(val weekStart: LocalDate, val month: YearMonth, val days: List<WeekDay>, val today: LocalDate)
 
 /** Вкладка списка внизу виджета. [name] и [color] — у своего списка (у «Все» и «Входящих» — null). */
 data class WidgetTab(val filter: WidgetFilter, val name: String? = null, val color: String? = null)
@@ -71,8 +81,11 @@ data class WidgetModel(
     val nowMinute: Int? = null,
     /** Блок «Просрочено» свёрнут (итерация 37): прошедшие дни ленты «Все» скрыты. */
     val overdueCollapsed: Boolean = false,
+    /** Данные вида «Неделя» (итерация 45); у остальных видов — null. */
+    val week: WidgetWeek? = null,
 ) {
-    val isEmpty: Boolean get() = days.all { it.items.isEmpty() }
+    /** В «Неделе» сетка есть всегда, даже без задач. */
+    val isEmpty: Boolean get() = week == null && days.all { it.items.isEmpty() }
 
     /** Прошедшие дни с задачами — блок «Просрочено» ленты «Все». */
     val pastDays: List<WidgetDayBlock>

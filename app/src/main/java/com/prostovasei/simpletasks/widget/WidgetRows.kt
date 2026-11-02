@@ -34,8 +34,8 @@ import kotlin.math.roundToInt
  */
 @RequiresApi(Build.VERSION_CODES.S)
 object WidgetRows {
-    /** Разных разметок строк: задача и период (каждая — обычная и выполненная), подпись дня, «Просрочено», «сейчас», хвост. */
-    const val VIEW_TYPES = 8
+    /** Разных разметок строк: задача и период (каждая — обычная и выполненная), подпись дня, «Просрочено», «сейчас», хвост и две строки недели. */
+    const val VIEW_TYPES = 10
 
     fun views(context: Context, line: WidgetLine, model: WidgetModel, liveClock: Boolean = true): RemoteViews = when (line) {
         is WidgetLine.Overdue -> overdue(context, line)
@@ -172,9 +172,9 @@ object WidgetRows {
         }
 
     /** Видимость пишется всегда: Android перекрашивает уже показанные строки, и прошлое значение иначе остаётся. */
-    private fun RemoteViews.visible(id: Int, shown: Boolean) = setViewVisibility(id, if (shown) View.VISIBLE else View.GONE)
+    internal fun RemoteViews.visible(id: Int, shown: Boolean) = setViewVisibility(id, if (shown) View.VISIBLE else View.GONE)
 
-    private fun ring(priority: Priority): ThemedColor = when (priority) {
+    internal fun ring(priority: Priority): ThemedColor = when (priority) {
         Priority.HIGH -> WidgetCheckTokens.high.ring
         Priority.MEDIUM -> WidgetCheckTokens.medium.ring
         Priority.LOW -> WidgetCheckTokens.low.ring
@@ -182,7 +182,7 @@ object WidgetRows {
     }
 
     /** Цвет темы: Android сам берёт светлый или тёмный по теме системы. */
-    private fun RemoteViews.color(id: Int, method: String, color: ThemedColor, alpha: Float = 1f) =
+    internal fun RemoteViews.color(id: Int, method: String, color: ThemedColor, alpha: Float = 1f) =
         setColorInt(id, method, argb(color.light, alpha), argb(color.dark, alpha))
 
     private fun argb(color: Long, alpha: Float): Int = Color(color).let { it.copy(alpha = it.alpha * alpha) }.toArgb()

@@ -8,6 +8,7 @@ import android.os.Build
 import android.os.Bundle
 import android.widget.RemoteViews
 import androidx.annotation.RequiresApi
+import androidx.compose.ui.unit.DpSize
 import android.content.Context
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.ui.common.DayNames
@@ -90,21 +91,35 @@ fun WidgetModel.lines(days: DayNames, withTail: Boolean = true): List<WidgetLine
  * Не больше [MAX_LINES] строк: дальше 14 дней всё равно не показываем, предел — защита размера пакета.
  */
 @RequiresApi(Build.VERSION_CODES.S)
-fun widgetRootViews(context: Context, appWidgetId: Int, model: WidgetModel, overlay: RemoteViews, liveClock: Boolean = true): RemoteViews =
+fun widgetRootViews(
+    context: Context,
+    appWidgetId: Int,
+    model: WidgetModel,
+    overlay: RemoteViews,
+    size: DpSize = DpSize.Unspecified,
+    liveClock: Boolean = true,
+): RemoteViews =
     RemoteViews(context.packageName, R.layout.widget_root).apply {
-        val all = if (model.isEmpty) emptyList() else model.lines(dayNames(context))
-        val lines = if (all.size > MAX_LINES) all.take(MAX_LINES) + WidgetLine.Tail else all
         val items = RemoteViews.RemoteCollectionItems.Builder()
             .setHasStableIds(true)
             .setViewTypeCount(WidgetRows.VIEW_TYPES)
-        lines.forEach { items.addItem(it.key.hashCode().toLong(), WidgetRows.views(context, it, model, liveClock)) }
+        val week = model.week
+        if (week != null) {
+            // Вид «Неделя» (итерация 45): четыре строки одинаковой высоты на весь виджет над нижней панелью.
+            WidgetWeekRows.views(context, week, size).forEachIndexed { index, row -> items.addItem("week:$index".hashCode().toLong(), row) }
+        } else {
+            val all = if (model.isEmpty) emptyList() else model.lines(dayNames(context))
+            val lines = if (all.size > MAX_LINES) all.take(MAX_LINES) + WidgetLine.Tail else all
+            lines.forEach { items.addItem(it.key.hashCode().toLong(), WidgetRows.views(context, it, model, liveClock)) }
+        }
         setRemoteAdapter(R.id.widget_list, items.build())
         setPendingIntentTemplate(
             R.id.widget_list,
             PendingIntent.getActivity(
                 context,
                 appWidgetId,
-                Intent(context, WidgetClickActivity::class.java),
+                // Номер виджета нужен нажатиям вида «Неделя»: выбор недели и месяца у каждого виджета свой.
+                Intent(context, WidgetClickActivity::class.java).putExtra(WidgetActions.EXTRA_WIDGET_ID, appWidgetId),
                 PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
             ),
         )
@@ -121,6 +136,12 @@ object WidgetClicks {
     const val TOGGLE_OVERDUE = "t"
     const val OPEN = "o"
     const val MOVE_OVERDUE = "m"
+
+    /** Вид «Неделя» в виджете (итерация 45): строка даты открывает день ([DAY]), строка мини-календаря выбирает неделю ([PICK_WEEK]), стрелки листают месяц. */
+    const val DAY = "d"
+    const val PICK_WEEK = "k"
+    const val PREV_MONTH = "p"
+    const val NEXT_MONTH = "x"
 
     /** Пустое нажатие: кружок будущего повтора и т. п. — у перекрашенной строки затирает прежнее. */
     const val NONE = "n"
@@ -144,6 +165,7 @@ class WidgetClickActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val (code, taskId) = WidgetClicks.parse(intent.data) ?: (null to null)
+        val widgetId = intent.getIntExtra(WidgetActions.EXTRA_WIDGET_ID, -1)
         WidgetLog.add(this, "нажатие в строке: $code")
         when (code) {
             WidgetClicks.OPEN -> taskId?.let { startActivity(openTaskIntent(this, it).apply { sourceBounds = intent.sourceBounds }) }
@@ -151,6 +173,10 @@ class WidgetClickActivity : Activity() {
             WidgetClicks.COMPLETE -> taskId?.let { sendBroadcast(WidgetActions.complete(this, it)) }
             WidgetClicks.UNCOMPLETE -> taskId?.let { sendBroadcast(WidgetActions.uncomplete(this, it)) }
             WidgetClicks.TOGGLE_OVERDUE -> sendBroadcast(WidgetActions.toggleOverdue(this))
+            WidgetClicks.DAY -> taskId?.let { startActivity(openDayIntent(this, it)) }
+            WidgetClicks.PICK_WEEK -> taskId?.let { sendBroadcast(WidgetActions.pickWeek(this, widgetId, it)) }
+            WidgetClicks.PREV_MONTH -> sendBroadcast(WidgetActions.shiftMonth(this, widgetId, -1))
+            WidgetClicks.NEXT_MONTH -> sendBroadcast(WidgetActions.shiftMonth(this, widgetId, 1))
         }
         finish()
     }

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Сгенерировано design/tools/gen_widget_week.py (итерация 45): последняя строка недели: воскресенье и мини-календарь. Высоту задаёт код (все строки недели одинаковые). Не править руками. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="UselessParent"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:id="@+id/week_row"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/widget_week_row_default"
+        android:orientation="horizontal">
+
+        <include layout="@layout/widget_week_cell_l" />
+
+        <include layout="@layout/widget_week_calendar" />
+    </LinearLayout>
+</FrameLayout>

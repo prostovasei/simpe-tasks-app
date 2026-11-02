@@ -21,7 +21,7 @@ fun renderWidget(context: Context, model: WidgetModel, size: DpSize = DpSize(320
         val overlay = GlanceRemoteViews().compose(context, size, appWidgetOptions = Bundle()) {
             WidgetContent(model, 1, scrollable = true, liveClock = liveClock)
         }.remoteViews
-        widgetRootViews(context, 1, model, overlay, liveClock)
+        widgetRootViews(context, 1, model, overlay, size, liveClock)
     }
 
 /**

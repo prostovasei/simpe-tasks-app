@@ -119,6 +119,32 @@ class WidgetScreenshotTest {
     @Config(qualifiers = "+night")
     fun widgetListDark() = capture("screenshots/widget_list_dark.png", scrollable = true)
 
+    /** Вид «Неделя» в виджете (итерация 45): четыре строки одинаковой высоты, «+N», мини-календарь, нижняя панель с тремя вкладками. */
+    @Test
+    fun widgetWeekLight() = capture("screenshots/widget_week_light.png", heightDp = 640, shown = weekModel, scrollable = true)
+
+    @Test
+    @Config(qualifiers = "+night")
+    fun widgetWeekDark() = capture("screenshots/widget_week_dark.png", heightDp = 640, shown = weekModel, scrollable = true)
+
+    private val weekModel: WidgetModel
+        get() {
+            val monday = today.minusDays(4)
+            fun day(offset: Int) = monday.plusDays(offset.toLong())
+            val tasks = mapOf(
+                0 to listOf(item("w1", "Купить продукты", DueText(DayLabel.Today, "10:00"), priority = Priority.LOW, done = true), item("w2", "Тренировка", DueText(DayLabel.Today, null))),
+                1 to listOf(item("w3", "Оплатить интернет", DueText(DayLabel.Today, "12:00"), priority = Priority.MEDIUM), item("w4", "Позвонить маме", DueText(DayLabel.Today, null))),
+                2 to listOf(item("w5", "Встреча", DueText(DayLabel.Today, "15:00"), priority = Priority.HIGH)),
+                4 to (1..6).map { item("w1$it", "Задача $it", DueText(DayLabel.Today, if (it == 1) "17:00" else null), priority = if (it == 1) Priority.HIGH else Priority.NONE) },
+                5 to listOf(item("w6", "Уборка", DueText(DayLabel.Today, "11:00")), item("w7@0", "Созвон с командой", DueText(DayLabel.Today, "10:00"), ghostOf = "w7")),
+                6 to listOf(item("w8", "План на неделю", DueText(DayLabel.Today, null))),
+            )
+            return WidgetModel(
+                WidgetFilter.Week, null, today, emptyList(),
+                week = WidgetWeek(monday, java.time.YearMonth.from(today), (0..6).map { com.prostovasei.simpletasks.ui.feature.week.WeekDay(day(it), tasks[it].orEmpty()) }, today),
+            )
+        }
+
     /** Настоящая картинка виджета: Glance молча отбрасывает детей Column сверх 10 — все 25 задач дня должны остаться. */
     @Test
     fun dayWithManyTasksKeepsAll() {

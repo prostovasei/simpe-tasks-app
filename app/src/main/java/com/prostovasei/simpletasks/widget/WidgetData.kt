@@ -8,6 +8,8 @@ import com.prostovasei.simpletasks.domain.repository.TaskRepository
 import com.prostovasei.simpletasks.ui.feature.all.OverdueFold
 import com.prostovasei.simpletasks.ui.feature.all.projectsById
 import com.prostovasei.simpletasks.ui.feature.task.options
+import com.prostovasei.simpletasks.ui.feature.week.buildWeek
+import com.prostovasei.simpletasks.ui.feature.week.weekStart
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
@@ -17,6 +19,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
+import java.time.LocalDate
+import java.time.YearMonth
 
 /** Зависимости для виджета: Glance создаёт его сам, без Hilt-внедрения. */
 @EntryPoint
@@ -31,14 +35,27 @@ interface WidgetEntryPoint {
 
 fun Context.widgetEntryPoint(): WidgetEntryPoint = EntryPointAccessors.fromApplication(applicationContext, WidgetEntryPoint::class.java)
 
+/**
+ * Выбор в виде «Неделя» (итерация 45), свой у каждого виджета: [start] — понедельник выбранной недели, [month] — месяц мини-календаря;
+ * null — текущая неделя и месяц сегодняшнего дня.
+ */
+data class WeekPick(val start: LocalDate? = null, val month: YearMonth? = null)
+
 /** Данные виджета для выбранного [filter]; обновляются при любых изменениях задач, в начале и конце сегодняшних задач и в полночь. */
 @OptIn(ExperimentalCoroutinesApi::class)
-fun WidgetEntryPoint.observeModel(filter: WidgetFilter): Flow<WidgetModel> = dayTicker().today().flatMapLatest { today ->
+fun WidgetEntryPoint.observeModel(filter: WidgetFilter, pick: WeekPick = WeekPick()): Flow<WidgetModel> = dayTicker().today().flatMapLatest { today ->
     val zone = time().zone()
     val tree = projects().observeProjectTree()
     val model = when (filter) {
         WidgetFilter.All -> combine(tasks().observeAllScreen(today), tree) { all, t -> WidgetModels.all(all, t.projectsById(), today, zone) to t }
         WidgetFilter.Inbox -> combine(tasks().observeInbox(today), tree) { list, t -> WidgetModels.list(filter, null, list, t.projectsById(), today, zone) to t }
+        WidgetFilter.Week -> {
+            val start = pick.start ?: today.weekStart()
+            combine(tasks().observeWeek(start), tree) { week, t ->
+                val days = buildWeek(start, week, t.projectsById(), today, zone, emptySet())
+                WidgetModel(WidgetFilter.Week, null, today, emptyList(), week = WidgetWeek(start, pick.month ?: YearMonth.from(today), days, today)) to t
+            }
+        }
         is WidgetFilter.ProjectList -> combine(tasks().observeProjectTasks(filter.projectId, today), tree) { list, t ->
             val projects = t.projectsById()
             // Список удалили — виджет возвращается к «Все».

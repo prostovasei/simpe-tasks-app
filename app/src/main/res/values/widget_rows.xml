@@ -31,6 +31,16 @@
     <dimen name="widget_radius_sm">4dp</dimen>
     <dimen name="widget_radius_md">8dp</dimen>
     <dimen name="widget_radius_lg">12dp</dimen>
+    <dimen name="widget_week_task">28dp</dimen>
+    <dimen name="widget_week_check">16dp</dimen>
+    <dimen name="widget_week_tick">10dp</dimen>
+    <dimen name="widget_week_header">26dp</dimen>
+    <dimen name="widget_week_cal_head">20dp</dimen>
+    <dimen name="widget_week_cal_weekdays">12dp</dimen>
+    <dimen name="widget_week_cal_day">14dp</dimen>
+    <dimen name="widget_week_cal_row">20dp</dimen>
+    <dimen name="widget_week_cal_arrow">24dp</dimen>
+    <dimen name="widget_week_row_default">140dp</dimen>
     <dimen name="widget_radius_xl">16dp</dimen>
 
     <color name="widget_surface">#FFFFFFFF</color>
@@ -45,4 +55,6 @@
     <color name="widget_text_done">#B315161F</color>
     <color name="widget_icon_done">#B35F6474</color>
     <color name="widget_accent_done">#B315803D</color>
+    <color name="widget_inactive">#FFA8B3AB</color>
+    <color name="widget_accent_soft">#FFD3ECDB</color>
 </resources>
