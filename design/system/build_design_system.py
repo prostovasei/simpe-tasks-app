@@ -94,6 +94,12 @@ SIZE_PICK = {
     'ICON_TILE': ('icon-tile', 'Плитка значка в окне выбора значка.'),
     'NAV_BAR': ('nav-bar', 'Высота нижней панели (закреплена внизу на всю ширину).'), 'NAV_TAB': ('nav-tab', 'Наибольшая ширина кнопки вкладки; вкладки делят ширину поровну.'),
     'NAV_ADD_W': ('nav-add-w', 'Кнопка «+» в панели: ширина.'), 'NAV_ADD_H': ('nav-add-h', 'Кнопка «+» в панели: высота.'),
+    'WIDGET_WEEK_TASK': ('widget-week-task', 'Вид «Неделя» в виджете: плашка задачи.'), 'WIDGET_WEEK_CHECK': ('widget-week-check', 'Вид «Неделя» в виджете: кружок.'),
+    'WIDGET_WEEK_TICK': ('widget-week-tick', 'Вид «Неделя» в виджете: галочка в кружке.'), 'WIDGET_WEEK_HEADER': ('widget-week-header', 'Вид «Неделя» в виджете: строка даты.'),
+    'WIDGET_WEEK_CAL_HEAD': ('widget-week-cal-head', 'Мини-календарь в виджете: месяц и стрелки.'), 'WIDGET_WEEK_CAL_WEEKDAYS': ('widget-week-cal-weekdays', 'Мини-календарь в виджете: «пн…вс».'),
+    'WIDGET_WEEK_CAL_DAY': ('widget-week-cal-day', 'Мини-календарь в виджете: день (кружок «сегодня»); меньше нельзя.'), 'WIDGET_WEEK_CAL_ROW': ('widget-week-cal-row', 'Мини-календарь в виджете: строка недели по умолчанию.'),
+    'WIDGET_WEEK_CAL_ROW_MAX': ('widget-week-cal-row-max', 'Мини-календарь в виджете: наибольшая строка недели.'), 'WIDGET_WEEK_CAL_ARROW': ('widget-week-cal-arrow', 'Мини-календарь в виджете: стрелка месяца.'),
+    'WIDGET_WEEK_ROW_DEFAULT': ('widget-week-row-default', 'Строка недели в виджете, пока размер виджета неизвестен.'), 'WIDGET_WEEK_ROW_MIN': ('widget-week-row-min', 'Строка недели в виджете: наименьшая высота.'),
     'WEEKVIEW_CELL_MIN': ('weekview-cell-min', 'Вид «Неделя»: наименьшая высота ячейки дня.'), 'WEEKVIEW_TASK': ('weekview-task', 'Вид «Неделя»: высота плашки задачи; она же зона нажатия кружка.'),
     'WEEKVIEW_CHECK': ('weekview-check', 'Вид «Неделя»: кружок приоритета.'), 'WEEKVIEW_CHECK_ICON': ('weekview-check-icon', 'Вид «Неделя»: галочка в кружке.'),
     'WEEKVIEW_HEADER': ('weekview-header', 'Вид «Неделя»: строка даты ячейки.'), 'WEEKVIEW_CAL_ROW': ('weekview-cal-row', 'Мини-календарь: наибольшая высота строки недели.'),
@@ -647,9 +653,9 @@ def main():
     import ds_more
     previews.update(ds_more.PREVIEWS)
     COMP_README.update(ds_more.README_MORE)
-    COMP_README['WidgetBar'] = ('Нижняя строка виджета: переключатель «Все» / «Входящие», кнопка «открыть приложение», «+».',
+    COMP_README['WidgetBar'] = ('Нижняя строка виджета: переключатель «Все» / «Входящие» / «Неделя», кнопка «открыть приложение», «+».',
                                 '''Кнопки лежат прямо на ленте, без подложки и перехода к фону; задачи уходят под них. Высота строки `size-widget-bar` (48), поля по бокам 6, кнопки по центру (отступ от нижнего края 4). Формы — как клавиша ввода на клавиатуре: ниже и шире, скругление больше.
-Слева капсула `surface` (радиус `radius-xl`, поля 4) с двумя кнопками `size-widget-switch-w` × `size-widget-switch-h` (52×36, радиус `radius-lg`): выбранная залита `selected` со значком `accent` 26, другая `surface` со значком `text-secondary`.
+Слева капсула `surface` (радиус `radius-xl`, поля 4) с тремя кнопками («Все», «Входящие», «Неделя» — `ic_tab_week`) `size-widget-switch-w` × `size-widget-switch-h` (52×36, радиус `radius-lg`): выбранная залита `selected` со значком `accent` 26, другая `surface` со значком `text-secondary`.
 Место между капсулой и кнопками нажимается как «открыть приложение». Справа капсула «открыть приложение» `size-widget-open-w` × `size-widget-open-h` (56×40, радиус `radius-xl`, `surface`) с зелёной (`accent`) галочкой значка приложения 26×22, щель 8 и «+» `size-widget-add-w` × `size-widget-add-h` (64×40, радиус `radius-xl`, `accent`, значок 24 `on-accent`). Кнопки обновления на виджете больше нет — проверка обновления в «Настройках».''')
     groups = {}
     for name, fn in previews.items():
