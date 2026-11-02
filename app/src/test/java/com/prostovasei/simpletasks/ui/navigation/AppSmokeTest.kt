@@ -73,6 +73,11 @@ class AppSmokeTest {
         composeRule.onNodeWithText("Входящие пусты").assertExists()
 
         // Поиск: поле ввода сразу на экране, ничего не найдено.
+        // Итерация 44: вкладка «Неделя» — сетка из семи дней и мини-календарь.
+        composeRule.onNodeWithTag("tab:WEEK").performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists("week-screen") }
+        composeRule.onNodeWithTag("week-cal-title").assertExists()
+
         composeRule.onNodeWithTag("tab:SEARCH").performClick()
         composeRule.onNodeWithTag(TAG_SEARCH_FIELD).performTextReplacement("молоко")
         composeRule.onNodeWithText("Ничего не найдено").assertExists()
@@ -275,3 +280,6 @@ class AppSmokeTest {
 private fun androidx.compose.ui.test.junit4.ComposeTestRule.onAllNodesWithTextExists(text: String): Boolean =
     onAllNodes(androidx.compose.ui.test.hasText(text) or androidx.compose.ui.test.hasContentDescription(text))
         .fetchSemanticsNodes().isNotEmpty()
+
+private fun androidx.compose.ui.test.junit4.ComposeTestRule.onAllNodesWithTagExists(tag: String): Boolean =
+    onAllNodes(androidx.compose.ui.test.hasTestTag(tag)).fetchSemanticsNodes().isNotEmpty()

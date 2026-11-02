@@ -10,6 +10,7 @@ import com.prostovasei.simpletasks.domain.model.NewTask
 import com.prostovasei.simpletasks.domain.model.SearchableTask
 import com.prostovasei.simpletasks.domain.model.Task
 import com.prostovasei.simpletasks.domain.model.TaskDetails
+import com.prostovasei.simpletasks.domain.model.WeekTasks
 import kotlinx.coroutines.flow.Flow
 import java.time.Instant
 import java.time.LocalDate
@@ -20,6 +21,12 @@ interface TaskRepository {
      * Здесь и во «Входящих» и списках — активные и выполненные сегодня (до полуночи, итерация 27).
      */
     fun observeAllScreen(today: LocalDate): Flow<AllScreenTasks>
+
+    /**
+     * Неделя из семи дней, начиная с [weekStart] (итерация 44): активные и выполненные задачи недели (выполненные — за любой день)
+     * и все активные повторяющиеся — для будущих разов.
+     */
+    fun observeWeek(weekStart: LocalDate): Flow<WeekTasks>
 
     /** «Входящие»: задачи системного списка и все задачи без срока (SPEC.md §4.2). */
     fun observeInbox(today: LocalDate): Flow<List<Task>>

@@ -14,6 +14,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
@@ -21,8 +22,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
@@ -31,7 +34,6 @@ import androidx.compose.material.icons.filled.MailOutline
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import kotlinx.coroutines.launch
@@ -59,7 +61,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hasRoute
@@ -77,6 +81,8 @@ import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.ui.common.TAG_ADD_TASK
 import com.prostovasei.simpletasks.ui.feature.all.AllRoute
+import com.prostovasei.simpletasks.ui.feature.week.DayRoute
+import com.prostovasei.simpletasks.ui.feature.week.WeekRoute
 import com.prostovasei.simpletasks.ui.feature.inbox.InboxRoute
 import com.prostovasei.simpletasks.ui.feature.lists.ListsRoute
 import com.prostovasei.simpletasks.ui.feature.project.ProjectRoute
@@ -91,12 +97,14 @@ import com.prostovasei.simpletasks.ui.feature.task.TaskDetailRoute
 import kotlin.reflect.KClass
 
 /** Вкладки нижнего бара (SPEC.md §4). */
-enum class Tab(val route: Any, val routeClass: KClass<*>, @param:StringRes val label: Int, val icon: ImageVector) {
-    INBOX(InboxDestination, InboxDestination::class, R.string.tab_inbox, Icons.Default.MailOutline),
-    ALL(AllDestination, AllDestination::class, R.string.tab_all, Icons.Default.DateRange),
-    LISTS(ListsDestination, ListsDestination::class, R.string.tab_lists, Icons.AutoMirrored.Filled.List),
-    SEARCH(SearchDestination, SearchDestination::class, R.string.tab_search, Icons.Default.Search),
-    SETTINGS(SettingsDestination, SettingsDestination::class, R.string.tab_settings, Icons.Default.Settings),
+enum class Tab(val route: Any, val routeClass: KClass<*>, @param:StringRes val label: Int, val icon: @Composable () -> ImageVector) {
+    INBOX(InboxDestination, InboxDestination::class, R.string.tab_inbox, { Icons.Default.MailOutline }),
+    ALL(AllDestination, AllDestination::class, R.string.tab_all, { Icons.Default.DateRange }),
+    // Итерация 44: «Неделя» — после «Все».
+    WEEK(WeekDestination, WeekDestination::class, R.string.tab_week, { ImageVector.vectorResource(R.drawable.ic_tab_week) }),
+    LISTS(ListsDestination, ListsDestination::class, R.string.tab_lists, { Icons.AutoMirrored.Filled.List }),
+    SEARCH(SearchDestination, SearchDestination::class, R.string.tab_search, { Icons.Default.Search }),
+    SETTINGS(SettingsDestination, SettingsDestination::class, R.string.tab_settings, { Icons.Default.Settings }),
 }
 
 @Composable
@@ -177,8 +185,8 @@ fun AppNavHost(
                 BottomBar(
                     selected = selected,
                     onSelect = { tab -> navController.openTab(tab) },
-                    // На «Все» новая задача — на сегодня, на остальных вкладках — во «Входящие».
-                    onAdd = { navController.navigate(QuickAddDestination(today = selected == Tab.ALL)) },
+                    // На «Все» и «Неделе» новая задача — на сегодня, на остальных вкладках — во «Входящие».
+                    onAdd = { navController.navigate(QuickAddDestination(today = selected == Tab.ALL || selected == Tab.WEEK)) },
                 )
             }
         },
@@ -202,6 +210,11 @@ fun AppNavHost(
             composable<AllDestination> {
                 AllRoute(onOpenTask = openTask)
             }
+            composable<WeekDestination> {
+                WeekRoute(onOpenTask = openTask, onOpenDay = { navController.navigate(DayDestination(it.toString())) })
+            }
+            // Полный список дня: открывается нажатием на строку даты в ячейке недели (итерация 44).
+            composable<DayDestination> { DayRoute(onBack = { navController.popBackStack() }, onOpenTask = openTask) }
             composable<ListsDestination> {
                 ListsRoute(onOpenProject = { navController.navigate(ProjectDestination(it)) }, onOpenCompleted = { navController.navigate(CompletedDestination) }, onOpenTrash = { navController.navigate(TrashDestination) })
             }
@@ -231,41 +244,42 @@ fun AppNavHost(
 }
 
 /**
- * Плавающая нижняя панель (итерация 13, макет PM): иконки вкладок без подписей, открытая — зелёная,
- * в конце — кнопка «+» новой задачи. Поиск — всегда в панели, перед «Настройками» (итерация 15).
+ * Нижняя панель (итерация 13, макет PM; итерация 44 — по референсу PM: не парит, а закреплена внизу на всю ширину, без капсулы и тени,
+ * сверху тонкая линия): иконки вкладок без подписей, открытая — зелёная, в конце — кнопка «+» новой задачи. Поиск — всегда в панели,
+ * перед «Настройками» (итерация 15). Фон панели доходит до низа экрана — под системной панелью навигации.
  */
 @Composable
 fun BottomBar(selected: Tab, onSelect: (Tab) -> Unit, onAdd: () -> Unit = {}) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
     val sizes = AppTheme.sizes
-    Box(
-        Modifier
-            .fillMaxWidth()
-            .windowInsetsPadding(WindowInsets.navigationBars)
-            .padding(horizontal = spacing.sm, vertical = spacing.sm),
-    ) {
+    Column(Modifier.fillMaxWidth().background(colors.surface)) {
+        Box(Modifier.fillMaxWidth().height(sizes.hairline).background(colors.divider))
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .windowInsetsPadding(WindowInsets.navigationBars)
                 .height(sizes.navBar)
-                .shadow(sizes.navShadow, AppTheme.shapes.nav)
-                .background(colors.surface, AppTheme.shapes.nav)
-                .padding(start = spacing.sm, end = spacing.xxs),
+                .padding(start = spacing.xxs, end = spacing.xs),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
+            // Вкладки делят ширину поровну (их шесть); на очень узком экране сжимаются, «+» остаётся на месте.
             Tab.entries.forEach { tab ->
-                IconButton(
-                    onClick = { onSelect(tab) },
-                    modifier = Modifier.size(sizes.navTab).testTag("tab:${tab.name}"),
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(sizes.navBar)
+                        .clickable(role = Role.Button, onClick = { onSelect(tab) })
+                        .testTag("tab:${tab.name}"),
+                    contentAlignment = Alignment.Center,
                 ) {
-                    Icon(tab.icon, contentDescription = stringResource(tab.label), tint = if (tab == selected) colors.accent else colors.textSecondary)
+                    Icon(tab.icon(), contentDescription = stringResource(tab.label), tint = if (tab == selected) colors.accent else colors.textSecondary)
                 }
             }
             Box(
                 modifier = Modifier
-                    .size(sizes.navAdd)
+                    .padding(start = spacing.xxs)
+                    .size(width = sizes.navAddWidth, height = sizes.navAddHeight)
                     .clip(AppTheme.shapes.extraLarge)
                     .background(colors.accent)
                     .clickable(onClick = onAdd)

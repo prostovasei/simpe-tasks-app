@@ -201,4 +201,33 @@ class TaskRepositoryTest : DatabaseTest() {
         assertEquals(TaskDue.AllDay(today.minusDays(3)), tasks.getTask(pastAllDay)?.due)
         assertEquals(TaskDue.AtTime(Instant.parse("2026-10-11T07:30:00Z")), tasks.getTask(pastTimed)?.due)
     }
+
+    /** Неделя (итерация 44): задачи по границам недели для «всего дня» и со временем, выполненные за любой день, без удалённых; повторяющиеся — отдельно. */
+    @Test
+    fun weekHasTasksOfItsSevenDaysIncludingDoneAndRepeating() = runTest {
+        val inbox = projects.getInbox().id
+        val zone = time.zone()
+        val monday = LocalDate.of(2026, 10, 26)
+        fun at(date: LocalDate, hour: Int) = TaskDue.AtTime(date.atTime(hour, 0).atZone(zone).toInstant())
+
+        val allDay = tasks.createTask(NewTask(inbox, "весь день", due = TaskDue.AllDay(monday)))
+        val sundayEvening = tasks.createTask(NewTask(inbox, "вс вечером", due = at(monday.plusDays(6), 23)))
+        val interval = tasks.createTask(NewTask(inbox, "интервал", start = at(monday.plusDays(2), 22), due = at(monday.plusDays(3), 1)))
+        val done = tasks.createTask(NewTask(inbox, "сделано", due = at(monday.plusDays(1), 10)))
+        tasks.setCompleted(done, true)
+        val before = tasks.createTask(NewTask(inbox, "до недели", due = TaskDue.AllDay(monday.minusDays(1))))
+        val after = tasks.createTask(NewTask(inbox, "после недели", due = TaskDue.AllDay(monday.plusDays(7))))
+        val nextWeekTimed = tasks.createTask(NewTask(inbox, "после недели со временем", due = at(monday.plusDays(7), 0)))
+        val deleted = tasks.createTask(NewTask(inbox, "удалено", due = TaskDue.AllDay(monday.plusDays(1))))
+        tasks.deleteTask(deleted)
+        val repeating = tasks.createTask(NewTask(inbox, "повтор", due = TaskDue.AllDay(monday.minusDays(10)), rrule = "FREQ=DAILY"))
+        val noDate = tasks.createTask(NewTask(inbox, "без даты"))
+
+        val week = tasks.observeWeek(monday).first()
+
+        assertEquals(setOf(allDay, sundayEvening, interval, done), week.inRange.map { it.id }.toSet())
+        assertEquals(listOf(repeating), week.repeating.map { it.id })
+        assertTrue(listOf(before, after, nextWeekTimed, deleted, noDate).none { id -> week.inRange.any { it.id == id } })
+        assertTrue(week.inRange.first { it.id == done }.isCompleted)
+    }
 }

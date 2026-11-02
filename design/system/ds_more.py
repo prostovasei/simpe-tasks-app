@@ -91,11 +91,12 @@ def frame(body, h=640, w=412):
 
 
 def nav_bar(sel):
-    names = ['mail', 'range', 'list', 'search', 'settings']
-    tabs = ''.join(f'<span style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:{"var(--accent)" if i == sel else "var(--text-secondary)"}">{mi(n, 24)}</span>' for i, n in enumerate(names))
-    add = f'<span style="width:52px;height:52px;border-radius:var(--radius-xl);background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center">{mi("add", 24)}</span>'
-    return (f'<div style="position:absolute;left:0;right:0;bottom:0;padding:12px"><div style="height:64px;border-radius:var(--radius-nav);background:var(--surface);{SHADOW};'
-            f'display:flex;align-items:center;justify-content:space-between;padding:0 4px 0 12px">{tabs}{add}</div></div>')
+    # Итерация 44: панель закреплена внизу на всю ширину, без капсулы и тени; шесть вкладок (после «Все» — «Неделя»), «+» в конце.
+    icons = [mi('mail', 24), mi('range', 24), svg('ic_tab_week', 24), mi('list', 24), mi('search', 24), mi('settings', 24)]
+    tabs = ''.join(f'<span style="flex:1;height:56px;display:flex;align-items:center;justify-content:center;color:{"var(--accent)" if i == sel else "var(--text-secondary)"}">{ic}</span>' for i, ic in enumerate(icons))
+    add = f'<span style="width:48px;height:40px;margin-left:4px;border-radius:var(--radius-xl);background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center">{mi("add", 24)}</span>'
+    return (f'<div style="position:absolute;left:0;right:0;bottom:0;height:57px;background:var(--surface);border-top:1px solid var(--divider);'
+            f'display:flex;align-items:center;padding:0 8px 0 4px">{tabs}{add}</div>')
 
 
 def day_header(text, relative=None, overdue=False, pad='12px 0 4px 12px'):
@@ -320,8 +321,8 @@ def p_search_field():
 
 
 def p_bottom_bar():
-    body = '<div style="display:flex;flex-direction:column;gap:12px">' + ''.join(frame(f'<div style="position:absolute;inset:0">{nav_bar(i)}</div>', h=96, w=412) for i in (1, 2)) + '</div>'
-    return doc('Список и виджет', 260, 'Нижняя панель приложения: пять вкладок и «+»; выбранная вкладка — зелёная', body)
+    body = '<div style="display:flex;flex-direction:column;gap:12px">' + ''.join(frame(f'<div style="position:absolute;inset:0">{nav_bar(i)}</div>', h=57, w=412) for i in (1, 2)) + '</div>'
+    return doc('Список и виджет', 260, 'Нижняя панель приложения: шесть вкладок и «+», закреплена внизу на всю ширину; выбранная вкладка — зелёная', body)
 
 
 def strip(title, subtitle, undo=None):
@@ -405,7 +406,7 @@ def lists_screen():
               f'<span style="width:48px;height:48px;display:flex;align-items:center;justify-content:center">{mi("more")}</span></div>')
     trash = f'<div style="display:flex;align-items:center;padding:12px 16px;color:var(--text-secondary)">{TRASH_ICON(24)}<span style="flex:1;padding-left:12px;font-size:16px;line-height:24px;color:var(--text-primary)">Корзина</span><span style="font-size:14px">5</span></div>'
     body = f'{head}{done}{trash}{folder}{proj("Ремонт", "var(--list-orange)", "ic_list_home", 3, True)}{proj("Работа", "var(--list-blue)", "ic_list_work", 12)}{proj("Спорт", "var(--list-teal)", "ic_list_sport", "")}{proj("Учёба", "var(--list-purple)", "ic_list_study", 4)}'
-    return frame(f'<div style="padding-top:8px">{body}</div>{nav_bar(2)}', 680)
+    return frame(f'<div style="padding-top:8px">{body}</div>{nav_bar(3)}', 680)
 
 
 def project_screen():
@@ -424,7 +425,7 @@ def search_screen():
             + old_row('Подготовить отчёт', 'var(--ring-high)', trailing=['Сегодня', '12:30'], mark='отчёт', list_color='var(--list-blue)')
             + old_row('Согласовать бюджет', 'var(--ring-medium)', sub='…квартальный отчёт и план', mark='отчёт', list_color='var(--list-blue)') + '</div>'
             + section_header('Выполненные') + old_row('Сдать отчёт за сентябрь', 'var(--inactive)', done=True, mark='отчёт', list_color='var(--list-blue)'))
-    return frame(f'{field}{rows}{nav_bar(3)}', 680)
+    return frame(f'{field}{rows}{nav_bar(4)}', 680)
 
 
 def completed_screen():
@@ -447,7 +448,7 @@ def settings_screen():
             f'{title}Импорт из TickTick</div><div style="font-size:14px;line-height:20px;color:var(--text-secondary)">Резервную копию (.csv) можно создать в настройках веб-версии TickTick.</div><div>{material_button("Выбрать файл .csv")}</div>{divider}'
             f'{title}Данные</div><div style="font-size:14px;line-height:20px">Задач: 3399 (активных 145)</div><div>{material_button("Очистить все данные", "outlined", "var(--danger)")}</div>'
             '<div style="font-size:12px;line-height:16px;color:var(--text-secondary);padding-top:12px">Версия 0.34.0 (сборка 138)</div></div>')
-    return frame(f'{body}{nav_bar(4)}', 850)
+    return frame(f'{body}{nav_bar(5)}', 850)
 
 
 def sheet_screen():
@@ -592,7 +593,7 @@ def lists_with_trash():
                               f'<span style="font-size:14px">{n}</span></div>')
     body = (head + row(mi('check'), 'Выполненные') + row(TRASH_ICON(24), 'Корзина', 5) + proj('Работа', 'var(--list-blue)', 'ic_list_work', 12)
             + proj('Спорт', 'var(--list-teal)', 'ic_list_sport', '') + proj('Учёба', 'var(--list-purple)', 'ic_list_study', 4))
-    return frame(f'<div style="padding-top:8px">{body}</div>{nav_bar(2)}', 680)
+    return frame(f'<div style="padding-top:8px">{body}</div>{nav_bar(3)}', 680)
 
 
 def readonly_task(menu=True):
@@ -727,7 +728,59 @@ def p_smart_date():
     return doc('Окна', 330, 'Дата и время в названии: фраза подсвечена, под названием чип срока с крестиком', body)
 
 
+# ---------------------------------------------------------------- итерация 44: вид «Неделя»
+
+def week_task(title, time='', color='var(--inactive)', done=False, ghost=False, over=False):
+    ring = (f'<span style="width:16px;height:16px;border-radius:50%;background:{color};display:flex;align-items:center;justify-content:center;color:var(--on-accent)">{svg("ic_node_check", 10)}</span>' if done
+            else f'<span style="width:16px;height:16px;border-radius:50%;border:2px solid {color};box-sizing:border-box"></span>')
+    st = 'text-decoration:line-through;' if done else ''
+    op = 'opacity:.7;' if done else ('opacity:.5;' if ghost else '')
+    t = f'<span style="font-size:11px;font-weight:600;color:{"var(--overdue)" if over else "var(--text-secondary)"};padding:0 8px 0 4px">{time}</span>' if time else '<span style="width:8px"></span>'
+    return (f'<div style="height:32px;margin-top:4px;border-radius:var(--radius-md);background:var(--surface);display:flex;align-items:center;{op}">'
+            f'<span style="width:32px;display:flex;align-items:center;justify-content:center">{ring}</span>'
+            f'<span style="flex:1;min-width:0;font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;{st}">{title}</span>{t}</div>')
+
+
+def week_cell(wd, num, tasks, today=False, hidden=0, h=190):
+    pill = (f'<span style="font-size:12px;font-weight:700;color:var(--on-accent);background:var(--accent);border-radius:12px;padding:1px 8px;margin-left:4px">{num}</span>' if today
+            else f'<span style="font-size:13px;font-weight:600;color:var(--text-secondary);margin-left:4px">{num}</span>')
+    more = f'<span style="margin-left:auto;font-size:12px;font-weight:700;color:var(--accent);background:var(--accent-soft);border-radius:12px;padding:0 8px">+{hidden}</span>' if hidden else ''
+    return (f'<div style="flex:1;min-width:0;height:{h}px;overflow:hidden;box-sizing:border-box;padding:8px 4px;border-right:1px solid var(--divider);border-bottom:1px solid var(--divider)">'
+            f'<div style="display:flex;align-items:center;height:26px"><span style="font-size:14px;font-weight:800;color:{"var(--accent)" if today else "var(--text-primary)"}">{wd}</span>{pill}{more}</div>{"".join(tasks)}</div>')
+
+
+def week_calendar(h=190):
+    weeks = [[28, 29, 30, 1, 2, 3, 4], [5, 6, 7, 8, 9, 10, 11], [12, 13, 14, 15, 16, 17, 18], [19, 20, 21, 22, 23, 24, 25], [26, 27, 28, 29, 30, 31, 1], [2, 3, 4, 5, 6, 7, 8]]
+    rows = ''
+    for i, w in enumerate(weeks):
+        band = 'background:var(--accent-soft);border-radius:12px;' if i == 4 else ''
+        cells = ''.join((f'<span style="flex:1;display:flex;justify-content:center"><span style="width:20px;height:20px;border-radius:50%;background:var(--accent);color:var(--on-accent);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center">{n}</span></span>'
+                         if i == 4 and n == 30 else
+                         f'<span style="flex:1;text-align:center;font-size:12px;font-weight:600;color:{"var(--inactive)" if (i == 0 and j < 3) or i == 5 or (i == 4 and j == 6) else "var(--text-primary)"}">{n}</span>')
+                        for j, n in enumerate(w))
+        rows += f'<div style="display:flex;align-items:center;height:24px;{band}">{cells}</div>'
+    head = (f'<div style="display:flex;align-items:center;justify-content:space-between;height:24px"><span style="color:var(--text-secondary);font-size:16px;width:24px;text-align:center">‹</span>'
+            '<span style="font-size:13px;font-weight:700">октябрь 2026</span><span style="color:var(--text-secondary);font-size:16px;width:24px;text-align:center">›</span></div>')
+    wk = ''.join(f'<span style="flex:1;text-align:center;font-size:10px;font-weight:600;color:var(--inactive)">{x}</span>' for x in ('пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'))
+    return (f'<div style="flex:1;min-width:0;height:{h}px;overflow:hidden;box-sizing:border-box;padding:4px;border-bottom:1px solid var(--divider)">{head}'
+            f'<div style="display:flex;height:14px;align-items:center">{wk}</div>{rows}</div>')
+
+
+def week_screen():
+    r1 = (f'<div style="display:flex">{week_cell("пн", 26, [week_task("Купить продукты", "10:00", "var(--ring-low)", done=True), week_task("Тренировка")])}'
+          f'{week_cell("вт", 27, [week_task("Оплатить интернет", "12:00", "var(--ring-medium)", over=True), week_task("Позвонить маме")])}</div>')
+    r2 = (f'<div style="display:flex">{week_cell("пт", 30, [week_task("Отчёт за неделю", "17:00", "var(--ring-high)"), week_task("Кино"), week_task("Ужин с Аней", "20:00"), week_task("Зарядка", "08:00", "var(--ring-medium)", done=True)], today=True, hidden=2)}'
+          f'{week_cell("сб", 31, [week_task("Уборка", "11:00"), week_task("Созвон с командой", "10:00", ghost=True)])}</div>')
+    r3 = f'<div style="display:flex">{week_cell("вс", 1, [week_task("План на неделю")])}{week_calendar()}</div>'
+    return frame(f'<div style="border-top:1px solid var(--divider)">{r1}{r2}{r3}</div>{nav_bar(2)}', 700)
+
+
+def p_week_view():
+    return doc('Список и виджет', 740, 'Вид «Неделя»: ячейки дней одинаковой высоты, «+N», мини-календарь, нижняя панель', f'<div class="row" style="align-items:flex-start">{week_screen()}</div>')
+
+
 PREVIEWS = {
+    'WeekView': p_week_view,
     'SmartDate': p_smart_date,
     'UpdateDialog': p_update_dialog, 'ListPriorityDialogs': p_list_priority_dialogs, 'CustomDialogs': p_custom_dialogs, 'AlertDialogs': p_alert_dialogs,
     'ChecklistRows': p_checklist, 'ChipsAndButtons': p_chips_fab, 'SettingsRow': p_switch_rows,
@@ -809,9 +862,12 @@ README_MORE = {
 Списки внутри папки сдвинуты вправо на `space-xl`. «+ Папка» и «+ Список» — текстовые кнопки `accent` справа от заголовка.'''),
     'SearchField': ('Поле поиска: подсказка «Поиск задач», запрос, очистка.',
                     '''Поле Material 3: фон `surface`, радиус `radius-lg`, высота 56, без линии снизу. Слева лупа `text-secondary`; справа крестик, когда есть запрос. Курсор `accent`. При открытии раздела курсор сразу в поле и поднята клавиатура. Найденное в плашках подсвечено `accent-soft`.'''),
-    'BottomBar': ('Нижняя панель приложения: «Входящие», «Все», «Списки», «Поиск», «Настройки» и «+».',
-                  '''Плавающая панель: высота `size-nav-bar` (64), радиус `radius-nav`, фон `surface`, лёгкая тень, поля от краёв `space-sm`. Вкладки — кнопки `size-nav-tab` (48) со значками 24 Material (почта, календарь, список, лупа, шестерёнка), выбранная `accent`, остальные `text-secondary`.
-«+» — `size-nav-add` (52), радиус `radius-xl`, `accent`. Панель стоит над системной панелью навигации.'''),
+    'WeekView': ('Вид «Неделя»: сетка 2×4 — шесть дней, воскресенье и мини-календарь; все ячейки одинаковые (0.44).',
+                 '''Нижняя панель: вкладка «Неделя» после «Все» (значок `ic_tab_week`). Сетка на весь экран без прокрутки: четыре строки одинаковой высоты, в строке две ячейки, линии `divider` между ячейками. Ячейка: строка даты `size-weekview-header` (26) — «пн 26» (`label-large` ExtraBold и SemiBold `text-secondary`; сегодня — день недели `accent`, число в метке `accent` с `on-accent`), справа «+N» (`label-medium` Bold `accent` на `accent-soft`) — сколько задач не поместилось; нажатие на строку даты открывает полный список дня. Ниже плашки `size-weekview-task` (32, `surface`, `radius-md`, щель `space-xxs`): кружок приоритета `size-weekview-check` (16, контур `size-checkbox-stroke`, цвета как в ленте; выполненная — залит с галочкой `size-weekview-check-icon`), название `body-small` Bold, время начала `label-small` справа (у невыполненных прошедших дней — `overdue`). Выполненная — зачёркнута и 70%, будущий повтор — 50% и без нажатия на кружок. Плашек в ячейке столько, сколько влезает по высоте.
+Мини-календарь — в последней ячейке: месяц и стрелки `size-weekview-cal-head` (24), «пн…вс» `size-weekview-cal-weekdays` (14), шесть строк недель (`size-weekview-cal-row-min` 16 … `size-weekview-cal-row` 28 — делят оставшуюся высоту). Строка недели нажимается целиком; выбранная — полоса `accent-soft`, сегодня — кружок `accent` `size-weekview-cal-today` (22), дни соседних месяцев — `inactive`. Неделя начинается с понедельника; текущая переходит в полночь, выбранная не прыгает. «+» создаёт задачу на сегодня. Полный список дня — вложенный экран с «Назад» (подпись «ПТ, 30 окт», метка «Сегодня», число задач, лента как на «Все»). Источник: `ui/feature/week/`.'''),
+    'BottomBar': ('Нижняя панель приложения: «Входящие», «Все», «Неделя», «Списки», «Поиск», «Настройки» и «+».',
+                  '''Закреплённая панель (0.44, решение PM по референсу): не парит, а лежит внизу на всю ширину — без капсулы и тени, сверху линия `divider` `size-hairline`, фон `surface` доходит до низа экрана под системной панелью навигации. Высота `size-nav-bar` (56). Шесть вкладок делят ширину поровну (на узком экране сжимаются): почта, календарь («Все»), три колонки («Неделя»), список, лупа, шестерёнка — значки 24, выбранная `accent`, остальные `text-secondary`; кнопка вкладки не шире `size-nav-tab` (48).
+В конце «+»: `size-nav-add-w` × `size-nav-add-h` (48×40), радиус `radius-xl`, `accent`, значок 24 `on-accent`. Нижнюю панель с тенью и капсулой больше не рисуем.'''),
     'ReminderStrip': ('Полоска напоминания поверх других приложений: стопка, «ещё N», «Отменить».',
                       '''Зелёная капсула `accent` высотой `size-popup-strip` (68), поля от краёв `size-popup-edge` (12), щель между полосками `size-popup-gap` (8). Слева колокольчик 22 `on-accent`; название `body-large` Bold, ниже подпись «Сегодня, 18:00 · Дом» `label-small` 80%.
 Справа круглые кнопки `size-popup-button` (48): «на завтра в это же время» (`on-accent` 18%, значок листка) и «выполнено» (`surface`, галочка `accent`). Смахнуть вправо — закрыть. Видно до трёх полосок, остальные — метка «ещё N».

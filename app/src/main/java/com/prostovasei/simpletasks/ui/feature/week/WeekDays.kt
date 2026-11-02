@@ -1,0 +1,47 @@
+package com.prostovasei.simpletasks.ui.feature.week
+
+import com.prostovasei.simpletasks.domain.model.Project
+import com.prostovasei.simpletasks.domain.model.WeekTasks
+import com.prostovasei.simpletasks.domain.model.upcomingRepeats
+import com.prostovasei.simpletasks.ui.common.TaskItem
+import com.prostovasei.simpletasks.ui.common.sortDay
+import com.prostovasei.simpletasks.ui.common.sortTime
+import com.prostovasei.simpletasks.ui.common.toItem
+import java.time.DayOfWeek
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.temporal.TemporalAdjusters
+
+/** Дней в неделе. */
+const val WEEK_LENGTH = 7
+
+/** Понедельник недели, в которую входит [date]. */
+fun LocalDate.weekStart(): LocalDate = with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+
+/**
+ * Семь дней недели с [weekStart]: задачи недели по их дню (начало интервала или срок), выполненные — на своём дне; будущие разы
+ * повторяющихся (после сегодняшнего дня) — бледными копиями. Внутри дня: «весь день», потом по времени, настоящие раньше будущих повторов.
+ */
+fun buildWeek(weekStart: LocalDate, week: WeekTasks, projects: Map<String, Project>, today: LocalDate, zone: ZoneId, pending: Set<String>): List<WeekDay> {
+    val last = weekStart.plusDays(WEEK_LENGTH - 1L)
+    val real = week.inRange.map { it to it.toItem(projects, today, zone, pending) }
+    // Будущие разы — только после сегодняшнего дня; прошлые разы уже стали выполненными задачами.
+    val after = maxOf(today, weekStart.minusDays(1))
+    val ghosts = if (after >= last) {
+        emptyList()
+    } else {
+        week.repeating.flatMap { task ->
+            task.upcomingRepeats(zone, after, last).mapIndexed { index, repeat -> repeat to repeat.toItem(projects, today, zone, pending, ghostIndex = index) }
+        }
+    }
+    val byDay = (real + ghosts)
+        .sortedWith(compareBy({ it.first.sortDay(zone) }, { it.first.sortTime() }, { it.second.isGhost }))
+        .groupBy({ it.first.sortDay(zone) }, { it.second })
+    return (0 until WEEK_LENGTH).map { offset ->
+        val date = weekStart.plusDays(offset.toLong())
+        WeekDay(date, byDay[date].orEmpty())
+    }
+}
+
+/** Время задачи для ячейки: начало («10:00»), без конца интервала; у «весь день» — null. */
+fun TaskItem.startTime(): String? = due?.time?.substringBefore('–')

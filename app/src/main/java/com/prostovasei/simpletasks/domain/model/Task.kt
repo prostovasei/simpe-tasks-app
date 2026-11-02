@@ -62,6 +62,12 @@ data class TaskDetails(
 /** Задача в корзине (итерация 39): [details] — она сама с пунктами чек-листа, [subtasks] — подзадачи, удалённые вместе с ней; удалена в [deletedAt]. */
 data class TrashedTask(val details: TaskDetails, val subtasks: List<Task>, val deletedAt: Instant)
 
+/**
+ * Неделя (итерация 44): [inRange] — активные и выполненные задачи, у которых начало (или срок) попадает в семь дней недели;
+ * [repeating] — все активные повторяющиеся: будущие разы считает приложение.
+ */
+data class WeekTasks(val inRange: List<Task>, val repeating: List<Task>)
+
 /** Секции экрана «Все» (SPEC.md §4.1). Только активные задачи. */
 data class AllScreenTasks(
     val overdue: List<Task>,

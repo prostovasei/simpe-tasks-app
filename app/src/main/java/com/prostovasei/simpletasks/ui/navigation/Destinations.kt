@@ -9,6 +9,14 @@ data object InboxDestination
 @Serializable
 data object AllDestination
 
+/** Вид «Неделя» (итерация 44). */
+@Serializable
+data object WeekDestination
+
+/** Полный список дня недели (итерация 44): [date] — день в виде «2026-10-30». Имя поля — ключ аргумента в SavedStateHandle. */
+@Serializable
+data class DayDestination(val date: String)
+
 @Serializable
 data object ListsDestination
 

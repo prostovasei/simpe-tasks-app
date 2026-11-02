@@ -39,10 +39,14 @@ object SizeTokens {
     /** Плитка значка в окне выбора значка. */
     const val ICON_TILE = 44
 
-    /** Плавающая нижняя панель: высота, кнопка вкладки, кнопка «+», тень. */
-    const val NAV_BAR = 64
+    /**
+     * Нижняя панель (итерация 44, решение PM: не парит, а закреплена внизу на всю ширину): высота, наибольшая ширина кнопки
+     * вкладки, кнопка «+» (ширина и высота); [NAV_SHADOW] — тень шторки и плашки сетки.
+     */
+    const val NAV_BAR = 56
     const val NAV_TAB = 48
-    const val NAV_ADD = 52
+    const val NAV_ADD_W = 48
+    const val NAV_ADD_H = 40
     const val NAV_SHADOW = 10
     const val CHECKBOX = 18
     const val CHECKBOX_STROKE = 2
@@ -218,6 +222,22 @@ object SizeTokens {
     const val SMART_CHIP_CLOSE_ICON = 12
 
     /** Корзина (итерация 39): строка с подписью «удалена …» выше обычной на это число dp. */
+    /**
+     * Вид «Неделя» (итерация 44): наименьшая высота ячейки дня, плашка задачи, кружок и значок в нём, строка подписи дня,
+     * строка недели в мини-календаре, кружок «сегодня» в нём и стрелки месяца.
+     */
+    const val WEEKVIEW_CELL_MIN = 112
+    const val WEEKVIEW_TASK = 32
+    const val WEEKVIEW_CHECK = 16
+    const val WEEKVIEW_CHECK_ICON = 10
+    const val WEEKVIEW_HEADER = 26
+    const val WEEKVIEW_CAL_ROW = 28
+    const val WEEKVIEW_CAL_ROW_MIN = 16
+    const val WEEKVIEW_CAL_HEAD = 24
+    const val WEEKVIEW_CAL_WEEKDAYS = 14
+    const val WEEKVIEW_CAL_TODAY = 22
+    const val WEEKVIEW_CAL_ARROW = 24
+
     const val TRASH_ROW_EXTRA = 14
 
     /** Строка недавнего запроса в поиске (итерация 38): высота, значок «часы» слева, зона нажатия крестика справа. */

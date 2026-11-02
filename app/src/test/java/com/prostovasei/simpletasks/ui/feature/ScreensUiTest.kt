@@ -3,6 +3,7 @@ package com.prostovasei.simpletasks.ui.feature
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -672,6 +673,21 @@ class ScreensUiTest {
         composeRule.onNodeWithTag(TAG_ADD_TASK).performClick()
 
         assertEquals(listOf(Tab.LISTS, Tab.SETTINGS), selected)
+        assertEquals(1, added)
+    }
+
+    /** Итерация 44: вкладок шесть — на самом узком экране они сжимаются, «+» и «Настройки» остаются на экране и нажимаются. */
+    @Test
+    @Config(qualifiers = "w320dp-h900dp-xhdpi")
+    fun bottomBarFitsNarrowScreenWithWeekTab() {
+        val selected = mutableListOf<Tab>()
+        var added = 0
+        show { BottomBar(selected = Tab.WEEK, onSelect = { selected += it }, onAdd = { added++ }) }
+
+        Tab.entries.forEach { composeRule.onNodeWithTag("tab:${it.name}").assertIsDisplayed() }
+        composeRule.onNodeWithTag("tab:WEEK").performClick()
+        composeRule.onNodeWithTag(TAG_ADD_TASK).assertIsDisplayed().performClick()
+        assertEquals(listOf(Tab.WEEK), selected)
         assertEquals(1, added)
     }
 

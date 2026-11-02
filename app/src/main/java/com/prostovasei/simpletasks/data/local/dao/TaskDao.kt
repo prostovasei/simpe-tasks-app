@@ -99,6 +99,25 @@ interface TaskDao {
     )
     fun observeUpcoming(allDayEnd: Long, end: Long, doneSince: Long): Flow<List<TaskEntity>>
 
+    /**
+     * Неделя (итерация 44): активные и выполненные задачи, у которых начало (или срок) попадает в промежуток недели —
+     * для задач «на весь день» по границам [allDayStart, allDayEnd), для задач со временем — [start, end).
+     */
+    @Query(
+        """
+        SELECT * FROM tasks
+        WHERE is_deleted = 0 AND status IN (0, 2) AND due_date IS NOT NULL
+          AND ((is_all_day = 1 AND COALESCE(start_date, due_date) >= :allDayStart AND COALESCE(start_date, due_date) < :allDayEnd)
+            OR (is_all_day = 0 AND COALESCE(start_date, due_date) >= :start AND COALESCE(start_date, due_date) < :end))
+        ORDER BY COALESCE(start_date, due_date), priority DESC, sort_order, created_at
+        """,
+    )
+    fun observeWeek(allDayStart: Long, allDayEnd: Long, start: Long, end: Long): Flow<List<TaskEntity>>
+
+    /** Активные повторяющиеся задачи со сроком: их будущие разы показываются в неделе (итерация 44). */
+    @Query("SELECT * FROM tasks WHERE is_deleted = 0 AND status = 0 AND rrule IS NOT NULL AND due_date IS NOT NULL")
+    fun observeRepeating(): Flow<List<TaskEntity>>
+
     @Query(
         """
         SELECT t.* FROM tasks t
