@@ -218,6 +218,19 @@ object SizeTokens {
     const val SMART_CHIP_CLOSE_ICON = 12
 
     /** Корзина (итерация 39): строка с подписью «удалена …» выше обычной на это число dp. */
+    /**
+     * Вид «Неделя» (итерация 44): наименьшая высота ячейки дня, плашка задачи, кружок и значок в нём, строка подписи дня,
+     * строка недели в мини-календаре, кружок «сегодня» в нём и стрелки месяца.
+     */
+    const val WEEKVIEW_CELL_MIN = 112
+    const val WEEKVIEW_TASK = 32
+    const val WEEKVIEW_CHECK = 16
+    const val WEEKVIEW_CHECK_ICON = 10
+    const val WEEKVIEW_HEADER = 26
+    const val WEEKVIEW_CAL_ROW = 28
+    const val WEEKVIEW_CAL_TODAY = 22
+    const val WEEKVIEW_CAL_ARROW = 28
+
     const val TRASH_ROW_EXTRA = 14
 
     /** Строка недавнего запроса в поиске (итерация 38): высота, значок «часы» слева, зона нажатия крестика справа. */

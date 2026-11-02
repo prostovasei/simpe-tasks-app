@@ -18,6 +18,7 @@ import com.prostovasei.simpletasks.domain.model.ProjectWithCount
 import com.prostovasei.simpletasks.domain.model.SearchableTask
 import com.prostovasei.simpletasks.domain.model.Task
 import com.prostovasei.simpletasks.domain.model.TaskDetails
+import com.prostovasei.simpletasks.domain.model.WeekTasks
 import com.prostovasei.simpletasks.domain.model.TaskDue
 import com.prostovasei.simpletasks.domain.model.TaskStatus
 import com.prostovasei.simpletasks.domain.repository.ProjectRepository
@@ -68,6 +69,19 @@ class FakeTaskRepository(private val today: LocalDate = LocalDate.of(2026, 10, 1
             todayAllDay = active.filter { (it.due as? TaskDue.AllDay)?.date == today },
             todayTimed = active.filter { val due = it.due; due is TaskDue.AtTime && due.date() == today },
             upcoming = active.filter { it.due!!.date() > today },
+        )
+    }
+
+    /** Неделя из семи дней: как в БД — активные и выполненные за любой день, плюс активные повторяющиеся. */
+    override fun observeWeek(weekStart: LocalDate): Flow<WeekTasks> = tasks.map { all ->
+        fun Task.day(): LocalDate? = when (val anchor = start ?: due) {
+            is TaskDue.AllDay -> anchor.date
+            is TaskDue.AtTime -> anchor.instant.atZone(ZoneOffset.UTC).toLocalDate()
+            null -> null
+        }
+        WeekTasks(
+            inRange = all.filter { it.status != TaskStatus.ABANDONED && it.due != null && it.day()?.let { d -> d >= weekStart && d < weekStart.plusDays(7) } == true },
+            repeating = all.filter { it.status == TaskStatus.ACTIVE && it.rrule != null && it.due != null },
         )
     }
 

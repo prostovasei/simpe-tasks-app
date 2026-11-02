@@ -12,6 +12,7 @@ import com.prostovasei.simpletasks.data.mapper.toDomain
 import com.prostovasei.simpletasks.domain.model.AllScreenTasks
 import com.prostovasei.simpletasks.domain.model.Completion
 import com.prostovasei.simpletasks.domain.model.Deletion
+import com.prostovasei.simpletasks.domain.model.WeekTasks
 import com.prostovasei.simpletasks.domain.model.NewTask
 import com.prostovasei.simpletasks.domain.model.Rescheduling
 import com.prostovasei.simpletasks.domain.model.Restoration
@@ -61,6 +62,15 @@ class RoomTaskRepository @Inject constructor(
                 upcoming = upcoming.map { it.toDomain() },
             )
         }.distinctUntilChanged()
+    }
+
+    override fun observeWeek(weekStart: LocalDate): Flow<WeekTasks> {
+        val first = DayWindow.of(weekStart, time.zone())
+        val last = DayWindow.of(weekStart.plusDays(WEEK_DAYS - 1L), time.zone())
+        return combine(
+            taskDao.observeWeek(first.allDayStart, last.allDayEnd, first.start, last.end),
+            taskDao.observeRepeating(),
+        ) { inRange, repeating -> WeekTasks(inRange.map { it.toDomain() }, repeating.map { it.toDomain() }) }.distinctUntilChanged()
     }
 
     override fun observeInbox(today: LocalDate): Flow<List<Task>> =
@@ -354,3 +364,6 @@ class RoomTaskRepository @Inject constructor(
         count
     }
 }
+
+/** Дней в неделе (итерация 44). */
+private const val WEEK_DAYS = 7

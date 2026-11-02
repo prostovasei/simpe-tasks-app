@@ -87,13 +87,13 @@ fun upcomingWithRepeats(
 }
 
 /** Порядок в «Предстоящих»: день → «весь день» раньше задач со временем → время начала. */
-private fun Task.sortDay(zone: ZoneId): LocalDate = when (val anchor = start ?: due) {
+internal fun Task.sortDay(zone: ZoneId): LocalDate = when (val anchor = start ?: due) {
     is TaskDue.AllDay -> anchor.date
     is TaskDue.AtTime -> anchor.instant.atZone(zone).toLocalDate()
     null -> LocalDate.MAX
 }
 
-private fun Task.sortTime(): Long = ((start ?: due) as? TaskDue.AtTime)?.instant?.toEpochMilli() ?: Long.MIN_VALUE
+internal fun Task.sortTime(): Long = ((start ?: due) as? TaskDue.AtTime)?.instant?.toEpochMilli() ?: Long.MIN_VALUE
 
 /**
  * Оставляет в списке задачи, отмеченные только что ([pending]): из БД они уже пропали (статус «выполнена»),

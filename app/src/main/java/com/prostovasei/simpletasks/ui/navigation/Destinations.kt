@@ -9,6 +9,10 @@ data object InboxDestination
 @Serializable
 data object AllDestination
 
+/** Вид «Неделя» (итерация 44). */
+@Serializable
+data object WeekDestination
+
 @Serializable
 data object ListsDestination
 
