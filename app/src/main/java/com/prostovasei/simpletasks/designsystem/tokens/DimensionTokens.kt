@@ -227,6 +227,23 @@ object SizeTokens {
      * строка недели в мини-календаре, кружок «сегодня» в нём и стрелки месяца.
      */
     const val WEEKVIEW_CELL_MIN = 112
+
+    /**
+     * Вид «Неделя» в виджете (итерация 45, макет `VariantK1`): плашка задачи (меньше, чем в приложении), кружок и галочка в нём, строка даты,
+     * мини-календарь (месяц, «пн…вс», день, строка недели по умолчанию, стрелка) и высота строки недели, пока размер виджета неизвестен.
+     */
+    const val WIDGET_WEEK_TASK = 28
+    const val WIDGET_WEEK_CHECK = 16
+    const val WIDGET_WEEK_TICK = 10
+    const val WIDGET_WEEK_HEADER = 26
+    const val WIDGET_WEEK_CAL_HEAD = 20
+    const val WIDGET_WEEK_CAL_WEEKDAYS = 12
+    const val WIDGET_WEEK_CAL_DAY = 14
+    const val WIDGET_WEEK_CAL_ROW = 20
+    const val WIDGET_WEEK_CAL_ARROW = 24
+    const val WIDGET_WEEK_ROW_DEFAULT = 140
+    const val WIDGET_WEEK_ROW_MIN = 96
+    const val WIDGET_WEEK_CAL_ROW_MAX = 24
     const val WEEKVIEW_TASK = 32
     const val WEEKVIEW_CHECK = 16
     const val WEEKVIEW_CHECK_ICON = 10

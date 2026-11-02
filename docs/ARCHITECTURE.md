@@ -1021,6 +1021,22 @@ PM поменял порядок: шторка для созданных зад�
 - Схема БД не менялась. Тесты: `WeekDaysTest`, `WeekViewModelTest`, `WeekScreenTest` (ячейки одинаковые и на экране, «+N», нажатия, календарь, снимки `week_*`), `DayViewModelTest`, `DayScreenTest` (снимок `day_light`),
   `TaskRepositoryTest.weekHasTasks…` (на настоящей БД), `ScreensUiTest.bottomBarFitsNarrowScreenWithWeekTab`, `AppSmokeTest`. Дизайн-система: `WeekView`, `BottomBar`, экраны с новой панелью, токены `weekview-*`, `nav-add-w/h` (версия 15).
 
+### 4.49. Итог Итерации 44 (часть 2) — вкладка «Неделя» в виджете (0.45.0)
+
+Макет — `VariantK1` (панель 2). Решения PM: третья вкладка «Неделя» рядом с «Все» и «Входящие»; ячейки одинаковые; «+N» в строке даты, нажатие на неё открывает день.
+
+- **Фильтр и данные:** `WidgetFilter.Week` ("week"); `WidgetModel.week` (`WidgetWeek(weekStart, month, days, today)`); `observeModel(filter, WeekPick)` собирает неделю тем же `buildWeek`, что и приложение
+  (`TaskRepository.observeWeek`). Выбор недели и месяца — у каждого виджета свой (`WidgetSelection.weekPick/setWeekPick`, SharedPreferences, забывается вместе с виджетом).
+  На Android 10–11 «Неделя» не показывается, вместо неё «Все» (выбор в настройках не затирается).
+- **Строки ленты:** `WidgetWeekRows` — четыре строки одинаковой высоты (`(высота виджета − верхнее поле − нижняя панель) / 4`, не меньше 96); в ячейке плашек столько, сколько влезает (`capacity`, не больше 5), остальное «+N».
+  Разметка `widget_week_cell_l/r`, `widget_week_calendar`, `widget_row_week(_last)` и таблица id `WidgetWeekIds` **генерируются** `design/tools/gen_widget_week.py` (id внутри одной разметки не повторяются, у левой и правой ячейки свои).
+  Каждая строка пишет свой вид целиком — урок 0.42.1 (Android перекрашивает показанные строки); тест `recycledRowsKeepNothingFromAnotherWeek`.
+- **Нажатия:** к шаблону списка добавлены коды `d` (строка даты → полный день в приложении, `MainActivity.EXTRA_OPEN_DAY` → `DayDestination`), `k` (строка календаря → `PICK_WEEK`), `p`/`x` (стрелки → `SHIFT_MONTH`);
+  номер виджета едет в шаблоне (`EXTRA_WIDGET_ID`), обрабатывает `WidgetActionReceiver`.
+- **Нижняя строка:** в переключателе три вкладки (`ic_tab_week`).
+- Схема БД не менялась. Тесты: `WidgetWeekTest` (строки одинаковой высоты и над панелью, «+N», нажатия, календарь, перекраска строк, выбор недели и месяца), снимки `widget_week_*`.
+  Дизайн-система: `Widget`, `WidgetBar`, токены `widget-week-*` (версия 16).
+
 ### 4.45. Дорожная карта (обновлена)
 
 | Итерация | Название | Суть |

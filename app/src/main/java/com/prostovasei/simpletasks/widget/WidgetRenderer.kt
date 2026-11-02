@@ -18,6 +18,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.time.Instant
+import java.time.LocalDate
+import java.time.YearMonth
 import java.time.ZoneId
 
 /**
@@ -47,10 +49,12 @@ object WidgetRenderer {
     suspend fun render(context: Context, appWidgetId: Int, reason: String) = mutex.withLock {
         val started = SystemClock.elapsedRealtime()
         try {
-            val filter = selection(context, appWidgetId)
-            val model = context.widgetEntryPoint().observeModel(filter).first()
+            // Вид «Неделя» — на Android 12+ (лента на элементах Android); на 10–11 вместо него «Все».
+            val chosen = selection(context, appWidgetId)
+            val filter = if (chosen == WidgetFilter.Week && Build.VERSION.SDK_INT < Build.VERSION_CODES.S) WidgetFilter.All else chosen
+            val model = context.widgetEntryPoint().observeModel(filter, WidgetSelection.weekPick(context, appWidgetId)).first()
             // Список удалили — виджет вернулся к «Все», запоминаем.
-            if (model.filter != filter) WidgetSelection.set(context, appWidgetId, model.filter)
+            if (model.filter != chosen && model.filter != filter) WidgetSelection.set(context, appWidgetId, model.filter)
             val manager = AppWidgetManager.getInstance(context)
             val options = manager.getAppWidgetOptions(appWidgetId)
             // Прокручиваемая лента — только Android 12+: корень и строки — обычные элементы, Glance — нижняя панель поверх.
@@ -58,7 +62,7 @@ object WidgetRenderer {
             val glance = composers.getOrPut(appWidgetId) { GlanceRemoteViews() }
                 .compose(context, sizeOf(options), appWidgetOptions = options) { WidgetContent(model, appWidgetId, scrollable) }
                 .remoteViews
-            val views = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) widgetRootViews(context, appWidgetId, model, glance) else glance
+            val views = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) widgetRootViews(context, appWidgetId, model, glance, sizeOf(options)) else glance
             manager.updateAppWidget(appWidgetId, views)
             val time = context.widgetEntryPoint().time()
             nextChanges[appWidgetId] = nextChange(model, time.zone())
@@ -125,8 +129,24 @@ object WidgetSelection {
     }
 
     fun remove(context: Context, appWidgetId: Int) {
-        prefs(context).edit().remove(key(appWidgetId)).commit()
+        prefs(context).edit().remove(key(appWidgetId)).remove(weekKey(appWidgetId)).remove(monthKey(appWidgetId)).commit()
     }
+
+    /** Выбор в виде «Неделя» (итерация 45): выбранная неделя и месяц мини-календаря этого виджета. */
+    fun weekPick(context: Context, appWidgetId: Int): WeekPick = WeekPick(
+        start = prefs(context).getString(weekKey(appWidgetId), null)?.let { runCatching { LocalDate.parse(it) }.getOrNull() },
+        month = prefs(context).getString(monthKey(appWidgetId), null)?.let { runCatching { YearMonth.parse(it) }.getOrNull() },
+    )
+
+    fun setWeekPick(context: Context, appWidgetId: Int, pick: WeekPick) {
+        prefs(context).edit()
+            .putString(weekKey(appWidgetId), pick.start?.toString())
+            .putString(monthKey(appWidgetId), pick.month?.toString())
+            .commit()
+    }
+
+    private fun weekKey(appWidgetId: Int) = "week_$appWidgetId"
+    private fun monthKey(appWidgetId: Int) = "month_$appWidgetId"
 
     private fun key(appWidgetId: Int) = "filter_$appWidgetId"
 }

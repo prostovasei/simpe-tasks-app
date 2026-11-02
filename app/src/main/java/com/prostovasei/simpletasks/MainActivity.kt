@@ -18,6 +18,7 @@ import androidx.core.content.ContextCompat
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.notifications.PrefsReminderStore
 import com.prostovasei.simpletasks.ui.navigation.AppNavHost
+import com.prostovasei.simpletasks.ui.navigation.DayDestination
 import com.prostovasei.simpletasks.ui.navigation.QuickAddDestination
 import com.prostovasei.simpletasks.ui.navigation.TaskDetailDestination
 import dagger.hilt.android.AndroidEntryPoint
@@ -69,10 +70,13 @@ class MainActivity : ComponentActivity() {
                 projectId = intent.getStringExtra(EXTRA_QUICK_ADD_PROJECT),
                 today = intent.getBooleanExtra(EXTRA_QUICK_ADD_TODAY, false),
             )
+            // Итерация 45: нажатие на строку даты в виджете «Неделя» открывает полный список этого дня.
+            intent.getStringExtra(EXTRA_OPEN_DAY) != null -> DayDestination(checkNotNull(intent.getStringExtra(EXTRA_OPEN_DAY)))
             else -> intent.getStringExtra(EXTRA_TASK_ID)?.let { TaskDetailDestination(it) }
         }
 
         const val EXTRA_TASK_ID = "open_task_id"
+        const val EXTRA_OPEN_DAY = "open_day"
         const val EXTRA_MOVE_OVERDUE = "move_overdue"
         const val EXTRA_QUICK_ADD = "quick_add"
         const val EXTRA_QUICK_ADD_PROJECT = "quick_add_project"

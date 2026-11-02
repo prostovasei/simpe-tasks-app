@@ -1,0 +1,54 @@
+package com.prostovasei.simpletasks.widget
+
+import com.prostovasei.simpletasks.R
+
+// Сгенерировано design/tools/gen_widget_week.py (итерация 45): id элементов ячеек и мини-календаря вида «Неделя» в виджете. Не править руками.
+
+/** Элементы одной плашки задачи в ячейке: сама плашка, зона кружка, кружок, галочка, название, время. */
+class SlotIds(val plaque: Int, val check: Int, val node: Int, val tick: Int, val title: Int, val time: Int)
+
+/** Элементы ячейки дня: строка даты (день недели, число, «+N») и плашки задач. */
+class CellIds(val head: Int, val weekday: Int, val number: Int, val more: Int, val slots: List<SlotIds>)
+
+/** Строка недели мини-календаря и её семь дней. */
+class CalRow(val row: Int, val days: List<Int>)
+
+object WeekIds {
+    /** Плашек в ячейке не больше. */
+    const val SLOTS = 5
+
+    val LEFT = CellIds(
+        head = R.id.wl_head, weekday = R.id.wl_wd, number = R.id.wl_num, more = R.id.wl_more,
+        slots = listOf(
+            SlotIds(R.id.wl_s1, R.id.wl_s1_check, R.id.wl_s1_node, R.id.wl_s1_tick, R.id.wl_s1_title, R.id.wl_s1_time),
+            SlotIds(R.id.wl_s2, R.id.wl_s2_check, R.id.wl_s2_node, R.id.wl_s2_tick, R.id.wl_s2_title, R.id.wl_s2_time),
+            SlotIds(R.id.wl_s3, R.id.wl_s3_check, R.id.wl_s3_node, R.id.wl_s3_tick, R.id.wl_s3_title, R.id.wl_s3_time),
+            SlotIds(R.id.wl_s4, R.id.wl_s4_check, R.id.wl_s4_node, R.id.wl_s4_tick, R.id.wl_s4_title, R.id.wl_s4_time),
+            SlotIds(R.id.wl_s5, R.id.wl_s5_check, R.id.wl_s5_node, R.id.wl_s5_tick, R.id.wl_s5_title, R.id.wl_s5_time),
+        ),
+    )
+
+    val RIGHT = CellIds(
+        head = R.id.wr_head, weekday = R.id.wr_wd, number = R.id.wr_num, more = R.id.wr_more,
+        slots = listOf(
+            SlotIds(R.id.wr_s1, R.id.wr_s1_check, R.id.wr_s1_node, R.id.wr_s1_tick, R.id.wr_s1_title, R.id.wr_s1_time),
+            SlotIds(R.id.wr_s2, R.id.wr_s2_check, R.id.wr_s2_node, R.id.wr_s2_tick, R.id.wr_s2_title, R.id.wr_s2_time),
+            SlotIds(R.id.wr_s3, R.id.wr_s3_check, R.id.wr_s3_node, R.id.wr_s3_tick, R.id.wr_s3_title, R.id.wr_s3_time),
+            SlotIds(R.id.wr_s4, R.id.wr_s4_check, R.id.wr_s4_node, R.id.wr_s4_tick, R.id.wr_s4_title, R.id.wr_s4_time),
+            SlotIds(R.id.wr_s5, R.id.wr_s5_check, R.id.wr_s5_node, R.id.wr_s5_tick, R.id.wr_s5_title, R.id.wr_s5_time),
+        ),
+    )
+
+    val CAL_PREV = R.id.wc_prev
+    val CAL_NEXT = R.id.wc_next
+    val CAL_TITLE = R.id.wc_title
+    val CAL_WEEKDAYS = listOf(R.id.wc_wd1, R.id.wc_wd2, R.id.wc_wd3, R.id.wc_wd4, R.id.wc_wd5, R.id.wc_wd6, R.id.wc_wd7)
+    val CAL_ROWS = listOf(
+        CalRow(R.id.wc_r1, listOf(R.id.wc_r1_d1, R.id.wc_r1_d2, R.id.wc_r1_d3, R.id.wc_r1_d4, R.id.wc_r1_d5, R.id.wc_r1_d6, R.id.wc_r1_d7)),
+        CalRow(R.id.wc_r2, listOf(R.id.wc_r2_d1, R.id.wc_r2_d2, R.id.wc_r2_d3, R.id.wc_r2_d4, R.id.wc_r2_d5, R.id.wc_r2_d6, R.id.wc_r2_d7)),
+        CalRow(R.id.wc_r3, listOf(R.id.wc_r3_d1, R.id.wc_r3_d2, R.id.wc_r3_d3, R.id.wc_r3_d4, R.id.wc_r3_d5, R.id.wc_r3_d6, R.id.wc_r3_d7)),
+        CalRow(R.id.wc_r4, listOf(R.id.wc_r4_d1, R.id.wc_r4_d2, R.id.wc_r4_d3, R.id.wc_r4_d4, R.id.wc_r4_d5, R.id.wc_r4_d6, R.id.wc_r4_d7)),
+        CalRow(R.id.wc_r5, listOf(R.id.wc_r5_d1, R.id.wc_r5_d2, R.id.wc_r5_d3, R.id.wc_r5_d4, R.id.wc_r5_d5, R.id.wc_r5_d6, R.id.wc_r5_d7)),
+        CalRow(R.id.wc_r6, listOf(R.id.wc_r6_d1, R.id.wc_r6_d2, R.id.wc_r6_d3, R.id.wc_r6_d4, R.id.wc_r6_d5, R.id.wc_r6_d6, R.id.wc_r6_d7)),
+    )
+}

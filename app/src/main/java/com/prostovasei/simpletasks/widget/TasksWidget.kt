@@ -523,10 +523,21 @@ private fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boolea
             modifier = GlanceModifier.button(R.drawable.widget_bar_switch, WidgetColors.surface, RadiusTokens.XL, imageButtons).padding(SizeTokens.WIDGET_SWITCH_PAD.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            listOf(WidgetFilter.All, WidgetFilter.Inbox).forEach { filter ->
+            // Итерация 45: третья вкладка — «Неделя» (только на Android 12+: ленту недели рисуют элементы Android).
+            listOf(WidgetFilter.All, WidgetFilter.Inbox, WidgetFilter.Week).filter { it != WidgetFilter.Week || imageButtons }.forEach { filter ->
                 SwitchTab(
-                    icon = if (filter == WidgetFilter.All) R.drawable.ic_widget_all else R.drawable.ic_widget_inbox,
-                    label = context.getString(if (filter == WidgetFilter.Inbox) R.string.inbox_list_name else R.string.widget_all),
+                    icon = when (filter) {
+                        WidgetFilter.All -> R.drawable.ic_widget_all
+                        WidgetFilter.Week -> R.drawable.ic_tab_week
+                        else -> R.drawable.ic_widget_inbox
+                    },
+                    label = context.getString(
+                        when (filter) {
+                            WidgetFilter.Inbox -> R.string.inbox_list_name
+                            WidgetFilter.Week -> R.string.tab_week
+                            else -> R.string.widget_all
+                        },
+                    ),
                     selected = filter == model.filter,
                     action = actionSendBroadcast(WidgetActions.switch(context, appWidgetId, filter)),
                     imageButtons = imageButtons,
@@ -623,6 +634,13 @@ fun openTaskIntent(context: Context, taskId: String): Intent = Intent(context, T
     .setData("simpletasks://task/$taskId".toUri())
     .putExtra(MainActivity.EXTRA_TASK_ID, taskId)
     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+
+/** Полный список дня в приложении (итерация 45): нажатие на строку даты в ячейке вида «Неделя» в виджете. [date] — «2026-10-30». */
+fun openDayIntent(context: Context, date: String): Intent = Intent(context, MainActivity::class.java)
+    .setAction(Intent.ACTION_MAIN)
+    .addCategory(Intent.CATEGORY_LAUNCHER)
+    .putExtra(MainActivity.EXTRA_OPEN_DAY, date)
+    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
 /** «+»: создание задачи поверх рабочего стола — на сегодня («Все»), во «Входящие» или в выбранный список. */
 fun quickAddIntent(context: Context, filter: WidgetFilter): Intent = Intent(context, TaskPopupActivity::class.java)
