@@ -137,11 +137,9 @@ object WidgetClicks {
     const val OPEN = "o"
     const val MOVE_OVERDUE = "m"
 
-    /** Вид «Неделя» в виджете (итерация 45): строка даты открывает день ([DAY]), строка мини-календаря выбирает неделю ([PICK_WEEK]), стрелки листают месяц. */
+    /** Вид «Неделя» в виджете (итерация 45): строка даты открывает день ([DAY]), строка мини-календаря выбирает неделю ([PICK_WEEK]) и с ней месяц (0.46.0, стрелок нет). */
     const val DAY = "d"
     const val PICK_WEEK = "k"
-    const val PREV_MONTH = "p"
-    const val NEXT_MONTH = "x"
 
     /** Пустое нажатие: кружок будущего повтора и т. п. — у перекрашенной строки затирает прежнее. */
     const val NONE = "n"
@@ -175,8 +173,6 @@ class WidgetClickActivity : Activity() {
             WidgetClicks.TOGGLE_OVERDUE -> sendBroadcast(WidgetActions.toggleOverdue(this))
             WidgetClicks.DAY -> taskId?.let { startActivity(openDayIntent(this, it)) }
             WidgetClicks.PICK_WEEK -> taskId?.let { sendBroadcast(WidgetActions.pickWeek(this, widgetId, it)) }
-            WidgetClicks.PREV_MONTH -> sendBroadcast(WidgetActions.shiftMonth(this, widgetId, -1))
-            WidgetClicks.NEXT_MONTH -> sendBroadcast(WidgetActions.shiftMonth(this, widgetId, 1))
         }
         finish()
     }

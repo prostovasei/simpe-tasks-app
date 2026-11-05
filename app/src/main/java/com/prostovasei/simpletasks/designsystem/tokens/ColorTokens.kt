@@ -11,18 +11,20 @@ data class PriorityColorTokens(val container: ThemedColor, val content: ThemedCo
 
 /** Базовая палитра приложения. Единственный источник цветов (см. docs/ARCHITECTURE.md §1.5). */
 object ColorTokens {
-    /** Фон экранов и виджета: почти белый (итерация 26, вариант PM «В»; до этого — светло-зелёный). */
-    val background = ThemedColor(light = 0xFFF6F7F6, dark = 0xFF0E1511)
+    /** Фон экранов и виджета: нейтральный светло-серый (итерация 45: без зелёного оттенка; итерация 26 — почти белый). */
+    val background = ThemedColor(light = 0xFFF5F5F5, dark = 0xFF121212)
 
     /** Белые плашки задач, меню, окна и нижняя панель поверх фона. */
-    val surface = ThemedColor(light = 0xFFFFFFFF, dark = 0xFF1A231E)
-    val textPrimary = ThemedColor(light = 0xFF15161F, dark = 0xFFE6EAE7)
-    val textSecondary = ThemedColor(light = 0xFF5F6474, dark = 0xFF9DA8A1)
-    val accent = ThemedColor(light = 0xFF15803D, dark = 0xFF4FC07F)
+    val surface = ThemedColor(light = 0xFFFFFFFF, dark = 0xFF1E1E1E)
+    val textPrimary = ThemedColor(light = 0xFF16171D, dark = 0xFFECECEC)
+    val textSecondary = ThemedColor(light = 0xFF62656E, dark = 0xFFA3A3A3)
 
-    /** Бледный акцент: подсветка найденного в поиске (итерация 15). */
-    val accentSoft = ThemedColor(light = 0xFFD3ECDB, dark = 0xFF1F4430)
-    val onAccent = ThemedColor(light = 0xFFFFFFFF, dark = 0xFF0A1A10)
+    /** Акцент (итерация 45, решение PM): чёрный; в тёмной теме — белый, иначе его не видно. До этого — зелёный. */
+    val accent = ThemedColor(light = 0xFF16171D, dark = 0xFFF2F2F2)
+
+    /** Бледный акцент: подсветка найденного в поиске (итерация 15), «+N» и выбранная неделя календаря — нейтральный серый. */
+    val accentSoft = ThemedColor(light = 0xFFEAEAEA, dark = 0xFF2E2E2E)
+    val onAccent = ThemedColor(light = 0xFFFFFFFF, dark = 0xFF16171D)
 
     /** Значок поверх квадратика цвета списка (итерация 14). */
     val onListSquare = ThemedColor(light = 0xFFFFFFFF, dark = 0xFFFFFFFF)
@@ -31,16 +33,16 @@ object ColorTokens {
     val inboxList = ThemedColor(light = 0xFF3D8BFD, dark = 0xFF6AA8FF)
 
     /** Рамка пустой галочки без приоритета и неактивные иконки нижней панели. */
-    val inactive = ThemedColor(light = 0xFFA8B3AB, dark = 0xFF5F6B64)
+    val inactive = ThemedColor(light = 0xFFA9A9A9, dark = 0xFF636363)
     val overdue = ThemedColor(light = 0xFFC62828, dark = 0xFFFF6B6B)
-    val divider = ThemedColor(light = 0xFFD5E0D8, dark = 0xFF2C3731)
+    val divider = ThemedColor(light = 0xFFE2E2E2, dark = 0xFF2E2E2E)
 
 
     /**
      * Мягкая подсветка выбранного (итерация 26, вариант PM «А»): выбранные плитки дней, кнопки шторки
-     * и переключатель виджета — светло-зелёные с зелёной иконкой вместо сплошного зелёного.
+     * и переключатель виджета — светлая подложка вместо сплошной заливки. С итерации 45 — нейтральный серый.
      */
-    val selected = ThemedColor(light = 0xFFE4F2E8, dark = 0xFF1F3A2A)
+    val selected = ThemedColor(light = 0xFFE8E8E8, dark = 0xFF2C2C2C)
 
     /** Опасные действия (удаление). Совпадает с [overdue], но означает другое — отдельная роль. */
     val danger = ThemedColor(light = 0xFFC62828, dark = 0xFFFF6B6B)
@@ -91,4 +93,15 @@ object WidgetCheckTokens {
     val medium = CheckTokens(ring = ThemedColor(light = 0xFFE09400, dark = 0xFFFFB020), fill = ThemedColor(light = 0xFFF4EAD7, dark = 0xFF43361E))
     val low = CheckTokens(ring = ThemedColor(light = 0xFF3D8BFD, dark = 0xFF6AA8FF), fill = ThemedColor(light = 0xFFDDE9FA, dark = 0xFF283446))
     val none = CheckTokens(ring = ThemedColor(light = 0xFF8B949E, dark = 0xFF7D8590), fill = ThemedColor(light = 0x00000000, dark = 0x00000000))
+}
+
+/**
+ * Строки вида «Неделя» (итерация 45, макет `VariantK2`): бледный фон по приоритету (без приоритета — [ColorTokens.surface])
+ * и серая отметка выполненной задачи. Те же цвета у приложения и у виджета.
+ */
+object WeekRowTokens {
+    val high = ThemedColor(light = 0xFFFDECEC, dark = 0xFF3A2222)
+    val medium = ThemedColor(light = 0xFFFDF4E3, dark = 0xFF3A2F1C)
+    val low = ThemedColor(light = 0xFFEAF2FC, dark = 0xFF1D2A3B)
+    val doneMark = ThemedColor(light = 0xFFBDBDBD, dark = 0xFF5A5A5A)
 }

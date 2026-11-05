@@ -19,8 +19,5 @@ data class WeekState(
     val isLoading: Boolean = true,
 )
 
-/** Выбор недели в мини-календаре: [weekStart] — понедельник нажатой недели. */
+/** Выбор недели в мини-календаре: [weekStart] — понедельник нажатой недели; месяц календаря следует за ней ([monthAfterPick]). */
 data class SelectWeek(val weekStart: LocalDate) : TaskListIntent
-
-/** Листание месяцев мини-календаря: [delta] = -1 — назад, 1 — вперёд. */
-data class ShiftMonth(val delta: Int) : TaskListIntent

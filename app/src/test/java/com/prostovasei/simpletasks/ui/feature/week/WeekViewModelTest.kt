@@ -77,17 +77,24 @@ class WeekViewModelTest {
     }
 
     @Test
-    fun monthShiftsBothWaysWithoutChangingTheWeek() = runTest(dispatcher) {
+    fun pickingAWeekOfANeighbourMonthTurnsTheCalendar() = runTest(dispatcher) {
         val vm = viewModel()
         runCurrent()
-        vm.onIntent(ShiftMonth(1))
+        assertEquals(YearMonth.of(2026, 10), vm.state.value.month)
+        // Неделя 26 окт – 1 ноя: в ней есть ноябрь — календарь перелистывается вперёд.
+        vm.onIntent(SelectWeek(LocalDate.of(2026, 10, 26)))
         runCurrent()
         assertEquals(YearMonth.of(2026, 11), vm.state.value.month)
-        vm.onIntent(ShiftMonth(-1))
-        vm.onIntent(ShiftMonth(-1))
+        assertEquals(LocalDate.of(2026, 10, 26), vm.state.value.weekStart)
+        // Та же неделя первой строкой ноября: в ней есть октябрь — назад; два выбора подряд не сливаются.
+        vm.onIntent(SelectWeek(LocalDate.of(2026, 10, 26)))
+        vm.onIntent(SelectWeek(LocalDate.of(2026, 9, 28)))
         runCurrent()
         assertEquals(YearMonth.of(2026, 9), vm.state.value.month)
-        assertEquals(monday, vm.state.value.weekStart)
+        // Неделя целиком из показанного месяца его не меняет.
+        vm.onIntent(SelectWeek(LocalDate.of(2026, 9, 14)))
+        runCurrent()
+        assertEquals(YearMonth.of(2026, 9), vm.state.value.month)
     }
 
     @Test

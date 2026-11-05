@@ -53,7 +53,7 @@ def option(title, sel=False, leading='', sub=None, hint=None, multi=False):
 
 
 def dlg(title, body, buttons=('Отмена', 'Готово'), subtitle=None, icon='', width=340):
-    """Окно по центру (SheetDialog): заголовок, содержимое, две кнопки (вторая — зелёная; None — только «Закрыть»)."""
+    """Окно по центру (SheetDialog): заголовок, содержимое, две кнопки (вторая — чёрная; None — только «Закрыть»)."""
     def b(t, primary):
         return (f'<span style="flex:1;min-height:50px;border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:center;font-weight:700;padding:0 8px;text-align:center;'
                 f'{"background:var(--accent);color:var(--on-accent)" if primary else "border:1px solid var(--divider);color:var(--text-primary)"}">{t}</span>')
@@ -66,7 +66,7 @@ def dlg(title, body, buttons=('Отмена', 'Готово'), subtitle=None, ic
 
 
 def badge(kind='ok'):
-    """Круглый значок над заголовком окна обновления: зелёный или красный."""
+    """Круглый значок над заголовком окна обновления: чёрный или красный."""
     if kind == 'err':
         return f'<span style="width:48px;height:48px;border-radius:50%;background:color-mix(in srgb,var(--danger) 12%,transparent);color:var(--danger);display:flex;align-items:center;justify-content:center">{mi("warn", 26)}</span>'
     inner = {'ok': mi('check', 26), 'update': svg('ic_widget_update', 26), 'lock': mi('lock', 26)}[kind]
@@ -252,7 +252,7 @@ def p_checklist():
 def p_chips_fab():
     fab = f'<span style="width:56px;height:56px;border-radius:16px;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center;{SHADOW}">{mi("add", 24)}</span>'
     body = (f'<div class="row" style="align-items:center;gap:28px"><div class="col">{fab}<div class="cap">плавающая «+» на экране списка</div></div>'
-            f'<div class="col"><div style="display:flex;gap:8px">{chip("Неделя", True)}{chip("Месяц")}</div><div class="cap">чип: выбран — зелёный, нет — белый с рамкой</div></div>'
+            f'<div class="col"><div style="display:flex;gap:8px">{chip("Неделя", True)}{chip("Месяц")}</div><div class="cap">чип: выбран — чёрный, нет — белый с рамкой</div></div>'
             f'<div class="col"><div style="display:flex;gap:12px;align-items:center">{material_button("Выбрать файл .csv")}{material_button("Проверить обновление", "outlined")}{material_button("Очистить все данные", "outlined", "var(--danger)")}</div><div class="cap" style="max-width:none">кнопки Material 3: заливка, контур, опасное действие</div></div></div>')
     return doc('Панель и поля', 150, 'Плавающая «+», чипы и кнопки Material', body)
 
@@ -261,7 +261,7 @@ def p_switch_rows():
     sw = lambda t, h, on: (f'<div style="display:flex;align-items:center;gap:12px"><div style="flex:1"><div style="font-size:16px;line-height:24px;font-weight:600">{t}</div><div style="font-size:12px;line-height:16px;color:var(--text-secondary)">{h}</div></div>{switch(on)}</div>')
     body = ('<div style="width:380px;display:flex;flex-direction:column;gap:12px">'
             '<div style="font-size:16px;font-weight:600;line-height:24px">Напоминания</div>'
-            f'{sw("Всплывающая полоска", "Напоминание — зелёной полоской снизу поверх любого приложения.", True)}'
+            f'{sw("Всплывающая полоска", "Напоминание — чёрной полоской снизу поверх любого приложения.", True)}'
             f'{sw("Точное время напоминаний", "Напоминание приходит секунда в секунду.", False)}'
             '<div style="font-size:14px;line-height:20px;color:var(--overdue)">Нужно разрешение «Появление поверх других приложений».</div>'
             f'<div>{material_button("Разрешить")}</div></div>')
@@ -322,7 +322,7 @@ def p_search_field():
 
 def p_bottom_bar():
     body = '<div style="display:flex;flex-direction:column;gap:12px">' + ''.join(frame(f'<div style="position:absolute;inset:0">{nav_bar(i)}</div>', h=57, w=412) for i in (1, 2)) + '</div>'
-    return doc('Список и виджет', 260, 'Нижняя панель приложения: шесть вкладок и «+», закреплена внизу на всю ширину; выбранная вкладка — зелёная', body)
+    return doc('Список и виджет', 260, 'Нижняя панель приложения: шесть вкладок и «+», закреплена внизу на всю ширину; выбранная вкладка — чёрная', body)
 
 
 def strip(title, subtitle, undo=None):
@@ -345,7 +345,7 @@ def p_reminder_strip():
     return doc('Напоминания и виджет', 420, 'Полоска напоминания поверх других приложений: стопка, «ещё N» и «Отменить»', body)
 
 
-def widget_body(pad_bottom=0):
+def widget_body(pad_bottom=0, sel='all'):
     title = ('<div style="display:flex;align-items:center;gap:4px;padding:2px 6px 2px"><span style="font-size:14px;font-weight:700;color:var(--overdue)">СР, 14 ОКТ</span>'
              '<span style="font-size:12px;font-weight:700;color:var(--overdue);background:var(--surface);border-radius:var(--radius-sm);padding:1px 4px">Вчера</span>'
              '<span style="flex:1"></span><span style="font-size:12px;font-weight:500;color:var(--text-secondary)">2</span></div>')
@@ -358,12 +358,12 @@ def widget_body(pad_bottom=0):
     rows = (overdue_header(1, widget=True) + title + frow('11:00', 'var(--inactive)', 'Отчёт за неделю', over=True, top=False, bottom=False, lsq=True) + title2
             + frow('09:00', 'var(--ring-high)', 'Зарядка', done=True, top=False) + frow('12:30', 'var(--ring-medium)', 'Созвон с командой', period=True, end='13:30', rep=True, rem='at') + now
             + frow('18:00', 'var(--ring-low)', 'Оплатить интернет', rem='early', bottom=False))
-    bar_sw = lambda ic, sel: f'<span style="width:52px;height:36px;border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:center;background:{"var(--selected)" if sel else "var(--surface)"};color:{"var(--accent)" if sel else "var(--text-secondary)"}">{svg(ic, 26)}</span>'
+    bar_sw = lambda ic, sel: f'<span style="width:52px;height:36px;border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:center;background:{"var(--selected)" if sel else "transparent"};color:{"var(--accent)" if sel else "var(--text-secondary)"}">{svg(ic, 26)}</span>'
     check = ('<svg width="26" height="22" viewBox="0 0 43 36"><path d="M5 19L16 30L38 7" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>')
-    # Итерация 43: без подложки и перехода к фону; кнопки ниже, шире и скруглённее.
-    bottom = ('<div style="position:absolute;left:0;right:0;bottom:0;height:48px;display:flex;align-items:center;padding:0 6px">'
-              f'<span style="display:flex;padding:4px;border-radius:var(--radius-xl);background:var(--surface)">{bar_sw("ic_widget_all", True)}{bar_sw("ic_widget_inbox", False)}{bar_sw("ic_tab_week", False)}</span><span style="flex:1"></span>'
-              f'<span style="width:56px;height:40px;border-radius:var(--radius-xl);background:var(--surface);color:var(--accent);display:flex;align-items:center;justify-content:center">{check}</span><span style="width:8px"></span>'
+    # 0.46.0 (реф PM): плоская панель — фон виджета и линия сверху, без белых капсул.
+    bottom = ('<div style="position:absolute;left:0;right:0;bottom:0;height:48px;display:flex;align-items:center;padding:0 6px;background:var(--background);border-top:1px solid var(--divider)">'
+              f'<span style="display:flex;padding:4px">{bar_sw("ic_widget_all", sel == "all")}{bar_sw("ic_widget_inbox", sel == "inbox")}{bar_sw("ic_tab_week", sel == "week")}</span><span style="flex:1"></span>'
+              f'<span style="width:56px;height:40px;color:var(--accent);display:flex;align-items:center;justify-content:center">{check}</span><span style="width:8px"></span>'
               f'<span style="width:64px;height:40px;border-radius:var(--radius-xl);background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center">{svg("ic_widget_add", 24)}</span></div>')
     return rows, bottom
 
@@ -376,8 +376,22 @@ def p_widget_bar():
 
 def p_widget_bar_only():
     _, bottom = widget_body()
-    body = f'<div style="position:relative;width:360px;height:70px;border-radius:var(--radius-xl);background:var(--background);overflow:hidden;border:1px solid var(--divider)">{bottom.split("</div>", 1)[1]}</div>'
-    return doc('Напоминания и виджет', 120, 'Нижняя строка виджета: переключатель «Все» / «Входящие», обновление, «+»', body)
+    body = f'<div style="position:relative;width:360px;height:70px;border-radius:var(--radius-xl);background:var(--background);overflow:hidden;border:1px solid var(--divider)">{bottom}</div>'
+    return doc('Напоминания и виджет', 120, 'Нижняя строка виджета: вкладки «Все» / «Входящие» / «Неделя», «открыть приложение», «+»', body)
+
+
+def p_widget_week():
+    """Вкладка «Неделя» в виджете (0.46.0): строки мельче, чем в приложении, календарь без месяца, плоская нижняя строка."""
+    _, bottom = widget_body(sel='week')
+    t = lambda *a, **k: week_task(*a, h=20, fs=11, gap=2, **k)
+    h = 150
+    r1 = f'<div style="display:flex">{week_cell("пн", 26, [t("Купить продукты", "10:00", "low", done=True), t("Тренировка")], h=h)}{week_cell("вт", 27, [t("Оплатить интернет", "12:00", "medium", over=True)], h=h)}</div>'
+    r2 = f'<div style="display:flex">{week_cell("ср", 28, [t("Встреча", "15:00", "high", over=True)], h=h)}{week_cell("чт", 29, [], h=h)}</div>'
+    r3 = (f'<div style="display:flex">{week_cell("пт", 30, [t("Отчёт", "17:00", "high"), t("Кино"), t("Ужин", "20:00"), t("Зарядка", "08:00", "medium", done=True), t("Врач", "", "low"), t("Билеты")], today=True, hidden=1, h=h)}'
+          f'{week_cell("сб", 31, [t("Уборка", "11:00"), t("Созвон", "10:00", "medium", ghost=True)], h=h)}</div>')
+    r4 = f'<div style="display:flex">{week_cell("вс", 1, [t("План на неделю")], h=h)}{week_calendar(h)}</div>'
+    body = f'<div style="position:relative;width:360px;height:{6 + 4 * h + 49}px;border-radius:var(--radius-xl);background:var(--background);overflow:hidden;border:1px solid var(--divider);padding-top:6px;box-sizing:border-box">{r1}{r2}{r3}{r4}{bottom}</div>'
+    return doc('Напоминания и виджет', 720, 'Виджет, вкладка «Неделя»: компактные строки с фоном по приоритету, «+N», календарь без месяца', body)
 
 
 # --------------------------------------------------------------- экраны
@@ -442,7 +456,7 @@ def settings_screen():
     body = ('<div style="padding:16px;display:flex;flex-direction:column;gap:12px">'
             '<div style="font-size:28px;line-height:36px;font-weight:700">Настройки</div>'
             f'{title}Ввод задач</div>{sw("Дата и время в названии", "«Созвон завтра 10:00» — срок ставится сам, фраза уходит из названия.", True)}{divider}'
-            f'{title}Напоминания</div>{sw("Всплывающая полоска", "Напоминание — зелёной полоской снизу поверх любого приложения.", True)}'
+            f'{title}Напоминания</div>{sw("Всплывающая полоска", "Напоминание — чёрной полоской снизу поверх любого приложения.", True)}'
             f'{sw("Точное время напоминаний", "Напоминание приходит секунда в секунду.", True)}{sw("Утренняя сводка", "Каждый день в это время — уведомление с планом на сегодня.", False)}{divider}'
             f'{title}Обновление</div><div style="font-size:14px;line-height:20px">Установлена последняя версия</div><div>{material_button("Проверить обновление", "outlined")}</div>{divider}'
             f'{title}Импорт из TickTick</div><div style="font-size:14px;line-height:20px;color:var(--text-secondary)">Резервную копию (.csv) можно создать в настройках веб-версии TickTick.</div><div>{material_button("Выбрать файл .csv")}</div>{divider}'
@@ -487,7 +501,7 @@ def p_overdue_header():
 
 
 def snackbar(text, kind='ic_node_check'):
-    """Подсказка «Отмена» (итерация 38): белая полупрозрачная карточка (88%), значок слева, зелёная «Отмена»."""
+    """Подсказка «Отмена» (итерация 38): белая полупрозрачная карточка (88%), значок слева, чёрная «Отмена»."""
     return (f'<div style="width:380px;min-height:56px;border-radius:var(--radius-xl);background:color-mix(in srgb,var(--surface) 88%,transparent);border:1px solid var(--divider);'
             f'color:var(--text-primary);display:flex;align-items:center;padding:0 4px 0 16px;gap:12px">'
             f'<span style="display:flex;color:var(--text-secondary)">{svg(kind, 22)}</span>'
@@ -630,7 +644,7 @@ def danger_dialog(title, text, ok):
 # ---------------------------------------------------------------- итерация 40: массовое редактирование
 
 def sel_row(left, color, title, selected=False, done=False, ghost=False, rep=False, rem=None, top=True, bottom=True, list_color='var(--inbox-list)', list_icon='ic_list_inbox', sub=None):
-    """Строка шкалы в режиме выбора: кружок → зелёная галочка, плашка подсвечена; будущий повтор бледный и не выбирается."""
+    """Строка шкалы в режиме выбора: кружок → чёрная галочка, плашка подсвечена; будущий повтор бледный и не выбирается."""
     lines = left if isinstance(left, list) else [left]
     wide = len(lines) > 1 or (lines and len(lines[0]) > 5)
     h = 58 if sub else 46
@@ -730,53 +744,56 @@ def p_smart_date():
 
 # ---------------------------------------------------------------- итерация 44: вид «Неделя»
 
-def week_task(title, time='', color='var(--inactive)', done=False, ghost=False, over=False):
-    ring = (f'<span style="width:16px;height:16px;border-radius:50%;background:{color};display:flex;align-items:center;justify-content:center;color:var(--on-accent)">{svg("ic_node_check", 10)}</span>' if done
-            else f'<span style="width:16px;height:16px;border-radius:50%;border:2px solid {color};box-sizing:border-box"></span>')
-    st = 'text-decoration:line-through;' if done else ''
-    op = 'opacity:.7;' if done else ('opacity:.5;' if ghost else '')
-    t = f'<span style="font-size:11px;font-weight:600;color:{"var(--overdue)" if over else "var(--text-secondary)"};padding:0 8px 0 4px">{time}</span>' if time else '<span style="width:8px"></span>'
-    return (f'<div style="height:32px;margin-top:4px;border-radius:var(--radius-md);background:var(--surface);display:flex;align-items:center;{op}">'
-            f'<span style="width:32px;display:flex;align-items:center;justify-content:center">{ring}</span>'
-            f'<span style="flex:1;min-width:0;font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;{st}">{title}</span>{t}</div>')
+def week_task(title, time='', pri='none', done=False, ghost=False, over=False, h=22, fs=12, gap=3):
+    """Строка задачи «Недели» (0.46.0): фон по приоритету (без приоритета и у выполненной — `surface`), выполненная — серая и зачёркнутая."""
+    ring_c = 'var(--week-row-done-mark)' if done else ('var(--inactive)' if pri == 'none' else f'var(--ring-{pri})')
+    ring = (f'<span style="width:14px;height:14px;border-radius:50%;background:{ring_c};display:flex;align-items:center;justify-content:center;color:var(--surface)">{svg("ic_node_check", 9)}</span>' if done
+            else f'<span style="width:14px;height:14px;border-radius:50%;border:2px solid {ring_c};box-sizing:border-box"></span>')
+    bg = 'var(--surface)' if done or pri == 'none' else f'var(--week-row-{pri})'
+    st = 'text-decoration:line-through;color:var(--inactive);' if done else ''
+    op = 'opacity:.5;' if ghost else ''
+    tc = 'var(--overdue)' if over else ('var(--inactive)' if done else 'var(--text-secondary)')
+    t = f'<span style="font-size:10.5px;font-weight:600;color:{tc};padding:0 6px 0 4px">{time}</span>' if time else '<span style="width:6px"></span>'
+    return (f'<div style="height:{h}px;margin-top:{gap}px;border-radius:var(--radius-md);background:{bg};display:flex;align-items:center;{op}">'
+            f'<span style="width:{h}px;display:flex;align-items:center;justify-content:center">{ring}</span>'
+            f'<span style="flex:1;min-width:0;font-size:{fs}px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;{st}">{title}</span>{t}</div>')
 
 
 def week_cell(wd, num, tasks, today=False, hidden=0, h=190):
-    pill = (f'<span style="font-size:12px;font-weight:700;color:var(--on-accent);background:var(--accent);border-radius:12px;padding:1px 8px;margin-left:4px">{num}</span>' if today
+    pill = (f'<span style="width:22px;height:22px;border-radius:50%;font-size:12px;font-weight:800;color:var(--on-accent);background:var(--accent);margin-left:4px;display:flex;align-items:center;justify-content:center">{num}</span>' if today
             else f'<span style="font-size:13px;font-weight:600;color:var(--text-secondary);margin-left:4px">{num}</span>')
-    more = f'<span style="margin-left:auto;font-size:12px;font-weight:700;color:var(--accent);background:var(--accent-soft);border-radius:12px;padding:0 8px">+{hidden}</span>' if hidden else ''
+    more = f'<span style="margin-left:auto;font-size:11.5px;font-weight:800;color:var(--text-primary);background:var(--accent-soft);border-radius:12px;padding:0 8px">+{hidden}</span>' if hidden else ''
     return (f'<div style="flex:1;min-width:0;height:{h}px;overflow:hidden;box-sizing:border-box;padding:8px 4px;border-right:1px solid var(--divider);border-bottom:1px solid var(--divider)">'
-            f'<div style="display:flex;align-items:center;height:26px"><span style="font-size:14px;font-weight:800;color:{"var(--accent)" if today else "var(--text-primary)"}">{wd}</span>{pill}{more}</div>{"".join(tasks)}</div>')
+            f'<div style="display:flex;align-items:center;height:26px"><span style="font-size:14px;font-weight:800;color:var(--text-primary)">{wd}</span>{pill}{more}</div>{"".join(tasks)}</div>')
 
 
 def week_calendar(h=190):
+    """Мини-календарь (0.46.0): без строки месяца и стрелок — месяц листается выбором недели с днями соседнего месяца."""
     weeks = [[28, 29, 30, 1, 2, 3, 4], [5, 6, 7, 8, 9, 10, 11], [12, 13, 14, 15, 16, 17, 18], [19, 20, 21, 22, 23, 24, 25], [26, 27, 28, 29, 30, 31, 1], [2, 3, 4, 5, 6, 7, 8]]
     rows = ''
     for i, w in enumerate(weeks):
         band = 'background:var(--accent-soft);border-radius:12px;' if i == 4 else ''
-        cells = ''.join((f'<span style="flex:1;display:flex;justify-content:center"><span style="width:20px;height:20px;border-radius:50%;background:var(--accent);color:var(--on-accent);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center">{n}</span></span>'
+        cells = ''.join((f'<span style="flex:1;display:flex;justify-content:center"><span style="width:22px;height:22px;border-radius:50%;background:var(--accent);color:var(--on-accent);font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center">{n}</span></span>'
                          if i == 4 and n == 30 else
                          f'<span style="flex:1;text-align:center;font-size:12px;font-weight:600;color:{"var(--inactive)" if (i == 0 and j < 3) or i == 5 or (i == 4 and j == 6) else "var(--text-primary)"}">{n}</span>')
                         for j, n in enumerate(w))
-        rows += f'<div style="display:flex;align-items:center;height:24px;{band}">{cells}</div>'
-    head = (f'<div style="display:flex;align-items:center;justify-content:space-between;height:24px"><span style="color:var(--text-secondary);font-size:16px;width:24px;text-align:center">‹</span>'
-            '<span style="font-size:13px;font-weight:700">октябрь 2026</span><span style="color:var(--text-secondary);font-size:16px;width:24px;text-align:center">›</span></div>')
+        rows += f'<div style="display:flex;align-items:center;height:26px;{band}">{cells}</div>'
     wk = ''.join(f'<span style="flex:1;text-align:center;font-size:10px;font-weight:600;color:var(--inactive)">{x}</span>' for x in ('пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'))
-    return (f'<div style="flex:1;min-width:0;height:{h}px;overflow:hidden;box-sizing:border-box;padding:4px;border-bottom:1px solid var(--divider)">{head}'
+    return (f'<div style="flex:1;min-width:0;height:{h}px;overflow:hidden;box-sizing:border-box;padding:4px;border-bottom:1px solid var(--divider);display:flex;flex-direction:column;justify-content:space-evenly">'
             f'<div style="display:flex;height:14px;align-items:center">{wk}</div>{rows}</div>')
 
 
 def week_screen():
-    r1 = (f'<div style="display:flex">{week_cell("пн", 26, [week_task("Купить продукты", "10:00", "var(--ring-low)", done=True), week_task("Тренировка")])}'
-          f'{week_cell("вт", 27, [week_task("Оплатить интернет", "12:00", "var(--ring-medium)", over=True), week_task("Позвонить маме")])}</div>')
-    r2 = (f'<div style="display:flex">{week_cell("пт", 30, [week_task("Отчёт за неделю", "17:00", "var(--ring-high)"), week_task("Кино"), week_task("Ужин с Аней", "20:00"), week_task("Зарядка", "08:00", "var(--ring-medium)", done=True)], today=True, hidden=2)}'
-          f'{week_cell("сб", 31, [week_task("Уборка", "11:00"), week_task("Созвон с командой", "10:00", ghost=True)])}</div>')
+    r1 = (f'<div style="display:flex">{week_cell("пн", 26, [week_task("Купить продукты", "10:00", "low", done=True), week_task("Тренировка"), week_task("Оплатить интернет", "12:00", "medium", over=True)])}'
+          f'{week_cell("вт", 27, [week_task("Позвонить маме"), week_task("Встреча", "15:00", "high", over=True)])}</div>')
+    r2 = (f'<div style="display:flex">{week_cell("пт", 30, [week_task("Отчёт за неделю", "17:00", "high"), week_task("Кино"), week_task("Ужин с Аней", "20:00"), week_task("Зарядка", "08:00", "medium", done=True), week_task("Позвонить врачу", "", "low"), week_task("Купить билеты")], today=True, hidden=2)}'
+          f'{week_cell("сб", 31, [week_task("Уборка", "11:00"), week_task("Созвон с командой", "10:00", "medium", ghost=True)])}</div>')
     r3 = f'<div style="display:flex">{week_cell("вс", 1, [week_task("План на неделю")])}{week_calendar()}</div>'
     return frame(f'<div style="border-top:1px solid var(--divider)">{r1}{r2}{r3}</div>{nav_bar(2)}', 700)
 
 
 def p_week_view():
-    return doc('Список и виджет', 740, 'Вид «Неделя»: ячейки дней одинаковой высоты, «+N», мини-календарь, нижняя панель', f'<div class="row" style="align-items:flex-start">{week_screen()}</div>')
+    return doc('Список и виджет', 740, 'Вид «Неделя»: компактные строки с фоном по приоритету, «+N», мини-календарь без месяца, нижняя панель', f'<div class="row" style="align-items:flex-start">{week_screen()}</div>')
 
 
 PREVIEWS = {
@@ -785,7 +802,7 @@ PREVIEWS = {
     'UpdateDialog': p_update_dialog, 'ListPriorityDialogs': p_list_priority_dialogs, 'CustomDialogs': p_custom_dialogs, 'AlertDialogs': p_alert_dialogs,
     'ChecklistRows': p_checklist, 'ChipsAndButtons': p_chips_fab, 'SettingsRow': p_switch_rows,
     'Headers': p_headers, 'EmptyTasks': p_empty, 'TaskRow': p_task_row, 'ListRows': p_list_rows, 'SearchField': p_search_field, 'BottomBar': p_bottom_bar,
-    'ReminderStrip': p_reminder_strip, 'SelectionMode': p_selection, 'ScreenSelection': lambda: screens(all_selected, 730, 'Экран «Все» в режиме выбора: сверху «Выбрано: N», снизу лента действий'), 'ScreenTrash': lambda: screens(trash_screen, 730, 'Экран «Корзина»: удалённые задачи как в списке, «Восстановить все» и «Удалить все»'), 'TrashTask': lambda: doc('Окна', 730, 'Задача в корзине: только чтение, «⋮» — восстановить или удалить навсегда', f'<div class="row" style="align-items:flex-start">{readonly_task(True)}</div>'), 'DangerDialog': p_danger, 'OverdueHeader': p_overdue_header, 'UndoSnackbar': p_snackbar, 'RecentSearches': p_recent_searches, 'TaskDraft': p_draft, 'ReminderNotification': p_notification, 'Widget': p_widget_bar, 'WidgetBar': p_widget_bar_only,
+    'ReminderStrip': p_reminder_strip, 'SelectionMode': p_selection, 'ScreenSelection': lambda: screens(all_selected, 730, 'Экран «Все» в режиме выбора: сверху «Выбрано: N», снизу лента действий'), 'ScreenTrash': lambda: screens(trash_screen, 730, 'Экран «Корзина»: удалённые задачи как в списке, «Восстановить все» и «Удалить все»'), 'TrashTask': lambda: doc('Окна', 730, 'Задача в корзине: только чтение, «⋮» — восстановить или удалить навсегда', f'<div class="row" style="align-items:flex-start">{readonly_task(True)}</div>'), 'DangerDialog': p_danger, 'OverdueHeader': p_overdue_header, 'UndoSnackbar': p_snackbar, 'RecentSearches': p_recent_searches, 'TaskDraft': p_draft, 'ReminderNotification': p_notification, 'Widget': p_widget_bar, 'WidgetBar': p_widget_bar_only, 'WidgetWeek': p_widget_week,
     'ScreenAll': lambda: screens(all_screen, 730, 'Экран «Все»: лента по дням со шкалой и нижней панелью'),
     'ScreenInbox': lambda: screens(inbox_screen, 730, 'Экран «Входящие»: плоский список, слева день и время'),
     'ScreenLists': lambda: screens(lists_screen, 730, 'Экран «Списки»'),
@@ -798,7 +815,7 @@ PREVIEWS = {
 
 README_MORE = {
     'SmartDate': ('Дата и время в названии: подсветка фразы и чип срока (0.41).', 'Пока человек печатает название, явная фраза срока («завтра в 10:00», «в пятницу», «через 3 дня», «15 ноября», «15.11», «в 18», «в 9 утра») подсвечивается: цвет `accent` на фоне `accent-soft`. Под названием чип: высота `size-smart-chip` (32), капсула `accent-soft`, значок календаря `size-smart-chip-icon` (18), текст `body-medium` Bold `accent` («Завтра, 10:00»), справа кружок `size-smart-chip-close` (20) с крестиком — не разбирать дату в названии этой задачи (фраза остаётся обычным текстом, срок возвращается). Поля даты и времени заполняются сразу. При сохранении фраза уходит из названия. Только время — сегодня или завтра, если время прошло; только дата — весь день. Общий выключатель — «Дата и время в названии» в настройках. Источник: `designsystem/components/SmartDateChip.kt`, `domain/smartdate/SmartDate.kt`, `ui/feature/task/SmartTitle.kt`.'),
-    'SelectionMode': ('Режим выбора: верхняя строка «Выбрано: N», лента действий, выбранная плашка (0.40).', 'Включается долгим нажатием на плашку (будущий повтор выбрать нельзя), дальше нажатие на плашку или кружок отмечает и снимает. Сверху строка `surface` высотой `size-selection-bar` (56): «✕» (закрыть режим, как и «Назад»), «Выбрано: N» (`title-large` Bold), «Выбрать все» (`accent`). Внизу на месте панели вкладок лента: высота `size-nav-bar`, радиус `radius-nav`, тень; кнопки не уже `size-ribbon-button` (76) и высотой `size-ribbon-button-height` (56): значок 24 и подпись `label-small` Bold; ряд прокручивается пальцем, у правого края затухание. Действия: «Выполнить», «На завтра», «На другой день» (календарь), «В список», «Приоритет», «Вернуть», «Удалить» (`danger`); неподходящие бледные (35%). В корзине: «Восстановить» и «Удалить навсегда» (с подтверждением `DangerDialog`). Выбранная плашка: фон `selected`, рамка `accent` 2, в кружке зелёная галочка. После действия режим закрывается, внизу `UndoSnackbar` («Выполнено: 3 · Отмена» и т. п.). Источник: `designsystem/components/Selection.kt`, `ui/feature/bulk/SelectionFrame.kt`, `BulkActions.kt`.'),
+    'SelectionMode': ('Режим выбора: верхняя строка «Выбрано: N», лента действий, выбранная плашка (0.40).', 'Включается долгим нажатием на плашку (будущий повтор выбрать нельзя), дальше нажатие на плашку или кружок отмечает и снимает. Сверху строка `surface` высотой `size-selection-bar` (56): «✕» (закрыть режим, как и «Назад»), «Выбрано: N» (`title-large` Bold), «Выбрать все» (`accent`). Внизу на месте панели вкладок лента: высота `size-nav-bar`, радиус `radius-nav`, тень; кнопки не уже `size-ribbon-button` (76) и высотой `size-ribbon-button-height` (56): значок 24 и подпись `label-small` Bold; ряд прокручивается пальцем, у правого края затухание. Действия: «Выполнить», «На завтра», «На другой день» (календарь), «В список», «Приоритет», «Вернуть», «Удалить» (`danger`); неподходящие бледные (35%). В корзине: «Восстановить» и «Удалить навсегда» (с подтверждением `DangerDialog`). Выбранная плашка: фон `selected`, рамка `accent` 2, в кружке чёрная галочка. После действия режим закрывается, внизу `UndoSnackbar` («Выполнено: 3 · Отмена» и т. п.). Источник: `designsystem/components/Selection.kt`, `ui/feature/bulk/SelectionFrame.kt`, `BulkActions.kt`.'),
     'ScreenSelection': ('Экран «Все» в режиме выбора (0.40).', 'Строка «Выбрано: N» поверх верха экрана, лента действий на месте нижней панели («+» и вкладки на это время скрыты). Список прокручивается выше ленты. То же во «Входящих», списках, «Поиске», «Выполненных» и «Корзине»; в виджете режима нет.'),
     'ScreenTrash': ('Экран «Корзина» (0.39).', 'Сверху «назад» и название `title-large` Bold; под ним «ЗАДАЧ: N» (`label-medium` Bold, `text-secondary`), справа «Восстановить все» (`accent`) и «Удалить все» (`danger`). Ниже плашки как в обычном списке (слева срок, справа список) с мелкой подписью «удалена 28 окт» (`body-small`, `text-secondary`); строка выше обычной на `size-trash-row-extra` (14). Новые удалённые сверху. Нажатие открывает задачу только для чтения (`TrashTask`); кружок ничего не отмечает. Пусто: «Корзина пуста» и подсказка по центру. Вход — строка «Корзина» на экране «Списки» под «Выполненными»: значок корзины, название, число задач (при нуле числа нет). Источник: `ui/feature/trash/TrashScreen.kt`.'),
     'TrashTask': ('Задача в корзине: та же шторка, но только для чтения (0.39).', 'Над шторкой плашка `selected` «В корзине · удалена 28 окт» со значком корзины. Название, описание, срок, список, значки повтора и уведомлений, чек-лист и подзадачи показываются как есть, править нельзя: кнопок панели, крестиков у полей и галочки «Готово» нет. «⋮» справа от названия: «Восстановить» и «Удалить навсегда» (`danger`, после подтверждения `DangerDialog`). Затемнение и «Назад» закрывают. Восстановленная задача возвращается в прежний список (если его нет — во «Входящие») вместе с подзадачами и чек-листами, подсказка `UndoSnackbar` «Задача восстановлена · Отмена». Источник: `ui/feature/trash/TrashTaskScreen.kt`.'),
@@ -810,7 +827,7 @@ README_MORE = {
 Источник: `designsystem/components/Common.kt` (`OverdueHeader`), `widget/TasksWidget.kt` (`OverdueTitle`).'''),
     'UndoSnackbar': ('Подсказка внизу экрана с кнопкой «Отмена»: белая полупрозрачная карточка со значком (0.38).',
                      '''Белая карточка `surface` на 88% (сквозь неё виден список или рабочий стол), рамка `divider` 1 (тени нет: сквозь полупрозрачную карточку она просвечивает), радиус `radius-xl` (16), высота от `size-snackbar-min-height` (56), поля слева `space-md`, справа `space-xxs`.
-Слева значок `size-snackbar-icon` (22) цвета `text-secondary`: галочка («Задача выполнена»), повтор («Следующий повтор: сб, 17 окт»), корзина («Задача удалена»), стрелка к черте («Перенесено на сегодня: N»), круговая стрелка («Задача возвращена»). Справа зелёная «Отмена» (`accent`, Bold) с зоной нажатия от 40.
+Слева значок `size-snackbar-icon` (22) цвета `text-secondary`: галочка («Задача выполнена»), повтор («Следующий повтор: сб, 17 окт»), корзина («Задача удалена»), стрелка к черте («Перенесено на сегодня: N»), круговая стрелка («Задача возвращена»). Справа чёрная «Отмена» (`accent`, Bold) с зоной нажатия от 40.
 Размытия фона нет: на старых телефонах Android оно недоступно. Висит ~4 с, новая заменяет прежнюю. В приложении стоит над нижней панелью с зазором `space-sm`; из виджета и уведомлений появляется в прозрачном окне поверх рабочего стола с отступом от низа `space-lg`; нажатие мимо закрывает окно сразу (отмена тогда уже невозможна).
 Тексты: «Задача удалена» без вопроса «Удалить?» (0.36), «Перенесено на сегодня: N» (0.37). «Отмена» возвращает всё как было (удалённое — вместе с подзадачами и чек-листами). Источник: `designsystem/components/UndoSnackbar.kt`, `ui/common/TaskListUi.kt` (`showUndo`).'''),
     'RecentSearches': ('Недавние запросы в поиске: пока поле пустое — до 5 строк (0.38).',
@@ -824,7 +841,7 @@ README_MORE = {
                              '''Системное уведомление Android (канал «Напоминания»). Название задачи, под ним срок и список. Две кнопки: «Выполнить» и «На завтра» (0.36): срок переносится на завтра, время дня то же; у задачи без времени — только день.
 Рисует система, поэтому вид зависит от телефона; значок приложения — `ic_notification`. Источник: `notifications/AndroidReminders.kt`.'''),
     'UpdateDialog': ('Окно обновления поверх рабочего стола: проверка, загрузка, установка, ошибки.',
-                     '''Строится на `SheetDialog`. Над заголовком круглый значок `size-dialog-badge` (48): зелёный (`selected`, значок `accent`) для хороших исходов, красный (`danger` 12%) для ошибок.
+                     '''Строится на `SheetDialog`. Над заголовком круглый значок `size-dialog-badge` (48): чёрный (`selected`, значок `accent`) для хороших исходов, красный (`danger` 12%) для ошибок.
 Состояния: проверка (полоса без процента), «Обновлений нет», «Доступно обновление» («Закрыть» / «Загрузить», версия и размер), загрузка (полоса, «7,2 из 16 МБ», процент, одна кнопка «Отмена»),
 «Обновление загружено» («Не сейчас» / «Обновить»), ошибки «Не удалось проверить» и «Не удалось загрузить» («Закрыть» / «Повторить»), «Нужно разрешение» («Закрыть» / «Разрешить»), установка.
 Во время загрузки «Назад» и нажатие мимо окна игнорируются: останавливает только «Отмена». Полоса: высота 4, дорожка `divider`, заливка `accent`. Источник: `ui/feature/update/UpdateDialog.kt`.'''),
@@ -832,15 +849,15 @@ README_MORE = {
                             '''Окно «Список»: слева квадратик цвета списка со значком (16), у «Входящие» цвет `inbox-list`. Окно «Приоритет»: флажок 24 цвета приоритета (`ring-*`), «Без приоритета» — `inactive`.
 Строка не ниже `size-dialog-row` (52), выбранная залита `selected`. Изменение применяется только по «Готово». Источник: `TaskFieldMenus.kt`.'''),
     'CustomDialogs': ('Окна «Вручную» (своё уведомление) и «Произвольно» (свой повтор) с счётчиками.',
-                      '''«Вручную»: три строки «Дней до срока / Часов / Минут» (у задачи на весь день: за сколько дней, час, минуты) со счётчиком «− 02 +»; снизу зелёным «Сработает: чт, 29 окт, 15:00».
-Минуты идут шагом 5, дни до 30. «Произвольно»: чипы «День / Неделя / Месяц / Год», строка «Каждые − N +» (1–99), у недели ещё чипы дней недели, внизу зелёная расшифровка («Каждые 2 недели: вт, чт»).
+                      '''«Вручную»: три строки «Дней до срока / Часов / Минут» (у задачи на весь день: за сколько дней, час, минуты) со счётчиком «− 02 +»; снизу чёрным «Сработает: чт, 29 окт, 15:00».
+Минуты идут шагом 5, дни до 30. «Произвольно»: чипы «День / Неделя / Месяц / Год», строка «Каждые − N +» (1–99), у недели ещё чипы дней недели, внизу чёрная расшифровка («Каждые 2 недели: вт, чт»).
 Кнопки «Отмена» и «Готово», как у всех окон. Источник: `TaskFieldMenus.kt`, `RepeatDialog.kt`.'''),
     'AlertDialogs': ('Стандартные окна Material 3: имя, удаление, цвет и значок списка.',
                      '''Это `AlertDialog` Material 3 с цветами из токенов: фон `surface`, заголовок `text-primary`, текст `text-secondary`, кнопки текстовые (`accent`, удаление — `danger`).
-Имя — поле с зелёной рамкой при вводе (`accent`), у нового списка ещё чипы «Без папки / папка». Цвет — 9 кружков `size-color-swatch` (40) с галочкой у выбранного и «Без цвета».
+Имя — поле с чёрной рамкой при вводе (`accent`), у нового списка ещё чипы «Без папки / папка». Цвет — 9 кружков `size-color-swatch` (40) с галочкой у выбранного и «Без цвета».
 Значок — плитки `size-icon-tile` (44) цвета списка с белым значком, выбранная в рамке `text-primary`, и «Без значка». Эти окна старого вида; новые окна делай через `SheetDialog`.'''),
     'ChecklistRows': ('Чек-лист и подзадачи в шторке созданной задачи.',
-                      '''Пункт: галочка с зоной нажатия `size-checkbox-touch` (40), текст `body-medium`, справа «⋮» (выше, ниже, переименовать, удалить). Отмеченный — зелёная галочка, текст зачёркнут `text-secondary`.
+                      '''Пункт: галочка с зоной нажатия `size-checkbox-touch` (40), текст `body-medium`, справа «⋮» (выше, ниже, переименовать, удалить). Отмеченный — чёрная галочка, текст зачёркнут `text-secondary`.
 Под пунктами поле «Добавить пункт» (подсказка `inactive`, отступ слева 40). Подзадачи из TickTick — под подписью «ПОДЗАДАЧИ», с плашкой приоритета, если он есть; нажатие открывает подзадачу.'''),
     'ChipsAndButtons': ('Плавающая «+», чипы и кнопки Material 3.',
                         '''Плавающая «+» на экранах списка и «Входящие»: 56, радиус 16, `accent`, значок `on-accent`. Чип: высота 32, радиус `radius-md`; выбранный залит `accent`, текст `on-accent`; невыбранный белый с рамкой `divider`.
@@ -850,10 +867,10 @@ README_MORE = {
 Секции разделены линией `divider`; заголовок секции — `title-medium` SemiBold.'''),
     'Headers': ('Заголовки: экрана, раздела, дня и день в виджете.',
                 '''Экран: `headline-medium` Bold, поля `space-md` и `space-sm`. Раздел: `label-medium` Bold прописными, `text-secondary`, красным для «Просрочено» (с 0.37 над прошедшими днями стоит `OverdueHeader`). День в ленте: `label-large` Bold и белая метка «Сегодня / Завтра / Вчера» (`label-small`, радиус `radius-sm`);
-прошедший день с невыполненными задачами красный. В виджете: 14 sp и метка 12 sp, у «Сегодня» справа зелёная линия прогресса (высота 4) и «3 из 7».'''),
+прошедший день с невыполненными задачами красный. В виджете: 14 sp и метка 12 sp, у «Сегодня» справа чёрная линия прогресса (высота 4) и «3 из 7».'''),
     'EmptyTasks': ('Пустой экран: пунктирная подсказка, силуэты плашек и стрелка к «+».',
                    '''Подсказка — рамка из штрихов `inactive` (штрих 6, толщина `size-stroke`), радиус `space-sm`, внутри `title-medium` ExtraBold и `body-medium`. Силуэты плашек высотой `size-ghost-row` (44): рамка галочки и серая полоска `divider` длиной 70%, 50%, 62%.
-Стрелка — зелёная кривая к кнопке «+», толщина `size-stroke`. На экране списка, где «+» плавает, стрелку поднимают над кнопкой.'''),
+Стрелка — чёрная кривая к кнопке «+», толщина `size-stroke`. На экране списка, где «+» плавает, стрелку поднимают над кнопкой.'''),
     'TaskRow': ('Плашка TaskRow в поиске и «Выполненные»: квадратная галочка, квадратик списка, название, значки, время.',
                 '''Это прежний вид плашки, ленты «Все», «Входящие» и списков им больше не пользуются (там `TimelineRow`). Галочка — квадрат `size-checkbox` (18, радиус `radius-sm`) с рамкой цвета приоритета, зона нажатия 40; отмеченная — заливка `accent` и белая галочка.
 Название `body-medium` SemiBold, под ним `body-small` — где найдено (поиск, найденное подсвечено `accent-soft`). Справа повтор 14, колокольчик 18 и время столбиком (`label-medium` Bold). Плашка `surface`, радиус `radius-md`, щель между плашками `size-card-gap` (2).'''),
@@ -862,22 +879,24 @@ README_MORE = {
 Списки внутри папки сдвинуты вправо на `space-xl`. «+ Папка» и «+ Список» — текстовые кнопки `accent` справа от заголовка.'''),
     'SearchField': ('Поле поиска: подсказка «Поиск задач», запрос, очистка.',
                     '''Поле Material 3: фон `surface`, радиус `radius-lg`, высота 56, без линии снизу. Слева лупа `text-secondary`; справа крестик, когда есть запрос. Курсор `accent`. При открытии раздела курсор сразу в поле и поднята клавиатура. Найденное в плашках подсвечено `accent-soft`.'''),
-    'WeekView': ('Вид «Неделя»: сетка 2×4 — шесть дней, воскресенье и мини-календарь; все ячейки одинаковые (0.44).',
-                 '''Нижняя панель: вкладка «Неделя» после «Все» (значок `ic_tab_week`). Сетка на весь экран без прокрутки: четыре строки одинаковой высоты, в строке две ячейки, линии `divider` между ячейками. Ячейка: строка даты `size-weekview-header` (26) — «пн 26» (`label-large` ExtraBold и SemiBold `text-secondary`; сегодня — день недели `accent`, число в метке `accent` с `on-accent`), справа «+N» (`label-medium` Bold `accent` на `accent-soft`) — сколько задач не поместилось; нажатие на строку даты открывает полный список дня. Ниже плашки `size-weekview-task` (32, `surface`, `radius-md`, щель `space-xxs`): кружок приоритета `size-weekview-check` (16, контур `size-checkbox-stroke`, цвета как в ленте; выполненная — залит с галочкой `size-weekview-check-icon`), название `body-small` Bold, время начала `label-small` справа (у невыполненных прошедших дней — `overdue`). Выполненная — зачёркнута и 70%, будущий повтор — 50% и без нажатия на кружок. Плашек в ячейке столько, сколько влезает по высоте.
-Мини-календарь — в последней ячейке: месяц и стрелки `size-weekview-cal-head` (24), «пн…вс» `size-weekview-cal-weekdays` (14), шесть строк недель (`size-weekview-cal-row-min` 16 … `size-weekview-cal-row` 28 — делят оставшуюся высоту). Строка недели нажимается целиком; выбранная — полоса `accent-soft`, сегодня — кружок `accent` `size-weekview-cal-today` (22), дни соседних месяцев — `inactive`. Неделя начинается с понедельника; текущая переходит в полночь, выбранная не прыгает. «+» создаёт задачу на сегодня. Полный список дня — вложенный экран с «Назад» (подпись «ПТ, 30 окт», метка «Сегодня», число задач, лента как на «Все»). Источник: `ui/feature/week/`.'''),
+    'WeekView': ('Вид «Неделя»: сетка 2×4 — шесть дней, воскресенье и мини-календарь; все ячейки одинаковые (0.44, вид строк — 0.46).',
+                 '''Нижняя панель: вкладка «Неделя» после «Все» (значок `ic_tab_week`). Сетка на весь экран без прокрутки: четыре строки одинаковой высоты, в строке две ячейки, линии `divider` между ячейками. Ячейка: строка даты `size-weekview-header` (26) — «пн 26» (`label-large` ExtraBold `text-primary` и SemiBold `text-secondary`; сегодня — число в кружке `accent` `size-weekview-cal-today` (22) с `on-accent`), справа «+N» (`label-medium` ExtraBold `text-primary` на `accent-soft`) — сколько задач не поместилось; нажатие на строку даты открывает полный список дня.
+Строки задач (0.46.0, реф PM, макет `VariantK2`): `size-weekview-task` (22), промежуток над каждой `size-weekview-task-gap` (3), радиус `radius-md`; фон — бледный цвет приоритета `week-row-high` / `week-row-medium` / `week-row-low`, без приоритета — `surface`. Кружок приоритета `size-weekview-check` (14, контур `size-checkbox-stroke`, цвета `ring-*`), название `body-small` Bold, время начала `label-small` справа (у невыполненных прошедших дней — `overdue`). Выполненная — фон `surface`, кружок залит `week-row-done-mark` с галочкой `size-weekview-check-icon`, название и время `inactive`, название зачёркнуто. Будущий повтор — 50% и без нажатия на кружок. Строк в ячейке столько, сколько влезает по высоте (на телефоне 6).
+Мини-календарь — в последней ячейке, без строки месяца и стрелок: «пн…вс» `size-weekview-cal-weekdays` (14), шесть строк недель (`size-weekview-cal-row-min` 16 … `size-weekview-cal-row` 28). Строка недели нажимается целиком; выбранная — полоса `accent-soft`, сегодня — кружок `accent` `size-weekview-cal-today` (22), дни соседних месяцев — `inactive`. Месяц листается сам: неделя с днями соседнего месяца переводит календарь на этот месяц (первая строка — назад, последние — вперёд). Неделя начинается с понедельника; текущая переходит в полночь, выбранная не прыгает. «+» создаёт задачу на сегодня. Полный список дня — вложенный экран с «Назад» (подпись «ПТ, 30 окт», метка «Сегодня», число задач, лента как на «Все»). Источник: `ui/feature/week/`.'''),
     'BottomBar': ('Нижняя панель приложения: «Входящие», «Все», «Неделя», «Списки», «Поиск», «Настройки» и «+».',
                   '''Закреплённая панель (0.44, решение PM по референсу): не парит, а лежит внизу на всю ширину — без капсулы и тени, сверху линия `divider` `size-hairline`, фон `surface` доходит до низа экрана под системной панелью навигации. Высота `size-nav-bar` (56). Шесть вкладок делят ширину поровну (на узком экране сжимаются): почта, календарь («Все»), три колонки («Неделя»), список, лупа, шестерёнка — значки 24, выбранная `accent`, остальные `text-secondary`; кнопка вкладки не шире `size-nav-tab` (48).
 В конце «+»: `size-nav-add-w` × `size-nav-add-h` (48×40), радиус `radius-xl`, `accent`, значок 24 `on-accent`. Нижнюю панель с тенью и капсулой больше не рисуем.'''),
     'ReminderStrip': ('Полоска напоминания поверх других приложений: стопка, «ещё N», «Отменить».',
-                      '''Зелёная капсула `accent` высотой `size-popup-strip` (68), поля от краёв `size-popup-edge` (12), щель между полосками `size-popup-gap` (8). Слева колокольчик 22 `on-accent`; название `body-large` Bold, ниже подпись «Сегодня, 18:00 · Дом» `label-small` 80%.
+                      '''Чёрная капсула `accent` высотой `size-popup-strip` (68), поля от краёв `size-popup-edge` (12), щель между полосками `size-popup-gap` (8). Слева колокольчик 22 `on-accent`; название `body-large` Bold, ниже подпись «Сегодня, 18:00 · Дом» `label-small` 80%.
 Справа круглые кнопки `size-popup-button` (48): «на завтра в это же время» (`on-accent` 18%, значок листка) и «выполнено» (`surface`, галочка `accent`). Смахнуть вправо — закрыть. Видно до трёх полосок, остальные — метка «ещё N».
 Состояние «Отменить»: полоска «Выполнено» или «Завтра, 18:00» с белой кнопкой «Отменить» и тонкой линией внизу, которая тает за 1,5 секунды. Без вибрации и без кольца «Пульс». Источник: `notifications/ReminderPopup.kt`.'''),
+    'WidgetWeek': ('Виджет, вкладка «Неделя» (0.45, вид строк и календаря — 0.46).', 'Четыре строки ленты одинаковой высоты над плоской нижней строкой (`WidgetBar`): Пн–Вт, Ср–Чт, Пт–Сб, Вс и мини-календарь. Ячейка — как `WeekView`, но мельче: строка `size-widget-week-task` (20), промежуток `size-widget-week-task-gap` (2), кружок `size-widget-week-check` (13), строка даты `size-widget-week-header` (22), кружок «сегодня» `size-widget-week-today` (20); фон строки по приоритету (`week-row-*`), выполненная — серая и зачёркнутая. Календарь без строки месяца и стрелок: неделя с днями соседнего месяца перелистывает его. Подробно — в README `Widget`. Источник: `widget/WidgetWeekRows.kt`, разметка — `design/tools/gen_widget_week.py`.'),
     'Widget': ('Виджет «Задачи»: лента по дням со шкалой, «сейчас» и нижняя строка.',
-               '''Фон `background`, радиус `radius-xl`. Список по дням: подпись дня (красная у прошедшего), строки шкалы как в `TimelineRow`, у «Сегодня» линия прогресса. Отметка «сейчас»: зелёное время слева, точка на линии и линия до края (`size-widget-now-row` 14).
-Внизу нижняя строка — кнопки лежат прямо на ленте, без подложки и перехода к фону (итерация 43); справа у подписи каждого дня число задач (у «Сегодня» вместо него прогресс), `text-secondary` 12. В виджете нет градиентов и размытия: фон и скругления — готовыми картинками. Цвета те же, что в приложении: Glance сам выбирает светлую или тёмную тему.
+               '''Фон `background`, радиус `radius-xl`. Список по дням: подпись дня (красная у прошедшего), строки шкалы как в `TimelineRow`, у «Сегодня» линия прогресса. Отметка «сейчас»: чёрное время слева, точка на линии и линия до края (`size-widget-now-row` 14).
+Внизу плоская нижняя строка (`WidgetBar`, 0.46.0: фон `background`, линия сверху); справа у подписи каждого дня число задач (у «Сегодня» вместо него прогресс), `text-secondary` 12. В виджете нет градиентов и размытия: фон и скругления — готовыми картинками. Цвета те же, что в приложении: Glance сам выбирает светлую или тёмную тему.
 Объём (итерация 42): во «Всех» — просроченные, сегодня и ещё 13 дней (с повторами); во «Входящих» и списках — все задачи; всего не больше 150 строк ленты. Строки «Ещё N» нет.
-Вид «Неделя» (итерация 45, третья вкладка переключателя; на Android 10–11 вместо неё «Все»): четыре строки ленты одинаковой высоты (виджет без верхнего поля и нижней панели делится на четыре, не меньше 96) — Пн–Вт, Ср–Чт, Пт–Сб, Вс и мини-календарь; нижняя строка ничего не закрывает. Ячейка и мини-календарь — как в приложении (`WeekView`), но плашка `size-widget-week-task` (28), кружок 16, календарь мельче (цифры 9 sp, день `size-widget-week-cal-day` 14); плашек в ячейке по высоте, остальное «+N». Нажатия: кружок — «выполнено»/«вернуть», плашка — открыть задачу, строка даты — полный день в приложении, строка календаря — неделя, стрелки — месяц; выбор недели и месяца у каждого виджета свой. Разметка `widget_week_*`/`widget_row_week*` генерируется `design/tools/gen_widget_week.py`.
-Устройство (итерация 42): на Android 12+ фон и лента — обычные элементы Android прямо в корне виджета (`widget_root`), каждая строка — своя разметка `widget_row_*` (задача, период, у выполненных — `*_done`, подпись дня, «Просрочено», «сейчас», хвост) ~1 КБ; нижняя строка — Glance поверх ленты, фоны кнопок — картинки со скруглением (`widget_bar_*`). Размеры и цвета строк — копия токенов в `res/values*/widget_rows.xml` (проверяет тест). Строка всегда задаёт весь свой вид: Android перекрашивает показанные строки другой задачи. Нажатия строк: кружок — «выполнено»/«вернуть», плашка — открыть задачу. Android 10–11 — лента Glance без прокрутки.'''),
+Вид «Неделя» (итерация 45, третья вкладка переключателя; на Android 10–11 вместо неё «Все»): четыре строки ленты одинаковой высоты (виджет без верхнего поля и нижней панели делится на четыре, не меньше 96) — Пн–Вт, Ср–Чт, Пт–Сб, Вс и мини-календарь; нижняя строка ничего не закрывает. Ячейка и мини-календарь — как в приложении (`WeekView`): строка `size-widget-week-task` (20) с промежутком `size-widget-week-task-gap` (2), фон по приоритету (`widget_week_plaque_*`), кружок `size-widget-week-check` (13), строка даты `size-widget-week-header` (22), сегодня — кружок `size-widget-week-today` (20); календарь мельче (цифры 9 sp, день `size-widget-week-cal-day` 14), без строки месяца и стрелок. Строк в ячейке по высоте (до 6), остальное «+N». Нажатия: кружок — «выполнено»/«вернуть», строка — открыть задачу, строка даты — полный день в приложении, строка календаря — неделя (и её месяц); выбор недели и месяца у каждого виджета свой. Разметка `widget_week_*`/`widget_row_week*` генерируется `design/tools/gen_widget_week.py`.
+Устройство (итерация 42): на Android 12+ фон и лента — обычные элементы Android прямо в корне виджета (`widget_root`), каждая строка — своя разметка `widget_row_*` (задача, период, у выполненных — `*_done`, подпись дня, «Просрочено», «сейчас», хвост) ~1 КБ; нижняя строка — Glance поверх ленты, фоны «+» и выбранной вкладки — картинки со скруглением (`widget_bar_add`, `widget_bar_tab_selected`). Размеры и цвета строк — копия токенов в `res/values*/widget_rows.xml` (проверяет тест). Строка всегда задаёт весь свой вид: Android перекрашивает показанные строки другой задачи. Нажатия строк: кружок — «выполнено»/«вернуть», плашка — открыть задачу. Android 10–11 — лента Glance без прокрутки.'''),
     'ScreenAll': ('Экран «Все».', 'Лента по дням на `background`: подпись дня, шкала со строками `TimelineRow`, отметка «сейчас» у сегодняшнего дня; внизу нижняя панель. Пустая лента — `EmptyTasks`. Окно задачи открывается поверх.'),
     'ScreenInbox': ('Экран «Входящие».', 'Плоский список без подписей дней: слева колонка дня и времени (`size-timeline-day-column` 56, растёт вместе с системным шрифтом; `label-small`), дальше шкала. Квадратик списка не показывается там, где список один (в «Входящих» он есть: он общий). «+» в нижней панели.'),
     'ScreenLists': ('Экран «Списки».', 'Заголовок и кнопки «+ Папка», «+ Список», строка «Выполненные», папки и списки (`ListRows`). Пусто: «Списков пока нет».'),

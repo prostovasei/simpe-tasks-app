@@ -15,7 +15,7 @@ class CalRow(val row: Int, val days: List<Int>)
 
 object WeekIds {
     /** Плашек в ячейке не больше. */
-    const val SLOTS = 5
+    const val SLOTS = 6
 
     val LEFT = CellIds(
         head = R.id.wl_head, weekday = R.id.wl_wd, number = R.id.wl_num, more = R.id.wl_more,
@@ -25,6 +25,7 @@ object WeekIds {
             SlotIds(R.id.wl_s3, R.id.wl_s3_check, R.id.wl_s3_node, R.id.wl_s3_tick, R.id.wl_s3_title, R.id.wl_s3_time),
             SlotIds(R.id.wl_s4, R.id.wl_s4_check, R.id.wl_s4_node, R.id.wl_s4_tick, R.id.wl_s4_title, R.id.wl_s4_time),
             SlotIds(R.id.wl_s5, R.id.wl_s5_check, R.id.wl_s5_node, R.id.wl_s5_tick, R.id.wl_s5_title, R.id.wl_s5_time),
+            SlotIds(R.id.wl_s6, R.id.wl_s6_check, R.id.wl_s6_node, R.id.wl_s6_tick, R.id.wl_s6_title, R.id.wl_s6_time),
         ),
     )
 
@@ -36,12 +37,10 @@ object WeekIds {
             SlotIds(R.id.wr_s3, R.id.wr_s3_check, R.id.wr_s3_node, R.id.wr_s3_tick, R.id.wr_s3_title, R.id.wr_s3_time),
             SlotIds(R.id.wr_s4, R.id.wr_s4_check, R.id.wr_s4_node, R.id.wr_s4_tick, R.id.wr_s4_title, R.id.wr_s4_time),
             SlotIds(R.id.wr_s5, R.id.wr_s5_check, R.id.wr_s5_node, R.id.wr_s5_tick, R.id.wr_s5_title, R.id.wr_s5_time),
+            SlotIds(R.id.wr_s6, R.id.wr_s6_check, R.id.wr_s6_node, R.id.wr_s6_tick, R.id.wr_s6_title, R.id.wr_s6_time),
         ),
     )
 
-    val CAL_PREV = R.id.wc_prev
-    val CAL_NEXT = R.id.wc_next
-    val CAL_TITLE = R.id.wc_title
     val CAL_WEEKDAYS = listOf(R.id.wc_wd1, R.id.wc_wd2, R.id.wc_wd3, R.id.wc_wd4, R.id.wc_wd5, R.id.wc_wd6, R.id.wc_wd7)
     val CAL_ROWS = listOf(
         CalRow(R.id.wc_r1, listOf(R.id.wc_r1_d1, R.id.wc_r1_d2, R.id.wc_r1_d3, R.id.wc_r1_d4, R.id.wc_r1_d5, R.id.wc_r1_d6, R.id.wc_r1_d7)),

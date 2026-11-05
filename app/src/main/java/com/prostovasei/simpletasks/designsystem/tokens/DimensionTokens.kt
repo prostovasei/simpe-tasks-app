@@ -222,38 +222,41 @@ object SizeTokens {
     const val SMART_CHIP_CLOSE_ICON = 12
 
     /** Корзина (итерация 39): строка с подписью «удалена …» выше обычной на это число dp. */
-    /**
-     * Вид «Неделя» (итерация 44): наименьшая высота ячейки дня, плашка задачи, кружок и значок в нём, строка подписи дня,
-     * строка недели в мини-календаре, кружок «сегодня» в нём и стрелки месяца.
-     */
+    /** Вид «Неделя» (итерация 44): наименьшая высота ячейки дня. */
     const val WEEKVIEW_CELL_MIN = 112
 
     /**
-     * Вид «Неделя» в виджете (итерация 45, макет `VariantK1`): плашка задачи (меньше, чем в приложении), кружок и галочка в нём, строка даты,
-     * мини-календарь (месяц, «пн…вс», день, строка недели по умолчанию, стрелка) и высота строки недели, пока размер виджета неизвестен.
+     * Вид «Неделя» в виджете (итерация 45, макет `VariantK1`; 0.46.0 — `VariantK2`, компактные строки): плашка задачи и промежуток
+     * между плашками, кружок и галочка в нём, строка даты, кружок «сегодня» у числа, мини-календарь («пн…вс», день, строка недели по
+     * умолчанию и наибольшая) и высота строки недели, пока размер виджета неизвестен.
      */
-    const val WIDGET_WEEK_TASK = 28
-    const val WIDGET_WEEK_CHECK = 16
-    const val WIDGET_WEEK_TICK = 10
-    const val WIDGET_WEEK_HEADER = 26
-    const val WIDGET_WEEK_CAL_HEAD = 20
+    const val WIDGET_WEEK_TASK = 20
+    const val WIDGET_WEEK_TASK_GAP = 2
+    const val WIDGET_WEEK_CHECK = 13
+    const val WIDGET_WEEK_TICK = 9
+    const val WIDGET_WEEK_HEADER = 22
+    const val WIDGET_WEEK_TODAY = 20
     const val WIDGET_WEEK_CAL_WEEKDAYS = 12
     const val WIDGET_WEEK_CAL_DAY = 14
     const val WIDGET_WEEK_CAL_ROW = 20
-    const val WIDGET_WEEK_CAL_ARROW = 24
     const val WIDGET_WEEK_ROW_DEFAULT = 140
     const val WIDGET_WEEK_ROW_MIN = 96
     const val WIDGET_WEEK_CAL_ROW_MAX = 24
-    const val WEEKVIEW_TASK = 32
-    const val WEEKVIEW_CHECK = 16
-    const val WEEKVIEW_CHECK_ICON = 10
+
+    /**
+     * Вид «Неделя» в приложении (итерация 44; 0.46.0 — компактные строки, `VariantK2`): плашка задачи (она же зона нажатия кружка)
+     * и промежуток между плашками, кружок и галочка в нём, строка даты, мини-календарь (строка недели — наибольшая и наименьшая,
+     * «пн…вс», кружок «сегодня» — он же кружок у числа в строке даты).
+     */
+    const val WEEKVIEW_TASK = 22
+    const val WEEKVIEW_TASK_GAP = 3
+    const val WEEKVIEW_CHECK = 14
+    const val WEEKVIEW_CHECK_ICON = 9
     const val WEEKVIEW_HEADER = 26
     const val WEEKVIEW_CAL_ROW = 28
     const val WEEKVIEW_CAL_ROW_MIN = 16
-    const val WEEKVIEW_CAL_HEAD = 24
     const val WEEKVIEW_CAL_WEEKDAYS = 14
     const val WEEKVIEW_CAL_TODAY = 22
-    const val WEEKVIEW_CAL_ARROW = 24
 
     const val TRASH_ROW_EXTRA = 14
 

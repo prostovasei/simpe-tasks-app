@@ -8,6 +8,7 @@ import com.prostovasei.simpletasks.designsystem.tokens.RadiusTokens
 import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
 import com.prostovasei.simpletasks.designsystem.tokens.SpacingTokens
 import com.prostovasei.simpletasks.designsystem.tokens.ThemedColor
+import com.prostovasei.simpletasks.designsystem.tokens.WeekRowTokens
 import com.prostovasei.simpletasks.ui.common.DONE_ALPHA
 import androidx.compose.ui.graphics.toArgb
 import org.junit.Assert.assertEquals
@@ -53,6 +54,16 @@ class WidgetRowResourcesTest {
             R.dimen.widget_radius_md to RadiusTokens.MD,
             R.dimen.widget_radius_lg to RadiusTokens.LG,
             R.dimen.widget_radius_xl to RadiusTokens.XL,
+            R.dimen.widget_week_task to SizeTokens.WIDGET_WEEK_TASK,
+            R.dimen.widget_week_task_gap to SizeTokens.WIDGET_WEEK_TASK_GAP,
+            R.dimen.widget_week_check to SizeTokens.WIDGET_WEEK_CHECK,
+            R.dimen.widget_week_tick to SizeTokens.WIDGET_WEEK_TICK,
+            R.dimen.widget_week_header to SizeTokens.WIDGET_WEEK_HEADER,
+            R.dimen.widget_week_today to SizeTokens.WIDGET_WEEK_TODAY,
+            R.dimen.widget_week_cal_weekdays to SizeTokens.WIDGET_WEEK_CAL_WEEKDAYS,
+            R.dimen.widget_week_cal_day to SizeTokens.WIDGET_WEEK_CAL_DAY,
+            R.dimen.widget_week_cal_row to SizeTokens.WIDGET_WEEK_CAL_ROW,
+            R.dimen.widget_week_row_default to SizeTokens.WIDGET_WEEK_ROW_DEFAULT,
         )
         dimens.forEach { (res, token) ->
             assertEquals(context.resources.getResourceEntryName(res), token.toFloat(), context.resources.getDimension(res))
@@ -71,6 +82,13 @@ class WidgetRowResourcesTest {
             R.color.widget_overdue to ColorTokens.overdue.pick(),
             R.color.widget_on_accent to ColorTokens.onAccent.pick(),
             R.color.widget_on_list_square to ColorTokens.onListSquare.pick(),
+            R.color.widget_text_primary to ColorTokens.textPrimary.pick(),
+            R.color.widget_inactive to ColorTokens.inactive.pick(),
+            R.color.widget_accent_soft to ColorTokens.accentSoft.pick(),
+            R.color.widget_week_high to WeekRowTokens.high.pick(),
+            R.color.widget_week_medium to WeekRowTokens.medium.pick(),
+            R.color.widget_week_low to WeekRowTokens.low.pick(),
+            R.color.widget_week_done to WeekRowTokens.doneMark.pick(),
         )
     }
 

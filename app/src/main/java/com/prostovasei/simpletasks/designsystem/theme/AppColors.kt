@@ -6,6 +6,7 @@ import com.prostovasei.simpletasks.designsystem.tokens.ColorTokens
 import com.prostovasei.simpletasks.designsystem.tokens.PriorityColorTokens
 import com.prostovasei.simpletasks.designsystem.tokens.PriorityTokens
 import com.prostovasei.simpletasks.designsystem.tokens.ThemedColor
+import com.prostovasei.simpletasks.designsystem.tokens.WeekRowTokens
 import com.prostovasei.simpletasks.designsystem.tokens.WidgetCheckTokens
 
 @Immutable
@@ -23,6 +24,10 @@ data class PriorityPalette(
 @Immutable
 data class CheckRings(val high: Color, val medium: Color, val low: Color)
 
+/** Строки «Недели» (итерация 45): фон по приоритету и серая отметка выполненной. */
+@Immutable
+data class WeekRowColors(val high: Color, val medium: Color, val low: Color, val doneMark: Color)
+
 @Immutable
 data class AppColors(
     val background: Color,
@@ -39,6 +44,7 @@ data class AppColors(
     val inboxList: Color,
     val onListSquare: Color,
     val checkRings: CheckRings,
+    val weekRow: WeekRowColors,
     val danger: Color,
     val scrim: Color,
     val priority: PriorityPalette,
@@ -67,6 +73,12 @@ internal fun appColors(isDark: Boolean): AppColors {
             high = WidgetCheckTokens.high.ring.resolve(),
             medium = WidgetCheckTokens.medium.ring.resolve(),
             low = WidgetCheckTokens.low.ring.resolve(),
+        ),
+        weekRow = WeekRowColors(
+            high = WeekRowTokens.high.resolve(),
+            medium = WeekRowTokens.medium.resolve(),
+            low = WeekRowTokens.low.resolve(),
+            doneMark = WeekRowTokens.doneMark.resolve(),
         ),
         danger = ColorTokens.danger.resolve(),
         scrim = ColorTokens.scrim.resolve(),

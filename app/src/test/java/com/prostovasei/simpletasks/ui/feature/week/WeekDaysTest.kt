@@ -11,6 +11,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.Instant
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.ZoneOffset
 
 /** Сборка недели (итерация 44): задачи по дням, выполненные на своём дне, будущие повторы, порядок внутри дня. */
@@ -109,5 +110,15 @@ class WeekDaysTest {
         val days = build(listOf(task("i", start = at("15T10:00:00"), due = at("15T11:30:00"))))
         assertEquals("10:00", days[3].items.single().startTime())
         assertEquals(null, build(listOf(task("a", due = TaskDue.AllDay(monday))))[0].items.single().startTime())
+    }
+
+    /** 0.46.0: месяц календаря следует за выбранной неделей — неделя с днями другого месяца перелистывает на него. */
+    @Test
+    fun monthFollowsThePickedWeek() {
+        val october = YearMonth.of(2026, 10)
+        assertEquals(october, monthAfterPick(october, LocalDate.of(2026, 10, 12)))
+        assertEquals(YearMonth.of(2026, 11), monthAfterPick(october, LocalDate.of(2026, 10, 26)))
+        assertEquals(YearMonth.of(2026, 9), monthAfterPick(october, LocalDate.of(2026, 9, 28)))
+        assertEquals(YearMonth.of(2026, 12), monthAfterPick(october, LocalDate.of(2026, 12, 7)))
     }
 }

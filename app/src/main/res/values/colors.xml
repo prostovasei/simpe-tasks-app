@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Только для иконки лаунчера: совпадает с ColorTokens.accent (светлая тема). -->
-    <color name="ic_launcher_background">#0969DA</color>
+    <!-- Только для иконки лаунчера: совпадает с ColorTokens.accent (светлая тема), с 0.46.0 — чёрный. -->
+    <color name="ic_launcher_background">#16171D</color>
     <!-- Полоска прокрутки списка виджета: полупрозрачный серый, виден и на светлом, и на тёмном фоне. -->
     <color name="widget_scroll_thumb">#808A8F98</color>
     <!-- Часы отметки «сейчас» в виджете: совпадает с ColorTokens.accent (светлая тема). -->
-    <color name="widget_now">#15803D</color>
+    <color name="widget_now">#16171D</color>
     <!-- Фон виджета: ColorTokens.background (светлая тема); тёмная — в values-night. Перехода к фону внизу нет (итерация 43). -->
-    <color name="widget_background">#F6F7F6</color>
+    <color name="widget_background">#F5F5F5</color>
 </resources>

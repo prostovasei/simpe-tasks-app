@@ -24,7 +24,7 @@ import javax.inject.Inject
 
 /**
  * Вид «Неделя» (итерация 44). Пока неделя не выбрана в мини-календаре, показывается текущая и переходит на новую в полночь;
- * месяц календаря — месяц сегодняшнего дня, пока его не пролистали.
+ * месяц календаря — месяц сегодняшнего дня, пока не выбрали неделю с днями другого месяца ([monthAfterPick]).
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
@@ -54,11 +54,11 @@ class WeekViewModel @Inject constructor(
         when (intent) {
             is TaskListIntent.ToggleComplete -> completion.toggle(intent.taskId, intent.recurring, intent.done) { sendEffect(it) }
             is TaskListIntent.Undo -> completion.undo(intent.taskId)
-            is SelectWeek -> selected.value = intent.weekStart
-            is ShiftMonth -> {
+            is SelectWeek -> {
                 val today = currentState.today ?: return
-                // От пролистанного месяца, а не от показанного: два нажатия подряд не должны слиться в одно.
-                shownMonth.update { (it ?: YearMonth.from(today)).plusMonths(intent.delta.toLong()) }
+                selected.value = intent.weekStart
+                // От последнего выбранного месяца, а не от показанного: два нажатия подряд не должны слиться в одно.
+                shownMonth.update { monthAfterPick(it ?: YearMonth.from(today), intent.weekStart) }
             }
             else -> Unit
         }

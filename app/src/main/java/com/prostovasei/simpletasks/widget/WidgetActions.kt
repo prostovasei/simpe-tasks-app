@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import androidx.core.net.toUri
+import com.prostovasei.simpletasks.ui.feature.week.monthAfterPick
 import com.prostovasei.simpletasks.ui.feature.week.weekStart
 import java.time.LocalDate
 import java.time.YearMonth
@@ -63,19 +64,13 @@ class WidgetActionReceiver : BroadcastReceiver() {
                 WidgetActions.PICK_WEEK -> {
                     val id = intent.getIntExtra(WidgetActions.EXTRA_WIDGET_ID, -1)
                     val date = intent.getStringExtra(WidgetActions.EXTRA_DATE)?.let { runCatching { LocalDate.parse(it) }.getOrNull() } ?: return
-                    WidgetLog.add(context, "неделя: $date")
-                    WidgetSelection.setWeekPick(context, id, WidgetSelection.weekPick(context, id).copy(start = date.weekStart()))
-                    WidgetRenderer.render(context, id, "неделя")
-                }
-                WidgetActions.SHIFT_MONTH -> {
-                    val id = intent.getIntExtra(WidgetActions.EXTRA_WIDGET_ID, -1)
-                    val delta = intent.getIntExtra(WidgetActions.EXTRA_DELTA, 0)
                     val pick = WidgetSelection.weekPick(context, id)
-                    // От пролистанного месяца; пока не листали — от месяца сегодняшнего дня.
-                    val base = pick.month ?: YearMonth.from(LocalDate.now(context.widgetEntryPoint().time().zone()))
-                    WidgetLog.add(context, "месяц: ${base.plusMonths(delta.toLong())}")
-                    WidgetSelection.setWeekPick(context, id, pick.copy(month = base.plusMonths(delta.toLong())))
-                    WidgetRenderer.render(context, id, "месяц")
+                    // 0.46.0: стрелок месяца нет — неделя с днями соседнего месяца перелистывает календарь на него.
+                    val shown = pick.month ?: YearMonth.from(LocalDate.now(context.widgetEntryPoint().time().zone()))
+                    val month = monthAfterPick(shown, date.weekStart())
+                    WidgetLog.add(context, "неделя: $date, месяц: $month")
+                    WidgetSelection.setWeekPick(context, id, WeekPick(start = date.weekStart(), month = month))
+                    WidgetRenderer.render(context, id, "неделя")
                 }
                 WidgetActions.MIDNIGHT -> WidgetRenderer.renderAll(context, "время")
             }
@@ -89,10 +84,8 @@ object WidgetActions {
     const val UNCOMPLETE = "com.prostovasei.simpletasks.widget.UNCOMPLETE"
     const val TOGGLE_OVERDUE = "com.prostovasei.simpletasks.widget.TOGGLE_OVERDUE"
     const val PICK_WEEK = "com.prostovasei.simpletasks.widget.PICK_WEEK"
-    const val SHIFT_MONTH = "com.prostovasei.simpletasks.widget.SHIFT_MONTH"
     const val MIDNIGHT = "com.prostovasei.simpletasks.WIDGET_MIDNIGHT"
     const val EXTRA_DATE = "date"
-    const val EXTRA_DELTA = "delta"
     const val EXTRA_WIDGET_ID = "widget_id"
     const val EXTRA_FILTER = "filter"
     const val EXTRA_TASK_ID = "task_id"
@@ -120,13 +113,6 @@ object WidgetActions {
         .setData("simpletasks://widget/$appWidgetId/week/$date".toUri())
         .putExtra(EXTRA_WIDGET_ID, appWidgetId)
         .putExtra(EXTRA_DATE, date)
-
-    /** Листание месяца мини-календаря виджета (итерация 45): [delta] = -1 — назад, 1 — вперёд. */
-    fun shiftMonth(context: Context, appWidgetId: Int, delta: Int): Intent = Intent(context, WidgetActionReceiver::class.java)
-        .setAction(SHIFT_MONTH)
-        .setData("simpletasks://widget/$appWidgetId/month/$delta".toUri())
-        .putExtra(EXTRA_WIDGET_ID, appWidgetId)
-        .putExtra(EXTRA_DELTA, delta)
 
     /** Снять отметку с выполненной (итерация 27): выполненная остаётся в виджете до полуночи. */
     fun uncomplete(context: Context, taskId: String): Intent = Intent(context, WidgetActionReceiver::class.java)

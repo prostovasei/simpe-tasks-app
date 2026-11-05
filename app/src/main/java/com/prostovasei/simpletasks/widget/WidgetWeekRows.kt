@@ -7,6 +7,7 @@ import android.text.Spanned
 import android.text.style.StrikethroughSpan
 import android.util.TypedValue
 import android.view.View
+import android.view.ViewGroup
 import android.widget.RemoteViews
 import androidx.annotation.RequiresApi
 import androidx.compose.ui.unit.DpSize
@@ -15,7 +16,8 @@ import com.prostovasei.simpletasks.designsystem.tokens.ColorTokens
 import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
 import com.prostovasei.simpletasks.designsystem.tokens.SpacingTokens
 import com.prostovasei.simpletasks.designsystem.tokens.ThemedColor
-import com.prostovasei.simpletasks.ui.common.DONE_ALPHA
+import com.prostovasei.simpletasks.designsystem.tokens.WeekRowTokens
+import com.prostovasei.simpletasks.domain.model.Priority
 import com.prostovasei.simpletasks.ui.common.TaskItem
 import com.prostovasei.simpletasks.ui.feature.week.WEEK_CALENDAR_ROWS
 import com.prostovasei.simpletasks.ui.feature.week.WEEK_LENGTH
@@ -33,7 +35,7 @@ import java.time.format.TextStyle
 import java.util.Locale
 
 /*
- * Вид «Неделя» в виджете (итерация 45, макет `VariantK1`): четыре строки ленты одинаковой высоты на весь виджет над нижней панелью —
+ * Вид «Неделя» в виджете (итерация 45, макет `VariantK1`; 0.46.0 — `VariantK2`: компактные строки с фоном по приоритету, до 6 в ячейке): четыре строки ленты одинаковой высоты на весь виджет над нижней панелью —
  * Пн–Вт, Ср–Чт, Пт–Сб, Вс и мини-календарь. Каждая строка пишет свой вид целиком (Android перекрашивает показанные строки, см. WidgetRows).
  * Ячейка: строка даты («пн 26», у сегодня — метка, справа «+N» — не поместившиеся задачи; нажатие открывает день в приложении) и плашки
  * задач: кружок (нажатие — «выполнено»), название, время. Плашек в ячейке столько, сколько влезает по высоте. Разметка — `widget_week_*`,
@@ -52,10 +54,10 @@ object WidgetWeekRows {
         return ((height - SizeTokens.WIDGET_EDGE - SizeTokens.WIDGET_BAR) / ROWS).coerceAtLeast(SizeTokens.WIDGET_WEEK_ROW_MIN.toFloat())
     }
 
-    /** Сколько плашек влезает в ячейку высотой [rowHeight]. */
+    /** Сколько строк задач влезает в ячейку высотой [rowHeight] (поле сверху, строка даты, строки с промежутком над каждой). */
     fun capacity(rowHeight: Float): Int {
-        val room = rowHeight - 2 * SpacingTokens.XS - SizeTokens.WIDGET_WEEK_HEADER
-        return (room / (SizeTokens.WIDGET_WEEK_TASK + SpacingTokens.XXS)).toInt().coerceIn(0, WeekIds.SLOTS)
+        val room = rowHeight - SpacingTokens.XXS - SizeTokens.WIDGET_WEEK_HEADER
+        return (room / (SizeTokens.WIDGET_WEEK_TASK + SizeTokens.WIDGET_WEEK_TASK_GAP)).toInt().coerceIn(0, WeekIds.SLOTS)
     }
 
     fun views(context: Context, week: WidgetWeek, size: DpSize): List<RemoteViews> {
@@ -68,7 +70,7 @@ object WidgetWeekRows {
             RemoteViews(context.packageName, if (right == null) R.layout.widget_row_week_last else R.layout.widget_row_week).apply {
                 setViewLayoutHeight(R.id.week_row, height, TypedValue.COMPLEX_UNIT_DIP)
                 cell(context, WeekIds.LEFT, left, capacity, today)
-                if (right != null) cell(context, WeekIds.RIGHT, right, capacity, today) else calendar(context, week, height)
+                if (right != null) cell(context, WeekIds.RIGHT, right, capacity, today) else calendar(week, height)
             }
         }
     }
@@ -78,13 +80,18 @@ object WidgetWeekRows {
         val shown = day.items.take(capacity)
         val hidden = day.items.size - shown.size
         setTextViewText(ids.weekday, day.date.dayOfWeek.getDisplayName(TextStyle.SHORT, RU))
-        color(ids.weekday, "setTextColor", if (isToday) ColorTokens.accent else ColorTokens.textPrimary)
+        color(ids.weekday, "setTextColor", ColorTokens.textPrimary)
         setTextViewText(ids.number, day.date.dayOfMonth.toString())
         color(ids.number, "setTextColor", if (isToday) ColorTokens.onAccent else ColorTokens.textSecondary)
-        // Метка «сегодня» у числа: фон accent и поля; у остальных дней — без фона и полей.
+        // Сегодня (0.46.0): число в кружке цвета акцента; у остальных дней — без фона, по ширине текста.
         setInt(ids.number, "setBackgroundResource", if (isToday) R.drawable.widget_week_today else 0)
-        val sidePad = if (isToday) dp(context, SpacingTokens.XS) else 0
-        setViewPadding(ids.number, sidePad, 0, sidePad, 0)
+        if (isToday) {
+            setViewLayoutWidth(ids.number, SizeTokens.WIDGET_WEEK_TODAY.toFloat(), TypedValue.COMPLEX_UNIT_DIP)
+            setViewLayoutHeight(ids.number, SizeTokens.WIDGET_WEEK_TODAY.toFloat(), TypedValue.COMPLEX_UNIT_DIP)
+        } else {
+            setViewLayoutWidth(ids.number, ViewGroup.LayoutParams.WRAP_CONTENT.toFloat(), TypedValue.COMPLEX_UNIT_PX)
+            setViewLayoutHeight(ids.number, ViewGroup.LayoutParams.WRAP_CONTENT.toFloat(), TypedValue.COMPLEX_UNIT_PX)
+        }
         visible(ids.more, hidden > 0)
         setTextViewText(ids.more, "+$hidden")
         setOnClickFillInIntent(ids.head, fillIn(WidgetClicks.DAY, day.date.toString()))
@@ -95,14 +102,19 @@ object WidgetWeekRows {
         }
     }
 
-    /** Плашка задачи в ячейке; всё, что зависит от задачи, пишется заново. */
+    /**
+     * Строка задачи в ячейке (0.46.0, `VariantK2`): фон по приоритету (без приоритета и у выполненной — белый), выполненная — серая и
+     * зачёркнутая с серым кружком, будущий повтор — наполовину прозрачный. Всё, что зависит от задачи, пишется заново.
+     */
     private fun RemoteViews.slot(context: Context, ids: SlotIds, item: TaskItem, overdue: Boolean) {
         val done = item.showsDone
         val ringColor = when {
-            item.isGhost && !done -> ColorTokens.inactive
+            done -> WeekRowTokens.doneMark
+            item.isGhost -> ColorTokens.inactive
             else -> ring(item.priority)
         }
-        setFloat(ids.plaque, "setAlpha", if (item.isGhost) GHOST_ALPHA else if (done) DONE_ALPHA else 1f)
+        setInt(ids.plaque, "setBackgroundResource", if (done) R.drawable.widget_week_plaque_plain else plaque(item.priority))
+        setFloat(ids.plaque, "setAlpha", if (item.isGhost) GHOST_ALPHA else 1f)
         setImageViewResource(ids.node, if (done) R.drawable.ic_widget_node_fill else R.drawable.ic_widget_node_ring)
         color(ids.node, "setColorFilter", ringColor)
         visible(ids.tick, done)
@@ -129,25 +141,41 @@ object WidgetWeekRows {
             ids.title,
             if (done) SpannableString(item.title).apply { setSpan(StrikethroughSpan(), 0, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE) } else item.title,
         )
-        color(ids.title, "setTextColor", if (item.isGhost) ColorTokens.textSecondary else ColorTokens.textPrimary)
+        color(
+            ids.title,
+            "setTextColor",
+            when {
+                done -> ColorTokens.inactive
+                item.isGhost -> ColorTokens.textSecondary
+                else -> ColorTokens.textPrimary
+            },
+        )
         val time = item.startTime()
         visible(ids.time, time != null)
         setTextViewText(ids.time, time.orEmpty())
-        color(ids.time, "setTextColor", if (overdue) ColorTokens.overdue else ColorTokens.textSecondary)
+        color(
+            ids.time,
+            "setTextColor",
+            when {
+                overdue -> ColorTokens.overdue
+                done -> ColorTokens.inactive
+                else -> ColorTokens.textSecondary
+            },
+        )
         // Без времени название доходит до края плашки — нужен правый отступ.
         setViewPadding(ids.plaque, 0, 0, if (time == null) dp(context, SpacingTokens.XS) else 0, 0)
         setOnClickFillInIntent(ids.plaque, fillIn(WidgetClicks.OPEN, item.taskId))
     }
 
-    /** Мини-календарь в последней ячейке: месяц со стрелками, «пн…вс», шесть строк недель; нажатие на строку выбирает неделю. */
-    private fun RemoteViews.calendar(context: Context, week: WidgetWeek, rowHeight: Float) {
+    /**
+     * Мини-календарь в последней ячейке (0.46.0: без строки месяца и стрелок): «пн…вс» и шесть строк недель; нажатие на строку выбирает
+     * неделю, а неделя с днями соседнего месяца перелистывает календарь на него (см. WidgetActionReceiver, monthAfterPick).
+     */
+    private fun RemoteViews.calendar(week: WidgetWeek, rowHeight: Float) {
         val month: YearMonth = week.month
-        setTextViewText(WeekIds.CAL_TITLE, "${month.month.getDisplayName(TextStyle.FULL_STANDALONE, RU)} ${month.year}")
-        setOnClickFillInIntent(WeekIds.CAL_PREV, fillIn(WidgetClicks.PREV_MONTH, null))
-        setOnClickFillInIntent(WeekIds.CAL_NEXT, fillIn(WidgetClicks.NEXT_MONTH, null))
         DayOfWeek.entries.forEachIndexed { index, day -> setTextViewText(WeekIds.CAL_WEEKDAYS[index], day.getDisplayName(TextStyle.SHORT, RU)) }
-        // Строки недель делят высоту под заголовком; ячейка ниже — календарь слегка обрезается.
-        val room = rowHeight - 2 * SpacingTokens.XXS - SizeTokens.WIDGET_WEEK_CAL_HEAD - SizeTokens.WIDGET_WEEK_CAL_WEEKDAYS
+        // Строки недель делят высоту под «пн…вс»; ячейка ниже — календарь слегка обрезается.
+        val room = rowHeight - 2 * SpacingTokens.XXS - SizeTokens.WIDGET_WEEK_CAL_WEEKDAYS
         val weekRow = (room / WEEK_CALENDAR_ROWS).coerceIn(SizeTokens.WIDGET_WEEK_CAL_DAY.toFloat(), SizeTokens.WIDGET_WEEK_CAL_ROW_MAX.toFloat())
         val first = month.atDay(1).weekStart()
         WeekIds.CAL_ROWS.forEachIndexed { index, row ->
@@ -169,6 +197,14 @@ object WidgetWeekRows {
         isToday -> ColorTokens.onAccent
         inMonth -> ColorTokens.textPrimary
         else -> ColorTokens.inactive
+    }
+
+    /** Фон строки задачи по приоритету. */
+    private fun plaque(priority: Priority): Int = when (priority) {
+        Priority.HIGH -> R.drawable.widget_week_plaque_high
+        Priority.MEDIUM -> R.drawable.widget_week_plaque_medium
+        Priority.LOW -> R.drawable.widget_week_plaque_low
+        Priority.NONE -> R.drawable.widget_week_plaque_plain
     }
 
     private fun dp(context: Context, value: Int): Int = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, value.toFloat(), context.resources.displayMetrics).toInt()

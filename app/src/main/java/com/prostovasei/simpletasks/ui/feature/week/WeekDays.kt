@@ -9,6 +9,7 @@ import com.prostovasei.simpletasks.ui.common.sortTime
 import com.prostovasei.simpletasks.ui.common.toItem
 import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.ZoneId
 import java.time.temporal.TemporalAdjusters
 
@@ -42,6 +43,14 @@ fun buildWeek(weekStart: LocalDate, week: WeekTasks, projects: Map<String, Proje
         WeekDay(date, byDay[date].orEmpty())
     }
 }
+
+/**
+ * Месяц мини-календаря после выбора недели [weekStart] (0.46.0, решение PM: строки месяца со стрелками нет, месяц листается сам).
+ * Неделя с днями другого месяца (бледными) переводит календарь на этот месяц; неделя целиком из [shown] его не меняет.
+ * Так выбор первой строки листает назад, последних — вперёд, а выбранная неделя всегда остаётся на виду.
+ */
+fun monthAfterPick(shown: YearMonth, weekStart: LocalDate): YearMonth =
+    (0 until WEEK_LENGTH).map { YearMonth.from(weekStart.plusDays(it.toLong())) }.firstOrNull { it != shown } ?: shown
 
 /** Время задачи для ячейки: начало («10:00»), без конца интервала; у «весь день» — null. */
 fun TaskItem.startTime(): String? = due?.time?.substringBefore('–')
