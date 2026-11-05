@@ -22,22 +22,11 @@ data class PriorityPalette(
 
 /** Рамка галочки по приоритету (итерация 13): как круглые галочки виджета, только в приложении — квадратные. */
 @Immutable
-data class CheckRings(val high: Color, val medium: Color, val low: Color, val none: Color)
+data class CheckRings(val high: Color, val medium: Color, val low: Color)
 
-/** Строки «Недели» (итерация 45; 46 — графит): фон по приоритету, цвета текста, времени и просрочки на высоком и среднем, отметка выполненной. */
+/** Строки «Недели» (итерация 45): фон по приоритету и серая отметка выполненной. */
 @Immutable
-data class WeekRowColors(
-    val high: Color,
-    val highContent: Color,
-    val highTime: Color,
-    val highOverdue: Color,
-    val medium: Color,
-    val mediumContent: Color,
-    val mediumTime: Color,
-    val mediumOverdue: Color,
-    val low: Color,
-    val doneMark: Color,
-)
+data class WeekRowColors(val high: Color, val medium: Color, val low: Color, val doneMark: Color)
 
 @Immutable
 data class AppColors(
@@ -55,8 +44,6 @@ data class AppColors(
     val inboxList: Color,
     val onListSquare: Color,
     val checkRings: CheckRings,
-    /** Галочка выполненной на залитом кружке по приоритету (итерация 46). */
-    val checkMarks: CheckRings,
     val weekRow: WeekRowColors,
     val danger: Color,
     val scrim: Color,
@@ -86,23 +73,10 @@ internal fun appColors(isDark: Boolean): AppColors {
             high = WidgetCheckTokens.high.ring.resolve(),
             medium = WidgetCheckTokens.medium.ring.resolve(),
             low = WidgetCheckTokens.low.ring.resolve(),
-            none = WidgetCheckTokens.none.ring.resolve(),
-        ),
-        checkMarks = CheckRings(
-            high = WidgetCheckTokens.high.check.resolve(),
-            medium = WidgetCheckTokens.medium.check.resolve(),
-            low = WidgetCheckTokens.low.check.resolve(),
-            none = WidgetCheckTokens.none.check.resolve(),
         ),
         weekRow = WeekRowColors(
             high = WeekRowTokens.high.resolve(),
-            highContent = WeekRowTokens.highContent.resolve(),
-            highTime = WeekRowTokens.highTime.resolve(),
-            highOverdue = WeekRowTokens.highOverdue.resolve(),
             medium = WeekRowTokens.medium.resolve(),
-            mediumContent = WeekRowTokens.mediumContent.resolve(),
-            mediumTime = WeekRowTokens.mediumTime.resolve(),
-            mediumOverdue = WeekRowTokens.mediumOverdue.resolve(),
             low = WeekRowTokens.low.resolve(),
             doneMark = WeekRowTokens.doneMark.resolve(),
         ),

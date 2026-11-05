@@ -46,7 +46,7 @@ object WidgetColors {
     val priorityNone = PriorityTokens.none.toProviders()
 }
 
-data class WidgetCheckColors(val ring: ColorProvider, val fill: ColorProvider, val check: ColorProvider)
+data class WidgetCheckColors(val ring: ColorProvider, val fill: ColorProvider)
 
 data class WidgetPriorityColors(val container: ColorProvider, val content: ColorProvider)
 
@@ -57,4 +57,4 @@ private const val DONE_OPACITY = 0.7f
 
 private fun PriorityColorTokens.toProviders() = WidgetPriorityColors(container.toProvider(), content.toProvider())
 
-private fun CheckTokens.toProviders() = WidgetCheckColors(ring.toProvider(), fill.toProvider(), check.toProvider())
+private fun CheckTokens.toProviders() = WidgetCheckColors(ring.toProvider(), fill.toProvider())

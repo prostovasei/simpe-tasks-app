@@ -113,18 +113,6 @@ object WidgetRows {
             setViewVisibility(R.id.row_line_top, if (line.line.top) View.VISIBLE else View.INVISIBLE)
             setViewVisibility(R.id.row_line_bottom, if (line.line.bottom) View.VISIBLE else View.INVISIBLE)
             color(R.id.row_node, "setColorFilter", if (faded && !done) ColorTokens.inactive else ring(item.priority))
-            // Итерация 46: у высокого приоритета обводка толще; галочка выполненной — своего цвета на каждом сером.
-            if (!done) {
-                val high = item.priority == Priority.HIGH
-                setImageViewResource(
-                    R.id.row_node,
-                    when {
-                        row.isPeriod -> if (high) R.drawable.widget_period_ring_high else R.drawable.widget_period_ring
-                        else -> if (high) R.drawable.ic_widget_node_ring_high else R.drawable.ic_widget_node_ring
-                    },
-                )
-            }
-            color(R.id.row_node_check, "setColorFilter", check(item.priority))
             // У будущего повтора кружок ничего не отмечает (как раньше): пустое нажатие и без подписи.
             if (!done) setContentDescription(R.id.row_node, if (item.isGhost) null else context.getString(R.string.widget_complete))
             val check = when {
@@ -185,14 +173,6 @@ object WidgetRows {
 
     /** Видимость пишется всегда: Android перекрашивает уже показанные строки, и прошлое значение иначе остаётся. */
     internal fun RemoteViews.visible(id: Int, shown: Boolean) = setViewVisibility(id, if (shown) View.VISIBLE else View.GONE)
-
-    /** Галочка выполненной на залитом кружке приоритета (итерация 46). */
-    internal fun check(priority: Priority): ThemedColor = when (priority) {
-        Priority.HIGH -> WidgetCheckTokens.high.check
-        Priority.MEDIUM -> WidgetCheckTokens.medium.check
-        Priority.LOW -> WidgetCheckTokens.low.check
-        Priority.NONE -> WidgetCheckTokens.none.check
-    }
 
     internal fun ring(priority: Priority): ThemedColor = when (priority) {
         Priority.HIGH -> WidgetCheckTokens.high.ring

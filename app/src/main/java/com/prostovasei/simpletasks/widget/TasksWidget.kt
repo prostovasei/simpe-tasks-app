@@ -354,9 +354,6 @@ private fun Rail(row: WidgetRow.Task, line: Line) {
         (row.past || item.isGhost) && !done -> WidgetColors.inactive
         else -> widgetCheckColors(item.priority).ring
     }
-    // Итерация 46: у высокого приоритета обводка толще; галочка выполненной — своего цвета на каждом сером.
-    val high = item.priority == Priority.HIGH && !done
-    val check = widgetCheckColors(item.priority).check
     val action = when {
         item.isGhost -> GlanceModifier
         done -> GlanceModifier.clickable(actionSendBroadcast(WidgetActions.uncomplete(context, item.id)))
@@ -371,38 +368,38 @@ private fun Rail(row: WidgetRow.Task, line: Line) {
             LineSegment(line.top, GlanceModifier.height(SizeTokens.WIDGET_PERIOD_STUB.dp))
             Box(GlanceModifier.width(SizeTokens.WIDGET_NODE.dp).defaultWeight(), contentAlignment = Alignment.Center) {
                 Image(
-                    ImageProvider(if (done) R.drawable.widget_period_fill else if (high) R.drawable.widget_period_ring_high else R.drawable.widget_period_ring),
+                    ImageProvider(if (done) R.drawable.widget_period_fill else R.drawable.widget_period_ring),
                     contentDescription = label,
                     colorFilter = ColorFilter.tint(color),
                     contentScale = ContentScale.FillBounds,
                     modifier = GlanceModifier.fillMaxSize(),
                 )
-                if (done) NodeCheck(check)
+                if (done) NodeCheck()
             }
             LineSegment(line.bottom, GlanceModifier.height(SizeTokens.WIDGET_PERIOD_STUB.dp))
         } else {
             LineSegment(line.top, GlanceModifier.defaultWeight())
             Box(GlanceModifier.size(SizeTokens.WIDGET_NODE.dp), contentAlignment = Alignment.Center) {
                 Image(
-                    ImageProvider(if (done) R.drawable.ic_widget_node_fill else if (high) R.drawable.ic_widget_node_ring_high else R.drawable.ic_widget_node_ring),
+                    ImageProvider(if (done) R.drawable.ic_widget_node_fill else R.drawable.ic_widget_node_ring),
                     contentDescription = label,
                     colorFilter = ColorFilter.tint(color),
                     modifier = GlanceModifier.size(SizeTokens.WIDGET_NODE.dp),
                 )
-                if (done) NodeCheck(check)
+                if (done) NodeCheck()
             }
             LineSegment(line.bottom, GlanceModifier.defaultWeight())
         }
     }
 }
 
-/** Галочка в залитом кружке или капсуле: [color] — свой у каждого приоритета (итерация 46). */
+/** Белая галочка в залитом кружке или капсуле. */
 @Composable
-private fun NodeCheck(color: ColorProvider) {
+private fun NodeCheck() {
     Image(
         ImageProvider(R.drawable.ic_node_check),
         contentDescription = null,
-        colorFilter = ColorFilter.tint(color),
+        colorFilter = ColorFilter.tint(WidgetColors.onAccent),
         modifier = GlanceModifier.size(SizeTokens.NODE_CHECK.dp),
     )
 }

@@ -240,7 +240,7 @@ fun PriorityDialog(priority: Priority, onConfirm: (Priority) -> Unit, onDismiss:
             Triple(R.string.priority_p1, Priority.HIGH, rings.high),
             Triple(R.string.priority_p2, Priority.MEDIUM, rings.medium),
             Triple(R.string.priority_p3, Priority.LOW, rings.low),
-            Triple(R.string.priority_p0, Priority.NONE, rings.none),
+            Triple(R.string.priority_p0, Priority.NONE, AppTheme.colors.inactive),
         ).forEach { (label, value, color) ->
             DialogOption(
                 title = stringResource(label),

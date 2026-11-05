@@ -18,7 +18,6 @@ import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
 import com.prostovasei.simpletasks.designsystem.tokens.SpacingTokens
 import com.prostovasei.simpletasks.designsystem.tokens.ThemedColor
 import com.prostovasei.simpletasks.designsystem.tokens.WeekRowTokens
-import com.prostovasei.simpletasks.designsystem.tokens.WidgetCheckTokens
 import com.prostovasei.simpletasks.domain.model.Priority
 import com.prostovasei.simpletasks.ui.common.TaskItem
 import com.prostovasei.simpletasks.ui.feature.week.WEEK_LENGTH
@@ -116,28 +115,16 @@ object WidgetWeekRows {
      */
     private fun RemoteViews.slot(context: Context, ids: SlotIds, item: TaskItem, overdue: Boolean, click: Click) {
         val done = item.showsDone
-        // Итерация 46 (вариант 2 «Контрастный графит»): у высокого и среднего свои текст, кружок, время и просрочка.
-        val level = if (done) Priority.NONE else item.priority
         val ringColor = when {
             done -> WeekRowTokens.doneMark
-            level == Priority.HIGH -> WeekRowTokens.highContent
-            level == Priority.MEDIUM -> WeekRowTokens.mediumContent
             item.isGhost -> ColorTokens.inactive
             else -> ring(item.priority)
         }
-        setInt(ids.plaque, "setBackgroundResource", plaque(level))
+        setInt(ids.plaque, "setBackgroundResource", if (done) R.drawable.widget_week_plaque_plain else plaque(item.priority))
         setFloat(ids.plaque, "setAlpha", if (item.isGhost) GHOST_ALPHA else 1f)
-        setImageViewResource(
-            ids.node,
-            when {
-                done -> R.drawable.ic_widget_node_fill
-                level == Priority.HIGH -> R.drawable.ic_widget_node_ring_high
-                else -> R.drawable.ic_widget_node_ring
-            },
-        )
+        setImageViewResource(ids.node, if (done) R.drawable.ic_widget_node_fill else R.drawable.ic_widget_node_ring)
         color(ids.node, "setColorFilter", ringColor)
         visible(ids.tick, done)
-        color(ids.tick, "setColorFilter", WidgetCheckTokens.none.check)
         setContentDescription(
             ids.node,
             when {
@@ -166,8 +153,6 @@ object WidgetWeekRows {
             "setTextColor",
             when {
                 done -> ColorTokens.inactive
-                level == Priority.HIGH -> WeekRowTokens.highContent
-                level == Priority.MEDIUM -> WeekRowTokens.mediumContent
                 item.isGhost -> ColorTokens.textSecondary
                 else -> ColorTokens.textPrimary
             },
@@ -179,12 +164,8 @@ object WidgetWeekRows {
             ids.time,
             "setTextColor",
             when {
-                overdue && level == Priority.HIGH -> WeekRowTokens.highOverdue
-                overdue && level == Priority.MEDIUM -> WeekRowTokens.mediumOverdue
                 overdue -> ColorTokens.overdue
                 done -> ColorTokens.inactive
-                level == Priority.HIGH -> WeekRowTokens.highTime
-                level == Priority.MEDIUM -> WeekRowTokens.mediumTime
                 else -> ColorTokens.textSecondary
             },
         )

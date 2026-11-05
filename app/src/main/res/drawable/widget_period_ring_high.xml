@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Вытянутое кольцо периода высокого приоритета (итерация 46, вариант А): обводка толще (3), цвет — оттенком. -->
-<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-    <corners android:radius="10dp" />
-    <!-- Прозрачная заливка явно: без неё оттенок закрашивает кольцо целиком. -->
-    <solid android:color="@android:color/transparent" />
-    <stroke android:width="3dp" android:color="@android:color/white" />
-</shape>

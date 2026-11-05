@@ -108,7 +108,7 @@ fun TaskRow(
         priority == Priority.HIGH -> colors.checkRings.high
         priority == Priority.MEDIUM -> colors.checkRings.medium
         priority == Priority.LOW -> colors.checkRings.low
-        else -> colors.checkRings.none
+        else -> colors.inactive
     }
 
     Row(

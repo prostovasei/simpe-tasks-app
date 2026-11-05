@@ -148,38 +148,20 @@ private fun WeekTaskRow(item: TaskItem, overdue: Boolean, onToggle: () -> Unit, 
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
     val done = item.showsDone
-    // Итерация 46 (вариант 2 «Контрастный графит»): у высокого и среднего свои фон, текст, кружок, время и просрочка.
-    val row = colors.weekRow
-    val level = if (done) Priority.NONE else item.priority
-    val fill = when (level) {
-        Priority.HIGH -> row.high
-        Priority.MEDIUM -> row.medium
-        Priority.LOW -> row.low
-        Priority.NONE -> colors.surface
-    }
-    val content = when (level) {
-        Priority.HIGH -> row.highContent
-        Priority.MEDIUM -> row.mediumContent
-        else -> colors.textPrimary
-    }
     val ring = when {
-        done -> row.doneMark
-        level == Priority.HIGH -> row.highContent
-        level == Priority.MEDIUM -> row.mediumContent
-        item.isGhost -> colors.inactive
-        level == Priority.LOW -> colors.checkRings.low
-        else -> colors.checkRings.none
+        item.isGhost && !done -> colors.inactive
+        item.priority == Priority.HIGH -> colors.checkRings.high
+        item.priority == Priority.MEDIUM -> colors.checkRings.medium
+        item.priority == Priority.LOW -> colors.checkRings.low
+        else -> colors.inactive
     }
-    val timeColor = when {
-        overdue && level == Priority.HIGH -> row.highOverdue
-        overdue && level == Priority.MEDIUM -> row.mediumOverdue
-        overdue -> colors.overdue
-        done -> colors.inactive
-        level == Priority.HIGH -> row.highTime
-        level == Priority.MEDIUM -> row.mediumTime
-        else -> colors.textSecondary
+    val fill = when {
+        done -> colors.surface
+        item.priority == Priority.HIGH -> colors.weekRow.high
+        item.priority == Priority.MEDIUM -> colors.weekRow.medium
+        item.priority == Priority.LOW -> colors.weekRow.low
+        else -> colors.surface
     }
-    val stroke = if (level == Priority.HIGH) SizeTokens.CHECKBOX_STROKE_HIGH else SizeTokens.CHECKBOX_STROKE
     val label = stringResource(if (done) R.string.task_uncomplete else R.string.widget_complete)
     Row(
         Modifier
@@ -202,10 +184,10 @@ private fun WeekTaskRow(item: TaskItem, overdue: Boolean, onToggle: () -> Unit, 
                 ),
             contentAlignment = Alignment.Center,
         ) {
-            Box(Modifier.size(SizeTokens.WEEKVIEW_CHECK.dp).border(stroke.dp, ring, CircleShape), contentAlignment = Alignment.Center) {
+            Box(Modifier.size(SizeTokens.WEEKVIEW_CHECK.dp).border(SizeTokens.CHECKBOX_STROKE.dp, if (done) colors.weekRow.doneMark else ring, CircleShape), contentAlignment = Alignment.Center) {
                 if (done) {
                     Box(Modifier.size(SizeTokens.WEEKVIEW_CHECK.dp).background(colors.weekRow.doneMark, CircleShape))
-                    Icon(painterResource(R.drawable.ic_node_check), null, tint = colors.checkMarks.none, modifier = Modifier.size(SizeTokens.WEEKVIEW_CHECK_ICON.dp))
+                    Icon(painterResource(R.drawable.ic_node_check), null, tint = colors.onAccent, modifier = Modifier.size(SizeTokens.WEEKVIEW_CHECK_ICON.dp))
                 }
             }
         }
@@ -215,8 +197,8 @@ private fun WeekTaskRow(item: TaskItem, overdue: Boolean, onToggle: () -> Unit, 
             fontWeight = FontWeight.Bold,
             color = when {
                 done -> colors.inactive
-                item.isGhost && level == Priority.NONE -> colors.textSecondary
-                else -> content
+                item.isGhost -> colors.textSecondary
+                else -> colors.textPrimary
             },
             textDecoration = if (done) TextDecoration.LineThrough else null,
             maxLines = 1,
@@ -228,7 +210,11 @@ private fun WeekTaskRow(item: TaskItem, overdue: Boolean, onToggle: () -> Unit, 
                 it,
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.SemiBold,
-                color = timeColor,
+                color = when {
+                    overdue -> colors.overdue
+                    done -> colors.inactive
+                    else -> colors.textSecondary
+                },
                 maxLines = 1,
                 modifier = Modifier.padding(start = spacing.xxs, end = spacing.xs),
             )
