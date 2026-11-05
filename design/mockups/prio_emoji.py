@@ -26,12 +26,13 @@ def emoji(e, size=15):
 
 def tall_repeat(color, h, w=16):
     """Знак повтора высотой с капсулу периода: две половины капсулы со стрелками (левая — вверх и вправо, правая — вниз и влево)."""
-    r = 7
+    # Почти замкнутая капсула: левая половина — снизу вверх и вправо (стрелка вправо сверху), правая — сверху вниз и влево
+    # (стрелка влево снизу); разрывы короткие — у стрелок.
     sw = 2
-    a = (f'M2 {h / 2 + 2}V{r + 2}a{r - 1} {r - 1} 0 0 1 {r - 1} {-(r - 1)}H{w - 6}'
-         f'M{w - 8} 1l2.5 2-2.5 2'
-         f'M{w - 2} {h / 2 - 2}V{h - r - 2}a{r - 1} {r - 1} 0 0 1 {-(r - 1)} {r - 1}H6'
-         f'M8 {h - 5}l-2.5 2 2.5 2')
+    a = (f'M2 {h - 7}V9a6 6 0 0 1 6 -6H10.5'
+         f'M8.5 0.8l2.4 2.2-2.4 2.2'
+         f'M14 7V{h - 9}a6 6 0 0 1 -6 6H5.5'
+         f'M7.5 {h - 5.2}l-2.4 2.2 2.4 2.2')
     return (f'<span style="width:{w}px;height:{h}px;border-radius:{w // 2}px;background:{BG};display:flex;flex-shrink:0;">'
             f'<svg width="{w}" height="{h}" viewBox="0 0 {w} {h}" fill="none" stroke="{color}" stroke-width="{sw}" stroke-linecap="round" stroke-linejoin="round">'
             f'<path d="{a}"/></svg></span>')
