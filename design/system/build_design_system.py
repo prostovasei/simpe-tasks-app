@@ -101,7 +101,7 @@ SIZE_PICK = {
     'ICON_TILE': ('icon-tile', 'Плитка значка в окне выбора значка.'),
     'NAV_BAR': ('nav-bar', 'Высота нижней панели (закреплена внизу на всю ширину).'), 'NAV_TAB': ('nav-tab', 'Наибольшая ширина кнопки вкладки; вкладки делят ширину поровну.'),
     'NAV_ADD_W': ('nav-add-w', 'Кнопка «+» в панели: ширина.'), 'NAV_ADD_H': ('nav-add-h', 'Кнопка «+» в панели: высота.'),
-    'WIDGET_WEEK_TASK': ('widget-week-task', 'Вид «Неделя» в виджете: строка задачи.'), 'WIDGET_WEEK_TASK_GAP': ('widget-week-task-gap', 'Вид «Неделя» в виджете: промежуток над строкой задачи.'), 'WIDGET_WEEK_CHECK': ('widget-week-check', 'Вид «Неделя» в виджете: кружок.'),
+    'WIDGET_WEEK_TASK': ('widget-week-task', 'Вид «Неделя» в виджете: наименьшая строка задачи; настоящая делит высоту ячейки поровну (обычно ~20).'), 'WIDGET_WEEK_TASK_GAP': ('widget-week-task-gap', 'Вид «Неделя» в виджете: промежуток над строкой задачи.'), 'WIDGET_WEEK_CHECK': ('widget-week-check', 'Вид «Неделя» в виджете: кружок.'),
     'WIDGET_WEEK_TICK': ('widget-week-tick', 'Вид «Неделя» в виджете: галочка в кружке.'), 'WIDGET_WEEK_HEADER': ('widget-week-header', 'Вид «Неделя» в виджете: строка даты.'),
     'WIDGET_WEEK_TODAY': ('widget-week-today', 'Вид «Неделя» в виджете: кружок «сегодня» у числа.'), 'WIDGET_WEEK_CAL_WEEKDAYS': ('widget-week-cal-weekdays', 'Мини-календарь в виджете: «пн…вс».'),
     'WIDGET_WEEK_CAL_DAY': ('widget-week-cal-day', 'Мини-календарь в виджете: день (кружок «сегодня»); меньше нельзя.'),

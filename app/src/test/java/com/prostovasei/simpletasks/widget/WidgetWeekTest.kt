@@ -170,6 +170,14 @@ class WidgetWeekTest {
         assertEquals(1, root.findViewById<ViewGroup>(R.id.widget_overlay).childCount)
     }
 
+    /** Решение PM — 6 задач в ячейке: на виджете во весь экран телефона (Samsung PM: ~640–680 dp) влезает 6, а не 5. */
+    @Test
+    fun sixTasksFitOnAFullScreenWidget() {
+        listOf(640, 680, 700).forEach { h ->
+            assertEquals("высота $h dp", 6, WidgetWeekRows.capacity(WidgetWeekRows.rowHeightDp(DpSize(360.dp, h.dp))))
+        }
+    }
+
     /** Пустые места под задачи невидимы, но держат размер (строки во всех ячейках одной высоты); лишние места убраны. */
     @Test
     fun emptySlotsKeepTheirShareAndExtraSlotsAreGone() {

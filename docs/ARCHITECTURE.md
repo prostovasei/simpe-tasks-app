@@ -1057,7 +1057,7 @@ PM поменял порядок: шторка для созданных зад�
   номер виджета во фрагменте адреса). Тест `fourEqualRowsFitTheRealHeightEvenWhenTheLauncherReportsMore`: сообщено 700 dp, настоящие 640 — строки равные и над панелью.
   Урок второй проверки PM: рабочий стол при обновлении применяет виджет **поверх** показанного (`reapply`, тот же макет), и `addView` дописывает строки к прежним
   (неделя трижды). Перед `addView` — `removeAllViews` (строки недели и нижняя панель, в обоих корнях). Тест `reapplyingTheWidgetKeepsFourRowsAndOneBar` (без очистки падает).
-- **Виджет:** `WidgetWeekRows` — строка `WIDGET_WEEK_TASK` 20 + промежуток 2, `capacity` до `SLOTS` = 6; фон строки — `widget_week_plaque_{high,medium,low,plain}`;
+- **Виджет:** `WidgetWeekRows` — наименьшая строка `WIDGET_WEEK_TASK` 18 + промежуток 2 (по ней `capacity` до `SLOTS` = 6; третья проверка PM: при 20 на Samsung влезало 5), настоящие строки делят высоту ячейки; фон строки — `widget_week_plaque_{high,medium,low,plain}`;
   сегодня — кружок `WIDGET_WEEK_TODAY` 20 (ширина и высота числа задаются кодом, у других дней — по тексту). Календарь без строки месяца; коды `p`/`x`, `SHIFT_MONTH` и стрелки удалены,
   `PICK_WEEK` сохраняет неделю и месяц (`monthAfterPick`). Разметка перегенерирована `gen_widget_week.py`.
   Нижняя строка (все вкладки): плоская — фон `background` и линия `divider` сверху; белые капсулы переключателя и «открыть приложение» убраны

@@ -64,7 +64,10 @@ object WidgetWeekRows {
         return ((height - SizeTokens.WIDGET_EDGE - SizeTokens.WIDGET_BAR) / ROWS).coerceAtLeast(SizeTokens.WIDGET_WEEK_ROW_MIN.toFloat())
     }
 
-    /** Сколько строк задач влезает в ячейку высотой [rowHeight] (поле сверху, строка даты, строки с промежутком над каждой). */
+    /**
+     * Сколько строк задач влезает в ячейку высотой [rowHeight] (поле сверху, строка даты, строки с промежутком над каждой) — по наименьшей
+     * читаемой строке `WIDGET_WEEK_TASK`: сами строки делят высоту поровну и выходят выше. Решение PM — до 6 в ячейке.
+     */
     fun capacity(rowHeight: Float): Int {
         val room = rowHeight - SpacingTokens.XXS - SizeTokens.WIDGET_WEEK_HEADER
         return (room / (SizeTokens.WIDGET_WEEK_TASK + SizeTokens.WIDGET_WEEK_TASK_GAP)).toInt().coerceIn(0, WeekIds.SLOTS)
