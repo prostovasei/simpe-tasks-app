@@ -213,7 +213,8 @@ interface TaskDao {
 
     @Query(
         """
-        UPDATE tasks SET status = :status, completed_at = :completedAt, updated_at = :now
+        UPDATE tasks SET status = :status, completed_at = :completedAt, updated_at = :now,
+            is_repeat_done = CASE WHEN :status = 2 THEN is_repeat_done ELSE 0 END
         WHERE id = :id AND is_deleted = 0
         """,
     )

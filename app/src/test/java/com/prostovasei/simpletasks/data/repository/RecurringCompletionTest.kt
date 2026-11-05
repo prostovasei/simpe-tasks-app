@@ -43,8 +43,22 @@ class RecurringCompletionTest : DatabaseTest() {
         assertEquals(TaskStatus.COMPLETED, copy.status)
         assertEquals(TaskDue.AllDay(today), copy.due)
         assertNull("У копии нет повтора", copy.rrule)
+        assertTrue("Копия — выполненный раз повтора: со знаком повтора", copy.isRepeatDone)
         val copyItems = tasks.observeTaskDetails(result.doneCopyId).first()!!.checklist
         assertEquals(listOf(true, false), copyItems.map { it.isDone })
+    }
+
+    /** Проверка PM (0.47.0): вернутый в работу раз повтора — обычная задача, без знака повтора. */
+    @Test
+    fun uncompletedRepeatCopyBecomesPlainTask() = runTest {
+        val id = create(TaskDue.AllDay(today), rrule = "FREQ=DAILY")
+        val result = tasks.complete(id) as Completion.Rescheduled
+
+        tasks.setCompleted(result.doneCopyId, completed = false)
+
+        val copy = checkNotNull(tasks.getTask(result.doneCopyId))
+        assertEquals(TaskStatus.ACTIVE, copy.status)
+        assertFalse(copy.isRepeatDone)
     }
 
     @Test

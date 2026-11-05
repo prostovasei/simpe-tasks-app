@@ -61,6 +61,11 @@ data class TaskEntity(
     /** Исходная строка CSV TickTick (JSON «колонка → значение») для выгрузки без потерь. */
     @ColumnInfo(name = "source_data", defaultValue = "NULL") val sourceData: String? = null,
     @ColumnInfo(name = "is_deleted", defaultValue = "0") val isDeleted: Boolean = false,
+    /**
+     * Выполненный раз повторяющейся задачи (итерация 47, проверка PM): копия без правила повтора, которая показывается со знаком
+     * повтора, а не с галочкой. Сбрасывается, если раз вернуть в работу.
+     */
+    @ColumnInfo(name = "is_repeat_done", defaultValue = "0") val isRepeatDone: Boolean = false,
     @ColumnInfo(name = "created_at") val createdAt: Long,
     @ColumnInfo(name = "updated_at") val updatedAt: Long,
 )

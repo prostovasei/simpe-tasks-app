@@ -31,6 +31,7 @@ internal fun TaskEntity.toDomain() = Task(
     parentId = parentId,
     createdAt = Instant.ofEpochMilli(createdAt),
     updatedAt = Instant.ofEpochMilli(updatedAt),
+    isRepeatDone = isRepeatDone,
 )
 
 internal fun ChecklistItemEntity.toDomain() = ChecklistItem(

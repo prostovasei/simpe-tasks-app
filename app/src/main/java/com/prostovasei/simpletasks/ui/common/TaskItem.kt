@@ -56,7 +56,8 @@ fun Task.toItem(projects: Map<String, Project>, today: LocalDate, zone: ZoneId, 
         isInboxList = project?.isInbox == true,
         isCompleting = id in pending,
         isDone = isCompleted,
-        isRecurring = rrule != null && due != null,
+        // Выполненный раз повтора — тоже со знаком повтора (проверка PM 0.47.0): у копии правила нет, есть отметка.
+        isRecurring = (rrule != null && due != null) || isRepeatDone,
         ghostOf = id.takeIf { ghostIndex != null },
         reminder = Reminders.mark(due, reminders),
     )

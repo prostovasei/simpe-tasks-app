@@ -94,6 +94,34 @@ class MigrationTest {
         }
     }
 
+    /** Итерация 47 (проверка PM): 3 → 4 — отметка выполненного раза повтора; у прежних задач её нет. */
+    @Test
+    fun migrate3To4KeepsTasksWithoutRepeatMark() {
+        val file = context.getDatabasePath(DB).apply { parentFile?.mkdirs(); delete() }
+        SQLiteDatabase.openOrCreateDatabase(file, null).use { db ->
+            schemaSql(3).forEach(db::execSQL)
+            db.execSQL(
+                "INSERT INTO projects (id, group_id, name, color, sort_order, is_inbox, is_deleted, created_at, updated_at, icon, emoji) " +
+                    "VALUES ('work', NULL, 'Работа', NULL, 0, 0, 0, 1, 1, NULL, '💼')",
+            )
+            db.execSQL("INSERT INTO tasks (id, project_id, title, status, created_at, updated_at) VALUES ('done', 'work', 'Стирка', 2, 1, 1)")
+            db.version = 3
+        }
+
+        val room = Room.databaseBuilder(context, AppDatabase::class.java, DB).allowMainThreadQueries().build()
+        try {
+            room.openHelper.readableDatabase.query("SELECT title, status, is_repeat_done FROM tasks WHERE id = 'done'").use { c ->
+                c.moveToFirst()
+                assertEquals("Стирка", c.getString(0))
+                assertEquals(2, c.getInt(1))
+                assertEquals(0, c.getInt(2))
+            }
+            assertEquals(LATEST, room.openHelper.readableDatabase.version)
+        } finally {
+            room.close()
+        }
+    }
+
     /** SQL создания таблиц и индексов из экспортированной схемы Room. */
     private fun schemaSql(version: Int): List<String> {
         val json = JSONObject(File("schemas/${AppDatabase::class.java.name}/$version.json").readText()).getJSONObject("database")
@@ -114,6 +142,6 @@ class MigrationTest {
 
     private companion object {
         const val DB = "migration-test.db"
-        const val LATEST = 3
+        const val LATEST = 4
     }
 }

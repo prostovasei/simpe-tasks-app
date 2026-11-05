@@ -143,6 +143,7 @@ class RoomTaskRepository @Inject constructor(
                 status = TaskStatus.COMPLETED.value,
                 completedAt = now,
                 rrule = null,
+                isRepeatDone = true,
                 externalId = null,
                 sourceData = null,
                 createdAt = now,
