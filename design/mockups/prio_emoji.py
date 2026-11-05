@@ -24,7 +24,7 @@ def emoji(e, size=15):
     return f'<span style="{EMO}font-size:{size}px;line-height:1;flex-shrink:0;">{e}</span>'
 
 
-def node(kind, high=False, done=False, rep=False, h=36, option='A'):
+def node(kind, high=False, done=False, rep=False, h=36, option='C'):
     """Кружок (dot) или капсула периода (cap). Повтор: у кружка — иконка вместо кружка; у капсулы — вариант A (иконка внутри
     капсулы сверху) или B (иконка над капсулой, капсула короче)."""
     ring = RING if high else NONE
@@ -35,6 +35,8 @@ def node(kind, high=False, done=False, rep=False, h=36, option='A'):
         fill = FADED if high else '#C4C6CA'
         return (f'<span style="width:16px;height:{h}px;border-radius:8px;background:{fill};display:flex;align-items:center;justify-content:center;flex-shrink:0;">'
                 f'{ico(P_CHECK, "#fff", 11, 3)}</span>')
+    if rep and option == 'C':  # решение PM: у повтора с длительностью капсулы нет — та же иконка повтора, что у обычной задачи
+        return pt.mark(16, ring, False, True)
     if rep and option == 'A':
         return (f'<span style="width:16px;height:{h}px;border-radius:8px;border:2px solid {ring};background:{BG};box-sizing:border-box;display:flex;flex-direction:column;align-items:center;padding-top:2px;flex-shrink:0;">'
                 f'{ico(P_REP, ring, 11, 2.6)}</span>')
@@ -44,7 +46,7 @@ def node(kind, high=False, done=False, rep=False, h=36, option='A'):
     return f'<span style="width:16px;height:{h}px;border-radius:8px;border:2px solid {ring};background:{BG};box-sizing:border-box;flex-shrink:0;"></span>'
 
 
-def row(title, t1='', t2='', kind='dot', high=False, done=False, rep=False, over=False, bell=False, emo='📥', option='A', ghost=False):
+def row(title, t1='', t2='', kind='dot', high=False, done=False, rep=False, over=False, bell=False, emo='📥', option='C', ghost=False):
     h = 52 if kind == 'cap' else 36
     times = (f'<span style="display:flex;flex-direction:column;justify-content:space-between;height:{h - 8}px;"><span>{t1}</span><span style="color:#8E9096">{t2}</span></span>'
              if kind == 'cap' else f'<span>{t1}</span>')
@@ -61,7 +63,7 @@ def timeline(rows):
     return f'<div style="position:relative;"><span style="position:absolute;left:52px;top:24px;bottom:14px;width:1.5px;background:{LINE};"></span>{rows}</div>'
 
 
-def screen_all(option='A'):
+def screen_all(option='C'):
     d = pt.day_label
     rows = (d('Вчера', 'Просрочено', red=True) + row('Отправить отчёт', '18:00', high=True, over=True, emo='💼')
             + d('Сегодня', '6 задач') + row('Зарядка', '08:00', rep=True, done=True, emo='💪')
@@ -152,8 +154,9 @@ def detail():
     mapping = ''.join(f'<span style="display:flex;align-items:center;gap:6px;width:118px;font-size:12px;color:{INK};">{emoji(e, 16)} {n}</span>'
                       for e, n in [('📥', 'Входящие'), ('💼', 'работа'), ('🏠', 'дом'), ('❤️', 'здоровье'), ('🛒', 'покупки'), ('📚', 'учёба'),
                                    ('💰', 'деньги'), ('✈️', 'поездки'), ('💪', 'спорт'), ('💡', 'идеи'), ('⭐', 'звезда'), ('📁', 'без значка')])
-    return (box('Повтор + длительность — вариант А (на всех экранах слева): иконка повтора внутри капсулы сверху', opt('A'))
-            + box('Вариант Б: иконка повтора над капсулой, капсула короче', opt('B'))
+    plain = timeline(row('Обед', '13:00', '14:00', kind='cap', high=True, emo='🏠') + row('Прогулка', '19:00', '20:00', kind='cap', emo='💪'))
+    return (box('Повтор + длительность (решение PM): капсулы нет — иконка повтора, как у обычной задачи; конец периода — серым под началом', opt('C'))
+            + box('Длительность без повтора — капсула, как сейчас', plain)
             + box('Старые списки: значок → эмодзи (один раз при обновлении)', f'<div style="display:flex;flex-wrap:wrap;gap:6px 4px;">{mapping}</div>')
             + f'<div style="font-size:13px;color:{T2};line-height:19px;width:400px;">Цвет списка больше не выбирается и нигде не показывается — вместо квадратика эмодзи. '
               f'TickTick: «🏠Дом» в файле → список «Дом» с эмодзи 🏠; при экспорте эмодзи возвращается в начало названия. '
@@ -161,12 +164,12 @@ def detail():
 
 
 SCREENS = [
-    ('1. «Все»', 'Высокий — фиолетовый. Повтор — иконка вместо кружка, у задачи с длительностью — внутри капсулы. Выполненная высокая — тусклый фиолетовый. Справа — эмодзи списка.', lambda: screen_all('A')),
+    ('1. «Все»', 'Высокий — фиолетовый. Повтор — иконка вместо кружка, и у задачи с длительностью тоже (без капсулы). Выполненная высокая — тусклый фиолетовый. Справа — эмодзи списка.', lambda: screen_all('C')),
     ('2. Окно задачи', 'Окна приоритета нет: нажатие на флажок сразу включает высокий, повторное — выключает. Кнопка списка — эмодзи.', screen_sheet),
     ('3. «Списки»', 'Вместо цветных квадратиков со значками — эмодзи на белой плитке.', screen_lists),
     ('4. Выбор эмодзи', '«⋮» списка → «Эмодзи»: сетка популярных по группам и поле для любого эмодзи с клавиатуры.', screen_picker),
     ('5. Виджет', 'Лента «Все» и «Неделя» в виджете — те же правила.', screen_widget),
-    ('6. Детали', 'Повтор с длительностью: два варианта. Перевод старых значков в эмодзи.', detail),
+    ('6. Детали', 'Повтор с длительностью — иконка повтора; длительность без повтора — капсула. Перевод старых значков в эмодзи.', detail),
 ]
 
 if __name__ == '__main__':
