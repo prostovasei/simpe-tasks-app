@@ -41,9 +41,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.core.di.ApplicationScope
-import com.prostovasei.simpletasks.designsystem.components.ColorDot
+import com.prostovasei.simpletasks.designsystem.components.ListBadge
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
-import com.prostovasei.simpletasks.designsystem.theme.parseListColor
 import com.prostovasei.simpletasks.domain.repository.ProjectRepository
 import com.prostovasei.simpletasks.ui.feature.task.ProjectOption
 import com.prostovasei.simpletasks.ui.feature.task.options
@@ -138,7 +137,7 @@ fun WidgetPicker(options: List<ProjectOption>, current: WidgetFilter, onPick: (W
                 if (lists.isNotEmpty()) HorizontalDivider(color = colors.divider, modifier = Modifier.padding(vertical = spacing.xs))
                 lists.forEach { option ->
                     val filter = WidgetFilter.ProjectList(option.id)
-                    PickerRow(option.name, null, option.color, current == filter, "$TAG_PICK_LIST:${option.id}") { onPick(filter) }
+                    PickerRow(option.name, null, option.emoji, current == filter, "$TAG_PICK_LIST:${option.id}") { onPick(filter) }
                 }
             }
         }
@@ -146,7 +145,7 @@ fun WidgetPicker(options: List<ProjectOption>, current: WidgetFilter, onPick: (W
 }
 
 @Composable
-private fun PickerRow(title: String, hint: String?, color: String?, selected: Boolean, tag: String, onClick: () -> Unit) {
+private fun PickerRow(title: String, hint: String?, emoji: String?, selected: Boolean, tag: String, onClick: () -> Unit) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
     Row(
@@ -154,7 +153,7 @@ private fun PickerRow(title: String, hint: String?, color: String?, selected: Bo
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(spacing.sm),
     ) {
-        parseListColor(color)?.let { ColorDot(it) }
+        emoji?.let { ListBadge(it) }
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = if (selected) FontWeight.Bold else null, color = colors.textPrimary)
             hint?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = colors.textSecondary) }

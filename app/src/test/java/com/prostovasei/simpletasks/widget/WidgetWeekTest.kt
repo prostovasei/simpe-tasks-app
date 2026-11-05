@@ -40,7 +40,7 @@ class WidgetWeekTest {
     private val today = LocalDate.of(2026, 10, 30)
 
     private fun item(id: String, title: String, time: String? = null, priority: Priority = Priority.NONE, done: Boolean = false, ghostOf: String? = null) =
-        TaskItem(id, title, priority, DueText(DayLabel.Today, time), "Работа", "#6B5CE7", isInboxList = false, isDone = done, ghostOf = ghostOf)
+        TaskItem(id, title, priority, DueText(DayLabel.Today, time), "Работа", "💼", isInboxList = false, isDone = done, ghostOf = ghostOf)
 
     private fun week(start: LocalDate = monday, month: YearMonth = YearMonth.of(2026, 10), items: (Int) -> List<TaskItem>) =
         WidgetModel(
@@ -50,7 +50,7 @@ class WidgetWeekTest {
 
     private val rich = week { day ->
         when (day) {
-            0 -> listOf(item("a1", "Купить продукты", "10:00", Priority.LOW, done = true), item("a2", "Тренировка"))
+            0 -> listOf(item("a1", "Купить продукты", "10:00", Priority.NONE, done = true), item("a2", "Тренировка"))
             4 -> (1..8).map { item("e$it", "Задача $it", if (it == 1) "17:00" else null, Priority.HIGH) }
             5 -> listOf(item("f1", "Уборка", "11:00"), item("f2@0", "Созвон", "10:00", ghostOf = "f2"))
             else -> emptyList()

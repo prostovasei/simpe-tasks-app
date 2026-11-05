@@ -7,15 +7,18 @@ class EnumMappingTest {
 
     @Test
     fun priorityMapsDatabaseValues() {
+        // Итерация 47: уровней два — средний TickTick (3) читается как высокий, низкий (1) — как обычный.
         assertEquals(Priority.NONE, Priority.fromValue(0))
-        assertEquals(Priority.LOW, Priority.fromValue(1))
-        assertEquals(Priority.MEDIUM, Priority.fromValue(3))
+        assertEquals(Priority.NONE, Priority.fromValue(1))
+        assertEquals(Priority.HIGH, Priority.fromValue(3))
         assertEquals(Priority.HIGH, Priority.fromValue(5))
+        assertEquals(listOf(0, 5), Priority.entries.map { it.value })
     }
 
     @Test
     fun unknownPriorityFallsBackToNone() {
         assertEquals(Priority.NONE, Priority.fromValue(2))
+        assertEquals(Priority.HIGH, Priority.fromValue(9))
         assertEquals(Priority.NONE, Priority.fromValue(-1))
     }
 

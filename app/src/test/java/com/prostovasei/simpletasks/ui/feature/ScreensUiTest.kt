@@ -1,5 +1,7 @@
 package com.prostovasei.simpletasks.ui.feature
 
+import com.prostovasei.simpletasks.ui.feature.project.TAG_EMOJI_FIELD
+import com.prostovasei.simpletasks.ui.feature.project.TAG_EMOJI_OPTION
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.assertCountEquals
@@ -133,20 +135,19 @@ class ScreensUiTest {
         recurring: Boolean = false,
         ghostOf: String? = null,
     ) = TaskItem(
-        id, title, priority, due, list, color, isInboxList = list == null, isCompleting = completing, isRecurring = recurring, ghostOf = ghostOf,
-        listIcon = ICONS[list ?: "Inbox"],
+        id, title, priority, due, list, EMOJIS[list ?: "Inbox"] ?: "📁", isInboxList = list == null, isCompleting = completing, isRecurring = recurring, ghostOf = ghostOf,
     )
 
-    // Значки списков в тестовых данных (итерация 14).
-    private val ICONS = mapOf("Inbox" to "inbox", "Работа" to "work", "Дом" to "home", "Здоровье" to "health")
+    // Эмодзи списков в тестовых данных (итерация 47; до этого — значки и цвета).
+    private val EMOJIS = mapOf("Inbox" to "📥", "Работа" to "💼", "Дом" to "🏠", "Здоровье" to "❤️")
 
     private val allState = AllState(
         overdue = listOf(item("o1", "Отправить отчёт", DueText(DayLabel.Yesterday, null), priority = Priority.HIGH)),
         todayAllDay = listOf(
-            item("d1", "Купить продукты", DueText(DayLabel.Today, null), list = null, color = null, priority = Priority.LOW),
+            item("d1", "Купить продукты", DueText(DayLabel.Today, null), list = null, color = null, priority = Priority.NONE),
             item("d2", "Оплатить интернет", DueText(DayLabel.Today, null), list = "Дом", color = "#46A758", completing = true),
         ),
-        todayTimed = listOf(item("t1", "Созвон с командой", DueText(DayLabel.Today, "10:00–11:00"), priority = Priority.MEDIUM, recurring = true)),
+        todayTimed = listOf(item("t1", "Созвон с командой", DueText(DayLabel.Today, "10:00–11:00"), priority = Priority.HIGH, recurring = true)),
         upcoming = listOf(
             item("t1@0", "Созвон с командой", DueText(DayLabel.Tomorrow, "10:00–11:00"), recurring = true, ghostOf = "t1"),
             item("u1", "Записаться к врачу", DueText(DayLabel.Date(LocalDate.of(2026, 10, 20), false), "09:30"), list = "Здоровье", color = "#E5484D"),
@@ -470,8 +471,8 @@ class ScreensUiTest {
         composeRule.mainClock.autoAdvance = false
         show {
             androidx.compose.foundation.layout.Column {
-                TaskRow(title = "Записаться к врачу", priority = Priority.HIGH, listColor = null, isCompleting = true, onToggle = {}, trailing = listOf("18:30"))
-                TaskRow(title = "Купить продукты", priority = Priority.NONE, listColor = null, isCompleting = false, onToggle = {})
+                TaskRow(title = "Записаться к врачу", priority = Priority.HIGH, listEmoji = null, isCompleting = true, onToggle = {}, trailing = listOf("18:30"))
+                TaskRow(title = "Купить продукты", priority = Priority.NONE, listEmoji = null, isCompleting = false, onToggle = {})
             }
         }
         composeRule.mainClock.advanceTimeBy(550)
@@ -513,9 +514,9 @@ class ScreensUiTest {
     @Config(qualifiers = "w412dp-h915dp-xxhdpi", fontScale = 1.3f)
     fun screenshotInboxDayColumnLargeFont() {
         val tasks = listOf(
-            item("i1", "Позвонить врачу", DueText(DayLabel.Today, "12:30"), list = null, color = null, priority = Priority.MEDIUM),
+            item("i1", "Позвонить врачу", DueText(DayLabel.Today, "12:30"), list = null, color = null, priority = Priority.HIGH),
             item("i2", "Купить продукты", DueText(DayLabel.Tomorrow, null), list = null, color = null),
-            item("i3", "Отчёт за неделю", DueText(DayLabel.Yesterday, "11:00"), list = null, color = null, priority = Priority.LOW),
+            item("i3", "Отчёт за неделю", DueText(DayLabel.Yesterday, "11:00"), list = null, color = null, priority = Priority.NONE),
         )
         show { InboxScreen(InboxState(tasks = tasks, isLoading = false), { intents += it }) }
         composeRule.onNodeWithText("Сегодня").assertExists()
@@ -559,8 +560,8 @@ class ScreensUiTest {
 
     private val completedState = CompletedState(
         days = listOf(
-            CompletedDay(DayLabel.Today, listOf(CompletedTask("c1", "Отправить отчёт", "Работа", "#3D8BFD", false, "09:05"))),
-            CompletedDay(DayLabel.Date(LocalDate.of(2026, 10, 1), showYear = false), listOf(CompletedTask("c2", "Купить продукты", null, null, true, null))),
+            CompletedDay(DayLabel.Today, listOf(CompletedTask("c1", "Отправить отчёт", "Работа", "💼", false, "09:05"))),
+            CompletedDay(DayLabel.Date(LocalDate.of(2026, 10, 1), showYear = false), listOf(CompletedTask("c2", "Купить продукты", null, "📥", true, null))),
         ),
         isLoading = false,
     )
@@ -597,7 +598,7 @@ class ScreensUiTest {
     private val projectState = ProjectState(
         name = "Работа",
         color = "#3D8BFD",
-        icon = "work",
+        emoji = "💼",
         tasks = listOf(item("w1", "Подготовить презентацию", DueText(DayLabel.Tomorrow, null), priority = Priority.HIGH), item("w2", "Разобрать почту")),
         isLoading = false,
     )
@@ -613,35 +614,36 @@ class ScreensUiTest {
         assertEquals(listOf<Any>(ProjectIntent.OpenDialog(ProjectDialog.Rename)), intents)
     }
 
+    /** Итерация 47: эмодзи списка — из сетки или любой с клавиатуры; список получает его по «Готово». */
     @Test
-    fun colorDialogSelectsColor() {
-        show { ProjectScreen(projectState.copy(dialog = ProjectDialog.Color), { intents += it }, {}) }
+    fun emojiDialogPicksFromGridOrKeyboard() {
+        show { ProjectScreen(projectState.copy(dialog = ProjectDialog.Emoji), { intents += it }, {}) }
 
-        composeRule.onNodeWithTag("color:#E5484D").performClick()
-        composeRule.onNodeWithText("Без цвета").performClick()
-
-        assertEquals(listOf<Any>(ProjectIntent.SetColor("#E5484D"), ProjectIntent.SetColor(null)), intents)
+        composeRule.onNodeWithText("Эмодзи списка").assertExists()
+        composeRule.onNodeWithTag("$TAG_EMOJI_OPTION:🏠").performClick()
+        composeRule.onNodeWithText("Готово").performClick()
+        assertEquals(listOf<Any>(ProjectIntent.SetEmoji("🏠")), intents)
     }
 
     @Test
-    fun iconDialogSelectsIcon() {
-        show { ProjectScreen(projectState.copy(dialog = ProjectDialog.Icon), { intents += it }, {}) }
+    fun emojiDialogTakesAnyEmojiFromKeyboard() {
+        show { ProjectScreen(projectState.copy(dialog = ProjectDialog.Emoji), { intents += it }, {}) }
 
-        composeRule.onNodeWithText("Значок списка").assertExists()
-        composeRule.onNodeWithTag("icon:home").performClick()
-        composeRule.onNodeWithText("Без значка").performClick()
-
-        assertEquals(listOf<Any>(ProjectIntent.SetIcon("home"), ProjectIntent.SetIcon(null)), intents)
+        composeRule.onNodeWithTag(TAG_EMOJI_FIELD).performTextInput("🦄 единорог")
+        composeRule.onNodeWithText("Готово").performClick()
+        assertEquals(listOf<Any>(ProjectIntent.SetEmoji("🦄")), intents)
     }
 
     @Test
-    fun menuHasIconItem() {
+    fun menuHasEmojiItemInsteadOfColorAndIcon() {
         show { ProjectScreen(projectState, { intents += it }, {}) }
 
         composeRule.onNodeWithTag(TAG_PROJECT_MENU).performClick()
-        composeRule.onNodeWithText("Значок").performClick()
+        composeRule.onNodeWithText("Цвет").assertDoesNotExist()
+        composeRule.onNodeWithText("Значок").assertDoesNotExist()
+        composeRule.onNodeWithText("Эмодзи").performClick()
 
-        assertEquals(listOf<Any>(ProjectIntent.OpenDialog(ProjectDialog.Icon)), intents)
+        assertEquals(listOf<Any>(ProjectIntent.OpenDialog(ProjectDialog.Emoji)), intents)
     }
 
     @Test

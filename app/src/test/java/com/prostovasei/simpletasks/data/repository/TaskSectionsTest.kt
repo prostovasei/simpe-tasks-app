@@ -110,7 +110,7 @@ class TaskSectionsTest : DatabaseTest() {
 
     @Test
     fun sectionsAreSorted() = runTest {
-        create("Низкий", TaskDue.AllDay(today), Priority.LOW)
+        create("Низкий", TaskDue.AllDay(today), Priority.NONE)
         create("Высокий", TaskDue.AllDay(today), Priority.HIGH)
         create("Без приоритета", TaskDue.AllDay(today), Priority.NONE)
         create("18:00", at(today, 18))

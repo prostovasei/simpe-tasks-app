@@ -28,7 +28,7 @@ class WidgetSizeTest {
     private fun item(i: Int, date: LocalDate) = TaskItem(
         "t$i", "Задача номер $i с длинным названием", if (i % 4 == 0) Priority.HIGH else Priority.NONE,
         DueText(if (date == today) DayLabel.Today else DayLabel.Date(date, showYear = false), if (i % 2 == 0) "%02d:30".format(8 + i % 12) else null),
-        "Другое", "#6B5CE7", isInboxList = false, isRecurring = i % 3 == 0, listIcon = "work",
+        "Другое", "💼", isInboxList = false, isRecurring = i % 3 == 0,
         reminder = if (i % 2 == 0) ReminderMark.AT_DUE else if (i % 5 == 0) ReminderMark.EARLY else null, isDone = i % 7 == 0,
     )
 

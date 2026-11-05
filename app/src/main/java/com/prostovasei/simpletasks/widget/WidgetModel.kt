@@ -56,7 +56,8 @@ data class WidgetDayBlock(val day: WidgetDay, val items: List<TaskItem>)
 data class WidgetWeek(val weekStart: LocalDate, val month: YearMonth, val days: List<WeekDay>, val today: LocalDate)
 
 /** Вкладка списка внизу виджета. [name] и [color] — у своего списка (у «Все» и «Входящих» — null). */
-data class WidgetTab(val filter: WidgetFilter, val name: String? = null, val color: String? = null)
+/** Вкладка виджета; [emoji] — эмодзи списка (итерация 47, до этого — цвет). */
+data class WidgetTab(val filter: WidgetFilter, val name: String? = null, val emoji: String? = null)
 
 /** Прогресс дня (итерация 30): сколько из задач дня уже выполнено — у «Сегодня» в виджете. */
 data class DayProgress(val done: Int, val total: Int) {
@@ -148,7 +149,7 @@ object WidgetModels {
             own.find { it.id == selected.projectId }?.let { if (shown.size == LIST_TABS) shown[LIST_TABS - 1] = it else shown += it }
         }
         return listOf(WidgetTab(WidgetFilter.All), WidgetTab(WidgetFilter.Inbox)) +
-            shown.map { WidgetTab(WidgetFilter.ProjectList(it.id), it.name, it.color) }
+            shown.map { WidgetTab(WidgetFilter.ProjectList(it.id), it.name, it.emoji) }
     }
 
     private const val LIST_TABS = 2

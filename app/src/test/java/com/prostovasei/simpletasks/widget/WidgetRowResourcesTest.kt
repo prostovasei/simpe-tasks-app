@@ -84,8 +84,6 @@ class WidgetRowResourcesTest {
             R.color.widget_inactive to ColorTokens.inactive.pick(),
             R.color.widget_accent_soft to ColorTokens.accentSoft.pick(),
             R.color.widget_week_high to WeekRowTokens.high.pick(),
-            R.color.widget_week_medium to WeekRowTokens.medium.pick(),
-            R.color.widget_week_low to WeekRowTokens.low.pick(),
             R.color.widget_week_done to WeekRowTokens.doneMark.pick(),
         )
     }

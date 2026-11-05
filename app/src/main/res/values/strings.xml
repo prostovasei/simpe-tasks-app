@@ -12,7 +12,6 @@
     <string name="search_hint">Поиск задач</string>
     <string name="search_clear">Очистить</string>
     <string name="clear_date">Убрать дату</string>
-    <string name="clear_priority">Убрать приоритет</string>
     <string name="clear_list">Вернуть во «Входящие»</string>
     <string name="search_start">Начните вводить — задачи появятся сразу</string>
     <string name="search_nothing">Ничего не найдено</string>
@@ -118,14 +117,8 @@
     <string name="project_back">Назад</string>
     <string name="project_menu">Меню списка</string>
     <string name="project_rename">Переименовать</string>
-    <string name="project_color">Цвет</string>
-    <string name="project_icon">Значок</string>
-    <string name="project_icon_title">Значок списка</string>
-    <string name="project_no_icon">Без значка</string>
     <string name="project_delete">Удалить</string>
     <string name="project_rename_title">Переименовать список</string>
-    <string name="project_color_title">Цвет списка</string>
-    <string name="project_no_color">Без цвета</string>
     <string name="project_delete_title">Удалить список «%s»?</string>
     <string name="project_delete_text">Задачи и чек-листы этого списка тоже будут удалены.</string>
 
@@ -162,10 +155,11 @@
     <string name="date_none">Без даты</string>
     <string name="time_all_day">Весь день</string>
     <string name="time_pick">Указать время…</string>
-    <string name="priority_p1">P1 Высокий</string>
-    <string name="priority_p2">P2 Средний</string>
-    <string name="priority_p3">P3 Низкий</string>
-    <string name="priority_p0">Без приоритета</string>
+    <string name="priority_p1">Высокий</string>
+    <string name="project_emoji">Эмодзи</string>
+    <string name="project_emoji_title">Эмодзи списка</string>
+    <string name="project_emoji_custom">Свой эмодзи — вставь с клавиатуры</string>
+    <string name="priority_p0">Обычный</string>
     <string name="action_ok">Готово</string>
 
     <string name="repeat_title">Повтор</string>
@@ -354,10 +348,8 @@
     <string name="token_overdue">overdue · просрочено</string>
     <string name="token_divider">divider · разделители</string>
 
-    <string name="priority_high">P1 Высокий</string>
-    <string name="priority_medium">P2 Средний</string>
-    <string name="priority_low">P3 Низкий</string>
-    <string name="priority_none">P0 Без приоритета</string>
+    <string name="priority_high">Высокий</string>
+    <string name="priority_none">Обычный</string>
 
     <string name="sample_section_overdue">Просрочено</string>
     <string name="sample_section_today">Сегодня</string>

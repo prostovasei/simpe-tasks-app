@@ -66,7 +66,8 @@ import com.prostovasei.simpletasks.ui.common.ReminderIcon
 fun TaskRow(
     title: String,
     priority: Priority,
-    listColor: Color?,
+    /** Эмодзи списка (итерация 47); null — не показывать. */
+    listEmoji: String?,
     isCompleting: Boolean,
     onToggle: () -> Unit,
     modifier: Modifier = Modifier,
@@ -77,7 +78,6 @@ fun TaskRow(
     isGhost: Boolean = false,
     isOverdue: Boolean = false,
     trailing: List<String> = emptyList(),
-    @DrawableRes listIcon: Int? = null,
     animateCompletion: Boolean = true,
     highlight: String? = null,
     subtitle: String? = null,
@@ -106,8 +106,6 @@ fun TaskRow(
     // Кружок — всегда цвет приоритета (итерация 27.1), просрочка — красным временем.
     val ring = when {
         priority == Priority.HIGH -> colors.checkRings.high
-        priority == Priority.MEDIUM -> colors.checkRings.medium
-        priority == Priority.LOW -> colors.checkRings.low
         else -> colors.inactive
     }
 
@@ -139,8 +137,8 @@ fun TaskRow(
         ) {
             if (!isGhost) SquareCheck(checked = selected ?: isCompleting, ring = ring)
         }
-        listColor?.let {
-            ListSquare(it, listIcon)
+        listEmoji?.let {
+            ListBadge(it)
             Spacer(Modifier.width(spacing.xs))
         }
         // Название занимает всё свободное место, ↻ — сразу за текстом, время прижато вправо.
@@ -189,24 +187,25 @@ fun TaskRow(
     }
 }
 
-/** Квадратик цвета списка со значком [icon] (итерация 14); [large] — на экране «Списки» и в заголовке списка. */
+/**
+ * Эмодзи списка (итерация 47, решение PM) вместо цветного квадратика со значком: в плашке — эмодзи размером со старый квадратик,
+ * [large] — на экране «Списки» и в заголовке списка: эмодзи на белой плитке.
+ */
 @Composable
-fun ListSquare(color: Color, @DrawableRes icon: Int?, modifier: Modifier = Modifier, large: Boolean = false) {
+fun ListBadge(emoji: String, modifier: Modifier = Modifier, large: Boolean = false) {
     val sizes = AppTheme.sizes
     Box(
         modifier = modifier
             .size(if (large) sizes.listSquareLarge else sizes.listSquare)
-            .background(color, if (large) AppTheme.shapes.medium else AppTheme.shapes.small),
+            .then(if (large) Modifier.background(AppTheme.colors.surface, AppTheme.shapes.medium) else Modifier),
         contentAlignment = Alignment.Center,
     ) {
-        if (icon != null) {
-            Icon(
-                painterResource(icon),
-                contentDescription = null,
-                tint = AppTheme.colors.onListSquare,
-                modifier = Modifier.size(if (large) sizes.listGlyphLarge else sizes.listGlyph),
-            )
-        }
+        Text(
+            emoji,
+            fontSize = with(LocalDensity.current) { (if (large) sizes.listGlyphLarge else sizes.listSquare).toSp() },
+            maxLines = 1,
+            modifier = Modifier.testTag("list-emoji:$emoji"),
+        )
     }
 }
 
@@ -255,8 +254,6 @@ fun PriorityBadge(priority: Priority, modifier: Modifier = Modifier) {
     val palette = AppTheme.colors.priority
     val (label, colors) = when (priority) {
         Priority.HIGH -> "P1" to palette.high
-        Priority.MEDIUM -> "P2" to palette.medium
-        Priority.LOW -> "P3" to palette.low
         Priority.NONE -> return
     }
     BadgeText(label, colors, modifier)
@@ -275,15 +272,6 @@ private fun BadgeText(label: String, colors: PriorityColors, modifier: Modifier)
     )
 }
 
-/** Цветная точка списка. */
-@Composable
-fun ColorDot(color: Color, modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .size(AppTheme.sizes.listDot)
-            .background(color, CircleShape),
-    )
-}
 
 /** Текст с подсвеченными вхождениями [query] (без учёта регистра). */
 fun highlighted(text: String, query: String?, background: Color): AnnotatedString = buildAnnotatedString {

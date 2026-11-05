@@ -61,7 +61,7 @@ class TaskRepositoryTest : DatabaseTest() {
                 projectId = work,
                 title = "Готово",
                 content = "Описание",
-                priority = Priority.MEDIUM,
+                priority = Priority.HIGH,
                 due = TaskDue.AllDay(LocalDate.of(2026, 10, 20)),
                 rrule = "FREQ=WEEKLY",
             ),
@@ -71,7 +71,7 @@ class TaskRepositoryTest : DatabaseTest() {
         assertEquals(work, updated.projectId)
         assertEquals("Готово", updated.title)
         assertEquals("Описание", updated.content)
-        assertEquals(Priority.MEDIUM, updated.priority)
+        assertEquals(Priority.HIGH, updated.priority)
         assertEquals(TaskDue.AllDay(LocalDate.of(2026, 10, 20)), updated.due)
         assertEquals("FREQ=WEEKLY", updated.rrule)
         assertEquals(created.createdAt, updated.createdAt)

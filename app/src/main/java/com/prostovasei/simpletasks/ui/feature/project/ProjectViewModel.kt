@@ -56,7 +56,7 @@ class ProjectViewModel @Inject constructor(
                         name = project.name,
                         groupId = project.groupId,
                         color = project.color,
-                        icon = project.icon,
+                        emoji = project.emojiShown,
                         isInbox = project.isInbox,
                         tasks = mergeWithPending(this.tasks, fresh, pending),
                         isLoading = false,
@@ -76,11 +76,7 @@ class ProjectViewModel @Inject constructor(
                 val state = currentState
                 update { projects.updateProject(projectId, intent.name, state.groupId, state.color) }
             }
-            is ProjectIntent.SetColor -> {
-                val state = currentState
-                update { projects.updateProject(projectId, state.name, state.groupId, intent.hex) }
-            }
-            is ProjectIntent.SetIcon -> update { projects.setProjectIcon(projectId, intent.icon) }
+            is ProjectIntent.SetEmoji -> update { projects.setProjectEmoji(projectId, intent.emoji) }
             ProjectIntent.ConfirmDelete -> {
                 setState { copy(dialog = ProjectDialog.None) }
                 if (!currentState.isInbox) viewModelScope.launch { projects.deleteProject(projectId) }

@@ -35,7 +35,7 @@ class DayScreenTest {
     private val today = LocalDate.of(2026, 10, 30)
 
     private fun item(id: String, title: String, time: String?, priority: Priority = Priority.NONE, done: Boolean = false) =
-        TaskItem(id, title, priority, DueText(DayLabel.Today, time), "Работа", "#3D8BFD", isInboxList = false, isDone = done)
+        TaskItem(id, title, priority, DueText(DayLabel.Today, time), "Работа", "💼", isInboxList = false, isDone = done)
 
     private val state = DayState(
         date = today,
@@ -43,7 +43,7 @@ class DayScreenTest {
         items = listOf(
             item("a", "Кино", null),
             item("b", "Позвонить врачу", null),
-            item("c", "Зарядка", "08:00", Priority.MEDIUM, done = true),
+            item("c", "Зарядка", "08:00", Priority.HIGH, done = true),
             item("d", "Отчёт за неделю", "17:00", Priority.HIGH),
         ),
         isLoading = false,

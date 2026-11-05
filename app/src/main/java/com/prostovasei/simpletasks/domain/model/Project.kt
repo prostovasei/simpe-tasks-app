@@ -21,9 +21,14 @@ data class Project(
     val isInbox: Boolean,
     val createdAt: Instant,
     val updatedAt: Instant,
-    /** Значок списка (итерация 14): ключ из `ListIcons`, null — без значка. */
+    /** Значок списка (итерация 14): ключ старого набора значков; с итерации 47 только как запас для [emojiShown]. */
     val icon: String? = null,
-)
+    /** Эмодзи списка (итерация 47), null — не выбран (тогда по значку или 📁, см. [ListEmoji.of]). */
+    val emoji: String? = null,
+) {
+    /** Эмодзи, который показывается у списка. */
+    val emojiShown: String get() = ListEmoji.of(isInbox, emoji, icon)
+}
 
 data class ProjectWithCount(
     val project: Project,

@@ -47,7 +47,6 @@ import androidx.glance.unit.ColorProvider
 import com.prostovasei.simpletasks.MainActivity
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.TaskPopupActivity
-import com.prostovasei.simpletasks.designsystem.theme.parseListColor
 import com.prostovasei.simpletasks.designsystem.tokens.RadiusTokens
 import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
 import com.prostovasei.simpletasks.designsystem.tokens.SpacingTokens
@@ -55,7 +54,6 @@ import com.prostovasei.simpletasks.domain.model.Priority
 import com.prostovasei.simpletasks.domain.model.ReminderMark
 import com.prostovasei.simpletasks.ui.common.DONE_ALPHA
 import com.prostovasei.simpletasks.ui.common.DayNames
-import com.prostovasei.simpletasks.ui.common.ListIcons
 import com.prostovasei.simpletasks.ui.common.ReminderIconMasks
 import com.prostovasei.simpletasks.ui.common.TaskItem
 import com.prostovasei.simpletasks.widget.theme.WidgetCheckColors
@@ -268,14 +266,15 @@ fun widgetDayTitle(context: Context, day: WidgetDay, today: LocalDate): WidgetDa
 /**
  * Строка шкалы: слева время (у периода — начало и конец, у задачи на весь день — пусто), по центру линия с кружком
  * приоритета (нажатие — «выполнено», у выполненной — вернуть), справа плашка: название и значки справа налево —
- * список, колокольчик, повтор (итерация 27). Выполненная — зачёркнутая и бледнее, кружок залит с белой галочкой.
+ * список, колокольчик (итерация 27; повтор с итерации 47 — знаком вместо кружка). Выполненная — зачёркнутая и бледнее, кружок залит с белой галочкой.
  */
 @Composable
 private fun TimelineRow(row: WidgetRow.Task, line: Line, overdue: Boolean, filter: WidgetFilter) {
     val context = LocalContext.current
     val item = row.item
     val done = item.showsDone
-    val faded = row.past || item.isGhost
+    // Итерация 47: будущий повтор не тусклый.
+    val faded = row.past
     val textColor = when {
         done -> WidgetColors.textDone
         faded -> WidgetColors.textSecondary
@@ -306,11 +305,10 @@ private fun TimelineRow(row: WidgetRow.Task, line: Line, overdue: Boolean, filte
                     maxLines = 1,
                     modifier = GlanceModifier.defaultWeight(),
                 )
-                if (item.isRecurring) MetaIcon(R.drawable.ic_tool_repeat, done)
                 item.reminder?.let { ReminderIcon(it, done) }
                 if (filter !is WidgetFilter.ProjectList) {
                     Spacer(GlanceModifier.width(SpacingTokens.XS.dp))
-                    ListSquare(item, done)
+                    ListSquare(item)
                 }
             }
         }
@@ -351,9 +349,12 @@ private fun Rail(row: WidgetRow.Task, line: Line) {
     val done = item.showsDone
     // Итерация 27.1 (вариант PM «А»): кружок всегда цвета приоритета, просрочка — красными подписью дня и временем.
     val color = when {
-        (row.past || item.isGhost) && !done -> WidgetColors.inactive
+        row.past && !done -> WidgetColors.inactive
+        done -> widgetCheckColors(item.priority).done
         else -> widgetCheckColors(item.priority).ring
     }
+    // Итерация 47: у повторяющейся задачи вместо кружка — знак повтора (у периода — вытянутый).
+    val repeat = item.isRecurring && !done
     val action = when {
         item.isGhost -> GlanceModifier
         done -> GlanceModifier.clickable(actionSendBroadcast(WidgetActions.uncomplete(context, item.id)))
@@ -368,7 +369,7 @@ private fun Rail(row: WidgetRow.Task, line: Line) {
             LineSegment(line.top, GlanceModifier.height(SizeTokens.WIDGET_PERIOD_STUB.dp))
             Box(GlanceModifier.width(SizeTokens.WIDGET_NODE.dp).defaultWeight(), contentAlignment = Alignment.Center) {
                 Image(
-                    ImageProvider(if (done) R.drawable.widget_period_fill else R.drawable.widget_period_ring),
+                    ImageProvider(if (done) R.drawable.widget_period_fill else if (repeat) R.drawable.ic_widget_period_repeat else R.drawable.widget_period_ring),
                     contentDescription = label,
                     colorFilter = ColorFilter.tint(color),
                     contentScale = ContentScale.FillBounds,
@@ -381,7 +382,7 @@ private fun Rail(row: WidgetRow.Task, line: Line) {
             LineSegment(line.top, GlanceModifier.defaultWeight())
             Box(GlanceModifier.size(SizeTokens.WIDGET_NODE.dp), contentAlignment = Alignment.Center) {
                 Image(
-                    ImageProvider(if (done) R.drawable.ic_widget_node_fill else R.drawable.ic_widget_node_ring),
+                    ImageProvider(if (done) R.drawable.ic_widget_node_fill else if (repeat) R.drawable.ic_repeat_round else R.drawable.ic_widget_node_ring),
                     contentDescription = label,
                     colorFilter = ColorFilter.tint(color),
                     modifier = GlanceModifier.size(SizeTokens.WIDGET_NODE.dp),
@@ -477,33 +478,14 @@ private fun MaskImage(mask: Bitmap, color: ColorProvider, size: Int) {
     Image(ImageProvider(mask), contentDescription = null, colorFilter = ColorFilter.tint(color), modifier = GlanceModifier.size(size.dp))
 }
 
-/** Квадратик цвета списка со значком (как в приложении); [done] — у выполненной бледнее (70%). */
+/** Эмодзи списка (итерация 47) вместо квадратика цвета со значком, как в приложении. */
 @Composable
-private fun ListSquare(item: TaskItem, done: Boolean) {
-    val color = when {
-        item.isInboxList -> if (done) WidgetColors.inboxListDone else WidgetColors.inboxList
-        else -> parseListColor(item.listColor)?.let { ColorProvider(if (done) it.copy(alpha = DONE_ALPHA) else it) }
-            ?: if (done) WidgetColors.inactiveDone else WidgetColors.inactive
-    }
-    Box(
-        modifier = GlanceModifier.size(SizeTokens.WIDGET_LIST_SQUARE.dp).background(color).cornerRadius(RadiusTokens.SM.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        ListIcons.drawable(item.listIcon)?.let { icon ->
-            Image(
-                ImageProvider(icon),
-                contentDescription = null,
-                colorFilter = ColorFilter.tint(WidgetColors.onListSquare),
-                modifier = GlanceModifier.size(SizeTokens.WIDGET_LIST_GLYPH.dp),
-            )
-        }
-    }
+private fun ListSquare(item: TaskItem) {
+    Text(item.listEmoji, style = TextStyle(fontSize = 15.sp), maxLines = 1)
 }
 
 fun widgetCheckColors(priority: Priority): WidgetCheckColors = when (priority) {
     Priority.HIGH -> WidgetColors.checkHigh
-    Priority.MEDIUM -> WidgetColors.checkMedium
-    Priority.LOW -> WidgetColors.checkLow
     Priority.NONE -> WidgetColors.checkNone
 }
 

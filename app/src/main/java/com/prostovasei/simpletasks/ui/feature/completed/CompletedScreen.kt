@@ -39,10 +39,8 @@ import com.prostovasei.simpletasks.designsystem.components.DayHeader
 import com.prostovasei.simpletasks.designsystem.components.EmptyState
 import com.prostovasei.simpletasks.designsystem.components.TaskRow
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
-import com.prostovasei.simpletasks.designsystem.theme.parseListColor
 import com.prostovasei.simpletasks.domain.model.Priority
 import com.prostovasei.simpletasks.ui.common.DayNames
-import com.prostovasei.simpletasks.ui.common.ListIcons
 import com.prostovasei.simpletasks.ui.common.showUndo
 import kotlinx.coroutines.launch
 
@@ -105,11 +103,10 @@ fun CompletedScreen(
                             TaskRow(
                                 title = task.title,
                                 priority = Priority.NONE,
-                                listColor = if (task.isInboxList) colors.inboxList else parseListColor(task.listColor) ?: colors.inactive,
+                                listEmoji = task.listEmoji,
                                 isCompleting = true,
                                 animateCompletion = false,
                                 trailing = listOfNotNull(task.time),
-                                listIcon = ListIcons.drawable(task.listIcon),
                                 onToggle = { if (selection.active) selection.toggle(task.id) else onIntent(CompletedIntent.Restore(task.id)) },
                                 onClick = { if (selection.active) selection.toggle(task.id) else onOpenTask(task.id) },
                                 selected = if (selection.active) task.id in selection.ids else null,

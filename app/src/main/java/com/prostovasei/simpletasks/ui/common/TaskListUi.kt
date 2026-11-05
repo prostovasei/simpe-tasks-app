@@ -10,16 +10,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
-import com.prostovasei.simpletasks.designsystem.theme.parseListColor
 import com.prostovasei.simpletasks.widget.WidgetDates
 import java.time.format.DateTimeFormatter
 import java.util.Locale
-
-/** Цвет квадратика списка: у «Входящих» свой, у списка без цвета — нейтральный. */
-@Composable
-@ReadOnlyComposable
-fun listSquareColor(item: TaskItem): Color =
-    if (item.isInboxList) AppTheme.colors.inboxList else parseListColor(item.listColor) ?: AppTheme.colors.inactive
 
 /** Время справа: «16:00» или интервал столбиком — «16:00», «17:00». */
 fun TaskItem.timeLines(): List<String> = due?.time?.split("–").orEmpty()

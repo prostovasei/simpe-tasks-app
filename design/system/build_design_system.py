@@ -39,10 +39,10 @@ for m in re.finditer(r'val (\w+) = ThemedColor\(light = 0x(\w+), dark = 0x(\w+)\
 for m in re.finditer(r'val (high|medium|low|none) = PriorityColorTokens\(\s*container = ThemedColor\(light = 0x(\w+), dark = 0x(\w+)\),\s*content = ThemedColor\(light = 0x(\w+), dark = 0x(\w+)\)', color_src):
     COLORS[f'priority-{m[1]}-bg'] = (hexcolor(m[2]), hexcolor(m[3]))
     COLORS[f'priority-{m[1]}-text'] = (hexcolor(m[4]), hexcolor(m[5]))
-for m in re.finditer(r'val (high|medium|low|none) = CheckTokens\(ring = ThemedColor\(light = 0x(\w+), dark = 0x(\w+)\), fill = ThemedColor\(light = 0x(\w+), dark = 0x(\w+)\)\)', color_src):
+for m in re.finditer(r'val (high|none) = CheckTokens\(\s*ring = ThemedColor\(light = 0x(\w+), dark = 0x(\w+)\),\s*fill = ThemedColor\(light = 0x(\w+), dark = 0x(\w+)\),\s*done = ThemedColor\(light = 0x(\w+), dark = 0x(\w+)\),?\s*\)', color_src):
     COLORS[f'ring-{m[1]}'] = (hexcolor(m[2]), hexcolor(m[3]))
-    COLORS[f'ring-{m[1]}-fill'] = (hexcolor(m[4]), hexcolor(m[5]))
-LIST_PRESETS = re.findall(r'"(#[0-9A-Fa-f]{6})"', color_src.split('presets')[1].split(')')[0])
+    COLORS[f'ring-{m[1]}-done'] = (hexcolor(m[6]), hexcolor(m[7]))
+LIST_PRESETS = []  # итерация 47: цвета списков убраны — вместо них эмодзи
 LIST_NAMES = ['red', 'orange', 'yellow', 'green', 'teal', 'blue', 'purple', 'pink', 'gray']
 
 
@@ -63,25 +63,20 @@ COLOR_USAGE = {
     'accent': 'Главный цвет — чёрный (с 0.46.0, раньше зелёный; в тёмной теме — белый): галочка «Готово», «+», даты и выбранные значки на `surface` и `selected`, «сейчас» на шкале, кружок «сегодня». Контраст на `surface` и `selected` выше 12:1.',
     'accent-soft': 'Бледный серый: подсветка найденного в поиске, «+N» и выбранная неделя мини-календаря в «Неделе».',
     'on-accent': 'Текст и значки на заливке `accent`.',
-    'on-list-square': 'Значок поверх квадратика цвета списка.',
-    'inbox-list': 'Квадратик списка «Входящие»: у него нет своего цвета.',
+    'on-list-square': 'Галочка на сером кружке выполненной задачи в «Неделе» (с итерации 47; раньше — значок на квадратике цвета списка).',
     'inactive': 'Рамка пустой галочки без приоритета, бледные значки (нет даты), подсказки полей на `surface`, текст выполненной задачи в «Неделе». Контраст 2,4:1 (светлая) и 2,8:1 (тёмная): только декор и подсказки, не основной текст.',
     'overdue': 'Просрочка: красные день и время. Не для кнопок удаления: для них `danger`.',
     'divider': 'Тонкие линии, рамки кнопок и полей, линия шкалы.',
     'selected': 'Мягкая подсветка выбранного: кнопки панели, дни под сеткой, переключатель виджета. Значок на ней чёрный (`accent`).',
     'danger': 'Опасные действия: «Удалить». Совпадает по значению с `overdue`, но роль другая.',
     'scrim': 'Затемнение под окнами и шторкой.',
-    'priority-high-bg': 'Плашка приоритета P1: фон.', 'priority-high-text': 'Плашка P1: текст на `priority-high-bg`.',
-    'priority-medium-bg': 'Плашка P2: фон.', 'priority-medium-text': 'Плашка P2: текст на `priority-medium-bg`.',
-    'priority-low-bg': 'Плашка P3: фон.', 'priority-low-text': 'Плашка P3: текст на `priority-low-bg`.',
-    'priority-none-bg': 'Плашка без приоритета: фон.', 'priority-none-text': 'Плашка без приоритета: текст на `priority-none-bg`.',
-    'ring-high': 'Цвет приоритета P1: кружок «выполнено», кнопка приоритета, шкала. На `surface` 3,9:1 в светлой теме.', 'ring-high-fill': 'Лёгкая заливка кружка P1 в виджете.',
-    'ring-medium': 'Цвет приоритета P2: кружок «выполнено», кнопка приоритета, шкала. На `surface` 2,5:1 в светлой теме (ниже 3:1): значение из приложения сохранено, приоритет не передавай одним цветом там, где важна точность.', 'ring-medium-fill': 'Лёгкая заливка кружка P2 в виджете.',
-    'ring-low': 'Цвет приоритета P3: кружок «выполнено», кнопка приоритета, шкала. На `surface` 3,3:1 в светлой теме.', 'ring-low-fill': 'Лёгкая заливка кружка P3 в виджете.',
-    'week-row-high': 'Вид «Неделя»: бледный фон строки задачи P1.', 'week-row-medium': 'Вид «Неделя»: бледный фон строки задачи P2.',
-    'week-row-low': 'Вид «Неделя»: бледный фон строки задачи P3. Без приоритета и у выполненной — `surface`.',
-    'week-row-done-mark': 'Вид «Неделя»: серый залитый кружок выполненной задачи (текст выполненной — `inactive`, зачёркнут).',
-    'ring-none': 'Кружок без приоритета в виджете.', 'ring-none-fill': 'Без заливки (прозрачный).',
+    'priority-high-bg': 'Высокий приоритет (итерация 47: фиолетовый; средний и низкий убраны): фон кнопки приоритета.', 'priority-high-text': 'Текст и значок на `priority-high-bg`.',
+    'priority-none-bg': 'Обычный приоритет: фон.', 'priority-none-text': 'Текст на `priority-none-bg`.',
+    'ring-high': 'Высокий приоритет: кружок, знак повтора, кнопка приоритета, шкала.',
+    'ring-high-done': 'Заливка кружка выполненной задачи высокого приоритета — тусклый фиолетовый (решение PM, итерация 47).',
+    'week-row-high': 'Вид «Неделя»: бледный фиолетовый фон строки задачи высокого приоритета; у обычной и выполненной — `surface`.',
+    'week-row-done-mark': 'Вид «Неделя»: серый залитый кружок выполненной задачи без приоритета (текст выполненной — `inactive`, зачёркнут).',
+    'ring-none': 'Кружок и знак повтора задачи без приоритета в виджете (в приложении — `inactive`).', 'ring-none-done': 'Заливка кружка выполненной задачи без приоритета в виджете.',
 }
 LIST_USAGE = 'Цвет списка из набора «Цвет» (хранится в БД как HEX; набор — часть системы).'
 
@@ -96,8 +91,8 @@ RADIUS_USAGE = {
 SIZE_PICK = {
     'HAIRLINE': ('hairline', 'Тонкие рамки и линии.'),
     'CARD_GAP': ('card-gap', 'Щель между плашками задач.'),
-    'LIST_SQUARE': ('list-square', 'Квадратик списка перед названием.'), 'LIST_GLYPH': ('list-glyph', 'Значок в нём.'),
-    'LIST_SQUARE_LARGE': ('list-square-large', 'Квадратик на экране «Списки» и в заголовке списка.'), 'LIST_GLYPH_LARGE': ('list-glyph-large', 'Значок в большом квадратике.'),
+    'LIST_SQUARE': ('list-square', 'Место под эмодзи списка перед названием (итерация 47: эмодзи вместо квадратика).'), 'LIST_GLYPH': ('list-glyph', 'Размер эмодзи списка в строке задачи.'),
+    'LIST_SQUARE_LARGE': ('list-square-large', 'Плитка эмодзи на экране «Списки» и в заголовке списка.'), 'LIST_GLYPH_LARGE': ('list-glyph-large', 'Размер эмодзи в большой плитке.'),
     'ICON_TILE': ('icon-tile', 'Плитка значка в окне выбора значка.'),
     'NAV_BAR': ('nav-bar', 'Высота нижней панели (закреплена внизу на всю ширину).'), 'NAV_TAB': ('nav-tab', 'Наибольшая ширина кнопки вкладки; вкладки делят ширину поровну.'),
     'NAV_ADD_W': ('nav-add-w', 'Кнопка «+» в панели: ширина.'), 'NAV_ADD_H': ('nav-add-h', 'Кнопка «+» в панели: высота.'),
@@ -162,7 +157,7 @@ def contrast(a, b):
 def build_tokens():
     color = []
     order = ['background', 'surface', 'text-primary', 'text-secondary', 'accent', 'on-accent', 'accent-soft', 'selected', 'inactive', 'divider',
-             'overdue', 'danger', 'scrim', 'inbox-list', 'on-list-square']
+             'overdue', 'danger', 'scrim', 'on-list-square']
     order += [n for n in COLORS if n.startswith('ring-')] + [n for n in COLORS if n.startswith('priority-')] + [n for n in COLORS if n.startswith('week-row-')]
     for n in order:
         light, dark = COLORS[n]
@@ -225,7 +220,24 @@ def icon_paths(name):
     return items
 
 
+LIST_EMOJI = {'work': '💼', 'home': '🏠', 'health': '❤️', 'shopping': '🛒', 'study': '📚', 'money': '💰', 'travel': '✈️', 'sport': '💪', 'idea': '💡', 'star': '⭐', 'inbox': '📥'}
+EMOJI_BY_COLOR = {'inbox-list': '📥', 'list-blue': '💼', 'list-green': '🏠', 'list-red': '❤️', 'list-orange': '🛒', 'list-purple': '💡', 'list-teal': '💪', 'list-yellow': '⭐', 'list-pink': '🎉', 'list-gray': '📁'}
+EMOJI_SPAN = '<span style="font-size:{px}px;line-height:1;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;width:{w}px;height:{w}px">{e}</span>'
+
+
+def emoji_lists(html):
+    """Итерация 47: квадратик цвета списка со значком → эмодзи списка; средний и низкий приоритет → высокий и обычный."""
+    html = re.sub(r'<span(?: class="list-sq")? style="(?:[^"]*?width:\s*(\d+)px;)?[^"]*?background:\s*var\(--((inbox-list|list-[a-z]+))\)[^"]*"[^>]*>(?:<svg.*?</svg>|[^<]*)</span>',
+                  lambda m: EMOJI_SPAN.format(px=max(12, int(m[1] or 16) - 2), w=int(m[1] or 16), e=EMOJI_BY_COLOR.get(m[2], '📁')), html, flags=re.S)
+    return (html.replace('var(--ring-medium)', 'var(--ring-high)').replace('var(--ring-low)', 'var(--inactive)')
+            .replace('var(--week-row-medium)', 'var(--surface)').replace('var(--week-row-low)', 'var(--surface)')
+            .replace('var(--priority-medium-bg)', 'var(--priority-high-bg)').replace('var(--priority-low-bg)', 'var(--priority-none-bg)')
+            .replace('var(--priority-medium-text)', 'var(--priority-high-text)').replace('var(--priority-low-text)', 'var(--priority-none-text)'))
+
+
 def svg(name, size=24, extra=''):
+    if name.startswith('ic_list_') and name[8:] in LIST_EMOJI and not (RES / 'drawable' / f'{name}.xml').exists():
+        return LIST_EMOJI[name[8:]]
     parts = ''
     for d, sw, filled in icon_paths(name):
         if filled and not sw:
@@ -308,10 +320,9 @@ def preview_tool_button():
             f'<div class="col">{tool(rep, "sel")}<div class="cap">выбрана</div></div>'
             f'<div class="col">{tool(rep, "dim")}<div class="cap">нет даты: бледный значок</div></div>'
             f'<div class="col">{tool(lst, "sel", clear=True)}<div class="cap">с крестиком «сбросить»</div></div>'
-            f'<div class="col">{tool(lsq, "sel", clear=True)}<div class="cap">список (квадратик цвета)</div></div>'
-            f'<div class="col">{pri("--ring-high")}<div class="cap">приоритет P1</div></div>'
-            f'<div class="col">{pri("--ring-medium")}<div class="cap">P2</div></div>'
-            f'<div class="col">{pri("--ring-low")}<div class="cap">P3</div></div>'
+            f'<div class="col">{tool(lsq, "sel", clear=True)}<div class="cap">список (эмодзи)</div></div>'
+            f'<div class="col">{pri("--ring-high")}<div class="cap">высокий: нажатие выключает</div></div>'
+            f'<div class="col">{pri("--inactive")}<div class="cap">обычный: нажатие включает</div></div>'
             f'<div class="col"><span class="confirm">{CHECK}</span><div class="cap">«Готово»: чёрная галочка</div></div></div>')
     return doc('Панель и поля', 150, 'Квадратная кнопка панели шторки и галочка «Готово»', body)
 
@@ -338,10 +349,13 @@ def preview_done_circle():
             return f'<span style="width:22px;height:22px;border-radius:50%;background:{color};color:var(--on-accent);display:flex;align-items:center;justify-content:center">{CHECK.replace("<svg", "<svg width=14 height=14")}</span>'
         return f'<span style="width:22px;height:22px;border-radius:50%;border:2px solid {color};display:block"></span>'
     cells = ''
-    for label, c in [('без приоритета', 'var(--text-secondary)'), ('P3', 'var(--ring-low)'), ('P2', 'var(--ring-medium)'), ('P1', 'var(--ring-high)')]:
-        done_c = 'var(--accent)' if label.startswith('без') else c
-        cells += f'<div class="col">{circ(c)}<div class="cap">{label}</div></div><div class="col">{circ(done_c, True)}<div class="cap">выполнена</div></div>'
-    return doc('Панель и поля', 110, 'Круг «выполнено» слева от названия: цвет приоритета', f'<div class="row">{cells}</div>')
+    for label, c, done_c in [('обычный', 'var(--inactive)', 'var(--inactive)'), ('высокий', 'var(--ring-high)', 'var(--ring-high-done)')]:
+        cells += f'<div class="col">{circ(c)}<div class="cap">{label}</div></div><div class="col">{circ(done_c, True)}<div class="cap">выполнена: тусклый</div></div>'
+    for label, c in [('повтор', 'var(--inactive)'), ('повтор, высокий', 'var(--ring-high)')]:
+        cells += f'<div class="col"><span style="color:{c};display:flex">{svg("ic_repeat_round", 22)}</span><div class="cap">{label}</div></div>'
+    tall = svg('ic_widget_period_repeat', 20).replace('height="20"', 'height="58"', 1)
+    cells += f'<div class="col"><span style="color:var(--ring-high);display:flex">{tall}</span><div class="cap">повтор с длительностью</div></div>'
+    return doc('Панель и поля', 150, 'Круг «выполнено» слева от названия: цвет приоритета; у повторяющейся — знак повтора', f'<div class="row">{cells}</div>')
 
 
 def preview_bell():
@@ -353,14 +367,13 @@ def preview_bell():
 
 
 def preview_list_square():
-    sw = ''
-    for nm in LIST_NAMES:
-        sw += f'<div class="col"><span class="list-sq" style="background:var(--list-{nm});width:40px;height:40px;border-radius:var(--radius-md)"></span><div class="cap">{nm}</div></div>'
-    icons = ['home', 'work', 'shopping', 'sport', 'study', 'health', 'money', 'travel', 'idea', 'star', 'inbox']
-    ic = ''.join(f'<div class="col"><span class="list-sq" style="background:var(--list-blue);width:24px;height:24px;border-radius:var(--radius-md)">{svg(f"ic_list_{i}", 16)}</span><div class="cap">{i}</div></div>' for i in icons)
-    body = (f'<div class="row" style="align-items:flex-start;gap:12px">{sw}</div>'
-            f'<div style="height:16px"></div><div class="row" style="align-items:flex-start;gap:12px">{ic}</div>')
-    return doc('Основы', 220, 'Цвета списков и значки внутри квадратика', body)
+    small = lambda e: f'<span style="width:16px;height:16px;font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center">{e}</span>'
+    large = lambda e: f'<span style="width:24px;height:24px;border-radius:var(--radius-md);background:var(--surface);font-size:16px;line-height:1;display:inline-flex;align-items:center;justify-content:center">{e}</span>'
+    row = ''.join(f'<div class="col"><div style="display:flex;gap:12px;align-items:center">{small(e)}{large(e)}</div><div class="cap">{n}</div></div>'
+                  for e, n in [('📥', 'Входящие'), ('💼', 'Работа'), ('🏠', 'Дом'), ('📁', 'без эмодзи')])
+    body = (f'<div class="row" style="align-items:flex-start;gap:20px">{row}</div><div style="height:16px"></div>'
+            f'<div style="font-size:13px;color:var(--text-secondary)">Строка задачи: {small("💼")} Работа · большая плитка — экран «Списки», заголовок списка</div>')
+    return doc('Основы', 170, 'Эмодзи списка: в строке задачи и на плитке', body)
 
 
 def preview_icons():
@@ -370,7 +383,19 @@ def preview_icons():
     return doc('Основы', 220, 'Контурные значки 24 dp, линия 2, скругления: цвет задаёт оттенок', f'<div class="row" style="align-items:flex-start;gap:6px">{cells}</div>')
 
 
-def node(color, done=False, h=20):
+def repeat_mark(color, h=20):
+    """Итерация 47: знак повтора вместо кружка — круглый, у задачи с длительностью вытянут на высоту капсулы."""
+    if h > 24:
+        tall = svg('ic_widget_period_repeat', 20).replace('height="20"', f'height="{h}"', 1)
+        return f'<span style="color:{color};display:flex">{tall}</span>'
+    return f'<span style="color:{color};display:flex;background:var(--background);border-radius:50%">{svg("ic_repeat_round", h)}</span>'
+
+
+def node(color, done=False, h=20, rep=False):
+    if rep and not done:
+        return repeat_mark(color, h)
+    if done and color in ('var(--ring-high)', 'var(--ring-medium)'):
+        color = 'var(--ring-high-done)'
     if done:
         return f'<span style="width:20px;height:{h}px;border-radius:10px;background:{color};color:var(--on-accent);display:flex;align-items:center;justify-content:center">{CHECK.replace("<svg", "<svg width=12 height=12")}</span>'
     return f'<span style="width:20px;height:{h}px;border-radius:10px;border:2px solid {color};background:var(--background);display:block"></span>'
@@ -381,8 +406,8 @@ def trow(time, color, title, done=False, over=False, period=None, rep=False, rem
     tcol = 'var(--overdue)' if over else ('var(--text-secondary)' if done else 'var(--text-primary)')
     t = f'<div style="width:38px;text-align:right;font-size:12px;line-height:16px;font-weight:700;color:{tcol};display:flex;flex-direction:column;justify-content:center">{time}' + (f'<span style="color:{"var(--overdue)" if over else "var(--text-secondary)"}">{end}</span>' if end else '') + '</div>'
     rail = (f'<div style="width:26px;display:flex;flex-direction:column;align-items:center"><span style="width:1px;flex:1;background:{"var(--divider)" if top else "transparent"}"></span>'
-            f'{node(color, done, 58 if period else 20)}<span style="width:1px;flex:1;background:{"var(--divider)" if bottom else "transparent"}"></span></div>')
-    icons = (f'<span style="color:var(--text-secondary);margin-left:4px">{svg("ic_tool_repeat", 18)}</span>' if rep else '') + (f'<span style="margin-left:4px">{bell(22, rem)}</span>' if rem else '')
+            f'{node(color, done, 58 if period else 20, rep)}<span style="width:1px;flex:1;background:{"var(--divider)" if bottom else "transparent"}"></span></div>')
+    icons = f'<span style="margin-left:4px">{bell(22, rem)}</span>' if rem else ''
     lsqh = f'<span class="list-sq" style="background:var(--inbox-list);margin-left:8px">{svg("ic_list_inbox", 12)}</span>' if lsq else ''
     plaque = (f'<div style="flex:1;margin:3px 0;border-radius:var(--radius-md);background:var(--surface);display:flex;align-items:center;padding:0 12px;opacity:{.7 if done else 1}">'
               f'<span style="flex:1;font-size:14px;font-weight:700;{"text-decoration:line-through;color:var(--text-secondary)" if done else ""}">{title}</span>{icons}{lsqh}</div>')
@@ -518,9 +543,9 @@ def cover():
 *{{box-sizing:border-box}}html,body{{margin:0}}body{{background:var(--background)}}
 svg{{display:block;width:960px;height:360px}}
 .ground{{fill:var(--background)}}.brand{{fill:var(--accent)}}.soft{{fill:var(--selected)}}.ink{{fill:var(--text-primary)}}.surf{{fill:var(--surface)}}
-.hi{{fill:var(--ring-high)}}.mid{{fill:var(--ring-medium)}}.lo{{fill:var(--ring-low)}}
+.hi{{fill:var(--ring-high)}}.mid{{fill:var(--ring-high-done)}}.lo{{fill:var(--inactive)}}
 .big{{rx:var(--radius-nav)}}.tile{{rx:var(--radius-lg)}}
-.ring0{{fill:none;stroke:var(--ring-high);stroke-width:4}}.ring1{{fill:none;stroke:var(--ring-medium);stroke-width:4}}.ring2{{fill:none;stroke:var(--ring-low);stroke-width:4}}
+.ring0{{fill:none;stroke:var(--ring-high);stroke-width:4}}.ring1{{fill:none;stroke:var(--ring-high-done);stroke-width:4}}.ring2{{fill:none;stroke:var(--inactive);stroke-width:4}}
 .name{{font-family:var(--font-sans);font-weight:800;font-size:112px;fill:var(--text-primary)}}
 .tag{{font-family:var(--font-sans);font-weight:500;font-size:14px;fill:var(--text-secondary)}}
 </style></head><body>
@@ -553,13 +578,13 @@ README = '''## Содержание и язык
 - Подпись недель в окне даты — «26 окт – 08 ноя»: число с нулём. Дата создания в меню «⋮» — «создано чт, 01 окт 2026».
 - Нет даты — «Без даты и времени», серым и без крестика. Нет времени — поле времени не показывается совсем.
 - Подсказка там, где действие недоступно, говорит, что сделать: «Сначала выберите день». Ошибки объясняют причину и что делать дальше.
-- Без эмодзи, без вибрации, без восклицательных знаков.
+- Без эмодзи в текстах (эмодзи — только знак списка, итерация 47), без вибрации, без восклицательных знаков.
 
 ## Основы визуала
 
 - **Цвет.** Фон экрана — `background`, поверх него белые плашки `surface`. Текст — `text-primary`, описания и значки — `text-secondary`.
   Главный цвет — `accent`: галочка «Готово», выбранные значки, даты. Выбранное — не сплошной чёрный, а мягкая заливка `selected` с чёрным значком.
-  Просрочка — `overdue` (красные день и время), удаление — `danger`. Приоритет — только цветом кружка и кнопки: `ring-high`, `ring-medium`, `ring-low`.
+  Просрочка — `overdue` (красные день и время), удаление — `danger`. Приоритетов два (итерация 47): высокий — фиолетовый `ring-high`, обычный — серый `inactive`; приоритет передаётся только цветом кружка и кнопки.
   Бледные недоступные значки — `inactive` с прозрачностью 60%. Рамки и линии — `divider`, толщина `size-hairline`.
 - **Тёмная тема** — те же роли, другие значения; на заливке `accent` текст всегда `on-accent`.
 - **Шрифт.** Только Manrope. Название задачи в шторке — `headline-small` (ExtraBold), заголовок окна — `title-large` (Bold), дата и время — `title-medium` (Bold),
@@ -573,14 +598,15 @@ README = '''## Содержание и язык
 ## Состояния
 
 - Выбрано: `selected` + чёрный значок. Недоступно (нет даты): значок `inactive` с прозрачностью 60%, фон и рамка прежние; нажатие показывает подсказку.
-- Приоритет: кнопка и круг «выполнено» цвета приоритета; без приоритета — серый контур, у выполненной чёрная заливка.
-- Просрочено: время и день красные, кружок бледный. Выполнено: плашка 70% непрозрачности, название зачёркнуто, кружок залит цветом приоритета с белой галочкой.
+- Приоритет: кнопка и круг «выполнено» цвета приоритета; без приоритета — серый контур. У выполненной высокого — тусклая фиолетовая заливка `ring-high-done`.
+- Повтор: у повторяющейся задачи вместо кружка знак повтора цвета приоритета (круглый; у задачи с длительностью — на высоту капсулы), нажатие — «выполнено». Будущие повторы не бледные.
+- Просрочено: время и день красные, кружок бледный (в «Неделе» просрочка не красная). Выполнено: плашка 70% непрозрачности, название зачёркнуто, кружок залит с белой галочкой.
 - Уведомления: колокольчик без знаков — в момент срока, со стрелкой — заранее, со стрелкой и чёрной точкой — несколько разных.
 
 ## Значки
 
 - Контурные, сетка 24 dp, линия 2, круглые концы и углы. Цвет задаёт оттенок: `text-secondary` по умолчанию, `accent` у выбранного, `inactive` (60%) у недоступного.
-- Значки списков — белые на квадратике цвета списка (`list-*`), у «Входящие» — `inbox-list`. Колокольчик со знаками собирается маской: вырез вокруг стрелки и точки.
+- У списков эмодзи вместо значка и цвета (итерация 47): у «Входящие» 📥, без эмодзи — 📁. Колокольчик со знаками собирается маской: вырез вокруг стрелки и точки.
 
 @@COMPONENTS@@
 '''
@@ -588,26 +614,28 @@ README = '''## Содержание и язык
 COMP_README = {
     'ToolButton': ('Квадратная кнопка панели шторки: список, приоритет, чек-лист, повтор, уведомления; рядом чёрная галочка «Готово».',
                    '''Размер 50 (`size-tool-button`), радиус `radius-lg`, рамка `divider` толщиной `size-hairline`, значок 25 (`size-tool-icon`).
-Выбранная кнопка залита `selected`, значок `accent`. Кнопка приоритета окрашена в цвет приоритета (`ring-*`), заливка — тот же цвет с прозрачностью 16%.
+Выбранная кнопка залита `selected`, значок `accent`. Кнопка приоритета — переключатель (итерация 47): нажатие включает и выключает высокий приоритет без окна; включённая — `ring-high` с заливкой того же цвета 16%, выключенная — `inactive`.
 Без даты повтор и уведомления остаются нажимаемыми: значок `inactive` с прозрачностью 60%, а окно подсказывает «Сначала выберите день».
-Крестик справа сверху сбрасывает только это свойство (список, приоритет): серый круг `size-clear-dot` с белым ×, зона нажатия вдвое больше.
+Крестик справа сверху сбрасывает только это свойство (список): серый круг `size-clear-dot` с белым ×, зона нажатия вдвое больше.
 Передавай: подпись для доступности, значок, состояние (выбрана / недоступна), действие. Не делай кнопки у́же 46.'''),
     'DateFields': ('Два поля шторки: дата и время; каждое открывает окно даты, у каждого свой крестик.',
                    '''Строка высотой `size-field-height` (54), значок `size-field-icon` (22), текст `title-medium` Bold, цвет `accent`. Промежуток между полями — `space-lg`.
 Крестик у даты убирает дату вместе со временем, крестик у времени — только время (день остаётся). Нажатие на текст поля открывает окно даты; крестик стоит рядом и в нажатие не входит.
 Без даты — одна серая подпись «Без даты и времени» (`text-secondary`), крестика и поля времени нет. Нет времени — поля времени нет.
 Передавай: выбранные день и время (период — «17:00–18:00»). Не показывай время без даты.'''),
-    'DoneCircle': ('Круг «выполнено» слева от названия созданной задачи; цвет — приоритет.',
-                   '''Диаметр `size-done-circle` (22), контур `size-stroke` (2). Цвет контура — приоритет задачи (`ring-high`, `ring-medium`, `ring-low`); без приоритета — `text-secondary`.
-У выполненной — заливка тем же цветом и белая галочка `size-done-check` (14); без приоритета заливка `accent`. Круг вплотную к левому краю текста, зона нажатия шире круга.
-У новой задачи круга нет. Не используй для приоритета значок P1 рядом с названием: цвет круга и кнопки — единственный знак приоритета.'''),
+    'DoneCircle': ('Круг «выполнено» слева от названия созданной задачи; цвет — приоритет; у повторяющейся — знак повтора.',
+                   '''Диаметр `size-done-circle` (22), контур `size-stroke` (2). Цвет контура — приоритет задачи: высокий `ring-high`, обычный `inactive`.
+У выполненной — заливка (у высокого тусклый `ring-high-done`) и белая галочка `size-done-check` (14). У повторяющейся задачи круга нет — на его месте знак повтора (`RepeatMark`, рисунки `ic_repeat_round` и `ic_widget_period_repeat`). Круг вплотную к левому краю текста, зона нажатия шире круга.
+У новой задачи круга нет. Не ставь значок приоритета рядом с названием: цвет круга и кнопки — единственный знак приоритета.'''),
     'ReminderBell': ('Колокольчик уведомлений в трёх видах: в момент срока, заранее, несколько.',
                      '''Один рисунок во всех местах (плашка 18, виджет 22, кнопка панели 25). Базовый колокольчик — контур, цвет `text-secondary` (на выбранной кнопке `accent`).
 «Заранее» — стрелка назад справа вверху в цвете `accent`, вокруг неё вырез в контуре. «Несколько» — стрелка и чёрная точка `accent` справа внизу (тоже с вырезом).
 Вид выбирается так: несколько разных напоминаний — «несколько»; хоть одно раньше срока — «заранее»; иначе — «в момент срока». Одинаковые по моменту считаются одним.'''),
-    'ListSquare': ('Квадратики списков: цвет и значок; девять цветов набора «Цвет» и значки внутри.',
-                   '''Маленький `size-list-square` (16) с радиусом `radius-sm` и значком `size-list-glyph` (12); большой `size-list-square-large` (24) с радиусом `radius-md` и значком 16.
-Значок белый (`on-list-square`). Цвет — один из `list-*`; у «Входящие» — `inbox-list`. Набор цветов хранится в БД как HEX, поэтому новые цвета добавляй в `ListColorTokens`, а не в экраны.'''),
+    'ListSquare': ('Эмодзи списка (`ListBadge`, итерация 47): вместо цветного квадратика со значком.',
+                   '''Маленький — эмодзи в поле `size-list-square` (16) без фона: строки задач, поиск, корзина, окна выбора списка. Большой — плитка `size-list-square-large` (24) цвета `surface`
+с радиусом `radius-md` и эмодзи `size-list-glyph-large` (16): экран «Списки», заголовок списка, кнопка списка в шторке задачи.
+У «Входящих» — 📥, у списка без эмодзи — 📁. Эмодзи хранится в БД (`projects.emoji`); старые значки перенесены миграцией (💼 🏠 ❤️ 🛒 📚 💰 ✈️ 💪 💡 ⭐).
+TickTick хранит эмодзи в начале названия: импорт отделяет его, экспорт возвращает. Цветов списков больше нет.'''),
     'Icons': ('Контурные значки приложения: сетка 24, линия 2, круглые концы.',
               '''Бери только значки из превью и ресурсов `ic_*`; цвет задавай оттенком (`text-secondary`, `accent`, `inactive`). Не рисуй новые значки другой толщины линии.
 Назначение: `tool_checklist` — чек-лист, `tool_priority` — флаг приоритета, `tool_reminder` — уведомления, `tool_repeat` — повтор, `tool_delete` — удалить, `no_date` — без даты,
@@ -634,9 +662,9 @@ COMP_README = {
 Прошедшие дни бледные и недоступны, сегодня в кольце, выбранный чёрный. Месяц нигде больше не открывается.'''),
     'TimelineRow': ('Строка шкалы дня: время слева, кружок приоритета на линии, белая плашка с названием.',
                     '''Высота `size-widget-row` (46), у периода `size-widget-period-row` (64). Колонка времени `size-widget-time` (38) справа выровнена, колонка линии `size-widget-rail` (26), кружок `size-widget-node` (20), контур `size-stroke`.
-Плашка — `surface`, радиус `radius-md`, щель сверху и снизу `size-widget-card-inset` (3), внутри `space-sm`. Название — `body-medium` Bold; справа повтор, колокольчик, квадратик списка.
-Период: кружок растягивается в капсулу на всю высоту плашки, конец периода серым под началом. Просрочка: время и день красные (`overdue`), кружок `inactive`.
-Выполнена: кружок залит цветом приоритета с белой галочкой, плашка 70%, название зачёркнуто. Тот же вид в приложении и в виджете.'''),
+Плашка — `surface`, радиус `radius-md`, щель сверху и снизу `size-widget-card-inset` (3), внутри `space-sm`. Название — `body-medium` Bold; справа колокольчик и эмодзи списка (знак повтора — вместо кружка слева).
+Период: кружок растягивается в капсулу на всю высоту плашки (у повторяющейся — вытянутый знак повтора), конец периода серым под началом. Просрочка: время и день красные (`overdue`), кружок `inactive`.
+Выполнена: кружок залит (высокий — тусклым `ring-high-done`) с белой галочкой, плашка 70%, название зачёркнуто. Тот же вид в приложении и в виджете.'''),
 }
 
 
@@ -676,7 +704,7 @@ def main():
     for name, fn in previews.items():
         folder = OUT / 'components' / name
         folder.mkdir()
-        (folder / 'preview.html').write_text(fn())
+        (folder / 'preview.html').write_text(emoji_lists(fn()))
         summary, text = COMP_README[name]
         (folder / 'README.md').write_text(f'{summary}\n\n{text}\n')
     (OUT / 'components' / 'Cover').mkdir()
@@ -691,7 +719,7 @@ def main():
     # Контраст пар из описаний (WCAG 2): печатаем таблицу для проверки, не пишем в файлы.
     pairs = [('text-primary', 'surface'), ('text-primary', 'background'), ('text-secondary', 'surface'), ('text-secondary', 'background'), ('accent', 'surface'),
              ('accent', 'selected'), ('on-accent', 'accent'), ('inactive', 'surface'), ('overdue', 'surface'), ('danger', 'surface'), ('ring-high', 'surface'),
-             ('ring-medium', 'surface'), ('ring-low', 'surface')]
+             ('ring-none', 'surface')]
     for a, b in pairs:
         print(f'{a:15} на {b:11} светлая {contrast(COLORS[a][0], COLORS[b][0]):4.1f}  тёмная {contrast(COLORS[a][1], COLORS[b][1]):4.1f}')
     print(len(tokens['color']['tokens']), 'цветов;', len(tokens['size']['tokens']), 'размеров')

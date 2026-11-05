@@ -46,8 +46,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalDensity
 import com.prostovasei.simpletasks.R
-import com.prostovasei.simpletasks.designsystem.components.GHOST_ALPHA
-import com.prostovasei.simpletasks.designsystem.components.ListSquare
+import com.prostovasei.simpletasks.designsystem.components.RepeatMark
+import com.prostovasei.simpletasks.designsystem.components.ListBadge
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
 import com.prostovasei.simpletasks.domain.model.Priority
@@ -144,7 +144,8 @@ fun LazyItemScope.TimelineTaskRow(
     val item = row.item
     val testTag = "task:${item.id}"
     val done by animateFloatAsState(if (item.showsDone) 1f else 0f, tween(DONE_FADE_MS), label = "done")
-    val faded = row.past || item.isGhost
+    // Итерация 47 (решение PM): будущий повтор не тусклый — тусклая только прошедшая задача.
+    val faded = row.past
     val baseHeight = if (row.isPeriod) SizeTokens.WIDGET_PERIOD_ROW else SizeTokens.WIDGET_ROW
     val height = (baseHeight + if (item.subtitle != null) SizeTokens.TRASH_ROW_EXTRA else 0).dp
     Row(
@@ -153,7 +154,6 @@ fun LazyItemScope.TimelineTaskRow(
             .fillMaxWidth()
             .height(height)
             .padding(end = spacing.xs)
-            .alpha(if (item.isGhost) GHOST_ALPHA else 1f)
             .testTag(testTag),
     ) {
         TimeColumn(row, isOverdue, faded, dayLabels)
@@ -192,15 +192,7 @@ fun LazyItemScope.TimelineTaskRow(
                     )
                 }
             }
-            // Значки справа налево (итерация 27): список, колокольчик, повтор.
-            if (item.isRecurring) {
-                Icon(
-                    painterResource(R.drawable.ic_tool_repeat),
-                    null,
-                    tint = colors.textSecondary,
-                    modifier = Modifier.padding(start = spacing.xxs).size(SizeTokens.WIDGET_META_ICON.dp).testTag("$testTag:repeat"),
-                )
-            }
+            // Значки справа налево (итерация 27): список, колокольчик. Повтор с итерации 47 — знаком вместо кружка на шкале.
             item.reminder?.let {
                 ReminderIcon(
                     mark = it,
@@ -212,7 +204,7 @@ fun LazyItemScope.TimelineTaskRow(
             }
             if (showList) {
                 Spacer(Modifier.width(spacing.xs))
-                ListSquare(listSquareColor(item), ListIcons.drawable(item.listIcon))
+                ListBadge(item.listEmoji)
             }
         }
     }
@@ -245,8 +237,9 @@ private fun TimeColumn(row: WidgetRow.Task, isOverdue: Boolean, faded: Boolean, 
 
 /**
  * Линия шкалы с кружком приоритета (у периода — капсула во всю высоту плашки); нажатие — «выполнено» или, у выполненной,
- * вернуть. У повторяющейся тоже обычный кружок — значок повтора только в плашке (итерация 27). [done] — доля перехода
- * к выполненной: кольцо заливается цветом и появляется белая галочка.
+ * вернуть. [done] — доля перехода к выполненной: кольцо заливается цветом и появляется белая галочка. Итерация 47: у повторяющейся
+ * задачи вместо кружка — знак повтора ([RepeatMark]: круглый, у периода — вытянутый); выполненная задача высокого приоритета
+ * заливается тусклым фиолетовым.
  */
 @Composable
 private fun Rail(row: WidgetRow.Task, top: Boolean, bottom: Boolean, faded: Boolean, done: Float, testTag: String, onToggle: () -> Unit, selected: Boolean? = null) {
@@ -256,10 +249,10 @@ private fun Rail(row: WidgetRow.Task, top: Boolean, bottom: Boolean, faded: Bool
     val ring = when {
         faded && !item.showsDone -> colors.inactive
         item.priority == Priority.HIGH -> colors.checkRings.high
-        item.priority == Priority.MEDIUM -> colors.checkRings.medium
-        item.priority == Priority.LOW -> colors.checkRings.low
         else -> colors.inactive
     }
+    val fill = if (item.priority == Priority.HIGH) colors.checkRings.highDone else ring
+    val repeat = item.isRecurring && !item.showsDone && selected == null
     val label = stringResource(
         when {
             selected != null -> if (selected) R.string.select_unmark else R.string.select_mark
@@ -278,22 +271,31 @@ private fun Rail(row: WidgetRow.Task, top: Boolean, bottom: Boolean, faded: Bool
     ) {
         if (row.isPeriod) {
             Segment(top, Modifier.height(SizeTokens.WIDGET_PERIOD_STUB.dp))
-            Node(if (selected == true) colors.accent else ring, if (selected != null) (if (selected) 1f else 0f) else done, Modifier.width(SizeTokens.WIDGET_NODE.dp).weight(1f))
+            val nodeModifier = Modifier.width(SizeTokens.WIDGET_NODE.dp).weight(1f)
+            if (repeat) {
+                RepeatMark(ring, nodeModifier.testTag("$testTag:repeat"), tall = true)
+            } else {
+                Node(if (selected == true) colors.accent else ring, if (selected != null) (if (selected) 1f else 0f) else done, nodeModifier, fill)
+            }
             Segment(bottom, Modifier.height(SizeTokens.WIDGET_PERIOD_STUB.dp))
         } else {
             Segment(top, Modifier.weight(1f))
-            Node(if (selected == true) colors.accent else ring, if (selected != null) (if (selected) 1f else 0f) else done, Modifier.size(SizeTokens.WIDGET_NODE.dp))
+            if (repeat) {
+                RepeatMark(ring, Modifier.size(SizeTokens.WIDGET_NODE.dp).testTag("$testTag:repeat"))
+            } else {
+                Node(if (selected == true) colors.accent else ring, if (selected != null) (if (selected) 1f else 0f) else done, Modifier.size(SizeTokens.WIDGET_NODE.dp), fill)
+            }
             Segment(bottom, Modifier.weight(1f))
         }
     }
 }
 
-/** Кружок или капсула: кольцо цвета [ring]; при [done] → 1 заливается тем же цветом, по центру белая галочка. */
+/** Кружок или капсула: кольцо цвета [ring]; при [done] → 1 заливается цветом [fill] (тусклый у высокого приоритета), по центру белая галочка. */
 @Composable
-private fun Node(ring: Color, done: Float, modifier: Modifier) {
-    Box(modifier.border(SizeTokens.CHECKBOX_STROKE.dp, ring, CircleShape), contentAlignment = Alignment.Center) {
+private fun Node(ring: Color, done: Float, modifier: Modifier, fill: Color = ring) {
+    Box(modifier.border(SizeTokens.CHECKBOX_STROKE.dp, if (done >= 1f) fill else ring, CircleShape), contentAlignment = Alignment.Center) {
         if (done > 0f) {
-            Box(Modifier.matchParentSize().alpha(done).background(ring, CircleShape))
+            Box(Modifier.matchParentSize().alpha(done).background(fill, CircleShape))
             Icon(
                 painterResource(R.drawable.ic_node_check),
                 null,

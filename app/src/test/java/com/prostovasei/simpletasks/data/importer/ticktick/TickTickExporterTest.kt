@@ -90,7 +90,7 @@ class TickTickExporterTest : DatabaseTest() {
                 projectId = home,
                 title = "Переезд",
                 content = "Первая строка\nВторая строка",
-                priority = Priority.MEDIUM,
+                priority = Priority.HIGH,
                 due = TaskDue.AtTime(Instant.parse("2026-10-14T02:30:00Z")),
                 checklist = listOf("Коробки", "Грузчики"),
             ),
@@ -110,11 +110,34 @@ class TickTickExporterTest : DatabaseTest() {
         assertEquals("Первая строка\rВторая строка\r▫Коробки\r▫Грузчики", move["Content"])
         assertEquals("2026-10-14T02:30:00+0000", move["Due Date"])
         assertEquals("false", move["Is All Day"])
-        assertEquals("3", move["Priority"])
+        assertEquals("5", move["Priority"])
         assertEquals("Asia/Krasnoyarsk", move["Timezone"])
         // «Весь день» 20 октября — полночь по Красноярску (UTC+7).
         assertEquals("2026-10-19T17:00:00+0000", car["Due Date"])
         assertEquals("true", car["Is All Day"])
+    }
+
+    /**
+     * Итерация 47 (решение PM): эмодзи списка TickTick хранит в начале названия. Экспорт возвращает его туда («🏠Дом»), импорт отделяет
+     * обратно — список «Дом» с эмодзи 🏠, без второго такого же списка. Средний приоритет TickTick (3) становится высоким.
+     */
+    @Test
+    fun listEmojiTravelsInTheListName() = runTest {
+        val home = projects.createProject("Дом", groupId = null)
+        projects.setProjectEmoji(home, "🏠")
+        tasks.createTask(NewTask(projectId = home, title = "Полить цветы", priority = Priority.HIGH))
+
+        val row = exportedRows().getValue("Полить цветы")
+        assertEquals("🏠Дом", row["List Name"])
+        assertEquals("5", row["Priority"])
+
+        val exported = export()
+        backup.clearAllData()
+        backup.importTickTick(exported.inputStream())
+        val lists = projects.observeProjectTree().first().let { t -> t.ungrouped + t.groups.flatMap { it.projects } }.map { it.project }
+        val imported = lists.single { it.name == "Дом" }
+        assertEquals("🏠", imported.emoji)
+        assertFalse("Нет списка с эмодзи в названии", lists.any { it.name == "🏠Дом" })
     }
 
     @Test

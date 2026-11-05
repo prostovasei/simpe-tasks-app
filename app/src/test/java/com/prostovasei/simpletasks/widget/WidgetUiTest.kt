@@ -41,7 +41,7 @@ class WidgetUiTest {
     private val context = ApplicationProvider.getApplicationContext<android.app.Application>()
 
     private fun item(id: String, title: String, due: DueText?, list: String? = "Работа", ghostOf: String? = null, priority: Priority = Priority.NONE, done: Boolean = false) =
-        TaskItem(id, title, priority, due, list, null, isInboxList = list == null, isRecurring = ghostOf != null, ghostOf = ghostOf, isDone = done)
+        TaskItem(id, title, priority, due, list, if (list == null) "📥" else "📁", isInboxList = list == null, isRecurring = ghostOf != null, ghostOf = ghostOf, isDone = done)
 
     private val today = LocalDate.of(2026, 10, 16)
 
@@ -61,7 +61,7 @@ class WidgetUiTest {
             WidgetDayBlock(WidgetDay.On(today.plusDays(1)), listOf(item("net", "Оплатить интернет", DueText(DayLabel.Tomorrow, null)))),
             WidgetDayBlock(WidgetDay.On(today.plusDays(3)), listOf(item("gym@0", "Зарядка", DueText(DayLabel.Date(today.plusDays(3), false), "08:00"), list = null, ghostOf = "gym"))),
         ),
-        tabs = listOf(WidgetTab(WidgetFilter.All), WidgetTab(WidgetFilter.Inbox), WidgetTab(WidgetFilter.ProjectList("work"), "Работа", "#3D8BFD")),
+        tabs = listOf(WidgetTab(WidgetFilter.All), WidgetTab(WidgetFilter.Inbox), WidgetTab(WidgetFilter.ProjectList("work"), "Работа", "💼")),
     )
 
     @Test
@@ -130,8 +130,6 @@ class WidgetUiTest {
     @Test
     fun priorityPicksCheckColor() {
         assertEquals(widgetCheckColors(Priority.HIGH), com.prostovasei.simpletasks.widget.theme.WidgetColors.checkHigh)
-        assertEquals(widgetCheckColors(Priority.MEDIUM), com.prostovasei.simpletasks.widget.theme.WidgetColors.checkMedium)
-        assertEquals(widgetCheckColors(Priority.LOW), com.prostovasei.simpletasks.widget.theme.WidgetColors.checkLow)
         assertEquals(widgetCheckColors(Priority.NONE), com.prostovasei.simpletasks.widget.theme.WidgetColors.checkNone)
     }
 
@@ -153,9 +151,9 @@ class WidgetUiTest {
     }
 
     private val options = listOf(
-        ProjectOption("inbox", "Inbox", null, isInbox = true),
-        ProjectOption("work", "Работа", "#3D8BFD", isInbox = false),
-        ProjectOption("home", "Дом", "#46A758", isInbox = false),
+        ProjectOption("inbox", "Inbox", "📥", isInbox = true),
+        ProjectOption("work", "Работа", "💼", isInbox = false),
+        ProjectOption("home", "Дом", "🏠", isInbox = false),
     )
 
     @Test

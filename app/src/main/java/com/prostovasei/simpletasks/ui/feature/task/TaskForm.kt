@@ -8,11 +8,12 @@ import java.time.LocalTime
 import java.time.ZoneId
 
 /** Список для выбора в форме задачи; [icon] — ключ значка списка (итерация 14). */
-data class ProjectOption(val id: String, val name: String, val color: String?, val isInbox: Boolean, val icon: String? = null)
+/** Список в окне выбора: [emoji] — эмодзи списка (итерация 47). */
+data class ProjectOption(val id: String, val name: String, val emoji: String, val isInbox: Boolean)
 
 fun ProjectTree.options(): List<ProjectOption> =
     (listOfNotNull(inbox) + groups.flatMap { it.projects } + ungrouped).map {
-        ProjectOption(it.project.id, it.project.name, it.project.color, it.project.isInbox, it.project.icon)
+        ProjectOption(it.project.id, it.project.name, it.project.emojiShown, it.project.isInbox)
     }
 
 /** Изменения полей задачи, общие для быстрого создания и экрана задачи. */

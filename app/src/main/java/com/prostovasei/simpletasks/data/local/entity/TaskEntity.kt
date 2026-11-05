@@ -71,6 +71,8 @@ data class ExportTaskRow(
     @ColumnInfo(name = "list_name") val listName: String,
     @ColumnInfo(name = "list_is_inbox") val listIsInbox: Boolean,
     @ColumnInfo(name = "folder_name") val folderName: String?,
+    /** Эмодзи списка (итерация 47): при экспорте возвращается в начало названия, как его хранит TickTick. */
+    @ColumnInfo(name = "list_emoji") val listEmoji: String? = null,
 )
 
 /** Задача с текстом её чек-листа (пункты через перевод строки) — для поиска (итерация 15). */

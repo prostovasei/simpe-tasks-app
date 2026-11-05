@@ -15,18 +15,17 @@ data class PriorityColors(val container: Color, val content: Color)
 @Immutable
 data class PriorityPalette(
     val high: PriorityColors,
-    val medium: PriorityColors,
-    val low: PriorityColors,
     val none: PriorityColors,
 )
 
 /** Рамка галочки по приоритету (итерация 13): как круглые галочки виджета, только в приложении — квадратные. */
 @Immutable
-data class CheckRings(val high: Color, val medium: Color, val low: Color)
+/** [highDone] — заливка выполненной задачи высокого приоритета (итерация 47: тусклый фиолетовый). */
+data class CheckRings(val high: Color, val highDone: Color)
 
 /** Строки «Недели» (итерация 45): фон по приоритету и серая отметка выполненной. */
 @Immutable
-data class WeekRowColors(val high: Color, val medium: Color, val low: Color, val doneMark: Color)
+data class WeekRowColors(val high: Color, val doneMark: Color)
 
 @Immutable
 data class AppColors(
@@ -41,7 +40,6 @@ data class AppColors(
     val divider: Color,
     val selected: Color,
     val inactive: Color,
-    val inboxList: Color,
     val onListSquare: Color,
     val checkRings: CheckRings,
     val weekRow: WeekRowColors,
@@ -67,25 +65,19 @@ internal fun appColors(isDark: Boolean): AppColors {
         divider = ColorTokens.divider.resolve(),
         selected = ColorTokens.selected.resolve(),
         inactive = ColorTokens.inactive.resolve(),
-        inboxList = ColorTokens.inboxList.resolve(),
         onListSquare = ColorTokens.onListSquare.resolve(),
         checkRings = CheckRings(
             high = WidgetCheckTokens.high.ring.resolve(),
-            medium = WidgetCheckTokens.medium.ring.resolve(),
-            low = WidgetCheckTokens.low.ring.resolve(),
+            highDone = WidgetCheckTokens.high.done.resolve(),
         ),
         weekRow = WeekRowColors(
             high = WeekRowTokens.high.resolve(),
-            medium = WeekRowTokens.medium.resolve(),
-            low = WeekRowTokens.low.resolve(),
             doneMark = WeekRowTokens.doneMark.resolve(),
         ),
         danger = ColorTokens.danger.resolve(),
         scrim = ColorTokens.scrim.resolve(),
         priority = PriorityPalette(
             high = PriorityTokens.high.resolve(),
-            medium = PriorityTokens.medium.resolve(),
-            low = PriorityTokens.low.resolve(),
             none = PriorityTokens.none.resolve(),
         ),
         isDark = isDark,

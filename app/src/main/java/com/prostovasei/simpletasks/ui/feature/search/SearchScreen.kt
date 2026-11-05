@@ -53,9 +53,7 @@ import com.prostovasei.simpletasks.designsystem.components.EmptyState
 import com.prostovasei.simpletasks.designsystem.components.SectionHeader
 import com.prostovasei.simpletasks.designsystem.components.TaskRow
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
-import com.prostovasei.simpletasks.ui.common.ListIcons
 import com.prostovasei.simpletasks.ui.common.dueLines
-import com.prostovasei.simpletasks.ui.common.listSquareColor
 
 @Composable
 fun SearchRoute(onOpenTask: (String) -> Unit, viewModel: SearchViewModel = hiltViewModel()) {
@@ -197,8 +195,7 @@ private fun ResultRow(result: SearchResult, query: String, onIntent: (SearchInte
     TaskRow(
         title = item.title,
         priority = item.priority,
-        listColor = listSquareColor(item),
-        listIcon = ListIcons.drawable(item.listIcon),
+        listEmoji = item.listEmoji,
         isCompleting = result.isDone,
         animateCompletion = false,
         isRecurring = item.isRecurring && !result.isDone,

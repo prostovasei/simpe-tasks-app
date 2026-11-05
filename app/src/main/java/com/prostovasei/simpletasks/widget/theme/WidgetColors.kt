@@ -25,28 +25,22 @@ object WidgetColors {
     val divider = ColorTokens.divider.toProvider()
     val selected = ColorTokens.selected.toProvider()
     val inactive = ColorTokens.inactive.toProvider()
-    val inboxList = ColorTokens.inboxList.toProvider()
     val onListSquare = ColorTokens.onListSquare.toProvider()
 
     /** Выполненная задача (итерация 27): название, значки и квадратик списка бледнее — 70%. */
     val textDone = ColorTokens.textPrimary.toProvider(DONE_OPACITY)
     val iconDone = ColorTokens.textSecondary.toProvider(DONE_OPACITY)
     val accentDone = ColorTokens.accent.toProvider(DONE_OPACITY)
-    val inboxListDone = ColorTokens.inboxList.toProvider(DONE_OPACITY)
     val inactiveDone = ColorTokens.inactive.toProvider(DONE_OPACITY)
 
     val checkHigh = WidgetCheckTokens.high.toProviders()
-    val checkMedium = WidgetCheckTokens.medium.toProviders()
-    val checkLow = WidgetCheckTokens.low.toProviders()
     val checkNone = WidgetCheckTokens.none.toProviders()
 
     val priorityHigh = PriorityTokens.high.toProviders()
-    val priorityMedium = PriorityTokens.medium.toProviders()
-    val priorityLow = PriorityTokens.low.toProviders()
     val priorityNone = PriorityTokens.none.toProviders()
 }
 
-data class WidgetCheckColors(val ring: ColorProvider, val fill: ColorProvider)
+data class WidgetCheckColors(val ring: ColorProvider, val fill: ColorProvider, val done: ColorProvider)
 
 data class WidgetPriorityColors(val container: ColorProvider, val content: ColorProvider)
 
@@ -57,4 +51,4 @@ private const val DONE_OPACITY = 0.7f
 
 private fun PriorityColorTokens.toProviders() = WidgetPriorityColors(container.toProvider(), content.toProvider())
 
-private fun CheckTokens.toProviders() = WidgetCheckColors(ring.toProvider(), fill.toProvider())
+private fun CheckTokens.toProviders() = WidgetCheckColors(ring.toProvider(), fill.toProvider(), done.toProvider())

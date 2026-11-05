@@ -46,7 +46,7 @@ class AllViewModelTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(dispatcher)
-        projects.tree.value = projects.tree.value.copy(ungrouped = listOf(ProjectWithCount(project("work", "Работа", color = "#3D8BFD"), 0)))
+        projects.tree.value = projects.tree.value.copy(ungrouped = listOf(ProjectWithCount(project("work", "Работа", emoji = "💼"), 0)))
         tasks.tasks.value = listOf(
             task("late", projectId = "work", due = TaskDue.AllDay(today.minusDays(1))),
             task("allday", due = TaskDue.AllDay(today)),
@@ -111,7 +111,8 @@ class AllViewModelTest {
         assertEquals(listOf("timed"), state.todayTimed.map { it.id })
         assertEquals(listOf("next"), state.upcoming.map { it.id })
         assertEquals("Работа", state.overdue.single().listName)
-        assertEquals("#3D8BFD", state.overdue.single().listColor)
+        assertEquals("💼", state.overdue.single().listEmoji)
+        assertEquals("📥", state.todayAllDay.single().listEmoji)
         assertEquals(DayLabel.Yesterday, state.overdue.single().due!!.day)
         assertEquals("10:00", state.todayTimed.single().due!!.time)
         assertTrue(state.todayAllDay.single().isInboxList)

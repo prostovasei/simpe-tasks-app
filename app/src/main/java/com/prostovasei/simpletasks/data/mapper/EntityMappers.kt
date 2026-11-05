@@ -53,6 +53,7 @@ internal fun ProjectEntity.toDomain() = Project(
     createdAt = Instant.ofEpochMilli(createdAt),
     updatedAt = Instant.ofEpochMilli(updatedAt),
     icon = icon,
+    emoji = emoji,
 )
 
 internal fun ProjectWithOpenCount.toDomain() = ProjectWithCount(project.toDomain(), openCount)

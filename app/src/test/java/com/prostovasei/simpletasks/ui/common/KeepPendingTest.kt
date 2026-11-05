@@ -1,6 +1,5 @@
 package com.prostovasei.simpletasks.ui.common
 
-import com.prostovasei.simpletasks.designsystem.theme.parseListColor
 import androidx.compose.ui.graphics.Color
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -35,14 +34,5 @@ class KeepPendingTest {
     @Test
     fun notPendingRemovedItemDisappears() {
         assertEquals(listOf("a"), keep(listOf("a", "b"), listOf("a"), setOf("z")))
-    }
-
-    @Test
-    fun listColorParsing() {
-        assertEquals(Color(0xFF3D8BFD), parseListColor("#3D8BFD"))
-        assertEquals(Color(0x803D8BFD), parseListColor("#803D8BFD"))
-        assertNull(parseListColor(null))
-        assertNull(parseListColor("blue"))
-        assertNull(parseListColor("#12"))
     }
 }

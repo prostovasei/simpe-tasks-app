@@ -18,6 +18,7 @@ import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
 import com.prostovasei.simpletasks.designsystem.tokens.SpacingTokens
 import com.prostovasei.simpletasks.designsystem.tokens.ThemedColor
 import com.prostovasei.simpletasks.designsystem.tokens.WeekRowTokens
+import com.prostovasei.simpletasks.designsystem.tokens.WidgetCheckTokens
 import com.prostovasei.simpletasks.domain.model.Priority
 import com.prostovasei.simpletasks.ui.common.TaskItem
 import com.prostovasei.simpletasks.ui.feature.week.WEEK_LENGTH
@@ -91,10 +92,10 @@ object WidgetWeekRows {
         val isToday = day.date == today
         val shown = day.items.take(capacity)
         val hidden = day.items.size - shown.size
-        // Сегодня (0.46.0, проверка PM): без кружка — день недели и число жирные и основного цвета; остальные дни — обычным шрифтом,
-        // число серое. Жирность — через начертание в тексте: у RemoteViews нет смены шрифта.
+        // Сегодня (0.46.0, проверка PM): без кружка — день недели и число жирные и основного цвета. Итерация 47: остальные дни —
+        // день недели и число одним нежирным начертанием (Medium) и серые. Жирность — через начертание в тексте: у RemoteViews нет смены шрифта.
         setTextViewText(ids.weekday, day.date.dayOfWeek.getDisplayName(TextStyle.SHORT, RU).bold(isToday))
-        color(ids.weekday, "setTextColor", ColorTokens.textPrimary)
+        color(ids.weekday, "setTextColor", if (isToday) ColorTokens.textPrimary else ColorTokens.textSecondary)
         setTextViewText(ids.number, day.date.dayOfMonth.toString().bold(isToday))
         color(ids.number, "setTextColor", if (isToday) ColorTokens.textPrimary else ColorTokens.textSecondary)
         visible(ids.more, hidden > 0)
@@ -105,25 +106,34 @@ object WidgetWeekRows {
         ids.slots.forEachIndexed { index, slot ->
             val item = shown.getOrNull(index)
             setViewVisibility(slot.plaque, if (item != null) View.VISIBLE else if (index < capacity) View.INVISIBLE else View.GONE)
-            if (item != null) slot(context, slot, item, overdue = day.date < today && !item.showsDone, click)
+            if (item != null) slot(context, slot, item, click)
         }
     }
 
     /**
-     * Строка задачи в ячейке (0.46.0, `VariantK2`): фон по приоритету (без приоритета и у выполненной — белый), выполненная — серая и
-     * зачёркнутая с серым кружком, будущий повтор — наполовину прозрачный. Всё, что зависит от задачи, пишется заново.
+     * Строка задачи в ячейке (0.46.0, `VariantK2`; итерация 47 — `VariantH2`): фон — бледный фиолетовый у высокого приоритета, иначе
+     * белый; у повторяющейся — знак повтора вместо кружка; выполненная — серая и зачёркнутая, кружок залит тусклым цветом приоритета;
+     * будущий повтор — как обычная, но без нажатия на знак; просроченное время не красное. Всё, что зависит от задачи, пишется заново.
      */
-    private fun RemoteViews.slot(context: Context, ids: SlotIds, item: TaskItem, overdue: Boolean, click: Click) {
+    private fun RemoteViews.slot(context: Context, ids: SlotIds, item: TaskItem, click: Click) {
         val done = item.showsDone
-        val ringColor = when {
+        val high = item.priority == Priority.HIGH
+        val nodeColor = when {
+            done && high -> WidgetCheckTokens.high.done
             done -> WeekRowTokens.doneMark
-            item.isGhost -> ColorTokens.inactive
-            else -> ring(item.priority)
+            high -> WidgetCheckTokens.high.ring
+            else -> ColorTokens.inactive
         }
-        setInt(ids.plaque, "setBackgroundResource", if (done) R.drawable.widget_week_plaque_plain else plaque(item.priority))
-        setFloat(ids.plaque, "setAlpha", if (item.isGhost) GHOST_ALPHA else 1f)
-        setImageViewResource(ids.node, if (done) R.drawable.ic_widget_node_fill else R.drawable.ic_widget_node_ring)
-        color(ids.node, "setColorFilter", ringColor)
+        setInt(ids.plaque, "setBackgroundResource", plaque(item.priority))
+        setImageViewResource(
+            ids.node,
+            when {
+                done -> R.drawable.ic_widget_node_fill
+                item.isRecurring -> R.drawable.ic_repeat_round
+                else -> R.drawable.ic_widget_node_ring
+            },
+        )
+        color(ids.node, "setColorFilter", nodeColor)
         visible(ids.tick, done)
         setContentDescription(
             ids.node,
@@ -151,11 +161,7 @@ object WidgetWeekRows {
         color(
             ids.title,
             "setTextColor",
-            when {
-                done -> ColorTokens.inactive
-                item.isGhost -> ColorTokens.textSecondary
-                else -> ColorTokens.textPrimary
-            },
+            if (done) ColorTokens.inactive else ColorTokens.textPrimary,
         )
         val time = item.startTime()
         visible(ids.time, time != null)
@@ -163,11 +169,7 @@ object WidgetWeekRows {
         color(
             ids.time,
             "setTextColor",
-            when {
-                overdue -> ColorTokens.overdue
-                done -> ColorTokens.inactive
-                else -> ColorTokens.textSecondary
-            },
+            if (done) ColorTokens.inactive else ColorTokens.textSecondary,
         )
         // Без времени название доходит до края плашки — нужен правый отступ.
         setViewPadding(ids.plaque, 0, 0, if (time == null) dp(context, SpacingTokens.XS) else 0, 0)
@@ -210,13 +212,8 @@ object WidgetWeekRows {
     /** Фон строки задачи по приоритету. */
     private fun plaque(priority: Priority): Int = when (priority) {
         Priority.HIGH -> R.drawable.widget_week_plaque_high
-        Priority.MEDIUM -> R.drawable.widget_week_plaque_medium
-        Priority.LOW -> R.drawable.widget_week_plaque_low
         Priority.NONE -> R.drawable.widget_week_plaque_plain
     }
 
     private fun dp(context: Context, value: Int): Int = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, value.toFloat(), context.resources.displayMetrics).toInt()
-
-    /** Будущий повтор — наполовину прозрачный, как в приложении. */
-    private const val GHOST_ALPHA = 0.5f
 }

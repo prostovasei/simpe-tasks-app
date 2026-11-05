@@ -37,7 +37,7 @@ class AndroidReminderAlarmTest {
 
     @Test
     fun setsAlarmClockAndCancels() {
-        val at = Instant.parse("2026-10-26T15:00:00Z")
+        val at = Instant.parse("2099-10-26T15:00:00Z")
         AndroidReminderAlarm(context).setAt(at)
 
         val alarm = alarms.reminderAlarm()
@@ -52,7 +52,7 @@ class AndroidReminderAlarmTest {
     @Test
     fun exactOffSetsPlainExactAlarm() {
         prefs.edit().putBoolean("exact_alarm_clock", false).commit()
-        val at = Instant.parse("2026-10-26T15:00:00Z")
+        val at = Instant.parse("2099-10-26T15:00:00Z")
         AndroidReminderAlarm(context).setAt(at)
 
         val alarm = alarms.reminderAlarm()

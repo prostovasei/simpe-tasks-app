@@ -1,5 +1,6 @@
 package com.prostovasei.simpletasks.ui.common
 
+import com.prostovasei.simpletasks.domain.model.ListEmoji
 import com.prostovasei.simpletasks.domain.model.Priority
 import com.prostovasei.simpletasks.domain.model.Project
 import com.prostovasei.simpletasks.domain.model.ReminderMark
@@ -17,7 +18,8 @@ data class TaskItem(
     val priority: Priority,
     val due: DueText?,
     val listName: String?,
-    val listColor: String?,
+    /** Эмодзи списка (итерация 47) — вместо цвета и значка. */
+    val listEmoji: String,
     val isInboxList: Boolean,
     /** Отмечена только что, а БД ещё не ответила: показывается выполненной сразу (итерация 27). */
     val isCompleting: Boolean = false,
@@ -28,8 +30,6 @@ data class TaskItem(
     val isRecurring: Boolean = false,
     /** Будущий повтор задачи [ghostOf] — только для показа: бледный, без галочки. */
     val ghostOf: String? = null,
-    /** Значок списка — ключ из [ListIcons] (у «Входящих» свой). */
-    val listIcon: String? = null,
     /** Колокольчик (итерация 27): в момент срока или со стрелкой назад — заранее (0.27.1); null — напоминаний нет. */
     val reminder: ReminderMark? = null,
     /** Мелкая подпись под названием (итерация 39): в корзине — «удалена 28 окт». */
@@ -52,13 +52,12 @@ fun Task.toItem(projects: Map<String, Project>, today: LocalDate, zone: ZoneId, 
         priority = priority,
         due = DueFormatter.format(due, start, today, zone),
         listName = project?.name,
-        listColor = project?.color,
+        listEmoji = project?.emojiShown ?: ListEmoji.DEFAULT,
         isInboxList = project?.isInbox == true,
         isCompleting = id in pending,
         isDone = isCompleted,
         isRecurring = rrule != null && due != null,
         ghostOf = id.takeIf { ghostIndex != null },
-        listIcon = if (project?.isInbox == true) ListIcons.INBOX else project?.icon,
         reminder = Reminders.mark(due, reminders),
     )
 }
