@@ -38,6 +38,32 @@ def tall_repeat(color, h, w=18):
             f'<path d="{a}"/></svg></span>')
 
 
+def round_repeat(color, size=16):
+    """Знак повтора у задачи без длительности (решение PM): круг из двух половин, стрелки посередине левой и правой сторон —
+    как у вытянутого знака, только круглый."""
+    c, g, r, k = size / 2, 1.4, size / 2 - 2.2, 1.8
+    L, R = c - r, c + r
+    a = (f'M{L} {c - g}A{r} {r} 0 0 1 {R} {c - g}'
+         f'M{R - k} {c - g - k}L{R} {c - g}L{R + k} {c - g - k}'
+         f'M{R} {c + g}A{r} {r} 0 0 1 {L} {c + g}'
+         f'M{L - k} {c + g + k}L{L} {c + g}L{L + k} {c + g + k}')
+    return (f'<span style="width:{size}px;height:{size}px;border-radius:50%;background:{BG};display:flex;flex-shrink:0;">'
+            f'<svg width="{size}" height="{size}" viewBox="0 0 {size} {size}" fill="none" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="overflow:visible">'
+            f'<path d="{a}"/></svg></span>')
+
+
+_old_mark = pt.mark
+
+
+def _mark(size, ring, done=False, rep=False, faded=None, stroke=2):
+    if rep and not done:
+        return round_repeat(ring, size + 1)
+    return _old_mark(size, ring, done, rep, faded, stroke)
+
+
+pt.mark = _mark
+
+
 def node(kind, high=False, done=False, rep=False, h=36, option='C'):
     """Кружок (dot) или капсула периода (cap). Повтор: у кружка — иконка вместо кружка; у капсулы — вариант A (иконка внутри
     капсулы сверху) или B (иконка над капсулой, капсула короче)."""
