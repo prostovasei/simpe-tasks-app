@@ -9,6 +9,7 @@ import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
 import com.prostovasei.simpletasks.designsystem.tokens.SpacingTokens
 import com.prostovasei.simpletasks.designsystem.tokens.ThemedColor
 import com.prostovasei.simpletasks.designsystem.tokens.WeekRowTokens
+import com.prostovasei.simpletasks.designsystem.tokens.WidgetCheckTokens
 import com.prostovasei.simpletasks.ui.common.DONE_ALPHA
 import androidx.compose.ui.graphics.toArgb
 import org.junit.Assert.assertEquals
@@ -87,6 +88,7 @@ class WidgetRowResourcesTest {
             R.color.widget_week_medium to WeekRowTokens.medium.pick(),
             R.color.widget_week_low to WeekRowTokens.low.pick(),
             R.color.widget_week_done to WeekRowTokens.doneMark.pick(),
+            R.color.widget_ring_none to WidgetCheckTokens.none.ring.pick(),
         )
     }
 

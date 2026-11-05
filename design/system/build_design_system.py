@@ -39,9 +39,10 @@ for m in re.finditer(r'val (\w+) = ThemedColor\(light = 0x(\w+), dark = 0x(\w+)\
 for m in re.finditer(r'val (high|medium|low|none) = PriorityColorTokens\(\s*container = ThemedColor\(light = 0x(\w+), dark = 0x(\w+)\),\s*content = ThemedColor\(light = 0x(\w+), dark = 0x(\w+)\)', color_src):
     COLORS[f'priority-{m[1]}-bg'] = (hexcolor(m[2]), hexcolor(m[3]))
     COLORS[f'priority-{m[1]}-text'] = (hexcolor(m[4]), hexcolor(m[5]))
-for m in re.finditer(r'val (high|medium|low|none) = CheckTokens\(ring = ThemedColor\(light = 0x(\w+), dark = 0x(\w+)\), fill = ThemedColor\(light = 0x(\w+), dark = 0x(\w+)\)\)', color_src):
+for m in re.finditer(r'val (high|medium|low|none) = CheckTokens\(ring = ThemedColor\(light = 0x(\w+), dark = 0x(\w+)\), fill = ThemedColor\(light = 0x(\w+), dark = 0x(\w+)\), check = ThemedColor\(light = 0x(\w+), dark = 0x(\w+)\)\)', color_src):
     COLORS[f'ring-{m[1]}'] = (hexcolor(m[2]), hexcolor(m[3]))
     COLORS[f'ring-{m[1]}-fill'] = (hexcolor(m[4]), hexcolor(m[5]))
+    COLORS[f'ring-{m[1]}-check'] = (hexcolor(m[6]), hexcolor(m[7]))
 LIST_PRESETS = re.findall(r'"(#[0-9A-Fa-f]{6})"', color_src.split('presets')[1].split(')')[0])
 LIST_NAMES = ['red', 'orange', 'yellow', 'green', 'teal', 'blue', 'purple', 'pink', 'gray']
 
@@ -75,13 +76,19 @@ COLOR_USAGE = {
     'priority-medium-bg': 'Плашка P2: фон.', 'priority-medium-text': 'Плашка P2: текст на `priority-medium-bg`.',
     'priority-low-bg': 'Плашка P3: фон.', 'priority-low-text': 'Плашка P3: текст на `priority-low-bg`.',
     'priority-none-bg': 'Плашка без приоритета: фон.', 'priority-none-text': 'Плашка без приоритета: текст на `priority-none-bg`.',
-    'ring-high': 'Цвет приоритета P1: кружок «выполнено», кнопка приоритета, шкала. На `surface` 3,9:1 в светлой теме.', 'ring-high-fill': 'Лёгкая заливка кружка P1 в виджете.',
-    'ring-medium': 'Цвет приоритета P2: кружок «выполнено», кнопка приоритета, шкала. На `surface` 2,5:1 в светлой теме (ниже 3:1): значение из приложения сохранено, приоритет не передавай одним цветом там, где важна точность.', 'ring-medium-fill': 'Лёгкая заливка кружка P2 в виджете.',
-    'ring-low': 'Цвет приоритета P3: кружок «выполнено», кнопка приоритета, шкала. На `surface` 3,3:1 в светлой теме.', 'ring-low-fill': 'Лёгкая заливка кружка P3 в виджете.',
-    'week-row-high': 'Вид «Неделя»: бледный фон строки задачи P1.', 'week-row-medium': 'Вид «Неделя»: бледный фон строки задачи P2.',
-    'week-row-low': 'Вид «Неделя»: бледный фон строки задачи P3. Без приоритета и у выполненной — `surface`.',
+    'ring-high': 'Приоритет P1 (итерация 46 — графит, без цвета): самый тёмный кружок, обводка толще (`size-checkbox-stroke-high`); кнопка приоритета, шкала. В тёмной теме — самый светлый.',
+    'ring-medium': 'Приоритет P2: тёмно-серый кружок, кнопка приоритета, шкала.',
+    'ring-low': 'Приоритет P3: светло-серый кружок. Только вместе с другими признаками: по одному оттенку уровни различаются слабо.',
+    'ring-none': 'Без приоритета: бледный кружок (в приложении и виджете).',
+    'ring-high-fill': 'Заливки кружка нет (прозрачный).', 'ring-medium-fill': 'Заливки кружка нет (прозрачный).', 'ring-low-fill': 'Заливки кружка нет (прозрачный).', 'ring-none-fill': 'Заливки кружка нет (прозрачный).',
+    'ring-high-check': 'Галочка выполненной на кружке, залитом `ring-high`.', 'ring-medium-check': 'Галочка выполненной на кружке, залитом `ring-medium`.',
+    'ring-low-check': 'Галочка выполненной на кружке, залитом `ring-low`.', 'ring-none-check': 'Галочка выполненной на кружке, залитом `ring-none`, и на `week-row-done-mark`.',
+    'week-row-high': 'Вид «Неделя» (вариант 2 «Контрастный графит»): фон строки P1 — почти чёрный (в тёмной теме светлый).',
+    'week-row-high-content': 'Текст и кружок на `week-row-high`.', 'week-row-high-time': 'Время на `week-row-high`.', 'week-row-high-overdue': 'Просроченное время на `week-row-high`.',
+    'week-row-medium': 'Вид «Неделя»: фон строки P2 — средне-серый.', 'week-row-medium-content': 'Текст и кружок на `week-row-medium`.',
+    'week-row-medium-time': 'Время на `week-row-medium`.', 'week-row-medium-overdue': 'Просроченное время на `week-row-medium`.',
+    'week-row-low': 'Вид «Неделя»: фон строки P3 — светло-серый. Без приоритета и у выполненной — `surface`.',
     'week-row-done-mark': 'Вид «Неделя»: серый залитый кружок выполненной задачи (текст выполненной — `inactive`, зачёркнут).',
-    'ring-none': 'Кружок без приоритета в виджете.', 'ring-none-fill': 'Без заливки (прозрачный).',
 }
 LIST_USAGE = 'Цвет списка из набора «Цвет» (хранится в БД как HEX; набор — часть системы).'
 
@@ -111,7 +118,7 @@ SIZE_PICK = {
     'WEEKVIEW_HEADER': ('weekview-header', 'Вид «Неделя»: строка даты ячейки.'), 'WEEKVIEW_CAL_ROW': ('weekview-cal-row', 'Мини-календарь: наибольшая высота строки недели.'),
     'WEEKVIEW_CAL_ROW_MIN': ('weekview-cal-row-min', 'Мини-календарь: наименьшая высота строки недели.'),
     'WEEKVIEW_CAL_WEEKDAYS': ('weekview-cal-weekdays', 'Мини-календарь: строка «пн…вс».'), 'WEEKVIEW_CAL_TODAY': ('weekview-cal-today', 'Мини-календарь и строка даты: кружок «сегодня» цвета `accent`.'),
-    'CHECKBOX': ('checkbox', 'Квадратная галочка чек-листа.'), 'CHECKBOX_STROKE': ('stroke', 'Толщина рамки галочек и кружков.'), 'CHECKBOX_TOUCH': ('checkbox-touch', 'Зона нажатия галочки.'),
+    'CHECKBOX': ('checkbox', 'Квадратная галочка чек-листа.'), 'CHECKBOX_STROKE': ('stroke', 'Толщина рамки галочек и кружков.'), 'CHECKBOX_STROKE_HIGH': ('checkbox-stroke-high', 'Обводка кружка высокого приоритета (итерация 46): толще обычной.'), 'CHECKBOX_TOUCH': ('checkbox-touch', 'Зона нажатия галочки.'),
     'META_ICON': ('meta-icon', 'Значок повтора в плашке.'), 'REMINDER_ICON': ('reminder-icon', 'Колокольчик в плашке приложения.'),
     'COLOR_SWATCH': ('color-swatch', 'Образец цвета списка в выборе.'), 'ICON': ('icon', 'Обычный значок.'),
     'SHEET_HANDLE_WIDTH': ('sheet-handle-width', 'Ручка шторки: ширина.'), 'SHEET_HANDLE_HEIGHT': ('sheet-handle-height', 'Ручка шторки: высота.'),
@@ -598,7 +605,7 @@ COMP_README = {
 Без даты — одна серая подпись «Без даты и времени» (`text-secondary`), крестика и поля времени нет. Нет времени — поля времени нет.
 Передавай: выбранные день и время (период — «17:00–18:00»). Не показывай время без даты.'''),
     'DoneCircle': ('Круг «выполнено» слева от названия созданной задачи; цвет — приоритет.',
-                   '''Диаметр `size-done-circle` (22), контур `size-stroke` (2). Цвет контура — приоритет задачи (`ring-high`, `ring-medium`, `ring-low`); без приоритета — `text-secondary`.
+                   '''Диаметр `size-done-circle` (22), контур `size-stroke` (2). Цвет контура — приоритет задачи (`ring-high`, `ring-medium`, `ring-low` — графит, итерация 46); без приоритета — `text-secondary`.
 У выполненной — заливка тем же цветом и белая галочка `size-done-check` (14); без приоритета заливка `accent`. Круг вплотную к левому краю текста, зона нажатия шире круга.
 У новой задачи круга нет. Не используй для приоритета значок P1 рядом с названием: цвет круга и кнопки — единственный знак приоритета.'''),
     'ReminderBell': ('Колокольчик уведомлений в трёх видах: в момент срока, заранее, несколько.',
@@ -633,10 +640,10 @@ COMP_README = {
                        '''Окно по центру (`SheetDialog` без «Готово»), единственная кнопка — «Закрыть». Два месяца: текущий и следующий, недели с понедельника.
 Прошедшие дни бледные и недоступны, сегодня в кольце, выбранный чёрный. Месяц нигде больше не открывается.'''),
     'TimelineRow': ('Строка шкалы дня: время слева, кружок приоритета на линии, белая плашка с названием.',
-                    '''Высота `size-widget-row` (46), у периода `size-widget-period-row` (64). Колонка времени `size-widget-time` (38) справа выровнена, колонка линии `size-widget-rail` (26), кружок `size-widget-node` (20), контур `size-stroke`.
+                    '''Высота `size-widget-row` (46), у периода `size-widget-period-row` (64). Колонка времени `size-widget-time` (38) справа выровнена, колонка линии `size-widget-rail` (26), кружок `size-widget-node` (20), контур `size-stroke`. Приоритет (итерация 46, вариант А — без цвета): кружок `ring-high` (самый тёмный, контур `size-checkbox-stroke-high`), `ring-medium`, `ring-low`, без приоритета `ring-none`.
 Плашка — `surface`, радиус `radius-md`, щель сверху и снизу `size-widget-card-inset` (3), внутри `space-sm`. Название — `body-medium` Bold; справа повтор, колокольчик, квадратик списка.
 Период: кружок растягивается в капсулу на всю высоту плашки, конец периода серым под началом. Просрочка: время и день красные (`overdue`), кружок `inactive`.
-Выполнена: кружок залит цветом приоритета с белой галочкой, плашка 70%, название зачёркнуто. Тот же вид в приложении и в виджете.'''),
+Выполнена: кружок залит цветом приоритета с галочкой `ring-*-check`, плашка 70%, название зачёркнуто. Тот же вид в приложении и в виджете.'''),
 }
 
 

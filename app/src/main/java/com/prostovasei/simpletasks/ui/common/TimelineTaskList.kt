@@ -253,12 +253,21 @@ private fun Rail(row: WidgetRow.Task, top: Boolean, bottom: Boolean, faded: Bool
     val colors = AppTheme.colors
     val item = row.item
     // Итерация 27.1 (вариант PM «А»): кружок всегда цвета приоритета, просрочка — красными подписью дня и временем.
+    // Итерация 46 (вариант А): цвет приоритета — графит по уровню, у высокого обводка толще.
     val ring = when {
         faded && !item.showsDone -> colors.inactive
         item.priority == Priority.HIGH -> colors.checkRings.high
         item.priority == Priority.MEDIUM -> colors.checkRings.medium
         item.priority == Priority.LOW -> colors.checkRings.low
-        else -> colors.inactive
+        else -> colors.checkRings.none
+    }
+    val stroke = if (item.priority == Priority.HIGH) SizeTokens.CHECKBOX_STROKE_HIGH else SizeTokens.CHECKBOX_STROKE
+    val check = when {
+        selected == true -> colors.onAccent
+        item.priority == Priority.HIGH -> colors.checkMarks.high
+        item.priority == Priority.MEDIUM -> colors.checkMarks.medium
+        item.priority == Priority.LOW -> colors.checkMarks.low
+        else -> colors.checkMarks.none
     }
     val label = stringResource(
         when {
@@ -278,11 +287,11 @@ private fun Rail(row: WidgetRow.Task, top: Boolean, bottom: Boolean, faded: Bool
     ) {
         if (row.isPeriod) {
             Segment(top, Modifier.height(SizeTokens.WIDGET_PERIOD_STUB.dp))
-            Node(if (selected == true) colors.accent else ring, if (selected != null) (if (selected) 1f else 0f) else done, Modifier.width(SizeTokens.WIDGET_NODE.dp).weight(1f))
+            Node(if (selected == true) colors.accent else ring, if (selected != null) (if (selected) 1f else 0f) else done, Modifier.width(SizeTokens.WIDGET_NODE.dp).weight(1f), stroke, check)
             Segment(bottom, Modifier.height(SizeTokens.WIDGET_PERIOD_STUB.dp))
         } else {
             Segment(top, Modifier.weight(1f))
-            Node(if (selected == true) colors.accent else ring, if (selected != null) (if (selected) 1f else 0f) else done, Modifier.size(SizeTokens.WIDGET_NODE.dp))
+            Node(if (selected == true) colors.accent else ring, if (selected != null) (if (selected) 1f else 0f) else done, Modifier.size(SizeTokens.WIDGET_NODE.dp), stroke, check)
             Segment(bottom, Modifier.weight(1f))
         }
     }
@@ -290,14 +299,14 @@ private fun Rail(row: WidgetRow.Task, top: Boolean, bottom: Boolean, faded: Bool
 
 /** Кружок или капсула: кольцо цвета [ring]; при [done] → 1 заливается тем же цветом, по центру белая галочка. */
 @Composable
-private fun Node(ring: Color, done: Float, modifier: Modifier) {
-    Box(modifier.border(SizeTokens.CHECKBOX_STROKE.dp, ring, CircleShape), contentAlignment = Alignment.Center) {
+private fun Node(ring: Color, done: Float, modifier: Modifier, stroke: Int = SizeTokens.CHECKBOX_STROKE, check: Color = AppTheme.colors.onAccent) {
+    Box(modifier.border(stroke.dp, ring, CircleShape), contentAlignment = Alignment.Center) {
         if (done > 0f) {
             Box(Modifier.matchParentSize().alpha(done).background(ring, CircleShape))
             Icon(
                 painterResource(R.drawable.ic_node_check),
                 null,
-                tint = AppTheme.colors.onAccent,
+                tint = check,
                 modifier = Modifier.size(SizeTokens.NODE_CHECK.dp).alpha(done),
             )
         }

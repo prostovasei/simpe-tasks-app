@@ -50,6 +50,9 @@ object SizeTokens {
     const val NAV_SHADOW = 10
     const val CHECKBOX = 18
     const val CHECKBOX_STROKE = 2
+
+    /** Обводка кружка высокого приоритета (итерация 46, вариант А): толще обычной. */
+    const val CHECKBOX_STROKE_HIGH = 3
     const val SWATCH = 32
     const val PROGRESS_HEIGHT = 6
     const val LIST_DOT = 10

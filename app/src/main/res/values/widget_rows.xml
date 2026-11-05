@@ -48,16 +48,16 @@
     <color name="widget_on_accent">#FFFFFFFF</color>
     <color name="widget_on_list_square">#FFFFFFFF</color>
     <color name="widget_text_primary">#FF16171D</color>
-    <color name="widget_ring_none">#FF8B949E</color>
+    <color name="widget_ring_none">#FFC4C6CA</color>
     <color name="widget_selected">#FFE8E8E8</color>
     <color name="widget_text_done">#B316171D</color>
     <color name="widget_icon_done">#B362656E</color>
     <color name="widget_accent_done">#B316171D</color>
     <color name="widget_inactive">#FFA9A9A9</color>
     <!-- Строки «Недели» (0.46.0): фон по приоритету и серая отметка выполненной — WeekRowTokens. -->
-    <color name="widget_week_high">#FFFDECEC</color>
-    <color name="widget_week_medium">#FFFDF4E3</color>
-    <color name="widget_week_low">#FFEAF2FC</color>
+    <color name="widget_week_high">#FF2E2F33</color>
+    <color name="widget_week_medium">#FFD0D1D4</color>
+    <color name="widget_week_low">#FFEAEBEC</color>
     <color name="widget_week_done">#FFBDBDBD</color>
     <color name="widget_accent_soft">#FFEAEAEA</color>
 </resources>

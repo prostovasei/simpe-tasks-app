@@ -61,47 +61,60 @@ object ListColorTokens {
     )
 }
 
-/** Цвета плашек приоритетов (SPEC.md §3). Текст подобран с контрастом не ниже 4.5:1. */
+/**
+ * Цвета плашек приоритетов (SPEC.md §3). С итерации 46 (решение PM, «очень цветасто») — графит: высокий почти чёрный с белым текстом,
+ * средний и низкий — серые, в тёмной теме наоборот. Текст подобран с контрастом не ниже 4.5:1.
+ */
 object PriorityTokens {
     val high = PriorityColorTokens(
-        container = ThemedColor(light = 0xFFFFCDD2, dark = 0xFF5C1D1D),
-        content = ThemedColor(light = 0xFFB71C1C, dark = 0xFFFFB4AB),
+        container = ThemedColor(light = 0xFF2E2F33, dark = 0xFFE4E5E7),
+        content = ThemedColor(light = 0xFFFFFFFF, dark = 0xFF16171D),
     )
     val medium = PriorityColorTokens(
-        container = ThemedColor(light = 0xFFFFE082, dark = 0xFF543B0C),
-        content = ThemedColor(light = 0xFF8A4B00, dark = 0xFFFFD180),
+        container = ThemedColor(light = 0xFFD0D1D4, dark = 0xFF4A4C51),
+        content = ThemedColor(light = 0xFF16171D, dark = 0xFFF2F2F2),
     )
     val low = PriorityColorTokens(
-        container = ThemedColor(light = 0xFFBBDEFB, dark = 0xFF0D3C61),
-        content = ThemedColor(light = 0xFF0D47A1, dark = 0xFF9CCBFF),
+        container = ThemedColor(light = 0xFFEAEBEC, dark = 0xFF2E3034),
+        content = ThemedColor(light = 0xFF3A3C42, dark = 0xFFD0D1D4),
     )
     val none = PriorityColorTokens(
         container = ThemedColor(light = 0xFFEEEEEE, dark = 0xFF242424),
         content = ThemedColor(light = 0xFF424242, dark = 0xFFBDBDBD),
     )
 }
-
 /**
  * Круглая галочка виджета: приоритет — цветом обводки и лёгкой заливки (решение PM, редизайн виджета).
  * [ring] — обводка, [fill] — заливка: непрозрачный оттенок поверх плашки дня (полупрозрачный оттенок
- * виджеты рисуют неровно). У задач без приоритета заливки нет.
+ * виджеты рисуют неровно). У задач без приоритета заливки нет. [check] — галочка выполненной на кружке, залитом [ring]
+ * (итерация 46: на светлом графите тёмной темы — тёмная, иначе белая).
  */
-data class CheckTokens(val ring: ThemedColor, val fill: ThemedColor)
+data class CheckTokens(val ring: ThemedColor, val fill: ThemedColor, val check: ThemedColor)
 
 object WidgetCheckTokens {
-    val high = CheckTokens(ring = ThemedColor(light = 0xFFE5484D, dark = 0xFFFF6B6B), fill = ThemedColor(light = 0xFFF4DFE2, dark = 0xFF43292B))
-    val medium = CheckTokens(ring = ThemedColor(light = 0xFFE09400, dark = 0xFFFFB020), fill = ThemedColor(light = 0xFFF4EAD7, dark = 0xFF43361E))
-    val low = CheckTokens(ring = ThemedColor(light = 0xFF3D8BFD, dark = 0xFF6AA8FF), fill = ThemedColor(light = 0xFFDDE9FA, dark = 0xFF283446))
-    val none = CheckTokens(ring = ThemedColor(light = 0xFF8B949E, dark = 0xFF7D8590), fill = ThemedColor(light = 0x00000000, dark = 0x00000000))
+    // Итерация 46 (вариант А, решение PM): приоритет — темнотой кружка, без цвета: высокий — чёрный (и толще, CHECKBOX_STROKE_HIGH),
+    // средний — тёмно-серый, низкий — светло-серый, без приоритета — бледный. В тёмной теме наоборот. Заливки нет.
+    val high = CheckTokens(ring = ThemedColor(light = 0xFF16171D, dark = 0xFFF2F2F2), fill = ThemedColor(light = 0x00000000, dark = 0x00000000), check = ThemedColor(light = 0xFFFFFFFF, dark = 0xFF16171D))
+    val medium = CheckTokens(ring = ThemedColor(light = 0xFF5F626B, dark = 0xFFB3B5BA), fill = ThemedColor(light = 0x00000000, dark = 0x00000000), check = ThemedColor(light = 0xFFFFFFFF, dark = 0xFF16171D))
+    val low = CheckTokens(ring = ThemedColor(light = 0xFF9A9DA4, dark = 0xFF7A7D84), fill = ThemedColor(light = 0x00000000, dark = 0x00000000), check = ThemedColor(light = 0xFFFFFFFF, dark = 0xFF16171D))
+    val none = CheckTokens(ring = ThemedColor(light = 0xFFC4C6CA, dark = 0xFF55575C), fill = ThemedColor(light = 0x00000000, dark = 0x00000000), check = ThemedColor(light = 0xFFFFFFFF, dark = 0xFFFFFFFF))
 }
 
 /**
- * Строки вида «Неделя» (итерация 45, макет `VariantK2`): бледный фон по приоритету (без приоритета — [ColorTokens.surface])
- * и серая отметка выполненной задачи. Те же цвета у приложения и у виджета.
+ * Строки вида «Неделя» (итерация 45; итерация 46 — вариант 2 «Контрастный графит» из рефа PM): фон по приоритету — высокий почти чёрный
+ * с белым текстом и кружком, средний — средне-серый, низкий — светло-серый, без приоритета — [ColorTokens.surface]; в тёмной теме наоборот.
+ * У высокого и среднего свои цвета текста (`*Content`), времени (`*Time`) и просрочки (`*Overdue`, на тёмной строке — светло-красный).
+ * Серая отметка выполненной задачи. Те же цвета у приложения и у виджета.
  */
 object WeekRowTokens {
-    val high = ThemedColor(light = 0xFFFDECEC, dark = 0xFF3A2222)
-    val medium = ThemedColor(light = 0xFFFDF4E3, dark = 0xFF3A2F1C)
-    val low = ThemedColor(light = 0xFFEAF2FC, dark = 0xFF1D2A3B)
+    val high = ThemedColor(light = 0xFF2E2F33, dark = 0xFFE4E5E7)
+    val highContent = ThemedColor(light = 0xFFFFFFFF, dark = 0xFF16171D)
+    val highTime = ThemedColor(light = 0xFFD8D9DC, dark = 0xFF4B4E56)
+    val highOverdue = ThemedColor(light = 0xFFFF8A80, dark = 0xFFC62828)
+    val medium = ThemedColor(light = 0xFFD0D1D4, dark = 0xFF4A4C51)
+    val mediumContent = ThemedColor(light = 0xFF16171D, dark = 0xFFF2F2F2)
+    val mediumTime = ThemedColor(light = 0xFF4B4E56, dark = 0xFFC9CBCF)
+    val mediumOverdue = ThemedColor(light = 0xFFC62828, dark = 0xFFFF8A80)
+    val low = ThemedColor(light = 0xFFEAEBEC, dark = 0xFF2E3034)
     val doneMark = ThemedColor(light = 0xFFBDBDBD, dark = 0xFF5A5A5A)
 }
