@@ -238,8 +238,8 @@ private fun TimeColumn(row: WidgetRow.Task, isOverdue: Boolean, faded: Boolean, 
 /**
  * Линия шкалы с кружком приоритета (у периода — капсула во всю высоту плашки); нажатие — «выполнено» или, у выполненной,
  * вернуть. [done] — доля перехода к выполненной: кольцо заливается цветом и появляется белая галочка. Итерация 47: у повторяющейся
- * задачи вместо кружка — знак повтора ([RepeatMark]: круглый, у периода — вытянутый); выполненная задача высокого приоритета
- * заливается тусклым фиолетовым.
+ * задачи вместо кружка — знак повтора ([RepeatMark]: круглый, у периода — вытянутый), у выполненной он остаётся без галочки,
+ * тусклым; выполненная задача высокого приоритета заливается тусклым фиолетовым.
  */
 @Composable
 private fun Rail(row: WidgetRow.Task, top: Boolean, bottom: Boolean, faded: Boolean, done: Float, testTag: String, onToggle: () -> Unit, selected: Boolean? = null) {
@@ -252,7 +252,9 @@ private fun Rail(row: WidgetRow.Task, top: Boolean, bottom: Boolean, faded: Bool
         else -> colors.inactive
     }
     val fill = if (item.priority == Priority.HIGH) colors.checkRings.highDone else ring
-    val repeat = item.isRecurring && !item.showsDone && selected == null
+    // Проверка PM (0.47.0): у выполненной повторяющейся галочки нет — знак повтора остаётся, тусклым цветом выполненной.
+    val repeat = item.isRecurring && selected == null
+    val repeatColor = if (item.showsDone) fill else ring
     val label = stringResource(
         when {
             selected != null -> if (selected) R.string.select_unmark else R.string.select_mark
@@ -273,7 +275,7 @@ private fun Rail(row: WidgetRow.Task, top: Boolean, bottom: Boolean, faded: Bool
             Segment(top, Modifier.height(SizeTokens.WIDGET_PERIOD_STUB.dp))
             val nodeModifier = Modifier.width(SizeTokens.WIDGET_NODE.dp).weight(1f)
             if (repeat) {
-                RepeatMark(ring, nodeModifier.testTag("$testTag:repeat"), tall = true)
+                RepeatMark(repeatColor, nodeModifier.testTag("$testTag:repeat"), tall = true)
             } else {
                 Node(if (selected == true) colors.accent else ring, if (selected != null) (if (selected) 1f else 0f) else done, nodeModifier, fill)
             }
@@ -281,7 +283,7 @@ private fun Rail(row: WidgetRow.Task, top: Boolean, bottom: Boolean, faded: Bool
         } else {
             Segment(top, Modifier.weight(1f))
             if (repeat) {
-                RepeatMark(ring, Modifier.size(SizeTokens.WIDGET_NODE.dp).testTag("$testTag:repeat"))
+                RepeatMark(repeatColor, Modifier.size(SizeTokens.WIDGET_NODE.dp).testTag("$testTag:repeat"))
             } else {
                 Node(if (selected == true) colors.accent else ring, if (selected != null) (if (selected) 1f else 0f) else done, Modifier.size(SizeTokens.WIDGET_NODE.dp), fill)
             }

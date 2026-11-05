@@ -156,10 +156,11 @@ private fun WeekTaskRow(item: TaskItem, onToggle: () -> Unit, onOpen: () -> Unit
             contentAlignment = Alignment.Center,
         ) {
             when {
+                // Проверка PM (0.47.0): выполненная повторяющаяся — знак повтора тусклым цветом, без галочки.
+                item.isRecurring -> RepeatMark(if (done) doneFill else ring, Modifier.size(SizeTokens.WEEKVIEW_CHECK.dp).testTag("week-repeat:${item.id}"))
                 done -> Box(Modifier.size(SizeTokens.WEEKVIEW_CHECK.dp).background(doneFill, CircleShape), contentAlignment = Alignment.Center) {
                     Icon(painterResource(R.drawable.ic_node_check), null, tint = colors.onListSquare, modifier = Modifier.size(SizeTokens.WEEKVIEW_CHECK_ICON.dp))
                 }
-                item.isRecurring -> RepeatMark(ring, Modifier.size(SizeTokens.WEEKVIEW_CHECK.dp).testTag("week-repeat:${item.id}"))
                 else -> Box(Modifier.size(SizeTokens.WEEKVIEW_CHECK.dp).border(SizeTokens.CHECKBOX_STROKE.dp, ring, CircleShape))
             }
         }

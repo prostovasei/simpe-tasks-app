@@ -121,17 +121,18 @@ object WidgetRows {
                     else -> ring(item.priority)
                 },
             )
-            if (!done) {
-                setImageViewResource(
-                    R.id.row_node,
-                    when {
-                        row.isPeriod && item.isRecurring -> R.drawable.ic_widget_period_repeat
-                        row.isPeriod -> R.drawable.widget_period_ring
-                        item.isRecurring -> R.drawable.ic_repeat_round
-                        else -> R.drawable.ic_widget_node_ring
-                    },
-                )
-            }
+            // Проверка PM (0.47.0): у выполненной повторяющейся галочки нет — знак повтора остаётся тусклым. Рисунок и галочка
+            // пишутся у каждой строки: строки одного макета переиспользуются лаунчером.
+            setImageViewResource(
+                R.id.row_node,
+                when {
+                    row.isPeriod && item.isRecurring -> R.drawable.ic_widget_period_repeat
+                    row.isPeriod -> if (done) R.drawable.widget_period_fill else R.drawable.widget_period_ring
+                    item.isRecurring -> R.drawable.ic_repeat_round
+                    else -> if (done) R.drawable.ic_widget_node_fill else R.drawable.ic_widget_node_ring
+                },
+            )
+            if (done) visible(R.id.row_node_check, !item.isRecurring)
             // У будущего повтора кружок ничего не отмечает (как раньше): пустое нажатие и без подписи.
             if (!done) setContentDescription(R.id.row_node, if (item.isGhost) null else context.getString(R.string.widget_complete))
             val check = when {

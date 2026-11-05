@@ -113,6 +113,16 @@ class WeekScreenTest {
         assertEquals(listOf("f2"), opened)
     }
 
+    /** Проверка PM (0.47.0): выполненная повторяющаяся — без галочки, знак повтора остаётся; нажатие возвращает её. */
+    @Test
+    fun doneRepeatKeepsTheRepeatMark() {
+        val state = weekState.copy(days = weekState.days.mapIndexed { i, d -> if (i == 0) d.copy(items = listOf(item("r1", "Бритьё", "09:00", done = true).copy(isRecurring = true))) else d })
+        show(state = state)
+        composeRule.onNodeWithTag("week-repeat:r1", useUnmergedTree = true).assertExists()
+        composeRule.onNodeWithTag("week-check:r1").performClick()
+        assertEquals(TaskListIntent.ToggleComplete("r1", recurring = true, done = true), intents.last())
+    }
+
     @Test
     fun calendarSelectsWeekWithoutMonthArrows() {
         show()

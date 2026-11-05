@@ -452,7 +452,7 @@ private fun SheetToolbar(
             tag = TAG_TOOL_LIST,
             clear = if (project?.isInbox == false && inbox != null) ClearAction(R.string.clear_list, TAG_CLEAR_LIST) { onEdit(FieldEdit.Project(inbox.id)) } else null,
             content = {
-                ListBadge(project?.emoji ?: ListEmoji.INBOX)
+                ListBadge(project?.emoji ?: ListEmoji.INBOX, large = true)
             },
         ) { open(ToolDialog.List) }
         ToolButton(

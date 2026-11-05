@@ -354,7 +354,8 @@ private fun Rail(row: WidgetRow.Task, line: Line) {
         else -> widgetCheckColors(item.priority).ring
     }
     // Итерация 47: у повторяющейся задачи вместо кружка — знак повтора (у периода — вытянутый).
-    val repeat = item.isRecurring && !done
+    // Проверка PM (0.47.0): у выполненной повторяющейся знак остаётся (тусклым), галочки нет.
+    val repeat = item.isRecurring
     val action = when {
         item.isGhost -> GlanceModifier
         done -> GlanceModifier.clickable(actionSendBroadcast(WidgetActions.uncomplete(context, item.id)))
@@ -369,25 +370,25 @@ private fun Rail(row: WidgetRow.Task, line: Line) {
             LineSegment(line.top, GlanceModifier.height(SizeTokens.WIDGET_PERIOD_STUB.dp))
             Box(GlanceModifier.width(SizeTokens.WIDGET_NODE.dp).defaultWeight(), contentAlignment = Alignment.Center) {
                 Image(
-                    ImageProvider(if (done) R.drawable.widget_period_fill else if (repeat) R.drawable.ic_widget_period_repeat else R.drawable.widget_period_ring),
+                    ImageProvider(if (repeat) R.drawable.ic_widget_period_repeat else if (done) R.drawable.widget_period_fill else R.drawable.widget_period_ring),
                     contentDescription = label,
                     colorFilter = ColorFilter.tint(color),
                     contentScale = ContentScale.FillBounds,
                     modifier = GlanceModifier.fillMaxSize(),
                 )
-                if (done) NodeCheck()
+                if (done && !repeat) NodeCheck()
             }
             LineSegment(line.bottom, GlanceModifier.height(SizeTokens.WIDGET_PERIOD_STUB.dp))
         } else {
             LineSegment(line.top, GlanceModifier.defaultWeight())
             Box(GlanceModifier.size(SizeTokens.WIDGET_NODE.dp), contentAlignment = Alignment.Center) {
                 Image(
-                    ImageProvider(if (done) R.drawable.ic_widget_node_fill else if (repeat) R.drawable.ic_repeat_round else R.drawable.ic_widget_node_ring),
+                    ImageProvider(if (repeat) R.drawable.ic_repeat_round else if (done) R.drawable.ic_widget_node_fill else R.drawable.ic_widget_node_ring),
                     contentDescription = label,
                     colorFilter = ColorFilter.tint(color),
                     modifier = GlanceModifier.size(SizeTokens.WIDGET_NODE.dp),
                 )
-                if (done) NodeCheck()
+                if (done && !repeat) NodeCheck()
             }
             LineSegment(line.bottom, GlanceModifier.defaultWeight())
         }

@@ -128,13 +128,14 @@ object WidgetWeekRows {
         setImageViewResource(
             ids.node,
             when {
-                done -> R.drawable.ic_widget_node_fill
+                // Проверка PM (0.47.0): выполненная повторяющаяся — знак повтора тусклым цветом, без галочки.
                 item.isRecurring -> R.drawable.ic_repeat_round
+                done -> R.drawable.ic_widget_node_fill
                 else -> R.drawable.ic_widget_node_ring
             },
         )
         color(ids.node, "setColorFilter", nodeColor)
-        visible(ids.tick, done)
+        visible(ids.tick, done && !item.isRecurring)
         setContentDescription(
             ids.node,
             when {

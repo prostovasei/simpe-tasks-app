@@ -92,7 +92,7 @@ SIZE_PICK = {
     'HAIRLINE': ('hairline', 'Тонкие рамки и линии.'),
     'CARD_GAP': ('card-gap', 'Щель между плашками задач.'),
     'LIST_SQUARE': ('list-square', 'Место под эмодзи списка перед названием (итерация 47: эмодзи вместо квадратика).'), 'LIST_GLYPH': ('list-glyph', 'Размер эмодзи списка в строке задачи.'),
-    'LIST_SQUARE_LARGE': ('list-square-large', 'Плитка эмодзи на экране «Списки» и в заголовке списка.'), 'LIST_GLYPH_LARGE': ('list-glyph-large', 'Размер эмодзи в большой плитке.'),
+    'LIST_SQUARE_LARGE': ('list-square-large', 'Поле крупного эмодзи: экран «Списки», заголовок списка, кнопка списка в шторке (без подложки).'), 'LIST_GLYPH_LARGE': ('list-glyph-large', 'Размер крупного эмодзи.'),
     'ICON_TILE': ('icon-tile', 'Плитка значка в окне выбора значка.'),
     'NAV_BAR': ('nav-bar', 'Высота нижней панели (закреплена внизу на всю ширину).'), 'NAV_TAB': ('nav-tab', 'Наибольшая ширина кнопки вкладки; вкладки делят ширину поровну.'),
     'NAV_ADD_W': ('nav-add-w', 'Кнопка «+» в панели: ширина.'), 'NAV_ADD_H': ('nav-add-h', 'Кнопка «+» в панели: высота.'),
@@ -351,7 +351,7 @@ def preview_done_circle():
     cells = ''
     for label, c, done_c in [('обычный', 'var(--inactive)', 'var(--inactive)'), ('высокий', 'var(--ring-high)', 'var(--ring-high-done)')]:
         cells += f'<div class="col">{circ(c)}<div class="cap">{label}</div></div><div class="col">{circ(done_c, True)}<div class="cap">выполнена: тусклый</div></div>'
-    for label, c in [('повтор', 'var(--inactive)'), ('повтор, высокий', 'var(--ring-high)')]:
+    for label, c in [('повтор', 'var(--inactive)'), ('повтор, высокий', 'var(--ring-high)'), ('повтор выполнен: тусклый, без галочки', 'var(--ring-high-done)')]:
         cells += f'<div class="col"><span style="color:{c};display:flex">{svg("ic_repeat_round", 22)}</span><div class="cap">{label}</div></div>'
     tall = svg('ic_widget_period_repeat', 20).replace('height="20"', 'height="58"', 1)
     cells += f'<div class="col"><span style="color:var(--ring-high);display:flex">{tall}</span><div class="cap">повтор с длительностью</div></div>'
@@ -368,12 +368,12 @@ def preview_bell():
 
 def preview_list_square():
     small = lambda e: f'<span style="width:16px;height:16px;font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center">{e}</span>'
-    large = lambda e: f'<span style="width:24px;height:24px;border-radius:var(--radius-md);background:var(--surface);font-size:16px;line-height:1;display:inline-flex;align-items:center;justify-content:center">{e}</span>'
+    large = lambda e: f'<span style="width:24px;height:24px;font-size:20px;line-height:1;display:inline-flex;align-items:center;justify-content:center">{e}</span>'
     row = ''.join(f'<div class="col"><div style="display:flex;gap:12px;align-items:center">{small(e)}{large(e)}</div><div class="cap">{n}</div></div>'
                   for e, n in [('📥', 'Входящие'), ('💼', 'Работа'), ('🏠', 'Дом'), ('📁', 'без эмодзи')])
     body = (f'<div class="row" style="align-items:flex-start;gap:20px">{row}</div><div style="height:16px"></div>'
-            f'<div style="font-size:13px;color:var(--text-secondary)">Строка задачи: {small("💼")} Работа · большая плитка — экран «Списки», заголовок списка</div>')
-    return doc('Основы', 170, 'Эмодзи списка: в строке задачи и на плитке', body)
+            f'<div style="font-size:13px;color:var(--text-secondary)">Строка задачи: {small("💼")} Работа · крупное — экран «Списки», заголовок списка, кнопка списка в шторке</div>')
+    return doc('Основы', 170, 'Эмодзи списка: в строке задачи и крупное — без подложки', body)
 
 
 def preview_icons():
@@ -392,8 +392,8 @@ def repeat_mark(color, h=20):
 
 
 def node(color, done=False, h=20, rep=False):
-    if rep and not done:
-        return repeat_mark(color, h)
+    if rep:  # проверка PM (0.47.0): у выполненной повторяющейся знак остаётся, тусклым, без галочки
+        return repeat_mark('var(--ring-high-done)' if done and color in ('var(--ring-high)', 'var(--ring-medium)') else color, h)
     if done and color in ('var(--ring-high)', 'var(--ring-medium)'):
         color = 'var(--ring-high-done)'
     if done:
@@ -625,15 +625,17 @@ COMP_README = {
 Передавай: выбранные день и время (период — «17:00–18:00»). Не показывай время без даты.'''),
     'DoneCircle': ('Круг «выполнено» слева от названия созданной задачи; цвет — приоритет; у повторяющейся — знак повтора.',
                    '''Диаметр `size-done-circle` (22), контур `size-stroke` (2). Цвет контура — приоритет задачи: высокий `ring-high`, обычный `inactive`.
-У выполненной — заливка (у высокого тусклый `ring-high-done`) и белая галочка `size-done-check` (14). У повторяющейся задачи круга нет — на его месте знак повтора (`RepeatMark`, рисунки `ic_repeat_round` и `ic_widget_period_repeat`). Круг вплотную к левому краю текста, зона нажатия шире круга.
+У выполненной — заливка (у высокого тусклый `ring-high-done`) и белая галочка `size-done-check` (14). У повторяющейся задачи круга нет — на его месте знак повтора (`RepeatMark`, рисунки `ic_repeat_round` и `ic_widget_period_repeat`);
+у выполненной повторяющейся галочки нет: знак остаётся, тусклым цветом выполненной, название зачёркнуто (проверка PM 0.47.0). Круг вплотную к левому краю текста, зона нажатия шире круга.
 У новой задачи круга нет. Не ставь значок приоритета рядом с названием: цвет круга и кнопки — единственный знак приоритета.'''),
     'ReminderBell': ('Колокольчик уведомлений в трёх видах: в момент срока, заранее, несколько.',
                      '''Один рисунок во всех местах (плашка 18, виджет 22, кнопка панели 25). Базовый колокольчик — контур, цвет `text-secondary` (на выбранной кнопке `accent`).
 «Заранее» — стрелка назад справа вверху в цвете `accent`, вокруг неё вырез в контуре. «Несколько» — стрелка и чёрная точка `accent` справа внизу (тоже с вырезом).
 Вид выбирается так: несколько разных напоминаний — «несколько»; хоть одно раньше срока — «заранее»; иначе — «в момент срока». Одинаковые по моменту считаются одним.'''),
     'ListSquare': ('Эмодзи списка (`ListBadge`, итерация 47): вместо цветного квадратика со значком.',
-                   '''Маленький — эмодзи в поле `size-list-square` (16) без фона: строки задач, поиск, корзина, окна выбора списка. Большой — плитка `size-list-square-large` (24) цвета `surface`
-с радиусом `radius-md` и эмодзи `size-list-glyph-large` (16): экран «Списки», заголовок списка, кнопка списка в шторке задачи.
+                   '''Подложки нет (проверка PM 0.47.0). Маленький — эмодзи `size-list-glyph` (14) в поле `size-list-square` (16): строки задач, поиск, корзина, окна выбора списка.
+Крупный — эмодзи `size-list-glyph-large` (20) в поле `size-list-square-large` (24): экран «Списки», заголовок списка, кнопка списка в шторке задачи.
+Высота строки эмодзи — 1,3 его размера, и он может выходить за поле: так рисунок не обрезается.
 У «Входящих» — 📥, у списка без эмодзи — 📁. Эмодзи хранится в БД (`projects.emoji`); старые значки перенесены миграцией (💼 🏠 ❤️ 🛒 📚 💰 ✈️ 💪 💡 ⭐).
 TickTick хранит эмодзи в начале названия: импорт отделяет его, экспорт возвращает. Цветов списков больше нет.'''),
     'Icons': ('Контурные значки приложения: сетка 24, линия 2, круглые концы.',

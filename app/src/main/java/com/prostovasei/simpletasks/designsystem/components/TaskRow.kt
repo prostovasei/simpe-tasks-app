@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -35,6 +36,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
@@ -188,26 +190,30 @@ fun TaskRow(
 }
 
 /**
- * Эмодзи списка (итерация 47, решение PM) вместо цветного квадратика со значком: в плашке — эмодзи размером со старый квадратик,
- * [large] — на экране «Списки» и в заголовке списка: эмодзи на белой плитке.
+ * Эмодзи списка (итерация 47, решение PM) вместо цветного квадратика со значком: в плашке — место размером со старый квадратик,
+ * [large] — на экране «Списки» и в заголовке списка. Проверка PM (0.47.0): без подложки, эмодзи не обрезается — у текста своя
+ * высота строки (а не 24 sp из темы) и он может выходить за поле.
  */
 @Composable
 fun ListBadge(emoji: String, modifier: Modifier = Modifier, large: Boolean = false) {
     val sizes = AppTheme.sizes
+    val glyph = with(LocalDensity.current) { (if (large) sizes.listGlyphLarge else sizes.listGlyph).toSp() }
     Box(
-        modifier = modifier
-            .size(if (large) sizes.listSquareLarge else sizes.listSquare)
-            .then(if (large) Modifier.background(AppTheme.colors.surface, AppTheme.shapes.medium) else Modifier),
+        modifier = modifier.size(if (large) sizes.listSquareLarge else sizes.listSquare),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             emoji,
-            fontSize = with(LocalDensity.current) { (if (large) sizes.listGlyphLarge else sizes.listSquare).toSp() },
+            style = TextStyle(fontSize = glyph, lineHeight = glyph * EMOJI_LINE_HEIGHT),
             maxLines = 1,
-            modifier = Modifier.testTag("list-emoji:$emoji"),
+            softWrap = false,
+            modifier = Modifier.wrapContentSize(unbounded = true).testTag("list-emoji:$emoji"),
         )
     }
 }
+
+/** Высота строки эмодзи относительно его размера: рисунок эмодзи выше букв. */
+private const val EMOJI_LINE_HEIGHT = 1.3f
 
 /** Квадратная галочка (макет PM): рамка цвета [ring], отмеченная — залита акцентом. */
 @Composable
