@@ -84,7 +84,7 @@ def cell(p):
     android:background="@drawable/widget_week_cell"
     android:orientation="vertical"
     android:paddingStart="@dimen/widget_space_xxs"
-    android:paddingTop="@dimen/widget_space_xxs"
+    android:paddingTop="@dimen/widget_week_task_gap"
     android:paddingEnd="@dimen/widget_space_xxs"
     android:paddingBottom="@dimen/widget_week_task_gap">
 
@@ -100,20 +100,18 @@ def cell(p):
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:maxLines="1"
+            android:fontFamily="sans-serif-medium"
             android:textColor="@color/widget_text_primary"
-            android:textSize="14sp"
-            android:textStyle="bold" />
+            android:textSize="12sp" />
 
         <TextView
             android:id="@+id/{p}_num"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="@dimen/widget_space_xxs"
-            android:gravity="center"
             android:maxLines="1"
             android:textColor="@color/widget_text_secondary"
-            android:textSize="12sp"
-            android:textStyle="bold" />
+            android:textSize="12sp" />
 
         <FrameLayout
             android:layout_width="0dp"
@@ -129,7 +127,7 @@ def cell(p):
             android:paddingStart="@dimen/widget_space_xs"
             android:paddingEnd="@dimen/widget_space_xs"
             android:textColor="@color/widget_text_primary"
-            android:textSize="11sp"
+            android:textSize="10sp"
             android:textStyle="bold"
             android:visibility="gone" />
     </LinearLayout>

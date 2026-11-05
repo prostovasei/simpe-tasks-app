@@ -1,13 +1,14 @@
 package com.prostovasei.simpletasks.widget
 
 import android.content.Context
+import android.graphics.Typeface
 import android.os.Build
 import android.text.SpannableString
 import android.text.Spanned
 import android.text.style.StrikethroughSpan
+import android.text.style.StyleSpan
 import android.util.TypedValue
 import android.view.View
-import android.view.ViewGroup
 import android.widget.RemoteViews
 import androidx.annotation.RequiresApi
 import androidx.compose.ui.unit.DpSize
@@ -69,7 +70,7 @@ object WidgetWeekRows {
      * читаемой строке `WIDGET_WEEK_TASK`: сами строки делят высоту поровну и выходят выше. Решение PM — до 6 в ячейке.
      */
     fun capacity(rowHeight: Float): Int {
-        val room = rowHeight - SpacingTokens.XXS - SizeTokens.WIDGET_WEEK_HEADER
+        val room = rowHeight - SizeTokens.WIDGET_WEEK_TASK_GAP - SizeTokens.WIDGET_WEEK_HEADER
         return (room / (SizeTokens.WIDGET_WEEK_TASK + SizeTokens.WIDGET_WEEK_TASK_GAP)).toInt().coerceIn(0, WeekIds.SLOTS)
     }
 
@@ -90,19 +91,12 @@ object WidgetWeekRows {
         val isToday = day.date == today
         val shown = day.items.take(capacity)
         val hidden = day.items.size - shown.size
-        setTextViewText(ids.weekday, day.date.dayOfWeek.getDisplayName(TextStyle.SHORT, RU))
+        // Сегодня (0.46.0, проверка PM): без кружка — день недели и число жирные и основного цвета; остальные дни — обычным шрифтом,
+        // число серое. Жирность — через начертание в тексте: у RemoteViews нет смены шрифта.
+        setTextViewText(ids.weekday, day.date.dayOfWeek.getDisplayName(TextStyle.SHORT, RU).bold(isToday))
         color(ids.weekday, "setTextColor", ColorTokens.textPrimary)
-        setTextViewText(ids.number, day.date.dayOfMonth.toString())
-        color(ids.number, "setTextColor", if (isToday) ColorTokens.onAccent else ColorTokens.textSecondary)
-        // Сегодня (0.46.0): число в кружке цвета акцента; у остальных дней — без фона, по ширине текста.
-        setInt(ids.number, "setBackgroundResource", if (isToday) R.drawable.widget_week_today else 0)
-        if (isToday) {
-            setViewLayoutWidth(ids.number, SizeTokens.WIDGET_WEEK_TODAY.toFloat(), TypedValue.COMPLEX_UNIT_DIP)
-            setViewLayoutHeight(ids.number, SizeTokens.WIDGET_WEEK_TODAY.toFloat(), TypedValue.COMPLEX_UNIT_DIP)
-        } else {
-            setViewLayoutWidth(ids.number, ViewGroup.LayoutParams.WRAP_CONTENT.toFloat(), TypedValue.COMPLEX_UNIT_PX)
-            setViewLayoutHeight(ids.number, ViewGroup.LayoutParams.WRAP_CONTENT.toFloat(), TypedValue.COMPLEX_UNIT_PX)
-        }
+        setTextViewText(ids.number, day.date.dayOfMonth.toString().bold(isToday))
+        color(ids.number, "setTextColor", if (isToday) ColorTokens.textPrimary else ColorTokens.textSecondary)
         visible(ids.more, hidden > 0)
         setTextViewText(ids.more, "+$hidden")
         with(click) { set(ids.head, WidgetClicks.DAY, day.date.toString()) }
@@ -208,6 +202,10 @@ object WidgetWeekRows {
         inMonth -> ColorTokens.textPrimary
         else -> ColorTokens.inactive
     }
+
+    /** Текст жирным начертанием ([bold] = true) или как есть. */
+    private fun String.bold(bold: Boolean): CharSequence =
+        if (bold) SpannableString(this).apply { setSpan(StyleSpan(Typeface.BOLD), 0, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE) } else this
 
     /** Фон строки задачи по приоритету. */
     private fun plaque(priority: Priority): Int = when (priority) {

@@ -59,7 +59,6 @@ class WidgetRowResourcesTest {
             R.dimen.widget_week_check to SizeTokens.WIDGET_WEEK_CHECK,
             R.dimen.widget_week_tick to SizeTokens.WIDGET_WEEK_TICK,
             R.dimen.widget_week_header to SizeTokens.WIDGET_WEEK_HEADER,
-            R.dimen.widget_week_today to SizeTokens.WIDGET_WEEK_TODAY,
             R.dimen.widget_week_cal_weekdays to SizeTokens.WIDGET_WEEK_CAL_WEEKDAYS,
             R.dimen.widget_week_cal_day to SizeTokens.WIDGET_WEEK_CAL_DAY,
             R.dimen.widget_bar to SizeTokens.WIDGET_BAR,

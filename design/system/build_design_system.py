@@ -103,7 +103,7 @@ SIZE_PICK = {
     'NAV_ADD_W': ('nav-add-w', 'Кнопка «+» в панели: ширина.'), 'NAV_ADD_H': ('nav-add-h', 'Кнопка «+» в панели: высота.'),
     'WIDGET_WEEK_TASK': ('widget-week-task', 'Вид «Неделя» в виджете: наименьшая строка задачи; настоящая делит высоту ячейки поровну (обычно ~20).'), 'WIDGET_WEEK_TASK_GAP': ('widget-week-task-gap', 'Вид «Неделя» в виджете: промежуток над строкой задачи.'), 'WIDGET_WEEK_CHECK': ('widget-week-check', 'Вид «Неделя» в виджете: кружок.'),
     'WIDGET_WEEK_TICK': ('widget-week-tick', 'Вид «Неделя» в виджете: галочка в кружке.'), 'WIDGET_WEEK_HEADER': ('widget-week-header', 'Вид «Неделя» в виджете: строка даты.'),
-    'WIDGET_WEEK_TODAY': ('widget-week-today', 'Вид «Неделя» в виджете: кружок «сегодня» у числа.'), 'WIDGET_WEEK_CAL_WEEKDAYS': ('widget-week-cal-weekdays', 'Мини-календарь в виджете: «пн…вс».'),
+    'WIDGET_WEEK_CAL_WEEKDAYS': ('widget-week-cal-weekdays', 'Мини-календарь в виджете: «пн…вс».'),
     'WIDGET_WEEK_CAL_DAY': ('widget-week-cal-day', 'Мини-календарь в виджете: день (кружок «сегодня»); меньше нельзя.'),
     'WIDGET_WEEK_ROW_DEFAULT': ('widget-week-row-default', 'Строка недели в виджете, пока размер виджета неизвестен: по ней считается число строк задач (сами строки делят высоту поровну).'), 'WIDGET_WEEK_ROW_MIN': ('widget-week-row-min', 'Строка недели в виджете: наименьшая высота.'),
     'WEEKVIEW_CELL_MIN': ('weekview-cell-min', 'Вид «Неделя»: наименьшая высота ячейки дня.'), 'WEEKVIEW_TASK': ('weekview-task', 'Вид «Неделя»: высота строки задачи; она же зона нажатия кружка.'), 'WEEKVIEW_TASK_GAP': ('weekview-task-gap', 'Вид «Неделя»: промежуток над строкой задачи.'),
@@ -659,9 +659,9 @@ def main():
     previews.update(ds_more.PREVIEWS)
     COMP_README.update(ds_more.README_MORE)
     COMP_README['WidgetBar'] = ('Нижняя строка виджета: переключатель «Все» / «Входящие» / «Неделя», кнопка «открыть приложение», «+».',
-                                '''Плоская панель (0.46.0, реф PM): фон `background`, сверху линия `divider` `size-hairline`; задачи ленты уходят под неё. Высота строки `size-widget-bar` (48), поля по бокам 6, кнопки по центру. Белых капсул больше нет.
-Слева три кнопки («Все», «Входящие», «Неделя» — `ic_tab_week`) `size-widget-switch-w` × `size-widget-switch-h` (52×36, радиус `radius-lg`): выбранная — на подложке `selected` со значком `accent` 26, остальные без подложки со значком `text-secondary`.
-Место между вкладками и кнопками нажимается как «открыть приложение». Справа галочка значка приложения 26×22 цвета `accent` без капсулы (зона нажатия `size-widget-open-w` × `size-widget-open-h`, 56×40), щель 8 и «+» `size-widget-add-w` × `size-widget-add-h` (64×40, радиус `radius-xl`, `accent`, значок 24 `on-accent`). Кнопки обновления на виджете нет — проверка обновления в «Настройках».''')
+                                '''Плоская панель (0.46.0, реф PM): фон `background`, сверху линия `divider` `size-hairline`; задачи ленты уходят под неё. Высота строки `size-widget-bar` (40; 0.46.0 — ниже по просьбе PM), поля по бокам 6, кнопки по центру. Белых капсул больше нет.
+Слева три кнопки («Все», «Входящие», «Неделя» — `ic_tab_week`) `size-widget-switch-w` × `size-widget-switch-h` (50×30, радиус `radius-lg`): выбранная — на подложке `selected` со значком `accent` 22, остальные без подложки со значком `text-secondary`.
+Место между вкладками и кнопками нажимается как «открыть приложение». Справа галочка значка приложения 24×20 цвета `accent` без капсулы (зона нажатия `size-widget-open-w` × `size-widget-open-h`, 52×32), щель 8 и «+» `size-widget-add-w` × `size-widget-add-h` (64×32, радиус `radius-xl`, `accent`, значок 22 `on-accent`). Кнопки обновления на виджете нет — проверка обновления в «Настройках».''')
     groups = {}
     for name, fn in previews.items():
         html = fn()

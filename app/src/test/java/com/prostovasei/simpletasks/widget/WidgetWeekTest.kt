@@ -178,6 +178,21 @@ class WidgetWeekTest {
         }
     }
 
+    /** Проверка PM (0.46.0): сегодня — без кружка, день недели и число жирные; у остальных дней жирного нет. */
+    @Test
+    fun todayIsBoldWithoutACircle() {
+        fun TextView.isBold() = (text as? android.text.Spanned)?.getSpans(0, text.length, android.text.style.StyleSpan::class.java)
+            ?.any { it.style == android.graphics.Typeface.BOLD } == true
+        val friday = list().rows()[2] // пятница 30 октября — сегодня
+        val number = friday.findViewById<TextView>(WeekIds.LEFT.number)
+        assertTrue(friday.findViewById<TextView>(WeekIds.LEFT.weekday).isBold())
+        assertTrue(number.isBold())
+        assertNull("без кружка", number.background)
+        val saturday = friday.findViewById<TextView>(WeekIds.RIGHT.weekday)
+        assertFalse(saturday.isBold())
+        assertFalse(friday.findViewById<TextView>(WeekIds.RIGHT.number).isBold())
+    }
+
     /** Пустые места под задачи невидимы, но держат размер (строки во всех ячейках одной высоты); лишние места убраны. */
     @Test
     fun emptySlotsKeepTheirShareAndExtraSlotsAreGone() {

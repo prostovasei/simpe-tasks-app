@@ -64,17 +64,18 @@ object SizeTokens {
      * к фону нет): место под панелью в конце ленты, строка кнопок, кнопка переключателя «Все» / «Входящие» и поле капсулы.
      */
     const val WIDGET_TAIL = 60
-    const val WIDGET_BAR = 48
-    const val WIDGET_SWITCH_W = 52
-    const val WIDGET_SWITCH_H = 36
+    // 0.46.0 (проверка PM): нижняя строка ниже — 40 вместо 48, кнопки 30–32 вместо 36–40.
+    const val WIDGET_BAR = 40
+    const val WIDGET_SWITCH_W = 50
+    const val WIDGET_SWITCH_H = 30
     const val WIDGET_SWITCH_PAD = 4
 
-    /** Кнопка «+» в нижней строке виджета (итерация 43: 64×40). */
+    /** Кнопка «+» в нижней строке виджета (итерация 43: 64×40; 0.46.0 — 64×32). */
     const val WIDGET_ADD_W = 64
-    const val WIDGET_ADD_H = 40
-    const val WIDGET_ADD_ICON = 24
+    const val WIDGET_ADD_H = 32
+    const val WIDGET_ADD_ICON = 22
     /** Иконки «Все» и «Входящие» в переключателе. */
-    const val WIDGET_TAB_ICON = 26
+    const val WIDGET_TAB_ICON = 22
 
     /** Поля строки задачи внутри её плашки в виджете. */
     const val WIDGET_ROW_GAP = 4
@@ -202,12 +203,12 @@ object SizeTokens {
 
     /**
      * Кнопка «открыть приложение» в нижней строке виджета (итерация 43, вместо кнопки обновления из итерации 32): белая
-     * капсула 56×40 с зелёной галочкой значка приложения 26×22 и щель до «+».
+     * зона 52×32 с галочкой значка приложения 24×20 (0.46.0: без капсулы, ниже) и щель до «+».
      */
-    const val WIDGET_OPEN_W = 56
-    const val WIDGET_OPEN_H = 40
-    const val WIDGET_OPEN_ICON_W = 26
-    const val WIDGET_OPEN_ICON_H = 22
+    const val WIDGET_OPEN_W = 52
+    const val WIDGET_OPEN_H = 32
+    const val WIDGET_OPEN_ICON_W = 24
+    const val WIDGET_OPEN_ICON_H = 20
     const val WIDGET_UPDATE_GAP = 8
 
     /** Режим выбора (итерация 40): кнопка ленты действий (ширина не меньше, высота) и высота верхней строки «Выбрано: N». */
@@ -228,15 +229,14 @@ object SizeTokens {
     /**
      * Вид «Неделя» в виджете (итерация 45, макет `VariantK1`; 0.46.0 — `VariantK2`, компактные строки): наименьшая строка задачи
      * (настоящая делит высоту ячейки поровну и обычно выше — ~20; по наименьшей считается, сколько строк влезает, решение PM — до 6) и промежуток
-     * между строками, кружок и галочка в нём, строка даты, кружок «сегодня» у числа, мини-календарь («пн…вс», день) и высота строки
+     * между строками, кружок и галочка в нём, строка даты, мини-календарь («пн…вс», день) и высота строки
      * недели, пока размер виджета неизвестен (по ней считается только число строк задач: сами строки делят высоту виджета поровну).
      */
     const val WIDGET_WEEK_TASK = 18
     const val WIDGET_WEEK_TASK_GAP = 2
     const val WIDGET_WEEK_CHECK = 13
     const val WIDGET_WEEK_TICK = 9
-    const val WIDGET_WEEK_HEADER = 22
-    const val WIDGET_WEEK_TODAY = 20
+    const val WIDGET_WEEK_HEADER = 18
     const val WIDGET_WEEK_CAL_WEEKDAYS = 12
     const val WIDGET_WEEK_CAL_DAY = 14
     const val WIDGET_WEEK_ROW_DEFAULT = 140
