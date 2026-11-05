@@ -16,42 +16,6 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="@dimen/widget_week_cal_head"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
-
-        <ImageView
-            android:id="@+id/wc_prev"
-            android:layout_width="@dimen/widget_week_cal_arrow"
-            android:layout_height="match_parent"
-            android:contentDescription="@string/week_prev_month"
-            android:scaleType="center"
-            android:src="@drawable/ic_week_prev"
-            android:tint="@color/widget_text_secondary" />
-
-        <TextView
-            android:id="@+id/wc_title"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:maxLines="1"
-            android:textColor="@color/widget_text_primary"
-            android:textSize="12sp"
-            android:textStyle="bold" />
-
-        <ImageView
-            android:id="@+id/wc_next"
-            android:layout_width="@dimen/widget_week_cal_arrow"
-            android:layout_height="match_parent"
-            android:contentDescription="@string/week_next_month"
-            android:scaleType="center"
-            android:src="@drawable/ic_week_next"
-            android:tint="@color/widget_text_secondary" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
         android:layout_height="@dimen/widget_week_cal_weekdays"
         android:orientation="horizontal">
 
@@ -129,7 +93,8 @@
         <LinearLayout
             android:id="@+id/wc_r1"
             android:layout_width="match_parent"
-            android:layout_height="@dimen/widget_week_cal_row"
+            android:layout_height="0dp"
+            android:layout_weight="1"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
@@ -249,7 +214,8 @@
         <LinearLayout
             android:id="@+id/wc_r2"
             android:layout_width="match_parent"
-            android:layout_height="@dimen/widget_week_cal_row"
+            android:layout_height="0dp"
+            android:layout_weight="1"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
@@ -369,7 +335,8 @@
         <LinearLayout
             android:id="@+id/wc_r3"
             android:layout_width="match_parent"
-            android:layout_height="@dimen/widget_week_cal_row"
+            android:layout_height="0dp"
+            android:layout_weight="1"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
@@ -489,7 +456,8 @@
         <LinearLayout
             android:id="@+id/wc_r4"
             android:layout_width="match_parent"
-            android:layout_height="@dimen/widget_week_cal_row"
+            android:layout_height="0dp"
+            android:layout_weight="1"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
@@ -609,7 +577,8 @@
         <LinearLayout
             android:id="@+id/wc_r5"
             android:layout_width="match_parent"
-            android:layout_height="@dimen/widget_week_cal_row"
+            android:layout_height="0dp"
+            android:layout_weight="1"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
@@ -729,7 +698,8 @@
         <LinearLayout
             android:id="@+id/wc_r6"
             android:layout_width="match_parent"
-            android:layout_height="@dimen/widget_week_cal_row"
+            android:layout_height="0dp"
+            android:layout_weight="1"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 

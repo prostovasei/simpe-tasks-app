@@ -76,7 +76,7 @@ class AppSmokeTest {
         // Итерация 44: вкладка «Неделя» — сетка из семи дней и мини-календарь.
         composeRule.onNodeWithTag("tab:WEEK").performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists("week-screen") }
-        composeRule.onNodeWithTag("week-cal-title").assertExists()
+        composeRule.onNodeWithTag("week-calendar").assertExists()
 
         composeRule.onNodeWithTag("tab:SEARCH").performClick()
         composeRule.onNodeWithTag(TAG_SEARCH_FIELD).performTextReplacement("молоко")

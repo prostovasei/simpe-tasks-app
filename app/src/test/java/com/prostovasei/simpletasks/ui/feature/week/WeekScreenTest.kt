@@ -111,16 +111,14 @@ class WeekScreenTest {
     }
 
     @Test
-    fun calendarSelectsWeekAndShiftsMonth() {
+    fun calendarSelectsWeekWithoutMonthArrows() {
         show()
-        composeRule.onNodeWithTag("week-cal-title").assertIsDisplayed()
+        // 0.46.0: строки месяца со стрелками нет — месяц листается выбором недели (WeekViewModelTest).
+        composeRule.onNodeWithTag("week-cal-prev").assertDoesNotExist()
+        composeRule.onNodeWithTag("week-cal-next").assertDoesNotExist()
         // Октябрь 2026: первая строка — с понедельника 28 сентября.
         composeRule.onNodeWithTag("week-cal-row:2026-10-05").performClick()
         assertEquals(SelectWeek(LocalDate.of(2026, 10, 5)), intents.last())
-        composeRule.onNodeWithTag("week-cal-next").performClick()
-        assertEquals(ShiftMonth(1), intents.last())
-        composeRule.onNodeWithTag("week-cal-prev").performClick()
-        assertEquals(ShiftMonth(-1), intents.last())
     }
 
     @Test
@@ -152,7 +150,7 @@ class WeekScreenTest {
         val screen = composeRule.onNodeWithTag("week-screen").getUnclippedBoundsInRoot()
         assertTrue("неделя помещается", cells.maxOf { it.bottom } <= screen.bottom)
         // Мини-календарь — в последней ячейке, того же размера.
-        val calendar = composeRule.onNodeWithTag("week-cal-title").getUnclippedBoundsInRoot()
+        val calendar = composeRule.onNodeWithTag("week-calendar").getUnclippedBoundsInRoot()
         assertTrue("календарь $calendar в ячейке ${cells[6]}", calendar.top >= cells[6].top - TOLERANCE && calendar.bottom <= cells[6].bottom + TOLERANCE)
     }
 

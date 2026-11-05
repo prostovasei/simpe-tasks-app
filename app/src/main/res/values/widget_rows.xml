@@ -22,6 +22,7 @@
     <dimen name="widget_fold_icon">20dp</dimen>
     <dimen name="widget_tail">60dp</dimen>
     <dimen name="widget_edge">6dp</dimen>
+    <dimen name="widget_bar">40dp</dimen>
     <dimen name="widget_list_edge">3dp</dimen>
     <dimen name="widget_day_gap">2dp</dimen>
     <dimen name="widget_hairline">1dp</dimen>
@@ -31,30 +32,32 @@
     <dimen name="widget_radius_sm">4dp</dimen>
     <dimen name="widget_radius_md">8dp</dimen>
     <dimen name="widget_radius_lg">12dp</dimen>
-    <dimen name="widget_week_task">28dp</dimen>
-    <dimen name="widget_week_check">16dp</dimen>
-    <dimen name="widget_week_tick">10dp</dimen>
-    <dimen name="widget_week_header">26dp</dimen>
-    <dimen name="widget_week_cal_head">20dp</dimen>
+    <dimen name="widget_week_task">18dp</dimen>
+    <dimen name="widget_week_check">13dp</dimen>
+    <dimen name="widget_week_tick">9dp</dimen>
+    <dimen name="widget_week_header">18dp</dimen>
+    <dimen name="widget_week_task_gap">2dp</dimen>
     <dimen name="widget_week_cal_weekdays">12dp</dimen>
     <dimen name="widget_week_cal_day">14dp</dimen>
-    <dimen name="widget_week_cal_row">20dp</dimen>
-    <dimen name="widget_week_cal_arrow">24dp</dimen>
-    <dimen name="widget_week_row_default">140dp</dimen>
     <dimen name="widget_radius_xl">16dp</dimen>
 
     <color name="widget_surface">#FFFFFFFF</color>
-    <color name="widget_divider">#FFD5E0D8</color>
-    <color name="widget_text_secondary">#FF5F6474</color>
+    <color name="widget_divider">#FFE2E2E2</color>
+    <color name="widget_text_secondary">#FF62656E</color>
     <color name="widget_overdue">#FFC62828</color>
     <color name="widget_on_accent">#FFFFFFFF</color>
     <color name="widget_on_list_square">#FFFFFFFF</color>
-    <color name="widget_text_primary">#FF15161F</color>
+    <color name="widget_text_primary">#FF16171D</color>
     <color name="widget_ring_none">#FF8B949E</color>
-    <color name="widget_selected">#FFE4F2E8</color>
-    <color name="widget_text_done">#B315161F</color>
-    <color name="widget_icon_done">#B35F6474</color>
-    <color name="widget_accent_done">#B315803D</color>
-    <color name="widget_inactive">#FFA8B3AB</color>
-    <color name="widget_accent_soft">#FFD3ECDB</color>
+    <color name="widget_selected">#FFE8E8E8</color>
+    <color name="widget_text_done">#B316171D</color>
+    <color name="widget_icon_done">#B362656E</color>
+    <color name="widget_accent_done">#B316171D</color>
+    <color name="widget_inactive">#FFA9A9A9</color>
+    <!-- Строки «Недели» (0.46.0): фон по приоритету и серая отметка выполненной — WeekRowTokens. -->
+    <color name="widget_week_high">#FFFDECEC</color>
+    <color name="widget_week_medium">#FFFDF4E3</color>
+    <color name="widget_week_low">#FFEAF2FC</color>
+    <color name="widget_week_done">#FFBDBDBD</color>
+    <color name="widget_accent_soft">#FFEAEAEA</color>
 </resources>

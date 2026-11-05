@@ -1,11 +1,12 @@
-"""Генератор разметки вида «Неделя» в виджете (итерация 45): ячейки дней, мини-календарь и строки ленты + таблица id для Kotlin.
+"""Генератор разметки вида «Неделя» в виджете (итерация 45; 0.46.0 — компактные строки, календарь без месяца и стрелок, строки недели, строки задач
+и недели календаря делят высоту поровну — weight, а не размер от рабочего стола): ячейки дней, мини-календарь и строки ленты + таблица id для Kotlin.
 
 Ячейка и календарь состоят из десятков элементов с уникальными id (в RemoteViews id внутри одной разметки не должны повторяться, а левая и правая
 ячейка — разные поддеревья), поэтому XML и таблица id пишутся скриптом. Запуск из корня репозитория: python3 design/tools/gen_widget_week.py
 """
 import os
 
-SLOTS = 5  # плашек в ячейке не больше: больше в виджет не помещается
+SLOTS = 6  # строк задач в ячейке не больше (решение PM: до 6)
 RES = 'app/src/main/res/layout'
 KT = 'app/src/main/java/com/prostovasei/simpletasks/widget/WidgetWeekIds.kt'
 NS = 'xmlns:android="http://schemas.android.com/apk/res/android"\n    xmlns:tools="http://schemas.android.com/tools"'
@@ -18,9 +19,10 @@ def cell(p):
         <LinearLayout
             android:id="@+id/{p}_s{i}"
             android:layout_width="match_parent"
-            android:layout_height="@dimen/widget_week_task"
-            android:layout_marginTop="@dimen/widget_space_xxs"
-            android:background="@drawable/widget_row_plaque"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginTop="@dimen/widget_week_task_gap"
+            android:background="@drawable/widget_week_plaque_plain"
             android:gravity="center_vertical"
             android:orientation="horizontal"
             android:visibility="gone">
@@ -68,7 +70,7 @@ def cell(p):
                 android:layout_marginEnd="@dimen/widget_space_xs"
                 android:maxLines="1"
                 android:textColor="@color/widget_text_secondary"
-                android:textSize="11sp" />
+                android:textSize="10sp" />
         </LinearLayout>
 '''
     return f'''<?xml version="1.0" encoding="utf-8"?>
@@ -82,9 +84,9 @@ def cell(p):
     android:background="@drawable/widget_week_cell"
     android:orientation="vertical"
     android:paddingStart="@dimen/widget_space_xxs"
-    android:paddingTop="@dimen/widget_space_xs"
+    android:paddingTop="@dimen/widget_week_task_gap"
     android:paddingEnd="@dimen/widget_space_xxs"
-    android:paddingBottom="@dimen/widget_space_xs">
+    android:paddingBottom="@dimen/widget_week_task_gap">
 
     <LinearLayout
         android:id="@+id/{p}_head"
@@ -98,9 +100,9 @@ def cell(p):
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:maxLines="1"
+            android:fontFamily="sans-serif-medium"
             android:textColor="@color/widget_text_primary"
-            android:textSize="14sp"
-            android:textStyle="bold" />
+            android:textSize="12sp" />
 
         <TextView
             android:id="@+id/{p}_num"
@@ -109,7 +111,7 @@ def cell(p):
             android:layout_marginStart="@dimen/widget_space_xxs"
             android:maxLines="1"
             android:textColor="@color/widget_text_secondary"
-            android:textSize="13sp" />
+            android:textSize="12sp" />
 
         <FrameLayout
             android:layout_width="0dp"
@@ -124,8 +126,8 @@ def cell(p):
             android:maxLines="1"
             android:paddingStart="@dimen/widget_space_xs"
             android:paddingEnd="@dimen/widget_space_xs"
-            android:textColor="@color/widget_now"
-            android:textSize="12sp"
+            android:textColor="@color/widget_text_primary"
+            android:textSize="10sp"
             android:textStyle="bold"
             android:visibility="gone" />
     </LinearLayout>
@@ -157,7 +159,8 @@ def calendar():
         <LinearLayout
             android:id="@+id/wc_r{r}"
             android:layout_width="match_parent"
-            android:layout_height="@dimen/widget_week_cal_row"
+            android:layout_height="0dp"
+            android:layout_weight="1"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 {days}        </LinearLayout>
@@ -190,42 +193,6 @@ def calendar():
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="@dimen/widget_week_cal_head"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
-
-        <ImageView
-            android:id="@+id/wc_prev"
-            android:layout_width="@dimen/widget_week_cal_arrow"
-            android:layout_height="match_parent"
-            android:contentDescription="@string/week_prev_month"
-            android:scaleType="center"
-            android:src="@drawable/ic_week_prev"
-            android:tint="@color/widget_text_secondary" />
-
-        <TextView
-            android:id="@+id/wc_title"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:maxLines="1"
-            android:textColor="@color/widget_text_primary"
-            android:textSize="12sp"
-            android:textStyle="bold" />
-
-        <ImageView
-            android:id="@+id/wc_next"
-            android:layout_width="@dimen/widget_week_cal_arrow"
-            android:layout_height="match_parent"
-            android:contentDescription="@string/week_next_month"
-            android:scaleType="center"
-            android:src="@drawable/ic_week_next"
-            android:tint="@color/widget_text_secondary" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
         android:layout_height="@dimen/widget_week_cal_weekdays"
         android:orientation="horizontal">
 {weekdays}    </LinearLayout>
@@ -235,23 +202,19 @@ def calendar():
 
 def row(name, comment, right):
     return f'''<?xml version="1.0" encoding="utf-8"?>
-<!-- Сгенерировано design/tools/gen_widget_week.py (итерация 45): {comment}. Высоту задаёт код (все строки недели одинаковые). Не править руками. -->
-<FrameLayout {NS}
+<!-- Сгенерировано design/tools/gen_widget_week.py (итерация 45; 0.46.0 — доля высоты): {comment}. Строки недели делят высоту виджета поровну (weight). Не править руками. -->
+<LinearLayout {NS}
     tools:ignore="UselessParent"
+    android:id="@+id/week_row"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="0dp"
+    android:layout_weight="1"
+    android:orientation="horizontal">
 
-    <LinearLayout
-        android:id="@+id/week_row"
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/widget_week_row_default"
-        android:orientation="horizontal">
+    <include layout="@layout/widget_week_cell_l" />
 
-        <include layout="@layout/widget_week_cell_l" />
-
-        <include layout="@layout/{right}" />
-    </LinearLayout>
-</FrameLayout>
+    <include layout="@layout/{right}" />
+</LinearLayout>
 '''
 
 
@@ -287,9 +250,6 @@ object WeekIds {{
 
 {cell_ids('wl', 'LEFT')}
 {cell_ids('wr', 'RIGHT')}
-    val CAL_PREV = R.id.wc_prev
-    val CAL_NEXT = R.id.wc_next
-    val CAL_TITLE = R.id.wc_title
     val CAL_WEEKDAYS = listOf({", ".join(f"R.id.wc_wd{d}" for d in range(1, 8))})
     val CAL_ROWS = listOf(
 {cal_rows},

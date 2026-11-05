@@ -70,7 +70,6 @@ fun WeekScreen(
                             selectedWeek = weekStart,
                             today = today,
                             onSelectWeek = { onIntent(SelectWeek(it)) },
-                            onShiftMonth = { onIntent(ShiftMonth(it)) },
                             modifier = Modifier.weight(1f).fillMaxHeight(),
                         )
                     }

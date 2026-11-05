@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Строка задачи вида «Неделя» в виджете (0.46.0, макет VariantK2): бледный фон по приоритету (без приоритета и выполненная — белый), радиус MD. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/widget_surface" />
+    <corners android:radius="@dimen/widget_radius_md" />
+</shape>

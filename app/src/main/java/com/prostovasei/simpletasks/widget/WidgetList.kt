@@ -98,33 +98,41 @@ fun widgetRootViews(
     overlay: RemoteViews,
     size: DpSize = DpSize.Unspecified,
     liveClock: Boolean = true,
-): RemoteViews =
-    RemoteViews(context.packageName, R.layout.widget_root).apply {
+): RemoteViews {
+    val week = model.week
+    if (week != null) {
+        // Вид «Неделя» (итерация 45; 0.46.0 — не лента): четыре строки делят настоящую высоту виджета поровну над нижней панелью.
+        return RemoteViews(context.packageName, R.layout.widget_root_week).apply {
+            val click = WidgetWeekRows.Click { viewId, code, id -> setOnClickPendingIntent(viewId, WidgetClicks.pending(context, appWidgetId, code, id)) }
+            // Рабочий стол при обновлении применяет действия поверх уже показанного виджета (reapply): без очистки строки
+            // добавлялись к прежним — проверка PM 0.46.0, неделя трижды в одном виджете.
+            removeAllViews(R.id.week_rows)
+            WidgetWeekRows.views(context, week, size, click).forEach { addView(R.id.week_rows, it) }
+            removeAllViews(R.id.widget_overlay)
+            addView(R.id.widget_overlay, overlay)
+        }
+    }
+    return RemoteViews(context.packageName, R.layout.widget_root).apply {
         val items = RemoteViews.RemoteCollectionItems.Builder()
             .setHasStableIds(true)
             .setViewTypeCount(WidgetRows.VIEW_TYPES)
-        val week = model.week
-        if (week != null) {
-            // Вид «Неделя» (итерация 45): четыре строки одинаковой высоты на весь виджет над нижней панелью.
-            WidgetWeekRows.views(context, week, size).forEachIndexed { index, row -> items.addItem("week:$index".hashCode().toLong(), row) }
-        } else {
-            val all = if (model.isEmpty) emptyList() else model.lines(dayNames(context))
-            val lines = if (all.size > MAX_LINES) all.take(MAX_LINES) + WidgetLine.Tail else all
-            lines.forEach { items.addItem(it.key.hashCode().toLong(), WidgetRows.views(context, it, model, liveClock)) }
-        }
+        val all = if (model.isEmpty) emptyList() else model.lines(dayNames(context))
+        val lines = if (all.size > MAX_LINES) all.take(MAX_LINES) + WidgetLine.Tail else all
+        lines.forEach { items.addItem(it.key.hashCode().toLong(), WidgetRows.views(context, it, model, liveClock)) }
         setRemoteAdapter(R.id.widget_list, items.build())
         setPendingIntentTemplate(
             R.id.widget_list,
             PendingIntent.getActivity(
                 context,
                 appWidgetId,
-                // Номер виджета нужен нажатиям вида «Неделя»: выбор недели и месяца у каждого виджета свой.
                 Intent(context, WidgetClickActivity::class.java).putExtra(WidgetActions.EXTRA_WIDGET_ID, appWidgetId),
                 PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
             ),
         )
+        removeAllViews(R.id.widget_overlay)
         addView(R.id.widget_overlay, overlay)
     }
+}
 
 /** Предел строк ленты (~150 строк — ~150 КБ пакета). */
 const val MAX_LINES = 150
@@ -137,17 +145,28 @@ object WidgetClicks {
     const val OPEN = "o"
     const val MOVE_OVERDUE = "m"
 
-    /** Вид «Неделя» в виджете (итерация 45): строка даты открывает день ([DAY]), строка мини-календаря выбирает неделю ([PICK_WEEK]), стрелки листают месяц. */
+    /** Вид «Неделя» в виджете (итерация 45): строка даты открывает день ([DAY]), строка мини-календаря выбирает неделю ([PICK_WEEK]) и с ней месяц (0.46.0, стрелок нет). */
     const val DAY = "d"
     const val PICK_WEEK = "k"
-    const val PREV_MONTH = "p"
-    const val NEXT_MONTH = "x"
 
     /** Пустое нажатие: кружок будущего повтора и т. п. — у перекрашенной строки затирает прежнее. */
     const val NONE = "n"
     private const val SCHEME = "wt"
 
     fun uri(code: String, taskId: String?): Uri = Uri.fromParts(SCHEME, "$code/${taskId.orEmpty()}", null)
+
+    /**
+     * Своё намерение у элемента вне ленты (вид «Неделя», 0.46.0). Номер виджета — и в добавке, и во фрагменте адреса: намерения
+     * с одинаковым адресом Android считает одним, и выбор недели ушёл бы в чужой виджет.
+     */
+    fun pending(context: Context, appWidgetId: Int, code: String, taskId: String?): PendingIntent = PendingIntent.getActivity(
+        context,
+        appWidgetId,
+        Intent(context, WidgetClickActivity::class.java)
+            .setData(Uri.fromParts(SCHEME, "$code/${taskId.orEmpty()}", appWidgetId.toString()))
+            .putExtra(WidgetActions.EXTRA_WIDGET_ID, appWidgetId),
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+    )
 
     /** Код и задача из адреса; null — адрес не наш. */
     fun parse(uri: Uri?): Pair<String, String?>? {
@@ -175,8 +194,6 @@ class WidgetClickActivity : Activity() {
             WidgetClicks.TOGGLE_OVERDUE -> sendBroadcast(WidgetActions.toggleOverdue(this))
             WidgetClicks.DAY -> taskId?.let { startActivity(openDayIntent(this, it)) }
             WidgetClicks.PICK_WEEK -> taskId?.let { sendBroadcast(WidgetActions.pickWeek(this, widgetId, it)) }
-            WidgetClicks.PREV_MONTH -> sendBroadcast(WidgetActions.shiftMonth(this, widgetId, -1))
-            WidgetClicks.NEXT_MONTH -> sendBroadcast(WidgetActions.shiftMonth(this, widgetId, 1))
         }
         finish()
     }
