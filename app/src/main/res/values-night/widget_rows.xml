@@ -14,9 +14,7 @@
     <color name="widget_icon_done">#B3A3A3A3</color>
     <color name="widget_accent_done">#B3F2F2F2</color>
     <color name="widget_inactive">#FF636363</color>
-    <color name="widget_week_high">#FF3A2222</color>
-    <color name="widget_week_medium">#FF3A2F1C</color>
-    <color name="widget_week_low">#FF1D2A3B</color>
+    <color name="widget_week_high">#FF2E2440</color>
     <color name="widget_week_done">#FF5A5A5A</color>
     <color name="widget_accent_soft">#FF2E2E2E</color>
 </resources>

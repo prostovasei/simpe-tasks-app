@@ -31,8 +31,8 @@ class WidgetListTest {
     private val today = LocalDate.of(2026, 10, 16)
 
     private fun item(id: String, title: String, day: DayLabel, time: String?, done: Boolean = false, ghostOf: String? = null) = TaskItem(
-        id, title, Priority.HIGH, DueText(day, time), "Работа", "#6B5CE7", isInboxList = false,
-        isRecurring = ghostOf != null, ghostOf = ghostOf, listIcon = "work", reminder = ReminderMark.EARLY, isDone = done,
+        id, title, Priority.HIGH, DueText(day, time), "Работа", "💼", isInboxList = false,
+        isRecurring = ghostOf != null, ghostOf = ghostOf, reminder = ReminderMark.EARLY, isDone = done,
     )
 
     private val model = WidgetModel(
@@ -112,7 +112,7 @@ class WidgetListTest {
     fun recycledRowsKeepNothingFromPreviousTask() {
         fun task(id: String, rich: Boolean, day: LocalDate) = TaskItem(
             id, "Задача $id", if (rich) Priority.HIGH else Priority.NONE, DueText(DayLabel.Date(day, false), if (rich) "10:00" else null),
-            "Работа", "#6B5CE7", isInboxList = false, isRecurring = rich, listIcon = "work", reminder = if (rich) ReminderMark.EARLY else null,
+            "Работа", "💼", isInboxList = false, isRecurring = rich, reminder = if (rich) ReminderMark.EARLY else null,
         )
         val rich = model.copy(days = listOf(WidgetDayBlock(WidgetDay.On(today), listOf(task("a", true, today), task("b", true, today)))), nowMinute = null)
         val later = today.plusDays(3)
@@ -126,7 +126,7 @@ class WidgetListTest {
             assertEquals(title.resources.getResourceEntryName(it), View.GONE, title.findViewById<View>(it).visibility)
         }
         rows.filter { it.findViewById<View>(R.id.row_plaque) != null }.forEach { row ->
-            listOf(R.id.row_start, R.id.row_repeat, R.id.row_bell).forEach {
+            listOf(R.id.row_start, R.id.row_bell).forEach {
                 assertEquals(row.resources.getResourceEntryName(it), View.GONE, row.findViewById<View>(it).visibility)
             }
         }

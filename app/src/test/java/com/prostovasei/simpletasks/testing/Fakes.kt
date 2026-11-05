@@ -48,8 +48,8 @@ fun task(
     createdAt = EPOCH, updatedAt = EPOCH,
 )
 
-fun project(id: String, name: String = id, isInbox: Boolean = false, groupId: String? = null, color: String? = null, icon: String? = null) =
-    Project(id, groupId, name, color, sortOrder = 0, isInbox = isInbox, createdAt = EPOCH, updatedAt = EPOCH, icon = icon)
+fun project(id: String, name: String = id, isInbox: Boolean = false, groupId: String? = null, color: String? = null, icon: String? = null, emoji: String? = null) =
+    Project(id, groupId, name, color, sortOrder = 0, isInbox = isInbox, createdAt = EPOCH, updatedAt = EPOCH, icon = icon, emoji = emoji)
 
 /** Задачи в памяти; даты сравниваются в UTC. */
 class FakeTaskRepository(private val today: LocalDate = LocalDate.of(2026, 10, 14)) : TaskRepository {
@@ -307,8 +307,8 @@ class FakeProjectRepository : ProjectRepository {
         }
     }
 
-    override suspend fun setProjectIcon(projectId: String, icon: String?) {
-        calls += "icon:$projectId:$icon"
+    override suspend fun setProjectEmoji(projectId: String, emoji: String?) {
+        calls += "emoji:$projectId:$emoji"
     }
 
     override suspend fun deleteProject(projectId: String) {

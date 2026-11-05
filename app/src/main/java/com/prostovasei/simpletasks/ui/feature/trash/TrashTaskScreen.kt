@@ -46,10 +46,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.prostovasei.simpletasks.R
-import com.prostovasei.simpletasks.designsystem.components.ListSquare
+import com.prostovasei.simpletasks.designsystem.components.ListBadge
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
-import com.prostovasei.simpletasks.designsystem.theme.parseListColor
-import com.prostovasei.simpletasks.ui.common.ListIcons
 import com.prostovasei.simpletasks.ui.common.dueLines
 import com.prostovasei.simpletasks.ui.feature.task.SheetDialog
 import com.prostovasei.simpletasks.ui.feature.task.priorityColor
@@ -142,7 +140,7 @@ fun TrashTaskScreen(state: TrashTaskState, onIntent: (TrashTaskIntent) -> Unit, 
                 }
             }
             Row(Modifier.padding(top = spacing.sm), verticalAlignment = Alignment.CenterVertically) {
-                ListSquare(if (item.isInboxList) colors.inboxList else parseListColor(item.listColor) ?: colors.inactive, ListIcons.drawable(item.listIcon))
+                ListBadge(item.listEmoji)
                 item.listName?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = colors.textSecondary, modifier = Modifier.padding(start = spacing.xs)) }
                 if (item.isRecurring) Icon(painterResource(R.drawable.ic_tool_repeat), null, tint = colors.textSecondary, modifier = Modifier.padding(start = spacing.sm).size(sizes.metaIcon))
                 if (item.reminder != null) Icon(painterResource(R.drawable.ic_tool_reminder), null, tint = colors.textSecondary, modifier = Modifier.padding(start = spacing.sm).size(sizes.metaIcon))

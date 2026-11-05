@@ -40,7 +40,83 @@ class MigrationTest {
                 assertEquals("#3D8BFD", c.getString(1))
                 assertNull(c.getString(2))
             }
-            assertEquals(2, room.openHelper.readableDatabase.version)
+            assertEquals(LATEST, room.openHelper.readableDatabase.version)
+        } finally {
+            room.close()
+        }
+    }
+
+    /**
+     * Итерация 47 (решения PM): 2 → 3 — эмодзи списков вместо значков и два приоритета. Значок переходит в эмодзи, «Входящие» — 📥,
+     * эмодзи в начале названия списка из TickTick отделяется; средний приоритет (3) становится высоким (5), низкий (1) — обычным (0).
+     */
+    @Test
+    fun migrate2To3GivesEmojiAndTwoPriorities() {
+        val file = context.getDatabasePath(DB).apply { parentFile?.mkdirs(); delete() }
+        SQLiteDatabase.openOrCreateDatabase(file, null).use { db ->
+            schemaSql(2).forEach(db::execSQL)
+            fun list(id: String, name: String, icon: String?, inbox: Int = 0) = db.execSQL(
+                "INSERT INTO projects (id, group_id, name, color, sort_order, is_inbox, is_deleted, created_at, updated_at, icon) " +
+                    "VALUES (?, NULL, ?, NULL, 0, ?, 0, 1, 1, ?)",
+                arrayOf<Any?>(id, name, inbox, icon),
+            )
+            list("inbox", "Inbox", null, inbox = 1)
+            list("work", "Работа", "work")
+            list("home", "🏠Дом", null)
+            list("plain", "Идеи", null)
+            listOf("p0" to 0, "p1" to 1, "p3" to 3, "p5" to 5).forEach { (id, priority) ->
+                db.execSQL(
+                    "INSERT INTO tasks (id, project_id, title, priority, created_at, updated_at) VALUES (?, 'work', ?, ?, 1, 1)",
+                    arrayOf<Any>(id, id, priority),
+                )
+            }
+            db.version = 2
+        }
+
+        val room = Room.databaseBuilder(context, AppDatabase::class.java, DB).allowMainThreadQueries().build()
+        try {
+            val lists = mutableMapOf<String, Pair<String, String?>>()
+            room.openHelper.readableDatabase.query("SELECT id, name, emoji FROM projects").use { c ->
+                while (c.moveToNext()) lists[c.getString(0)] = c.getString(1) to c.getString(2)
+            }
+            assertEquals("Inbox" to "📥", lists["inbox"])
+            assertEquals("Работа" to "💼", lists["work"])
+            assertEquals("Дом" to "🏠", lists["home"])
+            assertEquals("Идеи" to null, lists["plain"])
+            val priorities = mutableMapOf<String, Int>()
+            room.openHelper.readableDatabase.query("SELECT id, priority FROM tasks").use { c ->
+                while (c.moveToNext()) priorities[c.getString(0)] = c.getInt(1)
+            }
+            assertEquals(mapOf("p0" to 0, "p1" to 0, "p3" to 5, "p5" to 5), priorities)
+            assertEquals(LATEST, room.openHelper.readableDatabase.version)
+        } finally {
+            room.close()
+        }
+    }
+
+    /** Итерация 47 (проверка PM): 3 → 4 — отметка выполненного раза повтора; у прежних задач её нет. */
+    @Test
+    fun migrate3To4KeepsTasksWithoutRepeatMark() {
+        val file = context.getDatabasePath(DB).apply { parentFile?.mkdirs(); delete() }
+        SQLiteDatabase.openOrCreateDatabase(file, null).use { db ->
+            schemaSql(3).forEach(db::execSQL)
+            db.execSQL(
+                "INSERT INTO projects (id, group_id, name, color, sort_order, is_inbox, is_deleted, created_at, updated_at, icon, emoji) " +
+                    "VALUES ('work', NULL, 'Работа', NULL, 0, 0, 0, 1, 1, NULL, '💼')",
+            )
+            db.execSQL("INSERT INTO tasks (id, project_id, title, status, created_at, updated_at) VALUES ('done', 'work', 'Стирка', 2, 1, 1)")
+            db.version = 3
+        }
+
+        val room = Room.databaseBuilder(context, AppDatabase::class.java, DB).allowMainThreadQueries().build()
+        try {
+            room.openHelper.readableDatabase.query("SELECT title, status, is_repeat_done FROM tasks WHERE id = 'done'").use { c ->
+                c.moveToFirst()
+                assertEquals("Стирка", c.getString(0))
+                assertEquals(2, c.getInt(1))
+                assertEquals(0, c.getInt(2))
+            }
+            assertEquals(LATEST, room.openHelper.readableDatabase.version)
         } finally {
             room.close()
         }
@@ -66,5 +142,6 @@ class MigrationTest {
 
     private companion object {
         const val DB = "migration-test.db"
+        const val LATEST = 4
     }
 }

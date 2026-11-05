@@ -13,14 +13,12 @@ import androidx.annotation.RequiresApi
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import com.prostovasei.simpletasks.R
-import com.prostovasei.simpletasks.designsystem.theme.parseListColor
 import com.prostovasei.simpletasks.designsystem.tokens.ColorTokens
 import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
 import com.prostovasei.simpletasks.designsystem.tokens.ThemedColor
 import com.prostovasei.simpletasks.designsystem.tokens.WidgetCheckTokens
 import com.prostovasei.simpletasks.domain.model.Priority
 import com.prostovasei.simpletasks.ui.common.DONE_ALPHA
-import com.prostovasei.simpletasks.ui.common.ListIcons
 import com.prostovasei.simpletasks.ui.common.ReminderIconMasks
 import kotlin.math.roundToInt
 
@@ -91,7 +89,8 @@ object WidgetRows {
         val row = line.row
         val item = row.item
         val done = item.showsDone
-        val faded = row.past || item.isGhost
+        // Итерация 47: будущий повтор не тусклый — тусклая только прошедшая задача.
+        val faded = row.past
         val layout = when {
             row.isPeriod && done -> R.layout.widget_row_period_done
             row.isPeriod -> R.layout.widget_row_period
@@ -109,10 +108,31 @@ object WidgetRows {
             time(R.id.row_end, row.end, if (line.overdue) ColorTokens.overdue else ColorTokens.textSecondary, 1f, line.overdue)
             if (row.isPeriod) visible(R.id.row_time_gap, row.end != null)
 
-            // Шкала: линия вверх и вниз, кружок цвета приоритета (у прошедшей и будущего повтора — серый).
+            // Шкала: линия вверх и вниз, кружок цвета приоритета (у прошедшей — серый). Итерация 47: у повторяющейся — знак повтора
+            // вместо кружка (у периода — вытянутый), выполненная высокого приоритета — тусклый фиолетовый.
             setViewVisibility(R.id.row_line_top, if (line.line.top) View.VISIBLE else View.INVISIBLE)
             setViewVisibility(R.id.row_line_bottom, if (line.line.bottom) View.VISIBLE else View.INVISIBLE)
-            color(R.id.row_node, "setColorFilter", if (faded && !done) ColorTokens.inactive else ring(item.priority))
+            color(
+                R.id.row_node,
+                "setColorFilter",
+                when {
+                    faded && !done -> ColorTokens.inactive
+                    done -> doneFill(item.priority)
+                    else -> ring(item.priority)
+                },
+            )
+            // Проверка PM (0.47.0): у выполненной повторяющейся галочки нет — знак повтора остаётся тусклым. Рисунок и галочка
+            // пишутся у каждой строки: строки одного макета переиспользуются лаунчером.
+            setImageViewResource(
+                R.id.row_node,
+                when {
+                    row.isPeriod && item.isRecurring -> R.drawable.ic_widget_period_repeat
+                    row.isPeriod -> if (done) R.drawable.widget_period_fill else R.drawable.widget_period_ring
+                    item.isRecurring -> R.drawable.ic_repeat_round
+                    else -> if (done) R.drawable.ic_widget_node_fill else R.drawable.ic_widget_node_ring
+                },
+            )
+            if (done) visible(R.id.row_node_check, !item.isRecurring)
             // У будущего повтора кружок ничего не отмечает (как раньше): пустое нажатие и без подписи.
             if (!done) setContentDescription(R.id.row_node, if (item.isGhost) null else context.getString(R.string.widget_complete))
             val check = when {
@@ -122,14 +142,13 @@ object WidgetRows {
             }
             setOnClickFillInIntent(R.id.row_check, fillIn(check, item.id.takeUnless { item.isGhost }))
 
-            // Плашка: название (выполненная — зачёркнута), значки справа налево — список, колокольчик, повтор.
+            // Плашка: название (выполненная — зачёркнута), значки справа налево — список, колокольчик.
             setTextViewText(
                 R.id.row_title,
                 if (done) SpannableString(item.title).apply { setSpan(StrikethroughSpan(), 0, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE) } else item.title,
             )
             if (!done) color(R.id.row_title, "setTextColor", textColor)
             setOnClickFillInIntent(R.id.row_plaque, fillIn(WidgetClicks.OPEN, item.taskId))
-            visible(R.id.row_repeat, item.isRecurring)
             val masks = item.reminder?.let { ReminderIconMasks.of(it, (SizeTokens.WIDGET_REMINDER_ICON * context.resources.displayMetrics.density).roundToInt()) }
             visible(R.id.row_bell, masks != null)
             if (masks != null) {
@@ -137,18 +156,9 @@ object WidgetRows {
                 visible(R.id.row_bell_early, masks.early != null)
                 masks.early?.let { setImageViewBitmap(R.id.row_bell_early, it) }
             }
-            visible(R.id.row_square, filter !is WidgetFilter.ProjectList)
-            if (filter !is WidgetFilter.ProjectList) {
-                val listColor = parseListColor(item.listColor)
-                when {
-                    item.isInboxList -> color(R.id.row_square_bg, "setColorFilter", ColorTokens.inboxList)
-                    // Цвет списка одинаков в светлой и тёмной теме.
-                    listColor != null -> setInt(R.id.row_square_bg, "setColorFilter", listColor.toArgb())
-                    else -> color(R.id.row_square_bg, "setColorFilter", ColorTokens.inactive)
-                }
-                // Нет значка у списка — пустая картинка.
-                setImageViewResource(R.id.row_square_glyph, ListIcons.drawable(item.listIcon) ?: 0)
-            }
+            // Эмодзи списка (итерация 47) вместо цветного квадратика со значком; в виджете одного списка не нужен.
+            visible(R.id.row_emoji, filter !is WidgetFilter.ProjectList)
+            setTextViewText(R.id.row_emoji, item.listEmoji)
         }
     }
 
@@ -176,9 +186,13 @@ object WidgetRows {
 
     internal fun ring(priority: Priority): ThemedColor = when (priority) {
         Priority.HIGH -> WidgetCheckTokens.high.ring
-        Priority.MEDIUM -> WidgetCheckTokens.medium.ring
-        Priority.LOW -> WidgetCheckTokens.low.ring
         Priority.NONE -> WidgetCheckTokens.none.ring
+    }
+
+    /** Заливка кружка выполненной задачи (итерация 47): у высокого приоритета — тусклый фиолетовый. */
+    internal fun doneFill(priority: Priority): ThemedColor = when (priority) {
+        Priority.HIGH -> WidgetCheckTokens.high.done
+        Priority.NONE -> WidgetCheckTokens.none.done
     }
 
     /** Цвет темы: Android сам берёт светлый или тёмный по теме системы. */

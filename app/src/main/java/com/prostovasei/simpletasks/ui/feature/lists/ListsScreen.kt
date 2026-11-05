@@ -47,14 +47,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.prostovasei.simpletasks.R
-import com.prostovasei.simpletasks.designsystem.components.ListSquare
+import com.prostovasei.simpletasks.designsystem.components.ListBadge
 import com.prostovasei.simpletasks.designsystem.components.ConfirmDeleteDialog
 import com.prostovasei.simpletasks.designsystem.components.EmptyState
 import com.prostovasei.simpletasks.designsystem.components.NameDialog
 import com.prostovasei.simpletasks.designsystem.components.ScreenTitle
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
-import com.prostovasei.simpletasks.designsystem.theme.parseListColor
-import com.prostovasei.simpletasks.ui.common.ListIcons
 import com.prostovasei.simpletasks.domain.model.GroupWithProjects
 import com.prostovasei.simpletasks.domain.model.ProjectWithCount
 
@@ -224,11 +222,7 @@ private fun ProjectRow(item: ProjectWithCount, indented: Boolean, onClick: () ->
             .padding(start = if (indented) spacing.xl else spacing.md, end = spacing.md, top = spacing.sm, bottom = spacing.sm)
             .testTag("project:${item.project.id}"),
     ) {
-        ListSquare(
-            color = parseListColor(item.project.color) ?: colors.inactive,
-            icon = ListIcons.drawable(item.project.icon),
-            large = true,
-        )
+        ListBadge(item.project.emojiShown, large = true)
         Text(
             text = item.project.name,
             style = MaterialTheme.typography.bodyLarge,

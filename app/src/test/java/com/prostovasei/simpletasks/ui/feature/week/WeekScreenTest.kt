@@ -59,15 +59,16 @@ class WeekScreenTest {
         done: Boolean = false,
         ghostOf: String? = null,
     ) = TaskItem(
-        id, title, priority, DueText(DayLabel.Today, time), "Работа", "#3D8BFD", isInboxList = false, isDone = done, ghostOf = ghostOf,
+        id, title, priority, DueText(DayLabel.Today, time), "Работа", "💼", isInboxList = false, isDone = done, ghostOf = ghostOf,
+        isRecurring = ghostOf != null,
     )
 
     private val weekState = WeekState(
         weekStart = monday,
         today = today,
         days = listOf(
-            WeekDay(monday, listOf(item("a1", "Купить продукты", "10:00", Priority.LOW, done = true), item("a2", "Тренировка"))),
-            WeekDay(monday.plusDays(1), listOf(item("b1", "Оплатить интернет", "12:00", Priority.MEDIUM), item("b2", "Позвонить маме"))),
+            WeekDay(monday, listOf(item("a1", "Купить продукты", "10:00", Priority.NONE, done = true), item("a2", "Тренировка"))),
+            WeekDay(monday.plusDays(1), listOf(item("b1", "Оплатить интернет", "12:00", Priority.HIGH), item("b2", "Позвонить маме"))),
             WeekDay(monday.plusDays(2), listOf(item("c1", "Встреча", "15:00", Priority.HIGH))),
             WeekDay(monday.plusDays(3), emptyList()),
             WeekDay(
@@ -106,8 +107,20 @@ class WeekScreenTest {
     fun futureRepeatHasNoCircleButOpensTheSeriesTask() {
         show()
         composeRule.onNodeWithTag("week-check:f2@0").assertDoesNotExist()
+        // Итерация 47: у повторяющейся — знак повтора вместо кружка.
+        composeRule.onNodeWithTag("week-repeat:f2@0", useUnmergedTree = true).assertExists()
         composeRule.onNodeWithTag("week-task:f2@0").performClick()
         assertEquals(listOf("f2"), opened)
+    }
+
+    /** Проверка PM (0.47.0): выполненная повторяющаяся — без галочки, знак повтора остаётся; нажатие возвращает её. */
+    @Test
+    fun doneRepeatKeepsTheRepeatMark() {
+        val state = weekState.copy(days = weekState.days.mapIndexed { i, d -> if (i == 0) d.copy(items = listOf(item("r1", "Бритьё", "09:00", done = true).copy(isRecurring = true))) else d })
+        show(state = state)
+        composeRule.onNodeWithTag("week-repeat:r1", useUnmergedTree = true).assertExists()
+        composeRule.onNodeWithTag("week-check:r1").performClick()
+        assertEquals(TaskListIntent.ToggleComplete("r1", recurring = true, done = true), intents.last())
     }
 
     @Test

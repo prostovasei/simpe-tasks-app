@@ -109,6 +109,7 @@ def cell(p):
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="@dimen/widget_space_xxs"
+            android:fontFamily="sans-serif-medium"
             android:maxLines="1"
             android:textColor="@color/widget_text_secondary"
             android:textSize="12sp" />

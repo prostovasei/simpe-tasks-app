@@ -35,7 +35,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.prostovasei.simpletasks.R
-import com.prostovasei.simpletasks.designsystem.components.GHOST_ALPHA
+import com.prostovasei.simpletasks.designsystem.components.RepeatMark
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
 import com.prostovasei.simpletasks.domain.model.Priority
@@ -59,7 +59,6 @@ fun WeekCell(
     onOpen: (TaskItem) -> Unit,
     onOpenDay: () -> Unit,
     modifier: Modifier = Modifier,
-    today: LocalDate? = null,
 ) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
@@ -82,7 +81,7 @@ fun WeekCell(
         Column {
             WeekDayHeader(date, isToday, hidden = items.size - shown.size, onClick = onOpenDay)
             shown.forEach { item ->
-                WeekTaskRow(item, overdue = today != null && date < today && !item.showsDone, onToggle = { onToggle(item) }, onOpen = { onOpen(item) })
+                WeekTaskRow(item, onToggle = { onToggle(item) }, onOpen = { onOpen(item) })
             }
         }
     }
@@ -96,32 +95,16 @@ private fun WeekDayHeader(date: LocalDate, isToday: Boolean, hidden: Int, onClic
         Modifier.fillMaxWidth().height(SizeTokens.WEEKVIEW_HEADER.dp).clickable(onClick = onClick).testTag("week-day-open:$date"),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // Итерация 47 (решение PM): день недели и число одним нежирным начертанием и серые; сегодня — жирное и чёрное, без кружка.
+        val weight = if (isToday) FontWeight.ExtraBold else FontWeight.Medium
+        val color = if (isToday) colors.textPrimary else colors.textSecondary
         Text(
-            weekday,
+            "$weekday ${date.dayOfMonth}",
             style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.ExtraBold,
-            color = colors.textPrimary,
+            fontWeight = weight,
+            color = color,
+            modifier = if (isToday) Modifier.testTag("week-today:$date") else Modifier,
         )
-        if (isToday) {
-            Box(
-                Modifier
-                    .padding(start = AppTheme.spacing.xxs)
-                    .size(SizeTokens.WEEKVIEW_CAL_TODAY.dp)
-                    .background(colors.accent, CircleShape)
-                    .testTag("week-today:$date"),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(date.dayOfMonth.toString(), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.ExtraBold, color = colors.onAccent)
-            }
-        } else {
-            Text(
-                date.dayOfMonth.toString(),
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold,
-                color = colors.textSecondary,
-                modifier = Modifier.padding(start = AppTheme.spacing.xxs),
-            )
-        }
         if (hidden > 0) {
             Spacer(Modifier.weight(1f))
             Text(
@@ -139,38 +122,26 @@ private fun WeekDayHeader(date: LocalDate, isToday: Boolean, hidden: Int, onClic
 }
 
 /**
- * Строка задачи в ячейке (0.46.0, `VariantK2`): фон — бледный цвет приоритета (без приоритета — белый), кружок приоритета (нажатие —
- * «выполнено» или «вернуть»), название, время справа. Выполненная — белая, серая и зачёркнутая, кружок залит серым; будущий повтор —
- * наполовину прозрачный и без нажатия на кружок.
+ * Строка задачи в ячейке (0.46.0, `VariantK2`; итерация 47 — `VariantH2`): фон — бледный фиолетовый у высокого приоритета, иначе белый;
+ * кружок приоритета (нажатие — «выполнено» или «вернуть»), у повторяющейся — знак повтора; название, время справа (просрочка не красная).
+ * Выполненная — серая и зачёркнутая, кружок залит тусклым цветом приоритета; будущий повтор — как обычная, но без нажатия на знак.
  */
 @Composable
-private fun WeekTaskRow(item: TaskItem, overdue: Boolean, onToggle: () -> Unit, onOpen: () -> Unit) {
+private fun WeekTaskRow(item: TaskItem, onToggle: () -> Unit, onOpen: () -> Unit) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
     val done = item.showsDone
-    val ring = when {
-        item.isGhost && !done -> colors.inactive
-        item.priority == Priority.HIGH -> colors.checkRings.high
-        item.priority == Priority.MEDIUM -> colors.checkRings.medium
-        item.priority == Priority.LOW -> colors.checkRings.low
-        else -> colors.inactive
-    }
-    val fill = when {
-        done -> colors.surface
-        item.priority == Priority.HIGH -> colors.weekRow.high
-        item.priority == Priority.MEDIUM -> colors.weekRow.medium
-        item.priority == Priority.LOW -> colors.weekRow.low
-        else -> colors.surface
-    }
+    val high = item.priority == Priority.HIGH
+    val ring = if (high) colors.checkRings.high else colors.inactive
+    val doneFill = if (high) colors.checkRings.highDone else colors.weekRow.doneMark
     val label = stringResource(if (done) R.string.task_uncomplete else R.string.widget_complete)
     Row(
         Modifier
             .padding(top = SizeTokens.WEEKVIEW_TASK_GAP.dp)
             .fillMaxWidth()
             .height(SizeTokens.WEEKVIEW_TASK.dp)
-            .alpha(if (item.isGhost) GHOST_ALPHA else 1f)
             .clip(AppTheme.shapes.medium)
-            .background(fill)
+            .background(if (high) colors.weekRow.high else colors.surface)
             .clickable(onClick = onOpen)
             .testTag("week-task:${item.id}"),
         verticalAlignment = Alignment.CenterVertically,
@@ -184,22 +155,20 @@ private fun WeekTaskRow(item: TaskItem, overdue: Boolean, onToggle: () -> Unit, 
                 ),
             contentAlignment = Alignment.Center,
         ) {
-            Box(Modifier.size(SizeTokens.WEEKVIEW_CHECK.dp).border(SizeTokens.CHECKBOX_STROKE.dp, if (done) colors.weekRow.doneMark else ring, CircleShape), contentAlignment = Alignment.Center) {
-                if (done) {
-                    Box(Modifier.size(SizeTokens.WEEKVIEW_CHECK.dp).background(colors.weekRow.doneMark, CircleShape))
-                    Icon(painterResource(R.drawable.ic_node_check), null, tint = colors.onAccent, modifier = Modifier.size(SizeTokens.WEEKVIEW_CHECK_ICON.dp))
+            when {
+                // Проверка PM (0.47.0): выполненная повторяющаяся — знак повтора тусклым цветом, без галочки.
+                item.isRecurring -> RepeatMark(if (done) doneFill else ring, Modifier.size(SizeTokens.WEEKVIEW_CHECK.dp).testTag("week-repeat:${item.id}"))
+                done -> Box(Modifier.size(SizeTokens.WEEKVIEW_CHECK.dp).background(doneFill, CircleShape), contentAlignment = Alignment.Center) {
+                    Icon(painterResource(R.drawable.ic_node_check), null, tint = colors.onListSquare, modifier = Modifier.size(SizeTokens.WEEKVIEW_CHECK_ICON.dp))
                 }
+                else -> Box(Modifier.size(SizeTokens.WEEKVIEW_CHECK.dp).border(SizeTokens.CHECKBOX_STROKE.dp, ring, CircleShape))
             }
         }
         Text(
             item.title,
             style = MaterialTheme.typography.bodySmall,
             fontWeight = FontWeight.Bold,
-            color = when {
-                done -> colors.inactive
-                item.isGhost -> colors.textSecondary
-                else -> colors.textPrimary
-            },
+            color = if (done) colors.inactive else colors.textPrimary,
             textDecoration = if (done) TextDecoration.LineThrough else null,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -210,11 +179,8 @@ private fun WeekTaskRow(item: TaskItem, overdue: Boolean, onToggle: () -> Unit, 
                 it,
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.SemiBold,
-                color = when {
-                    overdue -> colors.overdue
-                    done -> colors.inactive
-                    else -> colors.textSecondary
-                },
+                // Итерация 47 (решение PM): прошедшее время в «Неделе» не красное.
+                color = if (done) colors.inactive else colors.textSecondary,
                 maxLines = 1,
                 modifier = Modifier.padding(start = spacing.xxs, end = spacing.xs),
             )

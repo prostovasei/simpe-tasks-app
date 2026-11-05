@@ -14,7 +14,7 @@ class WidgetTimelineTest {
     private val days = DayNames("Сегодня", "Завтра", "Вчера")
 
     private fun item(id: String, time: String?, day: DayLabel = DayLabel.Today) =
-        TaskItem(id, id, Priority.NONE, DueText(day, time), null, null, isInboxList = true)
+        TaskItem(id, id, Priority.NONE, DueText(day, time), null, "📥", isInboxList = true)
 
     private val allDay = item("net", null)
     private val office = item("office", "08:30")

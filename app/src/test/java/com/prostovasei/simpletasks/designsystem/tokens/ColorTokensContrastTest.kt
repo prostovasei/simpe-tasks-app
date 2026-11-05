@@ -11,8 +11,6 @@ class ColorTokensContrastTest {
     fun priorityBadgeTextIsReadable() {
         val priorities = mapOf(
             "high" to PriorityTokens.high,
-            "medium" to PriorityTokens.medium,
-            "low" to PriorityTokens.low,
             "none" to PriorityTokens.none,
         )
         priorities.forEach { (name, tokens) ->

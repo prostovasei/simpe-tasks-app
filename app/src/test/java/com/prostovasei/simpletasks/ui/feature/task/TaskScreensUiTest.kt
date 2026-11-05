@@ -56,8 +56,8 @@ class TaskScreensUiTest {
     private val today = LocalDate.of(2026, 10, 14)
     private val zone = ZoneOffset.UTC
     private val projects = listOf(
-        ProjectOption("inbox", "Inbox", null, isInbox = true),
-        ProjectOption("work", "Работа", "#3D8BFD", isInbox = false),
+        ProjectOption("inbox", "Inbox", "📥", isInbox = true),
+        ProjectOption("work", "Работа", "💼", isInbox = false),
     )
     private val intents = mutableListOf<Any>()
     private val busy = listOf(
@@ -78,7 +78,7 @@ class TaskScreensUiTest {
     private val quickState = QuickAddState(
         title = "Созвон с командой",
         projectId = "work",
-        priority = Priority.MEDIUM,
+        priority = Priority.HIGH,
         due = TaskDue.AtTime(Instant.parse("2026-10-15T10:00:00Z")),
         rrule = "FREQ=WEEKLY;INTERVAL=2;BYDAY=TU,TH",
         checklist = listOf("Повестка", ""),
@@ -330,13 +330,9 @@ class TaskScreensUiTest {
         composeRule.onNodeWithTag("$TAG_PROJECT_OPTION:inbox").performClick()
         assertTrue(intents.none { it is QuickAddIntent.Edit })
         composeRule.onNodeWithTag("$TAG_PROJECT_DIALOG:$TAG_DIALOG_DONE").performClick()
+        // Итерация 47 (решение PM): окна приоритета нет — нажатие сразу включает высокий.
         composeRule.onNodeWithTag(TAG_TOOL_PRIORITY).performClick()
-        composeRule.onNodeWithText("P2 Средний").performClick()
-        composeRule.onNodeWithTag("$TAG_PRIORITY_DIALOG:$TAG_DIALOG_CANCEL").performClick()
-        composeRule.onNodeWithTag(TAG_TOOL_PRIORITY).performClick()
-        composeRule.onNodeWithTag("$TAG_PRIORITY_OPTION:NONE").assertIsSelected()
-        composeRule.onNodeWithText("P1 Высокий").performClick()
-        composeRule.onNodeWithTag("$TAG_PRIORITY_DIALOG:$TAG_DIALOG_DONE").performClick()
+        composeRule.onNodeWithTag(TAG_PRIORITY_DIALOG).assertDoesNotExist()
         composeRule.onNodeWithTag(TAG_TOOL_CHECKLIST).performClick()
 
         assertEquals(
@@ -548,15 +544,22 @@ class TaskScreensUiTest {
         assertEquals(listOf<Any>(TaskDetailIntent.ToggleCompleted), intents.filterNot { it is TaskDetailIntent.Grid })
     }
 
+    /** Итерация 47: повторное нажатие на включённый приоритет выключает его; крестика у кнопки приоритета нет. */
+    @Test
+    fun priorityButtonTogglesOff() {
+        show { TaskDetailScreen(detailState, { intents += it }, {}, {}) }
+        composeRule.onNodeWithTag(TAG_CLEAR_PRIORITY).assertDoesNotExist()
+        composeRule.onNodeWithTag(TAG_TOOL_PRIORITY).performClick()
+        assertEquals(listOf<Any>(TaskDetailIntent.Edit(FieldEdit.SetPriority(Priority.NONE))), intents.filterNot { it is TaskDetailIntent.Grid })
+    }
+
     @Test
     fun clearBadgesResetOnlyTheirField() {
         show { TaskDetailScreen(detailState, { intents += it }, {}, {}) }
-        composeRule.onNodeWithTag(TAG_CLEAR_PRIORITY).performClick()
         composeRule.onNodeWithTag(TAG_CLEAR_LIST).performClick()
         composeRule.onNodeWithTag(TAG_CLEAR_DATE).performClick()
         assertEquals(
             listOf<Any>(
-                TaskDetailIntent.Edit(FieldEdit.SetPriority(Priority.NONE)),
                 TaskDetailIntent.Edit(FieldEdit.Project(projects.first { it.isInbox }.id)),
                 TaskDetailIntent.Grid(GridAction.ClearDate),
             ),

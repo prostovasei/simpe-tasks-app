@@ -61,7 +61,7 @@ fun WeekScreen(
             state.days.chunked(2).forEach { pair ->
                 Row(Modifier.weight(1f).fillMaxWidth()) {
                     pair.forEach { day ->
-                        WeekCell(day.date, day.items, day.date == today, toggle, open, { onOpenDay(day.date) }, Modifier.weight(1f).fillMaxHeight(), today)
+                        WeekCell(day.date, day.items, day.date == today, toggle, open, { onOpenDay(day.date) }, Modifier.weight(1f).fillMaxHeight())
                     }
                     // Нечётный день (воскресенье) делит строку с мини-календарём.
                     if (pair.size == 1) {

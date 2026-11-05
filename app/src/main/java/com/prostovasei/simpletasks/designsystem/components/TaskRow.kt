@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -35,6 +36,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
@@ -66,7 +68,8 @@ import com.prostovasei.simpletasks.ui.common.ReminderIcon
 fun TaskRow(
     title: String,
     priority: Priority,
-    listColor: Color?,
+    /** Эмодзи списка (итерация 47); null — не показывать. */
+    listEmoji: String?,
     isCompleting: Boolean,
     onToggle: () -> Unit,
     modifier: Modifier = Modifier,
@@ -77,7 +80,6 @@ fun TaskRow(
     isGhost: Boolean = false,
     isOverdue: Boolean = false,
     trailing: List<String> = emptyList(),
-    @DrawableRes listIcon: Int? = null,
     animateCompletion: Boolean = true,
     highlight: String? = null,
     subtitle: String? = null,
@@ -106,8 +108,6 @@ fun TaskRow(
     // Кружок — всегда цвет приоритета (итерация 27.1), просрочка — красным временем.
     val ring = when {
         priority == Priority.HIGH -> colors.checkRings.high
-        priority == Priority.MEDIUM -> colors.checkRings.medium
-        priority == Priority.LOW -> colors.checkRings.low
         else -> colors.inactive
     }
 
@@ -139,8 +139,8 @@ fun TaskRow(
         ) {
             if (!isGhost) SquareCheck(checked = selected ?: isCompleting, ring = ring)
         }
-        listColor?.let {
-            ListSquare(it, listIcon)
+        listEmoji?.let {
+            ListBadge(it)
             Spacer(Modifier.width(spacing.xs))
         }
         // Название занимает всё свободное место, ↻ — сразу за текстом, время прижато вправо.
@@ -189,26 +189,31 @@ fun TaskRow(
     }
 }
 
-/** Квадратик цвета списка со значком [icon] (итерация 14); [large] — на экране «Списки» и в заголовке списка. */
+/**
+ * Эмодзи списка (итерация 47, решение PM) вместо цветного квадратика со значком: в плашке — место размером со старый квадратик,
+ * [large] — на экране «Списки» и в заголовке списка. Проверка PM (0.47.0): без подложки, эмодзи не обрезается — у текста своя
+ * высота строки (а не 24 sp из темы) и он может выходить за поле.
+ */
 @Composable
-fun ListSquare(color: Color, @DrawableRes icon: Int?, modifier: Modifier = Modifier, large: Boolean = false) {
+fun ListBadge(emoji: String, modifier: Modifier = Modifier, large: Boolean = false) {
     val sizes = AppTheme.sizes
+    val glyph = with(LocalDensity.current) { (if (large) sizes.listGlyphLarge else sizes.listGlyph).toSp() }
     Box(
-        modifier = modifier
-            .size(if (large) sizes.listSquareLarge else sizes.listSquare)
-            .background(color, if (large) AppTheme.shapes.medium else AppTheme.shapes.small),
+        modifier = modifier.size(if (large) sizes.listSquareLarge else sizes.listSquare),
         contentAlignment = Alignment.Center,
     ) {
-        if (icon != null) {
-            Icon(
-                painterResource(icon),
-                contentDescription = null,
-                tint = AppTheme.colors.onListSquare,
-                modifier = Modifier.size(if (large) sizes.listGlyphLarge else sizes.listGlyph),
-            )
-        }
+        Text(
+            emoji,
+            style = TextStyle(fontSize = glyph, lineHeight = glyph * EMOJI_LINE_HEIGHT),
+            maxLines = 1,
+            softWrap = false,
+            modifier = Modifier.wrapContentSize(unbounded = true).testTag("list-emoji:$emoji"),
+        )
     }
 }
+
+/** Высота строки эмодзи относительно его размера: рисунок эмодзи выше букв. */
+private const val EMOJI_LINE_HEIGHT = 1.3f
 
 /** Квадратная галочка (макет PM): рамка цвета [ring], отмеченная — залита акцентом. */
 @Composable
@@ -255,8 +260,6 @@ fun PriorityBadge(priority: Priority, modifier: Modifier = Modifier) {
     val palette = AppTheme.colors.priority
     val (label, colors) = when (priority) {
         Priority.HIGH -> "P1" to palette.high
-        Priority.MEDIUM -> "P2" to palette.medium
-        Priority.LOW -> "P3" to palette.low
         Priority.NONE -> return
     }
     BadgeText(label, colors, modifier)
@@ -275,15 +278,6 @@ private fun BadgeText(label: String, colors: PriorityColors, modifier: Modifier)
     )
 }
 
-/** Цветная точка списка. */
-@Composable
-fun ColorDot(color: Color, modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .size(AppTheme.sizes.listDot)
-            .background(color, CircleShape),
-    )
-}
 
 /** Текст с подсвеченными вхождениями [query] (без учёта регистра). */
 fun highlighted(text: String, query: String?, background: Color): AnnotatedString = buildAnnotatedString {

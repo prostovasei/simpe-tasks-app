@@ -67,8 +67,6 @@ fun TokenShowcaseScreen(modifier: Modifier = Modifier) {
 
         SectionTitle(R.string.showcase_section_priorities)
         PriorityBadge(colors.priority.high, R.string.priority_high)
-        PriorityBadge(colors.priority.medium, R.string.priority_medium)
-        PriorityBadge(colors.priority.low, R.string.priority_low)
         PriorityBadge(colors.priority.none, R.string.priority_none)
 
         SectionTitle(R.string.showcase_section_preview)
@@ -85,8 +83,8 @@ fun TokenShowcaseScreen(modifier: Modifier = Modifier) {
             title = R.string.sample_task_today,
             meta = R.string.sample_task_today_meta,
             metaColor = colors.textSecondary,
-            priority = colors.priority.medium,
-            priorityLabel = R.string.priority_medium,
+            priority = colors.priority.none,
+            priorityLabel = R.string.priority_none,
         )
     }
 }

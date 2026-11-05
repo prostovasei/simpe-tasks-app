@@ -54,10 +54,8 @@
     <color name="widget_icon_done">#B362656E</color>
     <color name="widget_accent_done">#B316171D</color>
     <color name="widget_inactive">#FFA9A9A9</color>
-    <!-- Строки «Недели» (0.46.0): фон по приоритету и серая отметка выполненной — WeekRowTokens. -->
-    <color name="widget_week_high">#FFFDECEC</color>
-    <color name="widget_week_medium">#FFFDF4E3</color>
-    <color name="widget_week_low">#FFEAF2FC</color>
+    <!-- Строки «Недели» (0.46.0): фон высокого приоритета и серая отметка выполненной — WeekRowTokens (итерация 47). -->
+    <color name="widget_week_high">#FFF1E8FA</color>
     <color name="widget_week_done">#FFBDBDBD</color>
     <color name="widget_accent_soft">#FFEAEAEA</color>
 </resources>

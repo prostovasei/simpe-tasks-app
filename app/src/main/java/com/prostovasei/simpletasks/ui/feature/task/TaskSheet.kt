@@ -96,19 +96,18 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogWindowProvider
 import com.prostovasei.simpletasks.R
-import com.prostovasei.simpletasks.designsystem.components.ListSquare
+import com.prostovasei.simpletasks.designsystem.components.ListBadge
+import com.prostovasei.simpletasks.domain.model.ListEmoji
 import com.prostovasei.simpletasks.designsystem.components.SmartDateChip
 import com.prostovasei.simpletasks.designsystem.components.SmartDateHighlight
 import com.prostovasei.simpletasks.designsystem.components.smartDateSpan
 import com.prostovasei.simpletasks.ui.common.DayNames
 import com.prostovasei.simpletasks.ui.common.DueFormatter
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
-import com.prostovasei.simpletasks.designsystem.theme.parseListColor
 import com.prostovasei.simpletasks.designsystem.tokens.RadiusTokens
 import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
 import com.prostovasei.simpletasks.domain.model.Priority
 import com.prostovasei.simpletasks.domain.model.Reminders
-import com.prostovasei.simpletasks.ui.common.ListIcons
 import com.prostovasei.simpletasks.ui.common.ReminderIcon
 import java.time.LocalDate
 import kotlin.math.floor
@@ -453,10 +452,7 @@ private fun SheetToolbar(
             tag = TAG_TOOL_LIST,
             clear = if (project?.isInbox == false && inbox != null) ClearAction(R.string.clear_list, TAG_CLEAR_LIST) { onEdit(FieldEdit.Project(inbox.id)) } else null,
             content = {
-                ListSquare(
-                    color = parseListColor(project?.color) ?: colors.inactive,
-                    icon = ListIcons.drawable(if (project?.isInbox != false) ListIcons.INBOX else project.icon),
-                )
+                ListBadge(project?.emoji ?: ListEmoji.INBOX, large = true)
             },
         ) { open(ToolDialog.List) }
         ToolButton(
@@ -465,8 +461,10 @@ private fun SheetToolbar(
             tag = TAG_TOOL_PRIORITY,
             icon = R.drawable.ic_tool_priority,
             activeTint = priorityColor(fields.priority),
-            clear = if (fields.priority != Priority.NONE) ClearAction(R.string.clear_priority, TAG_CLEAR_PRIORITY) { onEdit(FieldEdit.SetPriority(Priority.NONE)) } else null,
-        ) { open(ToolDialog.Priority) }
+        ) {
+            // Итерация 47 (решение PM): окна приоритета нет — нажатие включает высокий, повторное выключает.
+            onEdit(FieldEdit.SetPriority(if (fields.priority == Priority.HIGH) Priority.NONE else Priority.HIGH))
+        }
         ToolButton(R.string.quick_tool_checklist, active = checklistActive, tag = TAG_TOOL_CHECKLIST, icon = R.drawable.ic_tool_checklist, onClick = onChecklist)
         // Повтор и уведомления доступны, если есть дата; без неё бледные, а в их окнах — подсказка «Сначала выберите день».
         ToolButton(
@@ -521,15 +519,10 @@ private fun ToolDialogs(dialog: ToolDialog, fields: SheetFields, onEdit: (FieldE
             onConfirm = { if (it != fields.reminders) onEdit(FieldEdit.SetReminders(it)); close() },
             onDismiss = close,
         )
-        ToolDialog.Priority -> PriorityDialog(
-            priority = fields.priority,
-            onConfirm = { if (it != fields.priority) onEdit(FieldEdit.SetPriority(it)); close() },
-            onDismiss = close,
-        )
     }
 }
 
-private enum class ToolDialog { None, List, Repeat, Reminder, Priority }
+private enum class ToolDialog { None, List, Repeat, Reminder }
 
 /**
  * Квадратная кнопка панели (макет PM): выбранная — залита акцентом; [dimmed] — пока нет даты: фон и рамка те же,
@@ -790,8 +783,6 @@ fun priorityColor(priority: Priority): Color? {
     val rings = AppTheme.colors.checkRings
     return when (priority) {
         Priority.HIGH -> rings.high
-        Priority.MEDIUM -> rings.medium
-        Priority.LOW -> rings.low
         Priority.NONE -> null
     }
 }

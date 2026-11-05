@@ -1,5 +1,6 @@
 package com.prostovasei.simpletasks.data.importer.ticktick
 
+import com.prostovasei.simpletasks.domain.model.ListEmoji
 import androidx.room.withTransaction
 import com.prostovasei.simpletasks.core.id.IdGenerator
 import com.prostovasei.simpletasks.core.time.TimeProvider
@@ -137,17 +138,20 @@ internal class TickTickImporter @Inject constructor(
         suspend fun projectIdFor(listName: String, folderName: String?): String {
             if (listName.isEmpty() || listName.equals(TickTickFormat.INBOX, ignoreCase = true)) return inboxId()
             projectIds[listName]?.let { return it }
-            val id = projectDao.getActiveByName(listName)?.id ?: run {
+            // Итерация 47: эмодзи в начале названия («🏠Дом») становится эмодзи списка, название — «Дом».
+            val (emoji, name) = ListEmoji.split(listName)
+            val id = (projectDao.getActiveByName(name) ?: projectDao.getActiveByName(listName))?.id ?: run {
                 val groupId = folderName?.let { groupIdFor(it) }
                 val newId = ids.newId()
                 projectDao.insert(
                     ProjectEntity(
                         id = newId,
                         groupId = groupId,
-                        name = listName,
+                        name = name,
                         sortOrder = projectDao.nextSortOrder(groupId),
                         createdAt = now,
                         updatedAt = now,
+                        emoji = emoji,
                     ),
                 )
                 listsCreated++

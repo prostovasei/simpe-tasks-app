@@ -97,8 +97,8 @@ class RoomProjectRepository @Inject constructor(
         projectDao.update(projectId, name, groupId, color, nowMillis())
     }
 
-    override suspend fun setProjectIcon(projectId: String, icon: String?) {
-        projectDao.setIcon(projectId, icon, nowMillis())
+    override suspend fun setProjectEmoji(projectId: String, emoji: String?) {
+        projectDao.setEmoji(projectId, emoji, nowMillis())
     }
 
     override suspend fun deleteProject(projectId: String) {

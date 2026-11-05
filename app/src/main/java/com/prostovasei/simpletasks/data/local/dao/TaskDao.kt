@@ -37,7 +37,7 @@ interface TaskDao {
 
     @Query(
         """
-        SELECT t.*, p.name AS list_name, p.is_inbox AS list_is_inbox, g.name AS folder_name
+        SELECT t.*, p.name AS list_name, p.is_inbox AS list_is_inbox, p.emoji AS list_emoji, g.name AS folder_name
         FROM tasks t
         JOIN projects p ON p.id = t.project_id
         LEFT JOIN project_groups g ON g.id = p.group_id AND g.is_deleted = 0
@@ -213,7 +213,8 @@ interface TaskDao {
 
     @Query(
         """
-        UPDATE tasks SET status = :status, completed_at = :completedAt, updated_at = :now
+        UPDATE tasks SET status = :status, completed_at = :completedAt, updated_at = :now,
+            is_repeat_done = CASE WHEN :status = 2 THEN is_repeat_done ELSE 0 END
         WHERE id = :id AND is_deleted = 0
         """,
     )

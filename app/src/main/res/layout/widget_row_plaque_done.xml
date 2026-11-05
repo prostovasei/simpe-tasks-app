@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   Плашка выполненной задачи (0.42.2): как widget_row_plaque, но название, значки и квадратик списка бледнее (70%) прямо в разметке.
-  Белая плашка задачи (итерация 42): название и значки справа налево — список, колокольчик, повтор.
+  Белая плашка задачи (итерация 42): название и значки справа налево — эмодзи списка, колокольчик (повтор — знаком на шкале, итерация 47).
   Нажатие — открыть задачу поверх рабочего стола.
 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -34,16 +34,6 @@
             android:textSize="14sp"
             android:textStyle="bold" />
 
-        <ImageView
-            android:id="@+id/row_repeat"
-            android:layout_width="@dimen/widget_meta_icon"
-            android:layout_height="@dimen/widget_meta_icon"
-            android:layout_marginStart="@dimen/widget_space_xxs"
-            android:contentDescription="@null"
-            android:src="@drawable/ic_tool_repeat"
-            android:tint="@color/widget_icon_done"
-            android:visibility="gone" />
-
         <FrameLayout
             android:id="@+id/row_bell"
             android:layout_width="@dimen/widget_reminder_icon"
@@ -67,28 +57,22 @@
                 android:visibility="gone" />
         </FrameLayout>
 
-        <FrameLayout
-            android:id="@+id/row_square"
-            android:layout_width="@dimen/widget_list_square"
-            android:layout_height="@dimen/widget_list_square"
-            android:layout_marginStart="@dimen/widget_space_xs">
+        <!-- Эмодзи списка вместо цветного квадратика со значком (итерация 47). -->
 
-            <ImageView
-                android:id="@+id/row_square_bg"
-                android:alpha="0.7"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:contentDescription="@null"
-                android:scaleType="fitXY"
-                android:src="@drawable/widget_row_square" />
+        <TextView
 
-            <ImageView
-                android:id="@+id/row_square_glyph"
-                android:layout_width="@dimen/widget_list_glyph"
-                android:layout_height="@dimen/widget_list_glyph"
-                android:layout_gravity="center"
-                android:contentDescription="@null"
-                android:tint="@color/widget_on_list_square" />
-        </FrameLayout>
+            android:id="@+id/row_emoji"
+
+            android:layout_width="wrap_content"
+
+            android:layout_height="wrap_content"
+
+            android:layout_marginStart="@dimen/widget_space_xs"
+
+            android:importantForAccessibility="no"
+
+            android:maxLines="1"
+
+            android:textSize="15sp" />
     </LinearLayout>
 </FrameLayout>

@@ -108,16 +108,16 @@ class WidgetModelTest {
     }
 
     private val lists = listOf(
-        ProjectOption("inbox", "Inbox", null, isInbox = true),
-        ProjectOption("work", "Работа", "#3D8BFD", isInbox = false),
-        ProjectOption("home", "Дом", "#46A758", isInbox = false),
-        ProjectOption("health", "Здоровье", null, isInbox = false),
+        ProjectOption("inbox", "Inbox", "📥", isInbox = true),
+        ProjectOption("work", "Работа", "💼", isInbox = false),
+        ProjectOption("home", "Дом", "🏠", isInbox = false),
+        ProjectOption("health", "Здоровье", "📁", isInbox = false),
     )
 
     @Test
     fun tabsShowAllInboxAndFirstTwoLists() {
         assertEquals(
-            listOf(WidgetTab(WidgetFilter.All), WidgetTab(WidgetFilter.Inbox), WidgetTab(WidgetFilter.ProjectList("work"), "Работа", "#3D8BFD"), WidgetTab(WidgetFilter.ProjectList("home"), "Дом", "#46A758")),
+            listOf(WidgetTab(WidgetFilter.All), WidgetTab(WidgetFilter.Inbox), WidgetTab(WidgetFilter.ProjectList("work"), "Работа", "💼"), WidgetTab(WidgetFilter.ProjectList("home"), "Дом", "🏠")),
             WidgetModels.tabs(WidgetFilter.All, lists),
         )
     }
@@ -143,7 +143,7 @@ class WidgetModelTest {
 
     @Test
     fun dayProgressCountsDone() {
-        fun item(id: String, done: Boolean) = TaskItem(id, id, Priority.NONE, null, null, null, isInboxList = true, isDone = done)
+        fun item(id: String, done: Boolean) = TaskItem(id, id, Priority.NONE, null, null, "📥", isInboxList = true, isDone = done)
         assertEquals(DayProgress(2, 3), DayProgress.of(listOf(item("a", true), item("b", false), item("c", true))))
         assertEquals(2f / 3, DayProgress(2, 3).fraction, 0.001f)
         assertEquals(null, DayProgress.of(emptyList()))

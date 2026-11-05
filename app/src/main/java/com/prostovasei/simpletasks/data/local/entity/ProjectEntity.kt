@@ -35,6 +35,8 @@ data class ProjectEntity(
     @ColumnInfo(name = "updated_at") val updatedAt: Long,
     /** Значок списка (итерация 14): ключ из `ListIcons`, null — без значка. Колонка добавлена в версии БД 2. */
     @ColumnInfo(name = "icon", defaultValue = "NULL") val icon: String? = null,
+    /** Эмодзи списка (итерация 47) вместо значка и цвета; null — по значку или 📁. Колонка добавлена в версии БД 3. */
+    @ColumnInfo(name = "emoji", defaultValue = "NULL") val emoji: String? = null,
 )
 
 /** Список со счётчиком открытых задач — для экрана «Списки». */

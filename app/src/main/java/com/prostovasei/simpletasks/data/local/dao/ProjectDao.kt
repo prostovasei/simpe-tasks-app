@@ -47,8 +47,8 @@ interface ProjectDao {
     )
     suspend fun update(id: String, name: String, groupId: String?, color: String?, now: Long): Int
 
-    @Query("UPDATE projects SET icon = :icon, updated_at = :now WHERE id = :id AND is_deleted = 0")
-    suspend fun setIcon(id: String, icon: String?, now: Long): Int
+    @Query("UPDATE projects SET emoji = :emoji, updated_at = :now WHERE id = :id AND is_deleted = 0")
+    suspend fun setEmoji(id: String, emoji: String?, now: Long): Int
 
     @Query("UPDATE projects SET group_id = NULL, updated_at = :now WHERE group_id = :groupId AND is_deleted = 0")
     suspend fun ungroup(groupId: String, now: Long): Int

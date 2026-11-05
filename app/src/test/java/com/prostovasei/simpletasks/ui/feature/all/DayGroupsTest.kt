@@ -13,7 +13,7 @@ class DayGroupsTest {
     private val today = LocalDate.of(2026, 10, 16)
 
     private fun item(id: String, day: DayLabel, time: String? = null) =
-        TaskItem(id, id, Priority.NONE, DueText(day, time), null, null, isInboxList = true)
+        TaskItem(id, id, Priority.NONE, DueText(day, time), null, "📥", isInboxList = true)
 
     @Test
     fun overdueSplitByDaysThenTodayThenUpcoming() {

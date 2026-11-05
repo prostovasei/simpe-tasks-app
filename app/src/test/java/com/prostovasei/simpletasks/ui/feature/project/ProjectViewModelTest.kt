@@ -74,34 +74,17 @@ class ProjectViewModelTest {
         assertEquals("Офис", vm.state.value.name)
     }
 
+    /** Итерация 47: эмодзи списка вместо цвета и значка; окно закрывается. */
     @Test
-    fun colorCanBeSetAndRemoved() = runTest(dispatcher) {
+    fun emojiIsSavedAndDialogCloses() = runTest(dispatcher) {
         val vm = viewModel()
         runCurrent()
+        vm.onIntent(ProjectIntent.OpenDialog(ProjectDialog.Emoji))
 
-        vm.onIntent(ProjectIntent.SetColor("#E5484D"))
+        vm.onIntent(ProjectIntent.SetEmoji("🏠"))
         runCurrent()
-        assertEquals("#E5484D", vm.state.value.color)
-
-        vm.onIntent(ProjectIntent.SetColor(null))
-        runCurrent()
-        assertEquals("updateProject:work:Работа:g1:null", projects.calls.last())
-    }
-
-    @Test
-    fun iconIsSavedAndDialogCloses() = runTest(dispatcher) {
-        val vm = viewModel()
-        runCurrent()
-        vm.onIntent(ProjectIntent.OpenDialog(ProjectDialog.Icon))
-
-        vm.onIntent(ProjectIntent.SetIcon("work"))
-        runCurrent()
-        assertEquals("icon:work:work", projects.calls.last())
+        assertEquals("emoji:work:🏠", projects.calls.last())
         assertEquals(ProjectDialog.None, vm.state.value.dialog)
-
-        vm.onIntent(ProjectIntent.SetIcon(null))
-        runCurrent()
-        assertEquals("icon:work:null", projects.calls.last())
     }
 
     @Test

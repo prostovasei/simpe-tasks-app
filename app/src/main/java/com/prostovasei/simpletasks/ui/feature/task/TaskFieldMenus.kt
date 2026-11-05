@@ -28,14 +28,12 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import com.prostovasei.simpletasks.R
-import com.prostovasei.simpletasks.designsystem.components.ListSquare
+import com.prostovasei.simpletasks.designsystem.components.ListBadge
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
-import com.prostovasei.simpletasks.designsystem.theme.parseListColor
 import com.prostovasei.simpletasks.domain.model.Priority
 import com.prostovasei.simpletasks.domain.model.Reminders
 import com.prostovasei.simpletasks.domain.model.TaskDue
 import com.prostovasei.simpletasks.ui.common.DayLabel
-import com.prostovasei.simpletasks.ui.common.ListIcons
 import com.prostovasei.simpletasks.ui.common.reminderText
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -219,39 +217,13 @@ fun ProjectDialog(projectId: String, projects: List<ProjectOption>, onConfirm: (
                 tag = "$TAG_PROJECT_OPTION:${option.id}",
                 onClick = { draft = option.id },
                 leading = {
-                    ListSquare(
-                        color = parseListColor(option.color) ?: AppTheme.colors.inactive,
-                        icon = ListIcons.drawable(if (option.isInbox) ListIcons.INBOX else option.icon),
-                    )
+                    ListBadge(option.emoji)
                 },
             )
         }
     }
 }
 
-/** Окно приоритета (итерация 31): флажок цвета приоритета, выбранный — галочкой; применяется по «Готово». */
-@Composable
-fun PriorityDialog(priority: Priority, onConfirm: (Priority) -> Unit, onDismiss: () -> Unit) {
-    var draft by remember { mutableStateOf(priority) }
-    // Цвета — как у кружков задач в ленте.
-    val rings = AppTheme.colors.checkRings
-    SheetDialog(stringResource(R.string.quick_tool_priority), TAG_PRIORITY_DIALOG, onDismiss, onDone = { onConfirm(draft) }) {
-        listOf(
-            Triple(R.string.priority_p1, Priority.HIGH, rings.high),
-            Triple(R.string.priority_p2, Priority.MEDIUM, rings.medium),
-            Triple(R.string.priority_p3, Priority.LOW, rings.low),
-            Triple(R.string.priority_p0, Priority.NONE, AppTheme.colors.inactive),
-        ).forEach { (label, value, color) ->
-            DialogOption(
-                title = stringResource(label),
-                selected = value == draft,
-                tag = "$TAG_PRIORITY_OPTION:${value.name}",
-                onClick = { draft = value },
-                leading = { Icon(painterResource(R.drawable.ic_tool_priority), null, tint = color, modifier = Modifier.size(AppTheme.sizes.icon)) },
-            )
-        }
-    }
-}
 
 /** Кнопка-«чип» в стиле дизайн-системы. */
 @Composable
@@ -293,5 +265,30 @@ const val TAG_CUSTOM_FIRES = "custom_fires"
 const val TAG_CUSTOM_ADD = "$TAG_CUSTOM_DIALOG:$TAG_DIALOG_DONE"
 const val TAG_PROJECT_DIALOG = "project_dialog"
 const val TAG_PROJECT_OPTION = "project_option"
+/**
+ * Окно приоритета (итерация 31): флажок цвета приоритета, выбранный — галочкой; применяется по «Готово». С итерации 47 — только
+ * в массовом редактировании (в окне задачи приоритет включается кнопкой) и с двумя вариантами: высокий и обычный.
+ */
+@Composable
+fun PriorityDialog(priority: Priority, onConfirm: (Priority) -> Unit, onDismiss: () -> Unit) {
+    var draft by remember { mutableStateOf(priority) }
+    // Цвета — как у кружков задач в ленте.
+    val rings = AppTheme.colors.checkRings
+    SheetDialog(stringResource(R.string.quick_tool_priority), TAG_PRIORITY_DIALOG, onDismiss, onDone = { onConfirm(draft) }) {
+        listOf(
+            Triple(R.string.priority_p1, Priority.HIGH, rings.high),
+            Triple(R.string.priority_p0, Priority.NONE, AppTheme.colors.inactive),
+        ).forEach { (label, value, color) ->
+            DialogOption(
+                title = stringResource(label),
+                selected = value == draft,
+                tag = "$TAG_PRIORITY_OPTION:${value.name}",
+                onClick = { draft = value },
+                leading = { Icon(painterResource(R.drawable.ic_tool_priority), null, tint = color, modifier = Modifier.size(AppTheme.sizes.icon)) },
+            )
+        }
+    }
+}
+
 const val TAG_PRIORITY_DIALOG = "priority_dialog"
 const val TAG_PRIORITY_OPTION = "priority_option"

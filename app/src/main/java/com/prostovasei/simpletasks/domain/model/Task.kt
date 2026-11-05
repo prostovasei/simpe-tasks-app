@@ -20,6 +20,8 @@ data class Task(
     val parentId: String?,
     val createdAt: Instant,
     val updatedAt: Instant,
+    /** Выполненный раз повторяющейся задачи: показывается со знаком повтора (итерация 47). */
+    val isRepeatDone: Boolean = false,
 ) {
     val isCompleted: Boolean get() = status == TaskStatus.COMPLETED
 }
