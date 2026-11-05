@@ -62,8 +62,7 @@ class WidgetRowResourcesTest {
             R.dimen.widget_week_today to SizeTokens.WIDGET_WEEK_TODAY,
             R.dimen.widget_week_cal_weekdays to SizeTokens.WIDGET_WEEK_CAL_WEEKDAYS,
             R.dimen.widget_week_cal_day to SizeTokens.WIDGET_WEEK_CAL_DAY,
-            R.dimen.widget_week_cal_row to SizeTokens.WIDGET_WEEK_CAL_ROW,
-            R.dimen.widget_week_row_default to SizeTokens.WIDGET_WEEK_ROW_DEFAULT,
+            R.dimen.widget_bar to SizeTokens.WIDGET_BAR,
         )
         dimens.forEach { (res, token) ->
             assertEquals(context.resources.getResourceEntryName(res), token.toFloat(), context.resources.getDimension(res))

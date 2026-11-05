@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Корень виджета на вкладке «Неделя» (0.46.0). Четыре строки недели — обычный вертикальный LinearLayout, а не лента: строки делят
+  настоящую высоту виджета поровну (weight). Размер, который сообщает рабочий стол, бывает больше настоящего (Samsung — на ~30 dp),
+  и строки фиксированной высоты уезжали под нижнюю панель. Снизу — место под панель (widget_overlay от Glance поверх).
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_root_bg"
+    android:clipToOutline="true"
+    tools:targetApi="31">
+
+    <LinearLayout
+        android:id="@+id/week_rows"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginStart="@dimen/widget_list_edge"
+        android:layout_marginTop="@dimen/widget_edge"
+        android:layout_marginBottom="@dimen/widget_bar"
+        android:orientation="vertical" />
+
+    <FrameLayout
+        android:id="@+id/widget_overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+</FrameLayout>

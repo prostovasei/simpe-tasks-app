@@ -3,7 +3,6 @@ package com.prostovasei.simpletasks.widget
 import android.appwidget.AppWidgetManager
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ListView
 import android.widget.TextView
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -63,10 +62,13 @@ class WidgetWeekTest {
         if (this@descendants is ViewGroup) for (i in 0 until childCount) yieldAll(getChildAt(i).descendants())
     }
 
-    private fun list(model: WidgetModel = rich): ListView =
-        renderWidget(context, model, size).applyLikeLauncher(context).descendants().filterIsInstance<ListView>().single()
+    /** 0.46.0: строки недели — не лента, а дети `week_rows` (делят высоту виджета поровну). */
+    private fun list(model: WidgetModel = rich, reported: DpSize = size): ViewGroup =
+        renderWidget(context, model, reported).applyLikeLauncher(context).findViewById(R.id.week_rows)
 
-    private fun ListView.rows(): List<View> = (0 until adapter.count).map { adapter.getView(it, null, this) }
+    private fun ViewGroup.rows(): List<View> = (0 until childCount).map { getChildAt(it) }
+
+    private fun px(dp: Float): Int = (dp * context.resources.displayMetrics.density).toInt()
 
     private fun View.visibleTexts() = descendants().filterIsInstance<TextView>().filter { it.visibility == View.VISIBLE }.map { it.text.toString() }.toList()
 
@@ -77,17 +79,30 @@ class WidgetWeekTest {
         assertEquals(WidgetFilter.All, WidgetFilter.decode(null))
     }
 
+    /**
+     * Проверка PM (0.46.0, Samsung): рабочий стол сообщил высоту больше настоящей, и четвёртая строка уезжала под нижнюю панель.
+     * Строки делят настоящую высоту поровну: при сообщённых 700 dp и настоящих 640 dp все четыре одинаковые и над панелью.
+     */
     @Test
-    fun fourRowsOfEqualHeightFillTheWidgetAboveTheBar() {
-        val rows = list().rows()
+    fun fourEqualRowsFitTheRealHeightEvenWhenTheLauncherReportsMore() {
+        val root = renderWidget(context, rich, DpSize(360.dp, 700.dp)).applyLikeLauncher(context)
+        val width = px(360f)
+        val height = px(640f)
+        root.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY))
+        root.layout(0, 0, width, height)
+        val rows = root.findViewById<ViewGroup>(R.id.week_rows).let { box -> (0 until box.childCount).map { box.getChildAt(it) } }
         assertEquals(4, rows.size)
-        val heights = rows.map { it.findViewById<View>(R.id.week_row).layoutParams.height }
-        assertEquals("высоты одинаковые", 1, heights.distinct().size)
-        val expectedPx = WidgetWeekRows.rowHeightDp(size) * context.resources.displayMetrics.density
-        assertEquals(expectedPx, heights.first().toFloat(), 1f)
-        // Четыре строки и нижняя панель помещаются в высоту виджета.
-        val total = WidgetWeekRows.rowHeightDp(size) * 4 + SizeTokens.WIDGET_EDGE + SizeTokens.WIDGET_BAR
-        assertTrue(total <= size.height.value + 1)
+        val heights = rows.map { it.height }
+        assertTrue("высоты одинаковые: $heights", heights.max() - heights.min() <= 1)
+        val barTop = height - px(SizeTokens.WIDGET_BAR.toFloat())
+        val box = root.findViewById<View>(R.id.week_rows)
+        assertTrue("последняя строка над панелью: ${box.top + rows.last().bottom} ≤ $barTop", box.top + rows.last().bottom <= barTop + 1)
+        // Строки задач во всех ячейках одной высоты и целиком внутри ячейки.
+        val friday = rows[2]
+        val slots = WeekIds.LEFT.slots.map { friday.findViewById<View>(it.plaque) }.filter { it.visibility == View.VISIBLE }
+        val slotHeights = slots.map { it.height }
+        assertTrue("строки задач одной высоты (до пикселя округления): $slotHeights", slotHeights.max() - slotHeights.min() <= 1)
+        assertTrue("строки задач внутри ячейки", slots.last().bottom <= friday.findViewById<View>(R.id.wl_root).height)
     }
 
     @Test
@@ -133,24 +148,33 @@ class WidgetWeekTest {
         assertTrue(last.visibleTexts().contains("вс"))
     }
 
-    /** Android перекрашивает уже показанные строки: строки пустой недели на месте строк богатой не наследуют ничего чужого. */
+    /** Пустые места под задачи невидимы, но держат размер (строки во всех ячейках одной высоты); лишние места убраны. */
     @Test
-    fun recycledRowsKeepNothingFromAnotherWeek() {
-        val shown = list(rich).rows()
-        val empty = week(monday.plusDays(7), YearMonth.of(2026, 11)) { emptyList() }
-        val next = list(empty)
-        shown.forEachIndexed { index, old ->
-            val row = next.adapter.getView(index, old, next)
-            assertTrue("строка $index перекрашена", row === old)
-            listOf(WeekIds.LEFT, WeekIds.RIGHT).forEach { cell ->
-                if (index < 3 || cell === WeekIds.LEFT) {
-                    cell.slots.forEach { assertEquals(View.GONE, row.findViewById<View>(it.plaque).visibility) }
-                    assertEquals(View.GONE, row.findViewById<View>(cell.more).visibility)
-                }
+    fun emptySlotsKeepTheirShareAndExtraSlotsAreGone() {
+        val small = DpSize(360.dp, 500.dp)
+        val capacity = WidgetWeekRows.capacity(WidgetWeekRows.rowHeightDp(small))
+        assertTrue("capacity $capacity", capacity in 1 until WeekIds.SLOTS)
+        val monday = list(rich, small).rows()[0]
+        WeekIds.LEFT.slots.forEachIndexed { index, slot ->
+            val expected = when {
+                index < 2 -> View.VISIBLE
+                index < capacity -> View.INVISIBLE
+                else -> View.GONE
             }
+            assertEquals("место $index", expected, monday.findViewById<View>(slot.plaque).visibility)
         }
-        // Календарь показывает другой месяц: ноябрь 2026 начинается с недели 26 октября.
-        assertEquals("26", shown[3].findViewById<TextView>(WeekIds.CAL_ROWS.first().days.first()).text.toString())
+        // Календарь другого месяца: ноябрь 2026 начинается с недели 26 октября.
+        val november = list(week(start = LocalDate.of(2026, 11, 2), month = YearMonth.of(2026, 11)) { emptyList() }).rows()[3]
+        assertEquals("26", november.findViewById<TextView>(WeekIds.CAL_ROWS.first().days.first()).text.toString())
+    }
+
+    /** У каждого виджета свои намерения нажатий: иначе выбор недели одного виджета менял бы другой. */
+    @Test
+    fun clicksOfTwoWidgetsAreDifferentIntents() {
+        val one = WidgetClicks.pending(context, 1, WidgetClicks.PICK_WEEK, "2026-10-26")
+        val two = WidgetClicks.pending(context, 2, WidgetClicks.PICK_WEEK, "2026-10-26")
+        assertFalse(one == two)
+        assertEquals(one, WidgetClicks.pending(context, 1, WidgetClicks.PICK_WEEK, "2026-10-26"))
     }
 
     @Test

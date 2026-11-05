@@ -1,4 +1,5 @@
-"""Генератор разметки вида «Неделя» в виджете (итерация 45; 0.46.0 — компактные строки, календарь без месяца и стрелок): ячейки дней, мини-календарь и строки ленты + таблица id для Kotlin.
+"""Генератор разметки вида «Неделя» в виджете (итерация 45; 0.46.0 — компактные строки, календарь без месяца и стрелок, строки недели, строки задач
+и недели календаря делят высоту поровну — weight, а не размер от рабочего стола): ячейки дней, мини-календарь и строки ленты + таблица id для Kotlin.
 
 Ячейка и календарь состоят из десятков элементов с уникальными id (в RemoteViews id внутри одной разметки не должны повторяться, а левая и правая
 ячейка — разные поддеревья), поэтому XML и таблица id пишутся скриптом. Запуск из корня репозитория: python3 design/tools/gen_widget_week.py
@@ -18,7 +19,8 @@ def cell(p):
         <LinearLayout
             android:id="@+id/{p}_s{i}"
             android:layout_width="match_parent"
-            android:layout_height="@dimen/widget_week_task"
+            android:layout_height="0dp"
+            android:layout_weight="1"
             android:layout_marginTop="@dimen/widget_week_task_gap"
             android:background="@drawable/widget_week_plaque_plain"
             android:gravity="center_vertical"
@@ -83,7 +85,8 @@ def cell(p):
     android:orientation="vertical"
     android:paddingStart="@dimen/widget_space_xxs"
     android:paddingTop="@dimen/widget_space_xxs"
-    android:paddingEnd="@dimen/widget_space_xxs">
+    android:paddingEnd="@dimen/widget_space_xxs"
+    android:paddingBottom="@dimen/widget_week_task_gap">
 
     <LinearLayout
         android:id="@+id/{p}_head"
@@ -158,7 +161,8 @@ def calendar():
         <LinearLayout
             android:id="@+id/wc_r{r}"
             android:layout_width="match_parent"
-            android:layout_height="@dimen/widget_week_cal_row"
+            android:layout_height="0dp"
+            android:layout_weight="1"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 {days}        </LinearLayout>
@@ -200,23 +204,19 @@ def calendar():
 
 def row(name, comment, right):
     return f'''<?xml version="1.0" encoding="utf-8"?>
-<!-- Сгенерировано design/tools/gen_widget_week.py (итерация 45): {comment}. Высоту задаёт код (все строки недели одинаковые). Не править руками. -->
-<FrameLayout {NS}
+<!-- Сгенерировано design/tools/gen_widget_week.py (итерация 45; 0.46.0 — доля высоты): {comment}. Строки недели делят высоту виджета поровну (weight). Не править руками. -->
+<LinearLayout {NS}
     tools:ignore="UselessParent"
+    android:id="@+id/week_row"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="0dp"
+    android:layout_weight="1"
+    android:orientation="horizontal">
 
-    <LinearLayout
-        android:id="@+id/week_row"
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/widget_week_row_default"
-        android:orientation="horizontal">
+    <include layout="@layout/widget_week_cell_l" />
 
-        <include layout="@layout/widget_week_cell_l" />
-
-        <include layout="@layout/{right}" />
-    </LinearLayout>
-</FrameLayout>
+    <include layout="@layout/{right}" />
+</LinearLayout>
 '''
 
 

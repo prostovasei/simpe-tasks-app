@@ -22,6 +22,7 @@
     <dimen name="widget_fold_icon">20dp</dimen>
     <dimen name="widget_tail">60dp</dimen>
     <dimen name="widget_edge">6dp</dimen>
+    <dimen name="widget_bar">48dp</dimen>
     <dimen name="widget_list_edge">3dp</dimen>
     <dimen name="widget_day_gap">2dp</dimen>
     <dimen name="widget_hairline">1dp</dimen>
@@ -39,8 +40,6 @@
     <dimen name="widget_week_today">20dp</dimen>
     <dimen name="widget_week_cal_weekdays">12dp</dimen>
     <dimen name="widget_week_cal_day">14dp</dimen>
-    <dimen name="widget_week_cal_row">20dp</dimen>
-    <dimen name="widget_week_row_default">140dp</dimen>
     <dimen name="widget_radius_xl">16dp</dimen>
 
     <color name="widget_surface">#FFFFFFFF</color>
