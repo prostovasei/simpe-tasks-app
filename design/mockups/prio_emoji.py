@@ -24,6 +24,19 @@ def emoji(e, size=15):
     return f'<span style="{EMO}font-size:{size}px;line-height:1;flex-shrink:0;">{e}</span>'
 
 
+def tall_repeat(color, h, w=16):
+    """Знак повтора высотой с капсулу периода: две половины капсулы со стрелками (левая — вверх и вправо, правая — вниз и влево)."""
+    r = 7
+    sw = 2
+    a = (f'M2 {h / 2 + 2}V{r + 2}a{r - 1} {r - 1} 0 0 1 {r - 1} {-(r - 1)}H{w - 6}'
+         f'M{w - 8} 1l2.5 2-2.5 2'
+         f'M{w - 2} {h / 2 - 2}V{h - r - 2}a{r - 1} {r - 1} 0 0 1 {-(r - 1)} {r - 1}H6'
+         f'M8 {h - 5}l-2.5 2 2.5 2')
+    return (f'<span style="width:{w}px;height:{h}px;border-radius:{w // 2}px;background:{BG};display:flex;flex-shrink:0;">'
+            f'<svg width="{w}" height="{h}" viewBox="0 0 {w} {h}" fill="none" stroke="{color}" stroke-width="{sw}" stroke-linecap="round" stroke-linejoin="round">'
+            f'<path d="{a}"/></svg></span>')
+
+
 def node(kind, high=False, done=False, rep=False, h=36, option='C'):
     """Кружок (dot) или капсула периода (cap). Повтор: у кружка — иконка вместо кружка; у капсулы — вариант A (иконка внутри
     капсулы сверху) или B (иконка над капсулой, капсула короче)."""
@@ -35,8 +48,8 @@ def node(kind, high=False, done=False, rep=False, h=36, option='C'):
         fill = FADED if high else '#C4C6CA'
         return (f'<span style="width:16px;height:{h}px;border-radius:8px;background:{fill};display:flex;align-items:center;justify-content:center;flex-shrink:0;">'
                 f'{ico(P_CHECK, "#fff", 11, 3)}</span>')
-    if rep and option == 'C':  # решение PM: у повтора с длительностью капсулы нет — та же иконка повтора, что у обычной задачи
-        return pt.mark(16, ring, False, True)
+    if rep and option == 'C':  # решение PM: у повтора с длительностью — знак повтора, вытянутый на высоту капсулы
+        return tall_repeat(ring, h)
     if rep and option == 'A':
         return (f'<span style="width:16px;height:{h}px;border-radius:8px;border:2px solid {ring};background:{BG};box-sizing:border-box;display:flex;flex-direction:column;align-items:center;padding-top:2px;flex-shrink:0;">'
                 f'{ico(P_REP, ring, 11, 2.6)}</span>')
@@ -155,7 +168,7 @@ def detail():
                       for e, n in [('📥', 'Входящие'), ('💼', 'работа'), ('🏠', 'дом'), ('❤️', 'здоровье'), ('🛒', 'покупки'), ('📚', 'учёба'),
                                    ('💰', 'деньги'), ('✈️', 'поездки'), ('💪', 'спорт'), ('💡', 'идеи'), ('⭐', 'звезда'), ('📁', 'без значка')])
     plain = timeline(row('Обед', '13:00', '14:00', kind='cap', high=True, emo='🏠') + row('Прогулка', '19:00', '20:00', kind='cap', emo='💪'))
-    return (box('Повтор + длительность (решение PM): капсулы нет — иконка повтора, как у обычной задачи; конец периода — серым под началом', opt('C'))
+    return (box('Повтор + длительность (решение PM): знак повтора высотой с капсулу — две половины со стрелками; конец периода — серым под началом', opt('C'))
             + box('Длительность без повтора — капсула, как сейчас', plain)
             + box('Старые списки: значок → эмодзи (один раз при обновлении)', f'<div style="display:flex;flex-wrap:wrap;gap:6px 4px;">{mapping}</div>')
             + f'<div style="font-size:13px;color:{T2};line-height:19px;width:400px;">Цвет списка больше не выбирается и нигде не показывается — вместо квадратика эмодзи. '
@@ -164,12 +177,12 @@ def detail():
 
 
 SCREENS = [
-    ('1. «Все»', 'Высокий — фиолетовый. Повтор — иконка вместо кружка, и у задачи с длительностью тоже (без капсулы). Выполненная высокая — тусклый фиолетовый. Справа — эмодзи списка.', lambda: screen_all('C')),
+    ('1. «Все»', 'Высокий — фиолетовый. Повтор — иконка вместо кружка; у задачи с длительностью знак повтора вытянут на высоту капсулы. Выполненная высокая — тусклый фиолетовый. Справа — эмодзи списка.', lambda: screen_all('C')),
     ('2. Окно задачи', 'Окна приоритета нет: нажатие на флажок сразу включает высокий, повторное — выключает. Кнопка списка — эмодзи.', screen_sheet),
     ('3. «Списки»', 'Вместо цветных квадратиков со значками — эмодзи на белой плитке.', screen_lists),
     ('4. Выбор эмодзи', '«⋮» списка → «Эмодзи»: сетка популярных по группам и поле для любого эмодзи с клавиатуры.', screen_picker),
     ('5. Виджет', 'Лента «Все» и «Неделя» в виджете — те же правила.', screen_widget),
-    ('6. Детали', 'Повтор с длительностью — иконка повтора; длительность без повтора — капсула. Перевод старых значков в эмодзи.', detail),
+    ('6. Детали', 'Повтор с длительностью — знак повтора высотой с капсулу; без повтора — капсула. Перевод старых значков в эмодзи.', detail),
 ]
 
 if __name__ == '__main__':
