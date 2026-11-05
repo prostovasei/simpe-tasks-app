@@ -104,7 +104,11 @@ fun widgetRootViews(
         // Вид «Неделя» (итерация 45; 0.46.0 — не лента): четыре строки делят настоящую высоту виджета поровну над нижней панелью.
         return RemoteViews(context.packageName, R.layout.widget_root_week).apply {
             val click = WidgetWeekRows.Click { viewId, code, id -> setOnClickPendingIntent(viewId, WidgetClicks.pending(context, appWidgetId, code, id)) }
+            // Рабочий стол при обновлении применяет действия поверх уже показанного виджета (reapply): без очистки строки
+            // добавлялись к прежним — проверка PM 0.46.0, неделя трижды в одном виджете.
+            removeAllViews(R.id.week_rows)
             WidgetWeekRows.views(context, week, size, click).forEach { addView(R.id.week_rows, it) }
+            removeAllViews(R.id.widget_overlay)
             addView(R.id.widget_overlay, overlay)
         }
     }
@@ -125,6 +129,7 @@ fun widgetRootViews(
                 PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
             ),
         )
+        removeAllViews(R.id.widget_overlay)
         addView(R.id.widget_overlay, overlay)
     }
 }

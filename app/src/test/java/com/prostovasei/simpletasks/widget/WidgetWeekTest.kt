@@ -148,6 +148,28 @@ class WidgetWeekTest {
         assertTrue(last.visibleTexts().contains("вс"))
     }
 
+    /**
+     * Проверка PM (0.46.0): рабочий стол при обновлении применяет виджет поверх показанного (reapply) — строки недели не должны
+     * добавляться к прежним (было: неделя трижды), нижняя панель — тоже одна.
+     */
+    @Test
+    fun reapplyingTheWidgetKeepsFourRowsAndOneBar() {
+        val first = renderWidget(context, rich, size)
+        val root = first.applyLikeLauncher(context)
+        repeat(2) { renderWidget(context, rich, size).reapply(context, root) }
+        assertEquals(4, root.findViewById<ViewGroup>(R.id.week_rows).childCount)
+        assertEquals(1, root.findViewById<ViewGroup>(R.id.widget_overlay).childCount)
+    }
+
+    /** Лента «Все» после повторного применения: одна нижняя панель. */
+    @Test
+    fun reapplyingTheListKeepsOneBar() {
+        val all = WidgetModel(WidgetFilter.All, null, today, emptyList())
+        val root = renderWidget(context, all, size).applyLikeLauncher(context)
+        repeat(2) { renderWidget(context, all, size).reapply(context, root) }
+        assertEquals(1, root.findViewById<ViewGroup>(R.id.widget_overlay).childCount)
+    }
+
     /** Пустые места под задачи невидимы, но держат размер (строки во всех ячейках одной высоты); лишние места убраны. */
     @Test
     fun emptySlotsKeepTheirShareAndExtraSlotsAreGone() {
