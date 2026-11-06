@@ -68,8 +68,23 @@ fun TrashTaskRoute(onClose: () -> Unit, viewModel: TrashTaskViewModel = hiltView
  * Задача в корзине (итерация 39, бэклог №35): та же шторка, но править нельзя — только читать. Сверху плашка «В корзине · удалена…»,
  * в «⋮» два пункта: «Восстановить» и «Удалить навсегда» (после подтверждения). Нажатие на затемнение и «Назад» закрывают.
  */
+/**
+ * Чем окно только для чтения отличается (итерация 49): задача в корзине или «Не буду делать» — значок и текст плашки, пункты «⋮»
+ * (первый — [TrashTaskIntent.Restore], второй — [TrashTaskIntent.DeleteForever]) и нужно ли подтверждать второй.
+ */
+enum class ReadonlyKind(val icon: Int, val banner: Int, val first: Int, val second: Int, val confirmSecond: Boolean) {
+    Trash(R.drawable.ic_tool_delete, R.string.trash_banner, R.string.trash_restore, R.string.trash_delete_forever, confirmSecond = true),
+    WontDo(R.drawable.ic_wont_do, R.string.wontdo_banner, R.string.wontdo_reopen, R.string.action_delete, confirmSecond = false),
+}
+
 @Composable
-fun TrashTaskScreen(state: TrashTaskState, onIntent: (TrashTaskIntent) -> Unit, onClose: () -> Unit, progress: () -> Float = { 1f }) {
+fun TrashTaskScreen(
+    state: TrashTaskState,
+    onIntent: (TrashTaskIntent) -> Unit,
+    onClose: () -> Unit,
+    progress: () -> Float = { 1f },
+    kind: ReadonlyKind = ReadonlyKind.Trash,
+) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
     val sizes = AppTheme.sizes
@@ -106,10 +121,10 @@ fun TrashTaskScreen(state: TrashTaskState, onIntent: (TrashTaskIntent) -> Unit, 
                 Modifier.fillMaxWidth().clip(AppTheme.shapes.large).background(colors.selected).padding(horizontal = spacing.sm + spacing.xxs, vertical = spacing.xs + spacing.xxs),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(painterResource(R.drawable.ic_tool_delete), null, tint = colors.textSecondary, modifier = Modifier.size(sizes.metaIcon))
+                Icon(painterResource(kind.icon), null, tint = colors.textSecondary, modifier = Modifier.size(sizes.metaIcon))
                 Spacer(Modifier.width(spacing.xs))
                 Text(
-                    stringResource(R.string.trash_banner, state.deletedOn?.let { WidgetDates.short(it) }.orEmpty()),
+                    stringResource(kind.banner, state.deletedOn?.let { if (kind == ReadonlyKind.WontDo) WidgetDates.withWeekday(it) else WidgetDates.short(it) }.orEmpty()),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = colors.textPrimary,
@@ -117,7 +132,11 @@ fun TrashTaskScreen(state: TrashTaskState, onIntent: (TrashTaskIntent) -> Unit, 
                 )
             }
             Row(Modifier.fillMaxWidth().padding(top = spacing.sm), verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(sizes.doneCircle).clip(CircleShape).border(sizes.checkboxStroke, priorityColor(task.priority) ?: colors.textSecondary, CircleShape))
+                if (kind == ReadonlyKind.WontDo) {
+                    Icon(painterResource(R.drawable.ic_wont_do), null, tint = colors.inactive, modifier = Modifier.size(sizes.doneCircle))
+                } else {
+                    Box(Modifier.size(sizes.doneCircle).clip(CircleShape).border(sizes.checkboxStroke, priorityColor(task.priority) ?: colors.textSecondary, CircleShape))
+                }
                 Spacer(Modifier.width(spacing.xs))
                 Text(
                     task.title,
@@ -126,7 +145,11 @@ fun TrashTaskScreen(state: TrashTaskState, onIntent: (TrashTaskIntent) -> Unit, 
                     color = colors.textPrimary,
                     modifier = Modifier.weight(1f).testTag(TAG_TRASH_TASK_TITLE),
                 )
-                TrashTaskMenu(onRestore = { onIntent(TrashTaskIntent.Restore) }, onDeleteForever = { confirmDelete = true })
+                TrashTaskMenu(
+                    kind,
+                    onRestore = { onIntent(TrashTaskIntent.Restore) },
+                    onDeleteForever = { if (kind.confirmSecond) confirmDelete = true else onIntent(TrashTaskIntent.DeleteForever) },
+                )
             }
             if (task.content.isNotBlank()) {
                 Text(task.content, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, color = colors.textSecondary, modifier = Modifier.padding(top = spacing.xxs))
@@ -180,9 +203,9 @@ fun TrashTaskScreen(state: TrashTaskState, onIntent: (TrashTaskIntent) -> Unit, 
     }
 }
 
-/** «⋮» справа от названия: «Восстановить» и «Удалить навсегда» (красным). */
+/** «⋮» справа от названия: «Восстановить» и «Удалить навсегда» (красным); у «Не буду делать» — «Вернуть в работу» и «Удалить». */
 @Composable
-private fun TrashTaskMenu(onRestore: () -> Unit, onDeleteForever: () -> Unit) {
+private fun TrashTaskMenu(kind: ReadonlyKind, onRestore: () -> Unit, onDeleteForever: () -> Unit) {
     val colors = AppTheme.colors
     var open by remember { mutableStateOf(false) }
     Box {
@@ -191,7 +214,7 @@ private fun TrashTaskMenu(onRestore: () -> Unit, onDeleteForever: () -> Unit) {
         }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }, containerColor = colors.surface) {
             DropdownMenuItem(
-                text = { Text(stringResource(R.string.trash_restore), fontWeight = FontWeight.SemiBold) },
+                text = { Text(stringResource(kind.first), fontWeight = FontWeight.SemiBold) },
                 onClick = {
                     open = false
                     onRestore()
@@ -199,7 +222,7 @@ private fun TrashTaskMenu(onRestore: () -> Unit, onDeleteForever: () -> Unit) {
                 modifier = Modifier.testTag(TAG_TRASH_TASK_RESTORE),
             )
             DropdownMenuItem(
-                text = { Text(stringResource(R.string.trash_delete_forever), color = colors.danger, fontWeight = FontWeight.SemiBold) },
+                text = { Text(stringResource(kind.second), color = colors.danger, fontWeight = FontWeight.SemiBold) },
                 onClick = {
                     open = false
                     onDeleteForever()

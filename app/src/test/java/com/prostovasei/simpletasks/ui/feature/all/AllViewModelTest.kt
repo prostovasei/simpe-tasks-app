@@ -217,7 +217,8 @@ class AllViewModelTest {
         assertEquals(listOf("gym@0", "dentist", "gym@1", "gym@2", "gym@3"), upcoming.map { it.id })
         val ghost = upcoming.first()
         assertTrue(ghost.isGhost)
-        assertEquals("gym", ghost.taskId)
+        // Итерация 49: нажатие открывает серию вместе с датой этого раза.
+        assertEquals("gym" to com.prostovasei.simpletasks.domain.model.TaskDue.AllDay(LocalDate.of(2026, 10, 20)), com.prostovasei.simpletasks.ui.common.TaskOpenKey.parse(ghost.taskId))
         assertEquals(DayLabel.Date(LocalDate.of(2026, 10, 20), showYear = false), ghost.due!!.day)
         assertEquals("Сама задача — в «Сегодня»", listOf("gym"), vm.state.value.todayAllDay.map { it.id })
     }

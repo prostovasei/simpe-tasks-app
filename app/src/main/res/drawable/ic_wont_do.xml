@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Значок «Не буду делать» (итерация 49, макет iteration49.py): круг с крестиком — пара кругу «выполнено»; цвет задаётся оттенком. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:strokeColor="@android:color/white" android:strokeWidth="2" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M12,3a9,9 0,1 1,0 18a9,9 0,1 1,0 -18z M9,9l6,6 M15,9l-6,6" />
+</vector>

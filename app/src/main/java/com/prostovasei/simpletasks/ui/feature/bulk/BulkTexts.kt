@@ -26,6 +26,7 @@ class BulkTexts private constructor(private val templates: Map<BulkKind, String>
         BulkKind.Priority -> UndoKind.Priority
         BulkKind.Reopened, BulkKind.Restored -> UndoKind.Restored
         BulkKind.Deleted -> UndoKind.Deleted
+        BulkKind.WontDo -> UndoKind.WontDo
     }
 
     companion object {
@@ -40,6 +41,7 @@ class BulkTexts private constructor(private val templates: Map<BulkKind, String>
                 BulkKind.Reopened to stringResource(R.string.bulk_reopened),
                 BulkKind.Deleted to stringResource(R.string.bulk_deleted),
                 BulkKind.Restored to stringResource(R.string.trash_restored_many),
+                BulkKind.WontDo to stringResource(R.string.bulk_wont_done),
             ),
             stringResource(R.string.inbox_list_name),
         )

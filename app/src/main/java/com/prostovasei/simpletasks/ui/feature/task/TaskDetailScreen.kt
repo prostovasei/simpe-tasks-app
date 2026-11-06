@@ -56,6 +56,9 @@ import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.domain.model.ChecklistItem
 import com.prostovasei.simpletasks.domain.model.Task
 import com.prostovasei.simpletasks.domain.model.TaskStatus
+import com.prostovasei.simpletasks.domain.model.EarlierRepeats
+import com.prostovasei.simpletasks.domain.model.TaskDue
+import com.prostovasei.simpletasks.widget.WidgetDates
 import com.prostovasei.simpletasks.ui.common.DayNames
 import kotlinx.coroutines.launch
 
@@ -65,6 +68,7 @@ fun TaskDetailRoute(onClose: () -> Unit, onOpenTask: (String) -> Unit, viewModel
     val motion = rememberSheetMotion(onClose)
     val snackbar = remember { SnackbarHostState() }
     val rescheduled = stringResource(R.string.task_rescheduled)
+    val futureHint = stringResource(R.string.future_done_hint)
     val days = DayNames(stringResource(R.string.day_today), stringResource(R.string.day_tomorrow), stringResource(R.string.day_yesterday))
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
@@ -73,6 +77,10 @@ fun TaskDetailRoute(onClose: () -> Unit, onOpenTask: (String) -> Unit, viewModel
                 is TaskDetailEffect.Rescheduled -> launch {
                     snackbar.currentSnackbarData?.dismiss()
                     snackbar.showSnackbar(rescheduled.format(days.format(effect.next)))
+                }
+                is TaskDetailEffect.FutureDone -> launch {
+                    snackbar.currentSnackbarData?.dismiss()
+                    snackbar.showSnackbar(futureHint.format(effect.nearest))
                 }
             }
         }
@@ -134,6 +142,8 @@ fun TaskDetailScreen(
             SheetConfirmButton(R.string.sheet_done, enabled = true, tag = TAG_DETAIL_CLOSE, onClick = onClose)
         },
     ) {
+        // Будущий повтор (итерация 49): плашка сверху — какой это раз и когда ближайший.
+        if (state.occurrence != null) FutureBanner(task)
         Row(verticalAlignment = Alignment.CenterVertically) {
             DoneCircle(done, priorityColor(task.priority), Modifier.testTag(TAG_DETAIL_DONE)) { onIntent(TaskDetailIntent.ToggleCompleted) }
             CompactField(
@@ -147,7 +157,10 @@ fun TaskDetailScreen(
                 modifier = Modifier.weight(1f).testTag(TAG_DETAIL_TITLE),
                 visualTransformation = smartHighlight(state.smart),
             )
-            TaskMenu(createdText(task.createdAt.atZone(state.zone).toLocalDate())) { onIntent(TaskDetailIntent.RequestDelete) }
+            TaskMenu(
+                createdText(task.createdAt.atZone(state.zone).toLocalDate()),
+                onWontDo = if (task.status == TaskStatus.ACTIVE) { { onIntent(TaskDetailIntent.WontDo) } } else null,
+            ) { onIntent(TaskDetailIntent.RequestDelete) }
         }
         SmartDateLine(state.smart, state.today, state.zone) { onIntent(TaskDetailIntent.DismissSmartDate) }
         CompactField(
@@ -177,6 +190,35 @@ fun TaskDetailScreen(
             )
         }
         if (state.subtasks.isNotEmpty()) SubtasksSection(state.subtasks, onIntent, onOpenTask)
+    }
+
+    when (val dialog = state.dialog) {
+        DetailDialog.DeleteSeries -> ChoiceDialog(
+            title = stringResource(R.string.delete_series_title),
+            text = stringResource(R.string.delete_series_text, task.title),
+            tag = TAG_DELETE_SERIES_DIALOG,
+            choices = listOf(
+                Choice(stringResource(R.string.delete_series_confirm), ChoiceStyle.Danger, TAG_CHOICE_DELETE) { onIntent(TaskDetailIntent.ConfirmDeleteSeries) },
+                Choice(stringResource(R.string.action_wont_do), ChoiceStyle.Outline, TAG_CHOICE_WONT_DO, R.drawable.ic_wont_do) { onIntent(TaskDetailIntent.WontDo) },
+                Choice(stringResource(R.string.action_cancel), ChoiceStyle.Plain, TAG_CHOICE_CANCEL) { onIntent(TaskDetailIntent.DismissDialog) },
+            ),
+            onDismiss = { onIntent(TaskDetailIntent.DismissDialog) },
+        )
+        is DetailDialog.Unclosed -> {
+            val target = state.occurrence?.let(::dayLabel).orEmpty()
+            ChoiceDialog(
+                title = stringResource(R.string.unclosed_title),
+                text = stringResource(R.string.unclosed_text, target, task.title, dialog.dates.joinToString(", ", transform = ::dayLabel)),
+                tag = TAG_UNCLOSED_DIALOG,
+                choices = listOf(
+                    Choice(stringResource(R.string.unclosed_skip), ChoiceStyle.Primary, TAG_CHOICE_SKIP) { onIntent(TaskDetailIntent.CloseEarlier(EarlierRepeats.SKIP)) },
+                    Choice(stringResource(R.string.unclosed_complete), ChoiceStyle.Outline, TAG_CHOICE_COMPLETE) { onIntent(TaskDetailIntent.CloseEarlier(EarlierRepeats.COMPLETE)) },
+                    Choice(stringResource(R.string.action_cancel), ChoiceStyle.Plain, TAG_CHOICE_CANCEL) { onIntent(TaskDetailIntent.DismissDialog) },
+                ),
+                onDismiss = { onIntent(TaskDetailIntent.DismissDialog) },
+            )
+        }
+        null -> Unit
     }
 
     state.renamingItem?.let { item ->
@@ -216,9 +258,47 @@ private fun DoneCircle(checked: Boolean, priority: androidx.compose.ui.graphics.
     }
 }
 
-/** «⋮» справа от названия: «Удалить» (красным) и под чертой — когда задача создана. */
+/** Плашка будущего повтора (итерация 49): «Будущий повтор · ближайший — вс, 08 ноя». */
 @Composable
-private fun TaskMenu(created: String, onDelete: () -> Unit) {
+private fun FutureBanner(series: Task) {
+    val colors = AppTheme.colors
+    val spacing = AppTheme.spacing
+    val nearest = (series.start ?: series.due)?.let(::dayLabel).orEmpty()
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(top = spacing.xs)
+            .clip(AppTheme.shapes.large)
+            .background(colors.selected)
+            .padding(horizontal = spacing.sm, vertical = spacing.xs)
+            .testTag(TAG_DETAIL_FUTURE),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(painterResource(R.drawable.ic_tool_repeat), null, tint = colors.textSecondary, modifier = Modifier.size(AppTheme.sizes.metaIcon))
+        Text(
+            stringResource(R.string.future_banner, nearest),
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = colors.textPrimary,
+            modifier = Modifier.padding(start = spacing.xs),
+        )
+    }
+}
+
+/** «вс, 08 ноя» для даты раза. */
+private fun dayLabel(due: TaskDue): String = WidgetDates.withWeekday(
+    when (due) {
+        is TaskDue.AllDay -> due.date
+        is TaskDue.AtTime -> due.instant.atZone(java.time.ZoneId.systemDefault()).toLocalDate()
+    },
+)
+
+/**
+ * «⋮» справа от названия: «Не буду делать» (итерация 49; только у незакрытой задачи), «Удалить» (красным) и под чертой —
+ * когда задача создана.
+ */
+@Composable
+private fun TaskMenu(created: String, onWontDo: (() -> Unit)?, onDelete: () -> Unit) {
     val colors = AppTheme.colors
     var open by remember { mutableStateOf(false) }
     Box {
@@ -226,6 +306,17 @@ private fun TaskMenu(created: String, onDelete: () -> Unit) {
             Icon(Icons.Default.MoreVert, stringResource(R.string.detail_menu), tint = colors.textSecondary)
         }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }, containerColor = colors.surface) {
+            if (onWontDo != null) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.action_wont_do), color = colors.textPrimary, fontWeight = FontWeight.SemiBold) },
+                    leadingIcon = { Icon(painterResource(R.drawable.ic_wont_do), null, tint = colors.textPrimary, modifier = Modifier.size(AppTheme.sizes.icon)) },
+                    onClick = {
+                        open = false
+                        onWontDo()
+                    },
+                    modifier = Modifier.testTag(TAG_DETAIL_WONT_DO),
+                )
+            }
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.action_delete), color = colors.danger, fontWeight = FontWeight.SemiBold) },
                 leadingIcon = { Icon(painterResource(R.drawable.ic_tool_delete), null, tint = colors.danger, modifier = Modifier.size(AppTheme.sizes.icon)) },
@@ -335,3 +426,12 @@ const val TAG_DETAIL_MENU = "detail_menu"
 const val TAG_DETAIL_CREATED = "detail_created"
 const val TAG_DETAIL_CLOSE = "detail_close"
 const val TAG_DETAIL_ADD_ITEM = "detail_add_item"
+const val TAG_DETAIL_WONT_DO = "detail_wont_do"
+const val TAG_DETAIL_FUTURE = "detail_future"
+const val TAG_DELETE_SERIES_DIALOG = "delete_series_dialog"
+const val TAG_UNCLOSED_DIALOG = "unclosed_dialog"
+const val TAG_CHOICE_DELETE = "delete"
+const val TAG_CHOICE_WONT_DO = "wont_do"
+const val TAG_CHOICE_SKIP = "skip"
+const val TAG_CHOICE_COMPLETE = "complete"
+const val TAG_CHOICE_CANCEL = "cancel"

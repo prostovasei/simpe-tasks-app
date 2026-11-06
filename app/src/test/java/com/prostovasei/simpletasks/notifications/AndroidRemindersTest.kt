@@ -56,7 +56,7 @@ class AndroidRemindersTest {
         val shadow = shadowOf(posted)
         assertEquals("Позвонить маме", shadow.contentTitle)
         assertEquals("Итерация 27: только срок, без списка", "Сегодня, 18:30", shadow.contentText)
-        assertEquals(listOf("Выполнить", "На завтра"), posted.actions.map { it.title.toString() })
+        assertEquals("Итерация 49: «Не буду делать» посередине", listOf("Выполнить", "Не буду делать", "На завтра"), posted.actions.map { it.title.toString() })
         assertEquals(AndroidReminderNotifications.CHANNEL_ID, posted.channelId)
         val channel = notificationManager.getNotificationChannel(AndroidReminderNotifications.CHANNEL_ID)
         assertTrue("Вибрация включена", channel.shouldVibrate())
@@ -68,7 +68,10 @@ class AndroidRemindersTest {
         val complete = shadowOf(posted.actions[0].actionIntent).savedIntent
         assertEquals(ReminderReceiver.ACTION_COMPLETE, complete.action)
         assertEquals("t1", complete.getStringExtra(ReminderReceiver.EXTRA_TASK_ID))
-        val tomorrow = shadowOf(posted.actions[1].actionIntent).savedIntent
+        val wontDo = shadowOf(posted.actions[1].actionIntent).savedIntent
+        assertEquals(ReminderReceiver.ACTION_WONT_DO, wontDo.action)
+        assertEquals("t1", wontDo.getStringExtra(ReminderReceiver.EXTRA_TASK_ID))
+        val tomorrow = shadowOf(posted.actions[2].actionIntent).savedIntent
         assertEquals("Итерация 36: «На завтра» — то же действие, что часы на полоске", ReminderReceiver.ACTION_TOMORROW, tomorrow.action)
         assertEquals("t1", tomorrow.getStringExtra(ReminderReceiver.EXTRA_TASK_ID))
 

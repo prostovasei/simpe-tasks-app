@@ -31,6 +31,7 @@ import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.domain.model.ChecklistItem
 import com.prostovasei.simpletasks.domain.model.Priority
 import com.prostovasei.simpletasks.domain.model.TaskDue
+import com.prostovasei.simpletasks.domain.model.TaskStatus
 import com.prostovasei.simpletasks.testing.task
 import java.time.Instant
 import java.time.LocalDate
@@ -480,6 +481,52 @@ class TaskScreensUiTest {
         composeRule.onNodeWithTag(TAG_DETAIL_MENU).performClick()
         composeRule.onNodeWithTag(TAG_DETAIL_CREATED).assertTextEquals("создано чт, 01 янв 2026")
         composeRule.onNodeWithTag(TAG_DETAIL_DELETE).assertExists()
+    }
+
+    /** Итерация 49: в «⋮» — «Не буду делать» над «Удалить»; у закрытой задачи его нет. */
+    @Test
+    fun detailMenuOffersWontDo() {
+        show { TaskDetailScreen(detailState, { intents += it }, {}, {}) }
+        composeRule.onNodeWithTag(TAG_DETAIL_MENU).performClick()
+        composeRule.onNodeWithTag(TAG_DETAIL_WONT_DO).performClick()
+        assertEquals(TaskDetailIntent.WontDo, intents.last())
+    }
+
+    @Test
+    fun detailClosedTaskHasNoWontDo() {
+        show { TaskDetailScreen(detailState.copy(task = detailState.task!!.copy(status = TaskStatus.COMPLETED)), { intents += it }, {}, {}) }
+        composeRule.onNodeWithTag(TAG_DETAIL_MENU).performClick()
+        composeRule.onNodeWithTag(TAG_DETAIL_DELETE).assertExists()
+        composeRule.onNodeWithTag(TAG_DETAIL_WONT_DO).assertDoesNotExist()
+    }
+
+    /** Итерация 49: будущий повтор — плашка «Будущий повтор · ближайший — …». */
+    @Test
+    fun detailFutureRepeatShowsBanner() {
+        show { TaskDetailScreen(detailState.copy(occurrence = TaskDue.AllDay(today.plusMonths(1))), { intents += it }, {}, {}) }
+        composeRule.onNodeWithTag(TAG_DETAIL_FUTURE).assertExists()
+    }
+
+    /** Итерация 49: окно «Удалить серию повторов?» — три кнопки, «Не буду делать» закрывает раз. */
+    @Test
+    fun screenshotDeleteSeriesDialog() {
+        var picked = ""
+        show {
+            ChoiceDialog(
+                title = "Удалить серию повторов?",
+                text = "Задача «Стирка» повторяется. Удалятся все её будущие повторы, выполненные останутся в истории.\n\nЧтобы убрать только этот повтор, нажмите «Не буду делать».",
+                tag = TAG_DELETE_SERIES_DIALOG,
+                choices = listOf(
+                    Choice("Удалить серию", ChoiceStyle.Danger, TAG_CHOICE_DELETE) { picked = "delete" },
+                    Choice("Не буду делать", ChoiceStyle.Outline, TAG_CHOICE_WONT_DO, com.prostovasei.simpletasks.R.drawable.ic_wont_do) { picked = "wont" },
+                    Choice("Отмена", ChoiceStyle.Plain, TAG_CHOICE_CANCEL) { picked = "cancel" },
+                ),
+                onDismiss = {},
+            )
+        }
+        composeRule.onRoot().captureRoboImage("screenshots/delete_series_dialog_light.png")
+        composeRule.onNodeWithTag("$TAG_DELETE_SERIES_DIALOG:$TAG_CHOICE_WONT_DO").performClick()
+        assertEquals("wont", picked)
     }
 
     @Test

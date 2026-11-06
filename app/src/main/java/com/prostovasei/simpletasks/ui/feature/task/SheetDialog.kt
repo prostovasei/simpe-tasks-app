@@ -1,6 +1,10 @@
 package com.prostovasei.simpletasks.ui.feature.task
 
 import androidx.compose.foundation.background
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -122,6 +126,80 @@ fun SheetDialog(
                         modifier = Modifier.weight(1f).heightIn(min = sizes.toolButton).testTag("$tag:$TAG_DIALOG_DONE"),
                     ) {
                         Text(stringResource(doneLabel), fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Вид кнопки в [ChoiceDialog]: красная, чёрная, с рамкой или просто текст. */
+enum class ChoiceStyle { Danger, Primary, Outline, Plain }
+
+/** Кнопка окна выбора: подпись, вид, тег для тестов, значок слева и действие. */
+class Choice(val label: String, val style: ChoiceStyle, val tag: String, @DrawableRes val icon: Int? = null, val onClick: () -> Unit)
+
+/**
+ * Окно выбора (итерация 49, макет iteration49.py): по центру — заголовок, пояснение и кнопки столбиком на всю ширину
+ * («Удалить серию» / «Не буду делать» / «Отмена»). Нажатие на кнопку сразу выполняет её; «Назад» и нажатие мимо — как «Отмена».
+ */
+@Composable
+fun ChoiceDialog(title: String, text: String, tag: String, choices: List<Choice>, onDismiss: () -> Unit) {
+    val colors = AppTheme.colors
+    val spacing = AppTheme.spacing
+    val sizes = AppTheme.sizes
+    val shape = AppTheme.shapes.large
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        Column(
+            Modifier
+                .padding(horizontal = spacing.lg, vertical = spacing.lg)
+                .widthIn(max = sizes.dialogMaxWidth)
+                .fillMaxWidth()
+                .clip(AppTheme.shapes.nav)
+                .background(colors.surface)
+                .testTag(tag),
+        ) {
+            Column(
+                Modifier
+                    .weight(1f, fill = false)
+                    .verticalScroll(rememberScrollState())
+                    .padding(start = spacing.lg, end = spacing.lg, top = spacing.lg, bottom = spacing.xs),
+            ) {
+                Text(title, color = colors.textPrimary, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text(text, color = colors.textSecondary, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = spacing.xs))
+            }
+            Column(Modifier.fillMaxWidth().padding(spacing.md), verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
+                choices.forEach { choice ->
+                    val modifier = Modifier.fillMaxWidth().heightIn(min = sizes.toolButton).testTag("$tag:${choice.tag}")
+                    val label: @Composable () -> Unit = {
+                        choice.icon?.let {
+                            Icon(painterResource(it), null, modifier = Modifier.padding(end = spacing.xs).size(sizes.metaIcon))
+                        }
+                        Text(choice.label, fontWeight = FontWeight.Bold)
+                    }
+                    when (choice.style) {
+                        ChoiceStyle.Danger, ChoiceStyle.Primary -> Button(
+                            onClick = choice.onClick,
+                            shape = shape,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (choice.style == ChoiceStyle.Danger) colors.danger else colors.accent,
+                                contentColor = colors.onAccent,
+                            ),
+                            modifier = modifier,
+                        ) { label() }
+                        ChoiceStyle.Outline -> OutlinedButton(
+                            onClick = choice.onClick,
+                            shape = shape,
+                            border = BorderStroke(sizes.hairline, colors.divider),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.textPrimary),
+                            modifier = modifier,
+                        ) { label() }
+                        ChoiceStyle.Plain -> TextButton(
+                            onClick = choice.onClick,
+                            shape = shape,
+                            colors = ButtonDefaults.textButtonColors(contentColor = colors.textPrimary),
+                            modifier = modifier,
+                        ) { label() }
                     }
                 }
             }

@@ -3,6 +3,7 @@ package com.prostovasei.simpletasks.domain.repository
 import com.prostovasei.simpletasks.domain.model.AllScreenTasks
 import com.prostovasei.simpletasks.domain.model.Completion
 import com.prostovasei.simpletasks.domain.model.Deletion
+import com.prostovasei.simpletasks.domain.model.EarlierRepeats
 import com.prostovasei.simpletasks.domain.model.Rescheduling
 import com.prostovasei.simpletasks.domain.model.Restoration
 import com.prostovasei.simpletasks.domain.model.TrashedTask
@@ -10,6 +11,8 @@ import com.prostovasei.simpletasks.domain.model.NewTask
 import com.prostovasei.simpletasks.domain.model.SearchableTask
 import com.prostovasei.simpletasks.domain.model.Task
 import com.prostovasei.simpletasks.domain.model.TaskDetails
+import com.prostovasei.simpletasks.domain.model.TaskDue
+import com.prostovasei.simpletasks.domain.model.WontDo
 import com.prostovasei.simpletasks.domain.model.WeekTasks
 import kotlinx.coroutines.flow.Flow
 import java.time.Instant
@@ -62,6 +65,22 @@ interface TaskRepository {
     suspend fun undo(completion: Completion)
 
     /**
+     * «Не буду делать» (итерация 49). Обычная задача закрывается без выполнения. У повторяющейся закрывается раз: ближайший
+     * ([occurrence] = null) или будущий [occurrence] — тогда незакрытые повторы перед ним пропускаются или выполняются ([earlier]);
+     * серия переезжает на следующий раз, а закрытый раз сохраняется отдельной задачей. null — задача уже закрыта или удалена.
+     */
+    suspend fun wontDo(taskId: String, occurrence: TaskDue? = null, earlier: EarlierRepeats = EarlierRepeats.SKIP): WontDo?
+
+    /** Отменяет «Не буду делать»: созданные записи стираются, задача возвращается как была. */
+    suspend fun undoWontDo(result: WontDo)
+
+    /** Задачи «Не буду делать», новые сверху (экран «Не буду делать», итерация 49). */
+    fun observeWontDo(): Flow<List<Task>>
+
+    /** Сколько задач «Не буду делать» — для строки на экране «Списки». */
+    fun observeWontDoCount(): Flow<Int>
+
+    /**
      * Задачи со временем, идущие в промежутке [from, to), и все активные повторяющиеся со временем —
      * для сетки недели в окне новой задачи (итерация 16).
      */
@@ -74,12 +93,12 @@ interface TaskRepository {
     fun observeCompleted(): Flow<List<Task>>
 
     /**
-     * Возвращает выполненную задачу в активные. Выполненный раз повторяющейся задачи возвращается обычной
-     * задачей без повтора — серия не меняется (решение PM). Возвращает задачу до изменения — для «Отмены».
+     * Возвращает выполненную задачу (или «не буду делать», итерация 49) в активные. Закрытый раз повторяющейся задачи возвращается
+     * обычной задачей без повтора — серия не меняется (решение PM). Возвращает задачу до изменения — для «Отмены».
      */
     suspend fun restore(taskId: String): Task?
 
-    /** «Отмена» возврата: задача снова выполнена, с прежним временем выполнения и повтором. */
+    /** «Отмена» возврата: задача снова закрыта (выполнена или «не буду делать»), с прежним временем и повтором. */
     suspend fun undoRestore(previous: Task)
 
     /** Снимает отметку «выполнена» (без переносов). */

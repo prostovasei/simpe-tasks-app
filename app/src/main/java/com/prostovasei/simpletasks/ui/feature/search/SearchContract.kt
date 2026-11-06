@@ -2,6 +2,7 @@ package com.prostovasei.simpletasks.ui.feature.search
 
 import com.prostovasei.simpletasks.domain.model.SearchableTask
 import com.prostovasei.simpletasks.domain.model.TaskDue
+import com.prostovasei.simpletasks.domain.model.TaskStatus
 import com.prostovasei.simpletasks.ui.common.TaskItem
 
 /** Найденная задача: [match] — строка описания или чек-листа, где нашлось слово (если не в названии). */
@@ -50,7 +51,8 @@ fun searchTasks(all: List<SearchableTask>, query: String): Pair<List<SearchHit>,
             (entry.task.content.lines() + entry.checklist).firstOrNull { it.contains(q, ignoreCase = true) }?.let { SearchHit(entry, it.trim()) }
         }
     }
-    val (done, active) = hits.partition { it.entry.task.isCompleted }
+    // «Не буду делать» (итерация 49) — тоже закрытые: вместе с выполненными, не среди активных.
+    val (done, active) = hits.partition { it.entry.task.status != TaskStatus.ACTIVE }
     return active.sortedWith(compareBy<SearchHit>({ it.entry.task.due == null }, { it.entry.task.due?.sortKey() }, { it.entry.task.createdAt })) to
         done.sortedByDescending { it.entry.task.completedAt ?: it.entry.task.updatedAt }.take(DONE_LIMIT)
 }

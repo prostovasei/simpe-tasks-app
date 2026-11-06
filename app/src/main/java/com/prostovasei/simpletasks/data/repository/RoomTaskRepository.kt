@@ -12,6 +12,10 @@ import com.prostovasei.simpletasks.data.mapper.toDomain
 import com.prostovasei.simpletasks.domain.model.AllScreenTasks
 import com.prostovasei.simpletasks.domain.model.Completion
 import com.prostovasei.simpletasks.domain.model.Deletion
+import com.prostovasei.simpletasks.domain.model.EarlierRepeats
+import com.prostovasei.simpletasks.domain.model.WontDo
+import com.prostovasei.simpletasks.domain.model.atOccurrence
+import com.prostovasei.simpletasks.domain.model.repeatsBefore
 import com.prostovasei.simpletasks.domain.model.WeekTasks
 import com.prostovasei.simpletasks.domain.model.NewTask
 import com.prostovasei.simpletasks.domain.model.Rescheduling
@@ -171,6 +175,86 @@ class RoomTaskRepository @Inject constructor(
         }
     }
 
+    override suspend fun wontDo(taskId: String, occurrence: TaskDue?, earlier: EarlierRepeats): WontDo? = db.withTransaction {
+        val entity = taskDao.getById(taskId)?.takeIf { !it.isDeleted && it.status == TaskStatus.ACTIVE.value }
+            ?: return@withTransaction null
+        val task = entity.toDomain()
+        val now = nowMillis()
+        val zone = time.zone()
+        val today = time.today()
+        val anchor = task.start ?: task.due
+        if (task.rrule == null || anchor == null) {
+            taskDao.setStatus(taskId, TaskStatus.ABANDONED.value, completedAt = now, now = now)
+            return@withTransaction WontDo(taskId, previous = task, closedWhole = true, occurrence = anchor)
+        }
+        // Будущий раз (как в TickTick): сначала закрываются незакрытые повторы перед ним — пропуском или выполнением.
+        val before = occurrence?.takeIf { it != anchor }?.let { task.repeatsBefore(it, zone, today) }.orEmpty()
+        val copies = mutableListOf<String>()
+        if (earlier == EarlierRepeats.COMPLETE) before.forEach { copies += insertClosedCopy(entity, it, TaskStatus.COMPLETED, now) }
+        // Раз, который закрываем: идём по серии, чтобы у «N раз» остаток считался верно; если правило дало другую дату — берём дату раза.
+        var target: Task = task
+        before.forEach { target = target.nextOccurrence(zone, today) ?: target }
+        val targetAnchor = target.start ?: target.due
+        val next: Task?
+        if (occurrence != null && targetAnchor != occurrence) {
+            next = target
+            target = task.atOccurrence(occurrence) ?: task
+        } else {
+            next = target.nextOccurrence(zone, today)
+        }
+        if (next == null) {
+            // Последний раз серии: закрывается сама задача.
+            updateTask(target)
+            taskDao.setStatus(taskId, TaskStatus.ABANDONED.value, completedAt = now, now = now)
+            return@withTransaction WontDo(
+                taskId, previous = task, closedWhole = true, copyIds = copies, occurrence = target.start ?: target.due,
+                skipped = if (earlier == EarlierRepeats.SKIP) before.size else 0, completed = if (earlier == EarlierRepeats.COMPLETE) before.size else 0,
+            )
+        }
+        copies += insertClosedCopy(entity, target, TaskStatus.ABANDONED, now)
+        // Как при выполнении: у серии чек-лист начинается заново.
+        val checked = checklistDao.getByTask(taskId).filter { it.isDone }.map { it.id }
+        checked.forEach { checklistDao.setDone(it, done = false, now = now) }
+        updateTask(next)
+        WontDo(
+            taskId, previous = task, closedWhole = false, copyIds = copies, checkedItemIds = checked, occurrence = target.start ?: target.due,
+            skipped = if (earlier == EarlierRepeats.SKIP) before.size else 0, completed = if (earlier == EarlierRepeats.COMPLETE) before.size else 0,
+        )
+    }
+
+    /** Закрытый раз серии — отдельная задача без правила, со сроком раза [occurrence] и копией чек-листа серии. */
+    private suspend fun insertClosedCopy(series: TaskEntity, occurrence: Task, status: TaskStatus, now: Long): String {
+        val copyId = ids.newId()
+        taskDao.insert(
+            series.copy(
+                id = copyId, status = status.value, completedAt = now, rrule = null, isRepeatDone = true,
+                externalId = null, sourceData = null, createdAt = now, updatedAt = now,
+            ),
+        )
+        updateTask(occurrence.copy(id = copyId, rrule = null))
+        val items = checklistDao.getByTask(series.id)
+        checklistDao.insertAll(items.map { it.copy(id = ids.newId(), taskId = copyId, createdAt = now, updatedAt = now) })
+        return copyId
+    }
+
+    override suspend fun undoWontDo(result: WontDo) {
+        val now = nowMillis()
+        db.withTransaction {
+            result.copyIds.forEach {
+                checklistDao.deleteHardByTask(it)
+                taskDao.deleteHard(it)
+            }
+            updateTask(result.previous)
+            if (result.closedWhole) taskDao.setStatus(result.taskId, TaskStatus.ACTIVE.value, completedAt = null, now = now)
+            result.checkedItemIds.forEach { checklistDao.setDone(it, done = true, now = now) }
+        }
+    }
+
+    override fun observeWontDo(): Flow<List<Task>> =
+        taskDao.observeWontDo().map { tasks -> tasks.map { it.toDomain() } }.distinctUntilChanged()
+
+    override fun observeWontDoCount(): Flow<Int> = taskDao.observeWontDoCount().distinctUntilChanged()
+
     override suspend fun moveToTomorrow(taskId: String) {
         val task = getTask(taskId) ?: return
         updateTask(task.withDue(task.due.movedTo(time.today().plusDays(1), time.zone())))
@@ -209,7 +293,7 @@ class RoomTaskRepository @Inject constructor(
         taskDao.observeCompleted().map { tasks -> tasks.map { it.toDomain() } }.distinctUntilChanged()
 
     override suspend fun restore(taskId: String): Task? {
-        val task = getTask(taskId)?.takeIf { it.isCompleted } ?: return null
+        val task = getTask(taskId)?.takeIf { it.status != TaskStatus.ACTIVE } ?: return null
         db.withTransaction {
             if (task.rrule != null) updateTask(task.copy(rrule = null))
             taskDao.setStatus(taskId, TaskStatus.ACTIVE.value, completedAt = null, now = nowMillis())
@@ -221,7 +305,8 @@ class RoomTaskRepository @Inject constructor(
         val now = nowMillis()
         db.withTransaction {
             updateTask(previous)
-            taskDao.setStatus(previous.id, TaskStatus.COMPLETED.value, completedAt = previous.completedAt?.toEpochMilli() ?: now, now = now)
+            val status = previous.status.takeIf { it != TaskStatus.ACTIVE } ?: TaskStatus.COMPLETED
+            taskDao.setStatus(previous.id, status.value, completedAt = previous.completedAt?.toEpochMilli() ?: now, now = now)
         }
     }
 

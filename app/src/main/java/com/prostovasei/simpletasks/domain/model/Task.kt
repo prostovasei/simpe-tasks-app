@@ -24,6 +24,9 @@ data class Task(
     val isRepeatDone: Boolean = false,
 ) {
     val isCompleted: Boolean get() = status == TaskStatus.COMPLETED
+
+    /** «Не буду делать» (итерация 49; в TickTick — Won't Do, статус −1). */
+    val isWontDo: Boolean get() = status == TaskStatus.ABANDONED
 }
 
 /** Задача для поиска: с текстом пунктов чек-листа (итерация 15). */

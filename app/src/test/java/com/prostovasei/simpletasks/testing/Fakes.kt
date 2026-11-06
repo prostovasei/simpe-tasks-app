@@ -5,6 +5,8 @@ import com.prostovasei.simpletasks.domain.model.Completion
 import com.prostovasei.simpletasks.domain.model.nextOccurrence
 import com.prostovasei.simpletasks.domain.model.GroupWithProjects
 import com.prostovasei.simpletasks.domain.model.Deletion
+import com.prostovasei.simpletasks.domain.model.EarlierRepeats
+import com.prostovasei.simpletasks.domain.model.WontDo
 import com.prostovasei.simpletasks.domain.model.NewTask
 import com.prostovasei.simpletasks.domain.model.Priority
 import com.prostovasei.simpletasks.domain.model.Rescheduling
@@ -135,7 +137,7 @@ class FakeTaskRepository(private val today: LocalDate = LocalDate.of(2026, 10, 1
     override fun observeCompleted(): Flow<List<Task>> = tasks.map { all -> all.filter { it.status == TaskStatus.COMPLETED } }
 
     override suspend fun restore(taskId: String): Task? {
-        val task = tasks.value.firstOrNull { it.id == taskId && it.status == TaskStatus.COMPLETED } ?: return null
+        val task = tasks.value.firstOrNull { it.id == taskId && it.status != TaskStatus.ACTIVE } ?: return null
         restored += taskId
         tasks.update { all -> all.map { if (it.id == taskId) it.copy(status = TaskStatus.ACTIVE, rrule = null, completedAt = null) else it } }
         return task
@@ -253,6 +255,32 @@ class FakeTaskRepository(private val today: LocalDate = LocalDate.of(2026, 10, 1
             }
         }
     }
+
+    /** Вызовы «Не буду делать»: задача, раз (null — ближайший) и что сделать с повторами перед ним. */
+    val wontDoCalls = mutableListOf<Triple<String, TaskDue?, EarlierRepeats>>()
+    val undoneWontDo = mutableListOf<WontDo>()
+
+    override suspend fun wontDo(taskId: String, occurrence: TaskDue?, earlier: EarlierRepeats): WontDo? {
+        val task = getTask(taskId)?.takeIf { it.status == TaskStatus.ACTIVE } ?: return null
+        wontDoCalls += Triple(taskId, occurrence, earlier)
+        val next = task.nextOccurrence(ZoneOffset.UTC, today)
+        if (task.rrule == null || next == null) {
+            tasks.update { all -> all.map { if (it.id == taskId) it.copy(status = TaskStatus.ABANDONED, completedAt = doneAt()) else it } }
+            return WontDo(taskId, task, closedWhole = true, occurrence = task.start ?: task.due)
+        }
+        val copy = task.copy(id = "wont-$taskId", status = TaskStatus.ABANDONED, completedAt = doneAt(), rrule = null, isRepeatDone = true)
+        tasks.update { all -> all.map { if (it.id == taskId) next else it } + copy }
+        return WontDo(taskId, task, closedWhole = false, copyIds = listOf(copy.id), occurrence = occurrence ?: task.start ?: task.due)
+    }
+
+    override suspend fun undoWontDo(result: WontDo) {
+        undoneWontDo += result
+        tasks.update { all -> all.filterNot { it.id in result.copyIds }.map { if (it.id == result.taskId) result.previous else it } }
+    }
+
+    override fun observeWontDo(): Flow<List<Task>> = tasks.map { all -> all.filter { it.status == TaskStatus.ABANDONED } }
+
+    override fun observeWontDoCount(): Flow<Int> = observeWontDo().map { it.size }
 
     /** Время выполнения в фейке — полдень [today] по UTC. */
     private fun doneAt(): Instant = today.atStartOfDay(ZoneOffset.UTC).plusHours(12).toInstant()

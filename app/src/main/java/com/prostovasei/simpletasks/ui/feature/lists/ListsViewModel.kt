@@ -21,6 +21,9 @@ class ListsViewModel @Inject constructor(
         viewModelScope.launch {
             tasks.observeTrashCount().collect { count -> setState { copy(trashCount = count) } }
         }
+        viewModelScope.launch {
+            tasks.observeWontDoCount().collect { count -> setState { copy(wontDoCount = count) } }
+        }
     }
 
     override fun onIntent(intent: ListsIntent) {

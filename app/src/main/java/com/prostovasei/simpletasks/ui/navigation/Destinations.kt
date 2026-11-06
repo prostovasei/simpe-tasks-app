@@ -45,6 +45,14 @@ data object TrashDestination
 @Serializable
 data class TrashTaskDestination(val taskId: String)
 
+/** «Не буду делать» (итерация 49). */
+@Serializable
+data object WontDoDestination
+
+/** Задача «Не буду делать» — шторка только для чтения (итерация 49). Имя поля — ключ аргумента в SavedStateHandle. */
+@Serializable
+data class WontDoTaskDestination(val taskId: String)
+
 /** Выполненные задачи (итерация 11). */
 @Serializable
 data object CompletedDestination

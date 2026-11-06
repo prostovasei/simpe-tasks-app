@@ -1,5 +1,6 @@
 package com.prostovasei.simpletasks.designsystem.components
 
+import com.prostovasei.simpletasks.R
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -87,6 +88,8 @@ fun TaskRow(
     selected: Boolean? = null,
     /** Долгое нажатие включает режим выбора; null — строку выбрать нельзя. */
     onLongClick: (() -> Unit)? = null,
+    /** «Не буду делать» (итерация 49): вместо галочки — круг с крестиком; нажатие на него возвращает задачу. */
+    wontDo: Boolean = false,
 ) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
@@ -137,7 +140,11 @@ fun TaskRow(
                 .then(if (isGhost) Modifier else Modifier.clickable(onClick = onToggle).testTag("$testTag:check")),
             contentAlignment = Alignment.Center,
         ) {
-            if (!isGhost) SquareCheck(checked = selected ?: isCompleting, ring = ring)
+            when {
+                isGhost -> Unit
+                wontDo && selected == null -> Icon(painterResource(R.drawable.ic_wont_do), null, tint = colors.inactive, modifier = Modifier.size(sizes.metaIcon + spacing.xxs))
+                else -> SquareCheck(checked = selected ?: isCompleting, ring = ring)
+            }
         }
         listEmoji?.let {
             ListBadge(it)

@@ -78,7 +78,9 @@ class WeekDaysTest {
         assertTrue(days[0].items.isEmpty())
         assertFalse(days[1].items.single().isGhost)
         assertEquals(listOf(true, true, true, true, true), days.drop(2).map { it.items.single().isGhost })
-        assertEquals("daily", days[2].items.single().taskId)
+        // Итерация 49: нажатие открывает серию вместе с датой этого раза.
+        val ghost = days[2].items.single()
+        assertEquals("daily" to ghost.occurrence, com.prostovasei.simpletasks.ui.common.TaskOpenKey.parse(ghost.taskId))
     }
 
     @Test
