@@ -145,16 +145,13 @@ object WidgetWeekRows {
                 else -> context.getString(R.string.widget_complete)
             },
         )
+        // Итерация 50: «выполнить» — зона ~40 dp поверх кружка и начала названия; у будущего повтора она открывает задачу, как вся плашка.
         with(click) {
-            set(
-                ids.check,
-                when {
-                    item.isGhost -> WidgetClicks.NONE
-                    done -> WidgetClicks.UNCOMPLETE
-                    else -> WidgetClicks.COMPLETE
-                },
-                item.id.takeUnless { item.isGhost },
-            )
+            when {
+                item.isGhost -> set(ids.hit, WidgetClicks.OPEN, item.taskId)
+                done -> set(ids.hit, WidgetClicks.UNCOMPLETE, item.id)
+                else -> set(ids.hit, WidgetClicks.COMPLETE, item.id)
+            }
         }
         setTextViewText(
             ids.title,

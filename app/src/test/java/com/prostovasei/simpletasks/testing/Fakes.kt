@@ -6,6 +6,7 @@ import com.prostovasei.simpletasks.domain.model.nextOccurrence
 import com.prostovasei.simpletasks.domain.model.GroupWithProjects
 import com.prostovasei.simpletasks.domain.model.Deletion
 import com.prostovasei.simpletasks.domain.model.EarlierRepeats
+import com.prostovasei.simpletasks.domain.model.Moved
 import com.prostovasei.simpletasks.domain.model.WontDo
 import com.prostovasei.simpletasks.domain.model.NewTask
 import com.prostovasei.simpletasks.domain.model.Priority
@@ -285,8 +286,35 @@ class FakeTaskRepository(private val today: LocalDate = LocalDate.of(2026, 10, 1
     /** Время выполнения в фейке — полдень [today] по UTC. */
     private fun doneAt(): Instant = today.atStartOfDay(ZoneOffset.UTC).plusHours(12).toInstant()
 
-    override suspend fun moveToTomorrow(taskId: String) {
+    override suspend fun moveToTomorrow(taskId: String): Moved? {
         movedToTomorrow += taskId
+        return null
+    }
+
+    /** Вызовы «Текущий повтор»: id и новый срок. */
+    val movedRepeats = mutableListOf<Pair<String, TaskDue>>()
+
+    /** Вызовы «Все повторы с этого момента» у будущего раза: id, дата раза и новый срок. */
+    val movedRepeatsFrom = mutableListOf<Triple<String, TaskDue, TaskDue?>>()
+    val undoneMoves = mutableListOf<Moved>()
+
+    override suspend fun moveRepeat(taskId: String, due: TaskDue, start: TaskDue?): Moved? {
+        movedRepeats += taskId to due
+        val task = tasks.value.firstOrNull { it.id == taskId } ?: return null
+        val next = task.nextOccurrence(ZoneOffset.UTC, LocalDate.MIN) ?: task
+        tasks.update { all -> all.map { if (it.id == taskId) next else it } }
+        return Moved(taskId, previous = task, day = due)
+    }
+
+    override suspend fun moveRepeatsFrom(taskId: String, occurrence: TaskDue, due: TaskDue?, start: TaskDue?): Moved? {
+        movedRepeatsFrom += Triple(taskId, occurrence, due)
+        val task = tasks.value.firstOrNull { it.id == taskId } ?: return null
+        return Moved(taskId, previous = task, day = due)
+    }
+
+    override suspend fun undoMove(moved: Moved) {
+        undoneMoves += moved
+        tasks.update { all -> all.map { if (it.id == moved.taskId) moved.previous else it } }
     }
 }
 

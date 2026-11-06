@@ -6,6 +6,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsNotFocused
 import androidx.compose.ui.test.assertIsOff
@@ -210,7 +213,8 @@ class TaskScreensUiTest {
         show { QuickAddScreen(quickState, { intents += it }, {}, autoFocus = false) }
         composeRule.onNodeWithTag(TAG_CLEAR_TIME).performClick()
         composeRule.onNodeWithTag(TAG_CLEAR_DATE).performClick()
-        assertEquals(listOf<Any>(QuickAddIntent.Grid(GridAction.ClearTime), QuickAddIntent.Grid(GridAction.ClearDate)), intents.filterNot { it is QuickAddIntent.Grid && it.action is GridAction.FirstDay })
+        // Итерация 50: после каждого крестика — «Готово» (у повторяющейся по нему решается, к чему применить).
+        assertEquals(listOf<Any>(QuickAddIntent.Grid(GridAction.ClearTime), QuickAddIntent.Grid(GridAction.Done), QuickAddIntent.Grid(GridAction.ClearDate), QuickAddIntent.Grid(GridAction.Done)), intents.filterNot { it is QuickAddIntent.Grid && it.action is GridAction.FirstDay })
     }
 
     @Test
@@ -243,7 +247,7 @@ class TaskScreensUiTest {
         composeRule.onNodeWithTag(TAG_TIMELINE_NO_DATE).performClick()
         composeRule.onNodeWithTag(TAG_WEEK_GRID).assertDoesNotExist()
         assertEquals(
-            listOf<Any>(QuickAddIntent.Grid(GridAction.ClearTime), QuickAddIntent.Grid(GridAction.ClearDate)),
+            listOf<Any>(QuickAddIntent.Grid(GridAction.ClearTime), QuickAddIntent.Grid(GridAction.ClearDate), QuickAddIntent.Grid(GridAction.Done)),
             intents.filterNot { it is QuickAddIntent.Grid && it.action is GridAction.FirstDay },
         )
     }
@@ -529,6 +533,58 @@ class TaskScreensUiTest {
         assertEquals("wont", picked)
     }
 
+    /** Итерация 50: окно «Изменить повторяющуюся задачу» у ближайшего раза — обе кнопки работают, «Отмена» тоже. */
+    @Test
+    fun detailChangeRepeatDialogSendsChoice() {
+        show { TaskDetailScreen(detailState.copy(dialog = DetailDialog.ChangeRepeat("вс, 08 ноя", "пн, 09 ноя 18:00")), { intents += it }, {}, {}) }
+
+        composeRule.onNodeWithText("Изменить повторяющуюся задачу").assertExists()
+        composeRule.onNodeWithTag("$TAG_CHANGE_REPEAT_DIALOG:$TAG_CHOICE_CURRENT").performClick()
+        composeRule.onNodeWithTag("$TAG_CHANGE_REPEAT_DIALOG:$TAG_CHOICE_ALL").performClick()
+        composeRule.onNodeWithTag("$TAG_CHANGE_REPEAT_DIALOG:$TAG_CHOICE_CANCEL").performClick()
+        assertEquals(
+            listOf(TaskDetailIntent.ChangeRepeat(all = false), TaskDetailIntent.ChangeRepeat(all = true), TaskDetailIntent.DismissDialog),
+            intents.takeLast(3),
+        )
+    }
+
+    /** У будущего раза «Текущий повтор» бледный и не нажимается, под ним подсказка с датой ближайшего. */
+    @Test
+    fun detailChangeRepeatDialogFutureDisablesCurrent() {
+        show { TaskDetailScreen(detailState.copy(dialog = DetailDialog.ChangeRepeat("вс, 22 ноя", "пн, 23 ноя 18:00", nearest = "вс, 08 ноя")), { intents += it }, {}, {}) }
+
+        composeRule.onNodeWithTag("$TAG_CHANGE_REPEAT_DIALOG:$TAG_CHOICE_CURRENT").assertIsNotEnabled()
+        composeRule.onNodeWithText("Сначала закройте ближайший повтор — вс, 08 ноя").assertExists()
+        composeRule.onNodeWithTag("$TAG_CHANGE_REPEAT_DIALOG:$TAG_CHOICE_ALL").performClick()
+        assertEquals(TaskDetailIntent.ChangeRepeat(all = true), intents.last())
+    }
+
+    /** Скриншоты окна (макет iteration50.py): ближайший раз и будущий. */
+    @Test
+    fun screenshotChangeRepeatDialog() {
+        var future by mutableStateOf(false)
+        show {
+            ChoiceDialog(
+                title = "Изменить повторяющуюся задачу",
+                text = if (future) "«Стирка»: вс, 22 ноя → пн, 23 ноя 18:00. Что перенести?" else "«Стирка»: вс, 08 ноя → пн, 09 ноя 18:00. Что перенести?",
+                tag = TAG_CHANGE_REPEAT_DIALOG,
+                choices = listOf(
+                    Choice(
+                        "Текущий повтор", if (future) ChoiceStyle.Outline else ChoiceStyle.Primary, TAG_CHOICE_CURRENT,
+                        enabled = !future, hint = if (future) "Сначала закройте ближайший повтор — вс, 08 ноя" else null,
+                    ) {},
+                    Choice("Все повторы с этого момента", if (future) ChoiceStyle.Primary else ChoiceStyle.Outline, TAG_CHOICE_ALL) {},
+                    Choice("Отмена", ChoiceStyle.Plain, TAG_CHOICE_CANCEL) {},
+                ),
+                onDismiss = {},
+            )
+        }
+        composeRule.onRoot().captureRoboImage("screenshots/change_repeat_dialog_light.png")
+        future = true
+        composeRule.waitForIdle()
+        composeRule.onRoot().captureRoboImage("screenshots/change_repeat_dialog_future_light.png")
+    }
+
     @Test
     fun detailReminderMenuTogglesOptions() {
         show { TaskDetailScreen(detailState, { intents += it }, {}, {}) }
@@ -609,6 +665,7 @@ class TaskScreensUiTest {
             listOf<Any>(
                 TaskDetailIntent.Edit(FieldEdit.Project(projects.first { it.isInbox }.id)),
                 TaskDetailIntent.Grid(GridAction.ClearDate),
+                TaskDetailIntent.Grid(GridAction.Done),
             ),
             intents.filterNot { it is TaskDetailIntent.Grid && it.action is GridAction.FirstDay },
         )
@@ -623,7 +680,7 @@ class TaskScreensUiTest {
         composeRule.onNodeWithTag("$TAG_DATE_CELL:${today.plusDays(1)}").performClick()
         composeRule.onNodeWithTag(TAG_TIMELINE_DONE).performClick()
         composeRule.onNodeWithTag(TAG_DETAIL_CLOSE).performClick()
-        assertEquals(listOf<Any>(TaskDetailIntent.Grid(GridAction.PickDay(today.plusDays(1)))), intents.filterNot { it is TaskDetailIntent.Grid && it.action is GridAction.FirstDay })
+        assertEquals(listOf<Any>(TaskDetailIntent.Grid(GridAction.PickDay(today.plusDays(1))), TaskDetailIntent.Grid(GridAction.Done)), intents.filterNot { it is TaskDetailIntent.Grid && it.action is GridAction.FirstDay })
         assertTrue(closed)
     }
 

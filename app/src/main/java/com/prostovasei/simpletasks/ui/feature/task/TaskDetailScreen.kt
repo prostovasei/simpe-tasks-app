@@ -218,6 +218,30 @@ fun TaskDetailScreen(
                 onDismiss = { onIntent(TaskDetailIntent.DismissDialog) },
             )
         }
+        is DetailDialog.ChangeRepeat -> {
+            val future = dialog.nearest != null
+            ChoiceDialog(
+                title = stringResource(R.string.change_repeat_title),
+                text = stringResource(R.string.change_repeat_text, task.title, dialog.from, dialog.to),
+                tag = TAG_CHANGE_REPEAT_DIALOG,
+                choices = listOf(
+                    Choice(
+                        stringResource(R.string.change_repeat_current),
+                        if (future) ChoiceStyle.Outline else ChoiceStyle.Primary,
+                        TAG_CHOICE_CURRENT,
+                        enabled = !future,
+                        hint = dialog.nearest?.let { stringResource(R.string.change_repeat_hint, it) },
+                    ) { onIntent(TaskDetailIntent.ChangeRepeat(all = false)) },
+                    Choice(
+                        stringResource(R.string.change_repeat_all),
+                        if (future) ChoiceStyle.Primary else ChoiceStyle.Outline,
+                        TAG_CHOICE_ALL,
+                    ) { onIntent(TaskDetailIntent.ChangeRepeat(all = true)) },
+                    Choice(stringResource(R.string.action_cancel), ChoiceStyle.Plain, TAG_CHOICE_CANCEL) { onIntent(TaskDetailIntent.DismissDialog) },
+                ),
+                onDismiss = { onIntent(TaskDetailIntent.DismissDialog) },
+            )
+        }
         null -> Unit
     }
 
@@ -430,6 +454,9 @@ const val TAG_DETAIL_WONT_DO = "detail_wont_do"
 const val TAG_DETAIL_FUTURE = "detail_future"
 const val TAG_DELETE_SERIES_DIALOG = "delete_series_dialog"
 const val TAG_UNCLOSED_DIALOG = "unclosed_dialog"
+const val TAG_CHANGE_REPEAT_DIALOG = "change_repeat_dialog"
+const val TAG_CHOICE_CURRENT = "current"
+const val TAG_CHOICE_ALL = "all"
 const val TAG_CHOICE_DELETE = "delete"
 const val TAG_CHOICE_WONT_DO = "wont_do"
 const val TAG_CHOICE_SKIP = "skip"

@@ -59,3 +59,16 @@ data class WontDo(
     val skipped: Int = 0,
     val completed: Int = 0,
 )
+
+/**
+ * Итог переноса (итерация 50) — с ним «Отмена» возвращает всё как было. [previous] — задача до изменения; [createdId] — созданная
+ * запись: перенесённый раз (обычная задача) или новая серия с будущего раза; [checkedItemIds] — пункты чек-листа серии, с которых
+ * сняли галочки (они уехали с перенесённым разом); [day] — новая дата для подсказки «Перенесено на …».
+ */
+data class Moved(
+    val taskId: String,
+    val previous: Task,
+    val createdId: String? = null,
+    val checkedItemIds: List<String> = emptyList(),
+    val day: TaskDue? = null,
+)

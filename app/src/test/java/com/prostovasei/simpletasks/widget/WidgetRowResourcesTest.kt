@@ -55,6 +55,7 @@ class WidgetRowResourcesTest {
             R.dimen.widget_radius_lg to RadiusTokens.LG,
             R.dimen.widget_radius_xl to RadiusTokens.XL,
             R.dimen.widget_week_task to SizeTokens.WIDGET_WEEK_TASK,
+            R.dimen.widget_week_hit to SizeTokens.WIDGET_WEEK_HIT,
             R.dimen.widget_week_task_gap to SizeTokens.WIDGET_WEEK_TASK_GAP,
             R.dimen.widget_week_check to SizeTokens.WIDGET_WEEK_CHECK,
             R.dimen.widget_week_tick to SizeTokens.WIDGET_WEEK_TICK,

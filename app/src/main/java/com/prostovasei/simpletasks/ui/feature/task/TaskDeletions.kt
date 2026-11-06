@@ -67,6 +67,9 @@ sealed interface UndoMessage {
 
     /** «Задача возвращена». */
     data object Reopened : UndoMessage
+
+    /** «Перенесено на пн, 09 ноя» (итерация 50). */
+    data class Moved(val day: String) : UndoMessage
 }
 
 /** Тексты подсказок [UndoMessage]; строки берутся один раз в композиции. */
@@ -79,10 +82,11 @@ class UndoMessages private constructor(private val strings: Map<Int, String>) {
             else -> strings.getValue(R.string.wontdo_done_on).format(message.day)
         }
         UndoMessage.Reopened -> strings.getValue(R.string.wontdo_reopened)
+        is UndoMessage.Moved -> strings.getValue(R.string.repeat_moved).format(message.day)
     }
 
     companion object {
-        private val IDS = listOf(R.string.wontdo_done, R.string.wontdo_done_on, R.string.wontdo_done_skipped, R.string.wontdo_done_completed, R.string.wontdo_reopened)
+        private val IDS = listOf(R.string.wontdo_done, R.string.wontdo_done_on, R.string.wontdo_done_skipped, R.string.wontdo_done_completed, R.string.wontdo_reopened, R.string.repeat_moved)
 
         @Composable
         fun load(): UndoMessages = UndoMessages(IDS.associateWith { stringResource(it) })

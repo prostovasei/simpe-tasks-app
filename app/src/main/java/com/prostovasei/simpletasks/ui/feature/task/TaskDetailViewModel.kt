@@ -35,6 +35,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
 /** Задача в шторке с сеткой недели (SPEC.md §4.5, итерация 19): правка всех полей с автосохранением, чек-лист, подзадачи. */
@@ -55,15 +56,24 @@ data class TaskDetailState(
     val smart: SmartTitle = SmartTitle(),
     /** Открыт будущий повтор (итерация 49): дата этого раза; null — сама задача (у серии — ближайший раз). */
     val occurrence: TaskDue? = null,
-    /** Окно поверх шторки: «Удалить серию» или «Незакрытые повторы» (итерация 49). */
+    /** Окно поверх шторки: «Удалить серию», «Незакрытые повторы» (итерация 49), «Изменить повторяющуюся задачу» (итерация 50). */
     val dialog: DetailDialog? = null,
+    /**
+     * Новая дата повторяющейся задачи, пока не решено, к чему её применить (итерация 50): выбор в окне даты не пишется сразу —
+     * после «Готово» спрашивается «Текущий повтор» / «Все повторы с этого момента». null — выбора нет.
+     */
+    val pending: Schedule? = null,
 ) {
     /** Что показывают поля даты: у будущего повтора — его дата. */
     val shown: Task?
         get() = task?.let { t -> occurrence?.let { t.atOccurrence(it) } ?: t }
 
     val fields: SheetFields?
-        get() = shown?.let { SheetFields(it.due, it.start, it.projectId, it.priority, it.rrule, it.reminders, projects, today, zone, nowMinute, busy) }
+        get() = shown?.let {
+            val due = if (pending != null) pending.due else it.due
+            val start = if (pending != null) pending.start else it.start
+            SheetFields(due, start, it.projectId, it.priority, it.rrule, it.reminders, projects, today, zone, nowMinute, busy)
+        }
 }
 
 /** Окна шторки (итерация 49, макет iteration49.py). */
@@ -73,6 +83,12 @@ sealed interface DetailDialog {
 
     /** «Не буду делать» у будущего раза: [dates] — незакрытые повторы перед ним; «Пропустить все» / «Выполнить все» / «Отмена». */
     data class Unclosed(val dates: List<TaskDue>) : DetailDialog
+
+    /**
+     * Новая дата у повторяющейся (итерация 50): «Текущий повтор» / «Все повторы с этого момента» / «Отмена». [from] и [to] — дата раза
+     * до и после («вс, 08 ноя», «пн, 09 ноя 18:00»); [nearest] — у будущего раза дата ближайшего: «Текущий повтор» тогда недоступен.
+     */
+    data class ChangeRepeat(val from: String, val to: String, val nearest: String? = null) : DetailDialog
 }
 
 sealed interface TaskDetailIntent {
@@ -98,6 +114,9 @@ sealed interface TaskDetailIntent {
 
     /** Выбор в окне «Незакрытые повторы»: что сделать с повторами перед будущим разом. */
     data class CloseEarlier(val earlier: EarlierRepeats) : TaskDetailIntent
+
+    /** Выбор в окне «Изменить повторяющуюся задачу» (итерация 50): [all] = false — «Текущий повтор», true — «Все повторы с этого момента». */
+    data class ChangeRepeat(val all: Boolean) : TaskDetailIntent
 
     /** «Отмена» в окне. */
     data object DismissDialog : TaskDetailIntent
@@ -222,9 +241,13 @@ class TaskDetailViewModel @Inject constructor(
             }
             is TaskDetailIntent.Grid -> when (val action = intent.action) {
                 is GridAction.FirstDay -> gridFirst.value = action.first
-                else -> editNow(seriesDates = true) {
-                    val next = Schedule(due, start).after(action, time.zone())
-                    withDue(next.due).copy(start = next.start).alignedToRepeat(time.zone())
+                GridAction.Done -> applyPending()
+                // Повторяющаяся (итерация 50): выбор копится до «Готово», «←» его просто забывает.
+                is GridAction.Restore -> if (isRepeating()) setState { copy(pending = null) } else editSchedule(action)
+                else -> if (isRepeating()) {
+                    setState { copy(pending = (pending ?: shownSchedule()).after(action, time.zone())) }
+                } else {
+                    editSchedule(action)
                 }
             }
             TaskDetailIntent.ToggleCompleted -> toggleCompleted()
@@ -241,7 +264,9 @@ class TaskDetailViewModel @Inject constructor(
                 setState { copy(dialog = null) }
                 wontDo(intent.earlier)
             }
-            TaskDetailIntent.DismissDialog -> setState { copy(dialog = null) }
+            is TaskDetailIntent.ChangeRepeat -> changeRepeat(intent.all)
+            // «Отмена» в окне «Изменить повторяющуюся задачу» возвращает прежнюю дату.
+            TaskDetailIntent.DismissDialog -> setState { copy(dialog = null, pending = if (dialog is DetailDialog.ChangeRepeat) null else pending) }
             is TaskDetailIntent.AddItem -> intent.title.trim().takeIf { it.isNotEmpty() }?.let { title ->
                 viewModelScope.launch { checklist.addItem(taskId, title) }
             }
@@ -294,6 +319,77 @@ class TaskDetailViewModel @Inject constructor(
                 sendEffect(TaskDetailEffect.Rescheduled(DueFormatter.format(next.due, next.start, time.today(), time.zone()) ?: return@launch))
             }
         }
+    }
+
+    private fun isRepeating(): Boolean = currentState.task?.let { it.rrule != null && it.status == TaskStatus.ACTIVE } == true
+
+    private fun shownSchedule(): Schedule = currentState.shown.let { Schedule(it?.due, it?.start) }
+
+    /** Выбор на сетке у обычной задачи — сохраняется сразу, как раньше. */
+    private fun editSchedule(action: GridAction) = editNow(seriesDates = true) {
+        val next = Schedule(due, start).after(action, time.zone())
+        withDue(next.due).copy(start = next.start).alignedToRepeat(time.zone())
+    }
+
+    /**
+     * «Готово» у повторяющейся (итерация 50): дата не изменилась — ничего; дату убрали — у всей серии, без окна (как раньше);
+     * иначе окно «Изменить повторяющуюся задачу».
+     */
+    private fun applyPending() {
+        val pending = currentState.pending ?: return
+        val task = currentState.task ?: return
+        val before = shownSchedule()
+        when {
+            pending == before -> setState { copy(pending = null) }
+            pending.due == null -> {
+                setState { copy(pending = null) }
+                applyToSeries(pending)
+            }
+            else -> {
+                val nearest = currentState.occurrence?.let { (task.start ?: task.due)?.let(::dayText) }
+                val from = (before.start ?: before.due)?.let(::dayText).orEmpty()
+                val to = (pending.start ?: pending.due)?.let(::whenText).orEmpty()
+                setState { copy(dialog = DetailDialog.ChangeRepeat(from, to, nearest)) }
+            }
+        }
+    }
+
+    /** Новая дата — всей серии, как до итерации 50: повтор начинается с первого подходящего дня. */
+    private fun applyToSeries(schedule: Schedule) = editNow(seriesDates = true) {
+        withDue(schedule.due).copy(start = schedule.start).alignedToRepeat(time.zone())
+    }
+
+    /**
+     * Выбор в окне «Изменить повторяющуюся задачу». У ближайшего раза «Все повторы» сдвигают серию (шторка остаётся), «Текущий
+     * повтор» делает раз обычной задачей; у будущего «Все повторы» делят серию. В обоих последних случаях шторка закрывается,
+     * а экран под ней показывает «Перенесено на … · Отмена».
+     */
+    private fun changeRepeat(all: Boolean) {
+        val pending = currentState.pending ?: return
+        val occurrence = currentState.occurrence
+        setState { copy(dialog = null, pending = null) }
+        if (all && occurrence == null) return applyToSeries(pending)
+        val due = pending.due ?: return
+        if (!all && occurrence != null) return
+        textSaveJob?.cancel()
+        persist()
+        val previous = lastWrite
+        saved = null
+        appScope.launch {
+            previous?.join()
+            val result = if (all) tasks.moveRepeatsFrom(taskId, occurrence!!, due, pending.start) else tasks.moveRepeat(taskId, due, pending.start)
+            if (result != null) {
+                val day = result.day?.let(::dayText).orEmpty()
+                deletions.notify(UndoNotice(UndoMessage.Moved(day), UndoKind.Calendar) { tasks.undoMove(result) })
+            }
+            close()
+        }
+    }
+
+    /** «пн, 09 ноя 18:00» — дата и время для окна выбора. */
+    private fun whenText(due: TaskDue): String = when (due) {
+        is TaskDue.AllDay -> dayText(due)
+        is TaskDue.AtTime -> dayText(due) + " " + due.instant.atZone(time.zone()).toLocalTime().format(TIME_FORMAT)
     }
 
     private fun nowMinute(): Int = time.now().atZone(time.zone()).let { it.hour * 60 + it.minute }
@@ -417,6 +513,7 @@ class TaskDetailViewModel @Inject constructor(
 
     private companion object {
         const val TEXT_SAVE_DELAY_MS = 500L
+        val TIME_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
     }
 }
 

@@ -13,6 +13,9 @@ import com.prostovasei.simpletasks.domain.model.AllScreenTasks
 import com.prostovasei.simpletasks.domain.model.Completion
 import com.prostovasei.simpletasks.domain.model.Deletion
 import com.prostovasei.simpletasks.domain.model.EarlierRepeats
+import com.prostovasei.simpletasks.domain.model.Moved
+import com.prostovasei.simpletasks.domain.model.Recurrence
+import com.prostovasei.simpletasks.domain.model.alignedToRepeat
 import com.prostovasei.simpletasks.domain.model.WontDo
 import com.prostovasei.simpletasks.domain.model.atOccurrence
 import com.prostovasei.simpletasks.domain.model.repeatsBefore
@@ -255,9 +258,79 @@ class RoomTaskRepository @Inject constructor(
 
     override fun observeWontDoCount(): Flow<Int> = taskDao.observeWontDoCount().distinctUntilChanged()
 
-    override suspend fun moveToTomorrow(taskId: String) {
-        val task = getTask(taskId) ?: return
-        updateTask(task.withDue(task.due.movedTo(time.today().plusDays(1), time.zone())))
+    override suspend fun moveToTomorrow(taskId: String): Moved? {
+        val task = getTask(taskId) ?: return null
+        val moved = task.withDue(task.due.movedTo(time.today().plusDays(1), time.zone()))
+        // Итерация 50: у повторяющейся — только этот раз, серия остаётся на своём расписании.
+        val due = moved.due
+        if (task.rrule != null && task.status == TaskStatus.ACTIVE && due != null) moveRepeat(taskId, due, moved.start)?.let { return it }
+        updateTask(moved)
+        return Moved(taskId, previous = task, day = moved.start ?: moved.due)
+    }
+
+    override suspend fun moveRepeat(taskId: String, due: TaskDue, start: TaskDue?): Moved? = db.withTransaction {
+        val entity = taskDao.getById(taskId)?.takeIf { !it.isDeleted && it.status == TaskStatus.ACTIVE.value } ?: return@withTransaction null
+        val task = entity.toDomain()
+        if (task.rrule == null) return@withTransaction null
+        val moved = task.withDue(due).copy(start = start, rrule = null)
+        val next = task.nextOccurrence(time.zone(), time.today())
+        if (next == null) {
+            // Последний раз серии: задача сама становится обычной на новую дату.
+            updateTask(moved)
+            return@withTransaction Moved(taskId, previous = task, day = start ?: due)
+        }
+        val now = nowMillis()
+        val copyId = ids.newId()
+        taskDao.insert(
+            entity.copy(id = copyId, rrule = null, isRepeatDone = false, externalId = null, sourceData = null, createdAt = now, updatedAt = now),
+        )
+        updateTask(moved.copy(id = copyId))
+        // Раз уезжает со своим чек-листом (с галочками), у серии он начинается заново — как при выполнении.
+        val items = checklistDao.getByTask(taskId)
+        checklistDao.insertAll(items.map { it.copy(id = ids.newId(), taskId = copyId, createdAt = now, updatedAt = now) })
+        val checked = items.filter { it.isDone }.map { it.id }
+        checked.forEach { checklistDao.setDone(it, done = false, now = now) }
+        updateTask(next)
+        Moved(taskId, previous = task, createdId = copyId, checkedItemIds = checked, day = start ?: due)
+    }
+
+    override suspend fun moveRepeatsFrom(taskId: String, occurrence: TaskDue, due: TaskDue?, start: TaskDue?): Moved? = db.withTransaction {
+        val entity = taskDao.getById(taskId)?.takeIf { !it.isDeleted && it.status == TaskStatus.ACTIVE.value } ?: return@withTransaction null
+        val task = entity.toDomain()
+        val rule = task.rrule ?: return@withTransaction null
+        val zone = time.zone()
+        val before = task.repeatsBefore(occurrence, zone, time.today())
+        val newRule = Recurrence.continued(rule, before.size)
+        if (before.isEmpty() || newRule == null) {
+            // Это и есть ближайший раз — серия просто сдвигается, как раньше.
+            updateTask(task.withDue(due).copy(start = start).alignedToRepeat(zone))
+            return@withTransaction Moved(taskId, previous = task, day = start ?: due)
+        }
+        val now = nowMillis()
+        val newId = ids.newId()
+        taskDao.insert(entity.copy(id = newId, externalId = null, sourceData = null, createdAt = now, updatedAt = now))
+        val series = task.withDue(due).copy(id = newId, start = start, rrule = newRule).alignedToRepeat(zone)
+        updateTask(series)
+        val items = checklistDao.getByTask(taskId)
+        checklistDao.insertAll(items.map { it.copy(id = ids.newId(), taskId = newId, isDone = false, createdAt = now, updatedAt = now) })
+        val lastDay = when (occurrence) {
+            is TaskDue.AllDay -> occurrence.date
+            is TaskDue.AtTime -> occurrence.instant.atZone(zone).toLocalDate()
+        }.minusDays(1)
+        updateTask(task.copy(rrule = Recurrence.endedOn(rule, lastDay)))
+        Moved(taskId, previous = task, createdId = newId, day = series.start ?: series.due)
+    }
+
+    override suspend fun undoMove(moved: Moved) {
+        val now = nowMillis()
+        db.withTransaction {
+            moved.createdId?.let {
+                checklistDao.deleteHardByTask(it)
+                taskDao.deleteHard(it)
+            }
+            updateTask(moved.previous)
+            moved.checkedItemIds.forEach { checklistDao.setDone(it, done = true, now = now) }
+        }
     }
 
     override suspend fun moveOverdueToToday(): Rescheduling {

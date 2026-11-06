@@ -233,9 +233,11 @@ object SizeTokens {
      * недели, пока размер виджета неизвестен (по ней считается только число строк задач: сами строки делят высоту виджета поровну).
      * Итерация 48 (макет `week_tune.py`): строка даты — по высоте текста, [WIDGET_WEEK_HEADER] — её наименьшая высота; поле над датой
      * [WIDGET_WEEK_CELL_TOP], над верхним рядом [WIDGET_WEEK_TOP]; [WIDGET_WEEK_INLINE_GAP] — между эмодзи и временем и от времени до края
-     * плашки; день календаря крупнее.
+     * плашки; день календаря крупнее. Итерация 50 (макет `iteration50.py`): [WIDGET_WEEK_HIT] — невидимая зона «выполнить» поверх
+     * кружка и начала названия на всю высоту плашки; кружок и название не сдвигаются.
      */
     const val WIDGET_WEEK_TASK = 18
+    const val WIDGET_WEEK_HIT = 40
     const val WIDGET_WEEK_TASK_GAP = 2
     const val WIDGET_WEEK_CHECK = 13
     const val WIDGET_WEEK_TICK = 9

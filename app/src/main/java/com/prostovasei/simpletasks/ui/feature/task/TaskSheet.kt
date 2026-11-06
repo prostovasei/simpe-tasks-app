@@ -229,6 +229,11 @@ fun TaskSheet(
         opened?.let { onGrid(GridAction.Restore(it)) }
         closeTimeline()
     }
+    // «Готово»: выбор закончен — у повторяющейся задачи дальше окно «Изменить повторяющуюся задачу» (итерация 50).
+    val applyTimeline = {
+        onGrid(GridAction.Done)
+        closeTimeline()
+    }
     BackHandler(enabled = timelineOpen, onBack = cancelTimeline)
 
     // Р1: откуда растёт окно — плашка виджета в координатах этого экрана; куда — само окно.
@@ -311,7 +316,7 @@ fun TaskSheet(
                         .background(colors.divider, AppTheme.shapes.small),
                 )
                 if (timelineOpen) {
-                    Timeline(fields, onGrid, hideKeyboard, closeTimeline, cancelTimeline, Modifier.weight(1f).windowInsetsPadding(WindowInsets.navigationBars))
+                    Timeline(fields, onGrid, hideKeyboard, applyTimeline, cancelTimeline, Modifier.weight(1f).windowInsetsPadding(WindowInsets.navigationBars))
                 } else {
                     Column(
                         Modifier
@@ -327,8 +332,14 @@ fun TaskSheet(
                             opened = Schedule(fields.due, fields.start)
                             timelineOpen = true
                         },
-                        onClearDate = { onGrid(GridAction.ClearDate) },
-                        onClearTime = { onGrid(GridAction.ClearTime) },
+                        onClearDate = {
+                            onGrid(GridAction.ClearDate)
+                            onGrid(GridAction.Done)
+                        },
+                        onClearTime = {
+                            onGrid(GridAction.ClearTime)
+                            onGrid(GridAction.Done)
+                        },
                         modifier = Modifier.padding(start = spacing.md, end = spacing.md),
                     )
                     SheetToolbar(fields, onEdit, checklistActive, onChecklist, actionCount, actions, openTool, Modifier.padding(bottom = spacing.xxs))

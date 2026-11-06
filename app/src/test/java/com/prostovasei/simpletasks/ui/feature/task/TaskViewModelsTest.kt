@@ -450,6 +450,115 @@ class TaskViewModelsTest {
         assertEquals(Triple("t1", future, EarlierRepeats.COMPLETE), tasks.wontDoCalls.single())
     }
 
+    /**
+     * Итерация 50: новая дата у повторяющейся не пишется до «Готово», потом окно «Изменить повторяющуюся задачу»; «Отмена» возвращает
+     * дату, «Текущий повтор» переносит только раз и закрывает шторку с «Перенесено на … · Отмена».
+     */
+    @Test
+    fun detailRepeatDateChangeAsksWhatToMove() = runTest(dispatcher) {
+        tasks.tasks.value = listOf(task("t1", due = TaskDue.AllDay(today)).copy(rrule = "FREQ=WEEKLY"))
+        val vm = detail(this)
+        runCurrent()
+        val tomorrow = TaskDue.AllDay(today.plusDays(1))
+
+        vm.onIntent(TaskDetailIntent.Grid(GridAction.PickDay(today.plusDays(1))))
+        runCurrent()
+        assertEquals("Поле показывает выбор", tomorrow, vm.state.value.fields!!.due)
+        assertEquals("В базе — по-старому", TaskDue.AllDay(today), tasks.getTask("t1")!!.due)
+
+        vm.onIntent(TaskDetailIntent.Grid(GridAction.Done))
+        val dialog = vm.state.value.dialog as DetailDialog.ChangeRepeat
+        assertNull("У ближайшего раза «Текущий повтор» доступен", dialog.nearest)
+
+        vm.onIntent(TaskDetailIntent.DismissDialog)
+        assertNull(vm.state.value.dialog)
+        assertEquals("«Отмена» вернула дату", TaskDue.AllDay(today), vm.state.value.fields!!.due)
+
+        // «←» в окне даты: выбор забыт, окна нет.
+        vm.onIntent(TaskDetailIntent.Grid(GridAction.PickDay(today.plusDays(1))))
+        vm.onIntent(TaskDetailIntent.Grid(GridAction.Restore(Schedule(TaskDue.AllDay(today), null))))
+        vm.onIntent(TaskDetailIntent.Grid(GridAction.Done))
+        assertNull(vm.state.value.dialog)
+        assertEquals(TaskDue.AllDay(today), vm.state.value.fields!!.due)
+
+        vm.onIntent(TaskDetailIntent.Grid(GridAction.PickDay(today.plusDays(1))))
+        vm.onIntent(TaskDetailIntent.Grid(GridAction.Done))
+        deletions.notices.test {
+            vm.effects.test {
+                vm.onIntent(TaskDetailIntent.ChangeRepeat(all = false))
+                runCurrent()
+                assertEquals(TaskDetailEffect.Close, awaitItem())
+            }
+            assertEquals(UndoMessage.Moved(vm.dayText(tomorrow)), awaitItem().message)
+        }
+        assertEquals("t1" to tomorrow, tasks.movedRepeats.single())
+    }
+
+    /** «Все повторы с этого момента» у ближайшего раза — как раньше: серия сдвигается, шторка остаётся. */
+    @Test
+    fun detailRepeatAllShiftsSeries() = runTest(dispatcher) {
+        tasks.tasks.value = listOf(task("t1", due = TaskDue.AllDay(today)).copy(rrule = "FREQ=WEEKLY"))
+        val vm = detail(this)
+        runCurrent()
+
+        vm.onIntent(TaskDetailIntent.Grid(GridAction.PickDay(today.plusDays(2))))
+        vm.onIntent(TaskDetailIntent.Grid(GridAction.Done))
+        vm.onIntent(TaskDetailIntent.ChangeRepeat(all = true))
+        runCurrent()
+
+        assertEquals(TaskDue.AllDay(today.plusDays(2)), tasks.getTask("t1")!!.due)
+        assertTrue(tasks.movedRepeats.isEmpty())
+        assertNull(vm.state.value.pending)
+    }
+
+    /** Будущий раз: «Текущий повтор» недоступен, «Все повторы с этого момента» делят серию; снятие даты — без окна. */
+    @Test
+    fun detailFutureRepeatSplitsSeries() = runTest(dispatcher) {
+        tasks.tasks.value = listOf(task("t1", due = TaskDue.AllDay(today)).copy(rrule = "FREQ=WEEKLY"))
+        val future = TaskDue.AllDay(today.plusDays(14))
+        val vm = detail(this, taskId = com.prostovasei.simpletasks.ui.common.TaskOpenKey.of("t1", future))
+        runCurrent()
+
+        vm.onIntent(TaskDetailIntent.Grid(GridAction.PickDay(today.plusDays(15))))
+        vm.onIntent(TaskDetailIntent.Grid(GridAction.Done))
+        val dialog = vm.state.value.dialog as DetailDialog.ChangeRepeat
+        assertEquals(vm.dayText(TaskDue.AllDay(today)), dialog.nearest)
+        assertEquals(future, vm.state.value.occurrence)
+
+        vm.onIntent(TaskDetailIntent.ChangeRepeat(all = true))
+        runCurrent()
+        assertEquals(Triple("t1", future, TaskDue.AllDay(today.plusDays(15)) as TaskDue?), tasks.movedRepeatsFrom.single())
+    }
+
+    @Test
+    fun detailRepeatClearedDateNeedsNoDialog() = runTest(dispatcher) {
+        tasks.tasks.value = listOf(task("t1", due = TaskDue.AllDay(today)).copy(rrule = "FREQ=WEEKLY"))
+        val vm = detail(this)
+        runCurrent()
+
+        vm.onIntent(TaskDetailIntent.Grid(GridAction.ClearDate))
+        vm.onIntent(TaskDetailIntent.Grid(GridAction.Done))
+        runCurrent()
+
+        assertNull(vm.state.value.dialog)
+        assertNull(tasks.getTask("t1")!!.due)
+    }
+
+    /** Крестик у времени — тоже окно (решение PM). */
+    @Test
+    fun detailRepeatClearedTimeAsks() = runTest(dispatcher) {
+        val at = TaskDue.AtTime(today.atTime(14, 30).atZone(time.zone()).toInstant())
+        tasks.tasks.value = listOf(task("t1", due = at).copy(rrule = "FREQ=WEEKLY"))
+        val vm = detail(this)
+        runCurrent()
+
+        vm.onIntent(TaskDetailIntent.Grid(GridAction.ClearTime))
+        vm.onIntent(TaskDetailIntent.Grid(GridAction.Done))
+
+        assertTrue(vm.state.value.dialog is DetailDialog.ChangeRepeat)
+        assertEquals(at, tasks.getTask("t1")!!.due)
+    }
+
     /** Будущий повтор, который на деле ближайший, открывается как обычная задача. */
     @Test
     fun detailNearestKeyOpensTheTask() = runTest(dispatcher) {
