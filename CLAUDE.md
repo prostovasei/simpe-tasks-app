@@ -27,6 +27,7 @@ Android-приложение (Kotlin, Compose, Room, Glance). Требовани
 
 ## Облачная среда
 
+- В новой сессии сначала: `bash tools/cloud-setup.sh` — настраивает всё ниже (повторный запуск безопасен).
 - Android SDK: `/opt/android-sdk` (`local.properties`).
 - Maven Central отвечает 429 через прокси: зеркало в `~/.gradle/init.d/central-mirror.gradle.kts`
   и `robolectricRepoUrl` в `~/.gradle/gradle.properties` (вне репозитория, настраиваются заново в новой среде).
