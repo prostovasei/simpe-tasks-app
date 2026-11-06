@@ -103,6 +103,13 @@ class WidgetWeekTest {
         val slotHeights = slots.map { it.height }
         assertTrue("строки задач одной высоты (до пикселя округления): $slotHeights", slotHeights.max() - slotHeights.min() <= 1)
         assertTrue("строки задач внутри ячейки", slots.last().bottom <= friday.findViewById<View>(R.id.wl_root).height)
+        // Итерация 50: зона «выполнить» ~40 dp на всю высоту плашки поверх кружка и начала названия; кружок и название на месте.
+        val slot = WeekIds.LEFT.slots[0]
+        val hit = friday.findViewById<View>(slot.hit)
+        assertTrue("зона ${hit.width}", kotlin.math.abs(hit.width - px(SizeTokens.WIDGET_WEEK_HIT.toFloat())) <= 1)
+        assertEquals(friday.findViewById<View>(slot.plaque).height, hit.height)
+        assertTrue("кружок ${friday.findViewById<View>(slot.check).width}", kotlin.math.abs(friday.findViewById<View>(slot.check).width - px(SizeTokens.WIDGET_WEEK_TASK.toFloat())) <= 1)
+        assertTrue("зона поверх начала названия", friday.findViewById<View>(slot.title).left < hit.right)
     }
 
     @Test
@@ -125,8 +132,9 @@ class WidgetWeekTest {
         val first = list().rows()[0]
         assertTrue("строка даты открывает день", first.findViewById<View>(WeekIds.LEFT.head).hasOnClickListeners())
         val slot = WeekIds.LEFT.slots[0]
-        assertTrue("кружок", first.findViewById<View>(slot.check).hasOnClickListeners())
+        assertTrue("зона «выполнить»", first.findViewById<View>(slot.hit).hasOnClickListeners())
         assertTrue("плашка", first.findViewById<View>(slot.plaque).hasOnClickListeners())
+
         assertEquals("Снять отметку «выполнено»", first.findViewById<View>(slot.node).contentDescription.toString())
         assertEquals(View.VISIBLE, first.findViewById<View>(slot.tick).visibility)
         assertEquals("Выполнить", first.findViewById<View>(WeekIds.LEFT.slots[1].node).contentDescription.toString())
@@ -206,8 +214,9 @@ class WidgetWeekTest {
         assertEquals("📥", monday.findViewById<TextView>(slots[1].emoji).text.toString())
         assertEquals("📥Разобрать", monday.findViewById<TextView>(slots[1].title).text.toString())
         // Эмодзи стоит между названием и временем.
-        val plaque = monday.findViewById<ViewGroup>(slots[0].plaque)
-        val order = (0 until plaque.childCount).map { plaque.getChildAt(it).id }
+        // Итерация 50: строка плашки — под зоной нажатия, первым слоем.
+        val line = monday.findViewById<ViewGroup>(slots[0].plaque).getChildAt(0) as ViewGroup
+        val order = (0 until line.childCount).map { line.getChildAt(it).id }
         assertTrue(order.indexOf(slots[0].title) < order.indexOf(slots[0].emoji))
         assertTrue(order.indexOf(slots[0].emoji) < order.indexOf(slots[0].time))
         assertEquals("ПН", monday.findViewById<TextView>(WeekIds.LEFT.weekday).text.toString())

@@ -142,6 +142,7 @@ class QuickAddViewModel @Inject constructor(
             is QuickAddIntent.Edit -> setState { edit(intent.edit) }
             is QuickAddIntent.Grid -> when (val action = intent.action) {
                 is GridAction.FirstDay -> gridFirst.value = action.first
+                GridAction.Done -> Unit
                 else -> setState { schedule(Schedule(due, start).after(action, zone)) }
             }
             QuickAddIntent.AddChecklist -> setState { copy(checklist = (checklist ?: emptyList()) + "") }

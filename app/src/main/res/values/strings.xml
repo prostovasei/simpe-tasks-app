@@ -486,6 +486,12 @@
     <string name="unclosed_skip">Пропустить все</string>
     <string name="unclosed_complete">Выполнить все</string>
     <string name="future_banner">Будущий повтор · ближайший — %1$s</string>
+    <string name="change_repeat_title">Изменить повторяющуюся задачу</string>
+    <string name="change_repeat_text">«%1$s»: %2$s → %3$s. Что перенести?</string>
+    <string name="change_repeat_current">Текущий повтор</string>
+    <string name="change_repeat_all">Все повторы с этого момента</string>
+    <string name="change_repeat_hint">Сначала закройте ближайший повтор — %1$s</string>
+    <string name="repeat_moved">Перенесено на %1$s</string>
     <string name="future_done_hint">Это будущий повтор: сначала закройте ближайший — %1$s</string>
     <string name="bulk_wont_do">Не буду делать</string>
     <string name="bulk_wont_done">Не буду делать: %1$d</string>

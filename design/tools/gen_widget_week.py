@@ -1,4 +1,4 @@
-"""Генератор разметки вида «Неделя» в виджете (итерация 45; 48 — мельче дата и название, эмодзи списка слева от времени, макет week_tune.py; 0.46.0 — компактные строки, календарь без месяца и стрелок, строки недели, строки задач
+"""Генератор разметки вида «Неделя» в виджете (итерация 45; 48 — мельче дата и название, эмодзи списка слева от времени, макет week_tune.py; 50 — зона нажатия кружка ~40 dp поверх начала строки, макет iteration50.py; 0.46.0 — компактные строки, календарь без месяца и стрелок, строки недели, строки задач
 и недели календаря делят высоту поровну — weight, а не размер от рабочего стола): ячейки дней, мини-календарь и строки ленты + таблица id для Kotlin.
 
 Ячейка и календарь состоят из десятков элементов с уникальными id (в RemoteViews id внутри одной разметки не должны повторяться, а левая и правая
@@ -16,16 +16,20 @@ def cell(p):
     slots = ''
     for i in range(1, SLOTS + 1):
         slots += f'''
-        <LinearLayout
+        <FrameLayout
             android:id="@+id/{p}_s{i}"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
             android:layout_marginTop="@dimen/widget_week_task_gap"
             android:background="@drawable/widget_week_plaque_plain"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
             android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
             <FrameLayout
                 android:id="@+id/{p}_s{i}_check"
@@ -81,6 +85,13 @@ def cell(p):
                 android:textColor="@color/widget_text_secondary"
                 android:textSize="10sp" />
         </LinearLayout>
+
+            <!-- Итерация 50: невидимая зона «выполнить» поверх кружка и начала названия — кружок и название на месте. -->
+            <FrameLayout
+                android:id="@+id/{p}_s{i}_hit"
+                android:layout_width="@dimen/widget_week_hit"
+                android:layout_height="match_parent" />
+        </FrameLayout>
 '''
     return f'''<?xml version="1.0" encoding="utf-8"?>
 <!-- Сгенерировано design/tools/gen_widget_week.py (итерация 45; 48 — строка даты по высоте текста, эмодзи списка слева от времени): ячейка дня вида «Неделя» в виджете. Не править руками. -->
@@ -232,7 +243,7 @@ def row(name, comment, right):
 
 def ids_kt():
     def cell_ids(p, name):
-        slots = ',\n'.join(f'        SlotIds(R.id.{p}_s{i}, R.id.{p}_s{i}_check, R.id.{p}_s{i}_node, R.id.{p}_s{i}_tick, R.id.{p}_s{i}_title, R.id.{p}_s{i}_emoji, R.id.{p}_s{i}_time)' for i in range(1, SLOTS + 1))
+        slots = ',\n'.join(f'        SlotIds(R.id.{p}_s{i}, R.id.{p}_s{i}_check, R.id.{p}_s{i}_node, R.id.{p}_s{i}_tick, R.id.{p}_s{i}_title, R.id.{p}_s{i}_emoji, R.id.{p}_s{i}_time, R.id.{p}_s{i}_hit)' for i in range(1, SLOTS + 1))
         return f'''    val {name} = CellIds(
         head = R.id.{p}_head, weekday = R.id.{p}_wd, number = R.id.{p}_num, more = R.id.{p}_more,
         slots = listOf(
@@ -247,8 +258,11 @@ import com.prostovasei.simpletasks.R
 
 // Сгенерировано design/tools/gen_widget_week.py (итерация 45): id элементов ячеек и мини-календаря вида «Неделя» в виджете. Не править руками.
 
-/** Элементы одной плашки задачи в ячейке: сама плашка, зона кружка, кружок, галочка, название, эмодзи списка (итерация 48), время. */
-class SlotIds(val plaque: Int, val check: Int, val node: Int, val tick: Int, val title: Int, val emoji: Int, val time: Int)
+/**
+ * Элементы одной плашки задачи в ячейке: сама плашка, место кружка, кружок, галочка, название, эмодзи списка (итерация 48), время
+ * и зона нажатия «выполнить» ~40 dp поверх кружка и начала названия (итерация 50).
+ */
+class SlotIds(val plaque: Int, val check: Int, val node: Int, val tick: Int, val title: Int, val emoji: Int, val time: Int, val hit: Int)
 
 /** Элементы ячейки дня: строка даты (день недели, число, «+N») и плашки задач. */
 class CellIds(val head: Int, val weekday: Int, val number: Int, val more: Int, val slots: List<SlotIds>)

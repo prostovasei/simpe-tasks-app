@@ -4,6 +4,7 @@ import com.prostovasei.simpletasks.domain.model.AllScreenTasks
 import com.prostovasei.simpletasks.domain.model.Completion
 import com.prostovasei.simpletasks.domain.model.Deletion
 import com.prostovasei.simpletasks.domain.model.EarlierRepeats
+import com.prostovasei.simpletasks.domain.model.Moved
 import com.prostovasei.simpletasks.domain.model.Rescheduling
 import com.prostovasei.simpletasks.domain.model.Restoration
 import com.prostovasei.simpletasks.domain.model.TrashedTask
@@ -104,8 +105,28 @@ interface TaskRepository {
     /** Снимает отметку «выполнена» (без переносов). */
     suspend fun setCompleted(taskId: String, completed: Boolean)
 
-    /** «На завтра» из уведомления: срок — завтра, время дня то же. */
-    suspend fun moveToTomorrow(taskId: String)
+    /**
+     * «На завтра» из уведомления и полоски: срок — завтра, время дня то же. У повторяющейся (итерация 50) переносится только этот
+     * раз — как [moveRepeat], серия остаётся на своём расписании. null — задачи нет.
+     */
+    suspend fun moveToTomorrow(taskId: String): Moved?
+
+    /**
+     * «Текущий повтор» (итерация 50, вариант А): ближайший раз серии становится обычной задачей с новым сроком [due] и началом [start]
+     * (с чек-листом и напоминаниями), серия переезжает на следующий раз. У последнего раза серия сама становится обычной задачей.
+     * null — задача не повторяющаяся, закрыта или удалена.
+     */
+    suspend fun moveRepeat(taskId: String, due: TaskDue, start: TaskDue?): Moved?
+
+    /**
+     * «Все повторы с этого момента» у будущего раза [occurrence] (итерация 50): серия делится — старая заканчивается накануне
+     * этого раза (UNTIL), новая начинается с [due]/[start] с тем же правилом (у «N раз» — с оставшимся числом).
+     * null — задача не повторяющаяся, закрыта или удалена.
+     */
+    suspend fun moveRepeatsFrom(taskId: String, occurrence: TaskDue, due: TaskDue?, start: TaskDue?): Moved?
+
+    /** «Отмена» переноса: созданная запись стирается, задача возвращается как была. */
+    suspend fun undoMove(moved: Moved)
 
     /**
      * «Перенести на сегодня» (итерация 37): все невыполненные задачи прошедших дней — на сегодня, время дня то же.

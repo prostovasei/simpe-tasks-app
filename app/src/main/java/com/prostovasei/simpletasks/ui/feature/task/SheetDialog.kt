@@ -35,7 +35,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -136,8 +138,19 @@ fun SheetDialog(
 /** Вид кнопки в [ChoiceDialog]: красная, чёрная, с рамкой или просто текст. */
 enum class ChoiceStyle { Danger, Primary, Outline, Plain }
 
-/** Кнопка окна выбора: подпись, вид, тег для тестов, значок слева и действие. */
-class Choice(val label: String, val style: ChoiceStyle, val tag: String, @DrawableRes val icon: Int? = null, val onClick: () -> Unit)
+/**
+ * Кнопка окна выбора: подпись, вид, тег для тестов, значок слева и действие. [enabled] = false — кнопка бледная и не нажимается
+ * (итерация 50: «Текущий повтор» у будущего раза), [hint] — подсказка под ней.
+ */
+class Choice(
+    val label: String,
+    val style: ChoiceStyle,
+    val tag: String,
+    @DrawableRes val icon: Int? = null,
+    val enabled: Boolean = true,
+    val hint: String? = null,
+    val onClick: () -> Unit,
+)
 
 /**
  * Окно выбора (итерация 49, макет iteration49.py): по центру — заголовок, пояснение и кнопки столбиком на всю ширину
@@ -170,7 +183,11 @@ fun ChoiceDialog(title: String, text: String, tag: String, choices: List<Choice>
             }
             Column(Modifier.fillMaxWidth().padding(spacing.md), verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
                 choices.forEach { choice ->
-                    val modifier = Modifier.fillMaxWidth().heightIn(min = sizes.toolButton).testTag("$tag:${choice.tag}")
+                    val modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = sizes.toolButton)
+                        .alpha(if (choice.enabled) 1f else DISABLED_CHOICE_ALPHA)
+                        .testTag("$tag:${choice.tag}")
                     val label: @Composable () -> Unit = {
                         choice.icon?.let {
                             Icon(painterResource(it), null, modifier = Modifier.padding(end = spacing.xs).size(sizes.metaIcon))
@@ -180,6 +197,7 @@ fun ChoiceDialog(title: String, text: String, tag: String, choices: List<Choice>
                     when (choice.style) {
                         ChoiceStyle.Danger, ChoiceStyle.Primary -> Button(
                             onClick = choice.onClick,
+                            enabled = choice.enabled,
                             shape = shape,
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = if (choice.style == ChoiceStyle.Danger) colors.danger else colors.accent,
@@ -189,23 +207,37 @@ fun ChoiceDialog(title: String, text: String, tag: String, choices: List<Choice>
                         ) { label() }
                         ChoiceStyle.Outline -> OutlinedButton(
                             onClick = choice.onClick,
+                            enabled = choice.enabled,
                             shape = shape,
                             border = BorderStroke(sizes.hairline, colors.divider),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.textPrimary),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.textPrimary, disabledContentColor = colors.textPrimary),
                             modifier = modifier,
                         ) { label() }
                         ChoiceStyle.Plain -> TextButton(
                             onClick = choice.onClick,
+                            enabled = choice.enabled,
                             shape = shape,
                             colors = ButtonDefaults.textButtonColors(contentColor = colors.textPrimary),
                             modifier = modifier,
                         ) { label() }
+                    }
+                    choice.hint?.let {
+                        Text(
+                            it,
+                            color = colors.textSecondary,
+                            style = MaterialTheme.typography.bodySmall,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth().testTag("$tag:${choice.tag}:hint"),
+                        )
                     }
                 }
             }
         }
     }
 }
+
+/** Бледность недоступной кнопки окна выбора (макет iteration50.py). */
+private const val DISABLED_CHOICE_ALPHA = 0.35f
 
 /**
  * Вариант в окне: название, подпись под ним и [hint] справа (когда сработает напоминание).

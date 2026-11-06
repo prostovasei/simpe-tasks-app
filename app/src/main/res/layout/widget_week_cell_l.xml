@@ -61,16 +61,20 @@
             android:visibility="gone" />
     </LinearLayout>
 
-        <LinearLayout
+        <FrameLayout
             android:id="@+id/wl_s1"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
             android:layout_marginTop="@dimen/widget_week_task_gap"
             android:background="@drawable/widget_week_plaque_plain"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
             android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
             <FrameLayout
                 android:id="@+id/wl_s1_check"
@@ -127,16 +131,27 @@
                 android:textSize="10sp" />
         </LinearLayout>
 
-        <LinearLayout
+            <!-- Итерация 50: невидимая зона «выполнить» поверх кружка и начала названия — кружок и название на месте. -->
+            <FrameLayout
+                android:id="@+id/wl_s1_hit"
+                android:layout_width="@dimen/widget_week_hit"
+                android:layout_height="match_parent" />
+        </FrameLayout>
+
+        <FrameLayout
             android:id="@+id/wl_s2"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
             android:layout_marginTop="@dimen/widget_week_task_gap"
             android:background="@drawable/widget_week_plaque_plain"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
             android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
             <FrameLayout
                 android:id="@+id/wl_s2_check"
@@ -193,16 +208,27 @@
                 android:textSize="10sp" />
         </LinearLayout>
 
-        <LinearLayout
+            <!-- Итерация 50: невидимая зона «выполнить» поверх кружка и начала названия — кружок и название на месте. -->
+            <FrameLayout
+                android:id="@+id/wl_s2_hit"
+                android:layout_width="@dimen/widget_week_hit"
+                android:layout_height="match_parent" />
+        </FrameLayout>
+
+        <FrameLayout
             android:id="@+id/wl_s3"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
             android:layout_marginTop="@dimen/widget_week_task_gap"
             android:background="@drawable/widget_week_plaque_plain"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
             android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
             <FrameLayout
                 android:id="@+id/wl_s3_check"
@@ -259,16 +285,27 @@
                 android:textSize="10sp" />
         </LinearLayout>
 
-        <LinearLayout
+            <!-- Итерация 50: невидимая зона «выполнить» поверх кружка и начала названия — кружок и название на месте. -->
+            <FrameLayout
+                android:id="@+id/wl_s3_hit"
+                android:layout_width="@dimen/widget_week_hit"
+                android:layout_height="match_parent" />
+        </FrameLayout>
+
+        <FrameLayout
             android:id="@+id/wl_s4"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
             android:layout_marginTop="@dimen/widget_week_task_gap"
             android:background="@drawable/widget_week_plaque_plain"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
             android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
             <FrameLayout
                 android:id="@+id/wl_s4_check"
@@ -325,16 +362,27 @@
                 android:textSize="10sp" />
         </LinearLayout>
 
-        <LinearLayout
+            <!-- Итерация 50: невидимая зона «выполнить» поверх кружка и начала названия — кружок и название на месте. -->
+            <FrameLayout
+                android:id="@+id/wl_s4_hit"
+                android:layout_width="@dimen/widget_week_hit"
+                android:layout_height="match_parent" />
+        </FrameLayout>
+
+        <FrameLayout
             android:id="@+id/wl_s5"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
             android:layout_marginTop="@dimen/widget_week_task_gap"
             android:background="@drawable/widget_week_plaque_plain"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
             android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
             <FrameLayout
                 android:id="@+id/wl_s5_check"
@@ -391,16 +439,27 @@
                 android:textSize="10sp" />
         </LinearLayout>
 
-        <LinearLayout
+            <!-- Итерация 50: невидимая зона «выполнить» поверх кружка и начала названия — кружок и название на месте. -->
+            <FrameLayout
+                android:id="@+id/wl_s5_hit"
+                android:layout_width="@dimen/widget_week_hit"
+                android:layout_height="match_parent" />
+        </FrameLayout>
+
+        <FrameLayout
             android:id="@+id/wl_s6"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
             android:layout_marginTop="@dimen/widget_week_task_gap"
             android:background="@drawable/widget_week_plaque_plain"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
             android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
             <FrameLayout
                 android:id="@+id/wl_s6_check"
@@ -456,4 +515,11 @@
                 android:textColor="@color/widget_text_secondary"
                 android:textSize="10sp" />
         </LinearLayout>
+
+            <!-- Итерация 50: невидимая зона «выполнить» поверх кружка и начала названия — кружок и название на месте. -->
+            <FrameLayout
+                android:id="@+id/wl_s6_hit"
+                android:layout_width="@dimen/widget_week_hit"
+                android:layout_height="match_parent" />
+        </FrameLayout>
 </LinearLayout>

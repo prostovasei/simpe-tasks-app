@@ -102,6 +102,26 @@ object Recurrence {
         return anchor
     }
 
+    /**
+     * Правило старой части серии при делении (итерация 50): повторы идут до дня [last] включительно — «N раз» и прежний «до даты»
+     * заменяются на UNTIL=[last].
+     */
+    fun endedOn(rrule: String, last: LocalDate): String {
+        val parts = rrule.trim().removePrefix("RRULE:").split(';').filter { it.isNotBlank() && !it.startsWith("COUNT=") && !it.startsWith("UNTIL=") }
+        return (parts + "UNTIL=%04d%02d%02d".format(last.year, last.monthValue, last.dayOfMonth)).joinToString(";")
+    }
+
+    /**
+     * Правило новой части серии при делении (итерация 50): то же, у «N раз» остаток уменьшается на [passed] пройденных повторов.
+     * null — повторов не осталось.
+     */
+    fun continued(rrule: String, passed: Int): String? {
+        val parts = rrule.trim().removePrefix("RRULE:").split(';').filter { it.isNotBlank() }
+        val count = parts.firstOrNull { it.startsWith("COUNT=") }?.substringAfter('=')?.toIntOrNull() ?: return rrule
+        if (count - passed <= 0) return null
+        return parts.joinToString(";") { if (it.startsWith("COUNT=")) "COUNT=${count - passed}" else it }
+    }
+
     private fun TaskDue.toDateTime(zone: ZoneId): DateTime = when (this) {
         is TaskDue.AllDay -> DateTime(date.year, date.monthValue - 1, date.dayOfMonth)
         is TaskDue.AtTime -> instant.atZone(zone).toLocalDateTime().let {

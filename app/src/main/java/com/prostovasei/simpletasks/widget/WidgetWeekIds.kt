@@ -4,8 +4,11 @@ import com.prostovasei.simpletasks.R
 
 // Сгенерировано design/tools/gen_widget_week.py (итерация 45): id элементов ячеек и мини-календаря вида «Неделя» в виджете. Не править руками.
 
-/** Элементы одной плашки задачи в ячейке: сама плашка, зона кружка, кружок, галочка, название, эмодзи списка (итерация 48), время. */
-class SlotIds(val plaque: Int, val check: Int, val node: Int, val tick: Int, val title: Int, val emoji: Int, val time: Int)
+/**
+ * Элементы одной плашки задачи в ячейке: сама плашка, место кружка, кружок, галочка, название, эмодзи списка (итерация 48), время
+ * и зона нажатия «выполнить» ~40 dp поверх кружка и начала названия (итерация 50).
+ */
+class SlotIds(val plaque: Int, val check: Int, val node: Int, val tick: Int, val title: Int, val emoji: Int, val time: Int, val hit: Int)
 
 /** Элементы ячейки дня: строка даты (день недели, число, «+N») и плашки задач. */
 class CellIds(val head: Int, val weekday: Int, val number: Int, val more: Int, val slots: List<SlotIds>)
@@ -20,24 +23,24 @@ object WeekIds {
     val LEFT = CellIds(
         head = R.id.wl_head, weekday = R.id.wl_wd, number = R.id.wl_num, more = R.id.wl_more,
         slots = listOf(
-            SlotIds(R.id.wl_s1, R.id.wl_s1_check, R.id.wl_s1_node, R.id.wl_s1_tick, R.id.wl_s1_title, R.id.wl_s1_emoji, R.id.wl_s1_time),
-            SlotIds(R.id.wl_s2, R.id.wl_s2_check, R.id.wl_s2_node, R.id.wl_s2_tick, R.id.wl_s2_title, R.id.wl_s2_emoji, R.id.wl_s2_time),
-            SlotIds(R.id.wl_s3, R.id.wl_s3_check, R.id.wl_s3_node, R.id.wl_s3_tick, R.id.wl_s3_title, R.id.wl_s3_emoji, R.id.wl_s3_time),
-            SlotIds(R.id.wl_s4, R.id.wl_s4_check, R.id.wl_s4_node, R.id.wl_s4_tick, R.id.wl_s4_title, R.id.wl_s4_emoji, R.id.wl_s4_time),
-            SlotIds(R.id.wl_s5, R.id.wl_s5_check, R.id.wl_s5_node, R.id.wl_s5_tick, R.id.wl_s5_title, R.id.wl_s5_emoji, R.id.wl_s5_time),
-            SlotIds(R.id.wl_s6, R.id.wl_s6_check, R.id.wl_s6_node, R.id.wl_s6_tick, R.id.wl_s6_title, R.id.wl_s6_emoji, R.id.wl_s6_time),
+            SlotIds(R.id.wl_s1, R.id.wl_s1_check, R.id.wl_s1_node, R.id.wl_s1_tick, R.id.wl_s1_title, R.id.wl_s1_emoji, R.id.wl_s1_time, R.id.wl_s1_hit),
+            SlotIds(R.id.wl_s2, R.id.wl_s2_check, R.id.wl_s2_node, R.id.wl_s2_tick, R.id.wl_s2_title, R.id.wl_s2_emoji, R.id.wl_s2_time, R.id.wl_s2_hit),
+            SlotIds(R.id.wl_s3, R.id.wl_s3_check, R.id.wl_s3_node, R.id.wl_s3_tick, R.id.wl_s3_title, R.id.wl_s3_emoji, R.id.wl_s3_time, R.id.wl_s3_hit),
+            SlotIds(R.id.wl_s4, R.id.wl_s4_check, R.id.wl_s4_node, R.id.wl_s4_tick, R.id.wl_s4_title, R.id.wl_s4_emoji, R.id.wl_s4_time, R.id.wl_s4_hit),
+            SlotIds(R.id.wl_s5, R.id.wl_s5_check, R.id.wl_s5_node, R.id.wl_s5_tick, R.id.wl_s5_title, R.id.wl_s5_emoji, R.id.wl_s5_time, R.id.wl_s5_hit),
+            SlotIds(R.id.wl_s6, R.id.wl_s6_check, R.id.wl_s6_node, R.id.wl_s6_tick, R.id.wl_s6_title, R.id.wl_s6_emoji, R.id.wl_s6_time, R.id.wl_s6_hit),
         ),
     )
 
     val RIGHT = CellIds(
         head = R.id.wr_head, weekday = R.id.wr_wd, number = R.id.wr_num, more = R.id.wr_more,
         slots = listOf(
-            SlotIds(R.id.wr_s1, R.id.wr_s1_check, R.id.wr_s1_node, R.id.wr_s1_tick, R.id.wr_s1_title, R.id.wr_s1_emoji, R.id.wr_s1_time),
-            SlotIds(R.id.wr_s2, R.id.wr_s2_check, R.id.wr_s2_node, R.id.wr_s2_tick, R.id.wr_s2_title, R.id.wr_s2_emoji, R.id.wr_s2_time),
-            SlotIds(R.id.wr_s3, R.id.wr_s3_check, R.id.wr_s3_node, R.id.wr_s3_tick, R.id.wr_s3_title, R.id.wr_s3_emoji, R.id.wr_s3_time),
-            SlotIds(R.id.wr_s4, R.id.wr_s4_check, R.id.wr_s4_node, R.id.wr_s4_tick, R.id.wr_s4_title, R.id.wr_s4_emoji, R.id.wr_s4_time),
-            SlotIds(R.id.wr_s5, R.id.wr_s5_check, R.id.wr_s5_node, R.id.wr_s5_tick, R.id.wr_s5_title, R.id.wr_s5_emoji, R.id.wr_s5_time),
-            SlotIds(R.id.wr_s6, R.id.wr_s6_check, R.id.wr_s6_node, R.id.wr_s6_tick, R.id.wr_s6_title, R.id.wr_s6_emoji, R.id.wr_s6_time),
+            SlotIds(R.id.wr_s1, R.id.wr_s1_check, R.id.wr_s1_node, R.id.wr_s1_tick, R.id.wr_s1_title, R.id.wr_s1_emoji, R.id.wr_s1_time, R.id.wr_s1_hit),
+            SlotIds(R.id.wr_s2, R.id.wr_s2_check, R.id.wr_s2_node, R.id.wr_s2_tick, R.id.wr_s2_title, R.id.wr_s2_emoji, R.id.wr_s2_time, R.id.wr_s2_hit),
+            SlotIds(R.id.wr_s3, R.id.wr_s3_check, R.id.wr_s3_node, R.id.wr_s3_tick, R.id.wr_s3_title, R.id.wr_s3_emoji, R.id.wr_s3_time, R.id.wr_s3_hit),
+            SlotIds(R.id.wr_s4, R.id.wr_s4_check, R.id.wr_s4_node, R.id.wr_s4_tick, R.id.wr_s4_title, R.id.wr_s4_emoji, R.id.wr_s4_time, R.id.wr_s4_hit),
+            SlotIds(R.id.wr_s5, R.id.wr_s5_check, R.id.wr_s5_node, R.id.wr_s5_tick, R.id.wr_s5_title, R.id.wr_s5_emoji, R.id.wr_s5_time, R.id.wr_s5_hit),
+            SlotIds(R.id.wr_s6, R.id.wr_s6_check, R.id.wr_s6_node, R.id.wr_s6_tick, R.id.wr_s6_title, R.id.wr_s6_emoji, R.id.wr_s6_time, R.id.wr_s6_hit),
         ),
     )
 

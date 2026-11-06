@@ -193,9 +193,8 @@ class ReminderPopup @Inject constructor(
                 },
                 onTomorrow = { id ->
                     act(id, strips.find { it.taskId == id }?.later.orEmpty().ifEmpty { context.getString(R.string.popup_tomorrow) }) {
-                        val before = tasks.getTask(id)
-                        tasks.moveToTomorrow(id)
-                        suspend { if (before != null) tasks.updateTask(before) }
+                        val moved = tasks.moveToTomorrow(id)
+                        suspend { if (moved != null) tasks.undoMove(moved) }
                     }
                 },
                 onUndo = ::undo,

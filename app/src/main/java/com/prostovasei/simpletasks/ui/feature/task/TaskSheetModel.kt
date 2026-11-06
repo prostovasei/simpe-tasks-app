@@ -62,6 +62,12 @@ sealed interface GridAction {
 
     /** Сетку пролистали: первый видимый день — [first]. */
     data class FirstDay(val first: LocalDate) : GridAction
+
+    /**
+     * Выбор закончен (итерация 50): «Готово» и «без даты» в окне даты, крестики у полей даты и времени. У повторяющейся задачи
+     * после него решается, к чему применить новую дату: к этому разу или ко всем повторам.
+     */
+    data object Done : GridAction
 }
 
 /** Срок и начало задачи. */
@@ -111,7 +117,7 @@ fun Schedule.after(action: GridAction, zone: ZoneId): Schedule {
         is GridAction.Resize -> if (date == null || minute == null) this else timed(date, minute, action.minutes, zone)
         GridAction.ClearTime -> if (date == null) this else Schedule(TaskDue.AllDay(date), null)
         GridAction.ClearDate -> Schedule(null, null)
-        is GridAction.FirstDay -> this
+        is GridAction.FirstDay, GridAction.Done -> this
         is GridAction.Restore -> action.schedule
     }
 }
