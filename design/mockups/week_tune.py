@@ -73,7 +73,8 @@ def ring(color, size=13):
 
 
 def slot(task, P, mode, h):
-    """Строка задачи. mode: None — без эмодзи (было), 'A' — эмодзи перед названием, 'B' — после."""
+    """Строка задачи. mode: None — без эмодзи (было), 'A' — эмодзи перед названием, 'B' — после, 'C' — слева от времени
+    (просьба PM после первого показа: эмодзи у правого края, перед временем; название обрезается, эмодзи видно всегда)."""
     title, time, e, high, rep = task
     color = HIGH_RING if high else INACT
     mark = repeat_icon(color) if rep else ring(color)
@@ -84,11 +85,12 @@ def slot(task, P, mode, h):
         text = f'{title} {emo(e, fs)}'
     else:
         text = title
+    lead = f'<span style="margin-left:4px;flex-shrink:0;display:flex;">{emo(e, fs)}</span>' if mode == 'C' else ''
     return (f'<div style="height:{h}px;margin-top:{P["gap"]}px;border-radius:8px;background:{HIGH_BG if high else SURF};'
             f'display:flex;align-items:center;min-width:0;">'
             f'<span style="width:18px;height:100%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">{mark}</span>'
             f'<span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:{fs}px;font-weight:700;color:{INK};">{text}</span>'
-            f'<span style="margin-left:4px;margin-right:{P["time_end"]}px;font-size:{sp(10)}px;color:{T2};flex-shrink:0;">{time}</span></div>')
+            f'{lead}<span style="margin-left:{3 if mode == "C" else 4}px;margin-right:{P["time_end"]}px;font-size:{sp(10)}px;color:{T2};flex-shrink:0;">{time}</span></div>')
 
 
 def head(wd, num, P):
@@ -210,8 +212,10 @@ def main_board():
                                                   'всегда видно, обрезается текст.', phone(AFTER, 'A')),
         ('3. Вариант Б — эмодзи после названия', 'Все поправки + эмодзи сразу после названия. У длинного названия эмодзи '
                                                  'уходит под «…» вместе с концом текста.', phone(AFTER, 'B')),
+        ('4. Вариант В — эмодзи слева от времени', 'Все поправки + эмодзи у правого края, перед временем. Эмодзи видно всегда '
+                                                   'и стоят ровным столбиком, обрезается текст.', phone(AFTER, 'C')),
     ]
-    W, H = 3 * 428 + 2 * 30 + 80, 1130
+    W, H = 4 * 428 + 3 * 30 + 80, 1130
     body = (f'<div style="font-size:28px;font-weight:700;letter-spacing:-.4px;">Виджет «Неделя»: поправки — итерация 48</div>'
             f'<div style="font-size:15px;color:{T2};margin:6px 0 22px;line-height:21px;">Время у края плашки · день недели капсом · '
             f'дата мельче, не-сегодня обычным шрифтом · меньше отступов вокруг даты · название мельче · календарик крупнее · '
@@ -228,12 +232,12 @@ def zoom_cells(P, mode, days, row_h=150):
 
 
 def detail_board():
-    W, H = 1400, 1000
+    W, H = 1400, 1300
     box = lambda t, inner, h: (f'<div style="margin-bottom:26px;"><div style="font-size:14px;font-weight:700;color:{T2};margin-bottom:8px;">{t}</div>'
                                f'<div style="height:{h}px;">{inner}</div></div>')
     rows = [
         ('1', 'Отступ справа от времени', '8 dp', '2 dp'),
-        ('2', 'Эмодзи списка', 'нет', 'А — перед названием · Б — после'),
+        ('2', 'Эмодзи списка', 'нет', 'А — перед названием · Б — после · В — слева от времени'),
         ('3', 'День недели', 'чт 5', 'ЧТ 5'),
         ('4', 'Шрифт даты и дня недели', '12', '10'),
         ('5', 'Не-сегодняшний день', 'средний', 'обычный (сегодня — жирный)'),
@@ -251,7 +255,8 @@ def detail_board():
              + '</table>')
     left = (box('Верхний ряд крупно — было', zoom_cells(BEFORE, None, [0, 1]), 250)
             + box('Стало, вариант А', zoom_cells(AFTER, 'A', [0, 1]), 250)
-            + box('Стало, вариант Б', zoom_cells(AFTER, 'B', [0, 1]), 250))
+            + box('Стало, вариант Б', zoom_cells(AFTER, 'B', [0, 1]), 250)
+            + box('Стало, вариант В', zoom_cells(AFTER, 'C', [0, 1]), 250))
     right = (f'{table}<div style="font-size:13px;color:{T2};line-height:19px;width:560px;margin-top:16px;">'
              f'Эмодзи — у всех задач, включая «Входящие» (📥). Если эмодзи уже есть в названии (🌐Купить молоко) — показываем оба, '
              f'без отдельной логики. Строк в ячейке по-прежнему до 6; освободившаяся высота уходит строкам задач. '
@@ -273,7 +278,7 @@ if __name__ == '__main__':
         'v': 3, 'createdOnFiles': {'v': 1, 'at': now}, 'title': 'Виджет «Неделя» — итерация 48',
         'launch': {'view': 'canvas'}, 'pages': [],
         'boards': {
-            'Main.dc.html': {'x': 0, 'y': 0, 'w': W1, 'h': H1, 'title': 'Было · вариант А · вариант Б'},
+            'Main.dc.html': {'x': 0, 'y': 0, 'w': W1, 'h': H1, 'title': 'Было · варианты А, Б, В'},
             'Detail.dc.html': {'x': W1 + 80, 'y': 0, 'w': W2, 'h': H2, 'title': 'Детали: было и стало'},
         },
         'order': ['Main.dc.html', 'Detail.dc.html'],
