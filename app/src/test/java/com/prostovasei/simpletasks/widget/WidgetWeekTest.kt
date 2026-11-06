@@ -193,6 +193,27 @@ class WidgetWeekTest {
         assertFalse(friday.findViewById<TextView>(WeekIds.RIGHT.number).isBold())
     }
 
+    /**
+     * Итерация 48 (решение PM, вариант В): эмодзи списка слева от времени у каждой задачи — и у «Входящих»; эмодзи в названии остаётся
+     * (дубль не убирается); день недели капсом.
+     */
+    @Test
+    fun listEmojiBeforeTimeAndUppercaseWeekday() {
+        val inbox = TaskItem("i1", "📥Разобрать", Priority.NONE, DueText(DayLabel.Today, "09:00"), "Входящие", "📥", isInboxList = true)
+        val monday = list(week { day -> if (day == 0) listOf(item("w1", "Синк", "11:00"), inbox) else emptyList() }).rows()[0]
+        val slots = WeekIds.LEFT.slots
+        assertEquals("💼", monday.findViewById<TextView>(slots[0].emoji).text.toString())
+        assertEquals("📥", monday.findViewById<TextView>(slots[1].emoji).text.toString())
+        assertEquals("📥Разобрать", monday.findViewById<TextView>(slots[1].title).text.toString())
+        // Эмодзи стоит между названием и временем.
+        val plaque = monday.findViewById<ViewGroup>(slots[0].plaque)
+        val order = (0 until plaque.childCount).map { plaque.getChildAt(it).id }
+        assertTrue(order.indexOf(slots[0].title) < order.indexOf(slots[0].emoji))
+        assertTrue(order.indexOf(slots[0].emoji) < order.indexOf(slots[0].time))
+        assertEquals("ПН", monday.findViewById<TextView>(WeekIds.LEFT.weekday).text.toString())
+        assertEquals("ВТ", monday.findViewById<TextView>(WeekIds.RIGHT.weekday).text.toString())
+    }
+
     /** Пустые места под задачи невидимы, но держат размер (строки во всех ячейках одной высоты); лишние места убраны. */
     @Test
     fun emptySlotsKeepTheirShareAndExtraSlotsAreGone() {

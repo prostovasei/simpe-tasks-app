@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Сгенерировано design/tools/gen_widget_week.py (итерация 45): ячейка дня вида «Неделя» в виджете. Не править руками. -->
+<!-- Сгенерировано design/tools/gen_widget_week.py (итерация 45; 48 — строка даты по высоте текста, эмодзи списка слева от времени): ячейка дня вида «Неделя» в виджете. Не править руками. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     tools:ignore="UselessLeaf"
@@ -10,14 +10,15 @@
     android:background="@drawable/widget_week_cell"
     android:orientation="vertical"
     android:paddingStart="@dimen/widget_space_xxs"
-    android:paddingTop="@dimen/widget_week_task_gap"
+    android:paddingTop="@dimen/widget_week_cell_top"
     android:paddingEnd="@dimen/widget_space_xxs"
     android:paddingBottom="@dimen/widget_week_task_gap">
 
     <LinearLayout
         android:id="@+id/wl_head"
         android:layout_width="match_parent"
-        android:layout_height="@dimen/widget_week_header"
+        android:layout_height="wrap_content"
+        android:minHeight="@dimen/widget_week_header"
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
@@ -25,20 +26,20 @@
             android:id="@+id/wl_wd"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:includeFontPadding="false"
             android:maxLines="1"
-            android:fontFamily="sans-serif-medium"
             android:textColor="@color/widget_text_primary"
-            android:textSize="12sp" />
+            android:textSize="9sp" />
 
         <TextView
             android:id="@+id/wl_num"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="@dimen/widget_space_xxs"
-            android:fontFamily="sans-serif-medium"
+            android:includeFontPadding="false"
             android:maxLines="1"
             android:textColor="@color/widget_text_secondary"
-            android:textSize="12sp" />
+            android:textSize="9sp" />
 
         <FrameLayout
             android:layout_width="0dp"
@@ -50,11 +51,12 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:background="@drawable/widget_week_more"
+            android:includeFontPadding="false"
             android:maxLines="1"
             android:paddingStart="@dimen/widget_space_xs"
             android:paddingEnd="@dimen/widget_space_xs"
             android:textColor="@color/widget_text_primary"
-            android:textSize="10sp"
+            android:textSize="9sp"
             android:textStyle="bold"
             android:visibility="gone" />
     </LinearLayout>
@@ -102,15 +104,24 @@
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:textColor="@color/widget_text_primary"
-                android:textSize="12sp"
+                android:textSize="10sp"
                 android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/wl_s1_emoji"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/widget_space_xxs"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textSize="10sp" />
 
             <TextView
                 android:id="@+id/wl_s1_time"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/widget_space_xxs"
-                android:layout_marginEnd="@dimen/widget_space_xs"
+                android:layout_marginStart="@dimen/widget_week_inline_gap"
+                android:layout_marginEnd="@dimen/widget_week_inline_gap"
                 android:maxLines="1"
                 android:textColor="@color/widget_text_secondary"
                 android:textSize="10sp" />
@@ -159,15 +170,24 @@
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:textColor="@color/widget_text_primary"
-                android:textSize="12sp"
+                android:textSize="10sp"
                 android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/wl_s2_emoji"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/widget_space_xxs"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textSize="10sp" />
 
             <TextView
                 android:id="@+id/wl_s2_time"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/widget_space_xxs"
-                android:layout_marginEnd="@dimen/widget_space_xs"
+                android:layout_marginStart="@dimen/widget_week_inline_gap"
+                android:layout_marginEnd="@dimen/widget_week_inline_gap"
                 android:maxLines="1"
                 android:textColor="@color/widget_text_secondary"
                 android:textSize="10sp" />
@@ -216,15 +236,24 @@
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:textColor="@color/widget_text_primary"
-                android:textSize="12sp"
+                android:textSize="10sp"
                 android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/wl_s3_emoji"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/widget_space_xxs"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textSize="10sp" />
 
             <TextView
                 android:id="@+id/wl_s3_time"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/widget_space_xxs"
-                android:layout_marginEnd="@dimen/widget_space_xs"
+                android:layout_marginStart="@dimen/widget_week_inline_gap"
+                android:layout_marginEnd="@dimen/widget_week_inline_gap"
                 android:maxLines="1"
                 android:textColor="@color/widget_text_secondary"
                 android:textSize="10sp" />
@@ -273,15 +302,24 @@
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:textColor="@color/widget_text_primary"
-                android:textSize="12sp"
+                android:textSize="10sp"
                 android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/wl_s4_emoji"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/widget_space_xxs"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textSize="10sp" />
 
             <TextView
                 android:id="@+id/wl_s4_time"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/widget_space_xxs"
-                android:layout_marginEnd="@dimen/widget_space_xs"
+                android:layout_marginStart="@dimen/widget_week_inline_gap"
+                android:layout_marginEnd="@dimen/widget_week_inline_gap"
                 android:maxLines="1"
                 android:textColor="@color/widget_text_secondary"
                 android:textSize="10sp" />
@@ -330,15 +368,24 @@
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:textColor="@color/widget_text_primary"
-                android:textSize="12sp"
+                android:textSize="10sp"
                 android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/wl_s5_emoji"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/widget_space_xxs"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textSize="10sp" />
 
             <TextView
                 android:id="@+id/wl_s5_time"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/widget_space_xxs"
-                android:layout_marginEnd="@dimen/widget_space_xs"
+                android:layout_marginStart="@dimen/widget_week_inline_gap"
+                android:layout_marginEnd="@dimen/widget_week_inline_gap"
                 android:maxLines="1"
                 android:textColor="@color/widget_text_secondary"
                 android:textSize="10sp" />
@@ -387,15 +434,24 @@
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:textColor="@color/widget_text_primary"
-                android:textSize="12sp"
+                android:textSize="10sp"
                 android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/wl_s6_emoji"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/widget_space_xxs"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textSize="10sp" />
 
             <TextView
                 android:id="@+id/wl_s6_time"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/widget_space_xxs"
-                android:layout_marginEnd="@dimen/widget_space_xs"
+                android:layout_marginStart="@dimen/widget_week_inline_gap"
+                android:layout_marginEnd="@dimen/widget_week_inline_gap"
                 android:maxLines="1"
                 android:textColor="@color/widget_text_secondary"
                 android:textSize="10sp" />

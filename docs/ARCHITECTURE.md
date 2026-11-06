@@ -1098,6 +1098,25 @@ PM поменял порядок: шторка для созданных зад�
 удалены `ListColorTokens`, `inboxList`, значки `ic_list_*` (кроме «Входящих»), окна цвета и значка списка. Тесты: `MigrationTest.migrate2To3GivesEmojiAndTwoPriorities`, `ListEmojiTest`,
 `TickTickExporterTest.listEmojiTravelsInTheListName`, окно эмодзи и переключатель приоритета в UI-тестах, скриншоты.
 
+### 4.53. Итог Итерации 48 — поправки виджета «Неделя» (0.48.0)
+
+Запрос PM по скриншоту виджета; макет — новый холст «Виджет „Неделя" — итерация 48» (`design/mockups/week_tune.py`), выбран вариант В.
+Только виджет, вкладка «Неделя»: приложение не меняется.
+
+| Что | Было | Стало |
+|---|---|---|
+| Эмодзи списка | нет | слева от времени у каждой задачи, и у «Входящих» (📥); эмодзи в названии не убирается (дубль остаётся — решение PM) |
+| Время в плашке | 8 dp от края | 2 dp (`WIDGET_WEEK_INLINE_GAP`); без времени так же от края — эмодзи |
+| День недели | «чт 5» | «ЧТ 5» |
+| Дата и день недели | 12 sp, Medium | 9 sp; не-сегодня — обычное начертание, сегодня — жирное |
+| Строка даты | 18 dp, поле сверху 2 | по высоте текста (не ниже `WIDGET_WEEK_HEADER` 12), поле сверху 1 (`WIDGET_WEEK_CELL_TOP`) |
+| Верхний ряд | 6 dp от края виджета | 2 dp (`WIDGET_WEEK_TOP`) |
+| Название задачи | 12 sp | 10 sp |
+| Даты календарика | 9 sp, кружок 14 | 11 sp, кружок 18 (`WIDGET_WEEK_CAL_DAY`) |
+
+Код: `design/tools/gen_widget_week.py` (разметка ячеек и календаря, id эмодзи — `SlotIds.emoji`), `widget/WidgetWeekRows.kt`, `widget_root_week.xml`,
+размеры — `SizeTokens` и `res/values/widget_rows.xml`. Тесты: `WidgetWeekTest.listEmojiBeforeTimeAndUppercaseWeekday`, `WidgetRowResourcesTest`, скриншоты `widget_week_*`.
+
 ### 4.45. Дорожная карта (обновлена)
 
 | Итерация | Название | Суть |

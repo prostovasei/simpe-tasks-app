@@ -15,7 +15,6 @@ import androidx.compose.ui.unit.DpSize
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.tokens.ColorTokens
 import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
-import com.prostovasei.simpletasks.designsystem.tokens.SpacingTokens
 import com.prostovasei.simpletasks.designsystem.tokens.ThemedColor
 import com.prostovasei.simpletasks.designsystem.tokens.WeekRowTokens
 import com.prostovasei.simpletasks.designsystem.tokens.WidgetCheckTokens
@@ -63,15 +62,16 @@ object WidgetWeekRows {
      */
     fun rowHeightDp(size: DpSize): Float {
         val height = size.height.value.takeIf { !it.isNaN() && it > 0f } ?: return SizeTokens.WIDGET_WEEK_ROW_DEFAULT.toFloat()
-        return ((height - SizeTokens.WIDGET_EDGE - SizeTokens.WIDGET_BAR) / ROWS).coerceAtLeast(SizeTokens.WIDGET_WEEK_ROW_MIN.toFloat())
+        return ((height - SizeTokens.WIDGET_WEEK_TOP - SizeTokens.WIDGET_BAR) / ROWS).coerceAtLeast(SizeTokens.WIDGET_WEEK_ROW_MIN.toFloat())
     }
 
     /**
      * Сколько строк задач влезает в ячейку высотой [rowHeight] (поле сверху, строка даты, строки с промежутком над каждой) — по наименьшей
-     * читаемой строке `WIDGET_WEEK_TASK`: сами строки делят высоту поровну и выходят выше. Решение PM — до 6 в ячейке.
+     * читаемой строке `WIDGET_WEEK_TASK`: сами строки делят высоту поровну и выходят выше. Решение PM — до 6 в ячейке. Строка даты
+     * (итерация 48) — по высоте текста, здесь считается по наименьшей `WIDGET_WEEK_HEADER`.
      */
     fun capacity(rowHeight: Float): Int {
-        val room = rowHeight - SizeTokens.WIDGET_WEEK_TASK_GAP - SizeTokens.WIDGET_WEEK_HEADER
+        val room = rowHeight - SizeTokens.WIDGET_WEEK_CELL_TOP - SizeTokens.WIDGET_WEEK_HEADER
         return (room / (SizeTokens.WIDGET_WEEK_TASK + SizeTokens.WIDGET_WEEK_TASK_GAP)).toInt().coerceIn(0, WeekIds.SLOTS)
     }
 
@@ -94,7 +94,8 @@ object WidgetWeekRows {
         val hidden = day.items.size - shown.size
         // Сегодня (0.46.0, проверка PM): без кружка — день недели и число жирные и основного цвета. Итерация 47: остальные дни —
         // день недели и число одним нежирным начертанием (Medium) и серые. Жирность — через начертание в тексте: у RemoteViews нет смены шрифта.
-        setTextViewText(ids.weekday, day.date.dayOfWeek.getDisplayName(TextStyle.SHORT, RU).bold(isToday))
+        // Итерация 48 (решение PM, макет `week_tune.py`): день недели капсом («ПТ 6»), остальные дни — обычным начертанием, мельче.
+        setTextViewText(ids.weekday, day.date.dayOfWeek.getDisplayName(TextStyle.SHORT, RU).uppercase(RU).bold(isToday))
         color(ids.weekday, "setTextColor", if (isToday) ColorTokens.textPrimary else ColorTokens.textSecondary)
         setTextViewText(ids.number, day.date.dayOfMonth.toString().bold(isToday))
         color(ids.number, "setTextColor", if (isToday) ColorTokens.textPrimary else ColorTokens.textSecondary)
@@ -164,6 +165,8 @@ object WidgetWeekRows {
             "setTextColor",
             if (done) ColorTokens.inactive else ColorTokens.textPrimary,
         )
+        // Эмодзи списка слева от времени (итерация 48, вариант В — решение PM): у каждой задачи, и у «Входящих»; эмодзи в названии не убирается.
+        setTextViewText(ids.emoji, item.listEmoji)
         val time = item.startTime()
         visible(ids.time, time != null)
         setTextViewText(ids.time, time.orEmpty())
@@ -172,8 +175,8 @@ object WidgetWeekRows {
             "setTextColor",
             if (done) ColorTokens.inactive else ColorTokens.textSecondary,
         )
-        // Без времени название доходит до края плашки — нужен правый отступ.
-        setViewPadding(ids.plaque, 0, 0, if (time == null) dp(context, SpacingTokens.XS) else 0, 0)
+        // Без времени крайний справа — эмодзи: тот же отступ до края плашки, что у времени (итерация 48 — минимальный).
+        setViewPadding(ids.plaque, 0, 0, if (time == null) dp(context, SizeTokens.WIDGET_WEEK_INLINE_GAP) else 0, 0)
         with(click) { set(ids.plaque, WidgetClicks.OPEN, item.taskId) }
     }
 

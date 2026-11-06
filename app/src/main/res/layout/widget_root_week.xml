@@ -17,7 +17,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_marginStart="@dimen/widget_list_edge"
-        android:layout_marginTop="@dimen/widget_edge"
+        android:layout_marginTop="@dimen/widget_week_top"
         android:layout_marginBottom="@dimen/widget_bar"
         android:orientation="vertical" />
 
