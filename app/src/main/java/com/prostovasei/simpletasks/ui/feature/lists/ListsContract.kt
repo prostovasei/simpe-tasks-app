@@ -6,6 +6,8 @@ import com.prostovasei.simpletasks.domain.model.ProjectTree
 data class ListsState(
     /** Сколько задач в корзине (итерация 39): число у строки «Корзина», при нуле не показывается. */
     val trashCount: Int = 0,
+    /** Сколько задач «Не буду делать» (итерация 49): число у строки, при нуле не показывается. */
+    val wontDoCount: Int = 0,
     val tree: ProjectTree? = null,
     val collapsedFolders: Set<String> = emptySet(),
     val dialog: ListsDialog = ListsDialog.None,

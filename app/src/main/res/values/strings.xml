@@ -469,4 +469,34 @@
     <string name="widget_log_share">Отправить</string>
     <string name="widget_log_clear">Очистить</string>
     <string name="widget_pick_title">Показывать в виджете</string>
+
+    <!-- Итерация 49: «Не буду делать» и удаление повторяющейся задачи (макет iteration49.py). -->
+    <string name="action_wont_do">Не буду делать</string>
+    <string name="wontdo_done">Не буду делать</string>
+    <string name="wontdo_done_on">Не буду делать · %1$s</string>
+    <string name="wontdo_done_skipped">Не буду делать · %1$s · пропущено: %2$d</string>
+    <string name="wontdo_done_completed">Не буду делать · %1$s · выполнено: %2$d</string>
+    <string name="delete_series_title">Удалить серию повторов?</string>
+    <string name="delete_series_text">Задача «%1$s» повторяется. Удалятся все её будущие повторы, выполненные останутся в истории.
+
+Чтобы убрать только этот повтор, нажмите «Не буду делать».</string>
+    <string name="delete_series_confirm">Удалить серию</string>
+    <string name="unclosed_title">Есть незакрытые повторы</string>
+    <string name="unclosed_text">Перед %1$s остались повторы «%2$s»: %3$s. Что с ними сделать?</string>
+    <string name="unclosed_skip">Пропустить все</string>
+    <string name="unclosed_complete">Выполнить все</string>
+    <string name="future_banner">Будущий повтор · ближайший — %1$s</string>
+    <string name="future_done_hint">Это будущий повтор: сначала закройте ближайший — %1$s</string>
+    <string name="bulk_wont_do">Не буду делать</string>
+    <string name="bulk_wont_done">Не буду делать: %1$d</string>
+    <string name="bulk_delete_title">Удалить выбранные задачи?</string>
+    <string name="bulk_delete_text">Среди выбранных повторяющихся: %1$d — их серии удалятся полностью, выполненные повторы останутся в истории.
+
+Чтобы убрать только текущие повторы, нажмите «Не буду делать».</string>
+    <string name="notification_wont_do">Не буду делать</string>
+    <string name="wontdo_title">Не буду делать</string>
+    <string name="wontdo_empty">Здесь будут задачи, которые вы решили не делать</string>
+    <string name="wontdo_banner">Не буду делать · отмечено %1$s</string>
+    <string name="wontdo_reopen">Вернуть в работу</string>
+    <string name="wontdo_reopened">Задача возвращена</string>
 </resources>

@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.viewmodel.CreationExtras
 import app.cash.turbine.test
 import com.prostovasei.simpletasks.core.time.DayTicker
+import com.prostovasei.simpletasks.domain.model.EarlierRepeats
 import com.prostovasei.simpletasks.domain.model.Priority
 import com.prostovasei.simpletasks.domain.model.ProjectWithCount
 import com.prostovasei.simpletasks.domain.model.TaskDue
@@ -390,6 +391,72 @@ class TaskViewModelsTest {
             runCurrent()
             assertEquals(listOf("t1"), tasks.tasks.value.map { it.id })
         }
+    }
+
+    /** Итерация 49: «Удалить» у повторяющейся сначала спрашивает; «Не буду делать» закрывает раз, под шторкой — «Отмена». */
+    @Test
+    fun detailRecurringDeleteAsksAndWontDoClosesOccurrence() = runTest(dispatcher) {
+        tasks.tasks.value = listOf(task("t1", due = TaskDue.AllDay(today)).copy(rrule = "FREQ=WEEKLY"))
+        val vm = detail(this)
+        runCurrent()
+
+        vm.onIntent(TaskDetailIntent.RequestDelete)
+        runCurrent()
+        assertEquals(DetailDialog.DeleteSeries, vm.state.value.dialog)
+        assertEquals("Серия не удалена до выбора", listOf("t1"), tasks.tasks.value.map { it.id })
+
+        deletions.notices.test {
+            vm.effects.test {
+                vm.onIntent(TaskDetailIntent.WontDo)
+                runCurrent()
+                assertEquals(TaskDetailEffect.Close, awaitItem())
+            }
+            val notice = awaitItem()
+            assertEquals(com.prostovasei.simpletasks.designsystem.components.UndoKind.WontDo, notice.kind)
+            assertTrue(notice.message is UndoMessage.WontDo && (notice.message as UndoMessage.WontDo).day != null)
+            assertEquals(Triple("t1", null, EarlierRepeats.SKIP), tasks.wontDoCalls.single())
+            assertEquals(TaskDue.AllDay(today.plusDays(7)), tasks.getTask("t1")!!.due)
+            deletions.undo(notice)
+            runCurrent()
+            assertEquals(TaskDue.AllDay(today), tasks.getTask("t1")!!.due)
+        }
+    }
+
+    /** Итерация 49: будущий повтор открывается со своей датой; «Не буду делать» спрашивает про незакрытые повторы перед ним. */
+    @Test
+    fun detailFutureRepeatAsksAboutEarlierOnes() = runTest(dispatcher) {
+        tasks.tasks.value = listOf(task("t1", due = TaskDue.AllDay(today)).copy(rrule = "FREQ=WEEKLY"))
+        val future = TaskDue.AllDay(today.plusDays(14))
+        val vm = detail(this, taskId = com.prostovasei.simpletasks.ui.common.TaskOpenKey.of("t1", future))
+        runCurrent()
+
+        assertEquals(future, vm.state.value.occurrence)
+        assertEquals("Поле даты показывает этот раз", future, vm.state.value.fields!!.due)
+
+        vm.effects.test {
+            vm.onIntent(TaskDetailIntent.ToggleCompleted)
+            runCurrent()
+            assertTrue("Будущий раз раньше ближайшего не выполняется", awaitItem() is TaskDetailEffect.FutureDone)
+        }
+        assertEquals(TaskStatus.ACTIVE, tasks.getTask("t1")!!.status)
+
+        vm.onIntent(TaskDetailIntent.WontDo)
+        runCurrent()
+        val dialog = vm.state.value.dialog as DetailDialog.Unclosed
+        assertEquals(listOf(TaskDue.AllDay(today), TaskDue.AllDay(today.plusDays(7))), dialog.dates)
+
+        vm.onIntent(TaskDetailIntent.CloseEarlier(EarlierRepeats.COMPLETE))
+        runCurrent()
+        assertEquals(Triple("t1", future, EarlierRepeats.COMPLETE), tasks.wontDoCalls.single())
+    }
+
+    /** Будущий повтор, который на деле ближайший, открывается как обычная задача. */
+    @Test
+    fun detailNearestKeyOpensTheTask() = runTest(dispatcher) {
+        tasks.tasks.value = listOf(task("t1", due = TaskDue.AllDay(today)).copy(rrule = "FREQ=WEEKLY"))
+        val vm = detail(this, taskId = com.prostovasei.simpletasks.ui.common.TaskOpenKey.of("t1", TaskDue.AllDay(today)))
+        runCurrent()
+        assertNull(vm.state.value.occurrence)
     }
 
     @Test

@@ -78,6 +78,12 @@ class ReminderManager @Inject constructor(
         tasks.complete(taskId)
     }
 
+    /** «Не буду делать» из уведомления (итерация 49): у повторяющейся закрывается этот раз. */
+    suspend fun wontDoFromNotification(taskId: String) {
+        notifications.cancel(taskId)
+        tasks.wontDo(taskId)
+    }
+
     /** «На завтра» из уведомления. */
     suspend fun moveToTomorrowFromNotification(taskId: String) {
         notifications.cancel(taskId)

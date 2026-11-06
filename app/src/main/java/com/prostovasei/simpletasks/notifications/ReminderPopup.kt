@@ -185,6 +185,12 @@ class ReminderPopup @Inject constructor(
                         suspend { tasks.undo(completion) }
                     }
                 },
+                onWontDo = { id ->
+                    act(id, context.getString(R.string.wontdo_done)) {
+                        val result = tasks.wontDo(id)
+                        suspend { if (result != null) tasks.undoWontDo(result) }
+                    }
+                },
                 onTomorrow = { id ->
                     act(id, strips.find { it.taskId == id }?.later.orEmpty().ifEmpty { context.getString(R.string.popup_tomorrow) }) {
                         val before = tasks.getTask(id)
@@ -304,6 +310,8 @@ fun ReminderStrips(
     strips: List<PopupStrip>,
     onDone: (String) -> Unit,
     onTomorrow: (String) -> Unit,
+    /** «Не буду делать» (итерация 49): круглая кнопка слева от «На завтра». */
+    onWontDo: (String) -> Unit = {},
     onOpen: (String) -> Unit,
     onDismiss: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -336,7 +344,7 @@ fun ReminderStrips(
         shown.asReversed().forEach { strip ->
             // Своя «личность» у «Отменить»: после отмены полоска появляется заново, с анимацией появления.
             key(strip.taskId, strip.undo != null) {
-                if (strip.undo != null) UndoStrip(strip, onUndo, onExpire) else Strip(strip, onDone, onTomorrow, onOpen, onDismiss)
+                if (strip.undo != null) UndoStrip(strip, onUndo, onExpire) else Strip(strip, onDone, onTomorrow, onWontDo, onOpen, onDismiss)
             }
         }
     }
@@ -349,7 +357,7 @@ fun ReminderStrips(
  * Действие выполняется, когда анимация доиграла; без анимаций в настройках телефона — сразу.
  */
 @Composable
-private fun Strip(strip: PopupStrip, onDone: (String) -> Unit, onTomorrow: (String) -> Unit, onOpen: (String) -> Unit, onDismiss: (String) -> Unit) {
+private fun Strip(strip: PopupStrip, onDone: (String) -> Unit, onTomorrow: (String) -> Unit, onWontDo: (String) -> Unit, onOpen: (String) -> Unit, onDismiss: (String) -> Unit) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
     val context = LocalContext.current
@@ -430,6 +438,19 @@ private fun Strip(strip: PopupStrip, onDone: (String) -> Unit, onTomorrow: (Stri
         Column(Modifier.weight(1f).clickable { if (!leaving) onOpen(strip.taskId) }.testTag("$TAG_POPUP_OPEN:${strip.taskId}")) {
             Text(strip.title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = colors.onAccent, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(strip.subtitle, style = MaterialTheme.typography.labelSmall, color = colors.onAccent.copy(alpha = SUBTITLE_ALPHA), maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        val wontDo = stringResource(R.string.action_wont_do)
+        Box(
+            Modifier
+                .size(SizeTokens.POPUP_BUTTON.dp)
+                .clip(CircleShape)
+                .background(colors.onAccent.copy(alpha = BUTTON_ALPHA))
+                .clickable { leave(onWontDo) { dust.animateTo(1f, tween(STRIP_DUST_MS, easing = LinearEasing)) } }
+                .semantics { contentDescription = wontDo }
+                .testTag("$TAG_POPUP_WONT_DO:${strip.taskId}"),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(painterResource(R.drawable.ic_wont_do), null, tint = colors.onAccent, modifier = Modifier.size(SizeTokens.POPUP_ICON.dp))
         }
         val tomorrow = stringResource(R.string.popup_tomorrow)
         Box(
@@ -557,6 +578,7 @@ private const val BUTTON_ALPHA = 0.18f
 const val TAG_POPUP = "popup"
 const val TAG_POPUP_OPEN = "popup_open"
 const val TAG_POPUP_TOMORROW = "popup_tomorrow"
+const val TAG_POPUP_WONT_DO = "popup_wont_do"
 const val TAG_POPUP_DONE = "popup_done"
 const val TAG_POPUP_MORE = "popup_more"
 const val TAG_POPUP_UNDO = "popup_undo"

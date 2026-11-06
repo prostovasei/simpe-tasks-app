@@ -34,14 +34,16 @@ data class TaskItem(
     val reminder: ReminderMark? = null,
     /** Мелкая подпись под названием (итерация 39): в корзине — «удалена 28 окт». */
     val subtitle: String? = null,
+    /** У будущего повтора — его начало или срок (итерация 49): окно задачи открывает именно этот раз. */
+    val occurrence: TaskDue? = null,
 ) {
     val isGhost: Boolean get() = ghostOf != null
 
     /** Показывается выполненной: уже в БД или только что отмечена. */
     val showsDone: Boolean get() = isDone || isCompleting
 
-    /** Задача, которую открывает нажатие. */
-    val taskId: String get() = ghostOf ?: id
+    /** Что открывает нажатие: задачу, а у будущего повтора — серию вместе с датой раза ([TaskOpenKey], итерация 49). */
+    val taskId: String get() = ghostOf?.let { TaskOpenKey.of(it, occurrence) } ?: id
 }
 
 fun Task.toItem(projects: Map<String, Project>, today: LocalDate, zone: ZoneId, pending: Set<String>, ghostIndex: Int? = null): TaskItem {
@@ -60,6 +62,7 @@ fun Task.toItem(projects: Map<String, Project>, today: LocalDate, zone: ZoneId, 
         isRecurring = (rrule != null && due != null) || isRepeatDone,
         ghostOf = id.takeIf { ghostIndex != null },
         reminder = Reminders.mark(due, reminders),
+        occurrence = (start ?: due).takeIf { ghostIndex != null },
     )
 }
 

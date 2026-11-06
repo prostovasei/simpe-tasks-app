@@ -144,6 +144,34 @@ fun Task.upcomingRepeats(zone: ZoneId, today: LocalDate, until: LocalDate): List
     return Recurrence.upcoming(rule, anchor, zone, after = today, until = until).mapNotNull { movedTo(it) }
 }
 
+/**
+ * Повторы серии, которые надо закрыть раньше будущего раза [occurrence] (итерация 49, как в TickTick): текущий раз и все следующие
+ * до [occurrence], не включая его. Пусто — [occurrence] и есть ближайший раз. Прошедшие разы, как и при выполнении, не копятся:
+ * после текущего счёт идёт с [today].
+ */
+fun Task.repeatsBefore(occurrence: TaskDue, zone: ZoneId, today: LocalDate): List<Task> {
+    val result = mutableListOf<Task>()
+    var current: Task? = this
+    while (current != null && result.size < MAX_REPEATS_BEFORE) {
+        val anchor = current.start ?: current.due ?: break
+        if (!anchor.isBefore(occurrence)) break
+        result += current
+        current = current.nextOccurrence(zone, today)
+    }
+    return result
+}
+
+/** Раз серии с началом (или сроком) [anchor] — для показа будущего повтора и записи «не буду делать» на его дату. */
+fun Task.atOccurrence(anchor: TaskDue): Task? = movedTo(anchor)
+
+private const val MAX_REPEATS_BEFORE = 400
+
+private fun TaskDue.isBefore(other: TaskDue): Boolean = when {
+    this is TaskDue.AllDay && other is TaskDue.AllDay -> date < other.date
+    this is TaskDue.AtTime && other is TaskDue.AtTime -> instant < other.instant
+    else -> false
+}
+
 /** Срок (и начало интервала) ставятся на первый день повтора начиная с текущей даты задачи. */
 fun Task.alignedToRepeat(zone: ZoneId): Task {
     val rule = rrule ?: return this

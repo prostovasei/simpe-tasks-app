@@ -57,7 +57,7 @@ import com.prostovasei.simpletasks.domain.model.GroupWithProjects
 import com.prostovasei.simpletasks.domain.model.ProjectWithCount
 
 @Composable
-fun ListsRoute(onOpenProject: (String) -> Unit, onOpenCompleted: () -> Unit = {}, onOpenTrash: () -> Unit = {}, viewModel: ListsViewModel = hiltViewModel()) {
+fun ListsRoute(onOpenProject: (String) -> Unit, onOpenCompleted: () -> Unit = {}, onOpenTrash: () -> Unit = {}, onOpenWontDo: () -> Unit = {}, viewModel: ListsViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
@@ -66,11 +66,11 @@ fun ListsRoute(onOpenProject: (String) -> Unit, onOpenCompleted: () -> Unit = {}
             }
         }
     }
-    ListsScreen(state, viewModel::onIntent, onOpenProject, onOpenCompleted, onOpenTrash)
+    ListsScreen(state, viewModel::onIntent, onOpenProject, onOpenCompleted, onOpenTrash, onOpenWontDo)
 }
 
 @Composable
-fun ListsScreen(state: ListsState, onIntent: (ListsIntent) -> Unit, onOpenProject: (String) -> Unit, onOpenCompleted: () -> Unit = {}, onOpenTrash: () -> Unit = {}) {
+fun ListsScreen(state: ListsState, onIntent: (ListsIntent) -> Unit, onOpenProject: (String) -> Unit, onOpenCompleted: () -> Unit = {}, onOpenTrash: () -> Unit = {}, onOpenWontDo: () -> Unit = {}) {
     val colors = AppTheme.colors
     Scaffold(containerColor = colors.background, contentWindowInsets = WindowInsets(0)) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
@@ -84,6 +84,7 @@ fun ListsScreen(state: ListsState, onIntent: (ListsIntent) -> Unit, onOpenProjec
                 }
             }
             CompletedRow(onOpenCompleted)
+            CountRow(R.drawable.ic_wont_do, R.string.wontdo_title, state.wontDoCount, TAG_WONT_DO, onOpenWontDo)
             TrashRow(state.trashCount, onOpenTrash)
             val tree = state.tree ?: return@Column
             if (tree.groups.isEmpty() && tree.ungrouped.isEmpty()) {
@@ -134,7 +135,11 @@ private fun CompletedRow(onClick: () -> Unit) {
 
 /** «Корзина» — под «Выполненными» (итерация 39): значок, название и число задач (при нуле числа нет). */
 @Composable
-private fun TrashRow(count: Int, onClick: () -> Unit) {
+private fun TrashRow(count: Int, onClick: () -> Unit) = CountRow(R.drawable.ic_tool_delete, R.string.trash_title, count, TAG_TRASH, onClick, TAG_TRASH_COUNT)
+
+/** Строка со значком, названием и числом задач (при нуле числа нет): «Не буду делать» (итерация 49) и «Корзина». */
+@Composable
+private fun CountRow(icon: Int, title: Int, count: Int, tag: String, onClick: () -> Unit, countTag: String = "$tag:count") {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
     Row(
@@ -143,20 +148,21 @@ private fun TrashRow(count: Int, onClick: () -> Unit) {
             .fillMaxWidth()
             .clickable(onClick = onClick)
             .padding(horizontal = spacing.md, vertical = spacing.sm)
-            .testTag(TAG_TRASH),
+            .testTag(tag),
     ) {
-        Icon(painterResource(R.drawable.ic_tool_delete), contentDescription = null, tint = colors.textSecondary)
+        Icon(painterResource(icon), contentDescription = null, tint = colors.textSecondary)
         Text(
-            text = stringResource(R.string.trash_title),
+            text = stringResource(title),
             style = MaterialTheme.typography.bodyLarge,
             color = colors.textPrimary,
             modifier = Modifier.weight(1f).padding(start = spacing.sm),
         )
-        if (count > 0) Text(count.toString(), style = MaterialTheme.typography.bodyMedium, color = colors.textSecondary, modifier = Modifier.testTag(TAG_TRASH_COUNT))
+        if (count > 0) Text(count.toString(), style = MaterialTheme.typography.bodyMedium, color = colors.textSecondary, modifier = Modifier.testTag(countTag))
     }
 }
 
 const val TAG_COMPLETED = "lists_completed"
+const val TAG_WONT_DO = "lists_wont_do"
 const val TAG_TRASH_COUNT = "lists_trash_count"
 
 @Composable

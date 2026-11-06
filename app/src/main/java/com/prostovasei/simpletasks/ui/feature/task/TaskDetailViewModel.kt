@@ -6,7 +6,12 @@ import com.prostovasei.simpletasks.core.di.ApplicationScope
 import com.prostovasei.simpletasks.core.time.DayTicker
 import com.prostovasei.simpletasks.core.time.TimeProvider
 import com.prostovasei.simpletasks.domain.model.ChecklistItem
+import com.prostovasei.simpletasks.designsystem.components.UndoKind
 import com.prostovasei.simpletasks.domain.model.Completion
+import com.prostovasei.simpletasks.domain.model.EarlierRepeats
+import com.prostovasei.simpletasks.domain.model.TaskDue
+import com.prostovasei.simpletasks.domain.model.atOccurrence
+import com.prostovasei.simpletasks.domain.model.repeatsBefore
 import com.prostovasei.simpletasks.domain.model.Task
 import com.prostovasei.simpletasks.domain.model.TaskStatus
 import com.prostovasei.simpletasks.domain.model.alignedToRepeat
@@ -16,6 +21,8 @@ import com.prostovasei.simpletasks.domain.repository.ProjectRepository
 import com.prostovasei.simpletasks.domain.repository.TaskRepository
 import com.prostovasei.simpletasks.ui.common.DueFormatter
 import com.prostovasei.simpletasks.ui.common.DueText
+import com.prostovasei.simpletasks.ui.common.TaskOpenKey
+import com.prostovasei.simpletasks.widget.WidgetDates
 import com.prostovasei.simpletasks.ui.mvi.MviViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineScope
@@ -46,9 +53,26 @@ data class TaskDetailState(
     val renamingItem: ChecklistItem? = null,
     /** Срок из названия (итерация 41): подсветка фразы и чип под названием. */
     val smart: SmartTitle = SmartTitle(),
+    /** Открыт будущий повтор (итерация 49): дата этого раза; null — сама задача (у серии — ближайший раз). */
+    val occurrence: TaskDue? = null,
+    /** Окно поверх шторки: «Удалить серию» или «Незакрытые повторы» (итерация 49). */
+    val dialog: DetailDialog? = null,
 ) {
+    /** Что показывают поля даты: у будущего повтора — его дата. */
+    val shown: Task?
+        get() = task?.let { t -> occurrence?.let { t.atOccurrence(it) } ?: t }
+
     val fields: SheetFields?
-        get() = task?.let { SheetFields(it.due, it.start, it.projectId, it.priority, it.rrule, it.reminders, projects, today, zone, nowMinute, busy) }
+        get() = shown?.let { SheetFields(it.due, it.start, it.projectId, it.priority, it.rrule, it.reminders, projects, today, zone, nowMinute, busy) }
+}
+
+/** Окна шторки (итерация 49, макет iteration49.py). */
+sealed interface DetailDialog {
+    /** «Удалить» у повторяющейся: «Удалить серию» / «Не буду делать» / «Отмена». */
+    data object DeleteSeries : DetailDialog
+
+    /** «Не буду делать» у будущего раза: [dates] — незакрытые повторы перед ним; «Пропустить все» / «Выполнить все» / «Отмена». */
+    data class Unclosed(val dates: List<TaskDue>) : DetailDialog
 }
 
 sealed interface TaskDetailIntent {
@@ -60,8 +84,23 @@ sealed interface TaskDetailIntent {
     data class Edit(val edit: FieldEdit) : TaskDetailIntent
     data class Grid(val action: GridAction) : TaskDetailIntent
     data object ToggleCompleted : TaskDetailIntent
-    /** «Удалить» в меню «⋮»: сразу, без вопроса — под шторкой появится «Задача удалена · Отмена» (итерация 36). */
+    /**
+     * «Удалить» в меню «⋮»: сразу, без вопроса — под шторкой появится «Задача удалена · Отмена» (итерация 36). У повторяющейся —
+     * сначала окно «Удалить серию повторов?» (итерация 49).
+     */
     data object RequestDelete : TaskDetailIntent
+
+    /** «Удалить серию» в окне: вся серия в корзину. */
+    data object ConfirmDeleteSeries : TaskDetailIntent
+
+    /** «Не буду делать» (итерация 49): в «⋮» и в окне удаления серии. */
+    data object WontDo : TaskDetailIntent
+
+    /** Выбор в окне «Незакрытые повторы»: что сделать с повторами перед будущим разом. */
+    data class CloseEarlier(val earlier: EarlierRepeats) : TaskDetailIntent
+
+    /** «Отмена» в окне. */
+    data object DismissDialog : TaskDetailIntent
     data class AddItem(val title: String) : TaskDetailIntent
     data class ToggleItem(val itemId: String) : TaskDetailIntent
     data class StartRenameItem(val itemId: String) : TaskDetailIntent
@@ -77,6 +116,9 @@ sealed interface TaskDetailEffect {
 
     /** Повторяющаяся задача выполнена и перенесена: «Следующий раз: …». */
     data class Rescheduled(val next: DueText) : TaskDetailEffect
+
+    /** Будущий повтор нельзя выполнить раньше ближайшего (итерация 49): подсказка с датой ближайшего [nearest]. */
+    data class FutureDone(val nearest: String) : TaskDetailEffect
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -99,7 +141,9 @@ class TaskDetailViewModel @Inject constructor(
     ),
 ) {
 
-    private val taskId: String = checkNotNull(savedStateHandle["taskId"]) { "Не передан taskId" }
+    /** Ключ открытия: id задачи, у будущего повтора — ещё и дата раза ([TaskOpenKey], итерация 49). */
+    private val openKey: Pair<String, TaskDue?> = TaskOpenKey.parse(checkNotNull(savedStateHandle["taskId"]) { "Не передан taskId" })
+    private val taskId: String = openKey.first
 
     /** Последняя сохранённая версия: с ней сравнивается черновик. */
     private var saved: Task? = null
@@ -129,7 +173,9 @@ class TaskDetailViewModel @Inject constructor(
                 }
                 if (saved == null) {
                     saved = fromDb
-                    setState { copy(smart = SmartTitle.opened(fromDb.title, today, nowMinute())) }
+                    // Будущий повтор (итерация 49): если это и есть ближайший раз — открываем как обычно.
+                    val future = openKey.second?.takeIf { fromDb.rrule != null && it != (fromDb.start ?: fromDb.due) }
+                    setState { copy(smart = SmartTitle.opened(fromDb.title, today, nowMinute()), occurrence = future) }
                 }
             }
         }
@@ -164,7 +210,7 @@ class TaskDetailViewModel @Inject constructor(
                 schedule?.let(::reschedule)
             }
             is TaskDetailIntent.Content -> editText { copy(content = intent.text) }
-            is TaskDetailIntent.Edit -> editNow {
+            is TaskDetailIntent.Edit -> editNow(seriesDates = intent.edit is FieldEdit.Due || intent.edit is FieldEdit.Repeat) {
                 when (val edit = intent.edit) {
                     // Повтор начинается с первого подходящего дня от выбранной даты (решение PM).
                     is FieldEdit.Due -> withDue(edit.due).alignedToRepeat(time.zone())
@@ -176,13 +222,26 @@ class TaskDetailViewModel @Inject constructor(
             }
             is TaskDetailIntent.Grid -> when (val action = intent.action) {
                 is GridAction.FirstDay -> gridFirst.value = action.first
-                else -> editNow {
+                else -> editNow(seriesDates = true) {
                     val next = Schedule(due, start).after(action, time.zone())
                     withDue(next.due).copy(start = next.start).alignedToRepeat(time.zone())
                 }
             }
             TaskDetailIntent.ToggleCompleted -> toggleCompleted()
-            TaskDetailIntent.RequestDelete -> delete()
+            TaskDetailIntent.RequestDelete -> {
+                val task = currentState.task ?: return
+                if (task.rrule != null && task.status == TaskStatus.ACTIVE) setState { copy(dialog = DetailDialog.DeleteSeries) } else delete()
+            }
+            TaskDetailIntent.ConfirmDeleteSeries -> {
+                setState { copy(dialog = null) }
+                delete()
+            }
+            TaskDetailIntent.WontDo -> requestWontDo()
+            is TaskDetailIntent.CloseEarlier -> {
+                setState { copy(dialog = null) }
+                wontDo(intent.earlier)
+            }
+            TaskDetailIntent.DismissDialog -> setState { copy(dialog = null) }
             is TaskDetailIntent.AddItem -> intent.title.trim().takeIf { it.isNotEmpty() }?.let { title ->
                 viewModelScope.launch { checklist.addItem(taskId, title) }
             }
@@ -212,6 +271,12 @@ class TaskDetailViewModel @Inject constructor(
      */
     private fun toggleCompleted() {
         val task = currentState.task ?: return
+        if (currentState.occurrence != null) {
+            // Будущий повтор нельзя выполнить раньше ближайшего (как в TickTick).
+            val nearest = (task.start ?: task.due)?.let(::dayText).orEmpty()
+            sendEffect(TaskDetailEffect.FutureDone(nearest))
+            return
+        }
         textSaveJob?.cancel()
         persist()
         val previous = lastWrite
@@ -248,10 +313,13 @@ class TaskDetailViewModel @Inject constructor(
         }
     }
 
-    /** Дата, список, приоритет и повтор сохраняются сразу. */
-    private fun editNow(change: Task.() -> Task) {
+    /**
+     * Дата, список, приоритет и повтор сохраняются сразу. [seriesDates] — правка даты или повтора: у будущего повтора она меняет
+     * серию, и окно дальше показывает серию (итерация 49: правка одного будущего раза — не в этой итерации).
+     */
+    private fun editNow(seriesDates: Boolean = false, change: Task.() -> Task) {
         val task = currentState.task ?: return
-        setState { copy(task = task.change()) }
+        setState { copy(task = task.change(), occurrence = if (seriesDates) null else occurrence) }
         textSaveJob?.cancel()
         persist()
     }
@@ -284,6 +352,46 @@ class TaskDetailViewModel @Inject constructor(
         setState { copy(checklist = reordered) }
         viewModelScope.launch { checklist.reorder(taskId, reordered.map { it.id }) }
     }
+
+    /** «Не буду делать»: у будущего раза с незакрытыми повторами перед ним — сначала окно выбора, иначе сразу. */
+    private fun requestWontDo() {
+        val task = currentState.task ?: return
+        val occurrence = currentState.occurrence
+        val before = occurrence?.let { task.repeatsBefore(it, time.zone(), time.today()) }.orEmpty()
+        if (before.isNotEmpty()) {
+            setState { copy(dialog = DetailDialog.Unclosed(before.mapNotNull { it.start ?: it.due })) }
+        } else {
+            setState { copy(dialog = null) }
+            wontDo(EarlierRepeats.SKIP)
+        }
+    }
+
+    /**
+     * Закрывает задачу (или раз повтора) без выполнения; черновик сначала дописывается. Шторка закрывается, подсказку
+     * «Не буду делать · … · Отмена» показывает экран под ней.
+     */
+    private fun wontDo(earlier: EarlierRepeats) {
+        val occurrence = currentState.occurrence
+        textSaveJob?.cancel()
+        persist()
+        val previous = lastWrite
+        saved = null
+        appScope.launch {
+            previous?.join()
+            val result = tasks.wontDo(taskId, occurrence, earlier) ?: return@launch close()
+            val day = result.occurrence?.takeIf { result.previous.rrule != null }?.let(::dayText)
+            deletions.notify(UndoNotice(UndoMessage.WontDo(day, result.skipped, result.completed), UndoKind.WontDo) { tasks.undoWontDo(result) })
+            close()
+        }
+    }
+
+    /** «вс, 08 ноя» — как в подписях дней. */
+    fun dayText(due: TaskDue): String = WidgetDates.withWeekday(
+        when (due) {
+            is TaskDue.AllDay -> due.date
+            is TaskDue.AtTime -> due.instant.atZone(time.zone()).toLocalDate()
+        },
+    )
 
     /** Удаляет без вопроса; шторка закрывается, когда запись в базе готова и событие для «Отмены» отправлено. */
     private fun delete() {

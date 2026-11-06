@@ -87,6 +87,8 @@ fun TaskPopup(start: Any, onDismiss: () -> Unit, origin: android.graphics.Rect? 
     val deletedText = stringResource(R.string.task_deleted)
     val movedText = stringResource(R.string.overdue_moved)
     LaunchedEffect(deletions) { deletions.events.collect { deletion -> offer = UndoOffer(deletedText, UndoKind.Deleted) { deletions.undo(deletion) } } }
+    val undoMessages = com.prostovasei.simpletasks.ui.feature.task.UndoMessages.load()
+    LaunchedEffect(deletions) { deletions.notices.collect { notice -> offer = UndoOffer(undoMessages.text(notice.message), notice.kind) { deletions.undo(notice) } } }
     LaunchedEffect(moves) {
         moves.events.collect { moved ->
             if (moved.count == 0) onDismiss() else offer = UndoOffer(movedText.format(moved.count), UndoKind.Moved) { moves.undo(moved) }

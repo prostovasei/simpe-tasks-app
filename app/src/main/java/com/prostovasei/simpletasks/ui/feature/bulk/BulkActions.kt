@@ -29,7 +29,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /** Что сделали с выбранными задачами — от этого зависят текст и значок подсказки «Отмена». */
-enum class BulkKind { Done, Tomorrow, OtherDay, Moved, Priority, Reopened, Deleted, Restored }
+enum class BulkKind { Done, Tomorrow, OtherDay, Moved, Priority, Reopened, Deleted, Restored, WontDo }
 
 /**
  * Итог массового действия (итерация 40): [count] задач; [date] — куда перенесли («На другой день»); [listName] — в какой список
@@ -61,6 +61,12 @@ class BulkActions @Inject constructor(
     fun complete(ids: List<String>) = run {
         val done = ids.map { tasks.complete(it) }
         BulkResult(BulkKind.Done, done.size) { done.forEach { tasks.undo(it) } }
+    }
+
+    /** «Не буду делать» (итерация 49): обычные закрываются, у повторяющихся — текущий раз (серия едет дальше). */
+    fun wontDo(ids: List<String>) = run {
+        val results = ids.mapNotNull { tasks.wontDo(it) }
+        BulkResult(BulkKind.WontDo, results.size) { results.forEach { tasks.undoWontDo(it) } }
     }
 
     fun toTomorrow(ids: List<String>) = run {

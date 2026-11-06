@@ -1,5 +1,11 @@
 package com.prostovasei.simpletasks.ui.feature.bulk
 
+import com.prostovasei.simpletasks.ui.feature.task.Choice
+import com.prostovasei.simpletasks.ui.feature.task.ChoiceDialog
+import com.prostovasei.simpletasks.ui.feature.task.ChoiceStyle
+import com.prostovasei.simpletasks.ui.feature.task.TAG_CHOICE_CANCEL
+import com.prostovasei.simpletasks.ui.feature.task.TAG_CHOICE_DELETE
+import com.prostovasei.simpletasks.ui.feature.task.TAG_CHOICE_WONT_DO
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -69,12 +75,13 @@ val LocalSelectionMode = staticCompositionLocalOf<MutableState<Boolean>?> { null
 val LocalBulkActions = staticCompositionLocalOf<BulkActionsHost?> { null }
 
 /** Задача, которую можно выбрать: [isDone] — выполнена (для неё «Вернуть», а не «Выполнить»). */
-data class Selectable(val id: String, val isDone: Boolean)
+/** Задача, которую можно выбрать; [isRecurring] — повторяющаяся: «Удалить» спросит про серии (итерация 49). */
+data class Selectable(val id: String, val isDone: Boolean, val isRecurring: Boolean = false)
 
 /** Где выбор: обычные задачи или корзина (там своя лента: «Восстановить», «Удалить навсегда»). */
 enum class SelectionScope { Tasks, Trash }
 
-private enum class BulkDialog { None, Day, List, Priority, DeleteForever }
+private enum class BulkDialog { None, Day, List, Priority, DeleteForever, DeleteSeries }
 
 /** Отступ снизу у списка в режиме выбора: последняя задача прокручивается выше ленты действий. */
 @Composable
@@ -106,6 +113,7 @@ fun SelectionFrame(
     val all = chosen.map { it.id }
     val open = chosen.filterNot { it.isDone }.map { it.id }
     val done = chosen.filter { it.isDone }.map { it.id }
+    val recurring = chosen.count { it.isRecurring && !it.isDone }
     val act: (BulkActions.() -> Unit) -> Unit = { action ->
         bulk?.actions?.action()
         selection.clear()
@@ -117,12 +125,16 @@ fun SelectionFrame(
             val actions = when (scope) {
                 SelectionScope.Tasks -> listOf(
                     RibbonAction(R.drawable.ic_node_check, stringResource(R.string.bulk_complete), TAG_BULK_COMPLETE, enabled = open.isNotEmpty()) { act { complete(open) } },
+                    RibbonAction(R.drawable.ic_wont_do, stringResource(R.string.bulk_wont_do), TAG_BULK_WONT_DO, enabled = open.isNotEmpty()) { act { wontDo(open) } },
                     RibbonAction(R.drawable.ic_popup_tomorrow, stringResource(R.string.bulk_tomorrow), TAG_BULK_TOMORROW, enabled = open.isNotEmpty()) { act { toTomorrow(open) } },
                     RibbonAction(R.drawable.ic_widget_all, stringResource(R.string.bulk_other_day), TAG_BULK_DAY, enabled = open.isNotEmpty()) { dialog = BulkDialog.Day },
                     RibbonAction(R.drawable.ic_list_inbox, stringResource(R.string.bulk_move), TAG_BULK_MOVE) { dialog = BulkDialog.List },
                     RibbonAction(R.drawable.ic_tool_priority, stringResource(R.string.bulk_priority), TAG_BULK_PRIORITY) { dialog = BulkDialog.Priority },
                     RibbonAction(R.drawable.ic_snack_restore, stringResource(R.string.bulk_reopen), TAG_BULK_REOPEN, enabled = done.isNotEmpty()) { act { reopen(done) } },
-                    RibbonAction(R.drawable.ic_tool_delete, stringResource(R.string.bulk_delete), TAG_BULK_DELETE, danger = true) { act { delete(all) } },
+                    // Итерация 49: среди выбранных есть повторяющиеся — сначала окно «Удалить / Не буду делать / Отмена».
+                    RibbonAction(R.drawable.ic_tool_delete, stringResource(R.string.bulk_delete), TAG_BULK_DELETE, danger = true) {
+                        if (recurring > 0) dialog = BulkDialog.DeleteSeries else act { delete(all) }
+                    },
                 )
                 SelectionScope.Trash -> listOf(
                     RibbonAction(R.drawable.ic_snack_restore, stringResource(R.string.bulk_restore), TAG_BULK_RESTORE) { act { restoreFromTrash(all) } },
@@ -151,6 +163,23 @@ fun SelectionFrame(
             close()
             act { setPriority(all, priority) }
         }, onDismiss = close)
+        BulkDialog.DeleteSeries -> ChoiceDialog(
+            title = stringResource(R.string.bulk_delete_title),
+            text = stringResource(R.string.bulk_delete_text, recurring),
+            tag = TAG_BULK_DELETE_SERIES_DIALOG,
+            choices = listOf(
+                Choice(stringResource(R.string.bulk_delete), ChoiceStyle.Danger, TAG_CHOICE_DELETE) {
+                    close()
+                    act { delete(all) }
+                },
+                Choice(stringResource(R.string.action_wont_do), ChoiceStyle.Outline, TAG_CHOICE_WONT_DO, R.drawable.ic_wont_do) {
+                    close()
+                    act { wontDo(open) }
+                },
+                Choice(stringResource(R.string.action_cancel), ChoiceStyle.Plain, TAG_CHOICE_CANCEL) { close() },
+            ),
+            onDismiss = close,
+        )
         BulkDialog.DeleteForever -> SheetDialog(
             title = stringResource(R.string.bulk_delete_forever_title),
             tag = TAG_BULK_DELETE_FOREVER_DIALOG,
@@ -173,6 +202,8 @@ const val TAG_BULK_MOVE = "bulk_move"
 const val TAG_BULK_PRIORITY = "bulk_priority"
 const val TAG_BULK_REOPEN = "bulk_reopen"
 const val TAG_BULK_DELETE = "bulk_delete"
+const val TAG_BULK_WONT_DO = "bulk_wont_do"
+const val TAG_BULK_DELETE_SERIES_DIALOG = "bulk_delete_series_dialog"
 const val TAG_BULK_RESTORE = "bulk_restore"
 const val TAG_BULK_DELETE_FOREVER = "bulk_delete_forever"
 const val TAG_BULK_DELETE_FOREVER_DIALOG = "bulk_delete_forever_dialog"

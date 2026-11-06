@@ -32,6 +32,7 @@ class ReminderReceiver : BroadcastReceiver() {
                 when (intent.action) {
                     ACTION_COMPLETE -> taskId?.let { reminders.completeFromNotification(it) }
                     ACTION_TOMORROW -> taskId?.let { reminders.moveToTomorrowFromNotification(it) }
+                    ACTION_WONT_DO -> taskId?.let { reminders.wontDoFromNotification(it) }
                     ACTION_SUMMARY -> summary.fire()
                     else -> {
                         reminders.check()
@@ -48,6 +49,7 @@ class ReminderReceiver : BroadcastReceiver() {
         const val ACTION_FIRE = "com.prostovasei.simpletasks.REMINDER"
         const val ACTION_COMPLETE = "com.prostovasei.simpletasks.REMINDER_COMPLETE"
         const val ACTION_TOMORROW = "com.prostovasei.simpletasks.REMINDER_TOMORROW"
+        const val ACTION_WONT_DO = "com.prostovasei.simpletasks.REMINDER_WONT_DO"
         const val ACTION_SUMMARY = "com.prostovasei.simpletasks.DAY_SUMMARY"
         const val EXTRA_TASK_ID = "task_id"
     }

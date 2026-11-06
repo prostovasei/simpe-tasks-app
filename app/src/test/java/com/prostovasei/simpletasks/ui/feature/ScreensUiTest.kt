@@ -29,6 +29,7 @@ import com.prostovasei.simpletasks.domain.model.TrashedTask
 import com.prostovasei.simpletasks.ui.feature.trash.TAG_TRASH_TASK_DELETE
 import com.prostovasei.simpletasks.ui.feature.trash.TAG_TRASH_TASK_RESTORE
 import com.prostovasei.simpletasks.ui.feature.trash.TAG_TRASH_TASK_MENU
+import com.prostovasei.simpletasks.ui.feature.trash.TAG_TRASH_TASK_BANNER
 import com.prostovasei.simpletasks.ui.feature.trash.TAG_TRASH_TASK_TITLE
 import com.prostovasei.simpletasks.ui.feature.trash.TAG_TRASH_TASK_BANNER
 import com.prostovasei.simpletasks.ui.feature.trash.TAG_TRASH_EMPTY
@@ -580,6 +581,51 @@ class ScreensUiTest {
         assertEquals("c2", opened)
         assertEquals(listOf<Any>(CompletedIntent.Restore("c1")), intents)
         composeRule.onRoot().captureRoboImage("screenshots/completed_light.png")
+    }
+
+    /** Итерация 49: «Не буду делать» — по дням, ✕ возвращает задачу, нажатие на строку открывает её. */
+    @Test
+    fun wontDoScreenReopensAndOpens() {
+        var opened: String? = null
+        val state = com.prostovasei.simpletasks.ui.feature.wontdo.WontDoState(days = completedState.days, repeats = setOf("c1"), isLoading = false)
+        show { com.prostovasei.simpletasks.ui.feature.wontdo.WontDoScreen(state, { intents += it }, {}, { opened = it }) }
+
+        composeRule.onNodeWithText("Не буду делать").assertExists()
+        composeRule.onNodeWithText("Купить продукты").performClick()
+        composeRule.onNodeWithTag("wont_do:c1:check", useUnmergedTree = true).performClick()
+
+        assertEquals("c2", opened)
+        assertEquals(listOf<Any>(com.prostovasei.simpletasks.ui.feature.wontdo.WontDoIntent.Reopen("c1")), intents)
+        composeRule.onRoot().captureRoboImage("screenshots/wont_do_light.png")
+    }
+
+    /** Итерация 49: строка «Не буду делать» на «Списках» — с числом задач. */
+    @Test
+    fun listsShowWontDoRow() {
+        var opened = false
+        show { ListsScreen(ListsState(tree = ProjectTree(null, emptyList(), emptyList()), wontDoCount = 3), { intents += it }, {}, onOpenWontDo = { opened = true }) }
+        composeRule.onNodeWithTag(com.prostovasei.simpletasks.ui.feature.lists.TAG_WONT_DO).performClick()
+        composeRule.onNodeWithTag("${com.prostovasei.simpletasks.ui.feature.lists.TAG_WONT_DO}:count", useUnmergedTree = true).assertTextEquals("3")
+        assertTrue(opened)
+    }
+
+    /** Итерация 49: задача «Не буду делать» — только чтение; «Удалить» без подтверждения. */
+    @Test
+    fun wontDoTaskIsReadOnly() {
+        val task = com.prostovasei.simpletasks.testing.task("t1", title = "Стирка").copy(status = com.prostovasei.simpletasks.domain.model.TaskStatus.ABANDONED)
+        val shown = TrashedTask(TaskDetails(task, emptyList()), emptyList(), java.time.Instant.parse("2026-11-06T10:00:00Z"))
+        show {
+            TrashTaskScreen(
+                TrashTaskState(shown, trashState.items.first(), LocalDate.of(2026, 11, 6), isLoading = false), { intents += it }, onClose = {},
+                kind = com.prostovasei.simpletasks.ui.feature.trash.ReadonlyKind.WontDo,
+            )
+        }
+        composeRule.onNodeWithTag(TAG_TRASH_TASK_BANNER).assertTextEquals("Не буду делать · отмечено пт, 06 ноя")
+        composeRule.onRoot().captureRoboImage("screenshots/wont_do_task_light.png")
+        composeRule.onNodeWithTag(TAG_TRASH_TASK_MENU).performClick()
+        composeRule.onNodeWithText("Вернуть в работу").assertExists()
+        composeRule.onNodeWithTag(TAG_TRASH_TASK_DELETE).performClick()
+        assertEquals(listOf<Any>(TrashTaskIntent.DeleteForever), intents.toList())
     }
 
     @Test

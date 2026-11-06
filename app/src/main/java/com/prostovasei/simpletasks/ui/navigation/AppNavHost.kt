@@ -1,5 +1,7 @@
 package com.prostovasei.simpletasks.ui.navigation
 
+import com.prostovasei.simpletasks.ui.feature.wontdo.WontDoRoute
+import com.prostovasei.simpletasks.ui.feature.wontdo.WontDoTaskRoute
 import com.prostovasei.simpletasks.designsystem.components.UndoKind
 import com.prostovasei.simpletasks.designsystem.components.UndoSnackbarHost
 import androidx.annotation.StringRes
@@ -133,10 +135,16 @@ fun AppNavHost(
     val snackbar = remember { SnackbarHostState() }
     val deletedText = stringResource(R.string.task_deleted)
     val undoText = stringResource(R.string.task_undo)
+    val undoMessages = com.prostovasei.simpletasks.ui.feature.task.UndoMessages.load()
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     LaunchedEffect(deletions) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             deletions.events.collect { deletion -> launch { snackbar.showUndo(deletedText, undoText, UndoKind.Deleted) { deletions.undo(deletion) } } }
+        }
+    }
+    LaunchedEffect(deletions) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            deletions.notices.collect { notice -> launch { snackbar.showUndo(undoMessages.text(notice.message), undoText, notice.kind) { deletions.undo(notice) } } }
         }
     }
     // «Перенести просроченные на сегодня» — под экраном «Перенесено на сегодня: N · Отмена» (итерация 37).
@@ -216,11 +224,14 @@ fun AppNavHost(
             // Полный список дня: открывается нажатием на строку даты в ячейке недели (итерация 44).
             composable<DayDestination> { DayRoute(onBack = { navController.popBackStack() }, onOpenTask = openTask) }
             composable<ListsDestination> {
-                ListsRoute(onOpenProject = { navController.navigate(ProjectDestination(it)) }, onOpenCompleted = { navController.navigate(CompletedDestination) }, onOpenTrash = { navController.navigate(TrashDestination) })
+                ListsRoute(onOpenProject = { navController.navigate(ProjectDestination(it)) }, onOpenCompleted = { navController.navigate(CompletedDestination) }, onOpenTrash = { navController.navigate(TrashDestination) }, onOpenWontDo = { navController.navigate(WontDoDestination) })
             }
             composable<TrashDestination> { TrashRoute(onBack = { navController.popBackStack() }, onOpenTask = { navController.navigate(TrashTaskDestination(it)) }) }
             // Задача в корзине — шторка только для чтения (итерация 39).
             dialog<TrashTaskDestination>(dialogProperties = SHEET_DIALOG) { TrashTaskRoute(onClose = { navController.popBackStack() }) }
+            composable<WontDoDestination> { WontDoRoute(onBack = { navController.popBackStack() }, onOpenTask = { navController.navigate(WontDoTaskDestination(it)) }) }
+            // Задача «Не буду делать» — шторка только для чтения (итерация 49).
+            dialog<WontDoTaskDestination>(dialogProperties = SHEET_DIALOG) { WontDoTaskRoute(onClose = { navController.popBackStack() }) }
             composable<CompletedDestination> { CompletedRoute(onBack = { navController.popBackStack() }, onOpenTask = openTask) }
             composable<SearchDestination> { SearchRoute(onOpenTask = openTask) }
             composable<SettingsDestination> { SettingsRoute() }
@@ -302,7 +313,7 @@ private val SHEET_DIALOG = DialogProperties(
     dismissOnClickOutside = false,
 )
 
-private fun NavDestination.isSheet() = hasRoute(QuickAddDestination::class) || hasRoute(TaskDetailDestination::class) || hasRoute(TrashTaskDestination::class)
+private fun NavDestination.isSheet() = hasRoute(QuickAddDestination::class) || hasRoute(TaskDetailDestination::class) || hasRoute(TrashTaskDestination::class) || hasRoute(WontDoTaskDestination::class)
 
 /** Порядок экрана слева направо: вкладки по порядку в панели, вложенные экраны — правее всех. */
 private fun NavDestination.order(): Int = Tab.entries.indexOfFirst { isOn(it) }.takeIf { it >= 0 } ?: Tab.entries.size

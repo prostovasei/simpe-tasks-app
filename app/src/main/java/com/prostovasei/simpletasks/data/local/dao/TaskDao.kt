@@ -175,6 +175,19 @@ interface TaskDao {
     )
     fun observeCompleted(): Flow<List<TaskEntity>>
 
+    /** «Не буду делать» (итерация 49): новые сверху (у импортированных без времени отметки — по времени изменения). */
+    @Query(
+        """
+        SELECT * FROM tasks
+        WHERE is_deleted = 0 AND status = -1
+        ORDER BY COALESCE(completed_at, updated_at) DESC
+        """,
+    )
+    fun observeWontDo(): Flow<List<TaskEntity>>
+
+    @Query("SELECT COUNT(*) FROM tasks WHERE is_deleted = 0 AND status = -1")
+    fun observeWontDoCount(): Flow<Int>
+
     @Query(
         """
         SELECT * FROM tasks
@@ -214,7 +227,7 @@ interface TaskDao {
     @Query(
         """
         UPDATE tasks SET status = :status, completed_at = :completedAt, updated_at = :now,
-            is_repeat_done = CASE WHEN :status = 2 THEN is_repeat_done ELSE 0 END
+            is_repeat_done = CASE WHEN :status != 0 THEN is_repeat_done ELSE 0 END
         WHERE id = :id AND is_deleted = 0
         """,
     )

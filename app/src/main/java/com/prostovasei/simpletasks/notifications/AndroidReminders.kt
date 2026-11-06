@@ -119,6 +119,8 @@ class AndroidReminderNotifications @Inject constructor(
                 ),
             )
             .addAction(0, context.getString(R.string.notification_complete), action(task.id, ReminderReceiver.ACTION_COMPLETE, id))
+            // Итерация 49: «Не буду делать» между «Выполнить» и «На завтра».
+            .addAction(0, context.getString(R.string.notification_wont_do), action(task.id, ReminderReceiver.ACTION_WONT_DO, id))
             // Итерация 36: «На завтра» рядом с «Выполнить» — то же, что часы на полоске (задача переезжает на завтра в то же время).
             .addAction(0, context.getString(R.string.notification_tomorrow), action(task.id, ReminderReceiver.ACTION_TOMORROW, id))
             .build()
@@ -166,12 +168,18 @@ class AndroidReminderNotifications @Inject constructor(
     private fun action(taskId: String, action: String, notificationId: Int): PendingIntent = PendingIntent.getBroadcast(
         context,
         // У каждой задачи и кнопки свой код — иначе Android подменит одно действие другим.
-        notificationId * 2 + if (action == ReminderReceiver.ACTION_COMPLETE) 0 else 1,
+        notificationId * ACTIONS + when (action) {
+            ReminderReceiver.ACTION_COMPLETE -> 0
+            ReminderReceiver.ACTION_WONT_DO -> 1
+            else -> 2
+        },
         Intent(context, ReminderReceiver::class.java).setAction(action).putExtra(ReminderReceiver.EXTRA_TASK_ID, taskId),
         PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
     )
 
     companion object {
+        /** Кнопок в уведомлении: «Выполнить», «Не буду делать», «На завтра». */
+        private const val ACTIONS = 3
         const val CHANNEL_ID = "reminders_vibrate"
         private const val SEPARATOR = " · "
         private const val OLD_CHANNEL_ID = "reminders"

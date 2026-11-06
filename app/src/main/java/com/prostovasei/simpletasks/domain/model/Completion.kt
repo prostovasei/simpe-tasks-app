@@ -33,3 +33,29 @@ data class Rescheduling(val previous: List<Task>) {
 data class Restoration(val deletions: List<Deletion>) {
     val count: Int get() = deletions.size
 }
+
+/** Что делать с незакрытыми повторами перед будущим разом, когда его отмечают «не буду делать» (итерация 49, как в TickTick). */
+enum class EarlierRepeats {
+    /** Пропустить: разы исчезают без записи. */
+    SKIP,
+
+    /** Выполнить: каждый раз становится выполненным. */
+    COMPLETE,
+}
+
+/**
+ * Итог «Не буду делать» (итерация 49) — с ним «Отмена» возвращает всё как было. [previous] — задача до изменения; [closedWhole] —
+ * закрыта сама задача (обычная или последний раз серии), иначе серия переехала, а раз записан отдельной задачей. [copyIds] — созданные
+ * записи (раз «не буду делать» и выполненные разы перед будущим); [checkedItemIds] — пункты чек-листа серии, с которых сняли галочки;
+ * [occurrence] — дата закрытого раза; [skipped] и [completed] — сколько незакрытых повторов перед ним пропущено или выполнено.
+ */
+data class WontDo(
+    val taskId: String,
+    val previous: Task,
+    val closedWhole: Boolean,
+    val copyIds: List<String> = emptyList(),
+    val checkedItemIds: List<String> = emptyList(),
+    val occurrence: TaskDue? = null,
+    val skipped: Int = 0,
+    val completed: Int = 0,
+)

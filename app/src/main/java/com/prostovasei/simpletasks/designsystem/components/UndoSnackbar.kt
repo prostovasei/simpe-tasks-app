@@ -40,6 +40,9 @@ enum class UndoKind(@DrawableRes val icon: Int) {
     Calendar(R.drawable.ic_widget_all),
     List(R.drawable.ic_list_inbox),
     Priority(R.drawable.ic_tool_priority),
+
+    /** «Не буду делать» (итерация 49). */
+    WontDo(R.drawable.ic_wont_do),
 }
 
 /** Содержимое подсказки с кнопкой: текст, подпись кнопки и [kind] для значка. */

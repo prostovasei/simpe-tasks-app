@@ -378,7 +378,7 @@ def preview_list_square():
 
 def preview_icons():
     names = ['ic_tool_checklist', 'ic_tool_priority', 'ic_tool_reminder', 'ic_tool_repeat', 'ic_tool_delete', 'ic_no_date', 'ic_time', 'ic_widget_all',
-             'ic_widget_inbox', 'ic_widget_list', 'ic_widget_add', 'ic_widget_update', 'ic_fold_open', 'ic_fold_closed', 'ic_move_today', 'ic_history', 'ic_snack_restore']
+             'ic_widget_inbox', 'ic_widget_list', 'ic_widget_add', 'ic_widget_update', 'ic_fold_open', 'ic_fold_closed', 'ic_move_today', 'ic_history', 'ic_snack_restore', 'ic_wont_do']
     cells = ''.join(f'<div class="col" style="width:92px"><span style="color:var(--text-primary)">{svg(n, 32)}</span><div class="cap">{n.removeprefix("ic_")}</div></div>' for n in names)
     return doc('Основы', 220, 'Контурные значки 24 dp, линия 2, скругления: цвет задаёт оттенок', f'<div class="row" style="align-items:flex-start;gap:6px">{cells}</div>')
 
