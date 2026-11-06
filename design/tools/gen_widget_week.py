@@ -1,4 +1,4 @@
-"""Генератор разметки вида «Неделя» в виджете (итерация 45; 0.46.0 — компактные строки, календарь без месяца и стрелок, строки недели, строки задач
+"""Генератор разметки вида «Неделя» в виджете (итерация 45; 48 — мельче дата и название, эмодзи списка слева от времени, макет week_tune.py; 0.46.0 — компактные строки, календарь без месяца и стрелок, строки недели, строки задач
 и недели календаря делят высоту поровну — weight, а не размер от рабочего стола): ячейки дней, мини-календарь и строки ленты + таблица id для Kotlin.
 
 Ячейка и календарь состоят из десятков элементов с уникальными id (в RemoteViews id внутри одной разметки не должны повторяться, а левая и правая
@@ -59,22 +59,31 @@ def cell(p):
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:textColor="@color/widget_text_primary"
-                android:textSize="12sp"
+                android:textSize="10sp"
                 android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/{p}_s{i}_emoji"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/widget_space_xxs"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textSize="10sp" />
 
             <TextView
                 android:id="@+id/{p}_s{i}_time"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/widget_space_xxs"
-                android:layout_marginEnd="@dimen/widget_space_xs"
+                android:layout_marginStart="@dimen/widget_week_inline_gap"
+                android:layout_marginEnd="@dimen/widget_week_inline_gap"
                 android:maxLines="1"
                 android:textColor="@color/widget_text_secondary"
                 android:textSize="10sp" />
         </LinearLayout>
 '''
     return f'''<?xml version="1.0" encoding="utf-8"?>
-<!-- Сгенерировано design/tools/gen_widget_week.py (итерация 45): ячейка дня вида «Неделя» в виджете. Не править руками. -->
+<!-- Сгенерировано design/tools/gen_widget_week.py (итерация 45; 48 — строка даты по высоте текста, эмодзи списка слева от времени): ячейка дня вида «Неделя» в виджете. Не править руками. -->
 <LinearLayout {NS}
     tools:ignore="UselessLeaf"
     android:id="@+id/{p}_root"
@@ -84,14 +93,15 @@ def cell(p):
     android:background="@drawable/widget_week_cell"
     android:orientation="vertical"
     android:paddingStart="@dimen/widget_space_xxs"
-    android:paddingTop="@dimen/widget_week_task_gap"
+    android:paddingTop="@dimen/widget_week_cell_top"
     android:paddingEnd="@dimen/widget_space_xxs"
     android:paddingBottom="@dimen/widget_week_task_gap">
 
     <LinearLayout
         android:id="@+id/{p}_head"
         android:layout_width="match_parent"
-        android:layout_height="@dimen/widget_week_header"
+        android:layout_height="wrap_content"
+        android:minHeight="@dimen/widget_week_header"
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
@@ -99,20 +109,20 @@ def cell(p):
             android:id="@+id/{p}_wd"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:includeFontPadding="false"
             android:maxLines="1"
-            android:fontFamily="sans-serif-medium"
             android:textColor="@color/widget_text_primary"
-            android:textSize="12sp" />
+            android:textSize="9sp" />
 
         <TextView
             android:id="@+id/{p}_num"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="@dimen/widget_space_xxs"
-            android:fontFamily="sans-serif-medium"
+            android:includeFontPadding="false"
             android:maxLines="1"
             android:textColor="@color/widget_text_secondary"
-            android:textSize="12sp" />
+            android:textSize="9sp" />
 
         <FrameLayout
             android:layout_width="0dp"
@@ -124,11 +134,12 @@ def cell(p):
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:background="@drawable/widget_week_more"
+            android:includeFontPadding="false"
             android:maxLines="1"
             android:paddingStart="@dimen/widget_space_xs"
             android:paddingEnd="@dimen/widget_space_xs"
             android:textColor="@color/widget_text_primary"
-            android:textSize="10sp"
+            android:textSize="9sp"
             android:textStyle="bold"
             android:visibility="gone" />
     </LinearLayout>
@@ -152,7 +163,7 @@ def calendar():
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="9sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </FrameLayout>
 ''' for d in range(1, 8))
@@ -178,7 +189,7 @@ def calendar():
                 android:textSize="9sp" />
 ''' for d in range(1, 8))
     return f'''<?xml version="1.0" encoding="utf-8"?>
-<!-- Сгенерировано design/tools/gen_widget_week.py (итерация 45): мини-календарь вида «Неделя» в виджете. Не править руками. -->
+<!-- Сгенерировано design/tools/gen_widget_week.py (итерация 45; 48 — даты 11): мини-календарь вида «Неделя» в виджете. Не править руками. -->
 <LinearLayout {NS}
     tools:ignore="DisableBaselineAlignment,TooManyViews,SmallSp"
     android:id="@+id/wc_root"
@@ -221,7 +232,7 @@ def row(name, comment, right):
 
 def ids_kt():
     def cell_ids(p, name):
-        slots = ',\n'.join(f'        SlotIds(R.id.{p}_s{i}, R.id.{p}_s{i}_check, R.id.{p}_s{i}_node, R.id.{p}_s{i}_tick, R.id.{p}_s{i}_title, R.id.{p}_s{i}_time)' for i in range(1, SLOTS + 1))
+        slots = ',\n'.join(f'        SlotIds(R.id.{p}_s{i}, R.id.{p}_s{i}_check, R.id.{p}_s{i}_node, R.id.{p}_s{i}_tick, R.id.{p}_s{i}_title, R.id.{p}_s{i}_emoji, R.id.{p}_s{i}_time)' for i in range(1, SLOTS + 1))
         return f'''    val {name} = CellIds(
         head = R.id.{p}_head, weekday = R.id.{p}_wd, number = R.id.{p}_num, more = R.id.{p}_more,
         slots = listOf(
@@ -236,8 +247,8 @@ import com.prostovasei.simpletasks.R
 
 // Сгенерировано design/tools/gen_widget_week.py (итерация 45): id элементов ячеек и мини-календаря вида «Неделя» в виджете. Не править руками.
 
-/** Элементы одной плашки задачи в ячейке: сама плашка, зона кружка, кружок, галочка, название, время. */
-class SlotIds(val plaque: Int, val check: Int, val node: Int, val tick: Int, val title: Int, val time: Int)
+/** Элементы одной плашки задачи в ячейке: сама плашка, зона кружка, кружок, галочка, название, эмодзи списка (итерация 48), время. */
+class SlotIds(val plaque: Int, val check: Int, val node: Int, val tick: Int, val title: Int, val emoji: Int, val time: Int)
 
 /** Элементы ячейки дня: строка даты (день недели, число, «+N») и плашки задач. */
 class CellIds(val head: Int, val weekday: Int, val number: Int, val more: Int, val slots: List<SlotIds>)

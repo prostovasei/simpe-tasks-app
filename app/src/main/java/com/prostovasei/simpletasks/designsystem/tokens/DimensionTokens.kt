@@ -231,14 +231,20 @@ object SizeTokens {
      * (настоящая делит высоту ячейки поровну и обычно выше — ~20; по наименьшей считается, сколько строк влезает, решение PM — до 6) и промежуток
      * между строками, кружок и галочка в нём, строка даты, мини-календарь («пн…вс», день) и высота строки
      * недели, пока размер виджета неизвестен (по ней считается только число строк задач: сами строки делят высоту виджета поровну).
+     * Итерация 48 (макет `week_tune.py`): строка даты — по высоте текста, [WIDGET_WEEK_HEADER] — её наименьшая высота; поле над датой
+     * [WIDGET_WEEK_CELL_TOP], над верхним рядом [WIDGET_WEEK_TOP]; [WIDGET_WEEK_INLINE_GAP] — между эмодзи и временем и от времени до края
+     * плашки; день календаря крупнее.
      */
     const val WIDGET_WEEK_TASK = 18
     const val WIDGET_WEEK_TASK_GAP = 2
     const val WIDGET_WEEK_CHECK = 13
     const val WIDGET_WEEK_TICK = 9
-    const val WIDGET_WEEK_HEADER = 18
+    const val WIDGET_WEEK_HEADER = 12
+    const val WIDGET_WEEK_CELL_TOP = 1
+    const val WIDGET_WEEK_TOP = 2
+    const val WIDGET_WEEK_INLINE_GAP = 2
     const val WIDGET_WEEK_CAL_WEEKDAYS = 12
-    const val WIDGET_WEEK_CAL_DAY = 14
+    const val WIDGET_WEEK_CAL_DAY = 18
     const val WIDGET_WEEK_ROW_DEFAULT = 140
     const val WIDGET_WEEK_ROW_MIN = 96
 

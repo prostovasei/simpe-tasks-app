@@ -384,17 +384,19 @@ def p_widget_bar_only():
 
 
 def p_widget_week():
-    """Вкладка «Неделя» в виджете (0.46.0): строки мельче, чем в приложении, календарь без месяца, плоская нижняя строка."""
+    """Вкладка «Неделя» в виджете (0.46.0): строки мельче, чем в приложении, календарь без месяца, плоская нижняя строка.
+    Итерация 48 (макет `week_tune.py`, вариант В): эмодзи списка слева от времени, время у края плашки, название 10, строка даты 9 капсом
+    по высоте текста, календарь 11."""
     _, bottom = widget_body(sel='week')
-    t = lambda *a, **k: week_task(*a, h=20, fs=11, gap=2, **k)
+    t = lambda *a, e='💼', **k: week_task(*a, h=20, fs=10, gap=2, emoji=e, **k)
     h = 150
-    r1 = f'<div style="display:flex">{week_cell("пн", 26, [t("Купить продукты", "10:00", "low", done=True), t("Тренировка")], h=h, widget=True)}{week_cell("вт", 27, [t("Оплатить интернет", "12:00", "medium", over=True)], h=h, widget=True)}</div>'
+    r1 = f'<div style="display:flex">{week_cell("пн", 26, [t("Купить продукты", "10:00", "low", done=True, e="🏠"), t("Тренировка", e="🎾")], h=h, widget=True)}{week_cell("вт", 27, [t("Оплатить интернет", "12:00", "medium", over=True, e="💰")], h=h, widget=True)}</div>'
     r2 = f'<div style="display:flex">{week_cell("ср", 28, [t("Встреча", "15:00", "high", over=True)], h=h, widget=True)}{week_cell("чт", 29, [], h=h, widget=True)}</div>'
-    r3 = (f'<div style="display:flex">{week_cell("пт", 30, [t("Отчёт", "17:00", "high"), t("Кино"), t("Ужин", "20:00"), t("Зарядка", "08:00", "medium", done=True), t("Врач", "", "low"), t("Билеты")], today=True, hidden=1, h=h, widget=True)}'
-          f'{week_cell("сб", 31, [t("Уборка", "11:00"), t("Созвон", "10:00", "medium", ghost=True)], h=h, widget=True)}</div>')
-    r4 = f'<div style="display:flex">{week_cell("вс", 1, [t("План на неделю")], h=h, widget=True)}{week_calendar(h)}</div>'
-    body = f'<div style="position:relative;width:360px;height:{6 + 4 * h + 41}px;border-radius:var(--radius-xl);background:var(--background);overflow:hidden;border:1px solid var(--divider);padding-top:6px;box-sizing:border-box">{r1}{r2}{r3}{r4}{bottom}</div>'
-    return doc('Напоминания и виджет', 720, 'Виджет, вкладка «Неделя»: компактные строки с фоном по приоритету, «+N», календарь без месяца', body)
+    r3 = (f'<div style="display:flex">{week_cell("пт", 30, [t("Отчёт", "17:00", "high"), t("Кино", e="📥"), t("Ужин", "20:00", e="🏠"), t("Зарядка", "08:00", "medium", done=True, e="🎾"), t("Врач", "", "low", e="📥"), t("Билеты", e="📥")], today=True, hidden=1, h=h, widget=True)}'
+          f'{week_cell("сб", 31, [t("Уборка", "11:00", e="🏠"), t("Созвон", "10:00", "medium", ghost=True)], h=h, widget=True)}</div>')
+    r4 = f'<div style="display:flex">{week_cell("вс", 1, [t("План на неделю", e="📥")], h=h, widget=True)}{week_calendar(h, widget=True)}</div>'
+    body = f'<div style="position:relative;width:360px;height:{2 + 4 * h + 41}px;border-radius:var(--radius-xl);background:var(--background);overflow:hidden;border:1px solid var(--divider);padding-top:2px;box-sizing:border-box">{r1}{r2}{r3}{r4}{bottom}</div>'
+    return doc('Напоминания и виджет', 720, 'Виджет, вкладка «Неделя»: компактные строки с фоном по приоритету, эмодзи списка слева от времени, «+N», календарь без месяца', body)
 
 
 # --------------------------------------------------------------- экраны
@@ -747,7 +749,7 @@ def p_smart_date():
 
 # ---------------------------------------------------------------- итерация 44: вид «Неделя»
 
-def week_task(title, time='', pri='none', done=False, ghost=False, over=False, h=22, fs=12, gap=3, rep=False):
+def week_task(title, time='', pri='none', done=False, ghost=False, over=False, h=22, fs=12, gap=3, rep=False, emoji=None):
     """Строка задачи «Недели» (0.46.0): фон по приоритету (без приоритета и у выполненной — `surface`), выполненная — серая и зачёркнутая."""
     # Итерация 47: два приоритета (средний → высокий, низкий → обычный), выполненная высокого — тусклый фиолетовый,
     # повторяющаяся (и будущий повтор) — знак повтора вместо кружка и не бледная, просрочка не красная.
@@ -761,6 +763,9 @@ def week_task(title, time='', pri='none', done=False, ghost=False, over=False, h
     op = ''
     tc = 'var(--inactive)' if done else 'var(--text-secondary)'
     t = f'<span style="font-size:10.5px;font-weight:600;color:{tc};padding:0 6px 0 4px">{time}</span>' if time else '<span style="width:6px"></span>'
+    if emoji is not None:  # виджет, итерация 48: эмодзи списка слева от времени, время и эмодзи в 2 dp от края плашки
+        t = (f'<span style="font-size:{fs}px;line-height:1;margin-left:4px;flex-shrink:0">{emoji}</span>'
+             + (f'<span style="font-size:10.5px;font-weight:600;color:{tc};padding:0 2px">{time}</span>' if time else '<span style="width:2px"></span>'))
     return (f'<div style="height:{h}px;margin-top:{gap}px;border-radius:var(--radius-md);background:{bg};display:flex;align-items:center;{op}">'
             f'<span style="width:{h}px;display:flex;align-items:center;justify-content:center">{ring}</span>'
             f'<span style="flex:1;min-width:0;font-size:{fs}px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;{st}">{title}</span>{t}</div>')
@@ -768,26 +773,29 @@ def week_task(title, time='', pri='none', done=False, ghost=False, over=False, h
 
 def week_cell(wd, num, tasks, today=False, hidden=0, h=190, widget=False):
     if widget:  # 0.46.0, проверка PM: строка даты виджета — 12 px, высота 18, сегодня жирным без кружка
-        more = f'<span style="margin-left:auto;font-size:10px;font-weight:700;color:var(--text-primary);background:var(--accent-soft);border-radius:12px;padding:0 7px;line-height:15px">+{hidden}</span>' if hidden else ''
-        # Итерация 47: день недели и число — одна подпись Medium серым; сегодня — жирным чёрным, без кружка.
-        w = f'<span style="font-size:12px;font-weight:{800 if today else 500};color:{"var(--text-primary)" if today else "var(--text-secondary)"}">{wd} {num}</span>'
-        return (f'<div style="flex:1;min-width:0;height:{h}px;overflow:hidden;box-sizing:border-box;padding:2px 4px;border-right:1px solid var(--divider);border-bottom:1px solid var(--divider)">'
-                f'<div style="display:flex;align-items:center;height:18px">{w}{more}</div>{"".join(tasks)}</div>')
+        more = f'<span style="margin-left:auto;font-size:9px;font-weight:700;color:var(--text-primary);background:var(--accent-soft);border-radius:12px;padding:0 7px;line-height:11px">+{hidden}</span>' if hidden else ''
+        # Итерация 47: день недели и число — одна подпись серым; сегодня — жирным чёрным, без кружка. Итерация 48: 9 sp, капсом,
+        # остальные дни обычным начертанием, строка даты по высоте текста (не ниже 12), поле над ней 1.
+        w = f'<span style="font-size:9px;font-weight:{800 if today else 400};color:{"var(--text-primary)" if today else "var(--text-secondary)"}">{wd.upper()} {num}</span>'
+        return (f'<div style="flex:1;min-width:0;height:{h}px;overflow:hidden;box-sizing:border-box;padding:1px 4px 2px;border-right:1px solid var(--divider);border-bottom:1px solid var(--divider)">'
+                f'<div style="display:flex;align-items:center;min-height:12px">{w}{more}</div>{"".join(tasks)}</div>')
     label = f'<span style="font-size:14px;font-weight:{800 if today else 500};color:{"var(--text-primary)" if today else "var(--text-secondary)"}">{wd} {num}</span>'
     more = f'<span style="margin-left:auto;font-size:11.5px;font-weight:800;color:var(--text-primary);background:var(--accent-soft);border-radius:12px;padding:0 8px">+{hidden}</span>' if hidden else ''
     return (f'<div style="flex:1;min-width:0;height:{h}px;overflow:hidden;box-sizing:border-box;padding:8px 4px;border-right:1px solid var(--divider);border-bottom:1px solid var(--divider)">'
             f'<div style="display:flex;align-items:center;height:26px">{label}{more}</div>{"".join(tasks)}</div>')
 
 
-def week_calendar(h=190):
-    """Мини-календарь (0.46.0): без строки месяца и стрелок — месяц листается выбором недели с днями соседнего месяца."""
+def week_calendar(h=190, widget=False):
+    """Мини-календарь (0.46.0): без строки месяца и стрелок — месяц листается выбором недели с днями соседнего месяца.
+    В виджете (итерация 48): даты 11, кружок «сегодня» 18."""
+    fs, today_d = (11, 18) if widget else (12, 22)
     weeks = [[28, 29, 30, 1, 2, 3, 4], [5, 6, 7, 8, 9, 10, 11], [12, 13, 14, 15, 16, 17, 18], [19, 20, 21, 22, 23, 24, 25], [26, 27, 28, 29, 30, 31, 1], [2, 3, 4, 5, 6, 7, 8]]
     rows = ''
     for i, w in enumerate(weeks):
         band = 'background:var(--accent-soft);border-radius:12px;' if i == 4 else ''
-        cells = ''.join((f'<span style="flex:1;display:flex;justify-content:center"><span style="width:22px;height:22px;border-radius:50%;background:var(--accent);color:var(--on-accent);font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center">{n}</span></span>'
+        cells = ''.join((f'<span style="flex:1;display:flex;justify-content:center"><span style="width:{today_d}px;height:{today_d}px;border-radius:50%;background:var(--accent);color:var(--on-accent);font-size:{fs}px;font-weight:800;display:flex;align-items:center;justify-content:center">{n}</span></span>'
                          if i == 4 and n == 30 else
-                         f'<span style="flex:1;text-align:center;font-size:12px;font-weight:600;color:{"var(--inactive)" if (i == 0 and j < 3) or i == 5 or (i == 4 and j == 6) else "var(--text-primary)"}">{n}</span>')
+                         f'<span style="flex:1;text-align:center;font-size:{fs}px;font-weight:600;color:{"var(--inactive)" if (i == 0 and j < 3) or i == 5 or (i == 4 and j == 6) else "var(--text-primary)"}">{n}</span>')
                         for j, n in enumerate(w))
         rows += f'<div style="display:flex;align-items:center;height:26px;{band}">{cells}</div>'
     wk = ''.join(f'<span style="flex:1;text-align:center;font-size:10px;font-weight:600;color:var(--inactive)">{x}</span>' for x in ('пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'))
@@ -902,12 +910,12 @@ README_MORE = {
                       '''Чёрная капсула `accent` высотой `size-popup-strip` (68), поля от краёв `size-popup-edge` (12), щель между полосками `size-popup-gap` (8). Слева колокольчик 22 `on-accent`; название `body-large` Bold, ниже подпись «Сегодня, 18:00 · Дом» `label-small` 80%.
 Справа круглые кнопки `size-popup-button` (48): «на завтра в это же время» (`on-accent` 18%, значок листка) и «выполнено» (`surface`, галочка `accent`). Смахнуть вправо — закрыть. Видно до трёх полосок, остальные — метка «ещё N».
 Состояние «Отменить»: полоска «Выполнено» или «Завтра, 18:00» с белой кнопкой «Отменить» и тонкой линией внизу, которая тает за 1,5 секунды. Без вибрации и без кольца «Пульс». Источник: `notifications/ReminderPopup.kt`.'''),
-    'WidgetWeek': ('Виджет, вкладка «Неделя» (0.45, вид строк и календаря — 0.46).', 'Четыре строки ленты одинаковой высоты над плоской нижней строкой (`WidgetBar`): Пн–Вт, Ср–Чт, Пт–Сб, Вс и мини-календарь. Ячейка — как `WeekView`, но мельче: строка не ниже `size-widget-week-task` (18; делят высоту ячейки поровну, обычно ~20), промежуток `size-widget-week-task-gap` (2), кружок `size-widget-week-check` (13), строка даты `size-widget-week-header` (18, 12 sp; сегодня — жирным без кружка, остальные дни обычным шрифтом); фон строки по приоритету (`week-row-*`), выполненная — серая и зачёркнутая. Календарь без строки месяца и стрелок: неделя с днями соседнего месяца перелистывает его. Подробно — в README `Widget`. Источник: `widget/WidgetWeekRows.kt`, разметка — `design/tools/gen_widget_week.py`.'),
+    'WidgetWeek': ('Виджет, вкладка «Неделя» (0.45, вид строк и календаря — 0.46, эмодзи и размеры — 0.48).', 'Четыре строки ленты одинаковой высоты над плоской нижней строкой (`WidgetBar`): Пн–Вт, Ср–Чт, Пт–Сб, Вс и мини-календарь. Ячейка — как `WeekView`, но мельче: строка не ниже `size-widget-week-task` (18; делят высоту ячейки поровну, обычно ~20), промежуток `size-widget-week-task-gap` (2), кружок `size-widget-week-check` (13), название 10 sp жирным. Справа (итерация 48, вариант В): эмодзи списка (у всех задач, и у «Входящих»; эмодзи в названии не убирается), время 10 sp, между ними и до края плашки `size-widget-week-inline-gap` (2). Строка даты (итерация 48) — по высоте текста, не ниже `size-widget-week-header` (12): «ПТ 30» капсом, 9 sp; сегодня — жирным без кружка, остальные дни обычным начертанием; поле над датой `size-widget-week-cell-top` (1), над верхним рядом `size-widget-week-top` (2). Фон строки по приоритету (`week-row-*`), выполненная — серая и зачёркнутая. Календарь без строки месяца и стрелок, даты 11 sp, кружок «сегодня» `size-widget-week-cal-day` (18): неделя с днями соседнего месяца перелистывает его. Подробно — в README `Widget`. Источник: `widget/WidgetWeekRows.kt`, разметка — `design/tools/gen_widget_week.py`.'),
     'Widget': ('Виджет «Задачи»: лента по дням со шкалой, «сейчас» и нижняя строка.',
                '''Фон `background`, радиус `radius-xl`. Список по дням: подпись дня (красная у прошедшего), строки шкалы как в `TimelineRow`, у «Сегодня» линия прогресса. Отметка «сейчас»: чёрное время слева, точка на линии и линия до края (`size-widget-now-row` 14).
 Внизу плоская нижняя строка (`WidgetBar`, 0.46.0: фон `background`, линия сверху); справа у подписи каждого дня число задач (у «Сегодня» вместо него прогресс), `text-secondary` 12. В виджете нет градиентов и размытия: фон и скругления — готовыми картинками. Цвета те же, что в приложении: Glance сам выбирает светлую или тёмную тему.
 Объём (итерация 42): во «Всех» — просроченные, сегодня и ещё 13 дней (с повторами); во «Входящих» и списках — все задачи; всего не больше 150 строк ленты. Строки «Ещё N» нет.
-Вид «Неделя» (итерация 45, третья вкладка переключателя; на Android 10–11 вместо неё «Все»): четыре строки одинаковой высоты (0.46.0: не лента, а вертикальная раскладка с долями — строки делят настоящую высоту виджета над нижней строкой, сколько бы ни сообщил рабочий стол) — Пн–Вт, Ср–Чт, Пт–Сб, Вс и мини-календарь; нижняя строка ничего не закрывает. Ячейка и мини-календарь — как в приложении (`WeekView`): строка не ниже `size-widget-week-task` (18; строки делят высоту ячейки поровну, обычно ~20) с промежутком `size-widget-week-task-gap` (2), фон по приоритету (`widget_week_plaque_*`), кружок `size-widget-week-check` (13), строка даты `size-widget-week-header` (18, 12 sp: день недели Medium, число Regular `text-secondary`; сегодня — без кружка, оба жирные `text-primary`); календарь мельче (цифры 9 sp, день `size-widget-week-cal-day` 14), без строки месяца и стрелок. Строк в ячейке по высоте (до 6, на телефоне обычно 6), остальное «+N». Нажатия: кружок — «выполнено»/«вернуть», строка — открыть задачу, строка даты — полный день в приложении, строка календаря — неделя (и её месяц); выбор недели и месяца у каждого виджета свой. Разметка `widget_week_*`/`widget_row_week*` генерируется `design/tools/gen_widget_week.py`.
+Вид «Неделя» (итерация 45, третья вкладка переключателя; на Android 10–11 вместо неё «Все»): четыре строки одинаковой высоты (0.46.0: не лента, а вертикальная раскладка с долями — строки делят настоящую высоту виджета над нижней строкой, сколько бы ни сообщил рабочий стол) — Пн–Вт, Ср–Чт, Пт–Сб, Вс и мини-календарь; нижняя строка ничего не закрывает. Ячейка и мини-календарь — как в приложении (`WeekView`): строка не ниже `size-widget-week-task` (18; строки делят высоту ячейки поровну, обычно ~20) с промежутком `size-widget-week-task-gap` (2), фон по приоритету (`widget_week_plaque_*`), кружок `size-widget-week-check` (13), справа эмодзи списка и время (итерация 48); строка даты по высоте текста, не ниже `size-widget-week-header` (12; 9 sp капсом — «ПТ 30», `text-secondary` обычным начертанием; сегодня — без кружка, жирные `text-primary`); календарь: цифры 11 sp, день `size-widget-week-cal-day` 18, без строки месяца и стрелок. Строк в ячейке по высоте (до 6, на телефоне обычно 6), остальное «+N». Нажатия: кружок — «выполнено»/«вернуть», строка — открыть задачу, строка даты — полный день в приложении, строка календаря — неделя (и её месяц); выбор недели и месяца у каждого виджета свой. Разметка `widget_week_*`/`widget_row_week*` генерируется `design/tools/gen_widget_week.py`.
 Устройство (итерация 42): на Android 12+ фон и лента — обычные элементы Android прямо в корне виджета (`widget_root`), каждая строка — своя разметка `widget_row_*` (задача, период, у выполненных — `*_done`, подпись дня, «Просрочено», «сейчас», хвост) ~1 КБ; нижняя строка — Glance поверх ленты, фоны «+» и выбранной вкладки — картинки со скруглением (`widget_bar_add`, `widget_bar_tab_selected`). Размеры и цвета строк — копия токенов в `res/values*/widget_rows.xml` (проверяет тест). Строка всегда задаёт весь свой вид: Android перекрашивает показанные строки другой задачи. Нажатия строк: кружок — «выполнено»/«вернуть», плашка — открыть задачу. Android 10–11 — лента Glance без прокрутки.'''),
     'ScreenAll': ('Экран «Все».', 'Лента по дням на `background`: подпись дня, шкала со строками `TimelineRow`, отметка «сейчас» у сегодняшнего дня; внизу нижняя панель. Пустая лента — `EmptyTasks`. Окно задачи открывается поверх.'),
     'ScreenInbox': ('Экран «Входящие».', 'Плоский список без подписей дней: слева колонка дня и времени (`size-timeline-day-column` 56, растёт вместе с системным шрифтом; `label-small`), дальше шкала. Эмодзи списка не показывается там, где список один (в «Входящих» он есть: он общий). «+» в нижней панели.'),

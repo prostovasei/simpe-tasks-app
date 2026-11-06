@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Сгенерировано design/tools/gen_widget_week.py (итерация 45): мини-календарь вида «Неделя» в виджете. Не править руками. -->
+<!-- Сгенерировано design/tools/gen_widget_week.py (итерация 45; 48 — даты 11): мини-календарь вида «Неделя» в виджете. Не править руками. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     tools:ignore="DisableBaselineAlignment,TooManyViews,SmallSp"
@@ -110,7 +110,7 @@
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="9sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </FrameLayout>
 
@@ -126,7 +126,7 @@
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="9sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </FrameLayout>
 
@@ -142,7 +142,7 @@
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="9sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </FrameLayout>
 
@@ -158,7 +158,7 @@
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="9sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </FrameLayout>
 
@@ -174,7 +174,7 @@
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="9sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </FrameLayout>
 
@@ -190,7 +190,7 @@
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="9sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </FrameLayout>
 
@@ -206,7 +206,7 @@
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="9sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </FrameLayout>
         </LinearLayout>
@@ -231,7 +231,7 @@
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="9sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </FrameLayout>
 
@@ -247,7 +247,7 @@
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="9sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </FrameLayout>
 
@@ -263,7 +263,7 @@
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="9sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </FrameLayout>
 
@@ -279,7 +279,7 @@
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="9sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </FrameLayout>
 
@@ -295,7 +295,7 @@
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="9sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </FrameLayout>
 
@@ -311,7 +311,7 @@
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="9sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </FrameLayout>
 
@@ -327,7 +327,7 @@
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="9sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </FrameLayout>
         </LinearLayout>
@@ -352,7 +352,7 @@
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="9sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </FrameLayout>
 
@@ -368,7 +368,7 @@
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="9sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </FrameLayout>
 
@@ -384,7 +384,7 @@
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="9sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </FrameLayout>
 
@@ -400,7 +400,7 @@
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="9sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </FrameLayout>
 
@@ -416,7 +416,7 @@
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="9sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </FrameLayout>
 
@@ -432,7 +432,7 @@
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="9sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </FrameLayout>
 
@@ -448,7 +448,7 @@
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="9sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </FrameLayout>
         </LinearLayout>
@@ -473,7 +473,7 @@
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="9sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </FrameLayout>
 
@@ -489,7 +489,7 @@
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="9sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </FrameLayout>
 
@@ -505,7 +505,7 @@
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="9sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </FrameLayout>
 
@@ -521,7 +521,7 @@
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="9sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </FrameLayout>
 
@@ -537,7 +537,7 @@
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="9sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </FrameLayout>
 
@@ -553,7 +553,7 @@
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="9sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </FrameLayout>
 
@@ -569,7 +569,7 @@
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="9sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </FrameLayout>
         </LinearLayout>
@@ -594,7 +594,7 @@
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="9sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </FrameLayout>
 
@@ -610,7 +610,7 @@
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="9sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </FrameLayout>
 
@@ -626,7 +626,7 @@
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="9sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </FrameLayout>
 
@@ -642,7 +642,7 @@
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="9sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </FrameLayout>
 
@@ -658,7 +658,7 @@
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="9sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </FrameLayout>
 
@@ -674,7 +674,7 @@
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="9sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </FrameLayout>
 
@@ -690,7 +690,7 @@
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="9sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </FrameLayout>
         </LinearLayout>
@@ -715,7 +715,7 @@
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="9sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </FrameLayout>
 
@@ -731,7 +731,7 @@
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="9sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </FrameLayout>
 
@@ -747,7 +747,7 @@
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="9sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </FrameLayout>
 
@@ -763,7 +763,7 @@
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="9sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </FrameLayout>
 
@@ -779,7 +779,7 @@
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="9sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </FrameLayout>
 
@@ -795,7 +795,7 @@
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="9sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </FrameLayout>
 
@@ -811,7 +811,7 @@
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="9sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </FrameLayout>
         </LinearLayout>
