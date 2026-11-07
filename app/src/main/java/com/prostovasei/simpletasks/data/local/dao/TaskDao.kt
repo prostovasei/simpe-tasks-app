@@ -140,11 +140,12 @@ interface TaskDao {
     /**
      * Задачи со временем для сетки недели (итерация 16): попадающие в промежуток [start, end) и все активные
      * повторяющиеся — их будущие разы считает приложение. Время — по началу интервала, если оно есть.
+     * «Не буду делать» (статус −1) время не занимает (0.50.1, проверка PM): как в ленте, «Неделе» и виджете.
      */
     @Query(
         """
         SELECT * FROM tasks
-        WHERE is_deleted = 0 AND is_all_day = 0 AND due_date IS NOT NULL
+        WHERE is_deleted = 0 AND is_all_day = 0 AND due_date IS NOT NULL AND status != -1
           AND ((COALESCE(start_date, due_date) < :end AND due_date >= :start) OR (rrule IS NOT NULL AND status = 0))
         """,
     )

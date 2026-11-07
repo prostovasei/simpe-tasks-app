@@ -147,6 +147,26 @@ class WontDoTest : DatabaseTest() {
         assertEquals(TaskStatus.ABANDONED, tasks.getTask(copyId)!!.status)
     }
 
+    /** 0.50.1 (проверка PM): «Не буду делать» не занимает время на сетке окна даты — ни обычная задача, ни закрытый раз серии. */
+    @Test
+    fun wontDoIsNotBusyOnTheGrid() = runTest {
+        val zone = time.zone
+        fun at(hour: Int) = TaskDue.AtTime(today.atTime(hour, 0).atZone(zone).toInstant())
+        val plain = create(at(14))
+        val series = create(at(20), rrule = "FREQ=WEEKLY")
+        val kept = create(at(10))
+        tasks.wontDo(plain)
+        val copyId = tasks.wontDo(series)!!.copyIds.single()
+
+        val from = today.atStartOfDay(zone).toInstant()
+        val busy = tasks.observeTimedInRange(from, from.plus(java.time.Duration.ofDays(1))).first().map { it.id }
+
+        assertTrue("Обычная задача — на сетке", kept in busy)
+        assertFalse("«Не буду делать» — не на сетке", plain in busy)
+        assertFalse("Закрытый раз серии — не на сетке", copyId in busy)
+        assertTrue("Серия (следующий раз) — на сетке", series in busy)
+    }
+
     @Test
     fun closedTaskIsNotClosedAgain() = runTest {
         val id = create(day(0))
