@@ -215,6 +215,21 @@ class TaskScreensUiTest {
         composeRule.onNodeWithTag(TAG_PROJECT_DIALOG).assertExists()
     }
 
+    /** 0.52.1: задача без списка — с датой «📌 Без списка», без даты «📥 Входящие»; вариант меняется сразу с датой. */
+    @Test
+    fun noListOptionFollowsDate() {
+        val state = mutableStateOf(quickState.copy(projectId = "inbox"))
+        show { QuickAddScreen(state.value, { intents += it }, {}, autoFocus = false) }
+        composeRule.onNodeWithTag(TAG_TOOL_LIST).assertTextContains("📌")
+        composeRule.onNodeWithTag(TAG_TOOL_LIST).performClick()
+        composeRule.onNodeWithTag("$TAG_PROJECT_OPTION:inbox").assertTextContains("Без списка").assertTextContains("📌")
+        state.value = state.value.copy(due = null)
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("$TAG_PROJECT_OPTION:inbox").assertTextContains("Входящие").assertTextContains("📥")
+        composeRule.onNodeWithTag("$TAG_PROJECT_DIALOG:$TAG_DIALOG_DONE").performClick()
+        composeRule.onNodeWithTag(TAG_TOOL_LIST).assertTextContains("📥")
+    }
+
     @Test
     fun crossesClearDateAndTimeSeparately() {
         show { QuickAddScreen(quickState, { intents += it }, {}, autoFocus = false) }

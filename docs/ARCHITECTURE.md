@@ -1187,7 +1187,7 @@ PM поменял порядок: шторка для созданных зад�
 
 Тесты: `RecurrenceTest` (правило под дату), `MoveRepeatTest` (месячный 10-го, режим выбора и просроченные), `TaskViewModelsTest.detailRepeatAllRetargetsOrHints`.
 
-### 4.57. Итог Итерации 52 — новая логика «Входящих», «Когда-нибудь» и «Без списка» (0.52.0)
+### 4.57. Итог Итерации 52 — новая логика «Входящих», «Когда-нибудь» и «Без списка» (0.52.0, 0.52.1)
 
 Решения PM (07.11.2026, после разбора справки Todoist, TickTick, SingularityApp и вопросов о привычках; модель — как в SingularityApp;
 макет — холст «Итерация 52 — Входящие», `design/mockups/iteration52.py`):
@@ -1207,6 +1207,21 @@ PM поменял порядок: шторка для созданных зад�
 `somedayGroups`, `noListGroups`, `SortCountsHost`), `BottomBar(inboxCount)` (Material Badge), строки «Списков», `TaskSheet(openListOnStart)`.
 Тесты: `TaskSectionsTest.inboxSomedayAndNoListSplitTasksByDateAndList`, `SortedScreensTest` (снимок `someday_light`), `ScreensUiTest`
 (счётчик, строки «Списков»), `TaskScreensUiTest.quickAddFromSomedayOpensListPicker`.
+
+**0.52.1 — эмодзи и подпись «без списка»** (решения PM 07.11.2026, макет — доска «Эмодзи и подпись (0.52.1)» на холсте итерации 52):
+
+| Что | Было | Стало |
+|---|---|---|
+| Задача без списка, с датой (лента, «Неделя», виджет, поиск, корзина, уведомление) | 📥 «Входящие» | 📌 «Без списка» |
+| Задача без списка, без даты | 📥 «Входящие» | 📥 «Входящие» (без изменений) |
+| Кнопка списка в шторке, первый вариант окна «Список» | 📥 «Входящие» | по дате задачи: 📌 «Без списка» / 📥 «Входящие»; в новой задаче меняется сразу с датой |
+| Окно «В список» в режиме выбора | 📥 «Входящие» | 📌 «Без списка», если дата есть у всех выбранных |
+| Строки «Списков» | значок «без даты» и 📥 | 💭 «Когда-нибудь», 📌 «Без списка» |
+
+Вкладка «Входящие» внизу — конверт и счётчик, как в 0.52.0. Данные и TickTick не меняются (служебный список «Входящие»).
+Код: `ListEmoji.NO_LIST` / `SOMEDAY` / `ofTask`, `Task.toItem`, `ProjectDialog(hasDate)`, `Selectable.hasDate`, `ListsScreen`, `AndroidReminders`.
+Тесты: `ListEmojiTest.taskWithoutListShowsPinWhenDated`, `TaskScreensUiTest.noListOptionFollowsDate`, `ScreensUiTest.listsShowSomedayAndNoListRows`,
+`AllViewModelTest` (📌 у задачи без списка с датой).
 
 ### 4.45. Дорожная карта (обновлена)
 

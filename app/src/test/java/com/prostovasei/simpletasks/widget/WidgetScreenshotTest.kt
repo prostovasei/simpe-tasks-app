@@ -46,7 +46,7 @@ class WidgetScreenshotTest {
         reminder: ReminderMark? = null,
         done: Boolean = false,
     ) = TaskItem(
-        id, title, priority, due, list, LIST_EMOJIS[list] ?: "📥", isInboxList = list == null, isRecurring = ghostOf != null || id == "gym", ghostOf = ghostOf, reminder = reminder, isDone = done,
+        id, title, priority, due, list, LIST_EMOJIS[list] ?: if (due != null) "📌" else "📥", isInboxList = list == null, isRecurring = ghostOf != null || id == "gym", ghostOf = ghostOf, reminder = reminder, isDone = done,
     )
 
     // Эмодзи списков в тестовых данных (итерация 47; до этого — цвета и значки).

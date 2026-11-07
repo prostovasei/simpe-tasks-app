@@ -95,7 +95,7 @@ class CompletedViewModel @Inject constructor(
                                 id = task.id,
                                 title = task.title,
                                 listName = project?.name,
-                                listEmoji = project?.emojiShown ?: ListEmoji.DEFAULT,
+                                listEmoji = project?.let { ListEmoji.ofTask(it.isInbox, task.due != null, it.emojiShown) } ?: ListEmoji.DEFAULT,
                                 isInboxList = project?.isInbox == true,
                                 time = task.completedAt?.atZone(zone)?.let(TIME::format),
                             )

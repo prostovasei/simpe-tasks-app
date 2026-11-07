@@ -49,7 +49,7 @@ fun InboxScreen(
     ) { padding ->
         // Итерация 40: долгое нажатие на плашку — режим выбора.
         val selection = rememberSelection()
-        SelectionFrame(selection, state.tasks.filterNot { it.isGhost }.map { Selectable(it.id, it.isDone, it.isRecurring) }, Modifier.padding(padding)) {
+        SelectionFrame(selection, state.tasks.filterNot { it.isGhost }.map { Selectable(it.id, it.isDone, it.isRecurring, it.due != null) }, Modifier.padding(padding)) {
         Column(Modifier.fillMaxSize()) {
             ScreenTitle(stringResource(R.string.inbox_title))
             // Итерация 52: «Входящие» — только неразобранное; подсказка, куда уходят задачи.

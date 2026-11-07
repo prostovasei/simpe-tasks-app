@@ -118,7 +118,7 @@ def screen_title(text):
     return f'<div style="padding:12px 16px;font-size:28px;line-height:36px;font-weight:700">{text}</div>'
 
 
-def frow(left, color, title, done=False, over=False, period=False, rep=False, rem=None, lsq=True, end=None, top=True, bottom=True, list_color='var(--inbox-list)', list_icon='ic_list_inbox'):
+def frow(left, color, title, done=False, over=False, period=False, rep=False, rem=None, lsq=True, end=None, top=True, bottom=True, list_color='var(--list-pin)', list_icon='ic_list_inbox'):
     """Строка шкалы (TimelineTaskRow). left — 1–2 строки слева: [«Сегодня», «10:00»] в плоских списках или «10:00»."""
     lines = left if isinstance(left, list) else [left]
     wide = len(lines) > 1 or (lines and len(lines[0]) > 5)
@@ -201,9 +201,11 @@ def p_update_dialog():
 def p_list_priority_dialogs():
     lsq = lambda e: f'<span style="width:16px;height:16px;font-size:15px;line-height:1;display:inline-flex;align-items:center;justify-content:center">{e}</span>'
     lst = dlg('Список', option('Входящие', False, lsq('📥')) + option('Работа', True, lsq('💼')) + option('Дом', False, lsq('🏠')) + option('Покупки', False, lsq('🛒')))
+    # 0.52.1: у задачи с датой первый вариант — «📌 Без списка».
+    dated = dlg('Список', option('Без списка', True, lsq('📌')) + option('Работа', False, lsq('💼')) + option('Дом', False, lsq('🏠')) + option('Покупки', False, lsq('🛒')))
     flag = lambda c: f'<span style="color:{c};display:flex">{svg("ic_tool_priority", 24)}</span>'
     pri = dlg('Приоритет', option('Высокий', True, flag('var(--ring-high)')) + option('Обычный', False, flag('var(--inactive)')))
-    return doc('Окна', 380, 'Окно «Список» (эмодзи) и «Приоритет» (два уровня, только при выборе нескольких задач)', f'<div class="row" style="align-items:flex-start;gap:24px">{lst}{pri}</div>')
+    return doc('Окна', 380, 'Окно «Список» (эмодзи) и «Приоритет» (два уровня, только при выборе нескольких задач)', f'<div class="row" style="align-items:flex-start;gap:24px">{lst}{dated}{pri}</div>')
 
 
 def stepper(label, val):
@@ -401,9 +403,9 @@ def p_widget_week():
     h = 150
     r1 = f'<div style="display:flex">{week_cell("пн", 26, [t("Купить продукты", "10:00", "low", done=True, e="🏠"), t("Тренировка", e="🎾")], h=h, widget=True)}{week_cell("вт", 27, [t("Оплатить интернет", "12:00", "medium", over=True, e="💰")], h=h, widget=True)}</div>'
     r2 = f'<div style="display:flex">{week_cell("ср", 28, [t("Встреча", "15:00", "high", over=True)], h=h, widget=True)}{week_cell("чт", 29, [], h=h, widget=True)}</div>'
-    r3 = (f'<div style="display:flex">{week_cell("пт", 30, [t("Отчёт", "17:00", "high"), t("Кино", e="📥"), t("Ужин", "20:00", e="🏠"), t("Зарядка", "08:00", "medium", done=True, e="🎾"), t("Врач", "", "low", e="📥"), t("Билеты", e="📥")], today=True, hidden=1, h=h, widget=True)}'
+    r3 = (f'<div style="display:flex">{week_cell("пт", 30, [t("Отчёт", "17:00", "high"), t("Кино", e="📌"), t("Ужин", "20:00", e="🏠"), t("Зарядка", "08:00", "medium", done=True, e="🎾"), t("Врач", "", "low", e="📌"), t("Билеты", e="📌")], today=True, hidden=1, h=h, widget=True)}'
           f'{week_cell("сб", 31, [t("Уборка", "11:00", e="🏠"), t("Созвон", "10:00", "medium", ghost=True)], h=h, widget=True)}</div>')
-    r4 = f'<div style="display:flex">{week_cell("вс", 1, [t("План на неделю", e="📥")], h=h, widget=True)}{week_calendar(h, widget=True)}</div>'
+    r4 = f'<div style="display:flex">{week_cell("вс", 1, [t("План на неделю", e="📌")], h=h, widget=True)}{week_calendar(h, widget=True)}</div>'
     body = f'<div style="position:relative;width:360px;height:{2 + 4 * h + 41}px;border-radius:var(--radius-xl);background:var(--background);overflow:hidden;border:1px solid var(--divider);padding-top:2px;box-sizing:border-box">{r1}{r2}{r3}{r4}{bottom}</div>'
     return doc('Напоминания и виджет', 720, 'Виджет, вкладка «Неделя»: компактные строки с фоном по приоритету, эмодзи списка слева от времени, «+N», календарь без месяца', body)
 
@@ -468,8 +470,8 @@ def lists_screen():
     folder = (f'<div style="display:flex;align-items:center;padding-left:8px;color:var(--text-secondary)">{mi("down")}<span style="flex:1;padding-left:8px;font-size:16px;line-height:24px;font-weight:600;color:var(--text-primary)">Дом</span><span style="font-size:14px">7</span>'
               f'<span style="width:48px;height:48px;display:flex;align-items:center;justify-content:center">{mi("more")}</span></div>')
     trash = f'<div style="display:flex;align-items:center;padding:12px 16px;color:var(--text-secondary)">{TRASH_ICON(24)}<span style="flex:1;padding-left:12px;font-size:16px;line-height:24px;color:var(--text-primary)">Корзина</span><span style="font-size:14px">5</span></div>'
-    someday = f'<div style="display:flex;align-items:center;padding:12px 16px;color:var(--text-secondary)">{svg("ic_no_date", 24)}<span style="flex:1;padding-left:12px;font-size:16px;color:var(--text-primary)">Когда-нибудь</span><span style="font-size:14px">7</span></div>'
-    nolist = f'<div style="display:flex;align-items:center;padding:12px 16px;color:var(--text-secondary)">{lsq("var(--inbox-list)", "ic_list_inbox")}<span style="flex:1;padding-left:12px;font-size:16px;color:var(--text-primary)">Без списка</span><span style="font-size:14px">2</span></div>'
+    someday = f'<div style="display:flex;align-items:center;padding:12px 16px;color:var(--text-secondary)">{lsq("var(--list-thought)", "ic_list_inbox")}<span style="flex:1;padding-left:12px;font-size:16px;color:var(--text-primary)">Когда-нибудь</span><span style="font-size:14px">7</span></div>'
+    nolist = f'<div style="display:flex;align-items:center;padding:12px 16px;color:var(--text-secondary)">{lsq("var(--list-pin)", "ic_list_inbox")}<span style="flex:1;padding-left:12px;font-size:16px;color:var(--text-primary)">Без списка</span><span style="font-size:14px">2</span></div>'
     body = f'{head}{someday}{nolist}{done}{WONT_ROW(3)}{trash}{folder}{proj("Ремонт", "var(--list-orange)", "ic_list_home", 3, True)}{proj("Работа", "var(--list-blue)", "ic_list_work", 12)}{proj("Спорт", "var(--list-teal)", "ic_list_sport", "")}'
     return frame(f'<div style="padding-top:8px">{body}</div>{nav_bar(3, 3)}', 680)
 
@@ -694,7 +696,7 @@ def danger_dialog(title, text, ok):
 
 # ---------------------------------------------------------------- итерация 40: массовое редактирование
 
-def sel_row(left, color, title, selected=False, done=False, ghost=False, rep=False, rem=None, top=True, bottom=True, list_color='var(--inbox-list)', list_icon='ic_list_inbox', sub=None):
+def sel_row(left, color, title, selected=False, done=False, ghost=False, rep=False, rem=None, top=True, bottom=True, list_color='var(--list-pin)', list_icon='ic_list_inbox', sub=None):
     """Строка шкалы в режиме выбора: кружок → чёрная галочка, плашка подсвечена; будущий повтор не выбирается."""
     lines = left if isinstance(left, list) else [left]
     wide = len(lines) > 1 or (lines and len(lines[0]) > 5)
@@ -1008,7 +1010,7 @@ README_MORE = {
 «Обновление загружено» («Не сейчас» / «Обновить»), ошибки «Не удалось проверить» и «Не удалось загрузить» («Закрыть» / «Повторить»), «Нужно разрешение» («Закрыть» / «Разрешить»), установка.
 Во время загрузки «Назад» и нажатие мимо окна игнорируются: останавливает только «Отмена». Полоса: высота 4, дорожка `divider`, заливка `accent`. Источник: `ui/feature/update/UpdateDialog.kt`.'''),
     'ListPriorityDialogs': ('Окна «Список» и «Приоритет»: один вариант, подсветка выбранного и галочка справа.',
-                            '''Окно «Список»: слева эмодзи списка (16), у «Входящие» 📥. Окно «Приоритет» (итерация 47) — только при правке нескольких задач: «Высокий» (флажок `ring-high`) и «Обычный» (`inactive`); в шторке одной задачи окна нет, кнопка — переключатель.
+                            '''Окно «Список»: слева эмодзи списка (16). Первый вариант — «без списка» (итерация 52.1): у задачи без даты «📥 Входящие», у задачи с датой «📌 Без списка»; в новой задаче вариант меняется сразу, как поставили или убрали дату. В режиме выбора — «📌 Без списка», если дата есть у всех выбранных. Окно «Приоритет» (итерация 47) — только при правке нескольких задач: «Высокий» (флажок `ring-high`) и «Обычный» (`inactive`); в шторке одной задачи окна нет, кнопка — переключатель.
 Строка не ниже `size-dialog-row` (52), выбранная залита `selected`. Изменение применяется только по «Готово». Источник: `TaskFieldMenus.kt`.'''),
     'CustomDialogs': ('Окна «Вручную» (своё уведомление) и «Произвольно» (свой повтор) с счётчиками.',
                       '''«Вручную»: три строки «Дней до срока / Часов / Минут» (у задачи на весь день: за сколько дней, час, минуты) со счётчиком «− 02 +»; снизу чёрным «Сработает: чт, 29 окт, 15:00».
@@ -1062,9 +1064,9 @@ README_MORE = {
 Устройство (итерация 42): на Android 12+ фон и лента — обычные элементы Android прямо в корне виджета (`widget_root`), каждая строка — своя разметка `widget_row_*` (задача, период, у выполненных — `*_done`, подпись дня, «Просрочено», «сейчас», хвост) ~1 КБ; нижняя строка — Glance поверх ленты, фоны «+» и выбранной вкладки — картинки со скруглением (`widget_bar_add`, `widget_bar_tab_selected`). Размеры и цвета строк — копия токенов в `res/values*/widget_rows.xml` (проверяет тест). Строка всегда задаёт весь свой вид: Android перекрашивает показанные строки другой задачи. Нажатия строк: кружок — «выполнено»/«вернуть», плашка — открыть задачу. Android 10–11 — лента Glance без прокрутки.'''),
     'ScreenAll': ('Экран «Все».', 'Лента по дням на `background`: подпись дня, шкала со строками `TimelineRow`, отметка «сейчас» у сегодняшнего дня; внизу нижняя панель. Пустая лента — `EmptyTasks`. Окно задачи открывается поверх.'),
     'ScreenInbox': ('Экран «Входящие» (0.52 — только неразобранное).', 'Итерация 52 (решение PM, по справке SingularityApp): «Входящие» — задачи без даты и без списка. Поставили дату — задача уходит в «Без списка» (`ScreenNoList`), выбрали список — в «Когда-нибудь» (`ScreenSomeday`), убрали дату у задачи без списка — возвращается. Под заголовком подсказка `body-small` `text-secondary`: «Здесь — то, что ещё не разобрано…». Плоский список (`TimelineRow`), колонка времени пустая, эмодзи списка нет. Пусто: «Всё разобрано». На вкладке нижней панели — число неразобранных (`BottomBar`). «+» — задача без даты и без списка. Вкладка «Входящие» в виджете — по той же логике.'),
-    'ScreenSomeday': ('Экран «Когда-нибудь» (0.52).', 'Вход — строка на «Списках» (значок `ic_no_date`, число открытых). «Назад», заголовок `title-large` Bold, справа число открытых задач. Группы по спискам в порядке «Списков» (папки, потом списки без папки): эмодзи `ListBadge`, название `body-medium` Bold, число `label-medium` Bold `text-secondary`; под ними строки `TimelineRow` без колонки времени. Кружок отмечает, плашка открывает задачу; поставили дату — задача уходит в свой список и в ленту по дате. «+» (`AddTaskButton`) — новая задача без даты, сразу открыто окно «Список». Пусто: «Задач со списком, но без даты нет». Источник: `ui/feature/sorted/`.'),
-    'ScreenNoList': ('Экран «Без списка» (0.52).', 'Вход — строка на «Списках» (эмодзи 📥, число открытых). Задачи без списка, но с датой: по дням, как на «Все» — подпись дня (`DayHeader`, «Сегодня»/«Завтра», прошедшие — `overdue`), строки `TimelineRow` с временем слева, линия «сейчас» у сегодня. Выбрали список — задача уходит из раздела; убрали дату — возвращается во «Входящие». «+» — задача на сегодня без списка. Пусто: «Задач с датой, но без списка нет». Источник: `ui/feature/sorted/`.'),
-    'ScreenLists': ('Экран «Списки».', 'Заголовок и кнопки «+ Папка», «+ Список»; сверху (0.52) «Когда-нибудь» и «Без списка» с числами, дальше «Выполненные», «Не буду делать», «Корзина», папки и списки (`ListRows`). Пусто: «Списков пока нет».'),
+    'ScreenSomeday': ('Экран «Когда-нибудь» (0.52).', 'Вход — строка на «Списках» (эмодзи 💭 с 0.52.1, число открытых). «Назад», заголовок `title-large` Bold, справа число открытых задач. Группы по спискам в порядке «Списков» (папки, потом списки без папки): эмодзи `ListBadge`, название `body-medium` Bold, число `label-medium` Bold `text-secondary`; под ними строки `TimelineRow` без колонки времени. Кружок отмечает, плашка открывает задачу; поставили дату — задача уходит в свой список и в ленту по дате. «+» (`AddTaskButton`) — новая задача без даты, сразу открыто окно «Список». Пусто: «Задач со списком, но без даты нет». Источник: `ui/feature/sorted/`.'),
+    'ScreenNoList': ('Экран «Без списка» (0.52).', 'Вход — строка на «Списках» (эмодзи 📌 с 0.52.1, число открытых). Задачи без списка, но с датой (у задачи — 📌 вместо 📥): по дням, как на «Все» — подпись дня (`DayHeader`, «Сегодня»/«Завтра», прошедшие — `overdue`), строки `TimelineRow` с временем слева, линия «сейчас» у сегодня. Выбрали список — задача уходит из раздела; убрали дату — возвращается во «Входящие». «+» — задача на сегодня без списка. Пусто: «Задач с датой, но без списка нет». Источник: `ui/feature/sorted/`.'),
+    'ScreenLists': ('Экран «Списки».', 'Заголовок и кнопки «+ Папка», «+ Список»; сверху (0.52) «Когда-нибудь» (💭) и «Без списка» (📌, эмодзи — 0.52.1) с числами, дальше «Выполненные», «Не буду делать», «Корзина», папки и списки (`ListRows`). Пусто: «Списков пока нет».'),
     'ScreenProject': ('Экран списка.', 'Сверху «назад», плитка эмодзи списка, название `title-large` Bold и «⋮» (переименовать, эмодзи, удалить; у «Входящих» меню нет). Ниже плоский список без эмодзи списка. Плавающая «+» в правом нижнем углу.'),
     'ScreenSearch': ('Экран «Поиск».', 'Поле поиска, раздел «Найдено: N» с плашками `TaskRow` (найденное подсвечено), ниже «Выполненные» серым; выполненную можно вернуть галочкой.'),
     'ScreenCompleted': ('Экран «Выполненные».', 'Сверху «назад» и заголовок, ниже дни (новые сверху) с плашками `TaskRow` в отмеченном виде; снять галочку — задача вернётся в свой список с кнопкой «Отмена».'),

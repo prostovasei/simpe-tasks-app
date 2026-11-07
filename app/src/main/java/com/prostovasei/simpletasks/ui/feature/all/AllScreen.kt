@@ -64,7 +64,7 @@ fun AllScreen(
         // Итерация 40: долгое нажатие на плашку — режим выбора (будущие повторы не выбираются).
         val selection = rememberSelection()
         val allItems = state.overdue + state.todayAllDay + state.todayTimed + state.upcoming
-        SelectionFrame(selection, allItems.filterNot { it.isGhost }.map { Selectable(it.id, it.isDone, it.isRecurring) }, Modifier.padding(padding)) {
+        SelectionFrame(selection, allItems.filterNot { it.isGhost }.map { Selectable(it.id, it.isDone, it.isRecurring, it.due != null) }, Modifier.padding(padding)) {
         LazyColumn(
             Modifier.fillMaxSize(),
             contentPadding = PaddingValues(bottom = selectionBottomInset(selection)),

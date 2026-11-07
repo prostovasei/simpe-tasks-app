@@ -140,7 +140,10 @@ class AndroidReminderNotifications @Inject constructor(
         val today = time.today()
         val zone = time.zone()
         val due = DueFormatter.format(task.due, task.start, today, zone)?.let(days::format)
-        val list = projects.observeProject(task.projectId).first()?.let { if (it.isInbox) context.getString(R.string.inbox_list_name) else it.name }
+        val list = projects.observeProject(task.projectId).first()?.let {
+            // Без списка: с датой — «Без списка», без даты — «Входящие» (итерация 52.1).
+            if (it.isInbox) context.getString(if (task.due != null) R.string.no_list_title else R.string.inbox_list_name) else it.name
+        }
         val later = DueFormatter.format(task.due.movedTo(today.plusDays(1), zone), null, today, zone)?.let(days::format).orEmpty()
         return PopupStrip(task.id, task.title, listOfNotNull(due, list).joinToString(SEPARATOR), later)
     }

@@ -102,8 +102,9 @@ fun ListsScreen(
                 }
             }
             // Итерация 52: «Когда-нибудь» (со списком, без даты) и «Без списка» (с датой, без списка) — над «Выполненными».
-            CountRow(R.drawable.ic_no_date, R.string.someday_title, state.somedayCount, TAG_SOMEDAY, onOpenSomeday)
-            CountRow(null, R.string.no_list_title, state.noListCount, TAG_NO_LIST, onOpenNoList, emoji = ListEmoji.INBOX)
+            // Итерация 52.1: у разделов свои эмодзи — 💭 и 📌 (у «Входящих» — 📥).
+            CountRow(null, R.string.someday_title, state.somedayCount, TAG_SOMEDAY, onOpenSomeday, emoji = ListEmoji.SOMEDAY)
+            CountRow(null, R.string.no_list_title, state.noListCount, TAG_NO_LIST, onOpenNoList, emoji = ListEmoji.NO_LIST)
             CompletedRow(onOpenCompleted)
             CountRow(R.drawable.ic_wont_do, R.string.wontdo_title, state.wontDoCount, TAG_WONT_DO, onOpenWontDo)
             TrashRow(state.trashCount, onOpenTrash)

@@ -77,7 +77,7 @@ fun ProjectScreen(
         snackbarHost = { UndoSnackbarHost(snackbarHostState) },
         floatingActionButton = { if (!selection.active) AddTaskButton(onAddTask) },
     ) { padding ->
-        SelectionFrame(selection, state.tasks.filterNot { it.isGhost }.map { Selectable(it.id, it.isDone, it.isRecurring) }, Modifier.padding(padding)) {
+        SelectionFrame(selection, state.tasks.filterNot { it.isGhost }.map { Selectable(it.id, it.isDone, it.isRecurring, it.due != null) }, Modifier.padding(padding)) {
         Column(Modifier.fillMaxSize()) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(end = AppTheme.spacing.xxs),
