@@ -197,6 +197,8 @@ fun TaskSheet(
     progress: () -> Float = { 1f },
     /** Сразу открыть выбор списка (итерация 52: «+» в «Когда-нибудь»). */
     openListOnStart: Boolean = false,
+    /** Сразу окно даты и времени (итерация 53: «Отложить» → «Выбрать дату и время…»). */
+    openDateOnStart: Boolean = false,
     reveal: () -> Float = { 1f },
     overlay: @Composable BoxScope.() -> Unit = {},
     actionCount: Int = 1,
@@ -209,7 +211,7 @@ fun TaskSheet(
     val keyboard = LocalSoftwareKeyboardController.current
     val focus = LocalFocusManager.current
     val closeLabel = stringResource(R.string.quick_add_close)
-    var timelineOpen by rememberSaveable { mutableStateOf(false) }
+    var timelineOpen by rememberSaveable { mutableStateOf(openDateOnStart) }
     var tool by remember { mutableStateOf(if (openListOnStart) ToolDialog.List else ToolDialog.None) }
     val hideKeyboard: () -> Unit = {
         focus.clearFocus()
@@ -221,7 +223,7 @@ fun TaskSheet(
         tool = which
     }
     // Срок и начало на момент открытия окна даты: «←» и «Назад» возвращают их (решение PM — отмена изменений).
-    var opened by remember { mutableStateOf<Schedule?>(null) }
+    var opened by remember { mutableStateOf<Schedule?>(if (openDateOnStart) Schedule(fields.due, fields.start) else null) }
     val closeTimeline = {
         timelineOpen = false
         // Занятость снова нужна для строки недели — с сегодняшнего дня.

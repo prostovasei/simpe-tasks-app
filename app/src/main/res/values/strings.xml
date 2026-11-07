@@ -514,4 +514,18 @@
     <string name="wontdo_banner">Не буду делать · отмечено %1$s</string>
     <string name="wontdo_reopen">Вернуть в работу</string>
     <string name="wontdo_reopened">Задача возвращена</string>
+    <!-- Итерация 53 (T-84): «Отложить» в уведомлении и на полоске — переносит срок самой задачи. -->
+    <string name="notification_done">Выполнено</string>
+    <string name="snooze_action">Отложить</string>
+    <string name="snooze_title">Отложить «%1$s»</string>
+    <string name="snooze_hour">Через 1 час</string>
+    <string name="snooze_three_hours">Через 3 часа</string>
+    <string name="snooze_evening">Вечером</string>
+    <string name="snooze_tomorrow">Завтра</string>
+    <string name="snooze_day_after">Послезавтра</string>
+    <string name="snooze_saturday">В субботу</string>
+    <string name="snooze_week">Через неделю</string>
+    <string name="snooze_pick_time">Выбрать дату и время…</string>
+    <string name="snooze_pick_day">Выбрать дату…</string>
+    <string name="snooze_done">Отложено на %1$s</string>
 </resources>

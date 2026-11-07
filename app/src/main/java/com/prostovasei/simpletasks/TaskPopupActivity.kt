@@ -49,6 +49,11 @@ import com.prostovasei.simpletasks.ui.navigation.QuickAddDestination
 import com.prostovasei.simpletasks.ui.navigation.DayDestination
 import com.prostovasei.simpletasks.ui.feature.week.DaySheetRoute
 import com.prostovasei.simpletasks.ui.navigation.TaskDetailDestination
+import com.prostovasei.simpletasks.ui.navigation.SnoozeDestination
+import com.prostovasei.simpletasks.ui.feature.snooze.SnoozeRoute
+import com.prostovasei.simpletasks.ui.common.DayNames
+import com.prostovasei.simpletasks.ui.common.DueFormatter
+import androidx.navigation.toRoute
 import dagger.hilt.android.AndroidEntryPoint
 
 /**
@@ -104,6 +109,9 @@ fun TaskPopup(start: Any, onDismiss: () -> Unit, origin: android.graphics.Rect? 
         onDismiss()
     }
     val close: () -> Unit = { if (offer == null && !navController.popBackStack()) onDismiss() }
+    val days = DayNames(stringResource(R.string.day_today), stringResource(R.string.day_tomorrow), stringResource(R.string.day_yesterday))
+    val today = java.time.LocalDate.now()
+    val zone = java.time.ZoneId.systemDefault()
     Box(Modifier.fillMaxSize()) {
         NavHost(
             navController,
@@ -115,10 +123,24 @@ fun TaskPopup(start: Any, onDismiss: () -> Unit, origin: android.graphics.Rect? 
             popExitTransition = { ExitTransition.None },
         ) {
             // Растёт из виджета только первое окно; подзадача, открытая из него, выезжает снизу.
-            composable<TaskDetailDestination> {
+            composable<TaskDetailDestination> { entry ->
+                val openDate = entry.toRoute<TaskDetailDestination>().openDate
                 CompositionLocalProvider(LocalSheetOrigin provides origin.takeIf { navController.previousBackStackEntry == null }) {
-                    TaskDetailRoute(onClose = close, onOpenTask = { navController.navigate(TaskDetailDestination(it)) })
+                    TaskDetailRoute(onClose = close, onOpenTask = { navController.navigate(TaskDetailDestination(it)) }, openDate = openDate)
                 }
+            }
+            // Итерация 53: «Отложить» из уведомления — окно выбора; «Выбрать дату и время…» — задача сразу с окном даты.
+            composable<SnoozeDestination> { entry ->
+                val taskId = entry.toRoute<SnoozeDestination>().taskId
+                SnoozeRoute(
+                    taskId = taskId,
+                    onDismiss = onDismiss,
+                    onSnoozed = { text, undo -> offer = UndoOffer(text, UndoKind.Tomorrow, undo) },
+                    onPickDate = {
+                        navController.navigate(TaskDetailDestination(taskId, openDate = true)) { popUpTo<SnoozeDestination> { inclusive = true } }
+                    },
+                    subtitle = { task -> listOfNotNull(task.title, DueFormatter.format(task.due, task.start, today, zone)?.let(days::format)).joinToString(" · ") },
+                )
             }
             composable<MoveOverdueDestination> {
                 // Перенос запускается один раз: при повороте экрана окно не переносит заново.

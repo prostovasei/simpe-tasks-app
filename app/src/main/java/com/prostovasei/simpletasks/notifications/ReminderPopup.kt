@@ -17,7 +17,9 @@ import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.tween
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -31,13 +33,13 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateListOf
@@ -49,6 +51,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.graphicsLayer
@@ -83,7 +86,10 @@ import com.prostovasei.simpletasks.designsystem.components.dust
 import com.prostovasei.simpletasks.designsystem.components.dustParticles
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
+import com.prostovasei.simpletasks.core.time.TimeProvider
 import com.prostovasei.simpletasks.domain.repository.TaskRepository
+import com.prostovasei.simpletasks.ui.feature.snooze.SnoozeChoice
+import com.prostovasei.simpletasks.ui.feature.snooze.snoozeChoices
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -96,8 +102,9 @@ import javax.inject.Singleton
 import kotlin.math.roundToInt
 
 /*
- * Полоска напоминания поверх других приложений (T-69, вариант PM «В»): зелёная, снизу, висит, пока не уберут.
- * Часы — на завтра в то же время, галочка — выполнено, название — окно задачи поверх, смахнуть вправо — закрыть.
+ * Полоска напоминания поверх других приложений (T-69, вариант PM «В»): снизу, висит, пока не уберут. С 0.53 (T-118) — белая,
+ * кнопки чёрные. Часы — «Отложить» (итерация 53, T-84): меню над полоской переносит срок задачи; галочка — выполнено,
+ * название — окно задачи поверх, смахнуть вправо — закрыть.
  * Несколько сразу — до трёх полосок друг над другом, остальные — «ещё N». Вместо обычного уведомления:
  * оно приходит, только если полоску показать нельзя (выключено, нет разрешения, экран заблокирован).
  */
@@ -121,16 +128,24 @@ object PopupPrefs {
 }
 
 /**
- * Полоска одной задачи: название, подпись «Сегодня, 18:00 · Дом» и [later] — когда напомнит после «на завтра».
- * [undo] — полоска уже сменилась на «Выполнено · Отменить» или «Завтра, 18:00 · Отменить» (0.29, П1).
+ * Полоска одной задачи: название и подпись «Сегодня, 18:00 · Дом». [snooze] — открыто меню «Отложить» (итерация 53).
+ * [undo] — полоска уже сменилась на «Выполнено · Отменить» или «Отложено на 18:00 · Отменить» (0.29, П1) со значком [undoIcon].
  */
 @Immutable
-data class PopupStrip(val taskId: String, val title: String, val subtitle: String, val later: String = "", val undo: String? = null)
+data class PopupStrip(
+    val taskId: String,
+    val title: String,
+    val subtitle: String,
+    val undo: String? = null,
+    val snooze: List<SnoozeChoice>? = null,
+    @param:DrawableRes val undoIcon: Int = R.drawable.ic_node_check,
+)
 
 @Singleton
 class ReminderPopup @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val tasks: TaskRepository,
+    private val time: TimeProvider,
     @param:ApplicationScope private val appScope: CoroutineScope,
 ) {
     private val strips = mutableStateListOf<PopupStrip>()
@@ -191,12 +206,8 @@ class ReminderPopup @Inject constructor(
                         suspend { if (result != null) tasks.undoWontDo(result) }
                     }
                 },
-                onTomorrow = { id ->
-                    act(id, strips.find { it.taskId == id }?.later.orEmpty().ifEmpty { context.getString(R.string.popup_tomorrow) }) {
-                        val moved = tasks.moveToTomorrow(id)
-                        suspend { if (moved != null) tasks.undoMove(moved) }
-                    }
-                },
+                onSnooze = ::toggleSnooze,
+                onSnoozeChoice = ::snooze,
                 onUndo = ::undo,
                 onExpire = ::remove,
                 onOpen = { id ->
@@ -213,11 +224,52 @@ class ReminderPopup @Inject constructor(
     }
 
     /** Действие с полоски: полоска сменяется на «… · Отменить» (П1), задача меняется сразу. */
-    private fun act(taskId: String, done: String, action: suspend () -> (suspend () -> Unit)) {
+    private fun act(taskId: String, done: String, @DrawableRes icon: Int = R.drawable.ic_node_check, action: suspend () -> (suspend () -> Unit)) {
         val index = strips.indexOfFirst { it.taskId == taskId }
         if (index < 0) return
-        strips[index] = strips[index].copy(undo = done)
+        strips[index] = strips[index].copy(undo = done, undoIcon = icon, snooze = null)
         reverts[taskId] = appScope.async { action() }
+    }
+
+    /** «Отложить»: меню над полоской открывается (варианты — на этот момент) или закрывается; у других полосок меню закрывается. */
+    private fun toggleSnooze(taskId: String) {
+        val strip = strips.find { it.taskId == taskId } ?: return
+        if (strip.snooze != null) {
+            update(taskId) { it.copy(snooze = null) }
+            return
+        }
+        appScope.launch {
+            val task = tasks.getTask(taskId) ?: return@launch
+            val choices = snoozeChoices(context, task, time)
+            withContext(Dispatchers.Main.immediate) {
+                strips.indices.forEach { i -> if (strips[i].snooze != null) strips[i] = strips[i].copy(snooze = null) }
+                update(taskId) { it.copy(snooze = choices) }
+            }
+        }
+    }
+
+    /** Вариант меню: срок задачи переносится, полоска — «Отложено на 18:00 · Отменить». «Выбрать дату…» — задача с окном даты поверх. */
+    private fun snooze(taskId: String, choice: SnoozeChoice) {
+        val option = choice.option
+        if (option == null) {
+            remove(taskId)
+            context.startActivity(
+                Intent(context, TaskPopupActivity::class.java)
+                    .putExtra(MainActivity.EXTRA_TASK_ID, taskId)
+                    .putExtra(MainActivity.EXTRA_OPEN_DATE, true)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK),
+            )
+            return
+        }
+        act(taskId, context.getString(R.string.snooze_done, choice.whenText), R.drawable.ic_popup_tomorrow) {
+            val moved = tasks.snooze(taskId, option.due, option.start)
+            suspend { if (moved != null) tasks.undoMove(moved) }
+        }
+    }
+
+    private fun update(taskId: String, change: (PopupStrip) -> PopupStrip) {
+        val index = strips.indexOfFirst { it.taskId == taskId }
+        if (index >= 0) strips[index] = change(strips[index])
     }
 
     /** «Отменить»: задача возвращается как была, полоска — снова с кнопками. */
@@ -308,8 +360,11 @@ const val POPUP_VISIBLE = 3
 fun ReminderStrips(
     strips: List<PopupStrip>,
     onDone: (String) -> Unit,
-    onTomorrow: (String) -> Unit,
-    /** «Не буду делать» (итерация 49): круглая кнопка слева от «На завтра». */
+    /** «Отложить» (итерация 53): открыть или закрыть меню над полоской. */
+    onSnooze: (String) -> Unit,
+    /** Вариант меню «Отложить». */
+    onSnoozeChoice: (String, SnoozeChoice) -> Unit = { _, _ -> },
+    /** «Не буду делать» (итерация 49): круглая кнопка слева от «Отложить». */
     onWontDo: (String) -> Unit = {},
     onOpen: (String) -> Unit,
     onDismiss: (String) -> Unit,
@@ -343,30 +398,31 @@ fun ReminderStrips(
         shown.asReversed().forEach { strip ->
             // Своя «личность» у «Отменить»: после отмены полоска появляется заново, с анимацией появления.
             key(strip.taskId, strip.undo != null) {
-                if (strip.undo != null) UndoStrip(strip, onUndo, onExpire) else Strip(strip, onDone, onTomorrow, onWontDo, onOpen, onDismiss)
+                if (strip.undo != null) {
+                    UndoStrip(strip, onUndo, onExpire)
+                } else {
+                    strip.snooze?.let { SnoozeMenu(strip, it, onSnoozeChoice) }
+                    Strip(strip, onDone, onSnooze, onWontDo, onOpen, onDismiss)
+                }
             }
         }
     }
 }
 
 /*
- * Анимации полоски (0.28.1, выбор PM в прототипе): появление — П10 «Пульс» (выезжает снизу, вокруг дважды
- * расходится зелёное кольцо), выполнено — В9 «Пыль» (рассыпается слева направо, как раньше задача в ленте),
- * на завтра — О5 «Перелистывание» (листок календаря, на обороте «Завтра, 18:00», затем уезжает вниз).
+ * Анимации полоски (0.28.1, выбор PM в прототипе): выполнено и «не буду делать» — В9 «Пыль» (рассыпается слева направо).
+ * С 0.53 «на завтра» с перелистыванием нет — его заменило меню «Отложить»; после выбора полоска сразу сменяется на «Отложено на … · Отменить».
  * Действие выполняется, когда анимация доиграла; без анимаций в настройках телефона — сразу.
  */
 @Composable
-private fun Strip(strip: PopupStrip, onDone: (String) -> Unit, onTomorrow: (String) -> Unit, onWontDo: (String) -> Unit, onOpen: (String) -> Unit, onDismiss: (String) -> Unit) {
+private fun Strip(strip: PopupStrip, onDone: (String) -> Unit, onSnooze: (String) -> Unit, onWontDo: (String) -> Unit, onOpen: (String) -> Unit, onDismiss: (String) -> Unit) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
     val context = LocalContext.current
     val animate = remember { animationsEnabled(context) }
     val offset = remember { Animatable(0f) }
     val dust = remember { Animatable(0f) }
-    val flip = remember { Animatable(0f) }
-    val drop = remember { Animatable(0f) }
     var leaving by remember { mutableStateOf(false) }
-    val back by remember { derivedStateOf { flip.value >= HALF } }
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
     val threshold = with(density) { SizeTokens.POPUP_SWIPE.dp.toPx() }
@@ -414,82 +470,112 @@ private fun Strip(strip: PopupStrip, onDone: (String) -> Unit, onTomorrow: (Stri
             }
             .offset { IntOffset(offset.value.roundToInt(), 0) }
             .graphicsLayer { alpha = 1f - (offset.value / size.width).coerceIn(0f, 1f) * SWIPE_FADE }
-            .graphicsLayer {
-                translationY = drop.value * DROP_DEPTH * size.height
-                rotationX = if (flip.value < HALF) flip.value / HALF * QUARTER_TURN else (flip.value / HALF - 2f) * QUARTER_TURN
-                cameraDistance = CAMERA_DISTANCE * density.density
-            }
             .dust({ dust.value }, particles, particleSize, dustColors)
-            .clip(CircleShape)
-            .background(colors.accent)
+            .stripBox()
             .padding(start = spacing.md, end = spacing.xs)
             .testTag("$TAG_POPUP:${strip.taskId}"),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(spacing.sm),
     ) {
-        if (back) {
-            // Оборот листка: когда напомнит.
-            Icon(painterResource(R.drawable.ic_popup_tomorrow), null, tint = colors.onAccent, modifier = Modifier.size(SizeTokens.POPUP_ICON.dp))
-            Text(strip.later, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = colors.onAccent, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            return@Row
-        }
-        Icon(painterResource(R.drawable.ic_tool_reminder), null, tint = colors.onAccent, modifier = Modifier.size(SizeTokens.POPUP_ICON.dp))
+        Icon(painterResource(R.drawable.ic_tool_reminder), null, tint = colors.textSecondary, modifier = Modifier.size(SizeTokens.POPUP_ICON.dp))
         Column(Modifier.weight(1f).clickable { if (!leaving) onOpen(strip.taskId) }.testTag("$TAG_POPUP_OPEN:${strip.taskId}")) {
-            Text(strip.title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = colors.onAccent, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(strip.subtitle, style = MaterialTheme.typography.labelSmall, color = colors.onAccent.copy(alpha = SUBTITLE_ALPHA), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(strip.title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = colors.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(strip.subtitle, style = MaterialTheme.typography.labelSmall, color = colors.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
-        val wontDo = stringResource(R.string.action_wont_do)
-        Box(
-            Modifier
-                .size(SizeTokens.POPUP_BUTTON.dp)
-                .clip(CircleShape)
-                .background(colors.onAccent.copy(alpha = BUTTON_ALPHA))
-                .clickable { leave(onWontDo) { dust.animateTo(1f, tween(STRIP_DUST_MS, easing = LinearEasing)) } }
-                .semantics { contentDescription = wontDo }
-                .testTag("$TAG_POPUP_WONT_DO:${strip.taskId}"),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(painterResource(R.drawable.ic_wont_do), null, tint = colors.onAccent, modifier = Modifier.size(SizeTokens.POPUP_ICON.dp))
+        StripButton(R.drawable.ic_wont_do, stringResource(R.string.action_wont_do), "$TAG_POPUP_WONT_DO:${strip.taskId}") {
+            leave(onWontDo) { dust.animateTo(1f, tween(STRIP_DUST_MS, easing = LinearEasing)) }
         }
-        val tomorrow = stringResource(R.string.popup_tomorrow)
-        Box(
-            Modifier
-                .size(SizeTokens.POPUP_BUTTON.dp)
-                .clip(CircleShape)
-                .background(colors.onAccent.copy(alpha = BUTTON_ALPHA))
-                .clickable {
-                    leave(onTomorrow) {
-                        flip.animateTo(HALF, tween(FLIP_OUT_MS, easing = FastOutLinearInEasing))
-                        flip.animateTo(1f, tween(FLIP_IN_MS, easing = LinearOutSlowInEasing))
-                        // Пауза — задержкой анимации: её отсчитывают кадры, как и остальную анимацию.
-                        drop.animateTo(1f, tween(DROP_MS, delayMillis = LATER_HOLD_MS, easing = FastOutLinearInEasing))
-                    }
+        StripButton(R.drawable.ic_popup_tomorrow, stringResource(R.string.snooze_action), "$TAG_POPUP_SNOOZE:${strip.taskId}", pressed = strip.snooze != null) {
+            if (!leaving) onSnooze(strip.taskId)
+        }
+        StripButton(R.drawable.ic_node_check, stringResource(R.string.notification_done), "$TAG_POPUP_DONE:${strip.taskId}") {
+            leave(onDone) { dust.animateTo(1f, tween(STRIP_DUST_MS, easing = LinearEasing)) }
+        }
+    }
+}
+
+/** Белая полоска (T-118): фон `surface`, тонкая рамка и тень — не сливается со светлым приложением под ней. */
+@Composable
+private fun Modifier.stripBox(): Modifier {
+    val colors = AppTheme.colors
+    return this
+        .shadow(SizeTokens.POPUP_SHADOW.dp, CircleShape)
+        .clip(CircleShape)
+        .background(colors.surface)
+        .border(AppTheme.sizes.hairline, colors.divider, CircleShape)
+}
+
+/** Круглая чёрная кнопка полоски (T-118): `accent`, значок `onAccent`; [pressed] — меню открыто, вокруг кольцо. */
+@Composable
+private fun StripButton(@DrawableRes icon: Int, label: String, tag: String, pressed: Boolean = false, onClick: () -> Unit) {
+    val colors = AppTheme.colors
+    Box(
+        Modifier
+            .size(SizeTokens.POPUP_BUTTON.dp)
+            .then(if (pressed) Modifier.border(SizeTokens.POPUP_PRESSED_RING.dp, colors.accent, CircleShape).padding(SizeTokens.POPUP_PRESSED_GAP.dp) else Modifier)
+            .clip(CircleShape)
+            .background(colors.accent)
+            .clickable(onClick = onClick)
+            .semantics { contentDescription = label }
+            .testTag(tag),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(painterResource(icon), null, tint = colors.onAccent, modifier = Modifier.size(SizeTokens.POPUP_ICON.dp))
+    }
+}
+
+/**
+ * Меню «Отложить» над полоской (итерация 53, макет — доска «Полоска»): подпись «ОТЛОЖИТЬ «…»», варианты с новым сроком справа,
+ * последним — «Выбрать дату и время…». Нажатие на вариант сразу переносит задачу.
+ */
+@Composable
+private fun SnoozeMenu(strip: PopupStrip, choices: List<SnoozeChoice>, onChoice: (String, SnoozeChoice) -> Unit) {
+    val colors = AppTheme.colors
+    val spacing = AppTheme.spacing
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .shadow(SizeTokens.POPUP_SHADOW.dp, AppTheme.shapes.extraLarge)
+            .clip(AppTheme.shapes.extraLarge)
+            .background(colors.surface)
+            .testTag("$TAG_POPUP_SNOOZE_MENU:${strip.taskId}"),
+    ) {
+        Text(
+            stringResource(R.string.snooze_title, strip.title).uppercase(),
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold,
+            color = colors.textSecondary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(start = spacing.lg, end = spacing.lg, top = spacing.sm, bottom = spacing.xxs),
+        )
+        choices.forEachIndexed { index, choice ->
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .height(SizeTokens.POPUP_MENU_ROW.dp)
+                    .clickable { onChoice(strip.taskId, choice) }
+                    .padding(horizontal = spacing.lg)
+                    .testTag("${choice.tag}:${strip.taskId}"),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(spacing.sm),
+            ) {
+                if (choice.option == null) {
+                    Icon(painterResource(R.drawable.ic_widget_all), null, tint = colors.textSecondary, modifier = Modifier.size(AppTheme.sizes.metaIcon))
                 }
-                .semantics { contentDescription = tomorrow }
-                .testTag("$TAG_POPUP_TOMORROW:${strip.taskId}"),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(painterResource(R.drawable.ic_popup_tomorrow), null, tint = colors.onAccent, modifier = Modifier.size(SizeTokens.POPUP_ICON.dp))
-        }
-        val done = stringResource(R.string.notification_complete)
-        Box(
-            Modifier
-                .size(SizeTokens.POPUP_BUTTON.dp)
-                .clip(CircleShape)
-                .background(colors.surface)
-                .clickable { leave(onDone) { dust.animateTo(1f, tween(STRIP_DUST_MS, easing = LinearEasing)) } }
-                .semantics { contentDescription = done }
-                .testTag("$TAG_POPUP_DONE:${strip.taskId}"),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(painterResource(R.drawable.ic_node_check), null, tint = colors.accent, modifier = Modifier.size(SizeTokens.POPUP_ICON.dp))
+                Text(choice.label, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold, color = colors.textPrimary, modifier = Modifier.weight(1f))
+                if (choice.whenText.isNotEmpty()) {
+                    Text(choice.whenText, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = colors.textSecondary)
+                }
+            }
+            if (index < choices.lastIndex) HorizontalDivider(color = colors.divider)
         }
     }
 }
 
 /**
  * «Выполнено · Отменить» (0.29, П1): полторы секунды на случай промаха пальцем. Тонкая линия внизу показывает, сколько
- * осталось, потом полоска уезжает вниз и закрывается.
+ * осталось, потом полоска уезжает вниз и закрывается. С 0.53 — белая, «Отменить» — чёрная капсула.
  */
 @Composable
 private fun UndoStrip(strip: PopupStrip, onUndo: (String) -> Unit, onExpire: (String) -> Unit) {
@@ -515,29 +601,28 @@ private fun UndoStrip(strip: PopupStrip, onUndo: (String) -> Unit, onExpire: (St
                 alpha = appear.value
                 translationY = drop.value * DROP_DEPTH * size.height
             }
-            .clip(CircleShape)
-            .background(colors.accent)
+            .stripBox()
             .drawWithContent {
                 drawContent()
                 // Сколько осталось до закрытия — линия внизу, тает справа налево.
                 val line = SizeTokens.POPUP_UNDO_LINE.dp.toPx()
-                drawRect(colors.onAccent.copy(alpha = UNDO_LINE_ALPHA), Offset(0f, size.height - line), Size(size.width * left.value, line))
+                drawRect(colors.accent, Offset(0f, size.height - line), Size(size.width * left.value, line))
             }
             .padding(start = spacing.md, end = spacing.xs)
             .testTag("$TAG_POPUP_UNDO_STRIP:${strip.taskId}"),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(spacing.sm),
     ) {
-        Icon(painterResource(R.drawable.ic_node_check), null, tint = colors.onAccent, modifier = Modifier.size(SizeTokens.POPUP_ICON.dp))
-        Text(strip.undo.orEmpty(), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = colors.onAccent, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+        Icon(painterResource(strip.undoIcon), null, tint = colors.textSecondary, modifier = Modifier.size(SizeTokens.POPUP_ICON.dp))
+        Text(strip.undo.orEmpty(), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = colors.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
         Text(
             undoLabel,
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.Bold,
-            color = colors.accent,
+            color = colors.onAccent,
             modifier = Modifier
                 .clip(CircleShape)
-                .background(colors.surface)
+                .background(colors.accent)
                 .clickable { onUndo(strip.taskId) }
                 .padding(horizontal = spacing.md, vertical = spacing.xs)
                 .testTag("$TAG_POPUP_UNDO:${strip.taskId}"),
@@ -554,29 +639,20 @@ private const val UNDO_APPEAR_MS = 200
 private const val UNDO_MS = 1500
 private const val SWIPE_OUT_MS = 180
 private const val SWIPE_FADE = 0.7f
-private const val UNDO_LINE_ALPHA = 0.6f
 private const val STRIP_DUST_MS = 600
-private const val FLIP_OUT_MS = 200
-private const val FLIP_IN_MS = 220
-private const val LATER_HOLD_MS = 700
 private const val DROP_MS = 280
 
-/** Куда уезжает после «на завтра» и «Отменить» — в высотах полоски. */
+/** Куда уезжает после «Отменить» — в высотах полоски. */
 private const val DROP_DEPTH = 1.7f
-private const val HALF = 0.5f
-private const val QUARTER_TURN = 90f
-private const val CAMERA_DISTANCE = 12f
 
 /** Частицы пыли летят почти горизонтально: над полоской окна мало места. */
 private val DUST_LIFT = -0.3f..0.3f
 private const val DUST_FADED = 0.6f
 
-private const val SUBTITLE_ALPHA = 0.8f
-private const val BUTTON_ALPHA = 0.18f
-
 const val TAG_POPUP = "popup"
 const val TAG_POPUP_OPEN = "popup_open"
-const val TAG_POPUP_TOMORROW = "popup_tomorrow"
+const val TAG_POPUP_SNOOZE = "popup_snooze"
+const val TAG_POPUP_SNOOZE_MENU = "popup_snooze_menu"
 const val TAG_POPUP_WONT_DO = "popup_wont_do"
 const val TAG_POPUP_DONE = "popup_done"
 const val TAG_POPUP_MORE = "popup_more"

@@ -18,7 +18,6 @@ import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.TaskPopupActivity
 import com.prostovasei.simpletasks.core.time.TimeProvider
 import com.prostovasei.simpletasks.domain.model.Task
-import com.prostovasei.simpletasks.domain.model.movedTo
 import com.prostovasei.simpletasks.domain.repository.ProjectRepository
 import com.prostovasei.simpletasks.ui.common.DayNames
 import com.prostovasei.simpletasks.ui.common.DueFormatter
@@ -118,11 +117,11 @@ class AndroidReminderNotifications @Inject constructor(
                     PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
                 ),
             )
-            .addAction(0, context.getString(R.string.notification_complete), action(task.id, ReminderReceiver.ACTION_COMPLETE, id))
-            // Итерация 49: «Не буду делать» между «Выполнить» и «На завтра».
+            .addAction(0, context.getString(R.string.notification_done), action(task.id, ReminderReceiver.ACTION_COMPLETE, id))
+            // Итерация 49: «Не буду делать» между «Выполнено» и «Отложить».
             .addAction(0, context.getString(R.string.notification_wont_do), action(task.id, ReminderReceiver.ACTION_WONT_DO, id))
-            // Итерация 36: «На завтра» рядом с «Выполнить» — то же, что часы на полоске (задача переезжает на завтра в то же время).
-            .addAction(0, context.getString(R.string.notification_tomorrow), action(task.id, ReminderReceiver.ACTION_TOMORROW, id))
+            // Итерация 53: «Отложить» вместо «На завтра» — окно выбора поверх экрана (меню в самом уведомлении Android не показывает).
+            .addAction(0, context.getString(R.string.snooze_action), snoozeAction(task.id, id))
             .build()
         @Suppress("MissingPermission") // проверено в canPost()
         manager.notify(id, notification)
@@ -134,7 +133,6 @@ class AndroidReminderNotifications @Inject constructor(
     }
 
     /** Подпись полоски (решение PM): «Сегодня, 18:00 · Дом». */
-    /** Полоска: подпись «Сегодня, 18:00 · Дом» и «Завтра, 18:00» — её показывает анимация переноса на завтра. */
     private suspend fun popupStrip(task: Task): PopupStrip {
         val days = DayNames(context.getString(R.string.day_today), context.getString(R.string.day_tomorrow), context.getString(R.string.day_yesterday))
         val today = time.today()
@@ -144,8 +142,7 @@ class AndroidReminderNotifications @Inject constructor(
             // Без списка: с датой — «Без списка», без даты — «Входящие» (итерация 52.1).
             if (it.isInbox) context.getString(if (task.due != null) R.string.no_list_title else R.string.inbox_list_name) else it.name
         }
-        val later = DueFormatter.format(task.due.movedTo(today.plusDays(1), zone), null, today, zone)?.let(days::format).orEmpty()
-        return PopupStrip(task.id, task.title, listOfNotNull(due, list).joinToString(SEPARATOR), later)
+        return PopupStrip(task.id, task.title, listOfNotNull(due, list).joinToString(SEPARATOR))
     }
 
     private fun canPost(): Boolean =
@@ -180,8 +177,18 @@ class AndroidReminderNotifications @Inject constructor(
         PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
     )
 
+    /** «Отложить»: окно выбора поверх того, что на экране. */
+    private fun snoozeAction(taskId: String, notificationId: Int): PendingIntent = PendingIntent.getActivity(
+        context,
+        notificationId * ACTIONS + 2,
+        Intent(context, TaskPopupActivity::class.java)
+            .putExtra(MainActivity.EXTRA_SNOOZE_TASK, taskId)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK),
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+    )
+
     companion object {
-        /** Кнопок в уведомлении: «Выполнить», «Не буду делать», «На завтра». */
+        /** Кнопок в уведомлении: «Выполнено», «Не буду делать», «Отложить». */
         private const val ACTIONS = 3
         const val CHANNEL_ID = "reminders_vibrate"
         private const val SEPARATOR = " · "

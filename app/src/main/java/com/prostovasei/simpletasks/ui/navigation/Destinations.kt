@@ -71,9 +71,13 @@ data class WontDoTaskDestination(val taskId: String)
 @Serializable
 data object CompletedDestination
 
-/** Экран задачи. */
+/** Экран задачи; [openDate] — сразу окно даты и времени (итерация 53: «Отложить» → «Выбрать дату и время…»). */
 @Serializable
-data class TaskDetailDestination(val taskId: String)
+data class TaskDetailDestination(val taskId: String, val openDate: Boolean = false)
+
+/** Окно «Отложить» поверх экрана — из кнопки уведомления (итерация 53). */
+@Serializable
+data class SnoozeDestination(val taskId: String)
 
 /** Экран задач списка. Имя поля — ключ аргумента в SavedStateHandle. */
 @Serializable

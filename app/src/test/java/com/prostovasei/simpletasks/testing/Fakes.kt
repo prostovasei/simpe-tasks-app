@@ -314,6 +314,14 @@ class FakeTaskRepository(private val today: LocalDate = LocalDate.of(2026, 10, 1
         return null
     }
 
+    /** Вызовы «Отложить» (итерация 53): id и новый срок. */
+    val snoozed = mutableListOf<Pair<String, TaskDue>>()
+
+    override suspend fun snooze(taskId: String, due: TaskDue, start: TaskDue?): Moved? {
+        snoozed += taskId to due
+        return null
+    }
+
     /** Вызовы «Текущий повтор»: id и новый срок. */
     val movedRepeats = mutableListOf<Pair<String, TaskDue>>()
 

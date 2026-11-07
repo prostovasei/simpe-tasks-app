@@ -65,7 +65,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import com.prostovasei.simpletasks.ui.common.repeatSummary
 
 @Composable
-fun TaskDetailRoute(onClose: () -> Unit, onOpenTask: (String) -> Unit, viewModel: TaskDetailViewModel = hiltViewModel()) {
+fun TaskDetailRoute(onClose: () -> Unit, onOpenTask: (String) -> Unit, openDate: Boolean = false, viewModel: TaskDetailViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val motion = rememberSheetMotion(onClose)
     val snackbar = remember { SnackbarHostState() }
@@ -94,7 +94,7 @@ fun TaskDetailRoute(onClose: () -> Unit, onOpenTask: (String) -> Unit, viewModel
             }
         }
     }
-    TaskDetailScreen(state, viewModel::onIntent, motion.close, onOpenTask, progress = motion.progress, reveal = motion.reveal) {
+    TaskDetailScreen(state, viewModel::onIntent, motion.close, onOpenTask, progress = motion.progress, reveal = motion.reveal, openDate = openDate) {
         // Подсказка «Следующий раз» — сверху, над шторкой: внизу её закрыла бы панель кнопок.
         UndoSnackbarHost(snackbar, Modifier.align(Alignment.TopCenter).statusBarsPadding())
     }
@@ -113,6 +113,7 @@ fun TaskDetailScreen(
     onOpenTask: (String) -> Unit,
     progress: () -> Float = { 1f },
     reveal: () -> Float = { 1f },
+    openDate: Boolean = false,
     overlay: @Composable androidx.compose.foundation.layout.BoxScope.() -> Unit = {},
 ) {
     val colors = AppTheme.colors
@@ -146,6 +147,7 @@ fun TaskDetailScreen(
         },
         progress = progress,
         reveal = reveal,
+        openDateOnStart = openDate,
         overlay = overlay,
         actions = {
             SheetConfirmButton(R.string.sheet_done, enabled = true, tag = TAG_DETAIL_CLOSE, onClick = onClose)

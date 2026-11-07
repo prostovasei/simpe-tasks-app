@@ -21,6 +21,7 @@ import com.prostovasei.simpletasks.ui.navigation.AppNavHost
 import com.prostovasei.simpletasks.ui.navigation.DayDestination
 import com.prostovasei.simpletasks.ui.navigation.QuickAddDestination
 import com.prostovasei.simpletasks.ui.navigation.TaskDetailDestination
+import com.prostovasei.simpletasks.ui.navigation.SnoozeDestination
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -72,10 +73,14 @@ class MainActivity : ComponentActivity() {
             )
             // Итерация 45: нажатие на строку даты в виджете «Неделя» открывает полный список этого дня.
             intent.getStringExtra(EXTRA_OPEN_DAY) != null -> DayDestination(checkNotNull(intent.getStringExtra(EXTRA_OPEN_DAY)))
-            else -> intent.getStringExtra(EXTRA_TASK_ID)?.let { TaskDetailDestination(it) }
+            // Итерация 53: «Отложить» в уведомлении — окно выбора поверх экрана.
+            intent.getStringExtra(EXTRA_SNOOZE_TASK) != null -> SnoozeDestination(checkNotNull(intent.getStringExtra(EXTRA_SNOOZE_TASK)))
+            else -> intent.getStringExtra(EXTRA_TASK_ID)?.let { TaskDetailDestination(it, openDate = intent.getBooleanExtra(EXTRA_OPEN_DATE, false)) }
         }
 
         const val EXTRA_TASK_ID = "open_task_id"
+        const val EXTRA_OPEN_DATE = "open_date"
+        const val EXTRA_SNOOZE_TASK = "snooze_task_id"
         const val EXTRA_OPEN_DAY = "open_day"
         const val EXTRA_MOVE_OVERDUE = "move_overdue"
         const val EXTRA_QUICK_ADD = "quick_add"

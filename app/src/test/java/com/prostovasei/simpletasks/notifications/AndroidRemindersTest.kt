@@ -38,7 +38,7 @@ class AndroidRemindersTest {
     private val app: Application = ApplicationProvider.getApplicationContext()
     private val notificationManager = app.getSystemService(NotificationManager::class.java)
 
-    private val popup = ReminderPopup(app, FakeTaskRepository(), CoroutineScope(Dispatchers.Unconfined))
+    private val popup = ReminderPopup(app, FakeTaskRepository(), FakeTimeProvider(now = Instant.parse("2026-10-14T05:00:00Z"), zone = ZoneOffset.UTC), CoroutineScope(Dispatchers.Unconfined))
 
     private fun notifications() = AndroidReminderNotifications(
         app,
@@ -56,7 +56,7 @@ class AndroidRemindersTest {
         val shadow = shadowOf(posted)
         assertEquals("Позвонить маме", shadow.contentTitle)
         assertEquals("Итерация 27: только срок, без списка", "Сегодня, 18:30", shadow.contentText)
-        assertEquals("Итерация 49: «Не буду делать» посередине", listOf("Выполнить", "Не буду делать", "На завтра"), posted.actions.map { it.title.toString() })
+        assertEquals("Итерация 49: «Не буду делать» посередине", listOf("Выполнено", "Не буду делать", "Отложить"), posted.actions.map { it.title.toString() })
         assertEquals(AndroidReminderNotifications.CHANNEL_ID, posted.channelId)
         val channel = notificationManager.getNotificationChannel(AndroidReminderNotifications.CHANNEL_ID)
         assertTrue("Вибрация включена", channel.shouldVibrate())
@@ -71,9 +71,10 @@ class AndroidRemindersTest {
         val wontDo = shadowOf(posted.actions[1].actionIntent).savedIntent
         assertEquals(ReminderReceiver.ACTION_WONT_DO, wontDo.action)
         assertEquals("t1", wontDo.getStringExtra(ReminderReceiver.EXTRA_TASK_ID))
-        val tomorrow = shadowOf(posted.actions[2].actionIntent).savedIntent
-        assertEquals("Итерация 36: «На завтра» — то же действие, что часы на полоске", ReminderReceiver.ACTION_TOMORROW, tomorrow.action)
-        assertEquals("t1", tomorrow.getStringExtra(ReminderReceiver.EXTRA_TASK_ID))
+        // Итерация 53: «Отложить» открывает окно выбора поверх экрана (меню в самом уведомлении Android не показывает).
+        val snooze = shadowOf(posted.actions[2].actionIntent).savedIntent
+        assertEquals(com.prostovasei.simpletasks.TaskPopupActivity::class.java.name, snooze.component?.className)
+        assertEquals("t1", snooze.getStringExtra(MainActivity.EXTRA_SNOOZE_TASK))
 
         notifications().cancel("t1")
         assertTrue(shadowOf(notificationManager).allNotifications.isEmpty())
