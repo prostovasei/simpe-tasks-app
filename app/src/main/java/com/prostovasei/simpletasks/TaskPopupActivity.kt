@@ -46,11 +46,13 @@ import com.prostovasei.simpletasks.ui.feature.task.LocalSheetOrigin
 import com.prostovasei.simpletasks.ui.feature.task.QuickAddRoute
 import com.prostovasei.simpletasks.ui.feature.task.TaskDetailRoute
 import com.prostovasei.simpletasks.ui.navigation.QuickAddDestination
+import com.prostovasei.simpletasks.ui.navigation.DayDestination
+import com.prostovasei.simpletasks.ui.feature.week.DaySheetRoute
 import com.prostovasei.simpletasks.ui.navigation.TaskDetailDestination
 import dagger.hilt.android.AndroidEntryPoint
 
 /**
- * Задача или создание задачи поверх рабочего стола (решение PM): открывается из виджета и уведомлений,
+ * Задача, создание задачи или шторка дня (итерация 51) поверх рабочего стола (решение PM): открывается из виджета и уведомлений,
  * само приложение не запускается, «Назад» сразу возвращает туда, откуда открыли.
  * Отдельная задача Android (taskAffinity), в списке недавних не показывается.
  */
@@ -127,6 +129,14 @@ fun TaskPopup(start: Any, onDismiss: () -> Unit, origin: android.graphics.Rect? 
                         moves.run()
                     }
                 }
+            }
+            // Итерация 51: нажатие на дату дня в «Неделе» виджета — шторка дня поверх рабочего стола, без приложения.
+            composable<DayDestination> {
+                DaySheetRoute(
+                    onClose = close,
+                    onOpenTask = { navController.navigate(TaskDetailDestination(it)) },
+                    onAdd = { navController.navigate(QuickAddDestination(date = it.toString())) },
+                )
             }
             composable<QuickAddDestination> {
                 CompositionLocalProvider(LocalSheetOrigin provides origin.takeIf { navController.previousBackStackEntry == null }) { QuickAddRoute(onClose = close) }

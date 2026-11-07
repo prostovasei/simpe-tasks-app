@@ -46,7 +46,8 @@ object WidgetRenderer {
         widgetIds(context).forEach { render(context, it, reason) }
     }
 
-    suspend fun render(context: Context, appWidgetId: Int, reason: String) = mutex.withLock {
+    /** [scrollToToday] — лента прокручивается к «Сегодня» (во «Входящих» — в начало): нажатие на дату в нижней строке (итерация 51). */
+    suspend fun render(context: Context, appWidgetId: Int, reason: String, scrollToToday: Boolean = false) = mutex.withLock {
         val started = SystemClock.elapsedRealtime()
         try {
             // Вид «Неделя» — на Android 12+ (лента на элементах Android); на 10–11 вместо него «Все».
@@ -62,7 +63,7 @@ object WidgetRenderer {
             val glance = composers.getOrPut(appWidgetId) { GlanceRemoteViews() }
                 .compose(context, sizeOf(options), appWidgetOptions = options) { WidgetContent(model, appWidgetId, scrollable) }
                 .remoteViews
-            val views = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) widgetRootViews(context, appWidgetId, model, glance, sizeOf(options)) else glance
+            val views = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) widgetRootViews(context, appWidgetId, model, glance, sizeOf(options), scrollToToday = scrollToToday) else glance
             manager.updateAppWidget(appWidgetId, views)
             val time = context.widgetEntryPoint().time()
             nextChanges[appWidgetId] = nextChange(model, time.zone())

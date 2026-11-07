@@ -89,6 +89,14 @@ class TaskViewModelsTest {
         assertEquals(TaskDue.AllDay(today), fromAll.state.value.due)
     }
 
+    /** Итерация 51: «Задача на сб, 7 ноя» в шторке дня — новая задача на этот день. */
+    @Test
+    fun quickAddFromDaySheetTakesItsDate() = runTest(dispatcher) {
+        val vm = quickAdd("date" to "2026-11-07", "today" to false)
+        runCurrent()
+        assertEquals(TaskDue.AllDay(LocalDate.of(2026, 11, 7)), vm.state.value.due)
+    }
+
     @Test
     fun quickAddSavesAllFields() = runTest(dispatcher) {
         val vm = quickAdd("today" to true)

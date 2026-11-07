@@ -14,6 +14,8 @@ import androidx.glance.GlanceModifier
 import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
+import androidx.glance.LocalSize
+import androidx.compose.ui.unit.Dp
 import androidx.glance.action.Action
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.AndroidRemoteViews
@@ -555,7 +557,24 @@ private fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boolea
                     modifier = GlanceModifier.size(width = SizeTokens.WIDGET_OPEN_ICON_W.dp, height = SizeTokens.WIDGET_OPEN_ICON_H.dp),
                 )
             }
-            Spacer(GlanceModifier.width(SizeTokens.WIDGET_UPDATE_GAP.dp))
+            // Итерация 51: между «✓» и «+» — сегодняшняя дата; нажатие возвращает к сегодня (неделя, «Сегодня» в ленте, начало «Входящих»).
+            val width = LocalSize.current.width
+            if (width == Dp.Unspecified || width >= SizeTokens.WIDGET_DATE_MIN.dp) {
+                val date = WidgetDates.bar(model.today, withWeekday = width == Dp.Unspecified || width >= SizeTokens.WIDGET_DATE_FULL_MIN.dp)
+                val description = context.getString(R.string.widget_today_date, date)
+                Box(
+                    modifier = GlanceModifier
+                        .fillMaxHeight()
+                        .padding(horizontal = SizeTokens.WIDGET_DATE_PAD.dp)
+                        .clickable(actionSendBroadcast(WidgetActions.today(context, appWidgetId)))
+                        .semantics { contentDescription = description },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(date, style = TextStyle(color = WidgetColors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold), maxLines = 1)
+                }
+            } else {
+                Spacer(GlanceModifier.width(SizeTokens.WIDGET_UPDATE_GAP.dp))
+            }
             Box(
                 modifier = GlanceModifier
                     .size(width = SizeTokens.WIDGET_ADD_W.dp, height = SizeTokens.WIDGET_ADD_H.dp)
@@ -622,12 +641,14 @@ fun openTaskIntent(context: Context, taskId: String): Intent = Intent(context, T
     .putExtra(MainActivity.EXTRA_TASK_ID, taskId)
     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
 
-/** Полный список дня в приложении (итерация 45): нажатие на строку даты в ячейке вида «Неделя» в виджете. [date] — «2026-10-30». */
-fun openDayIntent(context: Context, date: String): Intent = Intent(context, MainActivity::class.java)
-    .setAction(Intent.ACTION_MAIN)
-    .addCategory(Intent.CATEGORY_LAUNCHER)
+/**
+ * Шторка дня поверх рабочего стола (итерация 51; в итерации 45 открывался список дня в приложении): нажатие на строку даты в ячейке
+ * вида «Неделя» в виджете. [date] — «2026-10-30». У каждого дня свой адрес.
+ */
+fun openDayIntent(context: Context, date: String): Intent = Intent(context, TaskPopupActivity::class.java)
+    .setData("simpletasks://day/$date".toUri())
     .putExtra(MainActivity.EXTRA_OPEN_DAY, date)
-    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
 
 /** «+»: создание задачи поверх рабочего стола — на сегодня («Все»), во «Входящие» или в выбранный список. */
 fun quickAddIntent(context: Context, filter: WidgetFilter): Intent = Intent(context, TaskPopupActivity::class.java)

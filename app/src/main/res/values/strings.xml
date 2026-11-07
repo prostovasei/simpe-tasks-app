@@ -7,6 +7,9 @@
     <string name="tab_week">Неделя</string>
     <string name="tab_lists">Списки</string>
     <string name="day_empty">На этот день задач нет</string>
+    <string name="day_sheet_progress">%1$d из %2$d</string>
+    <string name="day_sheet_add">Задача на %1$s</string>
+    <string name="widget_today_date">Сегодня, %1$s: вернуться к сегодня</string>
     <string name="week_pick">Неделя %1$s</string>
     <string name="tab_search">Поиск</string>
     <string name="search_hint">Поиск задач</string>

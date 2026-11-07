@@ -211,6 +211,15 @@ object SizeTokens {
     const val WIDGET_OPEN_ICON_H = 20
     const val WIDGET_UPDATE_GAP = 8
 
+    /**
+     * Дата в нижней строке виджета между «✓» и «+» (итерация 51, макет iteration51.py): «сб, 7 ноя» на виджете не уже
+     * [WIDGET_DATE_FULL_MIN], «7 ноя» — до него, на виджете уже [WIDGET_DATE_MIN] даты нет: вкладки, «✓» и «+» занимают ~290 dp, «+» не должен обрезаться. [WIDGET_DATE_PAD] — поля
+     * зоны нажатия по бокам.
+     */
+    const val WIDGET_DATE_FULL_MIN = 380
+    const val WIDGET_DATE_MIN = 350
+    const val WIDGET_DATE_PAD = 6
+
     /** Режим выбора (итерация 40): кнопка ленты действий (ширина не меньше, высота) и высота верхней строки «Выбрано: N». */
     const val RIBBON_BUTTON = 76
     const val RIBBON_BUTTON_HEIGHT = 56

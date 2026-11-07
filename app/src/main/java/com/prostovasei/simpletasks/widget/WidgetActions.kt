@@ -72,6 +72,14 @@ class WidgetActionReceiver : BroadcastReceiver() {
                     WidgetSelection.setWeekPick(context, id, WeekPick(start = date.weekStart(), month = month))
                     WidgetRenderer.render(context, id, "неделя")
                 }
+                WidgetActions.TODAY -> {
+                    // Итерация 51: дата в нижней строке — к сегодня: «Неделя» — текущая неделя и месяц, лента — к «Сегодня» / в начало.
+                    val id = intent.getIntExtra(WidgetActions.EXTRA_WIDGET_ID, -1)
+                    val filter = WidgetSelection.get(context, id) ?: WidgetFilter.All
+                    WidgetLog.add(context, "к сегодня: ${filter.encode()}")
+                    if (filter == WidgetFilter.Week) WidgetSelection.setWeekPick(context, id, WeekPick())
+                    WidgetRenderer.render(context, id, "сегодня", scrollToToday = filter != WidgetFilter.Week)
+                }
                 WidgetActions.MIDNIGHT -> WidgetRenderer.renderAll(context, "время")
             }
         }
@@ -85,6 +93,7 @@ object WidgetActions {
     const val TOGGLE_OVERDUE = "com.prostovasei.simpletasks.widget.TOGGLE_OVERDUE"
     const val PICK_WEEK = "com.prostovasei.simpletasks.widget.PICK_WEEK"
     const val MIDNIGHT = "com.prostovasei.simpletasks.WIDGET_MIDNIGHT"
+    const val TODAY = "com.prostovasei.simpletasks.widget.TODAY"
     const val EXTRA_DATE = "date"
     const val EXTRA_WIDGET_ID = "widget_id"
     const val EXTRA_FILTER = "filter"
@@ -113,6 +122,12 @@ object WidgetActions {
         .setData("simpletasks://widget/$appWidgetId/week/$date".toUri())
         .putExtra(EXTRA_WIDGET_ID, appWidgetId)
         .putExtra(EXTRA_DATE, date)
+
+    /** Дата в нижней строке (итерация 51): вернуть виджет к сегодня. */
+    fun today(context: Context, appWidgetId: Int): Intent = Intent(context, WidgetActionReceiver::class.java)
+        .setAction(TODAY)
+        .setData("simpletasks://widget/$appWidgetId/today".toUri())
+        .putExtra(EXTRA_WIDGET_ID, appWidgetId)
 
     /** Снять отметку с выполненной (итерация 27): выполненная остаётся в виджете до полуночи. */
     fun uncomplete(context: Context, taskId: String): Intent = Intent(context, WidgetActionReceiver::class.java)

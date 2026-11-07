@@ -31,7 +31,7 @@ data object SettingsDestination
  * [today] — задача сразу на сегодня (открыто с экрана «Все»).
  */
 @Serializable
-data class QuickAddDestination(val projectId: String? = null, val today: Boolean = false)
+data class QuickAddDestination(val projectId: String? = null, val today: Boolean = false, val date: String? = null)
 
 /** Прозрачное окно «Перенести просроченные на сегодня» поверх рабочего стола (итерация 37, из виджета). */
 @Serializable

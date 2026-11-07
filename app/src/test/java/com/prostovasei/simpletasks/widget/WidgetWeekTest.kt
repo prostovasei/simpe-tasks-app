@@ -143,6 +143,16 @@ class WidgetWeekTest {
         assertNull(saturday.findViewById<View>(WeekIds.RIGHT.slots[1].node).contentDescription)
     }
 
+    /** Итерация 51: между «✓» и «+» — сегодняшняя дата; на узком виджете без дня недели, на совсем узком её нет. */
+    @Test
+    fun barShowsTodayDate() {
+        fun texts(width: Int) = renderWidget(context, rich, DpSize(width.dp, 700.dp)).applyLikeLauncher(context).visibleTexts()
+        assertTrue(texts(400).contains("пт, 30 окт"))
+        assertTrue(texts(360).contains("30 окт"))
+        assertFalse("«+» не обрезается", texts(320).any { it.endsWith("30 окт") })
+        assertEquals("сб, 7 ноя", WidgetDates.bar(LocalDate.of(2026, 11, 7), withWeekday = true))
+    }
+
     @Test
     fun calendarHasSixClickableWeeksWithoutMonthRow() {
         val last = list().rows()[3]

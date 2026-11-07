@@ -188,6 +188,12 @@ object WidgetDates {
     /** «пт, 16 окт» — нижняя строка и подписи дней (там — заглавными). */
     fun withWeekday(date: LocalDate): String = "${WEEKDAYS[date.dayOfWeek.value - 1]}, ${short(date)}"
 
+    /** «сб, 7 ноя» или без дня недели «7 ноя» — дата в нижней строке виджета (итерация 51, число без нуля). */
+    fun bar(date: LocalDate, withWeekday: Boolean): String {
+        val day = "${date.dayOfMonth} ${MONTHS[date.monthValue - 1]}"
+        return if (withWeekday) "${WEEKDAYS[date.dayOfWeek.value - 1]}, $day" else day
+    }
+
     /** «ПТ, 16 окт» — подписи дней в ленте приложения (итерация 13). */
     fun header(date: LocalDate): String = "${WEEKDAYS[date.dayOfWeek.value - 1].uppercase()}, ${short(date)}"
 }
