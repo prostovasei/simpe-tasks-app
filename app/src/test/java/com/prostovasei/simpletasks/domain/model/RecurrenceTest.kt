@@ -148,4 +148,28 @@ class RecurrenceTest {
         assertEquals(at(utc, 10, 17, 11, 0), aligned.due)
         assertEquals("FREQ=WEEKLY;BYDAY=SA", aligned.rrule)
     }
+
+    /** 0.51.1 (разбор PM, «Вода» 10-го числа): правило с одним днём меняется под новую дату, с несколькими — нет. */
+    @Test
+    fun ruleWithOneDayFollowsNewDate() {
+        val nov4 = LocalDate.of(2026, 11, 4) // среда
+        assertEquals("FREQ=MONTHLY;BYMONTHDAY=4", Recurrence.retargeted("FREQ=MONTHLY;BYMONTHDAY=10", nov4))
+        assertEquals("FREQ=MONTHLY;INTERVAL=2;BYMONTHDAY=4", Recurrence.retargeted("FREQ=MONTHLY;INTERVAL=2;BYMONTHDAY=10", nov4))
+        assertEquals("FREQ=WEEKLY;BYDAY=WE", Recurrence.retargeted("FREQ=WEEKLY;BYDAY=SA", nov4))
+        assertEquals("FREQ=YEARLY;BYMONTH=11;BYMONTHDAY=4", Recurrence.retargeted("FREQ=YEARLY;BYMONTH=3;BYMONTHDAY=8", nov4))
+        assertEquals("Несколько дней — без изменений", "FREQ=WEEKLY;BYDAY=TU,TH", Recurrence.retargeted("FREQ=WEEKLY;BYDAY=TU,TH", nov4))
+        assertEquals("Без дня — без изменений", "FREQ=MONTHLY", Recurrence.retargeted("FREQ=MONTHLY", nov4))
+        assertEquals("«Вторая пятница» — без изменений", "FREQ=MONTHLY;BYDAY=2FR", Recurrence.retargeted("FREQ=MONTHLY;BYDAY=2FR", nov4))
+        assertEquals("COUNT сохраняется", "FREQ=MONTHLY;BYMONTHDAY=4;COUNT=3", Recurrence.retargeted("FREQ=MONTHLY;BYMONTHDAY=10;COUNT=3", nov4))
+    }
+
+    @Test
+    fun seriesMovesToChosenDateInsteadOfSnappingBack() {
+        val water = task("w", due = TaskDue.AllDay(LocalDate.of(2026, 11, 10))).copy(rrule = "FREQ=MONTHLY;BYMONTHDAY=10")
+        val moved = water.seriesMovedTo(TaskDue.AllDay(LocalDate.of(2026, 11, 4)), null, ZoneId.of("UTC"))
+        assertEquals(TaskDue.AllDay(LocalDate.of(2026, 11, 4)), moved.due)
+        assertEquals("FREQ=MONTHLY;BYMONTHDAY=4", moved.rrule)
+        val twice = task("t", due = TaskDue.AllDay(LocalDate.of(2026, 11, 10))).copy(rrule = "FREQ=WEEKLY;BYDAY=TU,TH")
+        assertEquals("Вт и чт: ср 4 → чт 5", TaskDue.AllDay(LocalDate.of(2026, 11, 5)), twice.seriesMovedTo(TaskDue.AllDay(LocalDate.of(2026, 11, 4)), null, ZoneId.of("UTC")).due)
+    }
 }

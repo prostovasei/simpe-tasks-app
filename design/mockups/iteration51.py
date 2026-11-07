@@ -226,6 +226,36 @@ def day_notes():
     return f'<div style="width:440px;display:flex;flex-direction:column;gap:12px;font-size:14px;line-height:20px">{cards}</div>'
 
 
+# ------------------------------------------------------------------ 0.51.1: подсказка, когда дата встала на день правила
+
+def hint_screen():
+    """«Все повторы» у правила с несколькими днями («вт и чт»): выбрана ср 4 ноя — серия встала на чт 5 ноя, сверху подсказка."""
+    card = I.task_card('чт, 5 ноя').replace('>Стирка<', '>Бассейн<').replace('Постельное и полотенца', 'Абонемент в сумке')
+    toast = ('<div style="position:absolute;left:16px;right:16px;top:16px;min-height:56px;border-radius:var(--radius-xl);'
+             'background:color-mix(in srgb,var(--surface) 88%,transparent);border:1px solid var(--divider);display:flex;align-items:center;padding:8px 16px;gap:12px">'
+             f'<span style="display:flex;color:var(--text-secondary)">{svg("ic_tool_repeat", 22)}</span>'
+             '<span style="flex:1;font-size:14px;line-height:20px;font-weight:600">Повтор «Каждую неделю: вт, чт» — ближайший раз чт, 05 ноя</span></div>')
+    return I.phone(I.feed_before() + I.SCRIM + card + toast)
+
+
+def one_day_screen():
+    """«Все повторы» у правила с одним днём («каждый месяц, 10-го»): выбрано 4 ноя — серия на 4 ноя, правило «каждый месяц, 4-го»."""
+    card = (I.task_card('ср, 4 ноя').replace('>Стирка<', '>Вода<').replace('Постельное и полотенца', 'Оплатить счёт'))
+    return I.phone(I.feed_before() + I.SCRIM + card)
+
+
+def hint_notes():
+    items = [
+        ('Одно число или один день', '«Каждый месяц, 10-го» → перенесли на 4 ноя → «каждый месяц, 4-го», дальше 4 дек, 4 янв. «Каждую субботу» → на понедельник → '
+         '«каждый понедельник». Подсказки нет: дата встаёт ровно туда, куда выбрали.'),
+        ('Несколько дней', '«Вт и чт» → выбрали ср 4 ноя → серия встаёт на ближайший подходящий день, чт 5 ноя. Сверху на 4 секунды подсказка — та же, '
+         'что «Следующий повтор: …» после выполнения: значок повтора и текст, без кнопки.'),
+        ('Где', 'Только «Все повторы с этого момента» и дата из названия. «Текущий повтор» и раз, перенесённый «На завтра», — обычные задачи, правила у них нет.'),
+    ]
+    cards = ''.join(f'<div style="background:var(--surface);border-radius:var(--radius-lg);padding:14px 16px"><b>{t}.</b> {x}</div>' for t, x in items)
+    return f'<div style="width:{W_PHONE}px;display:flex;flex-direction:column;gap:12px;font-size:14px;line-height:20px">{cards}</div>'
+
+
 # ------------------------------------------------------------------ страницы
 
 def page(title, Wd, H, body):
@@ -271,6 +301,14 @@ def build(out):
     body = (headline('Шторка дня поверх рабочего стола', 'Нажатие на дату дня в «Неделе» виджета — вместо открытия приложения.')
             + f'<div style="display:flex;gap:48px;align-items:flex-start">{day_sheet()}{day_notes()}</div>')
     add('Day.dc.html', 'Шторка дня', 428 + 48 + 440 + 80, 36 + 40 + 52 + 876 + 40, body)
+
+    body = (headline('Перенос серии — 0.51.1', '«Все повторы с этого момента»: правило с одним днём меняется под новую дату; с несколькими днями — '
+                     'дата встаёт на ближайший день правила, и это видно по подсказке.')
+            + '<div style="display:flex;gap:40px;align-items:flex-start">'
+            + col('1. Один день: «каждый месяц, 10-го»', 'Выбрали 4 ноя → серия на 4 ноя, правило «каждый месяц, 4-го».', one_day_screen())
+            + col('2. Несколько дней: «вт, чт»', 'Выбрали ср 4 ноя → серия на чт 5 ноя, сверху подсказка.', hint_screen())
+            + f'<div style="padding-top:60px">{hint_notes()}</div></div>')
+    add('Hint.dc.html', 'Перенос серии (0.51.1)', 3 * W_PHONE + 2 * 40 + 80, 36 + 40 + 52 + 22 + 64 + H_PHONE + 40, body)
 
     now = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
     canvas = {'v': 3, 'createdOnFiles': {'v': 1, 'at': now}, 'title': 'Итерация 51 — сетка, дата и день в виджете', 'launch': {'view': 'canvas'}, 'pages': [],

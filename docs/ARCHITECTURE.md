@@ -1178,6 +1178,15 @@ PM поменял порядок: шторка для созданных зад�
 `WidgetActions.today`, `WidgetRenderer.render(scrollToToday)`, `widgetRootViews(scrollToToday)`, токены `WIDGET_DATE_*`. Тесты: `WeekGridModelTest` (дорожки), `DaySheetTest`
 (снимок `day_sheet_light`), `WidgetWeekTest` (дата на трёх ширинах), `WidgetListTest` (строка «Сегодня»), `TaskViewModelsTest` (новая задача на дату).
 
+**0.51.1 (разбор PM 07.11: «Вода» каждый месяц 10-го, перенос на 4-е «Все повторы» возвращался на 10-е):**
+
+| Что | Как стало |
+|---|---|
+| «Все повторы с этого момента» и дата в названии | Правило с одним днём (одно число месяца, один день недели, одна дата года) меняется под новую дату — `Recurrence.retargeted`, `Task.seriesMovedTo`. Несколько дней («вт, чт») — дата на ближайший день правила, в окне задачи подсказка «Повтор «…» — ближайший раз …» (`TaskDetailEffect.SeriesAligned`; у даты из названия подсказки нет — она меняется по мере набора) |
+| «На завтра» / «На другой день» в режиме выбора, «Перенести просроченные» | У повторяющейся — только этот раз (`TaskRepository.moveTasks`, `moveAll` → `moveRepeat`), `Rescheduling.moves` для «Отмены» |
+
+Тесты: `RecurrenceTest` (правило под дату), `MoveRepeatTest` (месячный 10-го, режим выбора и просроченные), `TaskViewModelsTest.detailRepeatAllRetargetsOrHints`.
+
 ### 4.45. Дорожная карта (обновлена)
 
 | Итерация | Название | Суть |

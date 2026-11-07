@@ -8,8 +8,6 @@ import com.prostovasei.simpletasks.domain.model.Priority
 import com.prostovasei.simpletasks.domain.model.Rescheduling
 import com.prostovasei.simpletasks.domain.model.Restoration
 import com.prostovasei.simpletasks.domain.model.Task
-import com.prostovasei.simpletasks.domain.model.movedTo
-import com.prostovasei.simpletasks.domain.model.withDue
 import com.prostovasei.simpletasks.domain.repository.ProjectRepository
 import com.prostovasei.simpletasks.domain.repository.TaskRepository
 import com.prostovasei.simpletasks.ui.feature.task.ProjectOption
@@ -69,14 +67,14 @@ class BulkActions @Inject constructor(
         BulkResult(BulkKind.WontDo, results.size) { results.forEach { tasks.undoWontDo(it) } }
     }
 
+    /** 0.51.1: у повторяющихся — только этот раз (как «На завтра» в уведомлении), серия на своём расписании. */
     fun toTomorrow(ids: List<String>) = run {
-        val date = time.today().plusDays(1)
-        edit(ids) { it.withDue(it.due.movedTo(date, time.zone())) }.result(BulkKind.Tomorrow)
+        tasks.moveTasks(ids, time.today().plusDays(1)).result(BulkKind.Tomorrow)
     }
 
-    /** Срок — на [date], время дня то же; у задачи без срока — весь день. */
+    /** Срок — на [date], время дня то же; у задачи без срока — весь день; у повторяющейся — только этот раз (0.51.1). */
     fun toDay(ids: List<String>, date: LocalDate) = run {
-        edit(ids) { it.withDue(it.due.movedTo(date, time.zone())) }.result(BulkKind.OtherDay, date = date)
+        tasks.moveTasks(ids, date).result(BulkKind.OtherDay, date = date)
     }
 
     fun moveTo(ids: List<String>, projectId: String, listName: String?) = run {

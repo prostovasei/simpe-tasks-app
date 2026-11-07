@@ -14,6 +14,7 @@ import com.prostovasei.simpletasks.domain.model.Rescheduling
 import com.prostovasei.simpletasks.domain.model.Restoration
 import com.prostovasei.simpletasks.domain.model.TrashedTask
 import com.prostovasei.simpletasks.domain.model.withDue
+import com.prostovasei.simpletasks.domain.model.movedTo
 import com.prostovasei.simpletasks.domain.model.Project
 import com.prostovasei.simpletasks.domain.model.ProjectGroup
 import com.prostovasei.simpletasks.domain.model.ProjectTree
@@ -176,6 +177,12 @@ class FakeTaskRepository(private val today: LocalDate = LocalDate.of(2026, 10, 1
         }
         tasks.update { all -> all.map { task -> if (task in overdue) task.withDue(TaskDue.AllDay(today)) else task } }
         return Rescheduling(overdue)
+    }
+
+    override suspend fun moveTasks(ids: List<String>, date: LocalDate): Rescheduling {
+        val moved = tasks.value.filter { it.id in ids }
+        tasks.update { all -> all.map { task -> if (task.id in ids) task.withDue(task.due.movedTo(date, ZoneOffset.UTC)) else task } }
+        return Rescheduling(moved)
     }
 
     override suspend fun undoReschedule(rescheduling: Rescheduling) {

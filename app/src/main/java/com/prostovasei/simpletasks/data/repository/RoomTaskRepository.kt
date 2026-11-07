@@ -16,6 +16,7 @@ import com.prostovasei.simpletasks.domain.model.EarlierRepeats
 import com.prostovasei.simpletasks.domain.model.Moved
 import com.prostovasei.simpletasks.domain.model.Recurrence
 import com.prostovasei.simpletasks.domain.model.alignedToRepeat
+import com.prostovasei.simpletasks.domain.model.seriesMovedTo
 import com.prostovasei.simpletasks.domain.model.WontDo
 import com.prostovasei.simpletasks.domain.model.atOccurrence
 import com.prostovasei.simpletasks.domain.model.repeatsBefore
@@ -303,13 +304,13 @@ class RoomTaskRepository @Inject constructor(
         val newRule = Recurrence.continued(rule, before.size)
         if (before.isEmpty() || newRule == null) {
             // Это и есть ближайший раз — серия просто сдвигается, как раньше.
-            updateTask(task.withDue(due).copy(start = start).alignedToRepeat(zone))
+            updateTask(task.seriesMovedTo(due, start, zone))
             return@withTransaction Moved(taskId, previous = task, day = start ?: due)
         }
         val now = nowMillis()
         val newId = ids.newId()
         taskDao.insert(entity.copy(id = newId, externalId = null, sourceData = null, createdAt = now, updatedAt = now))
-        val series = task.withDue(due).copy(id = newId, start = start, rrule = newRule).alignedToRepeat(zone)
+        val series = task.copy(rrule = newRule).seriesMovedTo(due, start, zone).copy(id = newId)
         updateTask(series)
         val items = checklistDao.getByTask(taskId)
         checklistDao.insertAll(items.map { it.copy(id = ids.newId(), taskId = newId, isDone = false, createdAt = now, updatedAt = now) })
@@ -346,12 +347,35 @@ class RoomTaskRepository @Inject constructor(
             }
             !task.isCompleted && date != null && date < today
         }
-        db.withTransaction { overdue.forEach { updateTask(it.withDue(it.due.movedTo(today, zone))) } }
-        return Rescheduling(overdue)
+        return moveAll(overdue, today)
+    }
+
+    override suspend fun moveTasks(ids: List<String>, date: LocalDate): Rescheduling = moveAll(ids.mapNotNull { getTask(it) }, date)
+
+    /** Обычные задачи — на [date] целиком; у повторяющейся (0.51.1) — только этот раз, серия на своём расписании. */
+    private suspend fun moveAll(tasks: List<Task>, date: LocalDate): Rescheduling = db.withTransaction {
+        val zone = time.zone()
+        val plain = mutableListOf<Task>()
+        val moves = mutableListOf<Moved>()
+        tasks.forEach { task ->
+            val moved = task.withDue(task.due.movedTo(date, zone))
+            val due = moved.due
+            val repeat = if (task.rrule != null && task.status == TaskStatus.ACTIVE && due != null) moveRepeat(task.id, due, moved.start) else null
+            if (repeat != null) {
+                moves += repeat
+            } else {
+                updateTask(moved)
+                plain += task
+            }
+        }
+        Rescheduling(plain, moves)
     }
 
     override suspend fun undoReschedule(rescheduling: Rescheduling) {
-        db.withTransaction { rescheduling.previous.forEach { updateTask(it) } }
+        db.withTransaction {
+            rescheduling.previous.forEach { updateTask(it) }
+            rescheduling.moves.forEach { undoMove(it) }
+        }
     }
 
     override fun observeTimedInRange(from: Instant, to: Instant): Flow<List<Task>> =
