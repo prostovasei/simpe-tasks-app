@@ -61,6 +61,8 @@ import com.prostovasei.simpletasks.domain.model.TaskDue
 import com.prostovasei.simpletasks.widget.WidgetDates
 import com.prostovasei.simpletasks.ui.common.DayNames
 import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberUpdatedState
+import com.prostovasei.simpletasks.ui.common.repeatSummary
 
 @Composable
 fun TaskDetailRoute(onClose: () -> Unit, onOpenTask: (String) -> Unit, viewModel: TaskDetailViewModel = hiltViewModel()) {
@@ -69,6 +71,9 @@ fun TaskDetailRoute(onClose: () -> Unit, onOpenTask: (String) -> Unit, viewModel
     val snackbar = remember { SnackbarHostState() }
     val rescheduled = stringResource(R.string.task_rescheduled)
     val futureHint = stringResource(R.string.future_done_hint)
+    val alignedHint = stringResource(R.string.series_aligned_hint)
+    // Текст правила — для подсказки 0.51.1; читается в момент события (правило к нему уже записано).
+    val rule by rememberUpdatedState(repeatSummary(state.task?.rrule).orEmpty())
     val days = DayNames(stringResource(R.string.day_today), stringResource(R.string.day_tomorrow), stringResource(R.string.day_yesterday))
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
@@ -81,6 +86,10 @@ fun TaskDetailRoute(onClose: () -> Unit, onOpenTask: (String) -> Unit, viewModel
                 is TaskDetailEffect.FutureDone -> launch {
                     snackbar.currentSnackbarData?.dismiss()
                     snackbar.showSnackbar(futureHint.format(effect.nearest))
+                }
+                is TaskDetailEffect.SeriesAligned -> launch {
+                    snackbar.currentSnackbarData?.dismiss()
+                    snackbar.showSnackbar(alignedHint.format(rule, effect.nearest))
                 }
             }
         }

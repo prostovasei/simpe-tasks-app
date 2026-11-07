@@ -139,6 +139,12 @@ sealed interface TaskDetailEffect {
 
     /** Будущий повтор нельзя выполнить раньше ближайшего (итерация 49): подсказка с датой ближайшего [nearest]. */
     data class FutureDone(val nearest: String) : TaskDetailEffect
+
+    /**
+     * «Все повторы» у правила с несколькими днями (0.51.1, макет iteration51.py, доска «Перенос серии»): выбранный день не подходит
+     * под правило — серия встала на ближайший подходящий [nearest]; подсказка «Повтор «…» — ближайший раз …».
+     */
+    data class SeriesAligned(val nearest: String) : TaskDetailEffect
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -359,7 +365,17 @@ class TaskDetailViewModel @Inject constructor(
      * Новая дата — всей серии: правило с одним днём («каждый месяц 10-го») меняется под новую дату (0.51.1), иначе повтор
      * начинается с первого подходящего дня.
      */
-    private fun applyToSeries(schedule: Schedule) = editNow(seriesDates = true) { seriesMovedTo(schedule.due, schedule.start, time.zone()) }
+    private fun applyToSeries(schedule: Schedule) {
+        editNow(seriesDates = true) { seriesMovedTo(schedule.due, schedule.start, time.zone()) }
+        val chosen = schedule.start ?: schedule.due ?: return
+        val placed = currentState.task?.let { it.start ?: it.due } ?: return
+        if (dayOf(chosen) != dayOf(placed)) sendEffect(TaskDetailEffect.SeriesAligned(dayText(placed)))
+    }
+
+    private fun dayOf(due: TaskDue) = when (due) {
+        is TaskDue.AllDay -> due.date
+        is TaskDue.AtTime -> due.instant.atZone(time.zone()).toLocalDate()
+    }
 
     /**
      * Выбор в окне «Изменить повторяющуюся задачу». У ближайшего раза «Все повторы» сдвигают серию (шторка остаётся), «Текущий

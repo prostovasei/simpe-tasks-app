@@ -519,6 +519,35 @@ class TaskViewModelsTest {
         assertNull(vm.state.value.pending)
     }
 
+    /** 0.51.1: «Все повторы» — правило с одним днём под новую дату, с несколькими — ближайший день правила и подсказка. */
+    @Test
+    fun detailRepeatAllRetargetsOrHints() = runTest(dispatcher) {
+        tasks.tasks.value = listOf(
+            task("water", due = TaskDue.AllDay(today.plusDays(4))).copy(rrule = "FREQ=MONTHLY;BYMONTHDAY=${today.plusDays(4).dayOfMonth}"),
+            task("pool", due = TaskDue.AllDay(today)).copy(rrule = "FREQ=WEEKLY;BYDAY=TU,TH"),
+        )
+        val water = detail(this, "water")
+        runCurrent()
+        water.onIntent(TaskDetailIntent.Grid(GridAction.PickDay(today.plusDays(1))))
+        water.onIntent(TaskDetailIntent.Grid(GridAction.Done))
+        water.onIntent(TaskDetailIntent.ChangeRepeat(all = true))
+        runCurrent()
+        assertEquals(TaskDue.AllDay(today.plusDays(1)), tasks.getTask("water")!!.due)
+        assertEquals("FREQ=MONTHLY;BYMONTHDAY=${today.plusDays(1).dayOfMonth}", tasks.getTask("water")!!.rrule)
+
+        // Сегодня ср 14.10.2026: «вт, чт» на пт 16 → вт 20, подсказка с этой датой.
+        val pool = detail(this, "pool")
+        runCurrent()
+        pool.effects.test {
+            pool.onIntent(TaskDetailIntent.Grid(GridAction.PickDay(today.plusDays(2))))
+            pool.onIntent(TaskDetailIntent.Grid(GridAction.Done))
+            pool.onIntent(TaskDetailIntent.ChangeRepeat(all = true))
+            runCurrent()
+            assertEquals(TaskDetailEffect.SeriesAligned(pool.dayText(TaskDue.AllDay(today.plusDays(6)))), awaitItem())
+        }
+        assertEquals(TaskDue.AllDay(today.plusDays(6)), tasks.getTask("pool")!!.due)
+    }
+
     /** Будущий раз: «Текущий повтор» недоступен, «Все повторы с этого момента» делят серию; снятие даты — без окна. */
     @Test
     fun detailFutureRepeatSplitsSeries() = runTest(dispatcher) {
