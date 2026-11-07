@@ -166,6 +166,16 @@ object SizeTokens {
     const val POPUP_GAP = 8
     const val POPUP_SWIPE = 56
     const val POPUP_UNDO_LINE = 3
+
+    /** Белая полоска (итерация 53, T-118): тень, чтобы не сливалась со светлым приложением под ней. */
+    const val POPUP_SHADOW = 6
+
+    /** Нажатая «Отложить» (меню открыто): белый зазор и чёрное кольцо вокруг кнопки. */
+    const val POPUP_PRESSED_GAP = 3
+    const val POPUP_PRESSED_RING = 2
+
+    /** Меню «Отложить» над полоской: строка варианта. */
+    const val POPUP_MENU_ROW = 48
     const val SHEET_REVEAL_BLUR = 8
     const val WIDGET_PROGRESS = 4
 

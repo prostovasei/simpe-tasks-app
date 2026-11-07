@@ -272,11 +272,16 @@ class RoomTaskRepository @Inject constructor(
     override suspend fun moveToTomorrow(taskId: String): Moved? {
         val task = getTask(taskId) ?: return null
         val moved = task.withDue(task.due.movedTo(time.today().plusDays(1), time.zone()))
-        // Итерация 50: у повторяющейся — только этот раз, серия остаётся на своём расписании.
-        val due = moved.due
-        if (task.rrule != null && task.status == TaskStatus.ACTIVE && due != null) moveRepeat(taskId, due, moved.start)?.let { return it }
-        updateTask(moved)
-        return Moved(taskId, previous = task, day = moved.start ?: moved.due)
+        return moveTo(task, moved.due ?: return null, moved.start)
+    }
+
+    override suspend fun snooze(taskId: String, due: TaskDue, start: TaskDue?): Moved? = moveTo(getTask(taskId) ?: return null, due, start)
+
+    /** Новый срок одной задачи; у повторяющейся (итерация 50) — только этот раз, серия остаётся на своём расписании. */
+    private suspend fun moveTo(task: Task, due: TaskDue, start: TaskDue?): Moved? {
+        if (task.rrule != null && task.status == TaskStatus.ACTIVE) moveRepeat(task.id, due, start)?.let { return it }
+        updateTask(task.withDue(due).copy(start = start))
+        return Moved(task.id, previous = task, day = start ?: due)
     }
 
     override suspend fun moveRepeat(taskId: String, due: TaskDue, start: TaskDue?): Moved? = db.withTransaction {

@@ -182,4 +182,34 @@ class MoveRepeatTest : DatabaseTest() {
         assertEquals(day(4), tasks.getTask(repeat)!!.due)
         assertEquals(day(0), tasks.getTask(overdue.moves.single().createdId!!)!!.due)
     }
+
+    /** Итерация 53: «Отложить» — новый срок обычной задачи, «Отмена» возвращает прежний. */
+    @Test
+    fun snoozeMovesPlainTaskWithUndo() = runTest {
+        val id = create(at(0, 17), rrule = null)
+        val moved = tasks.snooze(id, at(0, 18), null)!!
+        assertEquals(at(0, 18), tasks.getTask(id)!!.due)
+        tasks.undoMove(moved)
+        assertEquals(at(0, 17), tasks.getTask(id)!!.due)
+    }
+
+    /** Итерация 53: «Отложить» у повторяющейся — только этот раз, серия на своём расписании. */
+    @Test
+    fun snoozeMovesOnlyThisRepeat() = runTest {
+        val id = create(at(0, 17))
+        val moved = tasks.snooze(id, at(0, 20), null)!!
+        assertEquals(at(0, 20), tasks.getTask(moved.createdId!!)!!.due)
+        assertNull(tasks.getTask(moved.createdId!!)!!.rrule)
+        assertEquals("Серия — на следующей неделе", at(7, 17), tasks.getTask(id)!!.due)
+    }
+
+    /** Итерация 53: у задачи с периодом сдвигается и начало. */
+    @Test
+    fun snoozeKeepsPeriod() = runTest {
+        val id = tasks.createTask(NewTask(projects.getInbox().id, "Созвон", due = at(0, 19), start = at(0, 18)))
+        tasks.snooze(id, at(0, 20), at(0, 19))
+        val task = tasks.getTask(id)!!
+        assertEquals(at(0, 19), task.start)
+        assertEquals(at(0, 20), task.due)
+    }
 }

@@ -122,6 +122,12 @@ interface TaskRepository {
     suspend fun moveToTomorrow(taskId: String): Moved?
 
     /**
+     * «Отложить» из уведомления и полоски (итерация 53): срок [due] и начало [start] задачи — новые (варианты считает
+     * [com.prostovasei.simpletasks.domain.model.Snooze]). У повторяющейся — только этот раз, как [moveRepeat]. null — задачи нет.
+     */
+    suspend fun snooze(taskId: String, due: TaskDue, start: TaskDue?): Moved?
+
+    /**
      * «Текущий повтор» (итерация 50, вариант А): ближайший раз серии становится обычной задачей с новым сроком [due] и началом [start]
      * (с чек-листом и напоминаниями), серия переезжает на следующий раз. У последнего раза серия сама становится обычной задачей.
      * null — задача не повторяющаяся, закрыта или удалена.

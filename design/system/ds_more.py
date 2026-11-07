@@ -336,24 +336,64 @@ def p_bottom_bar():
     return doc('Список и виджет', 260, 'Нижняя панель приложения: шесть вкладок и «+», закреплена внизу на всю ширину; выбранная вкладка — чёрная', body)
 
 
-def strip(title, subtitle, undo=None):
+STRIP_BOX = ('background:var(--surface);color:var(--text-primary);border:1px solid var(--divider);'
+             'box-shadow:0 6px 18px color-mix(in srgb,var(--text-primary) 18%,transparent);box-sizing:border-box')
+
+
+def strip_btn(icon, pressed=False):
+    """Круглая чёрная кнопка белой полоски (0.53, T-118); нажатая «Отложить» — с кольцом."""
+    ring = ';box-shadow:0 0 0 3px var(--surface),0 0 0 5px var(--accent)' if pressed else ''
+    return (f'<span style="width:48px;height:48px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;'
+            f'justify-content:center;flex-shrink:0{ring}">{svg(icon, 22)}</span>')
+
+
+def strip(title, subtitle, undo=None, pressed=False, undo_icon='ic_node_check'):
+    """Полоска 0.53 (T-118): белая, кнопки чёрные — «Не буду делать», «Отложить» (часы), «Выполнено»."""
     if undo is not None:
-        return (f'<div style="height:68px;border-radius:34px;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;gap:12px;padding:0 8px 0 16px;position:relative;overflow:hidden">'
-                f'{svg("ic_node_check", 22)}<span style="flex:1;font-size:16px;line-height:24px;font-weight:700">{undo}</span>'
-                f'<span style="font-size:14px;font-weight:700;color:var(--accent);background:var(--surface);border-radius:20px;padding:8px 16px">Отменить</span>'
-                f'<span style="position:absolute;left:0;bottom:0;height:3px;width:55%;background:color-mix(in srgb,var(--on-accent) 60%,transparent)"></span></div>')
-    return (f'<div style="height:68px;border-radius:34px;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;gap:12px;padding:0 8px 0 16px">{svg("ic_tool_reminder", 22)}'
+        return (f'<div style="height:68px;border-radius:34px;{STRIP_BOX};display:flex;align-items:center;gap:12px;padding:0 10px 0 16px;position:relative;overflow:hidden">'
+                f'<span style="display:flex;color:var(--text-secondary)">{svg(undo_icon, 22)}</span><span style="flex:1;font-size:16px;line-height:24px;font-weight:700">{undo}</span>'
+                f'<span style="font-size:14px;font-weight:700;color:var(--on-accent);background:var(--accent);border-radius:20px;padding:10px 18px">Отменить</span>'
+                f'<span style="position:absolute;left:0;bottom:0;height:3px;width:55%;background:var(--accent)"></span></div>')
+    return (f'<div style="height:68px;border-radius:34px;{STRIP_BOX};display:flex;align-items:center;gap:10px;padding:0 10px 0 16px">'
+            f'<span style="display:flex;color:var(--text-secondary)">{svg("ic_tool_reminder", 22)}</span>'
             f'<div style="flex:1;min-width:0"><div style="font-size:16px;line-height:24px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{title}</div>'
-            f'<div style="font-size:11px;line-height:16px;opacity:.8">{subtitle}</div></div>'
-            f'<span style="width:48px;height:48px;border-radius:50%;background:color-mix(in srgb,var(--on-accent) 18%,transparent);display:flex;align-items:center;justify-content:center">{svg("ic_wont_do", 22)}</span>'
-            f'<span style="width:48px;height:48px;border-radius:50%;background:color-mix(in srgb,var(--on-accent) 18%,transparent);display:flex;align-items:center;justify-content:center">{svg("ic_popup_tomorrow", 22)}</span>'
-            f'<span style="width:48px;height:48px;border-radius:50%;background:var(--surface);color:var(--accent);display:flex;align-items:center;justify-content:center">{svg("ic_node_check", 22)}</span></div>')
+            f'<div style="font-size:11px;line-height:16px;color:var(--text-secondary)">{subtitle}</div></div>'
+            f'{strip_btn("ic_wont_do")}{strip_btn("ic_popup_tomorrow", pressed)}{strip_btn("ic_node_check")}</div>')
+
+
+def snooze_row(label, when, last=False, icon=None):
+    ic = f'<span style="display:flex;color:var(--text-secondary)">{svg(icon, 20)}</span>' if icon else ''
+    return (f'<div style="min-height:48px;display:flex;align-items:center;gap:12px;padding:0 20px;{"" if last else "border-bottom:1px solid var(--divider)"}">'
+            f'{ic}<span style="flex:1;font-size:16px;line-height:24px;font-weight:600">{label}</span>'
+            f'<span style="font-size:14px;line-height:20px;font-weight:600;color:var(--text-secondary)">{when}</span></div>')
+
+
+SNOOZE_TIMED = [('Через 1 час', '18:00'), ('Через 3 часа', '20:00'), ('Вечером', '19:00'), ('Завтра', 'чт, 12 ноя, 17:00')]
+SNOOZE_DAYS = [('Завтра', 'чт, 12 ноя'), ('Послезавтра', 'пт, 13 ноя'), ('В субботу', 'сб, 14 ноя'), ('Через неделю', 'ср, 18 ноя')]
+
+
+def snooze_menu(title, rows, pick='Выбрать дату и время…'):
+    """Меню «Отложить» над полоской (0.53): подпись, варианты с новым сроком справа, «Выбрать дату…»."""
+    head = f'<div style="padding:14px 20px 6px;font-size:12px;line-height:16px;font-weight:700;color:var(--text-secondary)">{title}</div>'
+    body = ''.join(snooze_row(l, w) for l, w in rows) + snooze_row(pick, '', last=True, icon='ic_widget_all')
+    return f'<div style="border-radius:var(--radius-xl);background:var(--surface);overflow:hidden;{STRIP_BOX}">{head}{body}</div>'
+
+
+def p_snooze():
+    timed = (f'<div style="width:388px;display:flex;flex-direction:column;gap:8px">{snooze_menu("ОТЛОЖИТЬ «СОЗВОН С КОМАНДОЙ»", SNOOZE_TIMED)}'
+             f'{strip("Созвон с командой", "Сегодня, 17:00 · Работа", pressed=True)}</div>')
+    days = (f'<div style="width:388px;display:flex;flex-direction:column;gap:8px">{snooze_menu("ОТЛОЖИТЬ «ОПЛАТИТЬ ИНТЕРНЕТ»", SNOOZE_DAYS, "Выбрать дату…")}'
+            f'{strip("Оплатить интернет", "Сегодня · Дом", pressed=True)}</div>')
+    window = dlg('Отложить', ''.join(snooze_row(l, w) for l, w in SNOOZE_TIMED) + snooze_row('Выбрать дату и время…', '', last=True, icon='ic_widget_all'),
+                 buttons=('Отмена',), subtitle='Созвон с командой · Сегодня, 17:00', width=356)
+    body = f'<div class="row" style="align-items:flex-end;gap:24px">{timed}{days}{window}</div>'
+    return doc('Напоминания и виджет', 470, '«Отложить»: меню над полоской (со временем и на весь день) и окно из уведомления; справа — новый срок', body)
 
 
 def p_reminder_strip():
     more = '<div style="align-self:center;font-size:12px;line-height:16px;font-weight:700;color:var(--text-secondary);background:var(--surface);border-radius:var(--radius-md);padding:4px 8px">ещё 2</div>'
     body = (f'<div style="width:412px;padding:8px 12px;display:flex;flex-direction:column;gap:8px">{more}{strip("Созвон с командой", "Сегодня, 18:00 · Дом")}{strip("Оплатить интернет", "Сегодня, 18:30")}'
-            f'{strip("", "", undo="Выполнено")}{strip("", "", undo="Завтра, 18:00")}</div>')
+            f'{strip("", "", undo="Выполнено")}{strip("", "", undo="Отложено на 18:00", undo_icon="ic_popup_tomorrow")}</div>')
     return doc('Напоминания и виджет', 420, 'Полоска напоминания поверх других приложений: стопка, «ещё N» и «Отменить»', body)
 
 
@@ -604,8 +644,8 @@ def p_notification():
             '<div style="display:flex;align-items:center;gap:8px;font-size:12px;line-height:16px;color:var(--text-secondary)"><span style="color:var(--accent);display:flex">' + svg('ic_notification', 16) + '</span>Simple Tasks · Напоминания · сейчас</div>'
             '<div style="font-size:16px;line-height:24px;font-weight:700;padding-top:4px">Созвон с командой</div>'
             '<div style="font-size:14px;line-height:20px;color:var(--text-secondary)">Сегодня, 18:00 · Дом</div>'
-            f'<div style="display:flex;gap:4px;padding-top:8px;margin-left:-12px">{notif_btn("Выполнить")}{notif_btn("Не буду делать")}{notif_btn("На завтра")}</div></div></div>')
-    return doc('Напоминания и виджет', 190, 'Обычное уведомление-напоминание с кнопками «Выполнить», «Не буду делать» и «На завтра»', body)
+            f'<div style="display:flex;gap:4px;padding-top:8px;margin-left:-12px">{notif_btn("Выполнено")}{notif_btn("Не буду делать")}{notif_btn("Отложить")}</div></div></div>')
+    return doc('Напоминания и виджет', 190, 'Обычное уведомление-напоминание с кнопками «Выполнено», «Не буду делать» и «Отложить»', body)
 
 
 # ---------------------------------------------------------------- итерация 39: «Корзина»
@@ -952,7 +992,7 @@ PREVIEWS = {
     'UpdateDialog': p_update_dialog, 'ListPriorityDialogs': p_list_priority_dialogs, 'CustomDialogs': p_custom_dialogs, 'AlertDialogs': p_alert_dialogs,
     'ChecklistRows': p_checklist, 'ChipsAndButtons': p_chips_fab, 'SettingsRow': p_switch_rows,
     'Headers': p_headers, 'EmptyTasks': p_empty, 'TaskRow': p_task_row, 'ListRows': p_list_rows, 'SearchField': p_search_field, 'BottomBar': p_bottom_bar,
-    'ReminderStrip': p_reminder_strip, 'SelectionMode': p_selection, 'ScreenSelection': lambda: screens(all_selected, 730, 'Экран «Все» в режиме выбора: сверху «Выбрано: N», снизу лента действий'), 'ScreenTrash': lambda: screens(trash_screen, 730, 'Экран «Корзина»: удалённые задачи как в списке, «Восстановить все» и «Удалить все»'), 'TrashTask': lambda: doc('Окна', 730, 'Задача в корзине: только чтение, «⋮» — восстановить или удалить навсегда', f'<div class="row" style="align-items:flex-start">{readonly_task(True)}</div>'), 'DangerDialog': p_danger, 'OverdueHeader': p_overdue_header, 'UndoSnackbar': p_snackbar, 'RecentSearches': p_recent_searches, 'TaskDraft': p_draft, 'ReminderNotification': p_notification, 'Widget': p_widget_bar, 'WidgetBar': p_widget_bar_only, 'WidgetWeek': p_widget_week,
+    'ReminderStrip': p_reminder_strip, 'Snooze': p_snooze, 'SelectionMode': p_selection, 'ScreenSelection': lambda: screens(all_selected, 730, 'Экран «Все» в режиме выбора: сверху «Выбрано: N», снизу лента действий'), 'ScreenTrash': lambda: screens(trash_screen, 730, 'Экран «Корзина»: удалённые задачи как в списке, «Восстановить все» и «Удалить все»'), 'TrashTask': lambda: doc('Окна', 730, 'Задача в корзине: только чтение, «⋮» — восстановить или удалить навсегда', f'<div class="row" style="align-items:flex-start">{readonly_task(True)}</div>'), 'DangerDialog': p_danger, 'OverdueHeader': p_overdue_header, 'UndoSnackbar': p_snackbar, 'RecentSearches': p_recent_searches, 'TaskDraft': p_draft, 'ReminderNotification': p_notification, 'Widget': p_widget_bar, 'WidgetBar': p_widget_bar_only, 'WidgetWeek': p_widget_week,
     'ScreenAll': lambda: screens(all_screen, 730, 'Экран «Все»: лента по дням со шкалой и нижней панелью'),
     'ScreenInbox': lambda: screens(inbox_screen, 730, 'Экран «Входящие»: плоский список, слева день и время'),
     'ScreenLists': lambda: screens(lists_screen, 730, 'Экран «Списки»: «Когда-нибудь» и «Без списка» сверху (0.52)'),
@@ -1001,9 +1041,10 @@ README_MORE = {
     'TaskDraft': ('Черновик новой задачи: закрыли карточку, не сохранив, — текст вернётся при следующем «+» (0.38).',
                   '''Если карточку новой задачи закрыли без сохранения (нажатием мимо, «Назад», смахнули окно), а в названии что-то набрано, название и описание запоминаются. Следующее «+» (с любого экрана и из виджета) открывает шторку с этим текстом: название выделено (`accent-soft`), любая буква заменит его, «Удалить» на клавиатуре сотрёт.
 Дата, список, приоритет, повтор и чек-лист не запоминаются. Черновик один, без срока годности; стирается, когда задачу сохранили или название очистили. Источник: `ui/feature/task/TaskDraft.kt`, `QuickAddViewModel.kt`.'''),
-    'ReminderNotification': ('Обычное уведомление-напоминание: название, срок, кнопки «Выполнить», «Не буду делать» и «На завтра».',
+    'ReminderNotification': ('Обычное уведомление-напоминание: название, срок, кнопки «Выполнено», «Не буду делать» и «Отложить» (0.53).',
                              '''Системное уведомление Android (канал «Напоминания»). Название задачи, под ним срок и список. Две кнопки: «Выполнить» и «На завтра» (0.36): срок переносится на завтра, время дня то же; у задачи без времени — только день.
-Рисует система, поэтому вид зависит от телефона; значок приложения — `ic_notification`. Источник: `notifications/AndroidReminders.kt`. Итерация 49: между «Выполнить» и «На завтра» — «Не буду делать»: у повторяющейся закрывает этот раз, серия едет дальше. Итерация 50: «На завтра» у повторяющейся переносит только этот раз (обычной задачей на завтра в то же время), серия остаётся на своём расписании; окна нет.'''),
+Рисует система, поэтому вид зависит от телефона; значок приложения — `ic_notification`. Источник: `notifications/AndroidReminders.kt`. Итерация 49: между «Выполнить» и «На завтра» — «Не буду делать»: у повторяющейся закрывает этот раз, серия едет дальше. Итерация 50: «На завтра» у повторяющейся переносит только этот раз (обычной задачей на завтра в то же время), серия остаётся на своём расписании; окна нет.
+Итерация 53 (T-84): кнопки — «Выполнено», «Не буду делать», «Отложить». «На завтра» вошло в «Отложить» вариантом «Завтра». Меню в самом уведомлении Android не показывает, поэтому «Отложить» открывает окно поверх экрана (`Snooze`).'''),
     'UpdateDialog': ('Окно обновления поверх рабочего стола: проверка, загрузка, установка, ошибки.',
                      '''Строится на `SheetDialog`. Над заголовком круглый значок `size-dialog-badge` (48): чёрный (`selected`, значок `accent`) для хороших исходов, красный (`danger` 12%) для ошибок.
 Состояния: проверка (полоса без процента), «Обновлений нет», «Доступно обновление» («Закрыть» / «Загрузить», версия и размер), загрузка (полоса, «7,2 из 16 МБ», процент, одна кнопка «Отмена»),
@@ -1051,10 +1092,16 @@ README_MORE = {
                   '''Закреплённая панель (0.44, решение PM по референсу): не парит, а лежит внизу на всю ширину — без капсулы и тени, сверху линия `divider` `size-hairline`, фон `surface` доходит до низа экрана под системной панелью навигации. Высота `size-nav-bar` (56). Шесть вкладок делят ширину поровну (на узком экране сжимаются): почта, календарь («Все»), три колонки («Неделя»), список, лупа, шестерёнка — значки 24, выбранная `accent`, остальные `text-secondary`; кнопка вкладки не шире `size-nav-tab` (48).
 В конце «+»: `size-nav-add-w` × `size-nav-add-h` (48×40), радиус `radius-xl`, `accent`, значок 24 `on-accent`. Нижнюю панель с тенью и капсулой больше не рисуем.
 Итерация 52: у «Входящих» — число неразобранных (без даты и без списка) в кружке Material Badge: фон `accent`, цифра `on-accent`; при нуле кружка нет.'''),
-    'ReminderStrip': ('Полоска напоминания поверх других приложений: стопка, «ещё N», «Отменить».',
-                      '''Чёрная капсула `accent` высотой `size-popup-strip` (68), поля от краёв `size-popup-edge` (12), щель между полосками `size-popup-gap` (8). Слева колокольчик 22 `on-accent`; название `body-large` Bold, ниже подпись «Сегодня, 18:00 · Дом» `label-small` 80%.
-Справа круглые кнопки `size-popup-button` (48): «на завтра в это же время» (`on-accent` 18%, значок листка) и «выполнено» (`surface`, галочка `accent`). Смахнуть вправо — закрыть. Видно до трёх полосок, остальные — метка «ещё N».
-Состояние «Отменить»: полоска «Выполнено» или «Завтра, 18:00» с белой кнопкой «Отменить» и тонкой линией внизу, которая тает за 1,5 секунды. Без вибрации и без кольца «Пульс». Источник: `notifications/ReminderPopup.kt`. Итерация 49: слева от «на завтра» — круглая кнопка «Не буду делать» (`on-accent` 18%, значок `ic_wont_do`). Итерация 50: «на завтра» у повторяющейся — только этот раз, серия на своём расписании; «Отменить» возвращает всё как было.'''),
+    'Snooze': ('«Отложить» (итерация 53, T-84): меню над полоской и окно из уведомления; переносит срок самой задачи.',
+               '''Варианты у задачи со временем: «Через 1 час», «Через 3 часа», «Вечером» (19:00), «Завтра» (в то же время), «Выбрать дату и время…»; на весь день: «Завтра», «Послезавтра», «В субботу», «Через неделю», «Выбрать дату…» — задача остаётся без времени.
+Новый срок — от старого срока задачи (у периода — от начала, период едет целиком); если вышло в прошлом — от «сейчас» (часы с округлением до 5 минут, дни — от сегодня). «Вечером» скрыт, если задача уже на 19:00 или позже или 19:00 прошло; «В субботу» — если совпадает с «Завтра» или «Послезавтра». У повторяющейся переносится только этот раз.
+Меню над полоской: белая карточка `radius-xl` с тенью `size-popup-shadow`, подпись «ОТЛОЖИТЬ «…»» `label-medium` Bold `text-secondary`, строки `size-popup-menu-row` (48): название `body-large` SemiBold, новый срок справа `body-medium` `text-secondary` («18:00» сегодня, «чт, 12 ноя, 17:00» в другой день), между строками линия `divider`. Окно из уведомления — `SheetDialog` «Отложить» с подписью задачи и одной кнопкой «Отмена»; строки — `DialogOption` с новым сроком справа.
+Вариант срабатывает сразу: полоска — «Отложено на 18:00 · Отменить», из уведомления — подсказка «Отложено на … · Отмена». «Выбрать дату…» — окно задачи сразу с окном даты поверх экрана. Источник: `domain/model/Snooze.kt`, `ui/feature/snooze/`, `notifications/ReminderPopup.kt`.'''),
+    'ReminderStrip': ('Полоска напоминания поверх других приложений: белая с чёрными кнопками (0.53), стопка, «ещё N», «Отменить».',
+                      '''Белая капсула `surface` высотой `size-popup-strip` (68) с рамкой `divider` и тенью `size-popup-shadow` (0.53, T-118: была чёрной). Поля от краёв `size-popup-edge` (12), щель между полосками `size-popup-gap` (8). Слева колокольчик 22 `text-secondary`; название `body-large` Bold `text-primary`, ниже подпись «Сегодня, 18:00 · Дом» `label-small` `text-secondary`.
+Справа три круглые чёрные кнопки `size-popup-button` (48): фон `accent`, значок `on-accent` — «Не буду делать», «Отложить» (часы), «Выполнено». Нажатая «Отложить» (меню открыто) — с кольцом `size-popup-pressed-ring` через зазор `size-popup-pressed-gap`. В тёмной теме по токенам наоборот: полоска тёмная, кнопки светлые.
+«Отложить» (итерация 53, `Snooze`): меню над полоской, срок задачи переносится. Смахнуть вправо — закрыть. Видно до трёх полосок, остальные — метка «ещё N».
+Состояние «Отменить»: белая полоска «Выполнено» (галочка) или «Отложено на 18:00» (часы) с чёрной капсулой «Отменить» и чёрной линией внизу, которая тает за 1,5 секунды. Без вибрации. Источник: `notifications/ReminderPopup.kt`.'''),
     'WidgetWeek': ('Виджет, вкладка «Неделя» (0.45, вид строк и календаря — 0.46, эмодзи и размеры — 0.48, зона кружка — 0.50, шторка дня — 0.51).', 'Четыре строки ленты одинаковой высоты над плоской нижней строкой (`WidgetBar`): Пн–Вт, Ср–Чт, Пт–Сб, Вс и мини-календарь. Ячейка — как `WeekView`, но мельче: строка не ниже `size-widget-week-task` (18; делят высоту ячейки поровну, обычно ~20), промежуток `size-widget-week-task-gap` (2), кружок `size-widget-week-check` (13), название 10 sp жирным. Справа (итерация 48, вариант В): эмодзи списка (у всех задач, и у «Входящих»; эмодзи в названии не убирается), время 10 sp, между ними и до края плашки `size-widget-week-inline-gap` (2). Строка даты (итерация 48) — по высоте текста, не ниже `size-widget-week-header` (12): «ПТ 30» капсом, 9 sp; сегодня — жирным без кружка, остальные дни обычным начертанием; поле над датой `size-widget-week-cell-top` (1), над верхним рядом `size-widget-week-top` (2). Фон строки по приоритету (`week-row-*`), выполненная — серая и зачёркнутая. Календарь без строки месяца и стрелок, даты 11 sp, кружок «сегодня» `size-widget-week-cal-day` (18): неделя с днями соседнего месяца перелистывает его. Нажатие (итерация 50): поверх кружка и начала названия — невидимая зона `size-widget-week-hit` (40) на всю высоту плашки, она выполняет задачу (у выполненной — возвращает); кружок и название не сдвигаются; у будущего повтора зоны нет — вся плашка открывает задачу. Нажатие на строку даты (итерация 51) — шторка дня поверх рабочего стола (`DaySheet`), приложение не открывается. Подробно — в README `Widget`. Источник: `widget/WidgetWeekRows.kt`, разметка — `design/tools/gen_widget_week.py`.'),
     'Widget': ('Виджет «Задачи»: лента по дням со шкалой, «сейчас» и нижняя строка.',
                '''Фон `background`, радиус `radius-xl`. Список по дням: подпись дня (красная у прошедшего), строки шкалы как в `TimelineRow`, у «Сегодня» линия прогресса. Отметка «сейчас»: чёрное время слева, точка на линии и линия до края (`size-widget-now-row` 14).
