@@ -10,12 +10,20 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.shadows.ShadowAlarmManager
 import java.time.Instant
 
-/** «Точное время напоминаний» (0.29.2): включено — как будильник (система не откладывает), выключено — обычный точный. */
+/**
+ * «Точное время напоминаний» (0.29.2): включено — как будильник (система не откладывает), выключено — обычный точный.
+ *
+ * Простое `Application` вместо `TasksApp` (T-82, причина найдена 07.11.2026): `TasksApp.onCreate` запускает `ReminderManager.start()`
+ * в фоне, и тот на пустой базе ставит `setAt(null)` — снимает будильник теста. Если фон успевал между «поставили» и «проверили»,
+ * тест падал (чаще на медленной автосборке). Этому тесту нужен только `AndroidReminderAlarm`, без запуска приложения.
+ */
 @RunWith(RobolectricTestRunner::class)
+@Config(application = android.app.Application::class)
 class AndroidReminderAlarmTest {
     private val context = ApplicationProvider.getApplicationContext<android.content.Context>()
     private val alarms = shadowOf(context.getSystemService(AlarmManager::class.java))
