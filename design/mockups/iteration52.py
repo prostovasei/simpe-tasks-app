@@ -145,10 +145,62 @@ BOARDS = [
 ]
 
 
+# ------------------------------------------------------------------ 0.52.1: разные эмодзи и подпись служебного списка
+
+PIN, THOUGHT, TRAY = '📌', '💭', '📥'
+
+
+def emoji(e, size=16):
+    return B.EMOJI_SPAN.format(px=size - 2, w=size, e=e)
+
+
+def erow(left, title, e, top=True, bottom=True, rem=None):
+    """Строка ленты с эмодзи [e] справа в плашке (у задачи без списка: 📥 без даты, 📌 с датой)."""
+    html = frow(left, 'var(--inactive)', title, top=top, bottom=bottom, rem=rem, lsq=False)
+    return html[:-len('</div></div>')] + f'<span style="margin-left:8px;display:flex">{emoji(e)}</span></div></div>'
+
+
+def list_dialog(first, first_emoji):
+    opt = lambda t, e, sel=False: D.option(t, sel, emoji(e))
+    return D.dlg('Список', opt(first, first_emoji, True) + opt('Работа', '💼') + opt('Дом', '🏠') + opt('Финансы', '💰'))
+
+
+def feed_with_parents():
+    rows = (day_header('ВС, 08 ноя', 'Сегодня') + erow('14:30', 'Стирка', '🏠', top=False) + erow('16:00', 'Уборка', '🏠', rem='at')
+            + erow(['18:00', '19:00'], 'Родители', PIN, bottom=False))
+    return frame(f'<div style="padding-top:8px">{rows}</div>{nav_bar(1, 3)}', H_PHONE)
+
+
+def dated_dialog_screen():
+    return I.centered(feed_with_parents() + I.SCRIM, list_dialog('Без списка', PIN))
+
+
+def undated_dialog_screen():
+    return I.centered(inbox_screen() + I.SCRIM, list_dialog('Входящие', TRAY))
+
+
+def lists_labels_screen():
+    head = f'<div style="display:flex;align-items:center"><div style="flex:1">{D.screen_title("Списки")}</div>{D.btn_text("+ Папка")}{D.btn_text("+ Список")}</div>'
+    line = lambda ic, t, n='': (f'<div style="display:flex;align-items:center;padding:12px 16px;color:var(--text-secondary)">{ic}'
+                                f'<span style="flex:1;padding-left:12px;font-size:16px;line-height:24px;color:var(--text-primary)">{t}</span><span style="font-size:14px">{n}</span></div>')
+    big = lambda e: emoji(e, 24)
+    body = (head + line(big(THOUGHT), 'Когда-нибудь', 7) + line(big(PIN), 'Без списка', 2) + line(mi('check'), 'Выполненные')
+            + D.WONT_ROW(3) + line(D.TRASH_ICON(24), 'Корзина', 5) + line(big('💼'), 'Работа', 12) + line(big('🏠'), 'Дом', 6))
+    return frame(f'<div style="padding-top:8px">{body}</div>{nav_bar(3, 3)}', H_PHONE)
+
+
+LABEL_BOARD = ('Labels.dc.html', 'Эмодзи и подпись (0.52.1)', 'Эмодзи и подпись служебного списка — 0.52.1',
+               'У задачи без списка подпись зависит от даты: без даты — «📥 Входящие», с датой — «📌 Без списка». У «Когда-нибудь» — 💭.',
+               [('1. Окно «Список» у задачи с датой', '«Родители» на вс 8 ноя 18:00: первый вариант — «📌 Без списка».', dated_dialog_screen),
+                ('2. Окно «Список» у задачи без даты', 'Задача из «Входящих»: первый вариант — «📥 Входящие». Поставили дату — сменится на 📌.', undated_dialog_screen),
+                ('3. «Списки»', '«💭 Когда-нибудь» и «📌 Без списка» — эмодзи вместо значков.', lists_labels_screen),
+                ('4. Лента', 'У задачи без списка с датой справа 📌 (было 📥) — в ленте, «Неделе», виджете, поиске.', feed_with_parents)])
+
+
 def build(out):
     os.makedirs(out, exist_ok=True)
     boards, order, y = {}, [], 0
-    for name, board_title, title, lead, cols in BOARDS:
+    for name, board_title, title, lead, cols in BOARDS + [LABEL_BOARD]:
         Wd, H, body = I.board(title, lead, cols)
         Path(out, name).write_text(I.page(board_title, Wd, H, body), encoding='utf-8')
         boards[name] = {'x': 0, 'y': y, 'w': Wd, 'h': H, 'title': board_title}

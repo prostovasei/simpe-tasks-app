@@ -465,7 +465,8 @@ private fun SheetToolbar(
             tag = TAG_TOOL_LIST,
             clear = if (project?.isInbox == false && inbox != null) ClearAction(R.string.clear_list, TAG_CLEAR_LIST) { onEdit(FieldEdit.Project(inbox.id)) } else null,
             content = {
-                ListBadge(project?.emoji ?: ListEmoji.INBOX, large = true)
+                // Без списка: с датой — 📌, без даты — 📥 (итерация 52.1).
+                ListBadge(ListEmoji.ofTask(project?.isInbox != false, fields.due != null, project?.emoji ?: ListEmoji.INBOX), large = true)
             },
         ) { open(ToolDialog.List) }
         ToolButton(
@@ -517,6 +518,7 @@ private fun ToolDialogs(dialog: ToolDialog, fields: SheetFields, onEdit: (FieldE
             projects = fields.projects,
             onConfirm = { if (it != fields.projectId) onEdit(FieldEdit.Project(it)); close() },
             onDismiss = close,
+            hasDate = fields.due != null,
         )
         ToolDialog.Repeat -> RepeatDialog(
             rrule = fields.rrule,

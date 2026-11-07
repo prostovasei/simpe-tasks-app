@@ -76,7 +76,8 @@ val LocalBulkActions = staticCompositionLocalOf<BulkActionsHost?> { null }
 
 /** Задача, которую можно выбрать: [isDone] — выполнена (для неё «Вернуть», а не «Выполнить»). */
 /** Задача, которую можно выбрать; [isRecurring] — повторяющаяся: «Удалить» спросит про серии (итерация 49). */
-data class Selectable(val id: String, val isDone: Boolean, val isRecurring: Boolean = false)
+/** [hasDate] — у задачи есть дата: окно «В список» тогда предлагает «📌 Без списка» вместо «📥 Входящие» (итерация 52.1). */
+data class Selectable(val id: String, val isDone: Boolean, val isRecurring: Boolean = false, val hasDate: Boolean = false)
 
 /** Где выбор: обычные задачи или корзина (там своя лента: «Восстановить», «Удалить навсегда»). */
 enum class SelectionScope { Tasks, Trash }
@@ -153,11 +154,14 @@ fun SelectionFrame(
         }, onDismiss = close)
         BulkDialog.List -> {
             val options = bulk?.projectOptions?.collectAsStateWithLifecycle()?.value.orEmpty()
+            // Все выбранные с датой — «📌 Без списка», иначе «📥 Входящие» (итерация 52.1).
+            val dated = chosen.isNotEmpty() && chosen.all { it.hasDate }
+            val noListName = stringResource(if (dated) R.string.no_list_title else R.string.inbox_list_name)
             ProjectDialog(projectId = "", projects = options, onConfirm = { projectId ->
                 close()
                 val option = options.firstOrNull { it.id == projectId } ?: return@ProjectDialog
-                act { moveTo(all, projectId, option.name.takeUnless { option.isInbox }) }
-            }, onDismiss = close)
+                act { moveTo(all, projectId, if (option.isInbox) noListName else option.name) }
+            }, onDismiss = close, hasDate = dated)
         }
         BulkDialog.Priority -> PriorityDialog(Priority.NONE, onConfirm = { priority ->
             close()

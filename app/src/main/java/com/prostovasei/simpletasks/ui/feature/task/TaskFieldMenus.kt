@@ -30,6 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.components.ListBadge
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
+import com.prostovasei.simpletasks.domain.model.ListEmoji
 import com.prostovasei.simpletasks.domain.model.Priority
 import com.prostovasei.simpletasks.domain.model.Reminders
 import com.prostovasei.simpletasks.domain.model.TaskDue
@@ -204,11 +205,14 @@ private val FIRES_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("EEE, 
 private val HINT_TIME: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm", RU)
 private val HINT_DAY_TIME: DateTimeFormatter = DateTimeFormatter.ofPattern("EEE HH:mm", RU)
 
-/** Окно списков (итерация 31): квадратик цвета со значком, выбранный — галочкой; применяется по «Готово». */
+/**
+ * Окно списков (итерация 31): эмодзи и название, выбранный — галочкой; применяется по «Готово». Первый вариант — «без списка»:
+ * у задачи с датой [hasDate] это «📌 Без списка», без даты — «📥 Входящие» (итерация 52.1).
+ */
 @Composable
-fun ProjectDialog(projectId: String, projects: List<ProjectOption>, onConfirm: (String) -> Unit, onDismiss: () -> Unit) {
+fun ProjectDialog(projectId: String, projects: List<ProjectOption>, onConfirm: (String) -> Unit, onDismiss: () -> Unit, hasDate: Boolean = false) {
     var draft by remember { mutableStateOf(projectId) }
-    val inboxName = stringResource(R.string.inbox_list_name)
+    val inboxName = stringResource(if (hasDate) R.string.no_list_title else R.string.inbox_list_name)
     SheetDialog(stringResource(R.string.quick_tool_list), TAG_PROJECT_DIALOG, onDismiss, onDone = { onConfirm(draft) }) {
         projects.forEach { option ->
             DialogOption(
@@ -217,7 +221,7 @@ fun ProjectDialog(projectId: String, projects: List<ProjectOption>, onConfirm: (
                 tag = "$TAG_PROJECT_OPTION:${option.id}",
                 onClick = { draft = option.id },
                 leading = {
-                    ListBadge(option.emoji)
+                    ListBadge(ListEmoji.ofTask(option.isInbox, hasDate, option.emoji))
                 },
             )
         }

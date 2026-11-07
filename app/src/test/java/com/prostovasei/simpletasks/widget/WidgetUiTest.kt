@@ -41,7 +41,7 @@ class WidgetUiTest {
     private val context = ApplicationProvider.getApplicationContext<android.app.Application>()
 
     private fun item(id: String, title: String, due: DueText?, list: String? = "Работа", ghostOf: String? = null, priority: Priority = Priority.NONE, done: Boolean = false) =
-        TaskItem(id, title, priority, due, list, if (list == null) "📥" else "📁", isInboxList = list == null, isRecurring = ghostOf != null, ghostOf = ghostOf, isDone = done)
+        TaskItem(id, title, priority, due, list, if (list != null) "📁" else if (due != null) "📌" else "📥", isInboxList = list == null, isRecurring = ghostOf != null, ghostOf = ghostOf, isDone = done)
 
     private val today = LocalDate.of(2026, 10, 16)
 

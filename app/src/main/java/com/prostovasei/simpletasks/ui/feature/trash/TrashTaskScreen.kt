@@ -164,7 +164,9 @@ fun TrashTaskScreen(
             }
             Row(Modifier.padding(top = spacing.sm), verticalAlignment = Alignment.CenterVertically) {
                 ListBadge(item.listEmoji)
-                item.listName?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = colors.textSecondary, modifier = Modifier.padding(start = spacing.xs)) }
+                // Без списка: с датой — «Без списка», без даты — «Входящие» (итерация 52.1).
+                val listName = if (item.isInboxList) stringResource(if (item.due != null) R.string.no_list_title else R.string.inbox_list_name) else item.listName
+                listName?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = colors.textSecondary, modifier = Modifier.padding(start = spacing.xs)) }
                 if (item.isRecurring) Icon(painterResource(R.drawable.ic_tool_repeat), null, tint = colors.textSecondary, modifier = Modifier.padding(start = spacing.sm).size(sizes.metaIcon))
                 if (item.reminder != null) Icon(painterResource(R.drawable.ic_tool_reminder), null, tint = colors.textSecondary, modifier = Modifier.padding(start = spacing.sm).size(sizes.metaIcon))
             }

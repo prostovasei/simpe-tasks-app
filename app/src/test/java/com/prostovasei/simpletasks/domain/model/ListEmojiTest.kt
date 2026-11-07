@@ -35,6 +35,15 @@ class ListEmojiTest {
         assertEquals(ListEmoji.DEFAULT, ListEmoji.of(isInbox = false, emoji = null, icon = null))
     }
 
+    /** 0.52.1: задача без списка — 📌 с датой и 📥 без даты; у задачи из списка — эмодзи списка. */
+    @Test
+    fun taskWithoutListShowsPinWhenDated() {
+        assertEquals(ListEmoji.NO_LIST, ListEmoji.ofTask(isInbox = true, hasDate = true, listEmoji = ListEmoji.INBOX))
+        assertEquals(ListEmoji.INBOX, ListEmoji.ofTask(isInbox = true, hasDate = false, listEmoji = ListEmoji.INBOX))
+        assertEquals("🏠", ListEmoji.ofTask(isInbox = false, hasDate = true, listEmoji = "🏠"))
+        assertEquals("🏠", ListEmoji.ofTask(isInbox = false, hasDate = false, listEmoji = "🏠"))
+    }
+
     @Test
     fun singleEmojiIsRecognised() {
         assertTrue(ListEmoji.isSingle("🦄"))

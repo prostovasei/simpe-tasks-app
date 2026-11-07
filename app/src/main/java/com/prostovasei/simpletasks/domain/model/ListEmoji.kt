@@ -11,6 +11,19 @@ object ListEmoji {
     const val INBOX = "📥"
     const val DEFAULT = "📁"
 
+    /** «Без списка» (итерация 52.1, решение PM): задача без списка, но с датой; и строка раздела на «Списках». */
+    const val NO_LIST = "📌"
+
+    /** «Когда-нибудь» (итерация 52.1): строка раздела на «Списках». */
+    const val SOMEDAY = "💭"
+
+    /** Эмодзи у задачи: без списка — 📌 с датой и 📥 без даты (итерация 52.1), иначе эмодзи списка. */
+    fun ofTask(isInbox: Boolean, hasDate: Boolean, listEmoji: String): String = when {
+        !isInbox -> listEmoji
+        hasDate -> NO_LIST
+        else -> INBOX
+    }
+
     /** Старые значки списков (итерация 14) → эмодзи; так же их переводит миграция БД 2 → 3. */
     val BY_ICON: Map<String, String> = linkedMapOf(
         "work" to "💼", "home" to "🏠", "health" to "❤️", "shopping" to "🛒", "study" to "📚",

@@ -4,6 +4,7 @@ import com.prostovasei.simpletasks.ui.feature.project.TAG_EMOJI_FIELD
 import com.prostovasei.simpletasks.ui.feature.project.TAG_EMOJI_OPTION
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onAllNodesWithText
@@ -797,6 +798,9 @@ class ScreensUiTest {
         }
         composeRule.onNodeWithTag("${com.prostovasei.simpletasks.ui.feature.lists.TAG_SOMEDAY}:count", useUnmergedTree = true).assertTextEquals("7")
         composeRule.onNodeWithTag("${com.prostovasei.simpletasks.ui.feature.lists.TAG_NO_LIST}:count", useUnmergedTree = true).assertTextEquals("2")
+        // 0.52.1: у разделов свои эмодзи — 💭 «Когда-нибудь» и 📌 «Без списка».
+        composeRule.onNodeWithTag(com.prostovasei.simpletasks.ui.feature.lists.TAG_SOMEDAY).assertTextContains("💭")
+        composeRule.onNodeWithTag(com.prostovasei.simpletasks.ui.feature.lists.TAG_NO_LIST).assertTextContains("📌")
         composeRule.onNodeWithTag(com.prostovasei.simpletasks.ui.feature.lists.TAG_SOMEDAY).performClick()
         composeRule.onNodeWithTag(com.prostovasei.simpletasks.ui.feature.lists.TAG_NO_LIST).performClick()
         assertTrue(someday && noList)

@@ -79,7 +79,7 @@ fun SearchScreen(state: SearchState, onIntent: (SearchIntent) -> Unit, onOpenTas
     }
     // Итерация 40: долгое нажатие на найденную задачу — режим выбора.
     val selection = rememberSelection()
-    SelectionFrame(selection, (state.active + state.done).map { Selectable(it.item.id, it.isDone, it.item.isRecurring) }) {
+    SelectionFrame(selection, (state.active + state.done).map { Selectable(it.item.id, it.isDone, it.item.isRecurring, it.item.due != null) }) {
     Column(Modifier.fillMaxSize().background(colors.background)) {
         TextField(
             value = state.query,

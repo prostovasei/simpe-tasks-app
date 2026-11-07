@@ -224,7 +224,8 @@ def icon_paths(name):
 
 
 LIST_EMOJI = {'work': '💼', 'home': '🏠', 'health': '❤️', 'shopping': '🛒', 'study': '📚', 'money': '💰', 'travel': '✈️', 'sport': '💪', 'idea': '💡', 'star': '⭐', 'inbox': '📥'}
-EMOJI_BY_COLOR = {'inbox-list': '📥', 'list-blue': '💼', 'list-green': '🏠', 'list-red': '❤️', 'list-orange': '🛒', 'list-purple': '💡', 'list-teal': '💪', 'list-yellow': '⭐', 'list-pink': '🎉', 'list-gray': '📁'}
+# 0.52.1: list-pin — задача без списка с датой (📌), list-thought — «Когда-нибудь» (💭).
+EMOJI_BY_COLOR = {'inbox-list': '📥', 'list-pin': '📌', 'list-thought': '💭', 'list-blue': '💼', 'list-green': '🏠', 'list-red': '❤️', 'list-orange': '🛒', 'list-purple': '💡', 'list-teal': '💪', 'list-yellow': '⭐', 'list-pink': '🎉', 'list-gray': '📁'}
 EMOJI_SPAN = '<span style="font-size:{px}px;line-height:1;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;width:{w}px;height:{w}px">{e}</span>'
 
 
@@ -373,7 +374,7 @@ def preview_list_square():
     small = lambda e: f'<span style="width:16px;height:16px;font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center">{e}</span>'
     large = lambda e: f'<span style="width:24px;height:24px;font-size:20px;line-height:1;display:inline-flex;align-items:center;justify-content:center">{e}</span>'
     row = ''.join(f'<div class="col"><div style="display:flex;gap:12px;align-items:center">{small(e)}{large(e)}</div><div class="cap">{n}</div></div>'
-                  for e, n in [('📥', 'Входящие'), ('💼', 'Работа'), ('🏠', 'Дом'), ('📁', 'без эмодзи')])
+                  for e, n in [('📥', 'Входящие'), ('📌', 'Без списка'), ('💭', 'Когда-нибудь'), ('💼', 'Работа'), ('🏠', 'Дом'), ('📁', 'без эмодзи')])
     body = (f'<div class="row" style="align-items:flex-start;gap:20px">{row}</div><div style="height:16px"></div>'
             f'<div style="font-size:13px;color:var(--text-secondary)">Строка задачи: {small("💼")} Работа · крупное — экран «Списки», заголовок списка, кнопка списка в шторке</div>')
     return doc('Основы', 170, 'Эмодзи списка: в строке задачи и крупное — без подложки', body)
@@ -653,7 +654,7 @@ COMP_README = {
                    '''Подложки нет (проверка PM 0.47.0). Маленький — эмодзи `size-list-glyph` (14) в поле `size-list-square` (16): строки задач, поиск, корзина, окна выбора списка.
 Крупный — эмодзи `size-list-glyph-large` (20) в поле `size-list-square-large` (24): экран «Списки», заголовок списка, кнопка списка в шторке задачи.
 Высота строки эмодзи — 1,3 его размера, и он может выходить за поле: так рисунок не обрезается.
-У «Входящих» — 📥, у списка без эмодзи — 📁. Эмодзи хранится в БД (`projects.emoji`); старые значки перенесены миграцией (💼 🏠 ❤️ 🛒 📚 💰 ✈️ 💪 💡 ⭐).
+У «Входящих» — 📥, у списка без эмодзи — 📁. Итерация 52.1: задача без списка, но с датой — 📌 «Без списка» (без даты — 📥 «Входящие»); строки разделов на «Списках» — 💭 «Когда-нибудь» и 📌 «Без списка». Эмодзи хранится в БД (`projects.emoji`); старые значки перенесены миграцией (💼 🏠 ❤️ 🛒 📚 💰 ✈️ 💪 💡 ⭐).
 TickTick хранит эмодзи в начале названия: импорт отделяет его, экспорт возвращает. Цветов списков больше нет.'''),
     'Icons': ('Контурные значки приложения: сетка 24, линия 2, круглые концы.',
               '''Бери только значки из превью и ресурсов `ic_*`; цвет задавай оттенком (`text-secondary`, `accent`, `inactive`). Не рисуй новые значки другой толщины линии.

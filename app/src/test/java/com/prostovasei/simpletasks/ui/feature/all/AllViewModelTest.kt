@@ -112,7 +112,7 @@ class AllViewModelTest {
         assertEquals(listOf("next"), state.upcoming.map { it.id })
         assertEquals("Работа", state.overdue.single().listName)
         assertEquals("💼", state.overdue.single().listEmoji)
-        assertEquals("📥", state.todayAllDay.single().listEmoji)
+        assertEquals("Без списка, но с датой — 📌 (0.52.1)", "📌", state.todayAllDay.single().listEmoji)
         assertEquals(DayLabel.Yesterday, state.overdue.single().due!!.day)
         assertEquals("10:00", state.todayTimed.single().due!!.time)
         assertTrue(state.todayAllDay.single().isInboxList)
