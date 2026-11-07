@@ -199,6 +199,8 @@ fun TaskSheet(
     openListOnStart: Boolean = false,
     /** Сразу окно даты и времени (итерация 53: «Отложить» → «Выбрать дату и время…»). */
     openDateOnStart: Boolean = false,
+    /** Растёт — открыть окно даты (итерация 54: «Отложить» → «Выбрать дату и время…» в окне задачи). */
+    dateRequests: Int = 0,
     reveal: () -> Float = { 1f },
     overlay: @Composable BoxScope.() -> Unit = {},
     actionCount: Int = 1,
@@ -239,6 +241,13 @@ fun TaskSheet(
         closeTimeline()
     }
     BackHandler(enabled = timelineOpen, onBack = cancelTimeline)
+    LaunchedEffect(dateRequests) {
+        if (dateRequests > 0 && !timelineOpen) {
+            hideKeyboard()
+            opened = Schedule(fields.due, fields.start)
+            timelineOpen = true
+        }
+    }
 
     // Р1: откуда растёт окно — плашка виджета в координатах этого экрана; куда — само окно.
     val origin = LocalSheetOrigin.current

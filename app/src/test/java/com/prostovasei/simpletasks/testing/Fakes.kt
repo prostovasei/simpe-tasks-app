@@ -319,7 +319,9 @@ class FakeTaskRepository(private val today: LocalDate = LocalDate.of(2026, 10, 1
 
     override suspend fun snooze(taskId: String, due: TaskDue, start: TaskDue?): Moved? {
         snoozed += taskId to due
-        return null
+        val previous = tasks.value.firstOrNull { it.id == taskId } ?: return null
+        tasks.update { all -> all.map { if (it.id == taskId) it.copy(due = due, start = start) else it } }
+        return Moved(taskId, previous = previous, day = start ?: due)
     }
 
     /** Вызовы «Текущий повтор»: id и новый срок. */

@@ -433,11 +433,13 @@ def preview_timeline_row():
     return doc('Список и виджет', 460, 'Строка шкалы: время, кружок приоритета, плашка. Просрочка, выполнено, период', body)
 
 
-def sheet_card(created, width=388):
+def sheet_card(created, width=388, snooze=False):
     handle = '<div style="display:flex;justify-content:center;padding:8px 0 4px"><span style="width:36px;height:4px;border-radius:var(--radius-sm);background:var(--divider)"></span></div>'
     dots = '<span style="color:var(--text-secondary);display:flex"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"><path d="M12 5h.01M12 12h.01M12 19h.01"/></svg></span>'
     circle = f'<span style="width:22px;height:22px;border-radius:50%;border:2px solid var(--ring-high);flex-shrink:0"></span>'
-    title = (f'<div style="display:flex;align-items:center;gap:10px;margin-top:10px">{circle}<span style="flex:1;font-size:24px;line-height:32px;font-weight:800">Подготовить отчёт</span>{dots}</div>'
+    # 0.54 (T-96): у созданной задачи с датой слева от «⋮» — часы «Отложить».
+    clock = f'<span style="color:var(--text-secondary);display:flex">{svg("ic_popup_tomorrow", 24)}</span>' if snooze else ''
+    title = (f'<div style="display:flex;align-items:center;gap:10px;margin-top:10px">{circle}<span style="flex:1;font-size:24px;line-height:32px;font-weight:800">Подготовить отчёт</span>{clock}{dots}</div>'
              if created else '<div style="font-size:24px;line-height:32px;font-weight:800;margin-top:10px;color:var(--inactive)">Купить билеты на концерт</div>')
     desc = '<div style="font-size:16px;line-height:24px;font-weight:500;color:var(--text-secondary);margin-top:4px">Квартальный отчёт для руководства</div>' if created else '<div style="font-size:16px;line-height:24px;font-weight:500;color:var(--inactive);margin-top:4px">Описание</div>'
     cal, clock = svg('ic_widget_all', 22), svg('ic_time', 22)
@@ -457,7 +459,7 @@ def sheet_card(created, width=388):
 
 
 def preview_sheet_card():
-    body = f'<div class="row" style="align-items:flex-start;gap:28px">{sheet_card(False)}{sheet_card(True)}</div>'
+    body = f'<div class="row" style="align-items:flex-start;gap:28px">{sheet_card(False)}{sheet_card(True, snooze=True)}</div>'
     return doc('Окна', 360, 'Шторка задачи: новая (повтор и уведомления бледные без даты) и созданная', body)
 
 
@@ -667,7 +669,7 @@ TickTick хранит эмодзи в начале названия: импор�
     'SheetCard': ('Шторка задачи: название, описание, поля даты и времени, панель кнопок и галочка «Готово».',
                   '''Карточка `surface`, радиус `radius-nav`, ручка `size-sheet-handle-width`×`size-sheet-handle-height` цвета `divider`, поля по бокам `space-md`. Над панелью клавиатуры карточка стоит прямо над ней.
 Название — `headline-small`, описание — `body-large` (Medium, `text-secondary`), подсказки полей — `inactive`.
-Новая задача: круга «выполнено» нет, повтор и уведомления бледные, пока нет даты. Созданная задача: круг цвета приоритета слева, «⋮» справа от названия.
+Новая задача: круга «выполнено» нет, повтор и уведомления бледные, пока нет даты. Созданная задача: круг цвета приоритета слева, «⋮» справа от названия; с 0.54 (T-96) между ними часы «Отложить» (`text-secondary`, зона нажатия `size-checkbox-touch`) — у незакрытой задачи с датой, кроме будущего повтора; открывают окно `Snooze`.
 Меню «⋮» содержит «Удалить» (`danger`, без подтверждения: после нажатия окно закрывается, внизу `UndoSnackbar` «Задача удалена · Отмена») и под чертой «создано …»; корзины в панели нет.
 Панель: список, приоритет, чек-лист, повтор, уведомления, справа галочка. Кнопки сжимаются на узком экране, но не меньше своего минимума.'''),
     'SheetDialog': ('Окно по центру экрана: заголовок, варианты, «Отмена» и «Готово».',

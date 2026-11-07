@@ -10,6 +10,8 @@ import com.prostovasei.simpletasks.core.time.DayTicker
 import com.prostovasei.simpletasks.domain.model.EarlierRepeats
 import com.prostovasei.simpletasks.domain.model.Priority
 import com.prostovasei.simpletasks.domain.model.ProjectWithCount
+import com.prostovasei.simpletasks.domain.model.SnoozeKind
+import com.prostovasei.simpletasks.domain.model.SnoozeOption
 import com.prostovasei.simpletasks.domain.model.TaskDue
 import com.prostovasei.simpletasks.domain.model.TaskStatus
 import com.prostovasei.simpletasks.testing.FakeChecklistRepository
@@ -424,6 +426,30 @@ class TaskViewModelsTest {
             assertTrue(notice.message is UndoMessage.WontDo && (notice.message as UndoMessage.WontDo).day != null)
             assertEquals(Triple("t1", null, EarlierRepeats.SKIP), tasks.wontDoCalls.single())
             assertEquals(TaskDue.AllDay(today.plusDays(7)), tasks.getTask("t1")!!.due)
+            deletions.undo(notice)
+            runCurrent()
+            assertEquals(TaskDue.AllDay(today), tasks.getTask("t1")!!.due)
+        }
+    }
+
+    /** Итерация 54: «Отложить» в окне задачи — новый срок, шторка закрывается, под ней «Отложено на … · Отмена». */
+    @Test
+    fun detailSnoozeMovesTaskAndOffersUndo() = runTest(dispatcher) {
+        tasks.tasks.value = listOf(task("t1", due = TaskDue.AllDay(today)))
+        val vm = detail(this)
+        runCurrent()
+        val tomorrow = TaskDue.AllDay(today.plusDays(1))
+
+        deletions.notices.test {
+            vm.effects.test {
+                vm.onIntent(TaskDetailIntent.Snooze(SnoozeOption(SnoozeKind.TOMORROW, tomorrow, null)))
+                runCurrent()
+                assertEquals(TaskDetailEffect.Close, awaitItem())
+            }
+            val notice = awaitItem()
+            assertEquals(com.prostovasei.simpletasks.designsystem.components.UndoKind.Tomorrow, notice.kind)
+            assertTrue(notice.message is UndoMessage.Snoozed)
+            assertEquals(tomorrow, tasks.getTask("t1")!!.due)
             deletions.undo(notice)
             runCurrent()
             assertEquals(TaskDue.AllDay(today), tasks.getTask("t1")!!.due)

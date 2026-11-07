@@ -518,6 +518,36 @@ class TaskScreensUiTest {
         assertEquals(TaskDetailIntent.WontDo, intents.last())
     }
 
+    /** Итерация 54: ⏰ «Отложить» открывает окно вариантов, выбор отдаёт новый срок; «Выбрать дату и время…» — окно даты. */
+    @Test
+    fun detailSnoozeOffersChoices() {
+        show { TaskDetailScreen(detailState, { intents += it }, {}, {}) }
+        composeRule.onNodeWithTag(TAG_DETAIL_SNOOZE).performClick()
+        composeRule.onNodeWithTag(com.prostovasei.simpletasks.ui.feature.snooze.TAG_SNOOZE_DIALOG).assertExists()
+        composeRule.onNodeWithText("Послезавтра").assertExists()
+        composeRule.onNodeWithTag("${com.prostovasei.simpletasks.ui.feature.snooze.TAG_SNOOZE_OPTION}:TOMORROW").performClick()
+        val snooze = intents.last() as TaskDetailIntent.Snooze
+        assertEquals(TaskDue.AllDay(today.plusDays(1)), snooze.option.due)
+        composeRule.onNodeWithTag(TAG_DETAIL_SNOOZE).performClick()
+        composeRule.onNodeWithTag(com.prostovasei.simpletasks.ui.feature.snooze.TAG_SNOOZE_PICK).performClick()
+        composeRule.onNodeWithTag(com.prostovasei.simpletasks.ui.feature.snooze.TAG_SNOOZE_DIALOG).assertDoesNotExist()
+        composeRule.onNodeWithTag(TAG_TIMELINE_DONE).assertExists()
+    }
+
+    /** Итерация 54: у закрытой задачи, у задачи без даты и у будущего повтора кнопки «Отложить» нет. */
+    @Test
+    fun detailSnoozeHiddenWhenNothingToMove() {
+        val state = mutableStateOf(detailState.copy(task = detailState.task!!.copy(status = TaskStatus.COMPLETED)))
+        show { TaskDetailScreen(state.value, { intents += it }, {}, {}) }
+        composeRule.onNodeWithTag(TAG_DETAIL_SNOOZE).assertDoesNotExist()
+        state.value = detailState.copy(task = detailState.task!!.copy(due = null))
+        composeRule.onNodeWithTag(TAG_DETAIL_SNOOZE).assertDoesNotExist()
+        state.value = detailState.copy(occurrence = TaskDue.AllDay(today.plusMonths(1)))
+        composeRule.onNodeWithTag(TAG_DETAIL_SNOOZE).assertDoesNotExist()
+        state.value = detailState
+        composeRule.onNodeWithTag(TAG_DETAIL_SNOOZE).assertExists()
+    }
+
     @Test
     fun detailClosedTaskHasNoWontDo() {
         show { TaskDetailScreen(detailState.copy(task = detailState.task!!.copy(status = TaskStatus.COMPLETED)), { intents += it }, {}, {}) }

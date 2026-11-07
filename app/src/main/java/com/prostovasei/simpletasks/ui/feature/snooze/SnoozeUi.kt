@@ -60,10 +60,12 @@ fun snoozeWhen(due: TaskDue, today: LocalDate, zone: ZoneId): String = when (due
 }
 
 /** Варианты «Отложить» задачи [task] сейчас — с подписями; последний — «Выбрать дату и время…» («Выбрать дату…» на весь день). */
-fun snoozeChoices(context: Context, task: Task, time: TimeProvider): List<SnoozeChoice> {
-    val zone = time.zone()
-    val today = time.today()
-    val options = Snooze.options(task.due, task.start, time.now(), zone).map { option ->
+fun snoozeChoices(context: Context, task: Task, time: TimeProvider): List<SnoozeChoice> = snoozeChoices(context, task, time.now(), time.zone())
+
+/** То же на момент [now] (окно задачи знает время с точностью до минуты). */
+fun snoozeChoices(context: Context, task: Task, now: java.time.Instant, zone: ZoneId): List<SnoozeChoice> {
+    val today = now.atZone(zone).toLocalDate()
+    val options = Snooze.options(task.due, task.start, now, zone).map { option ->
         SnoozeChoice(context.getString(option.kind.label), snoozeWhen(option.start ?: option.due, today, zone), option, "$TAG_SNOOZE_OPTION:${option.kind.name}")
     }
     val pick = if (task.due is TaskDue.AtTime) R.string.snooze_pick_time else R.string.snooze_pick_day
