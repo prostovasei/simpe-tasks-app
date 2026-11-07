@@ -122,6 +122,34 @@ object Recurrence {
         return parts.joinToString(";") { if (it.startsWith("COUNT=")) "COUNT=${count - passed}" else it }
     }
 
+    /**
+     * Правило серии под новую дату (0.51.1, разбор PM: «каждый месяц 10-го», перенесённый на 4-е, возвращался на 10-е). Если в правиле
+     * один день — одно число месяца (MONTHLY), один день недели (WEEKLY) или одна дата года (YEARLY), — он меняется на день [date];
+     * несколько дней («вт и чт») и сложные правила не меняются: дата потом встаёт на ближайший подходящий день ([alignStart]).
+     */
+    fun retargeted(rrule: String, date: LocalDate): String {
+        val parts = rrule.trim().removePrefix("RRULE:").split(';').filter { it.isNotBlank() }
+        fun value(key: String) = parts.firstOrNull { it.substringBefore('=').equals(key, ignoreCase = true) }?.substringAfter('=')
+        fun with(key: String, new: String) = parts.map { if (it.substringBefore('=').equals(key, ignoreCase = true)) "$key=$new" else it }
+        val byDay = value("BYDAY")
+        val byMonthDay = value("BYMONTHDAY")
+        val byMonth = value("BYMONTH")
+        val single = { v: String? -> v != null && !v.contains(',') }
+        return when (value("FREQ")?.uppercase()) {
+            "WEEKLY" -> if (single(byDay) && byDay!!.uppercase() in WEEK_CODES && byMonthDay == null && byMonth == null) {
+                with("BYDAY", WEEK_CODES[date.dayOfWeek.value - 1])
+            } else parts
+            "MONTHLY" -> if (single(byMonthDay) && byMonthDay!!.toIntOrNull() in 1..31 && byDay == null) with("BYMONTHDAY", date.dayOfMonth.toString()) else parts
+            "YEARLY" -> if (single(byMonthDay) && byMonthDay!!.toIntOrNull() in 1..31 && byDay == null && (byMonth == null || single(byMonth))) {
+                val day = with("BYMONTHDAY", date.dayOfMonth.toString())
+                if (byMonth != null) day.map { if (it.substringBefore('=').equals("BYMONTH", ignoreCase = true)) "BYMONTH=${date.monthValue}" else it } else day
+            } else parts
+            else -> parts
+        }.joinToString(";")
+    }
+
+    private val WEEK_CODES = listOf("MO", "TU", "WE", "TH", "FR", "SA", "SU")
+
     private fun TaskDue.toDateTime(zone: ZoneId): DateTime = when (this) {
         is TaskDue.AllDay -> DateTime(date.year, date.monthValue - 1, date.dayOfMonth)
         is TaskDue.AtTime -> instant.atZone(zone).toLocalDateTime().let {
@@ -190,6 +218,22 @@ private fun TaskDue.isBefore(other: TaskDue): Boolean = when {
     this is TaskDue.AllDay && other is TaskDue.AllDay -> date < other.date
     this is TaskDue.AtTime && other is TaskDue.AtTime -> instant < other.instant
     else -> false
+}
+
+/**
+ * Серия на новый срок [due] и начало [start] — «Все повторы с этого момента» (0.51.1): правило с одним днём меняется под новую дату
+ * ([Recurrence.retargeted]), иначе дата встаёт на первый подходящий день правила ([alignedToRepeat]).
+ */
+fun Task.seriesMovedTo(due: TaskDue?, start: TaskDue?, zone: ZoneId): Task {
+    val moved = withDue(due).copy(start = start)
+    val anchor = start ?: due
+    val date = when (anchor) {
+        is TaskDue.AllDay -> anchor.date
+        is TaskDue.AtTime -> anchor.instant.atZone(zone).toLocalDate()
+        null -> null
+    }
+    val rule = rrule?.let { r -> date?.let { Recurrence.retargeted(r, it) } ?: r }
+    return moved.copy(rrule = rule).alignedToRepeat(zone)
 }
 
 /** Срок (и начало интервала) ставятся на первый день повтора начиная с текущей даты задачи. */

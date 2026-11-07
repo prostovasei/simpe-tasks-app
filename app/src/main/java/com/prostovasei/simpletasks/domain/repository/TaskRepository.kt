@@ -125,6 +125,12 @@ interface TaskRepository {
      */
     suspend fun moveRepeatsFrom(taskId: String, occurrence: TaskDue, due: TaskDue?, start: TaskDue?): Moved?
 
+    /**
+     * Перенос на день [date], время дня то же (режим выбора: «На завтра», «На другой день»; 0.51.1): у повторяющейся — только этот раз
+     * ([moveRepeat]), серия на своём расписании. Отмена — [undoReschedule].
+     */
+    suspend fun moveTasks(ids: List<String>, date: LocalDate): Rescheduling
+
     /** «Отмена» переноса: созданная запись стирается, задача возвращается как была. */
     suspend fun undoMove(moved: Moved)
 

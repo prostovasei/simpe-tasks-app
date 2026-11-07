@@ -146,4 +146,40 @@ class MoveRepeatTest : DatabaseTest() {
         tasks.undoMove(moved!!)
         assertEquals(day(-2), tasks.getTask(id)!!.due)
     }
+
+    /** 0.51.1: «Все повторы» у ближайшего раза правила «10-го числа» — серия на выбранную дату, правило под неё. */
+    @Test
+    fun monthlyOnTenthMovesToChosenDay() = runTest {
+        val id = create(day(28), rrule = "FREQ=MONTHLY;BYMONTHDAY=10")
+
+        tasks.moveRepeatsFrom(id, day(28), day(22), null)
+
+        val series = tasks.getTask(id)!!
+        assertEquals(day(22), series.due)
+        assertEquals("FREQ=MONTHLY;BYMONTHDAY=4", series.rrule)
+    }
+
+    /** 0.51.1: режим выбора и «Перенести просроченные» у повторяющейся переносят только этот раз; «Отмена» возвращает всё. */
+    @Test
+    fun bulkAndOverdueMoveOnlyThisRepeat() = runTest {
+        val repeat = create(day(-3))
+        val plain = create(day(-2), rrule = null)
+
+        val moved = tasks.moveTasks(listOf(repeat, plain), today.plusDays(1))
+
+        assertEquals(2, moved.count)
+        assertEquals("Обычная — на завтра", day(1), tasks.getTask(plain)!!.due)
+        assertEquals("Серия — на своём расписании", day(4), tasks.getTask(repeat)!!.due)
+        assertEquals(day(1), tasks.getTask(moved.moves.single().createdId!!)!!.due)
+        tasks.undoReschedule(moved)
+        assertEquals(day(-3), tasks.getTask(repeat)!!.due)
+        assertEquals(day(-2), tasks.getTask(plain)!!.due)
+        assertNull(tasks.getTask(moved.moves.single().createdId!!))
+
+        val overdue = tasks.moveOverdueToToday()
+        assertEquals(2, overdue.count)
+        assertEquals(day(0), tasks.getTask(plain)!!.due)
+        assertEquals(day(4), tasks.getTask(repeat)!!.due)
+        assertEquals(day(0), tasks.getTask(overdue.moves.single().createdId!!)!!.due)
+    }
 }

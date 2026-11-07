@@ -15,6 +15,7 @@ import com.prostovasei.simpletasks.domain.model.repeatsBefore
 import com.prostovasei.simpletasks.domain.model.Task
 import com.prostovasei.simpletasks.domain.model.TaskStatus
 import com.prostovasei.simpletasks.domain.model.alignedToRepeat
+import com.prostovasei.simpletasks.domain.model.seriesMovedTo
 import com.prostovasei.simpletasks.domain.model.withDue
 import com.prostovasei.simpletasks.domain.repository.ChecklistRepository
 import com.prostovasei.simpletasks.domain.repository.ProjectRepository
@@ -354,10 +355,11 @@ class TaskDetailViewModel @Inject constructor(
         }
     }
 
-    /** Новая дата — всей серии, как до итерации 50: повтор начинается с первого подходящего дня. */
-    private fun applyToSeries(schedule: Schedule) = editNow(seriesDates = true) {
-        withDue(schedule.due).copy(start = schedule.start).alignedToRepeat(time.zone())
-    }
+    /**
+     * Новая дата — всей серии: правило с одним днём («каждый месяц 10-го») меняется под новую дату (0.51.1), иначе повтор
+     * начинается с первого подходящего дня.
+     */
+    private fun applyToSeries(schedule: Schedule) = editNow(seriesDates = true) { seriesMovedTo(schedule.due, schedule.start, time.zone()) }
 
     /**
      * Выбор в окне «Изменить повторяющуюся задачу». У ближайшего раза «Все повторы» сдвигают серию (шторка остаётся), «Текущий
@@ -395,7 +397,7 @@ class TaskDetailViewModel @Inject constructor(
     private fun nowMinute(): Int = time.now().atZone(time.zone()).let { it.hour * 60 + it.minute }
 
     /** Срок из названия или возврат прежнего — как выбор на сетке: сохраняется сразу. */
-    private fun reschedule(schedule: Schedule) = editNow { withDue(schedule.due).copy(start = schedule.start).alignedToRepeat(time.zone()) }
+    private fun reschedule(schedule: Schedule) = editNow { seriesMovedTo(schedule.due, schedule.start, time.zone()) }
 
     /** Название и описание сохраняются через полсекунды после последнего изменения. */
     private fun editText(change: Task.() -> Task) {
