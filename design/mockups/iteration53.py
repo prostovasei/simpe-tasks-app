@@ -7,6 +7,7 @@
 - Задача на весь день: завтра, послезавтра, в субботу, через неделю, выбрать дату…
 - Новый срок считается от старого срока задачи; если он уже прошёл — от текущего момента. Период едет целиком.
 - Повторяющаяся — переносится только этот раз, серия на своём расписании.
+- T-118: полоска белая (`surface`), кнопки на ней чёрные (`accent`, значок `on-accent`); в тёмной теме — наоборот, по токенам.
 
 Запуск: python3 design/mockups/iteration53.py <папка project>   → canvas.json, Strip.dc.html, Notification.dc.html
 """
@@ -47,19 +48,38 @@ def round_btn(icon, kind='ghost'):
     return f'<span style="width:48px;height:48px;border-radius:50%;{bg};display:flex;align-items:center;justify-content:center;flex-shrink:0">{icon}</span>'
 
 
-def strip(title, subtitle, pressed=False):
-    """Полоска 0.53: «Не буду делать», «Отложить» (часы), «Выполнено». Значок часов прежний — смысл «позже»."""
+def old_strip(title, subtitle):
+    """Полоска до 0.53: чёрная, кнопки светлые, часы — «на завтра»."""
     return (f'<div style="height:68px;border-radius:34px;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;gap:10px;padding:0 10px 0 16px">'
             f'{svg("ic_tool_reminder", 22)}<div style="flex:1;min-width:0"><div style="font-size:16px;line-height:24px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{title}</div>'
             f'<div style="font-size:11px;line-height:16px;opacity:.8">{subtitle}</div></div>'
-            f'{round_btn(I.wont(22))}{round_btn(svg("ic_popup_tomorrow", 22), "pressed" if pressed else "ghost")}{round_btn(svg("ic_node_check", 22), "white")}</div>')
+            f'{round_btn(I.wont(22))}{round_btn(svg("ic_popup_tomorrow", 22))}{round_btn(svg("ic_node_check", 22), "white")}</div>')
+
+
+STRIP_BOX = f'background:var(--surface);color:var(--text-primary);border:1px solid var(--divider);{SHADOW}'
+
+
+def black_btn(icon, pressed=False):
+    """Круглая чёрная кнопка белой полоски (T-118): `accent`, значок `on-accent`; нажатая «Отложить» — с кольцом."""
+    ring = ';box-shadow:0 0 0 3px var(--surface),0 0 0 5px var(--accent)' if pressed else ''
+    return (f'<span style="width:48px;height:48px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;'
+            f'justify-content:center;flex-shrink:0{ring}">{icon}</span>')
+
+
+def strip(title, subtitle, pressed=False):
+    """Полоска 0.53: белая, кнопки чёрные — «Не буду делать», «Отложить» (часы), «Выполнено». Значок часов прежний — смысл «позже»."""
+    return (f'<div style="height:68px;border-radius:34px;{STRIP_BOX};display:flex;align-items:center;gap:10px;padding:0 10px 0 16px;box-sizing:border-box">'
+            f'<span style="display:flex;color:var(--text-secondary)">{svg("ic_tool_reminder", 22)}</span><div style="flex:1;min-width:0"><div style="font-size:16px;line-height:24px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{title}</div>'
+            f'<div style="font-size:11px;line-height:16px;color:var(--text-secondary)">{subtitle}</div></div>'
+            f'{black_btn(I.wont(22))}{black_btn(svg("ic_popup_tomorrow", 22), pressed)}{black_btn(svg("ic_node_check", 22))}</div>')
 
 
 def undo_strip(text):
-    return (f'<div style="height:68px;border-radius:34px;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;gap:12px;padding:0 8px 0 16px;position:relative;overflow:hidden">'
-            f'{svg("ic_popup_tomorrow", 22)}<span style="flex:1;font-size:16px;line-height:24px;font-weight:700">{text}</span>'
-            f'<span style="font-size:14px;font-weight:700;color:var(--accent);background:var(--surface);border-radius:20px;padding:8px 16px">Отменить</span>'
-            f'<span style="position:absolute;left:0;bottom:0;height:3px;width:55%;background:color-mix(in srgb,var(--on-accent) 60%,transparent)"></span></div>')
+    """«Отложено на … · Отменить» на белой полоске: «Отменить» — чёрная капсула, тающая линия снизу — чёрная."""
+    return (f'<div style="height:68px;border-radius:34px;{STRIP_BOX};display:flex;align-items:center;gap:12px;padding:0 10px 0 16px;position:relative;overflow:hidden;box-sizing:border-box">'
+            f'<span style="display:flex;color:var(--text-secondary)">{svg("ic_popup_tomorrow", 22)}</span><span style="flex:1;font-size:16px;line-height:24px;font-weight:700">{text}</span>'
+            f'<span style="font-size:14px;font-weight:700;color:var(--on-accent);background:var(--accent);border-radius:20px;padding:10px 18px">Отменить</span>'
+            f'<span style="position:absolute;left:0;bottom:0;height:3px;width:55%;background:var(--accent)"></span></div>')
 
 
 def menu_row(label, when, last=False, icon=None):
@@ -85,7 +105,7 @@ def at_bottom(inner, gap=12):
 
 
 def strip_before():
-    old = strip('Созвон с командой', 'Сегодня, 17:00 · Работа')
+    old = old_strip('Созвон с командой', 'Сегодня, 17:00 · Работа')
     return I.phone(other_app() + at_bottom(old))
 
 
@@ -100,6 +120,17 @@ def strip_done():
 def strip_all_day():
     return I.phone(other_app() + at_bottom(menu(ALL_DAY, pick='Выбрать дату…', title='ОТЛОЖИТЬ «ОПЛАТИТЬ ИНТЕРНЕТ»')
                                            + strip('Оплатить интернет', 'Сегодня · Дом', pressed=True)))
+
+
+def dark_vars():
+    """Токены тёмной темы — для примера полоски в тёмной теме."""
+    t = I.B.build_tokens()
+    return ';'.join(f"--{c['name']}:{c['value']['dark']}" for c in t['color']['tokens'])
+
+
+def strip_dark():
+    inner = other_app() + at_bottom(strip('Созвон с командой', 'Сегодня, 17:00 · Работа') + undo_strip('Отложено на 18:00'))
+    return f'<div style="{dark_vars()};color-scheme:dark">{I.phone(inner)}</div>'
 
 
 # ------------------------------------------------------------------ уведомление
@@ -156,11 +187,12 @@ def notif_late():
 
 BOARDS = [
     ('Strip.dc.html', 'Полоска', 'Полоска напоминания: «Отложить» — итерация 53',
-     'Часы на полоске теперь «Отложить»: открывают выбор над полоской. Новый срок — у самой задачи, справа видно, каким он станет. После выбора — «Отложено на … · Отменить».',
+     'Полоска теперь белая с чёрными кнопками (T-118). Часы — «Отложить»: открывают выбор над полоской. Новый срок — у самой задачи, справа видно, каким он станет. После выбора — «Отложено на … · Отменить».',
      [('1. Было', 'Часы — «на завтра в то же время», сразу без выбора.', strip_before),
       ('2. Нажали «Отложить»', 'Над полоской — варианты для задачи со временем; справа новый срок. Нажатие на вариант сразу переносит задачу.', strip_menu),
       ('3. После выбора', 'Полоска сменяется на «Отложено на 18:00 · Отменить» (1,5 с), потом уезжает.', strip_done),
-      ('4. Задача на весь день', 'Только дни, задача остаётся без времени. «Выбрать дату…» — окно даты поверх экрана.', strip_all_day)]),
+      ('4. Задача на весь день', 'Только дни, задача остаётся без времени. «Выбрать дату…» — окно даты поверх экрана.', strip_all_day),
+      ('5. Тёмная тема', 'Белая полоска с чёрными кнопками — в светлой теме; в тёмной наоборот: тёмная полоска, светлые кнопки.', strip_dark)]),
     ('Notification.dc.html', 'Уведомление', 'Уведомление: «Отложить» — итерация 53',
      'В уведомлении три кнопки: «Выполнено», «Не буду делать», «Отложить». Меню в самом уведомлении Android не показывает — «Отложить» открывает окно поверх экрана.',
      [('1. Уведомление', '«На завтра» убрано — теперь это вариант «Завтра» внутри «Отложить».', notif_shade),
