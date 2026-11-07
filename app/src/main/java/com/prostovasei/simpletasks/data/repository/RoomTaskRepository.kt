@@ -14,6 +14,7 @@ import com.prostovasei.simpletasks.domain.model.Completion
 import com.prostovasei.simpletasks.domain.model.Deletion
 import com.prostovasei.simpletasks.domain.model.EarlierRepeats
 import com.prostovasei.simpletasks.domain.model.Moved
+import com.prostovasei.simpletasks.domain.model.SortCounts
 import com.prostovasei.simpletasks.domain.model.Recurrence
 import com.prostovasei.simpletasks.domain.model.alignedToRepeat
 import com.prostovasei.simpletasks.domain.model.seriesMovedTo
@@ -83,6 +84,15 @@ class RoomTaskRepository @Inject constructor(
 
     override fun observeInbox(today: LocalDate): Flow<List<Task>> =
         taskDao.observeInbox(doneSince(today)).map { tasks -> tasks.map { it.toDomain() } }.distinctUntilChanged()
+
+    override fun observeSomeday(today: LocalDate): Flow<List<Task>> =
+        taskDao.observeSomeday(doneSince(today)).map { tasks -> tasks.map { it.toDomain() } }.distinctUntilChanged()
+
+    override fun observeNoList(today: LocalDate): Flow<List<Task>> =
+        taskDao.observeNoList(doneSince(today)).map { tasks -> tasks.map { it.toDomain() } }.distinctUntilChanged()
+
+    override fun observeSortCounts(): Flow<SortCounts> =
+        taskDao.observeSortCounts().map { SortCounts(it.inbox, it.someday, it.noList) }.distinctUntilChanged()
 
     override fun observeProjectTasks(projectId: String, today: LocalDate): Flow<List<Task>> =
         taskDao.observeActiveByProject(projectId, doneSince(today)).map { tasks -> tasks.map { it.toDomain() } }.distinctUntilChanged()

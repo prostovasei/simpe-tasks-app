@@ -97,7 +97,12 @@
     <string name="empty_hint">Нажмите «+» внизу, чтобы добавить задачу</string>
 
     <string name="inbox_title">Входящие</string>
-    <string name="inbox_empty">Входящие пусты</string>
+    <string name="inbox_empty">Всё разобрано</string>
+    <string name="inbox_hint">Здесь — то, что ещё не разобрано: без даты и без списка. Поставьте дату или список — задача уйдёт сама.</string>
+    <string name="someday_title">Когда-нибудь</string>
+    <string name="someday_empty">Задач со списком, но без даты нет</string>
+    <string name="no_list_title">Без списка</string>
+    <string name="no_list_empty">Задач с датой, но без списка нет</string>
 
     <string name="lists_title">Списки</string>
     <string name="lists_new_list">+ Список</string>

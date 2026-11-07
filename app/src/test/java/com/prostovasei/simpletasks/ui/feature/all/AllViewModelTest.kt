@@ -272,7 +272,8 @@ class AllViewModelTest {
         val vm = InboxViewModel(tasks, projects, DayTicker { day }, time)
         runCurrent()
 
-        assertEquals(setOf("allday", "next", "nodate", "work-undated"), vm.state.value.tasks.map { it.id }.toSet())
+        // Итерация 52: только неразобранное — без даты и без списка.
+        assertEquals(setOf("nodate"), vm.state.value.tasks.map { it.id }.toSet())
 
         vm.onIntent(TaskListIntent.ToggleComplete("nodate"))
         advanceTimeBy(5_000)

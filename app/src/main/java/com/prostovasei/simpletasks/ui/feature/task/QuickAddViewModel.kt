@@ -34,6 +34,8 @@ data class QuickAddState(
     val checklist: List<String>? = null,
     val projects: List<ProjectOption> = emptyList(),
     val today: LocalDate = LocalDate.MIN,
+    /** Открыто «+» из «Когда-нибудь» (итерация 52): шторка сразу показывает выбор списка. */
+    val pickList: Boolean = false,
     val zone: ZoneId = ZoneId.systemDefault(),
     /** Сейчас — минута от начала суток (красная линия и начальная прокрутка сетки). */
     val nowMinute: Int = 0,
@@ -92,6 +94,7 @@ class QuickAddViewModel @Inject constructor(
         due = savedStateHandle.get<String>("date")?.let { runCatching { TaskDue.AllDay(LocalDate.parse(it)) }.getOrNull() }
             ?: if (savedStateHandle.get<Boolean>("today") == true) TaskDue.AllDay(time.today()) else null,
         nowMinute = time.now().atZone(time.zone()).let { it.hour * 60 + it.minute },
+        pickList = savedStateHandle.get<Boolean>("pickList") == true,
         title = drafts.get()?.title.orEmpty(),
         content = drafts.get()?.content.orEmpty(),
         draftRestored = drafts.get() != null,

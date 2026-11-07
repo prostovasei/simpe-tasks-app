@@ -52,6 +52,9 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import com.github.takahirom.roborazzi.captureRoboImage
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.performTextInput
 import com.prostovasei.simpletasks.designsystem.components.TAG_EMPTY_TASKS
@@ -765,7 +768,37 @@ class ScreensUiTest {
 
     @Test
     fun screenshotBottomBar() {
-        show { BottomBar(selected = Tab.SEARCH, onSelect = {}) }
+        show { BottomBar(selected = Tab.SEARCH, onSelect = {}, inboxCount = 3) }
         composeRule.onRoot().captureRoboImage("screenshots/bottom_bar_light.png")
+    }
+
+    /** Итерация 52: у «Входящих» — число неразобранных; при нуле кружка нет. */
+    @Test
+    fun bottomBarShowsInboxCount() {
+        var count by mutableStateOf(3)
+        show { BottomBar(selected = Tab.ALL, onSelect = {}, inboxCount = count) }
+        composeRule.onNodeWithTag(com.prostovasei.simpletasks.ui.navigation.TAG_INBOX_BADGE, useUnmergedTree = true).assertExists()
+        composeRule.onNodeWithText("3", useUnmergedTree = true).assertExists()
+        count = 0
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag(com.prostovasei.simpletasks.ui.navigation.TAG_INBOX_BADGE, useUnmergedTree = true).assertDoesNotExist()
+    }
+
+    /** Итерация 52: «Когда-нибудь» и «Без списка» на «Списках» — над «Выполненными», с числами. */
+    @Test
+    fun listsShowSomedayAndNoListRows() {
+        var someday = false
+        var noList = false
+        show {
+            ListsScreen(
+                ListsState(tree = ProjectTree(null, emptyList(), emptyList()), somedayCount = 7, noListCount = 2), { intents += it }, {},
+                onOpenSomeday = { someday = true }, onOpenNoList = { noList = true },
+            )
+        }
+        composeRule.onNodeWithTag("${com.prostovasei.simpletasks.ui.feature.lists.TAG_SOMEDAY}:count", useUnmergedTree = true).assertTextEquals("7")
+        composeRule.onNodeWithTag("${com.prostovasei.simpletasks.ui.feature.lists.TAG_NO_LIST}:count", useUnmergedTree = true).assertTextEquals("2")
+        composeRule.onNodeWithTag(com.prostovasei.simpletasks.ui.feature.lists.TAG_SOMEDAY).performClick()
+        composeRule.onNodeWithTag(com.prostovasei.simpletasks.ui.feature.lists.TAG_NO_LIST).performClick()
+        assertTrue(someday && noList)
     }
 }

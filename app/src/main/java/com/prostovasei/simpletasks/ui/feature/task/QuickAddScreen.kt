@@ -103,6 +103,7 @@ fun QuickAddScreen(
             onClose()
         },
         checklistActive = state.checklist != null,
+        openListOnStart = state.pickList,
         onChecklist = { onIntent(QuickAddIntent.AddChecklist) },
         progress = progress,
         reveal = reveal,

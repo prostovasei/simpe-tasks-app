@@ -1,5 +1,13 @@
 package com.prostovasei.simpletasks.ui.navigation
 
+import com.prostovasei.simpletasks.ui.feature.sorted.NoListRoute
+import com.prostovasei.simpletasks.ui.feature.sorted.SomedayRoute
+import com.prostovasei.simpletasks.ui.feature.sorted.SortCountsHost
+import com.prostovasei.simpletasks.domain.model.SortCounts
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.Text
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.prostovasei.simpletasks.ui.feature.wontdo.WontDoRoute
 import com.prostovasei.simpletasks.ui.feature.wontdo.WontDoTaskRoute
 import com.prostovasei.simpletasks.designsystem.components.UndoKind
@@ -130,6 +138,9 @@ fun AppNavHost(
     }
     val currentTab = Tab.entries.firstOrNull { destination.isOn(it) }
 
+    // Итерация 52: число неразобранных на вкладке «Входящие».
+    val sortCounts by hiltViewModel<SortCountsHost>().counts.collectAsStateWithLifecycle(SortCounts())
+
     // Задачу удалили в шторке — под ней «Задача удалена · Отмена» (итерация 36); пока приложение не на экране, событие не доходит.
     val deletions = hiltViewModel<TaskDeletionsHost>().deletions
     val snackbar = remember { SnackbarHostState() }
@@ -192,6 +203,7 @@ fun AppNavHost(
                 val selected = currentTab ?: Tab.ALL
                 BottomBar(
                     selected = selected,
+                    inboxCount = sortCounts.inbox,
                     onSelect = { tab -> navController.openTab(tab) },
                     // На «Все» и «Неделе» новая задача — на сегодня, на остальных вкладках — во «Входящие».
                     onAdd = { navController.navigate(QuickAddDestination(today = selected == Tab.ALL || selected == Tab.WEEK)) },
@@ -224,7 +236,21 @@ fun AppNavHost(
             // Полный список дня: открывается нажатием на строку даты в ячейке недели (итерация 44).
             composable<DayDestination> { DayRoute(onBack = { navController.popBackStack() }, onOpenTask = openTask) }
             composable<ListsDestination> {
-                ListsRoute(onOpenProject = { navController.navigate(ProjectDestination(it)) }, onOpenCompleted = { navController.navigate(CompletedDestination) }, onOpenTrash = { navController.navigate(TrashDestination) }, onOpenWontDo = { navController.navigate(WontDoDestination) })
+                ListsRoute(
+                    onOpenProject = { navController.navigate(ProjectDestination(it)) },
+                    onOpenCompleted = { navController.navigate(CompletedDestination) },
+                    onOpenTrash = { navController.navigate(TrashDestination) },
+                    onOpenWontDo = { navController.navigate(WontDoDestination) },
+                    onOpenSomeday = { navController.navigate(SomedayDestination) },
+                    onOpenNoList = { navController.navigate(NoListDestination) },
+                )
+            }
+            // Итерация 52: «Когда-нибудь» — «+» сразу с выбором списка; «Без списка» — «+» на сегодня.
+            composable<SomedayDestination> {
+                SomedayRoute(onBack = { navController.popBackStack() }, onOpenTask = openTask, onAddTask = { navController.navigate(QuickAddDestination(pickList = true)) })
+            }
+            composable<NoListDestination> {
+                NoListRoute(onBack = { navController.popBackStack() }, onOpenTask = openTask, onAddTask = { navController.navigate(QuickAddDestination(today = true)) })
             }
             composable<TrashDestination> { TrashRoute(onBack = { navController.popBackStack() }, onOpenTask = { navController.navigate(TrashTaskDestination(it)) }) }
             // Задача в корзине — шторка только для чтения (итерация 39).
@@ -260,7 +286,7 @@ fun AppNavHost(
  * перед «Настройками» (итерация 15). Фон панели доходит до низа экрана — под системной панелью навигации.
  */
 @Composable
-fun BottomBar(selected: Tab, onSelect: (Tab) -> Unit, onAdd: () -> Unit = {}) {
+fun BottomBar(selected: Tab, onSelect: (Tab) -> Unit, onAdd: () -> Unit = {}, inboxCount: Int = 0) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
     val sizes = AppTheme.sizes
@@ -284,7 +310,15 @@ fun BottomBar(selected: Tab, onSelect: (Tab) -> Unit, onAdd: () -> Unit = {}) {
                         .testTag("tab:${tab.name}"),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(tab.icon(), contentDescription = stringResource(tab.label), tint = if (tab == selected) colors.accent else colors.textSecondary)
+                    val icon = @Composable { Icon(tab.icon(), contentDescription = stringResource(tab.label), tint = if (tab == selected) colors.accent else colors.textSecondary) }
+                    // Итерация 52 (макет iteration52.py): у «Входящих» — чёрный кружок с числом неразобранных; при нуле его нет.
+                    if (tab == Tab.INBOX && inboxCount > 0) {
+                        BadgedBox(badge = {
+                            Badge(containerColor = colors.accent, contentColor = colors.onAccent, modifier = Modifier.testTag(TAG_INBOX_BADGE)) { Text(inboxCount.toString()) }
+                        }) { icon() }
+                    } else {
+                        icon()
+                    }
                 }
             }
             Box(
@@ -344,3 +378,5 @@ private fun NavHostController.openTab(tab: Tab) {
 }
 
 private fun NavDestination?.isOn(tab: Tab): Boolean = this?.hasRoute(tab.routeClass) == true
+
+const val TAG_INBOX_BADGE = "inbox_badge"

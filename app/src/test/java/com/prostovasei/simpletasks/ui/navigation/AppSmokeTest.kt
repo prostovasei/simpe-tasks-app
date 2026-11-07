@@ -70,7 +70,7 @@ class AppSmokeTest {
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Всё сделано") }
 
         composeRule.onNodeWithTag("tab:INBOX").performClick()
-        composeRule.onNodeWithText("Входящие пусты").assertExists()
+        composeRule.onNodeWithText("Всё разобрано").assertExists()
 
         // Поиск: поле ввода сразу на экране, ничего не найдено.
         // Итерация 44: вкладка «Неделя» — сетка из семи дней и мини-календарь.

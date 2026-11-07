@@ -47,6 +47,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.prostovasei.simpletasks.R
+import com.prostovasei.simpletasks.domain.model.ListEmoji
 import com.prostovasei.simpletasks.designsystem.components.ListBadge
 import com.prostovasei.simpletasks.designsystem.components.ConfirmDeleteDialog
 import com.prostovasei.simpletasks.designsystem.components.EmptyState
@@ -57,7 +58,15 @@ import com.prostovasei.simpletasks.domain.model.GroupWithProjects
 import com.prostovasei.simpletasks.domain.model.ProjectWithCount
 
 @Composable
-fun ListsRoute(onOpenProject: (String) -> Unit, onOpenCompleted: () -> Unit = {}, onOpenTrash: () -> Unit = {}, onOpenWontDo: () -> Unit = {}, viewModel: ListsViewModel = hiltViewModel()) {
+fun ListsRoute(
+    onOpenProject: (String) -> Unit,
+    onOpenCompleted: () -> Unit = {},
+    onOpenTrash: () -> Unit = {},
+    onOpenWontDo: () -> Unit = {},
+    onOpenSomeday: () -> Unit = {},
+    onOpenNoList: () -> Unit = {},
+    viewModel: ListsViewModel = hiltViewModel(),
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
@@ -66,11 +75,20 @@ fun ListsRoute(onOpenProject: (String) -> Unit, onOpenCompleted: () -> Unit = {}
             }
         }
     }
-    ListsScreen(state, viewModel::onIntent, onOpenProject, onOpenCompleted, onOpenTrash, onOpenWontDo)
+    ListsScreen(state, viewModel::onIntent, onOpenProject, onOpenCompleted, onOpenTrash, onOpenWontDo, onOpenSomeday, onOpenNoList)
 }
 
 @Composable
-fun ListsScreen(state: ListsState, onIntent: (ListsIntent) -> Unit, onOpenProject: (String) -> Unit, onOpenCompleted: () -> Unit = {}, onOpenTrash: () -> Unit = {}, onOpenWontDo: () -> Unit = {}) {
+fun ListsScreen(
+    state: ListsState,
+    onIntent: (ListsIntent) -> Unit,
+    onOpenProject: (String) -> Unit,
+    onOpenCompleted: () -> Unit = {},
+    onOpenTrash: () -> Unit = {},
+    onOpenWontDo: () -> Unit = {},
+    onOpenSomeday: () -> Unit = {},
+    onOpenNoList: () -> Unit = {},
+) {
     val colors = AppTheme.colors
     Scaffold(containerColor = colors.background, contentWindowInsets = WindowInsets(0)) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
@@ -83,6 +101,9 @@ fun ListsScreen(state: ListsState, onIntent: (ListsIntent) -> Unit, onOpenProjec
                     Text(stringResource(R.string.lists_new_list), color = colors.accent)
                 }
             }
+            // Итерация 52: «Когда-нибудь» (со списком, без даты) и «Без списка» (с датой, без списка) — над «Выполненными».
+            CountRow(R.drawable.ic_no_date, R.string.someday_title, state.somedayCount, TAG_SOMEDAY, onOpenSomeday)
+            CountRow(null, R.string.no_list_title, state.noListCount, TAG_NO_LIST, onOpenNoList, emoji = ListEmoji.INBOX)
             CompletedRow(onOpenCompleted)
             CountRow(R.drawable.ic_wont_do, R.string.wontdo_title, state.wontDoCount, TAG_WONT_DO, onOpenWontDo)
             TrashRow(state.trashCount, onOpenTrash)
@@ -139,7 +160,7 @@ private fun TrashRow(count: Int, onClick: () -> Unit) = CountRow(R.drawable.ic_t
 
 /** Строка со значком, названием и числом задач (при нуле числа нет): «Не буду делать» (итерация 49) и «Корзина». */
 @Composable
-private fun CountRow(icon: Int, title: Int, count: Int, tag: String, onClick: () -> Unit, countTag: String = "$tag:count") {
+private fun CountRow(icon: Int?, title: Int, count: Int, tag: String, onClick: () -> Unit, countTag: String = "$tag:count", emoji: String? = null) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
     Row(
@@ -150,7 +171,7 @@ private fun CountRow(icon: Int, title: Int, count: Int, tag: String, onClick: ()
             .padding(horizontal = spacing.md, vertical = spacing.sm)
             .testTag(tag),
     ) {
-        Icon(painterResource(icon), contentDescription = null, tint = colors.textSecondary)
+        if (icon != null) Icon(painterResource(icon), contentDescription = null, tint = colors.textSecondary) else ListBadge(emoji.orEmpty(), large = true)
         Text(
             text = stringResource(title),
             style = MaterialTheme.typography.bodyLarge,
@@ -163,6 +184,8 @@ private fun CountRow(icon: Int, title: Int, count: Int, tag: String, onClick: ()
 
 const val TAG_COMPLETED = "lists_completed"
 const val TAG_WONT_DO = "lists_wont_do"
+const val TAG_SOMEDAY = "lists_someday"
+const val TAG_NO_LIST = "lists_no_list"
 const val TAG_TRASH_COUNT = "lists_trash_count"
 
 @Composable

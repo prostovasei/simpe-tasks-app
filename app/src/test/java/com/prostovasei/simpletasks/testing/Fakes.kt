@@ -7,6 +7,7 @@ import com.prostovasei.simpletasks.domain.model.GroupWithProjects
 import com.prostovasei.simpletasks.domain.model.Deletion
 import com.prostovasei.simpletasks.domain.model.EarlierRepeats
 import com.prostovasei.simpletasks.domain.model.Moved
+import com.prostovasei.simpletasks.domain.model.SortCounts
 import com.prostovasei.simpletasks.domain.model.WontDo
 import com.prostovasei.simpletasks.domain.model.NewTask
 import com.prostovasei.simpletasks.domain.model.Priority
@@ -90,7 +91,22 @@ class FakeTaskRepository(private val today: LocalDate = LocalDate.of(2026, 10, 1
     }
 
     override fun observeInbox(today: LocalDate): Flow<List<Task>> =
-        tasks.map { all -> all.filter { it.shownOn(today) && (it.projectId == "inbox" || it.due == null) } }
+        tasks.map { all -> all.filter { it.shownOn(today) && it.projectId == "inbox" && it.due == null } }
+
+    override fun observeSomeday(today: LocalDate): Flow<List<Task>> =
+        tasks.map { all -> all.filter { it.shownOn(today) && it.projectId != "inbox" && it.due == null } }
+
+    override fun observeNoList(today: LocalDate): Flow<List<Task>> =
+        tasks.map { all -> all.filter { it.shownOn(today) && it.projectId == "inbox" && it.due != null } }
+
+    override fun observeSortCounts(): Flow<SortCounts> = tasks.map { all ->
+        val open = all.filter { it.status == TaskStatus.ACTIVE }
+        SortCounts(
+            inbox = open.count { it.projectId == "inbox" && it.due == null },
+            someday = open.count { it.projectId != "inbox" && it.due == null },
+            noList = open.count { it.projectId == "inbox" && it.due != null },
+        )
+    }
 
     override fun observeProjectTasks(projectId: String, today: LocalDate): Flow<List<Task>> =
         tasks.map { all -> all.filter { it.shownOn(today) && it.projectId == projectId } }

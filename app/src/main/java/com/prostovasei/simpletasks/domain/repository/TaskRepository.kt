@@ -5,6 +5,7 @@ import com.prostovasei.simpletasks.domain.model.Completion
 import com.prostovasei.simpletasks.domain.model.Deletion
 import com.prostovasei.simpletasks.domain.model.EarlierRepeats
 import com.prostovasei.simpletasks.domain.model.Moved
+import com.prostovasei.simpletasks.domain.model.SortCounts
 import com.prostovasei.simpletasks.domain.model.Rescheduling
 import com.prostovasei.simpletasks.domain.model.Restoration
 import com.prostovasei.simpletasks.domain.model.TrashedTask
@@ -32,8 +33,17 @@ interface TaskRepository {
      */
     fun observeWeek(weekStart: LocalDate): Flow<WeekTasks>
 
-    /** «Входящие»: задачи системного списка и все задачи без срока (SPEC.md §4.2). */
+    /** «Входящие» (итерация 52): только неразобранное — без даты и без списка (служебный список «Входящие»); выполненные сегодня — тоже. */
     fun observeInbox(today: LocalDate): Flow<List<Task>>
+
+    /** «Когда-нибудь» (итерация 52): задачи со списком, но без даты; выполненные сегодня — тоже. */
+    fun observeSomeday(today: LocalDate): Flow<List<Task>>
+
+    /** «Без списка» (итерация 52): задачи без списка, но с датой, по сроку; выполненные сегодня — тоже. */
+    fun observeNoList(today: LocalDate): Flow<List<Task>>
+
+    /** Сколько открытых задач во «Входящих», «Когда-нибудь» и «Без списка» (итерация 52). */
+    fun observeSortCounts(): Flow<SortCounts>
 
     fun observeProjectTasks(projectId: String, today: LocalDate): Flow<List<Task>>
 

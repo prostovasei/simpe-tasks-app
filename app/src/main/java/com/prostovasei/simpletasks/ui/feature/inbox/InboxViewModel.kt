@@ -23,7 +23,7 @@ import javax.inject.Inject
 
 data class InboxState(val tasks: List<TaskItem> = emptyList(), val isLoading: Boolean = true)
 
-/** «Входящие» (SPEC.md §4.2): задачи системного списка и задачи без срока из всех списков (решение PM). */
+/** «Входящие» (SPEC.md §4.2; итерация 52 — решение PM): только неразобранное — задачи без даты и без списка. */
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class InboxViewModel @Inject constructor(

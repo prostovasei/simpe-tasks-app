@@ -75,3 +75,6 @@ data class Moved(
     val checkedItemIds: List<String> = emptyList(),
     val day: TaskDue? = null,
 )
+
+/** Счётчики разделов (итерация 52): неразобранные во «Входящих», «Когда-нибудь» (со списком без даты), «Без списка» (с датой без списка). */
+data class SortCounts(val inbox: Int = 0, val someday: Int = 0, val noList: Int = 0)

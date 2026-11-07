@@ -9,6 +9,9 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.ui.platform.testTag
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -49,6 +52,13 @@ fun InboxScreen(
         SelectionFrame(selection, state.tasks.filterNot { it.isGhost }.map { Selectable(it.id, it.isDone, it.isRecurring) }, Modifier.padding(padding)) {
         Column(Modifier.fillMaxSize()) {
             ScreenTitle(stringResource(R.string.inbox_title))
+            // Итерация 52: «Входящие» — только неразобранное; подсказка, куда уходят задачи.
+            Text(
+                stringResource(R.string.inbox_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = AppTheme.colors.textSecondary,
+                modifier = Modifier.padding(horizontal = AppTheme.spacing.md).padding(bottom = AppTheme.spacing.xs).testTag(TAG_INBOX_HINT),
+            )
             FlatTaskList(
                 tasks = state.tasks,
                 isLoading = state.isLoading,
@@ -63,3 +73,5 @@ fun InboxScreen(
         }
     }
 }
+
+const val TAG_INBOX_HINT = "inbox_hint"

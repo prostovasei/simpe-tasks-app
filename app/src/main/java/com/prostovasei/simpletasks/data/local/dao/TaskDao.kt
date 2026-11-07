@@ -118,15 +118,51 @@ interface TaskDao {
     @Query("SELECT * FROM tasks WHERE is_deleted = 0 AND status = 0 AND rrule IS NOT NULL AND due_date IS NOT NULL")
     fun observeRepeating(): Flow<List<TaskEntity>>
 
+    /** «Входящие» (итерация 52): только неразобранное — без даты и без списка (служебный список «Входящие»). */
     @Query(
         """
         SELECT t.* FROM tasks t
         JOIN projects p ON p.id = t.project_id
-        WHERE t.is_deleted = 0 AND (t.status = 0 OR (t.status = 2 AND t.completed_at >= :doneSince)) AND (p.is_inbox = 1 OR t.due_date IS NULL)
+        WHERE t.is_deleted = 0 AND (t.status = 0 OR (t.status = 2 AND t.completed_at >= :doneSince)) AND p.is_inbox = 1 AND t.due_date IS NULL
         ORDER BY t.sort_order, t.created_at
         """,
     )
     fun observeInbox(doneSince: Long): Flow<List<TaskEntity>>
+
+    /** «Когда-нибудь» (итерация 52): задачи со списком, но без даты. */
+    @Query(
+        """
+        SELECT t.* FROM tasks t
+        JOIN projects p ON p.id = t.project_id
+        WHERE t.is_deleted = 0 AND (t.status = 0 OR (t.status = 2 AND t.completed_at >= :doneSince)) AND p.is_inbox = 0 AND t.due_date IS NULL
+        ORDER BY t.sort_order, t.created_at
+        """,
+    )
+    fun observeSomeday(doneSince: Long): Flow<List<TaskEntity>>
+
+    /** «Без списка» (итерация 52): задачи без списка, но с датой — по сроку. */
+    @Query(
+        """
+        SELECT t.* FROM tasks t
+        JOIN projects p ON p.id = t.project_id
+        WHERE t.is_deleted = 0 AND (t.status = 0 OR (t.status = 2 AND t.completed_at >= :doneSince)) AND p.is_inbox = 1 AND t.due_date IS NOT NULL
+        ORDER BY COALESCE(t.start_date, t.due_date), t.sort_order
+        """,
+    )
+    fun observeNoList(doneSince: Long): Flow<List<TaskEntity>>
+
+    /** Открытые задачи разделов «Входящие», «Когда-нибудь», «Без списка» — для счётчиков (итерация 52). */
+    @Query(
+        """
+        SELECT
+            COALESCE(SUM(p.is_inbox = 1 AND t.due_date IS NULL), 0) AS inbox,
+            COALESCE(SUM(p.is_inbox = 0 AND t.due_date IS NULL), 0) AS someday,
+            COALESCE(SUM(p.is_inbox = 1 AND t.due_date IS NOT NULL), 0) AS noList
+        FROM tasks t JOIN projects p ON p.id = t.project_id
+        WHERE t.is_deleted = 0 AND t.status = 0
+        """,
+    )
+    fun observeSortCounts(): Flow<SortCountsRow>
 
     @Query(
         """
@@ -385,3 +421,6 @@ interface TaskDao {
     )
     suspend fun trashTreeAt(id: String, at: Long): Int
 }
+
+/** Счётчики разделов (итерация 52): неразобранные, «Когда-нибудь», «Без списка». */
+data class SortCountsRow(val inbox: Int, val someday: Int, val noList: Int)
