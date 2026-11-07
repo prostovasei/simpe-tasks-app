@@ -27,8 +27,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
+import com.prostovasei.simpletasks.ui.feature.snooze.SnoozeDialog
+import com.prostovasei.simpletasks.ui.feature.snooze.SnoozeState
+import com.prostovasei.simpletasks.ui.feature.snooze.snoozeChoices
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -60,6 +65,7 @@ import com.prostovasei.simpletasks.domain.model.EarlierRepeats
 import com.prostovasei.simpletasks.domain.model.TaskDue
 import com.prostovasei.simpletasks.widget.WidgetDates
 import com.prostovasei.simpletasks.ui.common.DayNames
+import com.prostovasei.simpletasks.ui.common.DueFormatter
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberUpdatedState
 import com.prostovasei.simpletasks.ui.common.repeatSummary
@@ -126,6 +132,9 @@ fun TaskDetailScreen(
     }
     val done = task.status != TaskStatus.ACTIVE
     val addFocus = remember { FocusRequester() }
+    // Итерация 54: «Отложить» — окно вариантов; «Выбрать дату и время…» открывает окно даты шторки.
+    var snoozeOpen by rememberSaveable { mutableStateOf(false) }
+    var dateRequests by remember { mutableIntStateOf(0) }
     var showAdd by rememberSaveable { mutableStateOf(false) }
     var focusAdd by remember { mutableStateOf(false) }
     LaunchedEffect(focusAdd) {
@@ -135,6 +144,19 @@ fun TaskDetailScreen(
         }
     }
 
+    if (snoozeOpen) {
+        val context = LocalContext.current
+        val now = state.today.atStartOfDay(state.zone).plusMinutes(state.nowMinute.toLong()).toInstant()
+        val choices = remember(task, now) { snoozeChoices(context, task, now, state.zone) }
+        val subtitle = listOfNotNull(task.title, DueFormatter.format(task.due, task.start, state.today, state.zone)?.let {
+            DayNames(stringResource(R.string.day_today), stringResource(R.string.day_tomorrow), stringResource(R.string.day_yesterday)).format(it)
+        }).joinToString(" · ")
+        SnoozeDialog(SnoozeState(task.title, subtitle, choices, loaded = true), onDismiss = { snoozeOpen = false }) { choice ->
+            snoozeOpen = false
+            val option = choice.option
+            if (option == null) dateRequests++ else onIntent(TaskDetailIntent.Snooze(option))
+        }
+    }
     TaskSheet(
         fields = fields,
         onGrid = { onIntent(TaskDetailIntent.Grid(it)) },
@@ -148,6 +170,7 @@ fun TaskDetailScreen(
         progress = progress,
         reveal = reveal,
         openDateOnStart = openDate,
+        dateRequests = dateRequests,
         overlay = overlay,
         actions = {
             SheetConfirmButton(R.string.sheet_done, enabled = true, tag = TAG_DETAIL_CLOSE, onClick = onClose)
@@ -168,6 +191,12 @@ fun TaskDetailScreen(
                 modifier = Modifier.weight(1f).testTag(TAG_DETAIL_TITLE),
                 visualTransformation = smartHighlight(state.smart),
             )
+            // Итерация 54 (T-96): ⏰ «Отложить» — у незакрытой задачи с датой; у будущего повтора нет (его раз ещё не наступил).
+            if (task.status == TaskStatus.ACTIVE && task.due != null && state.occurrence == null) {
+                IconButton(onClick = { snoozeOpen = true }, modifier = Modifier.size(AppTheme.sizes.checkboxTouch).testTag(TAG_DETAIL_SNOOZE)) {
+                    Icon(painterResource(R.drawable.ic_popup_tomorrow), stringResource(R.string.snooze_action), tint = colors.textSecondary)
+                }
+            }
             TaskMenu(
                 createdText(task.createdAt.atZone(state.zone).toLocalDate()),
                 onWontDo = if (task.status == TaskStatus.ACTIVE) { { onIntent(TaskDetailIntent.WontDo) } } else null,
@@ -458,6 +487,7 @@ const val TAG_DETAIL_CONTENT = "detail_content"
 const val TAG_DETAIL_DONE = "detail_done"
 const val TAG_DETAIL_DELETE = "detail_delete"
 const val TAG_DETAIL_MENU = "detail_menu"
+const val TAG_DETAIL_SNOOZE = "detail_snooze"
 const val TAG_DETAIL_CREATED = "detail_created"
 const val TAG_DETAIL_CLOSE = "detail_close"
 const val TAG_DETAIL_ADD_ITEM = "detail_add_item"

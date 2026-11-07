@@ -9,7 +9,9 @@ import com.prostovasei.simpletasks.domain.model.ChecklistItem
 import com.prostovasei.simpletasks.designsystem.components.UndoKind
 import com.prostovasei.simpletasks.domain.model.Completion
 import com.prostovasei.simpletasks.domain.model.EarlierRepeats
+import com.prostovasei.simpletasks.domain.model.SnoozeOption
 import com.prostovasei.simpletasks.domain.model.TaskDue
+import com.prostovasei.simpletasks.ui.feature.snooze.snoozeWhen
 import com.prostovasei.simpletasks.domain.model.atOccurrence
 import com.prostovasei.simpletasks.domain.model.repeatsBefore
 import com.prostovasei.simpletasks.domain.model.Task
@@ -112,6 +114,9 @@ sealed interface TaskDetailIntent {
 
     /** «Не буду делать» (итерация 49): в «⋮» и в окне удаления серии. */
     data object WontDo : TaskDetailIntent
+
+    /** «Отложить» (итерация 54): новый срок из окна вариантов — как у уведомления (итерация 53). */
+    data class Snooze(val option: SnoozeOption) : TaskDetailIntent
 
     /** Выбор в окне «Незакрытые повторы»: что сделать с повторами перед будущим разом. */
     data class CloseEarlier(val earlier: EarlierRepeats) : TaskDetailIntent
@@ -267,6 +272,7 @@ class TaskDetailViewModel @Inject constructor(
                 delete()
             }
             TaskDetailIntent.WontDo -> requestWontDo()
+            is TaskDetailIntent.Snooze -> snooze(intent.option)
             is TaskDetailIntent.CloseEarlier -> {
                 setState { copy(dialog = null) }
                 wontDo(intent.earlier)
@@ -495,6 +501,24 @@ class TaskDetailViewModel @Inject constructor(
             val result = tasks.wontDo(taskId, occurrence, earlier) ?: return@launch close()
             val day = result.occurrence?.takeIf { result.previous.rrule != null }?.let(::dayText)
             deletions.notify(UndoNotice(UndoMessage.WontDo(day, result.skipped, result.completed), UndoKind.WontDo) { tasks.undoWontDo(result) })
+            close()
+        }
+    }
+
+    /**
+     * «Отложить» (итерация 54): срок задачи переносится (у повторяющейся — только этот раз), шторка закрывается,
+     * подсказку «Отложено на … · Отмена» показывает тот, кто под ней (приложение или окно поверх рабочего стола).
+     */
+    private fun snooze(option: SnoozeOption) {
+        textSaveJob?.cancel()
+        persist()
+        val previous = lastWrite
+        saved = null
+        appScope.launch {
+            previous?.join()
+            val result = tasks.snooze(taskId, option.due, option.start) ?: return@launch close()
+            val text = snoozeWhen(option.start ?: option.due, time.today(), time.zone())
+            deletions.notify(UndoNotice(UndoMessage.Snoozed(text), UndoKind.Tomorrow) { tasks.undoMove(result) })
             close()
         }
     }
