@@ -7,6 +7,7 @@ import com.prostovasei.simpletasks.domain.model.TaskDue
 import com.prostovasei.simpletasks.testing.DatabaseTest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
+import com.prostovasei.simpletasks.domain.model.SortCounts
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -145,7 +146,7 @@ class TaskSectionsTest : DatabaseTest() {
     }
 
     @Test
-    fun inboxShowsInboxTasksAndUndatedTasksFromOtherLists() = runTest {
+    fun inboxSomedayAndNoListSplitTasksByDateAndList() = runTest {
         val work = projects.createProject("Работа")
         create("Во входящих с датой", TaskDue.AllDay(today))
         create("Во входящих без даты", null)
@@ -158,8 +159,20 @@ class TaskSectionsTest : DatabaseTest() {
         time.now = now
         tasks.setCompleted(create("Выполненная сегодня", null), completed = true)
 
+        // Итерация 52: «Входящие» — без даты и без списка; «Когда-нибудь» — со списком без даты; «Без списка» — с датой без списка.
         val inbox = tasks.observeInbox(time.today()).first().map { it.title }.toSet()
-        assertEquals(setOf("Во входящих с датой", "Во входящих без даты", "Работа без даты", "Выполненная сегодня"), inbox)
+        assertEquals(setOf("Во входящих без даты", "Выполненная сегодня"), inbox)
+        assertEquals(listOf("Работа без даты"), tasks.observeSomeday(time.today()).first().map { it.title })
+        assertEquals(listOf("Во входящих с датой"), tasks.observeNoList(time.today()).first().map { it.title })
+        assertEquals("Выполненные не в счётчиках", SortCounts(inbox = 1, someday = 1, noList = 1), tasks.observeSortCounts().first())
+
+        // Дату поставили — задача ушла из «Входящих» в «Без списка»; список выбрали — в «Когда-нибудь».
+        val loose = tasks.observeInbox(time.today()).first().first { it.title == "Во входящих без даты" }
+        tasks.updateTask(loose.copy(due = TaskDue.AllDay(today.plusDays(2))))
+        assertTrue(tasks.observeInbox(time.today()).first().none { it.id == loose.id })
+        assertTrue(tasks.observeNoList(time.today()).first().any { it.id == loose.id })
+        tasks.updateTask(loose.copy(due = null, projectId = work))
+        assertTrue(tasks.observeSomeday(time.today()).first().any { it.id == loose.id })
     }
 }
 

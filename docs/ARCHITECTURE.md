@@ -1187,6 +1187,27 @@ PM поменял порядок: шторка для созданных зад�
 
 Тесты: `RecurrenceTest` (правило под дату), `MoveRepeatTest` (месячный 10-го, режим выбора и просроченные), `TaskViewModelsTest.detailRepeatAllRetargetsOrHints`.
 
+### 4.57. Итог Итерации 52 — новая логика «Входящих», «Когда-нибудь» и «Без списка» (0.52.0)
+
+Решения PM (07.11.2026, после разбора справки Todoist, TickTick, SingularityApp и вопросов о привычках; модель — как в SingularityApp;
+макет — холст «Итерация 52 — Входящие», `design/mockups/iteration52.py`):
+
+| Задача | Где видна |
+|---|---|
+| Без списка и без даты | «Входящие» — только неразобранное; счётчик на вкладке нижней панели |
+| Со списком, без даты | «Когда-нибудь» (строка на «Списках», группы по спискам) и свой список |
+| Без списка, с датой | «Без списка» (строка на «Списках», по дням) и «Все», «Неделя», виджет |
+| Со списком и с датой | Свой список, «Все», «Неделя», виджет |
+
+Переход между разделами — сам, по дате и списку. «+»: во «Входящих» — без даты и списка; в «Когда-нибудь» — без даты, сразу окно
+«Список» (`QuickAddDestination(pickList)`); в «Без списка» — на сегодня. Вкладка «Входящие» в виджете — по той же логике
+(`observeInbox`). Данные не меняются: «без списка» — служебный список «Входящие», выгрузка и загрузка TickTick — как раньше.
+
+Код: `TaskDao.observeInbox` / `observeSomeday` / `observeNoList` / `observeSortCounts`, `SortCounts`, `ui/feature/sorted/` (`SortedScreen`,
+`somedayGroups`, `noListGroups`, `SortCountsHost`), `BottomBar(inboxCount)` (Material Badge), строки «Списков», `TaskSheet(openListOnStart)`.
+Тесты: `TaskSectionsTest.inboxSomedayAndNoListSplitTasksByDateAndList`, `SortedScreensTest` (снимок `someday_light`), `ScreensUiTest`
+(счётчик, строки «Списков»), `TaskScreensUiTest.quickAddFromSomedayOpensListPicker`.
+
 ### 4.45. Дорожная карта (обновлена)
 
 | Итерация | Название | Суть |

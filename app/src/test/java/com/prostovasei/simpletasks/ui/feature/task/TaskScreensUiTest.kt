@@ -208,6 +208,13 @@ class TaskScreensUiTest {
         assertTrue(intents.none { it is QuickAddIntent.Grid && it.action is GridAction.PickDay })
     }
 
+    /** Итерация 52: «+» в «Когда-нибудь» — шторка сразу с выбором списка, без даты. */
+    @Test
+    fun quickAddFromSomedayOpensListPicker() {
+        show { QuickAddScreen(quickState.copy(pickList = true), { intents += it }, {}, autoFocus = false) }
+        composeRule.onNodeWithTag(TAG_PROJECT_DIALOG).assertExists()
+    }
+
     @Test
     fun crossesClearDateAndTimeSeparately() {
         show { QuickAddScreen(quickState, { intents += it }, {}, autoFocus = false) }

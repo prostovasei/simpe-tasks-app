@@ -8,6 +8,9 @@ data class ListsState(
     val trashCount: Int = 0,
     /** Сколько задач «Не буду делать» (итерация 49): число у строки, при нуле не показывается. */
     val wontDoCount: Int = 0,
+    /** «Когда-нибудь» и «Без списка» (итерация 52): числа открытых задач у строк. */
+    val somedayCount: Int = 0,
+    val noListCount: Int = 0,
     val tree: ProjectTree? = null,
     val collapsedFolders: Set<String> = emptySet(),
     val dialog: ListsDialog = ListsDialog.None,

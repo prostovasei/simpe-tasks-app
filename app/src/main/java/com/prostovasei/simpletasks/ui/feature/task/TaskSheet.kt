@@ -195,6 +195,8 @@ fun TaskSheet(
     onChecklist: () -> Unit,
     modifier: Modifier = Modifier,
     progress: () -> Float = { 1f },
+    /** Сразу открыть выбор списка (итерация 52: «+» в «Когда-нибудь»). */
+    openListOnStart: Boolean = false,
     reveal: () -> Float = { 1f },
     overlay: @Composable BoxScope.() -> Unit = {},
     actionCount: Int = 1,
@@ -208,7 +210,7 @@ fun TaskSheet(
     val focus = LocalFocusManager.current
     val closeLabel = stringResource(R.string.quick_add_close)
     var timelineOpen by rememberSaveable { mutableStateOf(false) }
-    var tool by remember { mutableStateOf(ToolDialog.None) }
+    var tool by remember { mutableStateOf(if (openListOnStart) ToolDialog.List else ToolDialog.None) }
     val hideKeyboard: () -> Unit = {
         focus.clearFocus()
         keyboard?.hide()

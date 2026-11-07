@@ -31,7 +31,13 @@ data object SettingsDestination
  * [today] — задача сразу на сегодня (открыто с экрана «Все»).
  */
 @Serializable
-data class QuickAddDestination(val projectId: String? = null, val today: Boolean = false, val date: String? = null)
+data class QuickAddDestination(
+    val projectId: String? = null,
+    val today: Boolean = false,
+    val date: String? = null,
+    /** Из «Когда-нибудь» (итерация 52): сразу открыть выбор списка — задача без даты со списком. */
+    val pickList: Boolean = false,
+)
 
 /** Прозрачное окно «Перенести просроченные на сегодня» поверх рабочего стола (итерация 37, из виджета). */
 @Serializable
@@ -48,6 +54,14 @@ data class TrashTaskDestination(val taskId: String)
 /** «Не буду делать» (итерация 49). */
 @Serializable
 data object WontDoDestination
+
+/** «Когда-нибудь» (итерация 52): задачи со списком, но без даты. */
+@Serializable
+data object SomedayDestination
+
+/** «Без списка» (итерация 52): задачи без списка, но с датой. */
+@Serializable
+data object NoListDestination
 
 /** Задача «Не буду делать» — шторка только для чтения (итерация 49). Имя поля — ключ аргумента в SavedStateHandle. */
 @Serializable
