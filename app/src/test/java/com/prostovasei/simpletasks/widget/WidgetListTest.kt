@@ -67,6 +67,22 @@ class WidgetListTest {
 
     private fun View.texts() = descendants().filterIsInstance<TextView>().filter { it.visibility == View.VISIBLE }.map { it.text.toString() }.toList()
 
+    /** Итерация 51: дата в нижней строке ведёт к подписи «Сегодня» (просроченный вчерашний день остаётся выше); без дней — к началу. */
+    @Test
+    fun todayLineIsTheTodayTitle() {
+        val lines = model.lines(dayNames(context))
+        val index = model.todayLine(lines)
+        assertEquals(WidgetDay.On(today), (lines[index] as WidgetLine.Title).day)
+        assertTrue("Вчерашний день выше", index > 0)
+        val future = model.copy(days = model.days.drop(2))
+        assertEquals("Сегодня пусто — первый следующий день", 0, future.todayLine(future.lines(dayNames(context))))
+        assertEquals(0, model.todayLine(emptyList()))
+        // Нажатие на дату — своё действие виджету, со своим адресом.
+        val intent = WidgetActions.today(context, 7)
+        assertEquals(WidgetActions.TODAY, intent.action)
+        assertEquals(7, intent.getIntExtra(WidgetActions.EXTRA_WIDGET_ID, -1))
+    }
+
     @Test
     fun everyLineArrives() {
         val list = list()

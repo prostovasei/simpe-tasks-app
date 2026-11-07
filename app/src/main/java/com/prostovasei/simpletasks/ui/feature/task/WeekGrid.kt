@@ -214,16 +214,21 @@ fun WeekGrid(
                         }
                         .testTag(TAG_WEEK_GRID),
                 ) {
+                    // Итерация 51: пересекающиеся задачи — рядом (дорожки), между задачами встык — зазор cardGap.
+                    val lanes = remember(busy) { busyLanes(busy) }
                     busy.forEach { slot ->
                         val index = ChronoUnit.DAYS.between(today, slot.date).toInt()
                         if (index in visible) {
+                            val lane = lanes[slot] ?: BusyLane(0, 1)
+                            val laneWidth = (dayWidth - sizes.cardGap * lane.count) / lane.count
                             key(slot) {
                                 BusyBlock(
                                     slot = slot,
-                                    width = dayWidth - sizes.cardGap,
-                                    height = hourHeight * ((slot.endMinute - slot.startMinute) / MINUTES_PER_HOUR) - sizes.hairline,
+                                    width = laneWidth,
+                                    height = hourHeight * ((slot.endMinute - slot.startMinute) / MINUTES_PER_HOUR) - sizes.cardGap,
                                     modifier = Modifier.offset {
-                                        IntOffset(columnX(index) + (gapPx / 2).roundToInt(), (slot.startMinute / MINUTES_PER_HOUR * hourPx).roundToInt())
+                                        val x = columnX(index) + (gapPx / 2).roundToInt() + (lane.index * (laneWidth + sizes.cardGap).toPx()).roundToInt()
+                                        IntOffset(x, (slot.startMinute / MINUTES_PER_HOUR * hourPx).roundToInt())
                                     },
                                 )
                             }
@@ -301,7 +306,10 @@ private fun HourLabels(modifier: Modifier, hourHeight: Dp) {
     }
 }
 
-/** Серая плашка уже занятого времени (от часа — со временем начала); выполненная — бледная и зачёркнутая. */
+/**
+ * Серая плашка уже занятого времени (от часа — со временем «19:30–21:30», итерация 51; в узкой плашке конец переносится на
+ * вторую строку); выполненная — бледная и зачёркнутая.
+ */
 @Composable
 private fun BusyBlock(slot: BusySlot, width: Dp, height: Dp, modifier: Modifier) {
     val colors = AppTheme.colors
@@ -323,10 +331,10 @@ private fun BusyBlock(slot: BusySlot, width: Dp, height: Dp, modifier: Modifier)
         )
         if (showTime) {
             Text(
-                timeText(slot.startMinute),
+                busyTimeText(slot),
                 style = MaterialTheme.typography.labelSmall,
                 color = colors.textSecondary,
-                maxLines = 1,
+                maxLines = 2,
                 overflow = TextOverflow.Clip,
             )
         }
@@ -461,6 +469,9 @@ private fun SelectedBlock(
 }
 
 private data class SlotPosition(val minute: Int, val duration: Int)
+
+/** «19:30–21:30»; после тире — место переноса, если плашка узкая. */
+internal fun busyTimeText(slot: BusySlot): String = "${timeText(slot.startMinute)}–\u200B${timeText(slot.endMinute)}"
 
 private fun timeText(minute: Int): String = "%02d:%02d".format(minute / 60 % 24, minute % 60)
 

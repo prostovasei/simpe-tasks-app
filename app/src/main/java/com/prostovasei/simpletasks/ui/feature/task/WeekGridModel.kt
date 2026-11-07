@@ -21,6 +21,44 @@ data class BusySlot(
     val isDone: Boolean,
 )
 
+/** Место занятого времени в колонке дня (итерация 51): дорожка [index] из [count] — пересекающиеся задачи стоят рядом. */
+data class BusyLane(val index: Int, val count: Int)
+
+/**
+ * Дорожки занятого времени (итерация 51, решение PM): задачи одного дня, которые пересекаются по времени (не встык), встают рядом
+ * и делят колонку поровну — каждая видна целиком. Группа — цепочка пересекающихся задач; в ней задача занимает первую свободную
+ * дорожку, число дорожек у всей группы одно.
+ */
+fun busyLanes(slots: List<BusySlot>): Map<BusySlot, BusyLane> {
+    val result = HashMap<BusySlot, BusyLane>()
+    slots.groupBy { it.date }.values.forEach { day ->
+        val sorted = day.sortedWith(compareBy<BusySlot> { it.startMinute }.thenByDescending { it.endMinute })
+        var group = mutableListOf<BusySlot>()
+        var groupEnd = -1
+        fun close() {
+            val ends = mutableListOf<Int>()
+            val lanes = group.map { slot ->
+                val free = ends.indexOfFirst { it <= slot.startMinute }
+                val lane = if (free >= 0) free else ends.size
+                if (lane == ends.size) ends += slot.endMinute else ends[lane] = slot.endMinute
+                slot to lane
+            }
+            lanes.forEach { (slot, lane) -> result[slot] = BusyLane(lane, ends.size) }
+        }
+        sorted.forEach { slot ->
+            if (group.isNotEmpty() && slot.startMinute >= groupEnd) {
+                close()
+                group = mutableListOf()
+                groupEnd = -1
+            }
+            group += slot
+            groupEnd = maxOf(groupEnd, slot.endMinute)
+        }
+        if (group.isNotEmpty()) close()
+    }
+    return result
+}
+
 /**
  * Геометрия сетки: сутки с 00:00 до 24:00 шагом 30 минут, листается по дням. В шторке — строка недели
  * из [VISIBLE_DAYS] дней, по нажатию на день — таймлайн на [TIMELINE_DAYS] дня (итерация 21).

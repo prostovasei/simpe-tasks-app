@@ -15,6 +15,25 @@ class WeekGridModelTest {
     private val today = LocalDate.of(2026, 10, 14)
     private val hourPx = 100f
 
+    /** Итерация 51: пересекающиеся задачи — рядом (дорожки), встык — не пересечение. */
+    @Test
+    fun overlappingBusySlotsShareTheColumn() {
+        fun slot(id: String, from: Int, to: Int, day: LocalDate = today) = BusySlot(id, id, day, from, to, isDone = false)
+        val hookah = slot("Кальян", 19 * 60 + 30, 21 * 60 + 30)
+        val football = slot("Футбол", 21 * 60 + 30, 23 * 60 + 30)
+        val flowers = slot("Цветы", 23 * 60, 23 * 60 + 30)
+        val dinner = slot("Ужин", 18 * 60, 19 * 60 + 30, today.plusDays(1))
+        val call = slot("Звонок", 18 * 60 + 30, 19 * 60 + 30, today.plusDays(1))
+        val series = slot("Сериал", 19 * 60, 20 * 60, today.plusDays(1))
+        val lanes = busyLanes(listOf(flowers, hookah, football, dinner, call, series))
+        assertEquals("Встык — на всю ширину", BusyLane(0, 1), lanes[hookah])
+        assertEquals(BusyLane(0, 2), lanes[football])
+        assertEquals(BusyLane(1, 2), lanes[flowers])
+        assertEquals(listOf(0, 1, 2), listOf(dinner, call, series).map { lanes.getValue(it).index })
+        assertEquals(setOf(3), listOf(dinner, call, series).map { lanes.getValue(it).count }.toSet())
+        assertEquals("19:30–\u200B21:30", busyTimeText(hookah))
+    }
+
     @Test
     fun minuteSnapsToHalfHour() {
         assertEquals(0, WeekGridMath.minuteAt(0f, hourPx))

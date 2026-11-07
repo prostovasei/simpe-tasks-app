@@ -125,6 +125,9 @@ SIZE_PICK = {
     'WIDGET_TIME': ('widget-time', 'Колонка времени слева.'), 'WIDGET_RAIL': ('widget-rail', 'Колонка линии шкалы с кружком.'), 'WIDGET_NODE': ('widget-node', 'Кружок приоритета на шкале.'),
     'WIDGET_BAR': ('widget-bar', 'Нижняя строка виджета.'), 'WIDGET_TAIL': ('widget-tail', 'Место под нижней строкой в конце ленты виджета.'),
     'WIDGET_ADD_W': ('widget-add-w', 'Кнопка «+» виджета: ширина.'), 'WIDGET_ADD_H': ('widget-add-h', 'Кнопка «+» виджета: высота.'),
+    'WIDGET_DATE_FULL_MIN': ('widget-date-full-min', 'Дата в нижней строке виджета (0.51): «сб, 7 ноя» на виджете не уже этого (380), уже — «7 ноя».'),
+    'WIDGET_DATE_MIN': ('widget-date-min', 'Дата в нижней строке виджета: на виджете уже этого (350) даты нет: «+» не должен обрезаться.'),
+    'WIDGET_DATE_PAD': ('widget-date-pad', 'Дата в нижней строке виджета: поля зоны нажатия по бокам.'),
     'WIDGET_OPEN_W': ('widget-open-w', 'Кнопка «открыть приложение» виджета: ширина.'), 'WIDGET_OPEN_H': ('widget-open-h', 'Кнопка «открыть приложение» виджета: высота.'),
     'WIDGET_SWITCH_W': ('widget-switch-w', 'Кнопка переключателя «Все» / «Входящие»: ширина.'), 'WIDGET_SWITCH_H': ('widget-switch-h', 'Кнопка переключателя: высота.'),
     'SNACKBAR_MIN_HEIGHT': ('snackbar-min-height', 'Подсказка «Отмена»: наименьшая высота.'), 'SNACKBAR_ICON': ('snackbar-icon', 'Значок слева в подсказке «Отмена».'),
@@ -504,11 +507,25 @@ def window_bar():
             f'{sqb(svg("ic_widget_all", 25), "var(--accent)")}<span class="confirm">{CHECK}</span></div>')
 
 
+def busy_preview(left, col):
+    """Занятое время в сетке (итерация 51): «Созвон» 10:00–12:00 и «Обед» 11:00–12:00 пересекаются — рядом, по половине колонки;
+    «Почта» 12:00–13:00 встык — на всю ширину, с зазором 2."""
+    def blk(x, w, top, h, title, when=''):
+        sub = f'<div style="font-size:10px;line-height:12px">{when}</div>' if when else ''
+        return (f'<div style="position:absolute;left:{x:.1f}px;width:{w:.1f}px;top:{top}px;height:{h - 2}px;border-radius:var(--radius-sm);'
+                f'background:color-mix(in srgb,var(--divider) 70%,var(--surface));color:var(--text-secondary);padding:1px 3px;box-sizing:border-box;overflow:hidden">'
+                f'<div style="font-size:11px;line-height:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{title}</div>{sub}</div>')
+    half = (col - 4 - 2) / 2
+    return (blk(left + 2, half, 0, 44, 'Созвон', '10:00–<wbr>12:00') + blk(left + 2 + half + 2, half, 22, 22, 'Обед')
+            + blk(left + 2, col - 4, 44, 22, 'Почта'))
+
+
 def preview_date_window():
     hours = ''.join(f'<div style="position:absolute;left:0;right:0;top:{(h - 10) * 22}px;height:22px;border-top:1px solid var(--divider)"><span style="position:absolute;left:4px;top:2px;font-size:11px;color:var(--text-secondary)">{h}</span></div>' for h in range(10, 17))
     cols = ''.join(f'<span style="width:{(388 - 26) / 3}px;height:36px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:{800 if i == 0 else 600};color:{"var(--accent)" if i == 0 else "var(--text-primary)"};background:{"var(--selected)" if i == 0 else "transparent"}">{t}</span>' for i, t in enumerate(['29 чт', '30 пт', '31 сб']))
     grid = (f'<div style="display:flex;padding-left:26px">{cols}</div><div style="position:relative;height:154px;overflow:hidden"><span style="position:absolute;left:26px;width:{(388 - 26) / 3}px;top:0;bottom:0;background:var(--selected);opacity:.7"></span>{hours}'
-            f'<div style="position:absolute;left:28px;width:{(388 - 26) / 3 - 4}px;top:{3 * 22}px;height:42px;border-radius:var(--radius-sm);background:var(--accent);color:var(--on-accent);font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center">13:00–15:00</div></div>')
+            f'<div style="position:absolute;left:28px;width:{(388 - 26) / 3 - 4}px;top:{3 * 22}px;height:42px;border-radius:var(--radius-sm);background:var(--accent);color:var(--on-accent);font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center">13:00–15:00</div>'
+            + busy_preview(26 + (388 - 26) / 3, (388 - 26) / 3) + '</div>')
     win = (f'<div style="width:388px;border-radius:var(--radius-nav) var(--radius-nav) 0 0;background:var(--surface);overflow:hidden">{grid}'
            f'<div style="border-top:1px solid var(--divider)">{week_block()}</div>{window_bar()}</div>')
     cap = ('<div style="max-width:420px;font-size:12px;line-height:18px;color:var(--text-secondary)">Сетка на 3 дня с часом, подогнанным под высоту (10:00–24:00 видно сразу, час не меньше 32). '
@@ -658,7 +675,8 @@ TickTick хранит эмодзи в начале названия: импор�
 Блок «2 недели»: ячейка `size-date-cell` (40), кружок дня `size-date-day` (34); прошедшие дни бледные и недоступны, сегодня в кольце `accent`, выбранный залит `accent`,
 три дня сетки — под подложкой `selected`, у 1-го числа подпись месяца. День выбирается нажатием сразу, сетка переезжает к нему, время остаётся.
 Нижняя строка: «←» (отменить изменения и вернуться), «без даты», «‹ 26 окт – 08 ноя ›» (листание по 2 недели, назад с первой страницы нельзя), «Календарь» значком, галочка (применить).
-Кнопки сжимаются на узком экране до `size-date-button-min` (36), место под подпись растёт вместе с крупным шрифтом (`size-date-range-min` × масштаб).'''),
+Кнопки сжимаются на узком экране до `size-date-button-min` (36), место под подпись растёт вместе с крупным шрифтом (`size-date-range-min` × масштаб).
+Занятое время (итерация 51): серые плашки других задач (`divider` 70%), высота — длительность. Задачи, которые пересекаются по времени, стоят рядом и делят колонку поровну (две — по половине, три — по трети); встык — не пересечение, на всю ширину. Между плашками зазор `size-card-gap` (2). В плашке от часа под названием «19:30–21:30» (`label-small`, в узкой плашке конец переносится на вторую строку). Выполненная — бледнее и зачёркнута. Задачи «Не буду делать» здесь не показываются (0.50.1).'''),
     'CalendarDialog': ('Календарь на ближайшие 2 месяца: день выбирается нажатием, окно закрывается.',
                        '''Окно по центру (`SheetDialog` без «Готово»), единственная кнопка — «Закрыть». Два месяца: текущий и следующий, недели с понедельника.
 Прошедшие дни бледные и недоступны, сегодня в кольце, выбранный чёрный. Месяц нигде больше не открывается.'''),
@@ -690,6 +708,7 @@ def main():
     COMP_README.update(ds_more.README_MORE)
     COMP_README['WidgetBar'] = ('Нижняя строка виджета: переключатель «Все» / «Входящие» / «Неделя», кнопка «открыть приложение», «+».',
                                 '''Плоская панель (0.46.0, реф PM): фон `background`, сверху линия `divider` `size-hairline`; задачи ленты уходят под неё. Высота строки `size-widget-bar` (40; 0.46.0 — ниже по просьбе PM), поля по бокам 6, кнопки по центру. Белых капсул больше нет.
+Итерация 51: между галочкой и «+» — сегодняшняя дата «сб, 7 ноя» (13 sp Bold `text-primary`, поля `size-widget-date-pad`); на виджете уже `size-widget-date-full-min` (380) — «7 ноя», уже `size-widget-date-min` (350) — даты нет («+» не обрезается). Нажатие возвращает к сегодня: «Неделя» — текущая неделя и месяц календарика, «Все» — лента к «Сегодня», «Входящие» — в начало. Меняется в полночь сама.
 Слева три кнопки («Все», «Входящие», «Неделя» — `ic_tab_week`) `size-widget-switch-w` × `size-widget-switch-h` (50×30, радиус `radius-lg`): выбранная — на подложке `selected` со значком `accent` 22, остальные без подложки со значком `text-secondary`.
 Место между вкладками и кнопками нажимается как «открыть приложение». Справа галочка значка приложения 24×20 цвета `accent` без капсулы (зона нажатия `size-widget-open-w` × `size-widget-open-h`, 52×32), щель 8 и «+» `size-widget-add-w` × `size-widget-add-h` (64×32, радиус `radius-xl`, `accent`, значок 22 `on-accent`). Кнопки обновления на виджете нет — проверка обновления в «Настройках».''')
     groups = {}

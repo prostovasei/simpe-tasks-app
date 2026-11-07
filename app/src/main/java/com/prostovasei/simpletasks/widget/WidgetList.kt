@@ -98,6 +98,7 @@ fun widgetRootViews(
     overlay: RemoteViews,
     size: DpSize = DpSize.Unspecified,
     liveClock: Boolean = true,
+    scrollToToday: Boolean = false,
 ): RemoteViews {
     val week = model.week
     if (week != null) {
@@ -120,6 +121,7 @@ fun widgetRootViews(
         val lines = if (all.size > MAX_LINES) all.take(MAX_LINES) + WidgetLine.Tail else all
         lines.forEach { items.addItem(it.key.hashCode().toLong(), WidgetRows.views(context, it, model, liveClock)) }
         setRemoteAdapter(R.id.widget_list, items.build())
+        if (scrollToToday) setScrollPosition(R.id.widget_list, model.todayLine(lines))
         setPendingIntentTemplate(
             R.id.widget_list,
             PendingIntent.getActivity(
@@ -132,6 +134,13 @@ fun widgetRootViews(
         removeAllViews(R.id.widget_overlay)
         addView(R.id.widget_overlay, overlay)
     }
+}
+
+/** Строка, к которой ведёт «к сегодня» (итерация 51): подпись сегодняшнего дня; нет её — первый день после сегодня; иначе начало. */
+fun WidgetModel.todayLine(lines: List<WidgetLine>): Int {
+    val titles = lines.withIndex().filter { it.value is WidgetLine.Title }
+    val day = titles.firstOrNull { ((it.value as WidgetLine.Title).day as? WidgetDay.On)?.date?.let { date -> date >= today } == true }
+    return day?.index ?: 0
 }
 
 /** Предел строк ленты (~150 строк — ~150 КБ пакета). */

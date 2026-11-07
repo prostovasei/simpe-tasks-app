@@ -88,8 +88,9 @@ class QuickAddViewModel @Inject constructor(
     QuickAddState(
         today = time.today(),
         zone = time.zone(),
-        // Открыто с экрана «Все» — по умолчанию задача на сегодня.
-        due = if (savedStateHandle.get<Boolean>("today") == true) TaskDue.AllDay(time.today()) else null,
+        // Открыто с экрана «Все» — по умолчанию задача на сегодня; из шторки дня (итерация 51) — на этот день.
+        due = savedStateHandle.get<String>("date")?.let { runCatching { TaskDue.AllDay(LocalDate.parse(it)) }.getOrNull() }
+            ?: if (savedStateHandle.get<Boolean>("today") == true) TaskDue.AllDay(time.today()) else null,
         nowMinute = time.now().atZone(time.zone()).let { it.hour * 60 + it.minute },
         title = drafts.get()?.title.orEmpty(),
         content = drafts.get()?.content.orEmpty(),
