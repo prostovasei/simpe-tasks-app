@@ -45,7 +45,7 @@ import java.time.format.TextStyle
 import java.util.Locale
 
 /**
- * Ячейка дня в виде «Неделя» (итерация 44; 0.46.0 — макет `VariantK2`): строка даты «пн 26» (у сегодня число в кружке цвета акцента)
+ * Ячейка дня в виде «Неделя» (итерация 44; 0.46.0 — макет `VariantK2`; 0.55 — как в виджете: «ПН 9» капсом, эмодзи списка слева от времени): строка даты (у сегодня число в кружке цвета акцента)
  * и задачи компактными строками: кружок приоритета, название, время справа. Высота ячейки задана снаружи (все ячейки недели одинаковые), поэтому
  * показывается столько плашек, сколько влезает; остальное — «+N» справа в строке даты. Нажатие на строку даты открывает полный
  * список дня. Правая и нижняя линии — сетка между ячейками.
@@ -98,9 +98,10 @@ private fun WeekDayHeader(date: LocalDate, isToday: Boolean, hidden: Int, onClic
         // Итерация 47 (решение PM): день недели и число одним нежирным начертанием и серые; сегодня — жирное и чёрное, без кружка.
         val weight = if (isToday) FontWeight.ExtraBold else FontWeight.Medium
         val color = if (isToday) colors.textPrimary else colors.textSecondary
+        // Итерация 55 (как в виджете): «ПН 9» капсом, мельче.
         Text(
-            "$weekday ${date.dayOfMonth}",
-            style = MaterialTheme.typography.labelLarge,
+            "${weekday.uppercase()} ${date.dayOfMonth}",
+            style = MaterialTheme.typography.labelSmall,
             fontWeight = weight,
             color = color,
             modifier = if (isToday) Modifier.testTag("week-today:$date") else Modifier,
@@ -174,6 +175,8 @@ private fun WeekTaskRow(item: TaskItem, onToggle: () -> Unit, onOpen: () -> Unit
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
+        // Итерация 55 (как в виджете, 0.48): эмодзи списка слева от времени, время у края плашки.
+        Text(item.listEmoji, style = MaterialTheme.typography.labelMedium, maxLines = 1, modifier = Modifier.padding(start = spacing.xxs).testTag("week-emoji:${item.id}"))
         item.startTime()?.let {
             Text(
                 it,
@@ -182,8 +185,8 @@ private fun WeekTaskRow(item: TaskItem, onToggle: () -> Unit, onOpen: () -> Unit
                 // Итерация 47 (решение PM): прошедшее время в «Неделе» не красное.
                 color = if (done) colors.inactive else colors.textSecondary,
                 maxLines = 1,
-                modifier = Modifier.padding(start = spacing.xxs, end = spacing.xs),
+                modifier = Modifier.padding(start = spacing.xxs, end = spacing.xxs),
             )
-        } ?: Box(Modifier.size(spacing.xs))
+        } ?: Box(Modifier.size(spacing.xxs))
     }
 }

@@ -1,5 +1,8 @@
 package com.prostovasei.simpletasks.ui.feature.lists
 
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -60,6 +63,9 @@ import com.prostovasei.simpletasks.domain.model.ProjectWithCount
 @Composable
 fun ListsRoute(
     onOpenProject: (String) -> Unit,
+    onOpenInbox: () -> Unit = {},
+    onOpenSearch: () -> Unit = {},
+    onOpenSettings: () -> Unit = {},
     onOpenCompleted: () -> Unit = {},
     onOpenTrash: () -> Unit = {},
     onOpenWontDo: () -> Unit = {},
@@ -75,7 +81,7 @@ fun ListsRoute(
             }
         }
     }
-    ListsScreen(state, viewModel::onIntent, onOpenProject, onOpenCompleted, onOpenTrash, onOpenWontDo, onOpenSomeday, onOpenNoList)
+    ListsScreen(state, viewModel::onIntent, onOpenProject, onOpenCompleted, onOpenTrash, onOpenWontDo, onOpenSomeday, onOpenNoList, onOpenInbox, onOpenSearch, onOpenSettings)
 }
 
 @Composable
@@ -88,6 +94,9 @@ fun ListsScreen(
     onOpenWontDo: () -> Unit = {},
     onOpenSomeday: () -> Unit = {},
     onOpenNoList: () -> Unit = {},
+    onOpenInbox: () -> Unit = {},
+    onOpenSearch: () -> Unit = {},
+    onOpenSettings: () -> Unit = {},
 ) {
     val colors = AppTheme.colors
     Scaffold(containerColor = colors.background, contentWindowInsets = WindowInsets(0)) { padding ->
@@ -100,19 +109,27 @@ fun ListsScreen(
                 TextButton(onClick = { onIntent(ListsIntent.OpenDialog(ListsDialog.CreateList)) }, modifier = Modifier.testTag(TAG_NEW_LIST)) {
                     Text(stringResource(R.string.lists_new_list), color = colors.accent)
                 }
+                // Итерация 55: «Настройки» — шестерёнка в шапке «Списков» (из нижней панели ушли).
+                IconButton(onClick = onOpenSettings, modifier = Modifier.testTag(TAG_LISTS_SETTINGS)) {
+                    Icon(painterResource(R.drawable.ic_nav_settings), stringResource(R.string.tab_settings), tint = colors.textSecondary)
+                }
             }
-            // Итерация 52: «Когда-нибудь» (со списком, без даты) и «Без списка» (с датой, без списка) — над «Выполненными».
-            // Итерация 52.1: у разделов свои эмодзи — 💭 и 📌 (у «Входящих» — 📥).
-            CountRow(null, R.string.someday_title, state.somedayCount, TAG_SOMEDAY, onOpenSomeday, emoji = ListEmoji.SOMEDAY)
-            CountRow(null, R.string.no_list_title, state.noListCount, TAG_NO_LIST, onOpenNoList, emoji = ListEmoji.NO_LIST)
-            CompletedRow(onOpenCompleted)
-            CountRow(R.drawable.ic_wont_do, R.string.wontdo_title, state.wontDoCount, TAG_WONT_DO, onOpenWontDo)
-            TrashRow(state.trashCount, onOpenTrash)
-            val tree = state.tree ?: return@Column
-            if (tree.groups.isEmpty() && tree.ungrouped.isEmpty()) {
-                EmptyState(stringResource(R.string.lists_empty))
-            } else {
-                LazyColumn(Modifier.fillMaxSize()) {
+            // Итерация 55: всё ниже шапки прокручивается — строк сверху стало больше, на маленьком экране они не влезают.
+            val tree = state.tree
+            LazyColumn(Modifier.fillMaxSize().testTag(TAG_LISTS_SCROLL)) {
+                item(key = "search") { SearchEntry(onOpenSearch) }
+                // «Входящие» — первой строкой, с числом неразобранных (из нижней панели ушли).
+                item(key = "inbox") { CountRow(null, R.string.inbox_title, state.inboxCount, TAG_LISTS_INBOX, onOpenInbox, emoji = ListEmoji.INBOX) }
+                // Итерация 52: «Когда-нибудь» (со списком, без даты) и «Без списка» (с датой, без списка) — над «Выполненными».
+                // Итерация 52.1: у разделов свои эмодзи — 💭 и 📌 (у «Входящих» — 📥).
+                item(key = "someday") { CountRow(null, R.string.someday_title, state.somedayCount, TAG_SOMEDAY, onOpenSomeday, emoji = ListEmoji.SOMEDAY) }
+                item(key = "no-list") { CountRow(null, R.string.no_list_title, state.noListCount, TAG_NO_LIST, onOpenNoList, emoji = ListEmoji.NO_LIST) }
+                item(key = "completed") { CompletedRow(onOpenCompleted) }
+                item(key = "wont-do") { CountRow(R.drawable.ic_wont_do, R.string.wontdo_title, state.wontDoCount, TAG_WONT_DO, onOpenWontDo) }
+                item(key = "trash") { TrashRow(state.trashCount, onOpenTrash) }
+                if (tree != null && tree.groups.isEmpty() && tree.ungrouped.isEmpty()) {
+                    item(key = "empty") { EmptyState(stringResource(R.string.lists_empty)) }
+                } else if (tree != null) {
                     tree.groups.forEach { group ->
                         val collapsed = group.group.id in state.collapsedFolders
                         item(key = "g-${group.group.id}") { FolderRow(group, collapsed, onIntent) }
@@ -183,6 +200,32 @@ private fun CountRow(icon: Int?, title: Int, count: Int, tag: String, onClick: (
     }
 }
 
+/** Поле «Поиск задач» (итерация 55): нажатие открывает поиск — с полем ввода и клавиатурой. */
+@Composable
+private fun SearchEntry(onClick: () -> Unit) {
+    val colors = AppTheme.colors
+    val spacing = AppTheme.spacing
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .padding(horizontal = spacing.md, vertical = spacing.xs)
+            .fillMaxWidth()
+            .height(AppTheme.sizes.searchEntry)
+            .clip(AppTheme.shapes.large)
+            .background(colors.surface)
+            .clickable(onClick = onClick)
+            .padding(horizontal = spacing.md)
+            .testTag(TAG_LISTS_SEARCH),
+    ) {
+        Icon(painterResource(R.drawable.ic_nav_search), null, tint = colors.textSecondary)
+        Text(stringResource(R.string.search_hint), style = MaterialTheme.typography.bodyLarge, color = colors.textSecondary, modifier = Modifier.padding(start = spacing.sm))
+    }
+}
+
+const val TAG_LISTS_SETTINGS = "lists_settings"
+const val TAG_LISTS_SEARCH = "lists_search"
+const val TAG_LISTS_INBOX = "lists_inbox"
+const val TAG_LISTS_SCROLL = "lists_scroll"
 const val TAG_COMPLETED = "lists_completed"
 const val TAG_WONT_DO = "lists_wont_do"
 const val TAG_SOMEDAY = "lists_someday"

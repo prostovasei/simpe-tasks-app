@@ -1,5 +1,7 @@
 package com.prostovasei.simpletasks.ui.feature.all
 
+import androidx.compose.foundation.layout.Column
+import com.prostovasei.simpletasks.designsystem.components.ScreenTitle
 import com.prostovasei.simpletasks.ui.feature.bulk.selectionBottomInset
 import com.prostovasei.simpletasks.ui.feature.bulk.rememberSelection
 import com.prostovasei.simpletasks.ui.feature.bulk.Selectable
@@ -41,7 +43,7 @@ fun AllRoute(onOpenTask: (String) -> Unit, viewModel: AllViewModel = hiltViewMod
     AllScreen(state, viewModel::onIntent, snackbar, onOpenTask, nowMinute = rememberNowMinute())
 }
 
-/** Лента «Все» по дням (итерация 13, макет PM): без заголовка экрана, «+» — в нижней панели. */
+/** Лента «Предстоящее» по дням (итерация 13, макет PM; итерация 55 — заголовок «Предстоящее»), «+» — в нижней панели. */
 @Composable
 fun AllScreen(
     state: AllState,
@@ -58,7 +60,10 @@ fun AllScreen(
         snackbarHost = { UndoSnackbarHost(snackbarHostState) },
     ) { padding ->
         if (!state.isLoading && state.isEmpty) {
-            EmptyTasks(stringResource(R.string.all_empty), stringResource(R.string.empty_hint), Modifier.padding(padding))
+            Column(Modifier.padding(padding)) {
+                ScreenTitle(stringResource(R.string.tab_upcoming))
+                EmptyTasks(stringResource(R.string.all_empty), stringResource(R.string.empty_hint))
+            }
             return@Scaffold
         }
         // Итерация 40: долгое нажатие на плашку — режим выбора (будущие повторы не выбираются).
@@ -69,6 +74,8 @@ fun AllScreen(
             Modifier.fillMaxSize(),
             contentPadding = PaddingValues(bottom = selectionBottomInset(selection)),
         ) {
+            // Итерация 55: лента «Все» называется «Предстоящее» — заголовок сверху, как на «Списках».
+            item(key = "title") { ScreenTitle(stringResource(R.string.tab_upcoming)) }
             val groups = state.dayGroups()
             // «Просрочено · N» над первым прошедшим днём (итерация 37): стрелка сворачивает все прошедшие дни, значок — переносит на сегодня.
             val overdueCount = groups.filter { it.isOverdue }.sumOf { group -> group.items.count { !it.showsDone } }

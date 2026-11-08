@@ -24,7 +24,7 @@ class ListsViewModel @Inject constructor(
         viewModelScope.launch {
             tasks.observeWontDoCount().collect { count -> setState { copy(wontDoCount = count) } }
         viewModelScope.launch {
-            tasks.observeSortCounts().collect { counts -> setState { copy(somedayCount = counts.someday, noListCount = counts.noList) } }
+            tasks.observeSortCounts().collect { counts -> setState { copy(inboxCount = counts.inbox, somedayCount = counts.someday, noListCount = counts.noList) } }
         }
         }
     }

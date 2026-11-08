@@ -1,5 +1,6 @@
 package com.prostovasei.simpletasks.ui.feature.week
 
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextEquals
@@ -121,6 +122,14 @@ class WeekScreenTest {
         composeRule.onNodeWithTag("week-repeat:r1", useUnmergedTree = true).assertExists()
         composeRule.onNodeWithTag("week-check:r1").performClick()
         assertEquals(TaskListIntent.ToggleComplete("r1", recurring = true, done = true), intents.last())
+    }
+
+    /** Итерация 55 (как в виджете): эмодзи списка слева от времени, дата капсом «ПН 2». */
+    @Test
+    fun rowsShowListEmojiAndCapsDate() {
+        show()
+        composeRule.onNodeWithTag("week-emoji:a1", useUnmergedTree = true).assertTextEquals("💼")
+        composeRule.onNodeWithText("ПН ${monday.dayOfMonth}").assertExists()
     }
 
     @Test

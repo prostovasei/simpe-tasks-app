@@ -1,5 +1,19 @@
 package com.prostovasei.simpletasks.ui.navigation
 
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.edit
+import android.content.Context
+import androidx.annotation.DrawableRes
 import com.prostovasei.simpletasks.ui.feature.sorted.NoListRoute
 import com.prostovasei.simpletasks.ui.feature.sorted.SomedayRoute
 import com.prostovasei.simpletasks.ui.feature.sorted.SortCountsHost
@@ -106,15 +120,27 @@ import com.prostovasei.simpletasks.ui.feature.task.QuickAddRoute
 import com.prostovasei.simpletasks.ui.feature.task.TaskDetailRoute
 import kotlin.reflect.KClass
 
-/** Вкладки нижнего бара (SPEC.md §4). */
-enum class Tab(val route: Any, val routeClass: KClass<*>, @param:StringRes val label: Int, val icon: @Composable () -> ImageVector) {
-    INBOX(InboxDestination, InboxDestination::class, R.string.tab_inbox, { Icons.Default.MailOutline }),
-    ALL(AllDestination, AllDestination::class, R.string.tab_all, { Icons.Default.DateRange }),
-    // Итерация 44: «Неделя» — после «Все».
-    WEEK(WeekDestination, WeekDestination::class, R.string.tab_week, { ImageVector.vectorResource(R.drawable.ic_tab_week) }),
-    LISTS(ListsDestination, ListsDestination::class, R.string.tab_lists, { Icons.AutoMirrored.Filled.List }),
-    SEARCH(SearchDestination, SearchDestination::class, R.string.tab_search, { Icons.Default.Search }),
-    SETTINGS(SettingsDestination, SettingsDestination::class, R.string.tab_settings, { Icons.Default.Settings }),
+/**
+ * Разделы нижней панели (итерация 55, решение PM, макет iteration55.py): слева «Предстоящее» или «Неделя» (одно место, выбор —
+ * удержанием, [NavPrefs]), посередине «+», справа «Списки». Значки — контурные, как в нижней строке виджета.
+ */
+enum class Tab(val route: Any, val routeClass: KClass<*>, @param:StringRes val label: Int, @param:DrawableRes val icon: Int) {
+    UPCOMING(AllDestination, AllDestination::class, R.string.tab_upcoming, R.drawable.ic_widget_all),
+    WEEK(WeekDestination, WeekDestination::class, R.string.tab_week, R.drawable.ic_tab_week),
+    LISTS(ListsDestination, ListsDestination::class, R.string.tab_lists, R.drawable.ic_widget_list),
+}
+
+/** «Входящие», «Поиск», «Настройки» (итерация 55) — экраны раздела «Списки»: панель видна, выбрана вкладка «Списки». */
+private val LISTS_CHILDREN: List<KClass<*>> = listOf(InboxDestination::class, SearchDestination::class, SettingsDestination::class)
+
+/** Какой вид открыт в левом месте панели: «Предстоящее» или «Неделя» (итерация 55; выбор удержанием запоминается). */
+object NavPrefs {
+    private const val PREFS = "navigation"
+    private const val KEY = "left_tab"
+
+    fun left(context: Context): Tab = if (context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY, null) == Tab.WEEK.name) Tab.WEEK else Tab.UPCOMING
+
+    fun setLeft(context: Context, tab: Tab) = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit { putString(KEY, tab.name) }
 }
 
 @Composable
@@ -137,6 +163,11 @@ fun AppNavHost(
         if (top.isSheet()) navController.previousBackStackEntry?.destination?.takeUnless { it.isSheet() } else top
     }
     val currentTab = Tab.entries.firstOrNull { destination.isOn(it) }
+        ?: Tab.LISTS.takeIf { LISTS_CHILDREN.any { child -> destination?.hasRoute(child) == true } }
+    val context = LocalContext.current
+    // Левое место панели: «Предстоящее» или «Неделя» — что выбрано удержанием (с ним приложение и открывается).
+    var left by remember { mutableStateOf(NavPrefs.left(context)) }
+    val startDestination = remember { left.route }
 
     // Итерация 52: число неразобранных на вкладке «Входящие».
     val sortCounts by hiltViewModel<SortCountsHost>().counts.collectAsStateWithLifecycle(SortCounts())
@@ -200,13 +231,26 @@ fun AppNavHost(
         bottomBar = {
             // На экране списка нижний бар скрыт: это вложенный экран с кнопкой «Назад». В режиме выбора — тоже.
             if (!selectionMode.value && (destination == null || currentTab != null)) {
-                val selected = currentTab ?: Tab.ALL
+                val selected = currentTab ?: left
                 BottomBar(
                     selected = selected,
+                    left = left,
                     inboxCount = sortCounts.inbox,
-                    onSelect = { tab -> navController.openTab(tab) },
-                    // На «Все» и «Неделе» новая задача — на сегодня, на остальных вкладках — во «Входящие».
-                    onAdd = { navController.navigate(QuickAddDestination(today = selected == Tab.ALL || selected == Tab.WEEK)) },
+                    onSelect = { tab ->
+                        // «Списки» из «Входящих», «Поиска» или «Настроек» — назад к самим «Спискам».
+                        if (tab == Tab.LISTS && currentTab == Tab.LISTS && destination?.hasRoute(ListsDestination::class) != true) {
+                            navController.popBackStack(ListsDestination, inclusive = false)
+                        } else {
+                            navController.openTab(tab)
+                        }
+                    },
+                    onPickLeft = { tab ->
+                        left = tab
+                        NavPrefs.setLeft(context, tab)
+                        navController.openTab(tab)
+                    },
+                    // На «Предстоящем» и «Неделе» новая задача — на сегодня, в «Списках» — во «Входящие».
+                    onAdd = { navController.navigate(QuickAddDestination(today = selected != Tab.LISTS)) },
                 )
             }
         },
@@ -216,7 +260,7 @@ fun AppNavHost(
         CompositionLocalProvider(LocalBulkActions provides bulk, LocalSelectionMode provides selectionMode) {
         NavHost(
             navController,
-            startDestination = AllDestination,
+            startDestination = startDestination,
             modifier = Modifier.padding(padding).consumeWindowInsets(padding),
             enterTransition = { slideIn(push = true) },
             exitTransition = { slideOut(push = true) },
@@ -237,6 +281,9 @@ fun AppNavHost(
             composable<DayDestination> { DayRoute(onBack = { navController.popBackStack() }, onOpenTask = openTask) }
             composable<ListsDestination> {
                 ListsRoute(
+                    onOpenInbox = { navController.navigate(InboxDestination) },
+                    onOpenSearch = { navController.navigate(SearchDestination) },
+                    onOpenSettings = { navController.navigate(SettingsDestination) },
                     onOpenProject = { navController.navigate(ProjectDestination(it)) },
                     onOpenCompleted = { navController.navigate(CompletedDestination) },
                     onOpenTrash = { navController.navigate(TrashDestination) },
@@ -281,15 +328,24 @@ fun AppNavHost(
 }
 
 /**
- * Нижняя панель (итерация 13, макет PM; итерация 44 — по референсу PM: не парит, а закреплена внизу на всю ширину, без капсулы и тени,
- * сверху тонкая линия): иконки вкладок без подписей, открытая — зелёная, в конце — кнопка «+» новой задачи. Поиск — всегда в панели,
- * перед «Настройками» (итерация 15). Фон панели доходит до низа экрана — под системной панелью навигации.
+ * Нижняя панель (итерация 55, решение PM, макет iteration55.py): три места — слева «Предстоящее» или «Неделя» ([left]; удержание —
+ * меню из двух пунктов, точка под значком подсказывает, что оно есть), посередине чёрная «+», справа «Списки» с числом неразобранных
+ * во «Входящих». Вкладки — как в нижней строке виджета: контурный значок, у выбранной — плашка `selected`. Закреплена внизу на всю
+ * ширину (итерация 44), сверху тонкая линия, фон доходит до низа экрана.
  */
 @Composable
-fun BottomBar(selected: Tab, onSelect: (Tab) -> Unit, onAdd: () -> Unit = {}, inboxCount: Int = 0) {
+fun BottomBar(
+    selected: Tab,
+    onSelect: (Tab) -> Unit,
+    onAdd: () -> Unit = {},
+    inboxCount: Int = 0,
+    left: Tab = Tab.UPCOMING,
+    onPickLeft: (Tab) -> Unit = {},
+) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
     val sizes = AppTheme.sizes
+    var menu by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxWidth().background(colors.surface)) {
         Box(Modifier.fillMaxWidth().height(sizes.hairline).background(colors.divider))
         Row(
@@ -297,33 +353,28 @@ fun BottomBar(selected: Tab, onSelect: (Tab) -> Unit, onAdd: () -> Unit = {}, in
                 .fillMaxWidth()
                 .windowInsetsPadding(WindowInsets.navigationBars)
                 .height(sizes.navBar)
-                .padding(start = spacing.xxs, end = spacing.xs),
+                .padding(horizontal = spacing.xs),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Вкладки делят ширину поровну (их шесть); на очень узком экране сжимаются, «+» остаётся на месте.
-            Tab.entries.forEach { tab ->
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(sizes.navBar)
-                        .clickable(role = Role.Button, onClick = { onSelect(tab) })
-                        .testTag("tab:${tab.name}"),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    val icon = @Composable { Icon(tab.icon(), contentDescription = stringResource(tab.label), tint = if (tab == selected) colors.accent else colors.textSecondary) }
-                    // Итерация 52 (макет iteration52.py): у «Входящих» — чёрный кружок с числом неразобранных; при нуле его нет.
-                    if (tab == Tab.INBOX && inboxCount > 0) {
-                        BadgedBox(badge = {
-                            Badge(containerColor = colors.accent, contentColor = colors.onAccent, modifier = Modifier.testTag(TAG_INBOX_BADGE)) { Text(inboxCount.toString()) }
-                        }) { icon() }
-                    } else {
-                        icon()
+            Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                NavTab(left, selected == left || (selected != Tab.LISTS), hint = true, onClick = { onSelect(left) }, onLongClick = { menu = true })
+                DropdownMenu(expanded = menu, onDismissRequest = { menu = false }, containerColor = colors.surface, modifier = Modifier.testTag(TAG_LEFT_MENU)) {
+                    listOf(Tab.UPCOMING, Tab.WEEK).forEach { tab ->
+                        DropdownMenuItem(
+                            text = { Text(stringResource(tab.label), color = colors.textPrimary, fontWeight = if (tab == left) FontWeight.Bold else FontWeight.SemiBold) },
+                            leadingIcon = { Icon(painterResource(tab.icon), null, tint = colors.textSecondary, modifier = Modifier.size(sizes.icon)) },
+                            trailingIcon = if (tab == left) { { Icon(Icons.Default.Check, null, tint = colors.accent) } } else null,
+                            onClick = {
+                                menu = false
+                                onPickLeft(tab)
+                            },
+                            modifier = Modifier.testTag("$TAG_LEFT_MENU:${tab.name}"),
+                        )
                     }
                 }
             }
             Box(
                 modifier = Modifier
-                    .padding(start = spacing.xxs)
                     .size(width = sizes.navAddWidth, height = sizes.navAddHeight)
                     .clip(AppTheme.shapes.extraLarge)
                     .background(colors.accent)
@@ -333,9 +384,43 @@ fun BottomBar(selected: Tab, onSelect: (Tab) -> Unit, onAdd: () -> Unit = {}, in
             ) {
                 Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_task), tint = colors.onAccent)
             }
+            Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                NavTab(Tab.LISTS, selected == Tab.LISTS, badge = inboxCount, onClick = { onSelect(Tab.LISTS) })
+            }
         }
     }
 }
+
+/** Вкладка панели: плашка `size-nav-tab` (выбранная — `selected`, значок `accent`), [badge] — число справа сверху, [hint] — точка «есть меню». */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun NavTab(tab: Tab, active: Boolean, onClick: () -> Unit, badge: Int = 0, hint: Boolean = false, onLongClick: (() -> Unit)? = null) {
+    val colors = AppTheme.colors
+    val sizes = AppTheme.sizes
+    val tint = if (active) colors.accent else colors.textSecondary
+    val label = stringResource(tab.label)
+    val hintLabel = stringResource(R.string.tab_switch_hint)
+    Box(
+        Modifier
+            .size(width = sizes.navTabWidth, height = sizes.navTabHeight)
+            .clip(AppTheme.shapes.large)
+            .background(if (active) colors.selected else Color.Transparent)
+            .combinedClickable(role = Role.Button, onClick = onClick, onLongClick = onLongClick, onLongClickLabel = if (onLongClick != null) hintLabel else null)
+            .semantics { contentDescription = label }
+            .testTag("tab:${if (hint) TAG_LEFT_TAB else tab.name}"),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(painterResource(tab.icon), contentDescription = null, tint = tint, modifier = Modifier.size(sizes.icon))
+        if (hint) {
+            Box(Modifier.align(Alignment.BottomCenter).padding(bottom = AppTheme.spacing.xxs).size(sizes.navHintDot).background(tint.copy(alpha = HINT_ALPHA), CircleShape))
+        }
+        if (badge > 0) {
+            Badge(containerColor = colors.accent, contentColor = colors.onAccent, modifier = Modifier.align(Alignment.TopEnd).padding(end = AppTheme.spacing.xs).testTag(TAG_INBOX_BADGE)) { Text(badge.toString()) }
+        }
+    }
+}
+
+private const val HINT_ALPHA = 0.6f
 
 private const val SLIDE_MS = 270
 
@@ -349,8 +434,12 @@ private val SHEET_DIALOG = DialogProperties(
 
 private fun NavDestination.isSheet() = hasRoute(QuickAddDestination::class) || hasRoute(TaskDetailDestination::class) || hasRoute(TrashTaskDestination::class) || hasRoute(WontDoTaskDestination::class)
 
-/** Порядок экрана слева направо: вкладки по порядку в панели, вложенные экраны — правее всех. */
-private fun NavDestination.order(): Int = Tab.entries.indexOfFirst { isOn(it) }.takeIf { it >= 0 } ?: Tab.entries.size
+/** Порядок экрана слева направо: «Предстоящее» и «Неделя» — слева, «Списки» — справа, вложенные экраны — правее всех. */
+private fun NavDestination.order(): Int = when {
+    isOn(Tab.UPCOMING) || isOn(Tab.WEEK) -> 0
+    isOn(Tab.LISTS) -> 1
+    else -> 2
+}
 
 /** 1 — новый экран приходит справа, -1 — слева. Между экранами одного уровня: вперёд — справа, «Назад» — слева. */
 private fun AnimatedContentTransitionScope<NavBackStackEntry>.direction(push: Boolean): Int {
@@ -373,10 +462,15 @@ private fun NavHostController.openTab(tab: Tab) {
     navigate(tab.route) {
         popUpTo(graph.findStartDestination().id) { saveState = true }
         launchSingleTop = true
-        restoreState = true
+        // Итерация 55: «Списки» всегда открываются с корня — «Входящие», «Поиск» и «Настройки» внутри не «залипают».
+        restoreState = tab != Tab.LISTS
     }
 }
 
 private fun NavDestination?.isOn(tab: Tab): Boolean = this?.hasRoute(tab.routeClass) == true
 
 const val TAG_INBOX_BADGE = "inbox_badge"
+
+/** Левое место панели («Предстоящее» или «Неделя»): тег `tab:left`, меню удержания — `tab_left_menu`. */
+const val TAG_LEFT_TAB = "left"
+const val TAG_LEFT_MENU = "tab_left_menu"
