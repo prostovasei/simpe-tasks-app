@@ -1,5 +1,12 @@
 package com.prostovasei.simpletasks.ui.navigation
 
+import com.prostovasei.simpletasks.ui.feature.lists.TAG_LISTS_SCROLL
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.performScrollToNode
+import com.prostovasei.simpletasks.ui.feature.lists.TAG_LISTS_SETTINGS
+import com.prostovasei.simpletasks.ui.feature.lists.TAG_LISTS_SEARCH
+import com.prostovasei.simpletasks.ui.feature.lists.TAG_LISTS_INBOX
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -68,24 +75,31 @@ class AppSmokeTest {
     @Test
     fun walkThroughTabsAndCreateList() {
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Всё сделано") }
+        composeRule.onNodeWithText("Предстоящее").assertExists()
 
-        composeRule.onNodeWithTag("tab:INBOX").performClick()
+        // Итерация 55: «Входящие», «Поиск», «Настройки» — в «Списках».
+        composeRule.onNodeWithTag("tab:LISTS").performClick()
+        composeRule.onNodeWithTag(TAG_LISTS_INBOX).performClick()
         composeRule.onNodeWithText("Всё разобрано").assertExists()
 
-        // Поиск: поле ввода сразу на экране, ничего не найдено.
-        // Итерация 44: вкладка «Неделя» — сетка из семи дней и мини-календарь.
-        composeRule.onNodeWithTag("tab:WEEK").performClick()
+        // «Неделя» — удержанием левого значка: меню «Предстоящее / Неделя».
+        composeRule.onNodeWithTag("tab:left").performTouchInput { longClick() }
+        composeRule.onNodeWithTag("$TAG_LEFT_MENU:WEEK").performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists("week-screen") }
         composeRule.onNodeWithTag("week-calendar").assertExists()
 
-        composeRule.onNodeWithTag("tab:SEARCH").performClick()
+        // Поиск: поле ввода сразу на экране, ничего не найдено. «Списки» из поиска — назад к самим «Спискам».
+        composeRule.onNodeWithTag("tab:LISTS").performClick()
+        composeRule.onNodeWithTag(TAG_LISTS_SEARCH).performClick()
         composeRule.onNodeWithTag(TAG_SEARCH_FIELD).performTextReplacement("молоко")
         composeRule.onNodeWithText("Ничего не найдено").assertExists()
 
-        composeRule.onNodeWithTag("tab:SETTINGS").performClick()
+        composeRule.onNodeWithTag("tab:LISTS").performClick()
+        composeRule.onNodeWithTag(TAG_LISTS_SETTINGS).performClick()
         composeRule.onNodeWithText("Импорт из TickTick").assertExists()
 
         composeRule.onNodeWithTag("tab:LISTS").performClick()
+        composeRule.onNodeWithTag(TAG_LISTS_SCROLL).performScrollToNode(hasText("Списков пока нет"))
         composeRule.onNodeWithText("Списков пока нет").assertExists()
         composeRule.onNodeWithTag(TAG_NEW_LIST).performClick()
         composeRule.onNodeWithTag(TAG_NAME_FIELD).performTextReplacement("Покупки")
@@ -93,12 +107,15 @@ class AppSmokeTest {
 
         // Новый список открывается сразу, нижний бар скрыт.
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("В списке пусто") }
-        composeRule.onNodeWithTag("tab:ALL").assertDoesNotExist()
+        composeRule.onNodeWithTag("tab:left").assertDoesNotExist()
 
         composeRule.onNodeWithContentDescription("Назад").performClick()
-        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Покупки") }
-        composeRule.onNodeWithTag("tab:ALL").performClick()
-        composeRule.onNodeWithText("Всё сделано").assertExists()
+        // «Списки» прокручиваются: новый список — под системными строками, на тестовом экране ниже края.
+        composeRule.waitUntil(5_000) { runCatching { composeRule.onNodeWithTag(TAG_LISTS_SCROLL).performScrollToNode(hasText("Покупки")) }.isSuccess }
+        // Левое место запомнило «Неделю»; «Предстоящее» — снова через меню.
+        composeRule.onNodeWithTag("tab:left").performTouchInput { longClick() }
+        composeRule.onNodeWithTag("$TAG_LEFT_MENU:UPCOMING").performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Всё сделано") }
     }
 
     @Test
@@ -113,10 +130,11 @@ class AppSmokeTest {
         composeRule.onNodeWithText("Сегодня").assertExists()
 
         // Поиск находит новую задачу по части слова.
-        composeRule.onNodeWithTag("tab:SEARCH").performClick()
+        composeRule.onNodeWithTag("tab:LISTS").performClick()
+        composeRule.onNodeWithTag(TAG_LISTS_SEARCH).performClick()
         composeRule.onNodeWithTag(TAG_SEARCH_FIELD).performTextReplacement("прод")
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("НАЙДЕНА 1 ЗАДАЧА") }
-        composeRule.onNodeWithTag("tab:ALL").performClick()
+        composeRule.onNodeWithTag("tab:left").performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_SEARCH_FIELD).fetchSemanticsNodes().isEmpty() }
 
         // Тап по карточке → шторка задачи → переименование → «Готово».
@@ -191,7 +209,7 @@ class AppSmokeTest {
 
         composeRule.onNodeWithText("Первая").performTouchInput { longClick() }
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_SELECTION_BAR).fetchSemanticsNodes().isNotEmpty() }
-        composeRule.onNodeWithTag("tab:ALL").assertDoesNotExist()
+        composeRule.onNodeWithTag("tab:left").assertDoesNotExist()
         composeRule.onNodeWithText("Вторая").performClick()
         composeRule.onNodeWithTag(TAG_SELECTION_COUNT).assertTextEquals("Выбрано: 2")
 
@@ -199,7 +217,7 @@ class AppSmokeTest {
         composeRule.onNodeWithTag(TAG_BULK_DELETE).performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Удалено: 2") }
         composeRule.onNodeWithTag(TAG_SELECTION_BAR).assertDoesNotExist()
-        composeRule.onNodeWithTag("tab:ALL").assertExists()
+        composeRule.onNodeWithTag("tab:left").assertExists()
         composeRule.waitUntil(5_000) { !composeRule.onAllNodesWithTextExists("Первая") }
 
         composeRule.onNodeWithText("Отмена").performClick()
@@ -221,6 +239,7 @@ class AppSmokeTest {
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_DETAIL_TITLE).fetchSemanticsNodes().isEmpty() }
 
         composeRule.onNodeWithTag("tab:LISTS").performClick()
+        composeRule.onNodeWithTag(TAG_LISTS_SCROLL).performScrollToNode(hasTestTag(TAG_TRASH))
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_TRASH_COUNT, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
         composeRule.onNodeWithTag(TAG_TRASH_COUNT, useUnmergedTree = true).assertTextEquals("1")
         composeRule.onNodeWithTag(TAG_TRASH).performClick()
@@ -235,7 +254,7 @@ class AppSmokeTest {
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_TRASH_EMPTY).fetchSemanticsNodes().isNotEmpty() }
 
         composeRule.onNodeWithContentDescription("Назад").performClick()
-        composeRule.onNodeWithTag("tab:ALL").performClick()
+        composeRule.onNodeWithTag("tab:left").performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("В корзину") }
     }
 
@@ -265,7 +284,8 @@ class AppSmokeTest {
     @Test
     fun searchRemembersQueriesAndRepeatsThem() {
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Всё сделано") }
-        composeRule.onNodeWithTag("tab:SEARCH").performClick()
+        composeRule.onNodeWithTag("tab:LISTS").performClick()
+        composeRule.onNodeWithTag(TAG_LISTS_SEARCH).performClick()
         composeRule.onNodeWithTag(TAG_SEARCH_FIELD).performTextReplacement("молоко")
         composeRule.onNodeWithTag(TAG_SEARCH_FIELD).performImeAction()
         composeRule.onNodeWithTag(TAG_SEARCH_FIELD).performTextReplacement("")

@@ -45,8 +45,19 @@ object SizeTokens {
      */
     const val NAV_BAR = 56
     const val NAV_TAB = 48
-    const val NAV_ADD_W = 48
-    const val NAV_ADD_H = 40
+    /** Итерация 55: «+» посередине панели шире — 72×44 (было 48×40). */
+    const val NAV_ADD_W = 72
+    const val NAV_ADD_H = 44
+
+    /** Итерация 55: вкладка панели как в нижней строке виджета — плашка 72×40, у выбранной фон `selected`. */
+    const val NAV_TAB_W = 72
+    const val NAV_TAB_H = 40
+
+    /** Точка под значком «Предстоящее / Неделя»: по удержанию есть меню. */
+    const val NAV_HINT_DOT = 4
+
+    /** Поле «Поиск задач» на «Списках» (итерация 55). */
+    const val SEARCH_ENTRY = 48
     const val NAV_SHADOW = 10
     const val CHECKBOX = 18
     const val CHECKBOX_STROKE = 2
@@ -278,7 +289,8 @@ object SizeTokens {
     const val WEEKVIEW_TASK_GAP = 3
     const val WEEKVIEW_CHECK = 14
     const val WEEKVIEW_CHECK_ICON = 9
-    const val WEEKVIEW_HEADER = 26
+    /** Итерация 55 (как в виджете): строка даты «ПН 9» по высоте текста — 20 (было 26). */
+    const val WEEKVIEW_HEADER = 20
     const val WEEKVIEW_CAL_ROW = 28
     const val WEEKVIEW_CAL_ROW_MIN = 16
     const val WEEKVIEW_CAL_WEEKDAYS = 14

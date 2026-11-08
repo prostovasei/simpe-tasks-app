@@ -528,4 +528,7 @@
     <string name="snooze_pick_time">Выбрать дату и время…</string>
     <string name="snooze_pick_day">Выбрать дату…</string>
     <string name="snooze_done">Отложено на %1$s</string>
+    <!-- Итерация 55: нижняя панель из трёх мест, «Входящие», «Поиск», «Настройки» — в «Списках». -->
+    <string name="tab_upcoming">Предстоящее</string>
+    <string name="tab_switch_hint">Удерживайте, чтобы выбрать «Предстоящее» или «Неделю»</string>
 </resources>

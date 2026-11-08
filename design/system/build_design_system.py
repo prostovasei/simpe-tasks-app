@@ -95,7 +95,10 @@ SIZE_PICK = {
     'LIST_SQUARE_LARGE': ('list-square-large', 'Поле крупного эмодзи: экран «Списки», заголовок списка, кнопка списка в шторке (без подложки).'), 'LIST_GLYPH_LARGE': ('list-glyph-large', 'Размер крупного эмодзи.'),
     'ICON_TILE': ('icon-tile', 'Плитка значка в окне выбора значка.'),
     'NAV_BAR': ('nav-bar', 'Высота нижней панели (закреплена внизу на всю ширину).'), 'NAV_TAB': ('nav-tab', 'Наибольшая ширина кнопки вкладки; вкладки делят ширину поровну.'),
-    'NAV_ADD_W': ('nav-add-w', 'Кнопка «+» в панели: ширина.'), 'NAV_ADD_H': ('nav-add-h', 'Кнопка «+» в панели: высота.'),
+    'NAV_ADD_W': ('nav-add-w', 'Кнопка «+» посередине панели: ширина (0.55).'), 'NAV_ADD_H': ('nav-add-h', 'Кнопка «+» посередине панели: высота (0.55).'),
+    'NAV_TAB_W': ('nav-tab-w', 'Место вкладки по бокам от «+» (0.55): ширина подложки выбранной вкладки.'), 'NAV_TAB_H': ('nav-tab-h', 'Место вкладки (0.55): высота подложки.'),
+    'NAV_HINT_DOT': ('nav-hint-dot', 'Точка под значком левой вкладки: удержание открывает выбор «Предстоящее»/«Неделя».'),
+    'SEARCH_ENTRY': ('search-entry', 'Поле «Поиск задач» сверху «Списков» (0.55): нажатие открывает экран поиска.'),
     'WIDGET_WEEK_TASK': ('widget-week-task', 'Вид «Неделя» в виджете: наименьшая строка задачи; настоящая делит высоту ячейки поровну (обычно ~20).'), 'WIDGET_WEEK_HIT': ('widget-week-hit', 'Вид «Неделя» в виджете (итерация 50): невидимая зона «выполнить» поверх кружка и начала названия на всю высоту плашки.'), 'WIDGET_WEEK_TASK_GAP': ('widget-week-task-gap', 'Вид «Неделя» в виджете: промежуток над строкой задачи.'), 'WIDGET_WEEK_CHECK': ('widget-week-check', 'Вид «Неделя» в виджете: кружок.'),
     'WIDGET_WEEK_TICK': ('widget-week-tick', 'Вид «Неделя» в виджете: галочка в кружке.'), 'WIDGET_WEEK_HEADER': ('widget-week-header', 'Вид «Неделя» в виджете: наименьшая высота строки даты (итерация 48: строка по высоте текста).'), 'WIDGET_WEEK_CELL_TOP': ('widget-week-cell-top', 'Вид «Неделя» в виджете: поле над строкой даты.'), 'WIDGET_WEEK_TOP': ('widget-week-top', 'Вид «Неделя» в виджете: поле над верхним рядом ячеек.'), 'WIDGET_WEEK_INLINE_GAP': ('widget-week-inline-gap', 'Вид «Неделя» в виджете: между эмодзи списка и временем и от времени до края плашки.'),
     'WIDGET_WEEK_CAL_WEEKDAYS': ('widget-week-cal-weekdays', 'Мини-календарь в виджете: «пн…вс».'),
@@ -386,7 +389,7 @@ def preview_list_square():
 
 def preview_icons():
     names = ['ic_tool_checklist', 'ic_tool_priority', 'ic_tool_reminder', 'ic_tool_repeat', 'ic_tool_delete', 'ic_no_date', 'ic_time', 'ic_widget_all',
-             'ic_widget_inbox', 'ic_widget_list', 'ic_widget_add', 'ic_widget_update', 'ic_fold_open', 'ic_fold_closed', 'ic_move_today', 'ic_history', 'ic_snack_restore', 'ic_wont_do']
+             'ic_widget_inbox', 'ic_widget_list', 'ic_widget_add', 'ic_widget_update', 'ic_fold_open', 'ic_fold_closed', 'ic_move_today', 'ic_history', 'ic_snack_restore', 'ic_wont_do', 'ic_tab_week', 'ic_nav_search', 'ic_nav_settings']
     cells = ''.join(f'<div class="col" style="width:92px"><span style="color:var(--text-primary)">{svg(n, 32)}</span><div class="cap">{n.removeprefix("ic_")}</div></div>' for n in names)
     return doc('Основы', 220, 'Контурные значки 24 dp, линия 2, скругления: цвет задаёт оттенок', f'<div class="row" style="align-items:flex-start;gap:6px">{cells}</div>')
 
@@ -665,7 +668,7 @@ TickTick хранит эмодзи в начале названия: импор�
     'Icons': ('Контурные значки приложения: сетка 24, линия 2, круглые концы.',
               '''Бери только значки из превью и ресурсов `ic_*`; цвет задавай оттенком (`text-secondary`, `accent`, `inactive`). Не рисуй новые значки другой толщины линии.
 Назначение: `tool_checklist` — чек-лист, `tool_priority` — флаг приоритета, `tool_reminder` — уведомления, `tool_repeat` — повтор, `tool_delete` — удалить, `no_date` — без даты,
-`time` — поле времени, `widget_all`/`widget_inbox`/`widget_list` — вкладки и календарь, `widget_add` — «+», `widget_update` — обновление, `fold_open`/`fold_closed` — стрелка «свернуть» у «Просрочено», `move_today` — «перенести на сегодня», `history` — недавний запрос в поиске, `snack_restore` — «задача возвращена» в подсказке.'''),
+`time` — поле времени, `widget_all`/`widget_inbox`/`widget_list` — вкладки и календарь (0.55: в нижней панели приложения те же значки, что в виджете — `widget_all` «Предстоящее», `tab_week` «Неделя», `widget_list` «Списки»), `nav_search` — поле поиска на «Списках», `nav_settings` — шестерёнка «Настройки» в шапке «Списков», `widget_add` — «+», `widget_update` — обновление, `fold_open`/`fold_closed` — стрелка «свернуть» у «Просрочено», `move_today` — «перенести на сегодня», `history` — недавний запрос в поиске, `snack_restore` — «задача возвращена» в подсказке.'''),
     'SheetCard': ('Шторка задачи: название, описание, поля даты и времени, панель кнопок и галочка «Готово».',
                   '''Карточка `surface`, радиус `radius-nav`, ручка `size-sheet-handle-width`×`size-sheet-handle-height` цвета `divider`, поля по бокам `space-md`. Над панелью клавиатуры карточка стоит прямо над ней.
 Название — `headline-small`, описание — `body-large` (Medium, `text-secondary`), подсказки полей — `inactive`.
