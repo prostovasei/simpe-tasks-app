@@ -8,7 +8,7 @@
 Второй круг (требования PM 10.11.2026): галочка «открыть приложение» остаётся; нажатие на дату — назад к сегодня;
 дата в две строки — «вт, 10» сверху, «ноя» снизу; вкладки — только значки, без подписей.
 
-Запуск: python3 design/mockups/iteration57.py <папка project>   → canvas.json, Main.dc.html (круг 1), Round2.dc.html (круг 2), Date.dc.html (дата)
+Запуск: python3 design/mockups/iteration57.py <папка project>   → canvas.json, Main.dc.html (круг 1), Round2.dc.html (круг 2), Date.dc.html (дата), Final.dc.html (итог)
 """
 import datetime
 import json
@@ -381,6 +381,71 @@ def cell(title, sub, fn):
             f'<div style="font-size:13px;color:var(--text-secondary);line-height:18px;min-height:56px;margin-bottom:10px">{sub}</div>{fn()}</div>')
 
 
+# ------------------------------------------------------------------ итог: выбор PM (вкладки слева, блок по центру, дата справа)
+
+def final_bar(center='light'):
+    """Решение PM: слева вкладки значками (как сейчас), по центру блок «галочка + «+»», справа дата — вариант 4 («10» и «вт» / «ноя»)."""
+    tab = lambda n, on: (f'<span style="width:50px;height:40px;border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:center;'
+                         f'background:{"var(--selected)" if on else "transparent"};color:{"var(--accent)" if on else "var(--text-secondary)"}">{svg(n, 24)}</span>')
+    if center == 'light':
+        block = (f'<span style="display:flex;align-items:center;gap:4px;padding:4px 4px 4px 10px;border-radius:24px;background:var(--surface);'
+                 f'border:1px solid var(--divider)">{check(s=24)}<span style="width:40px;height:36px;border-radius:18px;background:var(--accent);color:var(--on-accent);'
+                 f'display:flex;align-items:center;justify-content:center">{svg("ic_widget_add", 22)}</span></span>')
+    else:
+        block = (f'<span style="display:flex;align-items:center;gap:4px;padding:4px 4px 4px 10px;border-radius:24px;background:var(--accent)">'
+                 f'{check("var(--on-accent)", 24)}<span style="width:1px;height:20px;background:color-mix(in srgb,var(--on-accent) 30%,transparent)"></span>'
+                 f'<span style="width:40px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--on-accent)">{svg("ic_widget_add", 24)}</span></span>')
+    side = 'flex:1;display:flex;align-items:center'
+    return bar(f'<span style="{side}">{icon_tabs(tab)}</span>{block}<span style="{side};justify-content:flex-end">{d_num_left()}</span>', pad='8px 6px 10px')
+
+
+def full_week(bar_html, sel=2):
+    h = 148
+    r1 = (f'<div style="display:flex">{D.week_cell("пн", 9, [t("Вес", "10:00", rep=True, done=True, e="🔁"), t("Синк", "11:00", rep=True, done=True), t("S3", "11:30", done=True), t("Виджет", "16:00", done=True), t("Подарки", "17:00", done=True, e="💲")], h=h, widget=True)}'
+          f'{D.week_cell("вт", 10, [t("Дейлик", "11:00", rep=True), t("ИИ", "14:30", rep=True), t("Расскажут об экспертизе", "16:00"), t("Регулярка", "17:00", rep=True), t("Стирка", "23:00", e="🏠")], today=True, h=h, widget=True)}</div>')
+    r2 = (f'<div style="display:flex">{D.week_cell("ср", 11, [t("Встреча по итогам оценки", "10:00"), t("Налог", "11:30", "high", e="💲"), t("Синк/Погашения", "14:00", rep=True), t("Оценка", "16:00", rep=True)], h=h, widget=True)}'
+          f'{D.week_cell("чт", 12, [t("Дейлик", "11:00", rep=True), t("Расскажут об экспертизе", "14:00"), t("Девопсы", "14:30", rep=True), t("ЖКУ", "15:00", rep=True, e="💲"), t("Показания", "15:30", rep=True, e="💲")], hidden=1, h=h, widget=True)}</div>')
+    r3 = (f'<div style="display:flex">{D.week_cell("пт", 13, [t("ВПН", "10:00", rep=True, e="💲"), t("Финансы", "14:00", rep=True, e="🔁")], h=h, widget=True)}'
+          f'{D.week_cell("сб", 14, [t("Okko", "10:00", rep=True, e="💲"), t("Ростелеком", "10:00", rep=True, e="💲"), t("Yota", "11:00", rep=True, e="💲"), t("Бритьё", "14:30", rep=True, e="🔁"), t("Теннис", "20:30", rep=True, e="🏀")], hidden=1, h=h, widget=True)}</div>')
+    r4 = f'<div style="display:flex">{D.week_cell("вс", 15, [t("Стирка", "14:30", rep=True, e="🏠"), t("Уборка", "16:00", rep=True, e="🏠")], h=h, widget=True)}{D.week_calendar(h, widget=True)}</div>'
+    return (f'<div style="width:{W}px;border-radius:var(--radius-xl);background:var(--background);overflow:hidden;border:1px solid var(--divider);'
+            f'padding:4px 3px 0;box-sizing:border-box">{r1}{r2}{r3}{r4}{bar_html}</div>')
+
+
+def full_all(bar_html):
+    rows, _ = D.widget_body()
+    return (f'<div style="width:{W}px;border-radius:var(--radius-xl);background:var(--background);overflow:hidden;border:1px solid var(--divider);'
+            f'padding:6px 3px 0;box-sizing:border-box"><div style="height:400px;overflow:hidden">{rows}</div>{bar_html}</div>')
+
+
+def tabs_sel(bar_html, sel):
+    """Та же строка с другой выбранной вкладкой (подложка `selected` переезжает)."""
+    return bar_html
+
+
+def dark(inner):
+    import iteration53 as S3
+    return f'<div style="{S3.dark_vars()};color-scheme:dark;color:var(--text-primary);border-radius:var(--radius-xl)">{inner}</div>'
+
+
+def final_all_bar():
+    global SEL
+    keep, SEL = SEL, 0
+    try:
+        return final_bar()
+    finally:
+        SEL = keep
+
+
+FINAL = [
+    ('1. Неделя', 'Слева вкладки значками, как сейчас (выбранная — на светлой подложке). По центру белый блок: галочка — открыть приложение, чёрная «+» — новая задача. '
+     'Справа дата: крупное «10», рядом «вт» / «ноя»; нажатие — назад к сегодня.', lambda: full_week(final_bar())),
+    ('2. Все', 'Лента «Все» с той же строкой: выбрана первая вкладка. Блок по центру и дата не двигаются.', lambda: full_all(final_all_bar())),
+    ('3. Тёмная тема', 'Те же места; блок по центру тёмный, «+» светлая.', lambda: dark(full_week(final_bar()))),
+    ('4. Другой блок по центру', 'Если белый блок покажется лишним: чёрная капсула, в ней белые галочка и «+» через тонкую черту.', lambda: full_week(final_bar('dark'))),
+]
+
+
 def board(title, lead, variants, cell_fn=None, row_h=270 + 80):
     cell_ = cell_fn or cell
     cols, gap = 4, 40
@@ -404,6 +469,9 @@ BOARDS = [
     ('Date.dc.html', 'Дата', 'Как показывать дату — 10 вариантов',
      'Строка одна и та же (сегменты из круга 2), меняется только дата. Под каждой строкой — дата крупно, чтобы рассмотреть. '
      'Нажатие на дату — назад к сегодня; дата всегда сегодняшняя.', DATES, date_cell, 290),
+    ('Final.dc.html', 'Итог', 'Нижняя строка виджета — итог (выбор PM)',
+     'Слева — вкладки «Все» / «Входящие» / «Неделя» значками, как сейчас. По центру — блок: галочка (сразу открыть приложение) и «+» (новая задача). '
+     'Справа — дата, вариант 4: крупное «10», рядом «вт» и «ноя»; нажатие возвращает к сегодня.', FINAL, None, 820),
 ]
 
 
