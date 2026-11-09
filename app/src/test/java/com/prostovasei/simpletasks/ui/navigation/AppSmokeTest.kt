@@ -240,10 +240,14 @@ class AppSmokeTest {
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_DETAIL_TITLE).fetchSemanticsNodes().isEmpty() }
 
         composeRule.onNodeWithTag("tab:LISTS").performClick()
-        // Итерация 56: «Корзина» — в последней карточке; прокрутка к ней по ключу ставит её над строкой значков.
+        // Итерация 57 (CI #90): «Списки» дозагружают числа и дерево списков уже после открытия — строки сдвигаются, и нажатие по старому
+        // месту «Корзины» попадало мимо. Сначала ждём все данные (дерево списков и число корзины), потом прокручиваем к «Корзине».
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Списков пока нет") }
         composeRule.onNodeWithTag(TAG_LISTS_SCROLL).performScrollToKey("trash")
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_TRASH_COUNT, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
         composeRule.onNodeWithTag(TAG_TRASH_COUNT, useUnmergedTree = true).assertTextEquals("1")
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag(TAG_LISTS_SCROLL).performScrollToKey("trash")
         composeRule.onNodeWithTag(TAG_TRASH).performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("В корзину") }
 
