@@ -1300,6 +1300,20 @@ PM поменял порядок: шторка для созданных зад�
 - Тесты: `TextInputDialogsTest` (создание с эмодзи и папкой, папка, правка, «…»), `ScreensUiTest.folderShowsEmojiAndEdits`,
   `ListsViewModelTest`, `ProjectRepositoryTest`, `MigrationTest`; скриншоты `lists_light`, `lists_dark`, `list_create_dialog`, `folder_create_dialog`.
 
+### 4.62. Итог Итерации 57 — новая нижняя строка виджета (0.57.0)
+
+Решение PM (10.11.2026, четыре круга вариантов; макет — холст «Итерация 57 — Нижняя строка виджета», `design/mockups/iteration57.py`,
+доска «Итог 2»; карточка T-128): слева «+» — чёрная плитка, по центру один белый блок вкладок «Все» / «Входящие» / «Неделя»
+(выбранный вид — чёрный значок, остальные `inactive`, без подложек), справа белая плитка с датой «10 ВТ / ноя» той же ширины, что «+».
+
+- Галочки «открыть приложение» больше нет: нажатие на всю строку (её свободное место) открывает приложение — `clickable` у самой
+  строки Glance, у плиток свои нажатия. Дата — назад к сегодня (как с 0.51). Линии сверху нет.
+- Плитки высотой `WIDGET_ADD_H` (32), строка — `WIDGET_BAR` (40, расчёт строк «Недели» не меняется). Фоны — картинки со скруглением
+  `widget_bar_add`, `widget_bar_tile` (0.42.2). Дата — `WidgetDates.tile`: число 18 sp и столбик «ВТ» / «ноя» 9 sp; показывается на любой ширине.
+- Удалены `ic_widget_open_app`, `widget_bar_tab_selected` и размеры галочки, старой даты и вкладок с подложкой.
+- Тесты: `WidgetWeekTest.barShowsTodayDate`, `WidgetListTest.bottomBarOverList`, `WidgetScreenshotTest.bottomBarKeepsAllButtons`,
+  `WidgetUiTest.widgetShowsDayBlocksAndBottomBar`; скриншоты `widget_*`.
+
 ### 4.45. Дорожная карта (обновлена)
 
 | Итерация | Название | Суть |

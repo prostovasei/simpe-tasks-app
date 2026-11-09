@@ -143,14 +143,18 @@ class WidgetWeekTest {
         assertNull(saturday.findViewById<View>(WeekIds.RIGHT.slots[1].node).contentDescription)
     }
 
-    /** Итерация 51: между «✓» и «+» — сегодняшняя дата; на узком виджете без дня недели, на совсем узком её нет. */
+    /** Итерация 57: справа — плитка с датой «30 / ПТ / окт» на любой ширине виджета; нажатие — назад к сегодня. */
     @Test
     fun barShowsTodayDate() {
-        fun texts(width: Int) = renderWidget(context, rich, DpSize(width.dp, 700.dp)).applyLikeLauncher(context).visibleTexts()
-        assertTrue(texts(400).contains("пт, 30 окт"))
-        assertTrue(texts(360).contains("30 окт"))
-        assertFalse("«+» не обрезается", texts(320).any { it.endsWith("30 окт") })
-        assertEquals("сб, 7 ноя", WidgetDates.bar(LocalDate.of(2026, 11, 7), withWeekday = true))
+        listOf(400, 320).forEach { width ->
+            val root = renderWidget(context, rich, DpSize(width.dp, 700.dp)).applyLikeLauncher(context)
+            assertTrue(root.visibleTexts().containsAll(listOf("30", "ПТ", "окт")))
+            val found = ArrayList<View>()
+            root.findViewsWithText(found, "Сегодня, пт, 30 окт", View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
+            assertEquals(1, found.size)
+            assertTrue("дата нажимается", generateSequence(found.single()) { it.parent as? View }.take(3).any { it.hasOnClickListeners() })
+        }
+        assertEquals(Triple("7", "СБ", "ноя"), WidgetDates.tile(LocalDate.of(2026, 11, 7)))
     }
 
     @Test

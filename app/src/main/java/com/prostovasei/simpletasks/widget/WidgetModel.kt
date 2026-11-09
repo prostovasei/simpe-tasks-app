@@ -194,6 +194,10 @@ object WidgetDates {
         return if (withWeekday) "${WEEKDAYS[date.dayOfWeek.value - 1]}, $day" else day
     }
 
+    /** Итерация 57: дата в плитке нижней строки — «10», «ВТ», «ноя» (решение PM: число крупно, рядом день недели и месяц). */
+    fun tile(date: LocalDate): Triple<String, String, String> =
+        Triple(date.dayOfMonth.toString(), WEEKDAYS[date.dayOfWeek.value - 1].uppercase(), MONTHS[date.monthValue - 1])
+
     /** «ПТ, 16 окт» — подписи дней в ленте приложения (итерация 13). */
     fun header(date: LocalDate): String = "${WEEKDAYS[date.dayOfWeek.value - 1].uppercase()}, ${short(date)}"
 }
