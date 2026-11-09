@@ -164,17 +164,19 @@ internal class TickTickImporter @Inject constructor(
         private suspend fun inboxId(): String =
             projectIds.getOrPut(TickTickFormat.INBOX) { checkNotNull(projectDao.getInbox()) { "Нет «Входящих»" }.id }
 
-        private suspend fun groupIdFor(name: String): String {
-            groupIds[name]?.let { return it }
-            val id = groupDao.getActiveByName(name)?.id ?: run {
+        private suspend fun groupIdFor(folderName: String): String {
+            groupIds[folderName]?.let { return it }
+            // Итерация 56: у папки, как у списка, эмодзи из начала названия («🏠Дом») — отдельно.
+            val (emoji, name) = ListEmoji.split(folderName)
+            val id = (groupDao.getActiveByName(name) ?: groupDao.getActiveByName(folderName))?.id ?: run {
                 val newId = ids.newId()
                 groupDao.insert(
-                    ProjectGroupEntity(id = newId, name = name, sortOrder = groupDao.nextSortOrder(), createdAt = now, updatedAt = now),
+                    ProjectGroupEntity(id = newId, name = name, sortOrder = groupDao.nextSortOrder(), createdAt = now, updatedAt = now, emoji = emoji),
                 )
                 foldersCreated++
                 newId
             }
-            groupIds[name] = id
+            groupIds[folderName] = id
             return id
         }
     }

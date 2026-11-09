@@ -44,12 +44,13 @@ class ProjectRepositoryTest : DatabaseTest() {
         val list = projects.createProject("Список")
         time.advance()
 
-        projects.renameGroup(folder, "Новая папка")
+        projects.updateGroup(folder, "Новая папка", "🧩")
         projects.updateProject(list, "Новый список", groupId = folder, color = "#FF0000")
 
         val tree = projects.observeProjectTree().first()
         val group = tree.groups.single()
         assertEquals("Новая папка", group.group.name)
+        assertEquals("🧩", group.group.emoji)
         assertEquals(time.now, group.group.updatedAt)
         val project = group.projects.single().project
         assertEquals("Новый список", project.name)

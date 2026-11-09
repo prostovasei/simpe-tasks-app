@@ -236,10 +236,31 @@ def alert(title, body, buttons):
             f'<div style="padding-top:16px;font-size:14px;line-height:20px;color:var(--text-secondary)">{body}</div><div style="display:flex;justify-content:flex-end;gap:8px;padding-top:24px">{btn}</div></div>')
 
 
+def list_edit_dialog(kind='list'):
+    """Окно создания списка и папки (0.56, `ListEditDialog`): плашка эмодзи + название, быстрый выбор, у списка — папка."""
+    quick = '📁 💼 🏠 🛒 ❤️ 💪 📚 💰 ✈️ 💡 ⭐ 🎮 🏀 🎯 🧩'.split()
+    sel = '🛒' if kind == 'list' else '🎯'
+    tile = lambda e: (f'<span style="width:38px;height:38px;box-sizing:border-box;border-radius:var(--radius-md);background:{"var(--selected)" if e == sel else "transparent"};'
+                      f'border:{"2px solid var(--accent)" if e == sel else "1px solid transparent"};display:flex;align-items:center;justify-content:center">{em(e, 20, 24)}</span>')
+    more = ('<span style="width:38px;height:38px;box-sizing:border-box;border-radius:var(--radius-md);border:1px solid var(--divider);display:flex;align-items:center;'
+            'justify-content:center;font-weight:800;color:var(--text-secondary)">…</span>')
+    lab = lambda t: f'<div style="font-size:12px;font-weight:700;letter-spacing:.04em;color:var(--text-secondary);padding:12px 0 4px">{t}</div>'
+    btn = (f'<span style="position:relative;width:56px;height:56px;flex-shrink:0;border-radius:var(--radius-lg);background:var(--selected);display:flex;align-items:center;justify-content:center">'
+           f'{em(sel, 28, 32)}<span style="position:absolute;right:-4px;bottom:-4px;width:20px;height:20px;border-radius:10px;background:var(--surface);border:1px solid var(--divider);'
+           f'display:flex;align-items:center;justify-content:center;color:var(--text-secondary)">{mi("down", 14)}</span></span>')
+    name = 'Покупки' if kind == 'list' else 'Проекты'
+    field_ = (f'<div style="flex:1;height:56px;box-sizing:border-box;border-radius:var(--radius-lg);border:2px solid var(--accent);background:var(--background);'
+              f'display:flex;align-items:center;padding:0 14px;font-size:16px;font-weight:700">{name}</div>')
+    body = f'<div style="display:flex;gap:12px;align-items:center">{btn}{field_}</div>' + lab('ЭМОДЗИ') + f'<div style="display:flex;flex-wrap:wrap;gap:4px">{"".join(tile(e) for e in quick)}{more}</div>'
+    if kind == 'list':
+        body += lab('ПАПКА') + f'<div style="display:flex;gap:8px;flex-wrap:wrap">{chip("Без папки", True)}{chip("🧩 Личное")}</div>'
+    return dlg('Новый список' if kind == 'list' else 'Новая папка', f'<div style="padding:8px 24px 12px">{body}</div>', buttons=('Отмена', 'Создать'), width=360)
+
+
 def p_alert_dialogs():
     field = f'<div style="height:56px;border-radius:4px;border:2px solid var(--accent);display:flex;align-items:center;padding:0 16px;font-size:16px;color:var(--text-primary)">Работа</div>'
     folder = f'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">{chip("Без папки", True)}{chip("Дом")}{chip("Учёба")}</div>'
-    name = alert('Новый список', field + folder, [('Отмена', 'var(--accent)'), ('Создать', 'var(--accent)')])
+    name = list_edit_dialog()
     delete = alert('Удалить список «Работа»?', 'Задачи и чек-листы этого списка тоже будут удалены.', [('Отмена', 'var(--accent)'), ('Удалить', 'var(--danger)')])
     groups = [('Дела', '📥 📋 ✅ 📌 ⭐ 🔥 💡 🎯'), ('Работа', '💼 💻 📊 📈 📝 📅 📞 🗂️'), ('Дом', '🏠 🛒 🧹 🍳 🛠️ 🌱 🐶 🧺')]
     tile = lambda e, sel: (f'<span style="width:40px;height:40px;border-radius:var(--radius-md);background:{"var(--selected)" if sel else "transparent"};'
@@ -249,7 +270,7 @@ def p_alert_dialogs():
     field = ('<div style="margin-top:12px;height:48px;border-radius:4px;border:1px solid var(--divider);display:flex;align-items:center;padding:0 12px;'
              'font-size:14px;color:var(--inactive)">Свой эмодзи — вставь с клавиатуры</div>')
     emoji = alert('Эмодзи списка', grid + field, [('Отмена', 'var(--accent)')]).replace('width:300px', 'width:360px')
-    return doc('Окна', 640, 'Окна списка: имя, удаление, эмодзи (итерация 47: вместо цвета и значка)', f'<div class="row" style="align-items:flex-start;gap:24px">{name}{delete}{emoji}</div>')
+    return doc('Окна', 640, 'Окна списка: создание с эмодзи (0.56), удаление, все эмодзи', f'<div class="row" style="align-items:flex-start;gap:24px">{name}{delete}{emoji}</div>')
 
 
 def p_checklist():
@@ -313,17 +334,49 @@ def p_task_row():
     return doc('Список и виджет', 280, 'Плашка TaskRow (поиск и «Выполненные»): квадратная галочка с рамкой цвета приоритета', body)
 
 
+
+# --------------------------------------------------------------- «Списки» 0.56: карточки и строка значков
+
+def em(e, px=20, w=24):
+    return f'<span style="font-size:{px}px;line-height:1;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;width:{w}px;height:{w}px">{e}</span>'
+
+
+def card_row(lead, name, n=0, last=False, indent=0, trail=''):
+    """Строка карточки (0.56): значок/эмодзи 24, название SemiBold, число — только если не 0; линия `divider` под всеми, кроме последней."""
+    count = f'<span style="font-size:14px;font-weight:600;color:var(--text-secondary)">{n}</span>' if n else ''
+    sep = '' if last else f'<div style="position:absolute;left:{52 + indent}px;right:0;bottom:0;height:1px;background:var(--divider)"></div>'
+    return (f'<div style="position:relative;display:flex;align-items:center;gap:12px;min-height:52px;padding:0 16px 0 {16 + indent}px;color:var(--text-secondary)">'
+            f'<span style="width:24px;display:flex;justify-content:center;flex-shrink:0">{lead}</span>'
+            f'<span style="flex:1;min-width:0;font-size:16px;line-height:22px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{name}</span>'
+            f'{count}{trail}{sep}</div>')
+
+
+def folder_card_row(e, name, n, last=False):
+    trail = (f'<span style="display:flex;gap:4px;align-items:center;margin-left:4px">{mi("down", 22)}'
+             f'<span style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;margin-right:-8px">{mi("more", 22)}</span></span>')
+    return card_row(em(e), name, n, last, trail=trail)
+
+
+def lists_card(rows):
+    return f'<div style="margin:0 12px 12px;border-radius:var(--radius-lg);background:var(--surface);overflow:hidden">{rows}</div>'
+
+
+def lists_toolbar():
+    b = lambda ic: (f'<span style="flex:1;height:44px;border-radius:var(--radius-lg);background:var(--surface);color:var(--text-primary);'
+                    f'display:flex;align-items:center;justify-content:center">{svg(ic, 24)}</span>')
+    return (f'<div style="position:absolute;left:0;right:0;bottom:57px;padding:16px 12px 8px;background:linear-gradient(to bottom,transparent,var(--background) 35%)">'
+            f'<div style="display:flex;gap:8px">{b("ic_nav_search")}{b("ic_folder_plus")}{b("ic_list_plus")}{b("ic_nav_settings")}</div></div>')
+
+
+SYSTEM_CARD = lambda: lists_card(card_row(em('📥'), 'Входящие', 50) + card_row(em('💭'), 'Когда-нибудь', 7) + card_row(em('📌'), 'Без списка', 2, last=True))
+ARCHIVE_CARD = lambda: lists_card(card_row(mi('check'), 'Выполненные') + card_row(svg('ic_wont_do', 24), 'Не буду делать', 4) + card_row(svg('ic_tool_delete', 24), 'Корзина', 20, last=True))
+MINE_CARD = lambda: lists_card(card_row(em('💼'), 'Работа', 12) + folder_card_row('🧩', 'Личное', 5) + card_row(em('🏠'), 'Дом', 4, indent=24)
+                               + card_row(em('❤️'), 'Здоровье', 1, indent=24) + card_row(em('💡'), 'Идеи', last=True))
+
+
 def p_list_rows():
-    lsq = lambda c, ic: f'<span style="width:24px;height:24px;border-radius:var(--radius-md);background:{c};color:var(--on-list-square);display:flex;align-items:center;justify-content:center;flex-shrink:0">{svg(ic, 16)}</span>'
-    folder = ('<div style="display:flex;align-items:center;padding-left:8px"><span style="width:24px;display:flex;color:var(--text-secondary)">' + mi('down') + '</span>'
-              '<span style="flex:1;padding-left:8px;font-size:16px;line-height:24px;font-weight:600">Дом</span><span style="font-size:14px;color:var(--text-secondary)">7</span>'
-              f'<span style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary)">{mi("more")}</span></div>')
-    proj = lambda name, c, ic, n, ind=False: (f'<div style="display:flex;align-items:center;padding:12px 16px 12px {32 if ind else 16}px">{lsq(c, ic)}<span style="flex:1;padding-left:12px;font-size:16px;line-height:24px">{name}</span>'
-                                              f'<span style="font-size:14px;color:var(--text-secondary)">{n}</span></div>')
-    done = f'<div style="display:flex;align-items:center;padding:12px 16px;color:var(--text-secondary)">{mi("check")}<span style="flex:1;padding-left:12px;font-size:16px;line-height:24px;color:var(--text-primary)">Выполненные</span></div>'
-    wont = WONT_ROW(3)
-    body = f'<div style="width:412px;background:var(--background)">{done}{wont}{folder}{proj("Ремонт", "var(--list-orange)", "ic_list_home", 3, True)}{proj("Работа", "var(--list-blue)", "ic_list_work", 12)}{proj("Спорт", "var(--list-teal)", "ic_list_sport", "")}</div>'
-    return doc('Список и виджет', 330, 'Экран «Списки»: «Выполненные», «Не буду делать», папка, список со счётчиком и без него', body)
+    body = f'<div style="width:412px;background:var(--background);padding:12px 0 0">{MINE_CARD()}{ARCHIVE_CARD()}</div>'
+    return doc('Список и виджет', 560, 'Строки «Списков» в карточках (0.56): папка с эмодзи, списки с числом (при нуле без числа), архив', body)
 
 
 def p_search_field():
@@ -509,22 +562,9 @@ def nolist_screen():
 
 
 def lists_screen():
-    lsq = lambda c, ic: f'<span style="width:24px;height:24px;border-radius:var(--radius-md);background:{c};color:var(--on-list-square);display:flex;align-items:center;justify-content:center;flex-shrink:0">{svg(ic, 16)}</span>'
-    proj = lambda name, c, ic, n, ind=False: (f'<div style="display:flex;align-items:center;padding:12px 16px 12px {32 if ind else 16}px">{lsq(c, ic)}<span style="flex:1;padding-left:12px;font-size:16px;line-height:24px">{name}</span><span style="font-size:14px;color:var(--text-secondary)">{n}</span></div>')
-    gear = f'<span style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary)">{svg("ic_nav_settings", 24)}</span>'
-    head = f'<div style="display:flex;align-items:center"><div style="flex:1">{screen_title("Списки")}</div>{btn_text("+ Папка")}{btn_text("+ Список")}{gear}</div>'
-    # Итерация 55: «Поиск» — поле сверху (нажатие открывает экран поиска), «Входящие» — первой строкой с числом.
-    search = (f'<div style="margin:4px 16px 8px;height:48px;border-radius:var(--radius-lg);background:var(--surface);display:flex;align-items:center;gap:12px;padding:0 16px;'
-              f'color:var(--text-secondary)">{svg("ic_nav_search", 20)}<span style="font-size:16px">Поиск задач</span></div>')
-    inbox = f'<div style="display:flex;align-items:center;padding:12px 16px;color:var(--text-secondary)"><span style="font-size:20px;line-height:24px">📥</span><span style="flex:1;padding-left:12px;font-size:16px;color:var(--text-primary)">Входящие</span><span style="font-size:14px">3</span></div>'
-    done = f'<div style="display:flex;align-items:center;padding:12px 16px;color:var(--text-secondary)">{mi("check")}<span style="flex:1;padding-left:12px;font-size:16px;color:var(--text-primary)">Выполненные</span></div>'
-    folder = (f'<div style="display:flex;align-items:center;padding-left:8px;color:var(--text-secondary)">{mi("down")}<span style="flex:1;padding-left:8px;font-size:16px;line-height:24px;font-weight:600;color:var(--text-primary)">Дом</span><span style="font-size:14px">7</span>'
-              f'<span style="width:48px;height:48px;display:flex;align-items:center;justify-content:center">{mi("more")}</span></div>')
-    trash = f'<div style="display:flex;align-items:center;padding:12px 16px;color:var(--text-secondary)">{TRASH_ICON(24)}<span style="flex:1;padding-left:12px;font-size:16px;line-height:24px;color:var(--text-primary)">Корзина</span><span style="font-size:14px">5</span></div>'
-    someday = f'<div style="display:flex;align-items:center;padding:12px 16px;color:var(--text-secondary)">{lsq("var(--list-thought)", "ic_list_inbox")}<span style="flex:1;padding-left:12px;font-size:16px;color:var(--text-primary)">Когда-нибудь</span><span style="font-size:14px">7</span></div>'
-    nolist = f'<div style="display:flex;align-items:center;padding:12px 16px;color:var(--text-secondary)">{lsq("var(--list-pin)", "ic_list_inbox")}<span style="flex:1;padding-left:12px;font-size:16px;color:var(--text-primary)">Без списка</span><span style="font-size:14px">2</span></div>'
-    body = f'{head}{search}{inbox}{someday}{nolist}{done}{WONT_ROW(3)}{trash}{folder}{proj("Ремонт", "var(--list-orange)", "ic_list_home", 3, True)}{proj("Работа", "var(--list-blue)", "ic_list_work", 12)}{proj("Спорт", "var(--list-teal)", "ic_list_sport", "")}'
-    return frame(f'<div style="padding-top:8px">{body}</div>{nav_bar(3, 3)}', 800)
+    """Экран «Списки» (0.56): без заголовка, три карточки, строка значков над нижней панелью."""
+    body = f'<div style="padding-top:16px">{SYSTEM_CARD()}{MINE_CARD()}{ARCHIVE_CARD()}</div>'
+    return frame(f'{body}{lists_toolbar()}{nav_bar(3, 3)}', 800)
 
 
 def project_screen():
@@ -704,19 +744,9 @@ def empty_trash():
 
 
 def lists_with_trash():
-    lsq = lambda c, ic: f'<span style="width:24px;height:24px;border-radius:var(--radius-md);background:{c};color:var(--on-list-square);display:flex;align-items:center;justify-content:center;flex-shrink:0">{svg(ic, 16)}</span>'
-    proj = lambda name, c, ic, n: f'<div style="display:flex;align-items:center;padding:12px 16px">{lsq(c, ic)}<span style="flex:1;padding-left:12px;font-size:16px;line-height:24px">{name}</span><span style="font-size:14px;color:var(--text-secondary)">{n}</span></div>'
-    gear = f'<span style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary)">{svg("ic_nav_settings", 24)}</span>'
-    head = f'<div style="display:flex;align-items:center"><div style="flex:1">{screen_title("Списки")}</div>{btn_text("+ Папка")}{btn_text("+ Список")}{gear}</div>'
-    # Итерация 55: «Поиск» — поле сверху (нажатие открывает экран поиска), «Входящие» — первой строкой с числом.
-    search = (f'<div style="margin:4px 16px 8px;height:48px;border-radius:var(--radius-lg);background:var(--surface);display:flex;align-items:center;gap:12px;padding:0 16px;'
-              f'color:var(--text-secondary)">{svg("ic_nav_search", 20)}<span style="font-size:16px">Поиск задач</span></div>')
-    inbox = f'<div style="display:flex;align-items:center;padding:12px 16px;color:var(--text-secondary)"><span style="font-size:20px;line-height:24px">📥</span><span style="flex:1;padding-left:12px;font-size:16px;color:var(--text-primary)">Входящие</span><span style="font-size:14px">3</span></div>'
-    row = lambda ic, t, n='': (f'<div style="display:flex;align-items:center;padding:12px 16px;color:var(--text-secondary)">{ic}<span style="flex:1;padding-left:12px;font-size:16px;line-height:24px;color:var(--text-primary)">{t}</span>'
-                              f'<span style="font-size:14px">{n}</span></div>')
-    body = (head + row(mi('check'), 'Выполненные') + WONT_ROW(3) + row(TRASH_ICON(24), 'Корзина', 5) + proj('Работа', 'var(--list-blue)', 'ic_list_work', 12)
-            + proj('Спорт', 'var(--list-teal)', 'ic_list_sport', '') + proj('Учёба', 'var(--list-purple)', 'ic_list_study', 4))
-    return frame(f'<div style="padding-top:8px">{body}</div>{nav_bar(3)}', 680)
+    """«Корзина» на «Списках» (0.39; с 0.56 — последняя строка карточки архива)."""
+    body = f'<div style="padding-top:16px">{SYSTEM_CARD()}{MINE_CARD()}{ARCHIVE_CARD()}</div>'
+    return frame(f'{body}{lists_toolbar()}{nav_bar(3)}', 800)
 
 
 def readonly_task(menu=True, base=None, icon=None, banner='В корзине · удалена 28 окт', items=('Восстановить', 'Удалить навсегда')):
@@ -1012,7 +1042,7 @@ PREVIEWS = {
     'ReminderStrip': p_reminder_strip, 'Snooze': p_snooze, 'SelectionMode': p_selection, 'ScreenSelection': lambda: screens(all_selected, 730, 'Экран «Все» в режиме выбора: сверху «Выбрано: N», снизу лента действий'), 'ScreenTrash': lambda: screens(trash_screen, 730, 'Экран «Корзина»: удалённые задачи как в списке, «Восстановить все» и «Удалить все»'), 'TrashTask': lambda: doc('Окна', 730, 'Задача в корзине: только чтение, «⋮» — восстановить или удалить навсегда', f'<div class="row" style="align-items:flex-start">{readonly_task(True)}</div>'), 'DangerDialog': p_danger, 'OverdueHeader': p_overdue_header, 'UndoSnackbar': p_snackbar, 'RecentSearches': p_recent_searches, 'TaskDraft': p_draft, 'ReminderNotification': p_notification, 'Widget': p_widget_bar, 'WidgetBar': p_widget_bar_only, 'WidgetWeek': p_widget_week,
     'ScreenAll': lambda: screens(all_screen, 730, 'Экран «Предстоящее» (0.55, бывш. «Все»): заголовок, лента по дням со шкалой и нижней панелью'),
     'ScreenInbox': lambda: screens(inbox_screen, 730, 'Экран «Входящие»: плоский список, слева день и время'),
-    'ScreenLists': lambda: screens(lists_screen, 730, 'Экран «Списки»: «Когда-нибудь» и «Без списка» сверху (0.52)'),
+    'ScreenLists': lambda: screens(lists_screen, 850, 'Экран «Списки» (0.56): карточки групп, строка значков внизу'),
     'ScreenSomeday': lambda: screens(someday_screen, 730, 'Экран «Когда-нибудь»: задачи со списком без даты, группами по спискам (0.52)'),
     'ScreenNoList': lambda: screens(nolist_screen, 730, 'Экран «Без списка»: задачи с датой без списка, по дням (0.52)'),
     'ScreenProject': lambda: screens(project_screen, 730, 'Экран списка: заголовок со значком, «⋮» и плавающая «+»'),
@@ -1074,9 +1104,9 @@ README_MORE = {
                       '''«Вручную»: три строки «Дней до срока / Часов / Минут» (у задачи на весь день: за сколько дней, час, минуты) со счётчиком «− 02 +»; снизу чёрным «Сработает: чт, 29 окт, 15:00».
 Минуты идут шагом 5, дни до 30. «Произвольно»: чипы «День / Неделя / Месяц / Год», строка «Каждые − N +» (1–99), у недели ещё чипы дней недели, внизу чёрная расшифровка («Каждые 2 недели: вт, чт»).
 Кнопки «Отмена» и «Готово», как у всех окон. Источник: `TaskFieldMenus.kt`, `RepeatDialog.kt`.'''),
-    'AlertDialogs': ('Окна списка: имя, удаление, эмодзи.',
-                     '''Это `AlertDialog` Material 3 с цветами из токенов: фон `surface`, заголовок `text-primary`, текст `text-secondary`, кнопки текстовые (`accent`, удаление — `danger`).
-Имя — поле с чёрной рамкой при вводе (`accent`), у нового списка ещё чипы «Без папки / папка». Эмодзи (итерация 47, `EmojiPickerDialog`, окно `SheetDialog`) — сетка популярных по группам (Дела, Работа, Дом, Здоровье, Деньги, Отдых; по 8), выбранное в рамке `accent` на `selected`;
+    'AlertDialogs': ('Окна списка: создание (0.56 — с эмодзи), удаление, эмодзи.',
+                     '''Создание списка и папки и правка папки (итерация 56, T-127, `ListEditDialog` на `SheetDialog`): заголовок «Новый список» / «Новая папка» / «Папка»; слева плашка эмодзи `size-emoji-button` (56, `selected`, радиус `radius-lg`, в углу стрелка `size-emoji-button-mark`) — нажатие открывает все эмодзи; справа поле названия (`title-medium` Bold, фон `background`, рамка `accent`, радиус `radius-lg`). Ниже «ЭМОДЗИ» — быстрый выбор из 15 (`size-emoji-quick` 38, выбранный — рамка на `selected`) и «…» (все эмодзи); у списка — «ПАПКА»: чипы «Без папки» и папки с эмодзи. Кнопки «Отмена» и чёрная «Создать» («Сохранить»), бледная, пока нет названия. 📁 сохраняется как «без эмодзи».
+Удаление — `AlertDialog` Material 3 с цветами из токенов (кнопка `danger`). Эмодзи (итерация 47, `EmojiPickerDialog`, окно `SheetDialog`) — сетка популярных по группам (Дела, Работа, Дом, Здоровье, Деньги, Отдых; по 8), выбранное в рамке `accent` на `selected`;
 под сеткой поле «Свой эмодзи — вставь с клавиатуры»: берётся первый эмодзи из введённого. Окон «Цвет списка» и «Значок списка» больше нет.'''),
     'ChecklistRows': ('Чек-лист и подзадачи в шторке созданной задачи.',
                       '''Пункт: галочка с зоной нажатия `size-checkbox-touch` (40), текст `body-medium`, справа «⋮» (выше, ниже, переименовать, удалить). Отмеченный — чёрная галочка, текст зачёркнут `text-secondary`.
@@ -1096,9 +1126,9 @@ README_MORE = {
     'TaskRow': ('Плашка TaskRow в поиске и «Выполненные»: квадратная галочка, эмодзи списка, название, значки, время.',
                 '''Это прежний вид плашки, ленты «Все», «Входящие» и списков им больше не пользуются (там `TimelineRow`). Галочка — квадрат `size-checkbox` (18, радиус `radius-sm`) с рамкой цвета приоритета, зона нажатия 40; отмеченная — заливка `accent` и белая галочка.
 Название `body-medium` SemiBold, под ним `body-small` — где найдено (поиск, найденное подсвечено `accent-soft`). Справа повтор 14, колокольчик 18 и время столбиком (`label-medium` Bold). Плашка `surface`, радиус `radius-md`, щель между плашками `size-card-gap` (2).'''),
-    'ListRows': ('Экран «Списки»: строки «Выполненные» и «Не буду делать», папка и списки.',
-                 '''«Выполненные» — галочка и `body-large`. Папка: стрелка (вниз развёрнута, вправо свёрнута), имя `title-medium` SemiBold, число открытых задач, «⋮» (переименовать, удалить). Список: плитка с эмодзи `size-list-square-large` (24), имя `body-large`, счётчик `body-medium` (не показывается при нуле).
-Списки внутри папки сдвинуты вправо на `space-xl`. «+ Папка» и «+ Список» — текстовые кнопки `accent` справа от заголовка. Итерация 49: под «Выполненными» — строка «Не буду делать» (значок `ic_wont_do`, число задач, при нуле без числа).'''),
+    'ListRows': ('Строки «Списков» в карточках (0.56): папка с эмодзи, списки, архив.',
+                 '''Итерация 56 (T-123, T-125, T-126): строки лежат в белых карточках (`surface`, радиус `radius-lg`, поля `space-sm` по бокам, между карточками `space-sm`); скругляются только верх первой и низ последней строки, между строками линия `divider` от начала названия. Строка не ниже `size-list-row` (52): значок или эмодзи в поле `size-list-square-large` (24), название `body-large` SemiBold, справа число открытых задач `body-medium` SemiBold `text-secondary` — только если больше нуля.
+Папка: эмодзи (новое — 0.56; по умолчанию 📁), название, сумма задач её списков, стрелка (вниз — развёрнута, вправо — свёрнута) и «⋮» («Изменить» — окно «Папка» с названием и эмодзи, «Удалить»). Списки внутри папки сдвинуты на `space-lg`. Архив: «Выполненные» (галочка), «Не буду делать» (`ic_wont_do`), «Корзина» (`ic_tool_delete`).'''),
     'SearchField': ('Поле поиска: подсказка «Поиск задач», запрос, очистка.',
                     '''Поле Material 3: фон `surface`, радиус `radius-lg`, высота 56, без линии снизу. Слева лупа `text-secondary`; справа крестик, когда есть запрос. Курсор `accent`. При открытии раздела курсор сразу в поле и поднята клавиатура. Найденное в плашках подсвечено `accent-soft`.'''),
     'WeekView': ('Вид «Неделя»: сетка 2×4 — шесть дней, воскресенье и мини-календарь; все ячейки одинаковые (0.44, вид строк — 0.46, как виджет — 0.55).',
@@ -1132,7 +1162,7 @@ README_MORE = {
     'ScreenInbox': ('Экран «Входящие» (0.52 — только неразобранное).', 'Итерация 52 (решение PM, по справке SingularityApp): «Входящие» — задачи без даты и без списка. Поставили дату — задача уходит в «Без списка» (`ScreenNoList`), выбрали список — в «Когда-нибудь» (`ScreenSomeday`), убрали дату у задачи без списка — возвращается. Под заголовком подсказка `body-small` `text-secondary`: «Здесь — то, что ещё не разобрано…». Плоский список (`TimelineRow`), колонка времени пустая, эмодзи списка нет. Пусто: «Всё разобрано». Открывается строкой «Входящие» на «Списках» (0.55); число неразобранных — там и на вкладке «Списки» (`BottomBar`). «+» — задача без даты и без списка. Вкладка «Входящие» в виджете — по той же логике.'),
     'ScreenSomeday': ('Экран «Когда-нибудь» (0.52).', 'Вход — строка на «Списках» (эмодзи 💭 с 0.52.1, число открытых). «Назад», заголовок `title-large` Bold, справа число открытых задач. Группы по спискам в порядке «Списков» (папки, потом списки без папки): эмодзи `ListBadge`, название `body-medium` Bold, число `label-medium` Bold `text-secondary`; под ними строки `TimelineRow` без колонки времени. Кружок отмечает, плашка открывает задачу; поставили дату — задача уходит в свой список и в ленту по дате. «+» (`AddTaskButton`) — новая задача без даты, сразу открыто окно «Список». Пусто: «Задач со списком, но без даты нет». Источник: `ui/feature/sorted/`.'),
     'ScreenNoList': ('Экран «Без списка» (0.52).', 'Вход — строка на «Списках» (эмодзи 📌 с 0.52.1, число открытых). Задачи без списка, но с датой (у задачи — 📌 вместо 📥): по дням, как на «Все» — подпись дня (`DayHeader`, «Сегодня»/«Завтра», прошедшие — `overdue`), строки `TimelineRow` с временем слева, линия «сейчас» у сегодня. Выбрали список — задача уходит из раздела; убрали дату — возвращается во «Входящие». «+» — задача на сегодня без списка. Пусто: «Задач с датой, но без списка нет». Источник: `ui/feature/sorted/`.'),
-    'ScreenLists': ('Экран «Списки» (0.55 — с поиском, «Входящими» и настройками).', 'Итерация 55 (T-120): в шапке после «+ Папка», «+ Список» — шестерёнка «Настройки» (`ic_nav_settings`); под шапкой поле «Поиск задач» `size-search-entry` (48, `surface`, радиус `radius-lg`, `ic_nav_search`) — нажатие открывает экран поиска; первой строкой «Входящие» (📥) с числом неразобранных. Весь экран прокручивается. Дальше (0.52) «Когда-нибудь» (💭) и «Без списка» (📌, эмодзи — 0.52.1) с числами, дальше «Выполненные», «Не буду делать», «Корзина», папки и списки (`ListRows`). Пусто: «Списков пока нет».'),
+    'ScreenLists': ('Экран «Списки» (0.56 — карточки групп и строка значков).', 'Итерация 56 (решение PM 09.11.2026, T-123…T-125): заголовка нет. Три карточки (`ListRows`): системные — 📥 «Входящие», 💭 «Когда-нибудь», 📌 «Без списка» (их нельзя удалить или изменить); мои списки и папки; архив — «Выполненные», «Не буду делать», «Корзина». У каждой строки число задач, если не 0. Внизу, над нижней панелью, закреплена строка значков: поиск (`ic_nav_search`), новая папка (`ic_folder_plus`), новый список (`ic_list_plus`), настройки (`ic_nav_settings`) — четыре кнопки поровну, высота `size-lists-tool` (44), `surface`, радиус `radius-lg`, значок `text-primary`; над строкой плавный переход в `background`. Списки прокручиваются под ней. Окна создания — `AlertDialogs`. Пусто: «Списков пока нет» между системной карточкой и архивом.'),
     'ScreenProject': ('Экран списка.', 'Сверху «назад», плитка эмодзи списка, название `title-large` Bold и «⋮» (переименовать, эмодзи, удалить; у «Входящих» меню нет). Ниже плоский список без эмодзи списка. Плавающая «+» в правом нижнем углу.'),
     'ScreenSearch': ('Экран «Поиск».', 'С 0.55 открывается полем «Поиск задач» на «Списках» (отдельной вкладки нет). Поле поиска, раздел «Найдено: N» с плашками `TaskRow` (найденное подсвечено), ниже «Выполненные» серым; выполненную можно вернуть галочкой.'),
     'ScreenCompleted': ('Экран «Выполненные».', 'Сверху «назад» и заголовок, ниже дни (новые сверху) с плашками `TaskRow` в отмеченном виде; снять галочку — задача вернётся в свой список с кнопкой «Отмена».'),

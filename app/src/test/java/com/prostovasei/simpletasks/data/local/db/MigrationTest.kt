@@ -1,147 +1,74 @@
 package com.prostovasei.simpletasks.data.local.db
 
+import android.content.Context
 import android.database.sqlite.SQLiteDatabase
-import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import com.prostovasei.simpletasks.testing.FakeTimeProvider
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import java.io.File
 
 /**
- * Миграции базы: данные PM переживают обновление приложения (итерация 14: 1 → 2, значок списка).
- * База версии 1 создаётся по сохранённой схеме `app/schemas/.../1.json`, затем её открывает текущая версия Room
- * (Room сам сверяет итоговую структуру со схемой и падает при расхождении).
+ * Миграция 4 → 5 (итерация 56): база версии 4 строится по выгруженной схеме `schemas/…/4.json` (как у PM на телефоне),
+ * потом открывается приложением — Room сам проводит автоматическую миграцию и сверяет структуру с версией 5.
+ * Папка «🏠Дом» из TickTick становится «Дом» с эмодзи 🏠; папки без эмодзи, списки и задачи не меняются.
  */
 @RunWith(RobolectricTestRunner::class)
+@Config(application = android.app.Application::class)
 class MigrationTest {
-    private val context = ApplicationProvider.getApplicationContext<android.app.Application>()
+    private val context = ApplicationProvider.getApplicationContext<Context>()
 
     @Test
-    fun migrate1To2KeepsListsAndAddsEmptyIcon() {
-        val file = context.getDatabasePath(DB).apply { parentFile?.mkdirs(); delete() }
-        SQLiteDatabase.openOrCreateDatabase(file, null).use { db ->
-            schemaSql(1).forEach(db::execSQL)
-            db.execSQL(
-                "INSERT INTO projects (id, group_id, name, color, sort_order, is_inbox, is_deleted, created_at, updated_at) " +
-                    "VALUES ('work', NULL, 'Работа', '#3D8BFD', 0, 0, 0, 1, 1)",
-            )
-            db.version = 1
-        }
+    fun folderEmojiSplitFromName() {
+        val file = context.getDatabasePath(AppDatabase.NAME).apply { parentFile?.mkdirs(); delete() }
+        createVersion4(file)
 
-        val room = Room.databaseBuilder(context, AppDatabase::class.java, DB).allowMainThreadQueries().build()
+        val db = AppDatabase.build(context, FakeTimeProvider())
         try {
-            room.openHelper.readableDatabase.query("SELECT name, color, icon FROM projects WHERE id = 'work'").use { c ->
-                c.moveToFirst()
-                assertEquals("Работа", c.getString(0))
-                assertEquals("#3D8BFD", c.getString(1))
-                assertNull(c.getString(2))
-            }
-            assertEquals(LATEST, room.openHelper.readableDatabase.version)
+            val groups = runBlocking { db.projectGroupDao().observeActive().first() }.associateBy { it.id }
+            assertEquals("Дом", groups.getValue("g1").name)
+            assertEquals("🏠", groups.getValue("g1").emoji)
+            assertEquals("Работа", groups.getValue("g2").name)
+            assertNull(groups.getValue("g2").emoji)
+            val list = runBlocking { db.projectDao().getById("p1") }!!
+            assertEquals("g1", list.groupId)
+            assertEquals("Ремонт", list.name)
         } finally {
-            room.close()
+            db.close()
         }
     }
 
-    /**
-     * Итерация 47 (решения PM): 2 → 3 — эмодзи списков вместо значков и два приоритета. Значок переходит в эмодзи, «Входящие» — 📥,
-     * эмодзи в начале названия списка из TickTick отделяется; средний приоритет (3) становится высоким (5), низкий (1) — обычным (0).
-     */
-    @Test
-    fun migrate2To3GivesEmojiAndTwoPriorities() {
-        val file = context.getDatabasePath(DB).apply { parentFile?.mkdirs(); delete() }
-        SQLiteDatabase.openOrCreateDatabase(file, null).use { db ->
-            schemaSql(2).forEach(db::execSQL)
-            fun list(id: String, name: String, icon: String?, inbox: Int = 0) = db.execSQL(
-                "INSERT INTO projects (id, group_id, name, color, sort_order, is_inbox, is_deleted, created_at, updated_at, icon) " +
-                    "VALUES (?, NULL, ?, NULL, 0, ?, 0, 1, 1, ?)",
-                arrayOf<Any?>(id, name, inbox, icon),
+    private fun createVersion4(file: File) {
+        val schema = JSONObject(File(SCHEMA_DIR, "4.json").readText()).getJSONObject("database")
+        SQLiteDatabase.openOrCreateDatabase(file, null).use { sql ->
+            val entities = schema.getJSONArray("entities")
+            for (i in 0 until entities.length()) {
+                val entity = entities.getJSONObject(i)
+                val table = entity.getString("tableName")
+                sql.execSQL(entity.getString("createSql").replace("\${TABLE_NAME}", table))
+                val indices = entity.optJSONArray("indices") ?: continue
+                for (j in 0 until indices.length()) sql.execSQL(indices.getJSONObject(j).getString("createSql").replace("\${TABLE_NAME}", table))
+            }
+            val setup = schema.getJSONArray("setupQueries")
+            for (i in 0 until setup.length()) sql.execSQL(setup.getString(i))
+            sql.version = 4
+            sql.execSQL("INSERT INTO project_groups (id, name, sort_order, is_deleted, created_at, updated_at) VALUES ('g1', '🏠Дом', 0, 0, 1, 1)")
+            sql.execSQL("INSERT INTO project_groups (id, name, sort_order, is_deleted, created_at, updated_at) VALUES ('g2', 'Работа', 1, 0, 1, 1)")
+            sql.execSQL(
+                "INSERT INTO projects (id, group_id, name, sort_order, is_inbox, is_deleted, created_at, updated_at) VALUES ('p1', 'g1', 'Ремонт', 0, 0, 0, 1, 1)",
             )
-            list("inbox", "Inbox", null, inbox = 1)
-            list("work", "Работа", "work")
-            list("home", "🏠Дом", null)
-            list("plain", "Идеи", null)
-            listOf("p0" to 0, "p1" to 1, "p3" to 3, "p5" to 5).forEach { (id, priority) ->
-                db.execSQL(
-                    "INSERT INTO tasks (id, project_id, title, priority, created_at, updated_at) VALUES (?, 'work', ?, ?, 1, 1)",
-                    arrayOf<Any>(id, id, priority),
-                )
-            }
-            db.version = 2
         }
-
-        val room = Room.databaseBuilder(context, AppDatabase::class.java, DB).allowMainThreadQueries().build()
-        try {
-            val lists = mutableMapOf<String, Pair<String, String?>>()
-            room.openHelper.readableDatabase.query("SELECT id, name, emoji FROM projects").use { c ->
-                while (c.moveToNext()) lists[c.getString(0)] = c.getString(1) to c.getString(2)
-            }
-            assertEquals("Inbox" to "📥", lists["inbox"])
-            assertEquals("Работа" to "💼", lists["work"])
-            assertEquals("Дом" to "🏠", lists["home"])
-            assertEquals("Идеи" to null, lists["plain"])
-            val priorities = mutableMapOf<String, Int>()
-            room.openHelper.readableDatabase.query("SELECT id, priority FROM tasks").use { c ->
-                while (c.moveToNext()) priorities[c.getString(0)] = c.getInt(1)
-            }
-            assertEquals(mapOf("p0" to 0, "p1" to 0, "p3" to 5, "p5" to 5), priorities)
-            assertEquals(LATEST, room.openHelper.readableDatabase.version)
-        } finally {
-            room.close()
-        }
-    }
-
-    /** Итерация 47 (проверка PM): 3 → 4 — отметка выполненного раза повтора; у прежних задач её нет. */
-    @Test
-    fun migrate3To4KeepsTasksWithoutRepeatMark() {
-        val file = context.getDatabasePath(DB).apply { parentFile?.mkdirs(); delete() }
-        SQLiteDatabase.openOrCreateDatabase(file, null).use { db ->
-            schemaSql(3).forEach(db::execSQL)
-            db.execSQL(
-                "INSERT INTO projects (id, group_id, name, color, sort_order, is_inbox, is_deleted, created_at, updated_at, icon, emoji) " +
-                    "VALUES ('work', NULL, 'Работа', NULL, 0, 0, 0, 1, 1, NULL, '💼')",
-            )
-            db.execSQL("INSERT INTO tasks (id, project_id, title, status, created_at, updated_at) VALUES ('done', 'work', 'Стирка', 2, 1, 1)")
-            db.version = 3
-        }
-
-        val room = Room.databaseBuilder(context, AppDatabase::class.java, DB).allowMainThreadQueries().build()
-        try {
-            room.openHelper.readableDatabase.query("SELECT title, status, is_repeat_done FROM tasks WHERE id = 'done'").use { c ->
-                c.moveToFirst()
-                assertEquals("Стирка", c.getString(0))
-                assertEquals(2, c.getInt(1))
-                assertEquals(0, c.getInt(2))
-            }
-            assertEquals(LATEST, room.openHelper.readableDatabase.version)
-        } finally {
-            room.close()
-        }
-    }
-
-    /** SQL создания таблиц и индексов из экспортированной схемы Room. */
-    private fun schemaSql(version: Int): List<String> {
-        val json = JSONObject(File("schemas/${AppDatabase::class.java.name}/$version.json").readText()).getJSONObject("database")
-        val sql = mutableListOf<String>()
-        val entities = json.getJSONArray("entities")
-        for (i in 0 until entities.length()) {
-            val entity = entities.getJSONObject(i)
-            val table = entity.getString("tableName")
-            sql += entity.getString("createSql").replace("\${TABLE_NAME}", table)
-            entity.optJSONArray("indices")?.let { indices ->
-                for (j in 0 until indices.length()) sql += indices.getJSONObject(j).getString("createSql").replace("\${TABLE_NAME}", table)
-            }
-        }
-        val setup = json.getJSONArray("setupQueries")
-        for (i in 0 until setup.length()) sql += setup.getString(i)
-        return sql
     }
 
     private companion object {
-        const val DB = "migration-test.db"
-        const val LATEST = 4
+        /** Unit-тесты запускаются из папки модуля app. */
+        val SCHEMA_DIR = File("schemas/com.prostovasei.simpletasks.data.local.db.AppDatabase")
     }
 }

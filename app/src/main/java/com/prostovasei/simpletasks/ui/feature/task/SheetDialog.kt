@@ -71,6 +71,8 @@ fun SheetDialog(
     // Кнопка «Отмена» по умолчанию — то же, что «Назад» и нажатие мимо; окно обновления разводит их (загрузку не обрывать случайно).
     onCancel: () -> Unit = onDismiss,
     icon: (@Composable () -> Unit)? = null,
+    /** Итерация 56: «Создать» бледная и не нажимается, пока нет названия. */
+    doneEnabled: Boolean = true,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val colors = AppTheme.colors
@@ -122,8 +124,14 @@ fun SheetDialog(
                 if (onDone != null) {
                     Button(
                         onClick = onDone,
+                        enabled = doneEnabled,
                         shape = shape,
-                        colors = ButtonDefaults.buttonColors(containerColor = if (danger) colors.danger else colors.accent, contentColor = colors.onAccent),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (danger) colors.danger else colors.accent,
+                            contentColor = colors.onAccent,
+                            disabledContainerColor = colors.divider,
+                            disabledContentColor = colors.textSecondary,
+                        ),
                         contentPadding = buttonPadding,
                         modifier = Modifier.weight(1f).heightIn(min = sizes.toolButton).testTag("$tag:$TAG_DIALOG_DONE"),
                     ) {

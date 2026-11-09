@@ -58,6 +58,21 @@ object SizeTokens {
 
     /** Поле «Поиск задач» на «Списках» (итерация 55). */
     const val SEARCH_ENTRY = 48
+
+    /** Итерация 56: строка карточки «Списков» — не ниже. */
+    const val LIST_ROW = 52
+
+    /** Итерация 56: кнопка строки значков «Списков» (поиск, папка, список, настройки) — высота. */
+    const val LISTS_TOOL = 44
+
+    /** Итерация 56: плашка эмодзи слева от названия в окне создания списка и папки. */
+    const val EMOJI_BUTTON = 56
+
+    /** Итерация 56: эмодзи быстрого выбора в окне создания. */
+    const val EMOJI_QUICK = 38
+
+    /** Итерация 56: значок-стрелка на плашке эмодзи. */
+    const val EMOJI_BUTTON_MARK = 20
     const val NAV_SHADOW = 10
     const val CHECKBOX = 18
     const val CHECKBOX_STROKE = 2

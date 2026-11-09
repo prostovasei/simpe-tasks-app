@@ -23,9 +23,11 @@ class ListsViewModel @Inject constructor(
         }
         viewModelScope.launch {
             tasks.observeWontDoCount().collect { count -> setState { copy(wontDoCount = count) } }
+        }
+        // Итерация 56: подписка на числа «Входящих», «Когда-нибудь» и «Без списка» была внутри предыдущей и не запускалась —
+        // у строк не было чисел (T-125).
         viewModelScope.launch {
             tasks.observeSortCounts().collect { counts -> setState { copy(inboxCount = counts.inbox, somedayCount = counts.someday, noListCount = counts.noList) } }
-        }
         }
     }
 
@@ -40,18 +42,18 @@ class ListsViewModel @Inject constructor(
             is ListsIntent.CreateList -> {
                 closeDialog()
                 viewModelScope.launch {
-                    val id = projects.createProject(intent.name, groupId = intent.folderId)
+                    val id = projects.createProject(intent.name, groupId = intent.folderId, emoji = intent.emoji)
                     sendEffect(ListsEffect.OpenProject(id))
                 }
             }
             is ListsIntent.CreateFolder -> {
                 closeDialog()
-                viewModelScope.launch { projects.createGroup(intent.name) }
+                viewModelScope.launch { projects.createGroup(intent.name, intent.emoji) }
             }
-            is ListsIntent.RenameFolder -> {
-                val dialog = currentState.dialog as? ListsDialog.RenameFolder ?: return
+            is ListsIntent.UpdateFolder -> {
+                val dialog = currentState.dialog as? ListsDialog.EditFolder ?: return
                 closeDialog()
-                viewModelScope.launch { projects.renameGroup(dialog.folderId, intent.name) }
+                viewModelScope.launch { projects.updateGroup(dialog.folderId, intent.name, intent.emoji) }
             }
             ListsIntent.ConfirmDeleteFolder -> {
                 val dialog = currentState.dialog as? ListsDialog.DeleteFolder ?: return

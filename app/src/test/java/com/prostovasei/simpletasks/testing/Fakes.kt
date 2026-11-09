@@ -365,25 +365,25 @@ class FakeProjectRepository : ProjectRepository {
 
     override suspend fun getInbox(): Project = tree.value.inbox!!.project
 
-    override suspend fun createGroup(name: String): String {
+    override suspend fun createGroup(name: String, emoji: String?): String {
         val id = "g${nextId++}"
-        calls += "createGroup:$name"
-        tree.update { it.copy(groups = it.groups + GroupWithProjects(ProjectGroup(id, name, 0, EPOCH, EPOCH), emptyList())) }
+        calls += if (emoji == null) "createGroup:$name" else "createGroup:$name:$emoji"
+        tree.update { it.copy(groups = it.groups + GroupWithProjects(ProjectGroup(id, name, 0, EPOCH, EPOCH, emoji), emptyList())) }
         return id
     }
 
-    override suspend fun renameGroup(groupId: String, name: String) {
-        calls += "renameGroup:$groupId:$name"
+    override suspend fun updateGroup(groupId: String, name: String, emoji: String?) {
+        calls += "updateGroup:$groupId:$name:$emoji"
     }
 
     override suspend fun deleteGroup(groupId: String) {
         calls += "deleteGroup:$groupId"
     }
 
-    override suspend fun createProject(name: String, groupId: String?, color: String?): String {
+    override suspend fun createProject(name: String, groupId: String?, color: String?, emoji: String?): String {
         val id = "p${nextId++}"
-        calls += "createProject:$name:$groupId"
-        tree.update { it.copy(ungrouped = it.ungrouped + ProjectWithCount(project(id, name, groupId = groupId, color = color), 0)) }
+        calls += if (emoji == null) "createProject:$name:$groupId" else "createProject:$name:$groupId:$emoji"
+        tree.update { it.copy(ungrouped = it.ungrouped + ProjectWithCount(project(id, name, groupId = groupId, color = color).copy(emoji = emoji), 0)) }
         return id
     }
 

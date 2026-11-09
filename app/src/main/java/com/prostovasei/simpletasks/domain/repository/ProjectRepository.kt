@@ -12,14 +12,17 @@ interface ProjectRepository {
 
     suspend fun getInbox(): Project
 
-    suspend fun createGroup(name: String): String
+    /** Новая папка; [emoji] (итерация 56) — эмодзи папки, null — 📁. */
+    suspend fun createGroup(name: String, emoji: String? = null): String
 
-    suspend fun renameGroup(groupId: String, name: String)
+    /** Название и эмодзи папки (итерация 56: окно «Папка»). */
+    suspend fun updateGroup(groupId: String, name: String, emoji: String?)
 
     /** Удаляет папку. Её списки не удаляются, а переносятся на верхний уровень. */
     suspend fun deleteGroup(groupId: String)
 
-    suspend fun createProject(name: String, groupId: String? = null, color: String? = null): String
+    /** Новый список; [emoji] (итерация 56) — выбирается сразу в окне создания, null — 📁. */
+    suspend fun createProject(name: String, groupId: String? = null, color: String? = null, emoji: String? = null): String
 
     suspend fun updateProject(projectId: String, name: String, groupId: String?, color: String?)
 
