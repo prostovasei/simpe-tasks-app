@@ -1,5 +1,6 @@
 package com.prostovasei.simpletasks.ui.navigation
 
+import androidx.compose.ui.test.performScrollToKey
 import com.prostovasei.simpletasks.ui.feature.lists.TAG_LISTS_SCROLL
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
@@ -239,7 +240,8 @@ class AppSmokeTest {
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_DETAIL_TITLE).fetchSemanticsNodes().isEmpty() }
 
         composeRule.onNodeWithTag("tab:LISTS").performClick()
-        composeRule.onNodeWithTag(TAG_LISTS_SCROLL).performScrollToNode(hasTestTag(TAG_TRASH))
+        // Итерация 56: «Корзина» — в последней карточке; прокрутка к ней по ключу ставит её над строкой значков.
+        composeRule.onNodeWithTag(TAG_LISTS_SCROLL).performScrollToKey("trash")
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_TRASH_COUNT, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
         composeRule.onNodeWithTag(TAG_TRASH_COUNT, useUnmergedTree = true).assertTextEquals("1")
         composeRule.onNodeWithTag(TAG_TRASH).performClick()

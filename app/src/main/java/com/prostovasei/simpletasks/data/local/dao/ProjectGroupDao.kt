@@ -26,6 +26,10 @@ interface ProjectGroupDao {
     @Query("UPDATE project_groups SET name = :name, updated_at = :now WHERE id = :id AND is_deleted = 0")
     suspend fun rename(id: String, name: String, now: Long): Int
 
+    /** Итерация 56: название и эмодзи папки — одним окном «Папка». */
+    @Query("UPDATE project_groups SET name = :name, emoji = :emoji, updated_at = :now WHERE id = :id AND is_deleted = 0")
+    suspend fun update(id: String, name: String, emoji: String?, now: Long): Int
+
     @Query("UPDATE project_groups SET is_deleted = 1, updated_at = :now WHERE id = :id AND is_deleted = 0")
     suspend fun softDelete(id: String, now: Long): Int
 }

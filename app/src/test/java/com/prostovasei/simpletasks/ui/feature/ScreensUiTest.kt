@@ -532,7 +532,7 @@ class ScreensUiTest {
         inbox = ProjectWithCount(project("inbox", "Inbox", isInbox = true), 3),
         groups = listOf(
             GroupWithProjects(
-                ProjectGroup("g1", "Личное", 0, Instant.EPOCH, Instant.EPOCH),
+                ProjectGroup("g1", "Личное", 0, Instant.EPOCH, Instant.EPOCH, emoji = "🧩"),
                 listOf(ProjectWithCount(project("home", "Дом", groupId = "g1", color = "#46A758", icon = "home"), 4), ProjectWithCount(project("health", "Здоровье", groupId = "g1", color = "#E5484D", icon = "health"), 1)),
             ),
         ),
@@ -774,8 +774,25 @@ class ScreensUiTest {
 
     @Test
     fun screenshotLists() {
-        show { ListsScreen(ListsState(tree = tree), {}, {}) }
+        show { ListsScreen(ListsState(tree = tree, inboxCount = 50, somedayCount = 7, noListCount = 2, wontDoCount = 4, trashCount = 20), {}, {}) }
         composeRule.onRoot().captureRoboImage("screenshots/lists_light.png")
+    }
+
+    @Test
+    fun screenshotListsDark() {
+        show(dark = true) { ListsScreen(ListsState(tree = tree, inboxCount = 50, somedayCount = 7, noListCount = 2, wontDoCount = 4, trashCount = 20), {}, {}) }
+        composeRule.onRoot().captureRoboImage("screenshots/lists_dark.png")
+    }
+
+    /** Итерация 56: у папки — эмодзи, число задач её списков; «⋮» → «Изменить» открывает окно «Папка» с названием и эмодзи. */
+    @Test
+    fun folderShowsEmojiAndEdits() {
+        show { ListsScreen(ListsState(tree = tree), { intents += it }, {}) }
+        composeRule.onNodeWithTag("folder:g1").assertTextContains("🧩")
+        composeRule.onNodeWithTag("folder:g1:count", useUnmergedTree = true).assertTextEquals("5")
+        composeRule.onNodeWithTag("folder_menu:g1").performClick()
+        composeRule.onNodeWithTag(com.prostovasei.simpletasks.ui.feature.lists.TAG_FOLDER_EDIT).performClick()
+        assertEquals(listOf<Any>(ListsIntent.OpenDialog(ListsDialog.EditFolder("g1", "Личное", "🧩"))), intents)
     }
 
     @Test

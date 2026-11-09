@@ -22,7 +22,8 @@ sealed interface ListsDialog {
     data object None : ListsDialog
     data object CreateList : ListsDialog
     data object CreateFolder : ListsDialog
-    data class RenameFolder(val folderId: String, val name: String) : ListsDialog
+    /** Итерация 56: «⋮» папки → «Изменить» — название и эмодзи одним окном. */
+    data class EditFolder(val folderId: String, val name: String, val emoji: String?) : ListsDialog
     data class DeleteFolder(val folderId: String, val name: String) : ListsDialog
 }
 
@@ -30,9 +31,9 @@ sealed interface ListsIntent {
     data class ToggleFolder(val folderId: String) : ListsIntent
     data class OpenDialog(val dialog: ListsDialog) : ListsIntent
     data object DismissDialog : ListsIntent
-    data class CreateList(val name: String, val folderId: String?) : ListsIntent
-    data class CreateFolder(val name: String) : ListsIntent
-    data class RenameFolder(val name: String) : ListsIntent
+    data class CreateList(val name: String, val folderId: String?, val emoji: String? = null) : ListsIntent
+    data class CreateFolder(val name: String, val emoji: String? = null) : ListsIntent
+    data class UpdateFolder(val name: String, val emoji: String?) : ListsIntent
     data object ConfirmDeleteFolder : ListsIntent
 }
 

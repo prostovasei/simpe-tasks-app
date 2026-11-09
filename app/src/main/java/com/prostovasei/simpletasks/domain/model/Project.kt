@@ -9,7 +9,12 @@ data class ProjectGroup(
     val sortOrder: Int,
     val createdAt: Instant,
     val updatedAt: Instant,
-)
+    /** Эмодзи папки (итерация 56), null — не выбран (📁). */
+    val emoji: String? = null,
+) {
+    /** Эмодзи, который показывается у папки. */
+    val emojiShown: String get() = emoji ?: ListEmoji.DEFAULT
+}
 
 /** Список задач. [color] — HEX-цвет, выбранный пользователем (данные, не дизайн-токен). */
 data class Project(

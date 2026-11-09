@@ -47,21 +47,21 @@ class RoomProjectRepository @Inject constructor(
     override suspend fun getInbox(): Project =
         checkNotNull(projectDao.getInbox()) { "Список «Входящие» должен создаваться при открытии БД" }.toDomain()
 
-    override suspend fun createGroup(name: String): String {
+    override suspend fun createGroup(name: String, emoji: String?): String {
         require(name.isNotBlank()) { "Название папки не может быть пустым" }
         val id = ids.newId()
         val now = nowMillis()
         db.withTransaction {
             groupDao.insert(
-                ProjectGroupEntity(id = id, name = name, sortOrder = groupDao.nextSortOrder(), createdAt = now, updatedAt = now),
+                ProjectGroupEntity(id = id, name = name, sortOrder = groupDao.nextSortOrder(), createdAt = now, updatedAt = now, emoji = emoji),
             )
         }
         return id
     }
 
-    override suspend fun renameGroup(groupId: String, name: String) {
+    override suspend fun updateGroup(groupId: String, name: String, emoji: String?) {
         require(name.isNotBlank()) { "Название папки не может быть пустым" }
-        groupDao.rename(groupId, name, nowMillis())
+        groupDao.update(groupId, name, emoji, nowMillis())
     }
 
     override suspend fun deleteGroup(groupId: String) {
@@ -72,7 +72,7 @@ class RoomProjectRepository @Inject constructor(
         }
     }
 
-    override suspend fun createProject(name: String, groupId: String?, color: String?): String {
+    override suspend fun createProject(name: String, groupId: String?, color: String?, emoji: String?): String {
         require(name.isNotBlank()) { "Название списка не может быть пустым" }
         val id = ids.newId()
         val now = nowMillis()
@@ -86,6 +86,7 @@ class RoomProjectRepository @Inject constructor(
                     sortOrder = projectDao.nextSortOrder(groupId),
                     createdAt = now,
                     updatedAt = now,
+                    emoji = emoji,
                 ),
             )
         }

@@ -29,9 +29,10 @@ import java.util.concurrent.Executor
     ],
     // 1 → 2 (итерация 14): колонка projects.icon. 2 → 3 (итерация 47): колонка projects.emoji и два приоритета ([V2to3]).
     // 3 → 4 (итерация 47, проверка PM): колонка tasks.is_repeat_done — выполненный раз повтора. Данные PM сохраняются автоматической миграцией Room.
-    version = 4,
+    // 4 → 5 (итерация 56): колонка project_groups.emoji — эмодзи папки ([V4to5]).
+    version = 5,
     exportSchema = true,
-    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3, spec = V2to3::class), AutoMigration(from = 3, to = 4)],
+    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3, spec = V2to3::class), AutoMigration(from = 3, to = 4), AutoMigration(from = 4, to = 5, spec = V4to5::class)],
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun projectGroupDao(): ProjectGroupDao
@@ -53,6 +54,23 @@ abstract class AppDatabase : RoomDatabase() {
             // которые могли пережить тест и уронить следующий (бэклог №54).
             if (executor != null) builder.allowMainThreadQueries().setQueryExecutor(executor).setTransactionExecutor(executor)
             return builder.addCallback(InboxSeed(time)).build()
+        }
+    }
+}
+
+/**
+ * Миграция 4 → 5 (итерация 56, решение PM): у папок появился эмодзи. Папки из TickTick с эмодзи в начале названия («🏠Дом»):
+ * эмодзи — отдельно, название — «Дом» (как у списков в [V2to3]).
+ */
+class V4to5 : AutoMigrationSpec {
+    override fun onPostMigrate(db: SupportSQLiteDatabase) {
+        val named = mutableListOf<Pair<String, String>>()
+        db.query("SELECT id, name FROM project_groups WHERE emoji IS NULL").use { c ->
+            while (c.moveToNext()) named += c.getString(0) to c.getString(1)
+        }
+        named.forEach { (id, name) ->
+            val (emoji, rest) = ListEmoji.split(name)
+            if (emoji != null) db.execSQL("UPDATE project_groups SET emoji = ?, name = ? WHERE id = ?", arrayOf<Any>(emoji, rest, id))
         }
     }
 }

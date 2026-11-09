@@ -14,4 +14,6 @@ data class ProjectGroupEntity(
     @ColumnInfo(name = "is_deleted", defaultValue = "0") val isDeleted: Boolean = false,
     @ColumnInfo(name = "created_at") val createdAt: Long,
     @ColumnInfo(name = "updated_at") val updatedAt: Long,
+    /** Эмодзи папки (итерация 56), null — 📁. Колонка добавлена миграцией 4 → 5. */
+    @ColumnInfo(name = "emoji") val emoji: String? = null,
 )

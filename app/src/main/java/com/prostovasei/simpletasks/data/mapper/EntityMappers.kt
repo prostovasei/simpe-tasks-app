@@ -65,4 +65,5 @@ internal fun ProjectGroupEntity.toDomain() = ProjectGroup(
     sortOrder = sortOrder,
     createdAt = Instant.ofEpochMilli(createdAt),
     updatedAt = Instant.ofEpochMilli(updatedAt),
+    emoji = emoji,
 )

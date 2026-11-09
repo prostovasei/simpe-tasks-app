@@ -114,6 +114,13 @@
     <string name="lists_create_list_title">Новый список</string>
     <string name="lists_create_folder_title">Новая папка</string>
     <string name="lists_rename_folder_title">Переименовать папку</string>
+    <string name="lists_edit_folder_title">Папка</string>
+    <string name="lists_name_hint">Название</string>
+    <string name="lists_emoji_label">Эмодзи</string>
+    <string name="lists_folder_label">Папка</string>
+    <string name="lists_emoji_more">Все эмодзи</string>
+    <string name="lists_new_folder_action">Новая папка</string>
+    <string name="lists_new_list_action">Новый список</string>
     <string name="lists_delete_folder_title">Удалить папку «%s»?</string>
     <string name="lists_delete_folder_text">Списки из папки останутся и переместятся на верхний уровень.</string>
     <string name="lists_folder_none">Без папки</string>
@@ -135,6 +142,7 @@
     <string name="action_cancel">Отмена</string>
     <string name="action_delete">Удалить</string>
     <string name="action_rename">Переименовать</string>
+    <string name="action_edit">Изменить</string>
 
     <string name="add_task">Новая задача</string>
     <string name="quick_add_title_hint">Купить билеты на концерт</string>

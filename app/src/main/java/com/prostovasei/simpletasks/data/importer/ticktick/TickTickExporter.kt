@@ -78,7 +78,7 @@ internal class TickTickExporter @Inject constructor(
         }.orEmpty()
 
         val overrides = mapOf(
-            "Folder Name" to row.folderName.orEmpty(),
+            "Folder Name" to row.folderName?.let { name -> row.folderEmoji?.let { it + name } ?: name }.orEmpty(),
             // Итерация 47: эмодзи списка TickTick хранит в начале названия («🏠Дом»).
             "List Name" to if (row.listIsInbox) TickTickFormat.INBOX else row.listEmoji?.let { it + row.listName } ?: row.listName,
             "Title" to task.title,
