@@ -8,7 +8,7 @@
 Второй круг (требования PM 10.11.2026): галочка «открыть приложение» остаётся; нажатие на дату — назад к сегодня;
 дата в две строки — «вт, 10» сверху, «ноя» снизу; вкладки — только значки, без подписей.
 
-Запуск: python3 design/mockups/iteration57.py <папка project>   → canvas.json, Main.dc.html (круг 1), Round2.dc.html (круг 2), Date.dc.html (дата), Final.dc.html (итог)
+Запуск: python3 design/mockups/iteration57.py <папка project>   → canvas.json, Main.dc.html (круг 1), Round2.dc.html (круг 2), Date.dc.html (дата), Final.dc.html (итог 1), Round4.dc.html (круг 4)
 """
 import datetime
 import json
@@ -446,6 +446,110 @@ FINAL = [
 ]
 
 
+# ------------------------------------------------------------------ круг 4: «+» слева, вкладки по центру, дата справа (решение PM)
+
+def lay(left, center, right, pad='8px 8px 10px', bg=None, border=True, wrap=None):
+    """Три места: стороны делят остаток поровну — блок вкладок ровно по центру. Пустое место строки — открыть приложение."""
+    side = 'flex:1;display:flex;align-items:center'
+    inner = f'<span style="{side}">{left}</span>{center}<span style="{side};justify-content:flex-end">{right}</span>'
+    if wrap:
+        return wrap(inner)
+    return bar(inner, pad=pad, border=border, bg=bg or 'transparent')
+
+
+DATE4 = d_num_left
+
+
+def tabs_sel_bg(size=24, w=50, h=40, radius='var(--radius-lg)'):
+    return icon_tabs(lambda n, on: (f'<span style="width:{w}px;height:{h}px;border-radius:{radius};display:flex;align-items:center;justify-content:center;'
+                                    f'background:{"var(--selected)" if on else "transparent"};color:{"var(--accent)" if on else "var(--text-secondary)"}">{svg(n, size)}</span>'))
+
+
+def q1_flat():
+    return widget(lay(plus(52, 40), f'<span style="display:flex">{tabs_sel_bg()}</span>', DATE4()))
+
+
+def q2_segment():
+    tab = lambda n, on: (f'<span style="width:48px;height:36px;border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:center;'
+                         f'background:{"var(--surface)" if on else "transparent"};color:{"var(--accent)" if on else "var(--text-secondary)"};'
+                         f'{"box-shadow:0 1px 2px color-mix(in srgb,var(--text-primary) 15%,transparent)" if on else ""}">{svg(n, 22)}</span>')
+    seg = f'<span style="display:flex;padding:3px;border-radius:var(--radius-xl);background:var(--divider)">{icon_tabs(tab)}</span>'
+    return widget(lay(plus(44, 44, '22px'), seg, DATE4()))
+
+
+def q3_dark_tabs():
+    tab = lambda n, on: (f'<span style="width:44px;height:36px;border-radius:18px;display:flex;align-items:center;justify-content:center;'
+                         f'background:{"var(--on-accent)" if on else "transparent"};color:{"var(--accent)" if on else "var(--on-accent)"}">{svg(n, 22)}</span>')
+    pill = f'<span style="display:flex;padding:4px;border-radius:22px;background:var(--accent)">{icon_tabs(tab)}</span>'
+    add = (f'<span style="width:44px;height:44px;border-radius:22px;border:1.5px solid var(--text-primary);box-sizing:border-box;display:flex;align-items:center;'
+           f'justify-content:center;color:var(--text-primary)">{svg("ic_widget_add", 24)}</span>')
+    return widget(lay(add, pill, DATE4(), border=False))
+
+
+def q4_dots():
+    tab = lambda n, on: (f'<span style="width:48px;display:flex;flex-direction:column;align-items:center;gap:4px;color:{"var(--accent)" if on else "var(--inactive)"}">'
+                         f'{svg(n, 24)}<span style="width:5px;height:5px;border-radius:3px;background:{"var(--accent)" if on else "transparent"}"></span></span>')
+    return widget(lay(plus(44, 44, '22px'), f'<span style="display:flex;padding-top:6px">{icon_tabs(tab)}</span>', DATE4()))
+
+
+def q5_white_capsule():
+    tab = lambda n, on: (f'<span style="width:44px;height:36px;border-radius:18px;display:flex;align-items:center;justify-content:center;'
+                         f'background:{"var(--accent)" if on else "transparent"};color:{"var(--on-accent)" if on else "var(--text-secondary)"}">{svg(n, 22)}</span>')
+    pill = f'<span style="display:flex;padding:4px;border-radius:22px;background:var(--surface);border:1px solid var(--divider)">{icon_tabs(tab)}</span>'
+    return widget(lay(plus(48, 44, 'var(--radius-lg)'), pill, DATE4(), border=False))
+
+
+def q6_tiles():
+    tile = lambda inner, on=False, w=44: (f'<span style="width:{w}px;height:44px;border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:center;flex-shrink:0;'
+                                          f'background:{"var(--accent)" if on else "var(--surface)"};color:{"var(--on-accent)" if on else "var(--text-secondary)"}">{inner}</span>')
+    tabs = f'<span style="display:flex;gap:4px">{icon_tabs(lambda n, on: tile(svg(n, 22), on))}</span>'
+    date = f'<span style="height:44px;border-radius:var(--radius-lg);background:var(--surface);display:flex;align-items:center;padding:0 4px">{DATE4()}</span>'
+    return widget(lay(tile(svg('ic_widget_add', 24), True, 52), tabs, date, border=False))
+
+
+def q7_indicator():
+    tab = lambda n, on: (f'<span style="width:56px;height:54px;position:relative;display:flex;align-items:center;justify-content:center;color:{"var(--accent)" if on else "var(--text-secondary)"}">'
+                         f'<span style="position:absolute;top:0;left:12px;right:12px;height:3px;border-radius:0 0 3px 3px;background:{"var(--accent)" if on else "transparent"}"></span>{svg(n, 24)}</span>')
+    return widget(lay(plus(48, 40), f'<span style="display:flex">{icon_tabs(tab)}</span>', DATE4(), pad='0 8px'))
+
+
+def q8_card():
+    card = lambda inner: (f'<div style="padding:6px 6px 8px"><div style="display:flex;align-items:center;padding:6px;border-radius:var(--radius-xl);background:var(--surface);'
+                          f'border:1px solid var(--divider)">{inner}</div></div>')
+    return widget(lay(plus(44, 40, 'var(--radius-lg)'), f'<span style="display:flex">{tabs_sel_bg(22, 46, 36)}</span>', DATE4(), wrap=card))
+
+
+def q9_dark_bar():
+    tab = lambda n, on: (f'<span style="width:44px;height:36px;border-radius:18px;display:flex;align-items:center;justify-content:center;'
+                         f'background:{"color-mix(in srgb,var(--on-accent) 22%,transparent)" if on else "transparent"};color:{"var(--on-accent)" if on else "color-mix(in srgb,var(--on-accent) 60%,transparent)"}">{svg(n, 22)}</span>')
+    add = (f'<span style="width:40px;height:36px;border-radius:18px;background:var(--on-accent);color:var(--accent);display:flex;align-items:center;'
+           f'justify-content:center">{svg("ic_widget_add", 22)}</span>')
+    date = DATE4().replace('color:var(--text-secondary)', 'color:color-mix(in srgb,var(--on-accent) 65%,transparent)')
+    date = f'<span style="color:var(--on-accent);display:flex">{date}</span>'
+    wrap = lambda inner: (f'<div style="padding:6px 6px 8px"><div style="display:flex;align-items:center;padding:4px;border-radius:24px;background:var(--accent)">{inner}</div></div>')
+    return widget(lay(add, f'<span style="display:flex">{icon_tabs(tab)}</span>', date, wrap=wrap))
+
+
+def q10_big_plus():
+    add = (f'<span style="width:56px;height:56px;margin-top:-18px;border-radius:var(--radius-lg);background:var(--accent);color:var(--on-accent);display:flex;'
+           f'align-items:center;justify-content:center;box-shadow:0 2px 6px color-mix(in srgb,var(--text-primary) 25%,transparent)">{svg("ic_widget_add", 28)}</span>')
+    return widget(lay(add, f'<span style="display:flex">{tabs_sel_bg()}</span>', DATE4()))
+
+
+VARIANTS4 = [
+    ('1. Плоско', '«+» — чёрная плашка слева, значки по центру (выбранный — на светлой подложке, как сейчас), дата справа. Самый близкий к нынешнему.', q1_flat),
+    ('2. Сегменты', 'Значки в серой капсуле, выбранный — белый. «+» — чёрный круг.', q2_segment),
+    ('3. Тёмная капсула', 'Вкладки в чёрной капсуле по центру — главный элемент строки; «+» — контурный круг.', q3_dark_tabs),
+    ('4. Точка под значком', 'Значки без подложек, выбранный — чёрный с точкой; «+» — чёрный круг. Самый лёгкий.', q4_dots),
+    ('5. Белая капсула', 'Вкладки в белой капсуле, выбранный — чёрный круг; «+» — чёрная плашка со скруглением.', q5_white_capsule),
+    ('6. Плитки', '«+», каждая вкладка и дата — белые плитки одной высоты; выбранная вкладка и «+» — чёрные.', q6_tiles),
+    ('7. Полоска сверху', 'У выбранного значка — чёрная полоска над ним, как вкладки Android.', q7_indicator),
+    ('8. Белая карточка', 'Вся строка — белая карточка со скруглением, внутри «+», вкладки и дата.', q8_card),
+    ('9. Чёрная полоса', 'Вся строка — чёрная капсула: белая «+», светлые значки, белая дата.', q9_dark_bar),
+    ('10. Крупный «+»', '«+» крупнее и приподнят над строкой, как главная кнопка; вкладки и дата — как в 1. В виджете сложнее всего: кнопка заходит на ряд задач.', q10_big_plus),
+]
+
+
 def board(title, lead, variants, cell_fn=None, row_h=270 + 80):
     cell_ = cell_fn or cell
     cols, gap = 4, 40
@@ -469,6 +573,9 @@ BOARDS = [
     ('Date.dc.html', 'Дата', 'Как показывать дату — 10 вариантов',
      'Строка одна и та же (сегменты из круга 2), меняется только дата. Под каждой строкой — дата крупно, чтобы рассмотреть. '
      'Нажатие на дату — назад к сегодня; дата всегда сегодняшняя.', DATES, date_cell, 290),
+    ('Round4.dc.html', 'Круг 4', 'Нижняя строка виджета — «+» слева, вкладки по центру, дата справа',
+     'Решение PM: галочки нет — приложение открывается нажатием на свободное место строки. Слева «+» (новая задача), по центру вкладки '
+     '«Все» / «Входящие» / «Неделя» значками, справа дата «10 вт / ноя» (нажатие — назад к сегодня). 10 вариантов оформления.', VARIANTS4),
     ('Final.dc.html', 'Итог', 'Нижняя строка виджета — итог (выбор PM)',
      'Слева — вкладки «Все» / «Входящие» / «Неделя» значками, как сейчас. По центру — блок: галочка (сразу открыть приложение) и «+» (новая задача). '
      'Справа — дата, вариант 4: крупное «10», рядом «вт» и «ноя»; нажатие возвращает к сегодня.', FINAL, None, 820),
