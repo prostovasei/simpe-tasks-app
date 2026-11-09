@@ -73,7 +73,8 @@ class WidgetUiTest {
         // Нижняя строка (итерация 25): «Все», «Входящие», открыть приложение и «+»; даты и «⋯» нет.
         // Итерация 43: слева от «+» — капсула с галочкой значка приложения (открыть приложение), вместо кнопки обновления.
         listOf("Все", "Входящие", "Новая задача").forEach { onNode(hasContentDescription(it)).assertExists() }
-        onAllNodes(hasContentDescription("Открыть приложение")).assertCountEquals(2)
+        // Итерация 57: галочки нет — «открыть приложение» одна зона: вся строка.
+        onAllNodes(hasContentDescription("Открыть приложение")).assertCountEquals(1)
         onAllNodes(hasContentDescription("Обновление приложения")).assertCountEquals(0)
         onNode(hasTextEqualTo("пт, 16 окт")).assertDoesNotExist()
         // Итерация 43: у каждого дня справа число задач (у «Сегодня» вместо него прогресс «0 из 1»).

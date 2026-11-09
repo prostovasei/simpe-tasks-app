@@ -173,8 +173,8 @@ class WidgetScreenshotTest {
     fun bottomBarKeepsAllButtons() {
         val views = runBlocking { Preview(model).compose(context, size = DpSize(320.dp, 420.dp)) }
         val root = views.apply(context, FrameLayout(context))
-        // «Открыть приложение» — пустое место и капсула с галочкой (итерация 43): два нажимаемых элемента.
-        mapOf("Все" to 1, "Входящие" to 1, "Открыть приложение" to 2, "Новая задача" to 1).forEach { (label, count) ->
+        // Итерация 57: галочки нет — приложение открывает свободное место строки (одна зона на всю строку).
+        mapOf("Все" to 1, "Входящие" to 1, "Открыть приложение" to 1, "Новая задача" to 1).forEach { (label, count) ->
             val found = ArrayList<View>()
             root.findViewsWithText(found, label, View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
             assertEquals(label, count, found.size)

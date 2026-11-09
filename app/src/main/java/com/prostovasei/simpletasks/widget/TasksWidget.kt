@@ -493,101 +493,85 @@ fun widgetCheckColors(priority: Priority): WidgetCheckColors = when (priority) {
 }
 
 /**
- * Нижняя строка (итерация 25, вариант PM «Г»; итерация 43 — кнопки ниже и шире, как клавиша ввода, без подложки; 0.42.2 — фоны кнопок картинками со скруглением: скругление Glance при первом
- * показе виджета не применялось, кнопки были квадратными): слева переключатель «Все» / «Входящие» / «Неделя», справа «+»; всё место
- * между ними — открыть приложение. 0.46.0 (реф PM): панель плоская с линией сверху, выбранная вкладка на серой подложке, галочка
- * без капсулы, «+» цвета акцента (чёрный).
+ * Нижняя строка (итерация 57, решение PM, макет iteration57.py, доска «Итог 2»): слева «+» — чёрная плитка, по центру один белый блок
+ * вкладок «Все» / «Входящие» / «Неделя» (выбранный вид — чёрный значок, остальные серые), справа плитка с датой «10 ВТ / ноя» той же
+ * ширины, что «+» (нажатие — назад к сегодня). Галочки больше нет: всё свободное место строки открывает приложение. Без линии сверху.
+ * Фоны плиток — картинками со скруглением (0.42.2: скругление Glance при первом показе не применялось).
  */
 @Composable
 private fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boolean) {
     val context = LocalContext.current
-    // 0.46.0 (макет `VariantK2`, реф PM): панель плоская — фон виджета и тонкая линия сверху, без белых капсул.
-    Column(GlanceModifier.fillMaxWidth()) {
-        Box(GlanceModifier.fillMaxWidth().height(SizeTokens.HAIRLINE.dp).background(WidgetColors.divider)) {}
+    val openApp = context.getString(R.string.widget_open_app)
+    Row(
+        modifier = GlanceModifier
+            .fillMaxWidth()
+            .height(SizeTokens.WIDGET_BAR.dp)
+            .background(WidgetColors.background)
+            .padding(horizontal = SizeTokens.WIDGET_EDGE.dp)
+            .clickable(actionStartActivity(openAppIntent(context)))
+            .semantics { contentDescription = openApp },
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = GlanceModifier
+                .size(width = SizeTokens.WIDGET_ADD_W.dp, height = SizeTokens.WIDGET_ADD_H.dp)
+                .button(R.drawable.widget_bar_add, WidgetColors.accent, RadiusTokens.LG, imageButtons)
+                .clickable(actionStartActivity(quickAddIntent(context, model.filter))),
+            contentAlignment = Alignment.Center,
+        ) {
+            Image(
+                ImageProvider(R.drawable.ic_widget_add),
+                contentDescription = context.getString(R.string.add_task),
+                colorFilter = ColorFilter.tint(WidgetColors.onAccent),
+                modifier = GlanceModifier.size(SizeTokens.WIDGET_ADD_ICON.dp),
+            )
+        }
+        Spacer(GlanceModifier.defaultWeight())
         Row(
-            modifier = GlanceModifier.fillMaxWidth().height(SizeTokens.WIDGET_BAR.dp).background(WidgetColors.background).padding(horizontal = SizeTokens.WIDGET_EDGE.dp),
+            modifier = GlanceModifier
+                .height(SizeTokens.WIDGET_ADD_H.dp)
+                .button(R.drawable.widget_bar_tile, WidgetColors.surface, RadiusTokens.LG, imageButtons)
+                .padding(horizontal = SizeTokens.WIDGET_TAB_BLOCK_PAD.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Row(
-                modifier = GlanceModifier.padding(SizeTokens.WIDGET_SWITCH_PAD.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                // Итерация 45: третья вкладка — «Неделя» (только на Android 12+: ленту недели рисуют элементы Android).
-                listOf(WidgetFilter.All, WidgetFilter.Inbox, WidgetFilter.Week).filter { it != WidgetFilter.Week || imageButtons }.forEach { filter ->
-                    SwitchTab(
-                        icon = when (filter) {
-                            WidgetFilter.All -> R.drawable.ic_widget_all
-                            WidgetFilter.Week -> R.drawable.ic_tab_week
-                            else -> R.drawable.ic_widget_inbox
+            // Итерация 45: третья вкладка — «Неделя» (только на Android 12+: ленту недели рисуют элементы Android).
+            listOf(WidgetFilter.All, WidgetFilter.Inbox, WidgetFilter.Week).filter { it != WidgetFilter.Week || imageButtons }.forEach { filter ->
+                SwitchTab(
+                    icon = when (filter) {
+                        WidgetFilter.All -> R.drawable.ic_widget_all
+                        WidgetFilter.Week -> R.drawable.ic_tab_week
+                        else -> R.drawable.ic_widget_inbox
+                    },
+                    label = context.getString(
+                        when (filter) {
+                            WidgetFilter.Inbox -> R.string.inbox_list_name
+                            WidgetFilter.Week -> R.string.tab_week
+                            else -> R.string.widget_all
                         },
-                        label = context.getString(
-                            when (filter) {
-                                WidgetFilter.Inbox -> R.string.inbox_list_name
-                                WidgetFilter.Week -> R.string.tab_week
-                                else -> R.string.widget_all
-                            },
-                        ),
-                        selected = filter == model.filter,
-                        action = actionSendBroadcast(WidgetActions.switch(context, appWidgetId, filter)),
-                        imageButtons = imageButtons,
-                    )
-                }
-            }
-            val openApp = context.getString(R.string.widget_open_app)
-            Box(
-                modifier = GlanceModifier
-                    .defaultWeight()
-                    .fillMaxHeight()
-                    .clickable(actionStartActivity(openAppIntent(context)))
-                    .semantics { contentDescription = openApp },
-            ) {}
-            // Итерация 43: слева от «+» — галочка значка приложения (вместо кнопки обновления из итерации 32; с 0.46.0 — без капсулы):
-            // открывает приложение, как и всё пустое место левее.
-            Box(
-                modifier = GlanceModifier
-                    .size(width = SizeTokens.WIDGET_OPEN_W.dp, height = SizeTokens.WIDGET_OPEN_H.dp)
-                    .clickable(actionStartActivity(openAppIntent(context)))
-                    .semantics { contentDescription = openApp },
-                contentAlignment = Alignment.Center,
-            ) {
-                Image(
-                    ImageProvider(R.drawable.ic_widget_open_app),
-                    contentDescription = null,
-                    colorFilter = ColorFilter.tint(WidgetColors.accent),
-                    modifier = GlanceModifier.size(width = SizeTokens.WIDGET_OPEN_ICON_W.dp, height = SizeTokens.WIDGET_OPEN_ICON_H.dp),
+                    ),
+                    selected = filter == model.filter,
+                    action = actionSendBroadcast(WidgetActions.switch(context, appWidgetId, filter)),
                 )
             }
-            // Итерация 51: между «✓» и «+» — сегодняшняя дата; нажатие возвращает к сегодня (неделя, «Сегодня» в ленте, начало «Входящих»).
-            val width = LocalSize.current.width
-            if (width == Dp.Unspecified || width >= SizeTokens.WIDGET_DATE_MIN.dp) {
-                val date = WidgetDates.bar(model.today, withWeekday = width == Dp.Unspecified || width >= SizeTokens.WIDGET_DATE_FULL_MIN.dp)
-                val description = context.getString(R.string.widget_today_date, date)
-                Box(
-                    modifier = GlanceModifier
-                        .fillMaxHeight()
-                        .padding(horizontal = SizeTokens.WIDGET_DATE_PAD.dp)
-                        .clickable(actionSendBroadcast(WidgetActions.today(context, appWidgetId)))
-                        .semantics { contentDescription = description },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(date, style = TextStyle(color = WidgetColors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold), maxLines = 1)
-                }
-            } else {
-                Spacer(GlanceModifier.width(SizeTokens.WIDGET_UPDATE_GAP.dp))
-            }
-            Box(
-                modifier = GlanceModifier
-                    .size(width = SizeTokens.WIDGET_ADD_W.dp, height = SizeTokens.WIDGET_ADD_H.dp)
-                    .button(R.drawable.widget_bar_add, WidgetColors.accent, RadiusTokens.XL, imageButtons)
-                    .clickable(actionStartActivity(quickAddIntent(context, model.filter))),
-                contentAlignment = Alignment.Center,
-            ) {
-                Image(
-                    ImageProvider(R.drawable.ic_widget_add),
-                    contentDescription = context.getString(R.string.add_task),
-                    colorFilter = ColorFilter.tint(WidgetColors.onAccent),
-                    modifier = GlanceModifier.size(SizeTokens.WIDGET_ADD_ICON.dp),
-                )
+        }
+        Spacer(GlanceModifier.defaultWeight())
+        // Итерация 51 → 57: сегодняшняя дата — плитка шириной с «+»; нажатие возвращает к сегодня (неделя, «Сегодня» в ленте, начало «Входящих»).
+        val (day, weekday, month) = WidgetDates.tile(model.today)
+        val description = context.getString(R.string.widget_today_date, WidgetDates.bar(model.today, withWeekday = true))
+        Row(
+            modifier = GlanceModifier
+                .size(width = SizeTokens.WIDGET_ADD_W.dp, height = SizeTokens.WIDGET_ADD_H.dp)
+                .button(R.drawable.widget_bar_tile, WidgetColors.surface, RadiusTokens.LG, imageButtons)
+                .clickable(actionSendBroadcast(WidgetActions.today(context, appWidgetId)))
+                .semantics { contentDescription = description },
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(day, style = TextStyle(color = WidgetColors.textPrimary, fontSize = SizeTokens.WIDGET_DATE_DAY_SP.sp, fontWeight = FontWeight.Bold), maxLines = 1)
+            Spacer(GlanceModifier.width(SizeTokens.WIDGET_DATE_GAP.dp))
+            Column {
+                Text(weekday, style = TextStyle(color = WidgetColors.textPrimary, fontSize = SizeTokens.WIDGET_DATE_SMALL_SP.sp, fontWeight = FontWeight.Bold), maxLines = 1)
+                Text(month, style = TextStyle(color = WidgetColors.textSecondary, fontSize = SizeTokens.WIDGET_DATE_SMALL_SP.sp, fontWeight = FontWeight.Medium), maxLines = 1)
             }
         }
     }
@@ -600,27 +584,20 @@ private fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boolea
 private fun GlanceModifier.button(image: Int, color: ColorProvider, radius: Int, asImage: Boolean): GlanceModifier =
     if (asImage) background(ImageProvider(image)) else background(color).cornerRadius(radius.dp)
 
-/** Кнопка переключателя: выбранная — на серой подложке с иконкой цвета акцента, другая — серая иконка без подложки (0.46.0). */
+/** Вкладка в белом блоке (итерация 57): только значок — выбранный вид чёрный (`accent`), остальные серые (`inactive`), без подложек. */
 @Composable
-private fun SwitchTab(icon: Int, label: String, selected: Boolean, action: Action, imageButtons: Boolean) {
+private fun SwitchTab(icon: Int, label: String, selected: Boolean, action: Action) {
     Box(
         modifier = GlanceModifier
-            .width(SizeTokens.WIDGET_SWITCH_W.dp)
-            .height(SizeTokens.WIDGET_SWITCH_H.dp)
-            .then(
-                if (selected) {
-                    GlanceModifier.button(R.drawable.widget_bar_tab_selected, WidgetColors.selected, RadiusTokens.LG, imageButtons)
-                } else {
-                    GlanceModifier
-                },
-            )
+            .width(SizeTokens.WIDGET_TAB_CELL.dp)
+            .height(SizeTokens.WIDGET_ADD_H.dp)
             .clickable(action),
         contentAlignment = Alignment.Center,
     ) {
         Image(
             ImageProvider(icon),
             contentDescription = label,
-            colorFilter = ColorFilter.tint(if (selected) WidgetColors.accent else WidgetColors.textSecondary),
+            colorFilter = ColorFilter.tint(if (selected) WidgetColors.accent else WidgetColors.inactive),
             modifier = GlanceModifier.size(SizeTokens.WIDGET_TAB_ICON.dp),
         )
     }

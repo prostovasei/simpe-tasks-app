@@ -92,16 +92,24 @@ object SizeTokens {
     const val WIDGET_TAIL = 60
     // 0.46.0 (проверка PM): нижняя строка ниже — 40 вместо 48, кнопки 30–32 вместо 36–40.
     const val WIDGET_BAR = 40
-    const val WIDGET_SWITCH_W = 50
-    const val WIDGET_SWITCH_H = 30
-    const val WIDGET_SWITCH_PAD = 4
 
-    /** Кнопка «+» в нижней строке виджета (итерация 43: 64×40; 0.46.0 — 64×32). */
+    /** Кнопка «+» в нижней строке виджета (итерация 43: 64×40; 0.46.0 — 64×32; 0.57 — плитка, той же ширины плитка даты, высота — у всех плиток строки). */
     const val WIDGET_ADD_W = 64
     const val WIDGET_ADD_H = 32
     const val WIDGET_ADD_ICON = 22
     /** Иконки «Все» и «Входящие» в переключателе. */
     const val WIDGET_TAB_ICON = 22
+
+    /** Итерация 57: место значка в белом блоке вкладок нижней строки виджета (ширина; высота — [WIDGET_ADD_H]). */
+    const val WIDGET_TAB_CELL = 44
+
+    /** Итерация 57: поля по бокам внутри блока вкладок. */
+    const val WIDGET_TAB_BLOCK_PAD = 4
+
+    /** Итерация 57: дата в плитке — число и столбик «ВТ» / «ноя» (размеры шрифта, sp), промежуток между ними. */
+    const val WIDGET_DATE_DAY_SP = 18
+    const val WIDGET_DATE_SMALL_SP = 9
+    const val WIDGET_DATE_GAP = 3
 
     /** Поля строки задачи внутри её плашки в виджете. */
     const val WIDGET_ROW_GAP = 4
@@ -236,25 +244,6 @@ object SizeTokens {
     /** Круглый значок над заголовком окна обновления (итерация 32) и сам значок. */
     const val DIALOG_BADGE = 48
     const val DIALOG_BADGE_ICON = 26
-
-    /**
-     * Кнопка «открыть приложение» в нижней строке виджета (итерация 43, вместо кнопки обновления из итерации 32): белая
-     * зона 52×32 с галочкой значка приложения 24×20 (0.46.0: без капсулы, ниже) и щель до «+».
-     */
-    const val WIDGET_OPEN_W = 52
-    const val WIDGET_OPEN_H = 32
-    const val WIDGET_OPEN_ICON_W = 24
-    const val WIDGET_OPEN_ICON_H = 20
-    const val WIDGET_UPDATE_GAP = 8
-
-    /**
-     * Дата в нижней строке виджета между «✓» и «+» (итерация 51, макет iteration51.py): «сб, 7 ноя» на виджете не уже
-     * [WIDGET_DATE_FULL_MIN], «7 ноя» — до него, на виджете уже [WIDGET_DATE_MIN] даты нет: вкладки, «✓» и «+» занимают ~290 dp, «+» не должен обрезаться. [WIDGET_DATE_PAD] — поля
-     * зоны нажатия по бокам.
-     */
-    const val WIDGET_DATE_FULL_MIN = 380
-    const val WIDGET_DATE_MIN = 350
-    const val WIDGET_DATE_PAD = 6
 
     /** Режим выбора (итерация 40): кнопка ленты действий (ширина не меньше, высота) и высота верхней строки «Выбрано: N». */
     const val RIBBON_BUTTON = 76
