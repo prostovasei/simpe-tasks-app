@@ -8,7 +8,7 @@
 Второй круг (требования PM 10.11.2026): галочка «открыть приложение» остаётся; нажатие на дату — назад к сегодня;
 дата в две строки — «вт, 10» сверху, «ноя» снизу; вкладки — только значки, без подписей.
 
-Запуск: python3 design/mockups/iteration57.py <папка project>   → canvas.json, Main.dc.html (круг 1), Round2.dc.html (круг 2), Date.dc.html (дата), Final.dc.html (итог 1), Round4.dc.html (круг 4)
+Запуск: python3 design/mockups/iteration57.py <папка project>   → canvas.json, Main.dc.html (круг 1), Round2.dc.html (круг 2), Date.dc.html (дата), Final.dc.html (итог 1), Round4.dc.html (круг 4), Final2.dc.html (итог 2)
 """
 import datetime
 import json
@@ -550,6 +550,48 @@ VARIANTS4 = [
 ]
 
 
+# ------------------------------------------------------------------ итог 2: вариант 6, доработки PM
+
+TILE_W, TILE_H = 64, 36
+
+
+def final2_bar(sel=SEL):
+    """Решение PM: основа — «Плитки» (круг 4, вариант 6). «+» и дата — плитки одной ширины; вкладки — один белый блок по центру,
+    выбранный вид — чёрный значок, остальные серые; строка ниже (плитки 36 вместо 44)."""
+    tile = lambda inner, bg, color: (f'<span style="width:{TILE_W}px;height:{TILE_H}px;border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:center;'
+                                     f'flex-shrink:0;background:{bg};color:{color}">{inner}</span>')
+    add = tile(svg('ic_widget_add', 22), 'var(--accent)', 'var(--on-accent)')
+    date = ('<span style="display:flex;align-items:center;gap:4px"><span style="font-size:20px;line-height:22px;font-weight:800">10</span>'
+            '<span style="display:flex;flex-direction:column"><span style="font-size:9px;line-height:10px;font-weight:800">ВТ</span>'
+            '<span style="font-size:9px;line-height:10px;font-weight:600;color:var(--text-secondary)">ноя</span></span></span>')
+    date = tile(date, 'var(--surface)', 'var(--text-primary)')
+    icons = ''.join(f'<span style="width:48px;height:{TILE_H}px;display:flex;align-items:center;justify-content:center;'
+                    f'color:{"var(--accent)" if i == sel else "var(--inactive)"}">{svg(n, 22)}</span>' for i, (n, _) in enumerate(TABS))
+    block = f'<span style="display:flex;border-radius:var(--radius-lg);background:var(--surface);padding:0 4px">{icons}</span>'
+    return lay(add, block, date, pad='6px 6px 7px', border=False)
+
+
+def final2_bar_sel(sel):
+    return lambda: final2_bar(sel)
+
+
+FINAL2 = [
+    ('1. Неделя', 'Слева чёрная «+», справа белая плитка с датой — одной ширины. По центру один белый блок вкладок: выбранный вид — чёрный значок, '
+     'остальные серые. Строка ниже: плитки 36 вместо 44. Пустое место строки — открыть приложение; дата — назад к сегодня.', lambda: full_week(final2_bar(2))),
+    ('2. Все', 'Выбрана лента «Все» — чёрный значок календаря; «+» и дата на месте.', lambda: full_all(final2_bar(0))),
+    ('3. Тёмная тема', 'Те же места: «+» светлая, блоки тёмные, выбранный значок светлый.', lambda: dark(full_week(final2_bar(2)))),
+    ('4. Было и стало', 'Сверху — строка сейчас, снизу — новая. Новая ниже и спокойнее: одна чёрная кнопка, один блок вкладок, дата справа.',
+     lambda: f'<div style="display:flex;flex-direction:column;gap:16px">{widget(v_now_bar())}{widget(final2_bar(2))}</div>'),
+]
+
+
+def v_now_bar():
+    tabs = ''.join(f'<span style="width:56px;height:40px;border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:center;'
+                   f'background:{"var(--selected)" if i == SEL else "transparent"};color:{"var(--accent)" if i == SEL else "var(--text-secondary)"}">{svg(n, 24)}</span>'
+                   for i, (n, _) in enumerate(TABS))
+    return bar(f'{tabs}{SPACER}{ic("ic_node_check", "var(--text-primary)", 26)}<span style="font-size:14px;font-weight:700;padding:0 4px">{DATE}</span>{plus(64, 40)}')
+
+
 def board(title, lead, variants, cell_fn=None, row_h=270 + 80):
     cell_ = cell_fn or cell
     cols, gap = 4, 40
@@ -576,6 +618,9 @@ BOARDS = [
     ('Round4.dc.html', 'Круг 4', 'Нижняя строка виджета — «+» слева, вкладки по центру, дата справа',
      'Решение PM: галочки нет — приложение открывается нажатием на свободное место строки. Слева «+» (новая задача), по центру вкладки '
      '«Все» / «Входящие» / «Неделя» значками, справа дата «10 вт / ноя» (нажатие — назад к сегодня). 10 вариантов оформления.', VARIANTS4),
+    ('Final2.dc.html', 'Итог 2', 'Нижняя строка виджета — итог (вариант 6 с доработками PM)',
+     'Слева «+», по центру один белый блок вкладок (выбранный вид — чёрный значок, остальные серые), справа дата «10 ВТ / ноя». '
+     '«+» и дата — плитки одной ширины; строка ниже, чем сейчас. Галочки нет: приложение открывается нажатием на свободное место строки.', FINAL2, None, 820),
     ('Final.dc.html', 'Итог', 'Нижняя строка виджета — итог (выбор PM)',
      'Слева — вкладки «Все» / «Входящие» / «Неделя» значками, как сейчас. По центру — блок: галочка (сразу открыть приложение) и «+» (новая задача). '
      'Справа — дата, вариант 4: крупное «10», рядом «вт» и «ноя»; нажатие возвращает к сегодня.', FINAL, None, 820),
