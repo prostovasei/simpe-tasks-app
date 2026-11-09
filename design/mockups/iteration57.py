@@ -8,7 +8,7 @@
 Второй круг (требования PM 10.11.2026): галочка «открыть приложение» остаётся; нажатие на дату — назад к сегодня;
 дата в две строки — «вт, 10» сверху, «ноя» снизу; вкладки — только значки, без подписей.
 
-Запуск: python3 design/mockups/iteration57.py <папка project>   → canvas.json, Main.dc.html (круг 1), Round2.dc.html (круг 2)
+Запуск: python3 design/mockups/iteration57.py <папка project>   → canvas.json, Main.dc.html (круг 1), Round2.dc.html (круг 2), Date.dc.html (дата)
 """
 import datetime
 import json
@@ -288,19 +288,108 @@ VARIANTS2 = [
 ]
 
 
+# ------------------------------------------------------------------ круг 3: как показывать дату (просьба PM)
+
+def stack(*lines):
+    """Строки даты столбиком: (текст, размер, начертание, цвет)."""
+    return ('<span style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 6px;flex-shrink:0">'
+            + ''.join(f'<span style="font-size:{fs}px;line-height:{fs + 2}px;font-weight:{fw};color:{c}">{tx}</span>' for tx, fs, fw, c in lines) + '</span>')
+
+
+P, S2 = 'var(--text-primary)', 'var(--text-secondary)'
+
+
+def d_two():
+    return stack(('вт, 10', 14, 800, P), ('ноя', 11, 600, S2))
+
+
+def d_three():
+    return stack(('вт', 11, 600, S2), ('10', 14, 800, P), ('Ноя', 11, 600, S2))
+
+
+def d_three_big():
+    return stack(('ВТ', 10, 800, S2), ('10', 22, 800, P), ('НОЯ', 10, 800, S2))
+
+
+def d_num_left():
+    return ('<span style="display:flex;align-items:center;gap:5px;padding:0 6px"><span style="font-size:26px;line-height:28px;font-weight:800">10</span>'
+            + stack(('вт', 11, 700, P), ('ноя', 11, 600, S2)).replace('padding:0 6px', 'padding:0;align-items:flex-start') + '</span>')
+
+
+def d_leaf():
+    return ('<span style="width:44px;border-radius:var(--radius-md);overflow:hidden;border:1px solid var(--divider);background:var(--surface);display:flex;flex-direction:column;'
+            'align-items:center;flex-shrink:0;margin:0 4px"><span style="width:100%;text-align:center;background:var(--accent);color:var(--on-accent);font-size:9px;line-height:13px;'
+            'font-weight:800">НОЯ</span><span style="font-size:17px;line-height:19px;font-weight:800">10</span><span style="font-size:9px;line-height:11px;font-weight:600;'
+            'color:var(--text-secondary);padding-bottom:2px">вт</span></span>')
+
+
+def d_circle():
+    return ('<span style="display:flex;flex-direction:column;align-items:center;gap:1px;padding:0 6px"><span style="font-size:10px;line-height:11px;font-weight:700;color:var(--text-secondary)">вт</span>'
+            '<span style="width:28px;height:28px;border-radius:14px;background:var(--accent);color:var(--on-accent);font-size:14px;font-weight:800;display:flex;align-items:center;'
+            'justify-content:center">10</span></span>')
+
+
+def d_one_line():
+    return '<span style="font-size:14px;font-weight:700;padding:0 6px;white-space:nowrap">вт, 10 ноя</span>'
+
+
+def d_today():
+    return stack(('Сегодня', 13, 800, P), ('10 ноя', 11, 600, S2))
+
+
+def d_weekday_full():
+    return stack(('10 ноя', 14, 800, P), ('вторник', 11, 600, S2))
+
+
+def d_outlined():
+    return ('<span style="border:1.5px solid var(--text-primary);border-radius:var(--radius-md);padding:1px 8px;margin:0 4px;flex-shrink:0">'
+            + stack(('вт', 10, 600, S2), ('10', 15, 800, P), ('ноя', 10, 600, S2)).replace('padding:0 6px', 'padding:0') + '</span>')
+
+
+def date_bar(date):
+    tab = lambda n, on: (f'<span style="flex:1;height:36px;border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:center;'
+                         f'background:{"var(--surface)" if on else "transparent"};color:{"var(--accent)" if on else "var(--text-secondary)"};'
+                         f'{"box-shadow:0 1px 2px color-mix(in srgb,var(--text-primary) 15%,transparent)" if on else ""}">{svg(n, 22)}</span>')
+    group = f'<span style="width:150px;display:flex;padding:3px;border-radius:var(--radius-xl);background:var(--divider)">{icon_tabs(tab)}</span>'
+    inner = bar(f'{group}{SPACER}{check()}{date}{plus(48, 44, "22px")}', pad='10px 10px 10px', border=False)
+    zoom = (f'<div style="margin-top:10px;height:136px;border-radius:var(--radius-lg);background:var(--surface);display:flex;align-items:center;justify-content:center">'
+            f'<span style="transform:scale(2);display:flex">{date}</span></div>')
+    return (f'<div style="width:{W}px;border-radius:var(--radius-xl);background:var(--background);border:1px solid var(--divider);box-sizing:border-box">{inner}</div>{zoom}')
+
+
+DATES = [
+    ('1. Две строки', '«вт, 10» сверху, «ноя» снизу — из круга 2.', lambda: date_bar(d_two())),
+    ('2. Три строки', '«вт» / «10» / «Ноя» — каждое отдельно, число чуть крупнее. Ваш вариант.', lambda: date_bar(d_three())),
+    ('3. Три строки, крупное число', '«ВТ» / «10» / «НОЯ»: число заметно крупнее, день и месяц мелко капсом — как в календаре.', lambda: date_bar(d_three_big())),
+    ('4. Число слева', 'Крупное «10», справа столбиком «вт» и «ноя». Компактно по высоте.', lambda: date_bar(d_num_left())),
+    ('5. Листок календаря', 'Мини-листок: сверху чёрная полоса «НОЯ», крупное «10», снизу «вт». Сразу понятно, что это дата.', lambda: date_bar(d_leaf())),
+    ('6. Число в круге', '«вт» над чёрным кругом с «10» — как «сегодня» в мини-календаре виджета. Месяца нет.', lambda: date_bar(d_circle())),
+    ('7. Одна строка', '«вт, 10 ноя» — как сейчас, для сравнения.', lambda: date_bar(d_one_line())),
+    ('8. «Сегодня»', '«Сегодня» сверху, «10 ноя» снизу: подсказывает, что нажатие вернёт к сегодня.', lambda: date_bar(d_today())),
+    ('9. День недели словом', '«10 ноя» сверху, «вторник» снизу полностью.', lambda: date_bar(d_weekday_full())),
+    ('10. В рамке', '«вт» / «10» / «ноя» в тонкой чёрной рамке — дата выглядит кнопкой.', lambda: date_bar(d_outlined())),
+]
+
+
+def date_cell(title, sub, fn):
+    return (f'<div style="width:{W}px"><div style="font-size:17px;font-weight:800;margin-bottom:4px">{title}</div>'
+            f'<div style="font-size:13px;color:var(--text-secondary);line-height:18px;min-height:40px;margin-bottom:10px">{sub}</div>{fn()}</div>')
+
+
 def cell(title, sub, fn):
     return (f'<div style="width:{W}px"><div style="font-size:17px;font-weight:800;margin-bottom:4px">{title}</div>'
             f'<div style="font-size:13px;color:var(--text-secondary);line-height:18px;min-height:56px;margin-bottom:10px">{sub}</div>{fn()}</div>')
 
 
-def board(title, lead, variants):
+def board(title, lead, variants, cell_fn=None, row_h=270 + 80):
+    cell_ = cell_fn or cell
     cols, gap = 4, 40
     Wd = cols * W + (cols - 1) * gap + 80
     rows = (len(variants) + cols - 1) // cols
-    Hh = 36 + 40 + 70 + rows * (80 + 270 + 48) + 20
+    Hh = 36 + 40 + 70 + rows * (row_h + 48) + 20
     body = (f'<div style="font-size:28px;font-weight:800;letter-spacing:-.4px">{title}</div>'
             f'<div style="font-size:15px;color:var(--text-secondary);margin:6px 0 22px;line-height:21px">{lead}</div>'
-            f'<div style="display:flex;flex-wrap:wrap;gap:48px {gap}px;align-items:flex-start">' + ''.join(cell(*v) for v in variants) + '</div>')
+            f'<div style="display:flex;flex-wrap:wrap;gap:48px {gap}px;align-items:flex-start">' + ''.join(cell_(*v) for v in variants) + '</div>')
     return Wd, Hh, body
 
 
@@ -312,14 +401,17 @@ BOARDS = [
     ('Round2.dc.html', 'Круг 2', 'Нижняя строка виджета — круг 2 (требования PM)',
      'Во всех: галочка — сразу открыть приложение; дата в две строки «вт, 10» / «ноя» — нажатие возвращает к сегодня; '
      'вкладки «Все» / «Входящие» / «Неделя» — только значками; «+» — новая задача.', VARIANTS2),
+    ('Date.dc.html', 'Дата', 'Как показывать дату — 10 вариантов',
+     'Строка одна и та же (сегменты из круга 2), меняется только дата. Под каждой строкой — дата крупно, чтобы рассмотреть. '
+     'Нажатие на дату — назад к сегодня; дата всегда сегодняшняя.', DATES, date_cell, 290),
 ]
 
 
 def build(out, created=None):
     os.makedirs(out, exist_ok=True)
     boards, order, y = {}, [], 0
-    for name, board_title, title, lead, variants in BOARDS:
-        Wd, Hh, body = board(title, lead, variants)
+    for name, board_title, title, lead, variants, *extra in BOARDS:
+        Wd, Hh, body = board(title, lead, variants, *extra)
         Path(out, name).write_text(I.page(board_title, Wd, Hh, body), encoding='utf-8')
         boards[name] = {'x': 0, 'y': y, 'w': Wd, 'h': Hh, 'title': board_title}
         order.append(name)
