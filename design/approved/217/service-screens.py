@@ -1,10 +1,10 @@
-"""Финансы #217 — комплект недостающих экранов на основе утверждённого compact-module-bar.html.
+"""Финансы #217 — согласованный PM 10.11.2026 комплект экранов на основе compact-module-bar.html.
 Запуск: python3 service-screens.py  → service-screens.html; затем node service-render.js → service-N.png (нужен Playwright)."""
 import re
 from pathlib import Path
 
 root = Path(__file__).parent
-approved = (root / '../../approved/217/compact-module-bar.html').resolve().read_text()
+approved = (root / 'compact-module-bar.html').read_text()
 style = re.search(r'<style>(.*?)</style>', approved, re.S).group(1)
 
 P = {
