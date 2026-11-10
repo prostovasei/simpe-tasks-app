@@ -1,6 +1,10 @@
 # simpe-tasks-app
 Minimalist Android task tracker with Jetpack Glance widget.
 
+- Общие правила Claude Code и Codex: [AGENTS.md](AGENTS.md)
+- Текущее состояние: [docs/HANDOFF.md](docs/HANDOFF.md)
+- Задачи: [GitHub Issues](https://github.com/prostovasei/simpe-tasks-app/issues); [статус переноса старого бэклога](docs/BACKLOG-MIGRATION.md)
+- Макеты: [design/README.md](design/README.md); проверки: [docs/TESTING.md](docs/TESTING.md)
 - Требования: [`SPEC.md`](SPEC.md)
 - Архитектура, аудит и план итераций: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 
