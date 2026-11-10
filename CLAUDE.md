@@ -13,3 +13,5 @@ Claude Artifacts можно использовать для подготовки
 должны быть доступны в репозитории. Старый бэклог и чек-лист перенесены 10.11.2026 (#92):
 [docs/BACKLOG-MIGRATION.md](docs/BACKLOG-MIGRATION.md). Артефакты бэклога и чек-листа — архив: не обновлять,
 не создавать параллельный новый бэклог в Claude; задачи — GitHub Issues, чек-лист — docs/TESTING-CHECKLIST.md.
+
+Задачи Codex ставятся через `@codex` в GitHub Issue: [docs/CODEX.md](docs/CODEX.md).
