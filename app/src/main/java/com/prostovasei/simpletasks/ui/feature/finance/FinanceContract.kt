@@ -56,7 +56,8 @@ data class FinanceState(
     val form: OperationForm? = null,
     /** Незавершённый ввод новой операции: возвращается при следующем открытии окна (живёт, пока приложение не закрыто). */
     val draft: OperationForm? = null,
-    val today: LocalDate = LocalDate.EPOCH,
+    // Не LocalDate.EPOCH (только с Android 14) и не LocalDate.MIN (от него нельзя отнять месяц для аналитики).
+    val today: LocalDate = LocalDate.ofEpochDay(0),
     /** Месяц аналитики (этап 3); сохраняется при смене вкладки и модуля, после полного закрытия — снова текущий. */
     val month: YearMonth = YearMonth.from(today),
 ) {
