@@ -50,7 +50,8 @@ fun FinanceRoute(viewModel: FinanceViewModel) {
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
             when (effect) {
-                FinanceEffect.OperationsSoon -> Toast.makeText(context, R.string.finance_operations_soon_toast, Toast.LENGTH_SHORT).show()
+                FinanceEffect.OperationSaved -> Toast.makeText(context, R.string.operation_saved, Toast.LENGTH_SHORT).show()
+                FinanceEffect.OperationTrashed -> Toast.makeText(context, R.string.operation_trashed, Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -58,8 +59,8 @@ fun FinanceRoute(viewModel: FinanceViewModel) {
 }
 
 /**
- * Экран финансов, этап 1 (#221; макеты design/approved/217/service-screens.html, экраны 2.1, 2.4): без заголовка модуля.
- * Счетов нет — «Начнём со счёта»; есть — карточки счетов сверху аналитики. Операции и сама аналитика — следующие этапы.
+ * Экран финансов (этап 1 — #221, этап 2 — #225; макеты design/approved/217/service-screens.html): без заголовка модуля.
+ * Счетов нет — «Начнём со счёта»; есть — карточки счетов сверху аналитики и вкладка «Операции». Сама аналитика — этап 3.
  */
 @Composable
 fun FinanceScreen(state: FinanceState, onIntent: (FinanceIntent) -> Unit) {
@@ -69,7 +70,7 @@ fun FinanceScreen(state: FinanceState, onIntent: (FinanceIntent) -> Unit) {
         when {
             accounts == null -> Unit
             accounts.isEmpty() -> FinanceEmpty { onIntent(FinanceIntent.NewAccount) }
-            state.tab == FinanceTab.OPERATIONS -> Soon(stringResource(R.string.finance_operations_soon_title), stringResource(R.string.finance_operations_soon_text))
+            state.tab == FinanceTab.OPERATIONS -> state.operations?.let { OperationsList(it, state.today) { id -> onIntent(FinanceIntent.OpenOperation(id)) } }
             else -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
                 AccountsBlock(accounts, state.total, onIntent)
                 Text(
@@ -81,6 +82,7 @@ fun FinanceScreen(state: FinanceState, onIntent: (FinanceIntent) -> Unit) {
             }
         }
     }
+    state.form?.let { OperationDialog(state, it, onIntent) }
     when (val window = state.window) {
         AccountWindow.None -> Unit
         AccountWindow.Create -> AccountDialog(null, onSave = { onIntent(FinanceIntent.SaveAccount(it)) }, onDismiss = { onIntent(FinanceIntent.CloseWindow) })
@@ -188,16 +190,6 @@ private fun FinanceEmpty(onCreate: () -> Unit) {
     }
 }
 
-@Composable
-private fun Soon(title: String, text: String) {
-    val colors = AppTheme.colors
-    val spacing = AppTheme.spacing
-    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center, modifier = Modifier.fillMaxSize().padding(horizontal = spacing.xl).testTag(TAG_FINANCE_SOON)) {
-        Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = colors.textPrimary)
-        Text(text, style = MaterialTheme.typography.bodySmall, color = colors.textSecondary, textAlign = TextAlign.Center, modifier = Modifier.padding(top = spacing.xs))
-    }
-}
-
 /** Чёрная кнопка во всю ширину: «Создать счёт», «Сохранить». [plus] — значок «+» слева. */
 @Composable
 internal fun PrimaryAction(label: String, tag: String, onClick: () -> Unit, enabled: Boolean = true, plus: Boolean = false) {
@@ -227,7 +219,6 @@ private const val WIDE_TILES = 3
 const val TAG_FINANCE = "finance"
 const val TAG_FINANCE_EMPTY = "finance_empty"
 const val TAG_FINANCE_CREATE = "finance_create_account"
-const val TAG_FINANCE_SOON = "finance_soon"
 const val TAG_ACCOUNTS = "finance_accounts"
 const val TAG_ACCOUNTS_TOTAL = "finance_accounts_total"
 const val TAG_ACCOUNT_ADD = "finance_account_add"

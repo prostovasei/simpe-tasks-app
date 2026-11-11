@@ -14,6 +14,7 @@ MAT = {
     'range': 'M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z',
     'list': 'M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z',
     'add': 'M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z',
+    'chevron': 'M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z',
     'expand': 'M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z',
     'check': 'M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z',
     'close': 'M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z',
@@ -1253,4 +1254,84 @@ README_MORE.update({
                       'Не нижняя шторка (решение PM): окно `radius-nav` на `surface`, поля от краёв 16. Сверху заголовок `title-large` Bold и «×» (`size-finance-close`, `text-secondary`); «Назад» и нажатие мимо — как «×». Строки полей `size-finance-field` (48): подпись `text-secondary` слева, значение Bold справа, у выбора — стрелка `inactive`; под строкой линия `divider`. Сумма — крупно по центру (`headline-large` Bold) со знаком «₽», клавиатура цифровая, копейки через запятую. Внизу одна чёрная кнопка во всю ширину (`accent` / `on-accent`, `radius-lg`); недоступная — `divider` / `text-secondary`. Окно счёта: название (пустое — название типа), тип (наличные / карта / накопления), эмодзи (по умолчанию от типа: 👛 💳 🏦), «Остаток сейчас». Удаления и архива счёта нет.'),
     'ScreenFinance': ('Экран «Финансы», этап 1 (0.58).',
                       'Без заголовка модуля. Счетов нет — по центру значок `ic_finance_wallet` (`size-finance-empty-icon`, `inactive`), «Начнём со счёта», пояснение и чёрная кнопка «+ Создать счёт». Есть счета — блок «Счета · сумма» (сумма `text-secondary`) с маленьким «+» (`size-account-add`, `surface`, `radius-md`) и карточки счетов (`surface`, `radius-lg`, поля 12): эмодзи и название `label-medium` `text-secondary`, остаток `title-small` Bold. До трёх счетов карточки делят ширину поровну; больше — ряд листается вбок, карточка не уже `size-account-tile` (108), следующая выглядывает. Суммы — «42 300 ₽», копейки только если есть. Операции и аналитика — следующие этапы.'),
+})
+
+
+# ---------------------------------------------------------------- финансы, этап 2 (0.59, #225): окно операции, список операций, категории
+
+def segments(options, sel):
+    cell = lambda t, on: (f'<span style="flex:1;min-height:36px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:14px;line-height:20px;'
+                          f'background:{"var(--surface)" if on else "transparent"};color:{"var(--text-primary)" if on else "var(--text-secondary)"};font-weight:{700 if on else 500}">{t}</span>')
+    return f'<div style="display:flex;gap:4px;padding:4px;border-radius:var(--radius-lg);background:var(--selected)">{"".join(cell(t, t == sel) for t in options)}</div>'
+
+
+def fin_field(label, value, pick=False, muted=False):
+    arrow = f'<span style="color:var(--inactive)">{mi("expand", 18)}</span>' if pick else ''
+    style = 'color:var(--inactive);font-weight:400' if muted else 'font-weight:700'
+    return (f'<div style="display:flex;align-items:center;min-height:48px;border-bottom:1px solid var(--divider)"><span style="flex:1;font-size:14px;line-height:20px;color:var(--text-secondary)">{label}</span>'
+            f'<span style="display:flex;align-items:center;font-size:14px;line-height:20px;{style}">{value}{arrow}</span></div>')
+
+
+def chips(items, sel=None):
+    chip = lambda t: (f'<span style="flex:1;min-width:0;min-height:36px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:12px;line-height:16px;'
+                      f'background:{"var(--accent)" if t == sel else "var(--selected)" if t == "Все категории" else "var(--background)"};'
+                      f'color:{"var(--on-accent)" if t == sel else "var(--text-secondary)" if t == "Все категории" else "var(--text-primary)"};font-weight:{700 if t == sel else 600}">{t}</span>')
+    rows = [items[i:i + 3] for i in range(0, len(items), 3)]
+    return ('<div style="padding-top:12px;font-size:12px;line-height:16px;color:var(--text-secondary)">Категория · необязательно</div>'
+            + ''.join(f'<div style="display:flex;gap:4px;padding-top:{8 if i == 0 else 4}px">{"".join(chip(t) for t in r)}</div>' for i, r in enumerate(rows)) + '<div style="height:8px"></div>')
+
+
+def operation_window(kind='Расход', edit=False):
+    head = (f'<div style="display:flex;align-items:center;padding:12px 8px 0 16px"><span style="flex:1;font-size:22px;line-height:28px;font-weight:700">{kind if edit else "Новая операция"}</span>'
+            + (f'<span style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary)">{svg("ic_tool_delete", 24)}</span>' if edit else '')
+            + f'<span style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary)">{mi("close")}</span></div>')
+    amount = '<div style="text-align:center;padding:12px 0;font-size:32px;line-height:40px;font-weight:700">850 ₽</div>'
+    if kind == 'Перевод':
+        body = fin_field('Со счёта', '💳 Карта', True) + fin_field('На счёт', '👛 Наличные', True) + fin_field('Комментарий', 'Необязательно', muted=True)
+    else:
+        body = (fin_field('Счёт', '💳 Карта', True) + chips(['Продукты', 'Кафе', 'Транспорт', 'Дом', 'Здоровье', 'Все категории'], 'Продукты')
+                + fin_field('Место', 'Пятёрочка') + fin_field('Комментарий', 'Необязательно', muted=True))
+    body += fin_field('Дата', '10.11.2026 · сегодня', True)
+    tabs = '' if edit else f'<div style="padding-top:8px">{segments(["Расход", "Доход", "Перевод"], kind)}</div>'
+    return (f'<div style="width:380px;border-radius:var(--radius-nav);background:var(--surface);overflow:hidden;flex-shrink:0">{head}<div style="padding:0 16px">{tabs}{amount}{body}</div>'
+            f'<div style="padding:16px">{primary_action("Сохранить")}</div></div>')
+
+
+def operations_screen():
+    def row(title, value, transfer=False):
+        color = 'var(--text-secondary)' if transfer else 'var(--text-primary)'
+        sub = '<div style="font-size:11px;line-height:16px;color:var(--text-secondary)">Перевод</div>' if transfer else ''
+        return (f'<div style="display:flex;align-items:center;min-height:52px;padding:0 16px;border-bottom:1px solid var(--divider)"><span style="flex:1;font-size:14px;line-height:20px;font-weight:600;color:{color}">{title}{sub}</span>'
+                f'<span style="font-size:14px;line-height:20px;font-weight:{500 if transfer else 700};color:{color}">{value}</span></div>')
+    day = lambda t: f'<div style="padding:12px 20px 8px;font-size:14px;line-height:20px;font-weight:700">{t}</div>'
+    card = lambda rows: f'<div style="margin:0 16px;border-radius:var(--radius-lg);background:var(--surface);overflow:hidden">{rows}</div>'
+    gear = f'<span style="position:absolute;right:12px;top:2px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary)">{svg("ic_nav_settings", 20)}</span>'
+    body = (day('10 ноября · сегодня') + card(row('Продукты', '− 850 ₽') + row('Зарплата', '+ 65 000 ₽') + row('Карта → Наличные', '5 000 ₽', True))
+            + day('9 ноября · вчера') + card(row('Кафе', '− 620 ₽') + row('Без категории', '− 1 200 ₽')))
+    return frame(f'{module_bar()}{gear}{body}{finance_bar("operations")}', 730)
+
+
+def categories_screen():
+    row = lambda t, arch=False: (f'<div style="display:flex;align-items:center;min-height:52px;padding:0 16px;border-bottom:1px solid var(--divider)"><span style="flex:1;font-size:16px;line-height:24px;font-weight:600;'
+                                 f'color:{"var(--text-secondary)" if arch else "var(--text-primary)"}">{t}</span><span style="color:var(--inactive)">{svg("ic_snack_restore", 20) if arch else mi("chevron", 24)}</span></div>')
+    top = (f'<div style="display:flex;align-items:center;padding:8px 12px 0 0"><span style="width:48px;height:48px;display:flex;align-items:center;justify-content:center">{mi("back")}</span>'
+           f'<span style="flex:1;font-size:22px;line-height:28px;font-weight:700">Категории</span>'
+           f'<span style="width:36px;height:36px;border-radius:var(--radius-lg);background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center">{mi("add", 18)}</span></div>')
+    card = lambda rows: f'<div style="margin:0 16px;border-radius:var(--radius-lg);background:var(--surface);overflow:hidden">{rows}</div>'
+    return frame(f'{top}<div style="padding:8px 16px">{segments(["Расходы", "Доходы"], "Расходы")}</div>{card(row("Продукты") + row("Кафе") + row("Транспорт"))}'
+                 f'<div style="padding:16px 20px 8px;font-size:14px;line-height:20px;font-weight:700">Архив</div>{card(row("Такси", True))}', 730)
+
+
+PREVIEWS.update({
+    'OperationWindow': lambda: doc('Окна', 620, 'Окно операции (0.59): расход, перевод и правка',
+                                   f'<div class="row" style="align-items:flex-start">{operation_window()}{operation_window("Перевод")}{operation_window(edit=True)}</div>'),
+    'ScreenOperations': lambda: doc('Экраны', 760, 'Финансы, этап 2 (0.59): операции и категории',
+                                    f'<div class="row" style="align-items:flex-start">{operations_screen()}{categories_screen()}</div>'),
+})
+
+README_MORE.update({
+    'OperationWindow': ('Окно операции: расход, доход, перевод и правка (0.59).',
+                        'Этап 2 финансов (#225, макеты design/approved/217, экраны 1.2–1.6). Окно `FinanceWindow`. Сверху переключатель типа — три равные части на подложке `selected` (`radius-lg`, поля 4), выбранная — `surface` и Bold; высота части `size-finance-chip` (36). Ниже крупная сумма по центру со знаком «₽», строки полей: «Счёт» (эмодзи и название, стрелка — список счетов), категории, «Место», «Комментарий», «Дата» («10.11.2026 · сегодня»). Категории — кнопки по три в ряд высотой `size-finance-chip`, `radius-md`: обычная — `background`, выбранная — `accent` / `on-accent` Bold, «Все категории» — `selected` / `text-secondary`; не больше пяти категорий, недавние первыми. Нет категорий — одна кнопка «+ Создать категорию» и пояснение. У перевода вместо категорий и места — «Со счёта» и «На счёт». Под полем «Место», пока оно в фокусе, — кнопки-подсказки ранее введённых мест. Правка: заголовок — тип операции, переключателя нет, перед «×» значок корзины `ic_tool_delete`. «Сохранить» недоступна без суммы. После сохранения окно остаётся для следующей операции.'),
+    'ScreenOperations': ('Экраны «Операции» и «Категории» (0.59).',
+                         'Операции: группы по дням — подпись `label-large` Bold («10 ноября · сегодня», в другом году — с годом), карточка `surface` `radius-lg` со строками `size-operation-row` (52): слева категория SemiBold (без категории — «Без категории»), справа сумма Bold: расход «− 850 ₽», доход «+ 65 000 ₽». Перевод — «Карта → Наличные» и сумма без знака цветом `text-secondary`, под названием подпись «Перевод»; новых цветов нет. Справа в баре модулей — шестерёнка финансов (`ic_nav_settings`, `text-secondary`). Категории — вложенный экран без баров: стрелка назад, заголовок, чёрная «+» 36; переключатель «Расходы / Доходы»; карточка строк со стрелкой; «Архив» — серые названия со значком возврата `ic_snack_restore`.'),
 })

@@ -20,6 +20,16 @@ import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.domain.model.finance.AccountDraft
 import com.prostovasei.simpletasks.domain.model.finance.AccountType
 import com.prostovasei.simpletasks.testing.account
+import com.prostovasei.simpletasks.testing.category
+import com.prostovasei.simpletasks.testing.operation
+import com.prostovasei.simpletasks.domain.model.finance.FormHints
+import com.prostovasei.simpletasks.domain.model.finance.OperationKind
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.test.assertContentDescriptionEquals
+import androidx.compose.ui.test.onNodeWithContentDescription
+import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -47,11 +57,11 @@ class FinanceScreenTest {
     )
 
     /** Экран в каркасе: бар модулей сверху, нижняя панель финансов снизу — как в приложении. */
-    private fun show(state: FinanceState, dark: Boolean = false, extra: @Composable () -> Unit = {}) {
+    private fun show(state: FinanceState, dark: Boolean = false, onSettings: (() -> Unit)? = null, extra: @Composable () -> Unit = {}) {
         composeRule.setContent {
             AppTheme(darkTheme = dark) {
                 Column(Modifier.fillMaxSize()) {
-                    ModuleBar(AppModule.FINANCE, onSelect = {})
+                    ModuleBar(AppModule.FINANCE, onSelect = {}, onSettings = onSettings)
                     Box(Modifier.weight(1f)) { FinanceScreen(state) { intents += it } }
                     FinanceBottomBar(state.tab, onSelect = { intents += FinanceIntent.SelectTab(it) }, onAdd = { intents += FinanceIntent.Add })
                 }
@@ -104,11 +114,206 @@ class FinanceScreenTest {
         composeRule.onRoot().captureRoboImage("screenshots/finance_accounts_many_dark.png")
     }
 
+    private val today = LocalDate.parse("2026-11-10")
+    private val food = category("c1", "Продукты")
+    private val cats = listOf(food, category("c2", "Кафе"), category("c3", "Транспорт"), category("c4", "Дом"), category("c5", "Здоровье"), category("c6", "Подарки"), category("i1", "Зарплата", OperationKind.INCOME), category("old", "Такси", archived = true))
+    private val ops = listOf(
+        operation("o1", 85_000, "2026-11-10", category = "Продукты"),
+        operation("o2", 6_500_000, "2026-11-10", OperationKind.INCOME, category = "Зарплата"),
+        operation("o3", 500_000, "2026-11-10", OperationKind.TRANSFER, to = "Наличные"),
+        operation("o4", 62_000, "2026-11-09", category = "Кафе"),
+        operation("o5", 120_000, "2026-11-09"),
+        operation("o6", 240_000, "2025-12-30", category = "Дом"),
+    )
+
+    private fun full(form: OperationForm? = null, tab: FinanceTab = FinanceTab.OPERATIONS) =
+        FinanceState(accounts = three, tab = tab, operations = ops, categories = cats, hints = FormHints("a1", listOf("c2"), listOf("Пятёрочка", "Перекрёсток", "Озон")), form = form, today = today)
+
+    /** Список операций: дни, знаки сумм, перевод с подписью, «Без категории»; нажатие открывает правку. */
     @Test
-    fun operationsTabSaysTheyComeLater() {
-        show(FinanceState(accounts = three, tab = FinanceTab.OPERATIONS))
+    fun operationsAreGroupedByDayWithSigns() {
+        show(full(), onSettings = { intents += FinanceIntent.CloseWindow })
+
+        composeRule.onNodeWithText("10 ноября · сегодня").assertExists()
+        composeRule.onNodeWithText("9 ноября · вчера").assertExists()
+        composeRule.onNodeWithText("30 декабря 2025").assertExists()
+        composeRule.onNodeWithText("− 850${s}₽").assertExists()
+        composeRule.onNodeWithText("+ 65${s}000${s}₽").assertExists()
+        composeRule.onNodeWithText("Карта → Наличные").assertExists()
+        composeRule.onNodeWithText("5${s}000${s}₽").assertExists()
+        composeRule.onNodeWithText("Без категории").assertExists()
+        composeRule.onNodeWithTag("$TAG_OPERATION:o4").performClick()
+        composeRule.onNodeWithTag(TAG_MODULE_SETTINGS).performClick()
+        assertEquals(listOf(FinanceIntent.OpenOperation("o4"), FinanceIntent.CloseWindow), intents)
+        composeRule.onRoot().captureRoboImage("screenshots/finance_operations_light.png")
+    }
+
+    @Test
+    fun emptyOperationsInviteToAdd() {
+        show(FinanceState(accounts = three, tab = FinanceTab.OPERATIONS, operations = emptyList(), today = today))
         composeRule.onNodeWithText("Операций пока нет").assertExists()
         composeRule.onNodeWithTag(TAG_ACCOUNTS).assertDoesNotExist()
+    }
+
+    /** Окно расхода: тип, сумма, счёт, пять категорий (недавняя первой) и «Все категории», место, комментарий, дата. */
+    @Test
+    fun expenseWindowShowsFieldsAndSendsChanges() {
+        var form by mutableStateOf(OperationForm(OperationKind.EXPENSE, "a1", today, amount = "850", categoryId = "c2"))
+        composeRule.setContent {
+            AppTheme {
+                OperationDialog(full(form), form) { intent ->
+                    intents += intent
+                    if (intent is FinanceIntent.EditForm) form = intent.change(form)
+                }
+            }
+        }
+
+        composeRule.onNodeWithText("Новая операция").assertExists()
+        composeRule.onNodeWithTag(TAG_OPERATION_AMOUNT).assertTextEquals("850${s}₽")
+        composeRule.onNodeWithTag(TAG_OPERATION_ACCOUNT).assertContentDescriptionEquals("Счёт: 💳 Карта")
+        composeRule.onNodeWithTag(TAG_OPERATION_DATE).assertContentDescriptionEquals("Дата: 10.11.2026 · сегодня")
+        composeRule.onNodeWithTag("$TAG_OPERATION_CATEGORY:c2").assertIsSelected()
+        composeRule.onNodeWithTag("$TAG_OPERATION_CATEGORY:c6").assertDoesNotExist()
+        composeRule.onNodeWithTag("$TAG_OPERATION_CATEGORY:old").assertDoesNotExist()
+        composeRule.onNodeWithTag(TAG_OPERATION_TRASH).assertDoesNotExist()
+        composeRule.onNode(isDialog()).captureRoboImage("screenshots/finance_operation_expense_light.png")
+
+        // Категория: другая — выбрана, повторное нажатие снимает выбор.
+        composeRule.onNodeWithTag("$TAG_OPERATION_CATEGORY:c1").performClick()
+        assertEquals("c1", form.categoryId)
+        composeRule.onNodeWithTag("$TAG_OPERATION_CATEGORY:c1").performClick()
+        assertEquals(null, form.categoryId)
+
+        // Место: подсказки из ранее введённых по набранному тексту.
+        composeRule.onNodeWithTag(TAG_OPERATION_PLACE).performTextInput("пе")
+        composeRule.onNodeWithTag("$TAG_OPERATION_PLACE_HINTS:Озон").assertDoesNotExist()
+        composeRule.onNodeWithTag("$TAG_OPERATION_PLACE_HINTS:Перекрёсток").performClick()
+        assertEquals("Перекрёсток", form.place)
+        composeRule.onNodeWithTag(TAG_OPERATION_COMMENT).performTextInput("хлеб")
+        assertEquals("хлеб", form.comment)
+
+        composeRule.onNodeWithTag(TAG_OPERATION_ACCOUNT).performClick()
+        composeRule.onNodeWithTag("$TAG_OPERATION_ACCOUNT:a2").performClick()
+        assertEquals("a2", form.accountId)
+
+        intents.clear()
+        composeRule.onNodeWithTag("$TAG_OPERATION_KIND:INCOME").performClick()
+        composeRule.onNodeWithTag(TAG_OPERATION_SAVE).performClick()
+        composeRule.onNodeWithTag("$TAG_OPERATION_WINDOW:$TAG_WINDOW_CLOSE").performClick()
+        assertEquals(listOf(FinanceIntent.SetKind(OperationKind.INCOME), FinanceIntent.SaveForm, FinanceIntent.CloseForm), intents)
+    }
+
+    /** «Все категории»: полный список без архивных, «Без категории» и создание новой прямо из операции. */
+    @Test
+    fun allCategoriesPickerSelectsAndCreates() {
+        var form by mutableStateOf(OperationForm(OperationKind.EXPENSE, "a1", today, amount = "850"))
+        composeRule.setContent {
+            AppTheme {
+                OperationDialog(full(form), form) { intent ->
+                    intents += intent
+                    if (intent is FinanceIntent.EditForm) form = intent.change(form)
+                }
+            }
+        }
+
+        composeRule.onNodeWithTag(TAG_OPERATION_CATEGORY_ALL).performClick()
+        composeRule.onNodeWithTag("$TAG_CATEGORY_PICKER:old").assertDoesNotExist()
+        composeRule.onNodeWithTag("$TAG_CATEGORY_PICKER:i1").assertDoesNotExist()
+        composeRule.onNodeWithTag("$TAG_CATEGORY_PICKER:none").assertExists()
+        composeRule.onNodeWithTag("$TAG_CATEGORY_PICKER:c6").performClick()
+        assertEquals("c6", form.categoryId)
+        // Шестая категория не из первых пяти — показана первой кнопкой.
+        composeRule.onNodeWithTag("$TAG_OPERATION_CATEGORY:c6").assertIsSelected()
+
+        composeRule.onNodeWithTag(TAG_OPERATION_CATEGORY_ALL).performClick()
+        composeRule.onNodeWithTag(TAG_CATEGORY_PICKER_NEW).performClick()
+        composeRule.onNodeWithText("Новая категория расходов").assertExists()
+        composeRule.onNodeWithTag(TAG_CATEGORY_NAME).performTextInput("Одежда")
+        composeRule.onNodeWithTag(TAG_CATEGORY_SAVE).performClick()
+        assertEquals(FinanceIntent.CreateCategory("Одежда", OperationKind.EXPENSE, select = true), intents.last())
+    }
+
+    /** Перевод: «Со счёта» и «На счёт» вместо категории и места. Без категорий — «Создать категорию». Нет суммы — «Сохранить» не нажимается. */
+    @Test
+    fun transferAndFirstOperationWindows() {
+        var form by mutableStateOf(OperationForm(OperationKind.TRANSFER, "a1", today, amount = "5000", toAccountId = "a2"))
+        var state by mutableStateOf(full(form))
+        composeRule.setContent { AppTheme { OperationDialog(state.copy(form = form), form) { intent -> intents += intent } } }
+
+        composeRule.onNodeWithTag(TAG_OPERATION_ACCOUNT).assertContentDescriptionEquals("Со счёта: 💳 Карта")
+        composeRule.onNodeWithTag(TAG_OPERATION_TO).assertContentDescriptionEquals("На счёт: 👛 Наличные")
+        composeRule.onNodeWithTag(TAG_OPERATION_PLACE).assertDoesNotExist()
+        composeRule.onNodeWithTag(TAG_OPERATION_CATEGORIES).assertDoesNotExist()
+        composeRule.onNode(isDialog()).captureRoboImage("screenshots/finance_operation_transfer_light.png")
+        composeRule.onNodeWithTag(TAG_OPERATION_TO).performClick()
+        composeRule.onNodeWithTag("$TAG_OPERATION_TO:a1").assertDoesNotExist()
+        composeRule.onNodeWithTag("$TAG_OPERATION_TO:a3").assertExists()
+
+        state = state.copy(categories = emptyList())
+        form = OperationForm(OperationKind.EXPENSE, "a1", today)
+        composeRule.onNodeWithText("Категорий пока нет. Операцию можно сохранить и без категории.").assertExists()
+        intents.clear()
+        composeRule.onNodeWithTag(TAG_OPERATION_SAVE).performClick()
+        assertEquals(emptyList<FinanceIntent>(), intents)
+        composeRule.onNodeWithTag(TAG_OPERATION_CATEGORY_CREATE).performClick()
+        composeRule.onNodeWithText("Новая категория расходов").assertExists()
+    }
+
+    /** Правка: заголовок — тип операции, переключателя типа нет, корзина в заголовке, дата «вчера». */
+    @Test
+    fun editWindowHasTrashAndNoKindSwitch() {
+        val form = OperationForm(OperationKind.EXPENSE, "a1", today.minusDays(1), editingId = "o4", amount = "620", categoryId = "old", place = "Кофейня")
+        composeRule.setContent { AppTheme { OperationDialog(full(form), form) { intents += it } } }
+
+        composeRule.onNodeWithText("Расход").assertExists()
+        composeRule.onNodeWithTag("$TAG_OPERATION_KIND:INCOME").assertDoesNotExist()
+        composeRule.onNodeWithTag(TAG_OPERATION_DATE).assertContentDescriptionEquals("Дата: 09.11.2026 · вчера")
+        // Архивная категория операции остаётся видна и выбрана.
+        composeRule.onNodeWithTag("$TAG_OPERATION_CATEGORY:old").assertIsSelected()
+        composeRule.onNode(isDialog()).captureRoboImage("screenshots/finance_operation_edit_light.png")
+        composeRule.onNodeWithTag(TAG_OPERATION_TRASH).performClick()
+        assertEquals(listOf<FinanceIntent>(FinanceIntent.TrashOperation), intents)
+    }
+
+    /** Экран «Категории»: два списка, архив внизу, правка названия и «В архив», возврат из архива. */
+    @Test
+    fun categoriesScreenManagesBothLists() {
+        var back = false
+        composeRule.setContent { AppTheme { CategoriesScreen(cats, { intents += it }, onBack = { back = true }) } }
+
+        composeRule.onNodeWithText("Продукты").assertExists()
+        composeRule.onNodeWithText("Зарплата").assertDoesNotExist()
+        composeRule.onNodeWithText("Архив").assertExists()
+        composeRule.onRoot().captureRoboImage("screenshots/finance_categories_light.png")
+
+        composeRule.onNodeWithTag("$TAG_CATEGORY:old").performClick()
+        composeRule.onNodeWithTag("$TAG_CATEGORY:c2").performClick()
+        composeRule.onNodeWithText("Категория расходов").assertExists()
+        composeRule.onNodeWithTag(TAG_CATEGORY_NAME).performTextReplacement("Кофе")
+        composeRule.onNodeWithTag(TAG_CATEGORY_SAVE).performClick()
+        composeRule.onNodeWithTag("$TAG_CATEGORY:c3").performClick()
+        composeRule.onNodeWithTag(TAG_CATEGORY_ARCHIVE).performClick()
+
+        composeRule.onNodeWithTag("$TAG_CATEGORY_KIND:INCOME").performClick()
+        composeRule.onNodeWithText("Зарплата").assertExists()
+        composeRule.onNodeWithText("Архив").assertDoesNotExist()
+        composeRule.onNodeWithTag(TAG_CATEGORY_ADD).performClick()
+        composeRule.onNodeWithText("Новая категория доходов").assertExists()
+        composeRule.onNodeWithTag(TAG_CATEGORY_SAVE).performClick()
+        composeRule.onNodeWithTag(TAG_CATEGORY_NAME).performTextInput(" Подарки ")
+        composeRule.onNodeWithTag(TAG_CATEGORY_SAVE).performClick()
+        composeRule.onNodeWithContentDescription("Назад").performClick()
+
+        assertEquals(
+            listOf(
+                FinanceIntent.ArchiveCategory("old", archived = false),
+                FinanceIntent.RenameCategory("c2", "Кофе"),
+                FinanceIntent.ArchiveCategory("c3", archived = true),
+                FinanceIntent.CreateCategory("Подарки", OperationKind.INCOME),
+            ),
+            intents,
+        )
+        assertEquals(true, back)
     }
 
     @Test

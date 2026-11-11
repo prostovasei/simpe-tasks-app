@@ -416,12 +416,18 @@ class FakeChecklistRepository : com.prostovasei.simpletasks.domain.repository.Ch
     override suspend fun reorder(taskId: String, orderedItemIds: List<String>) { calls += "reorder:$taskId:${orderedItemIds.joinToString(",")}" }
 }
 
-/** Счета финансов в памяти (#221). */
+/** Финансы в памяти (#221, #225): счета, операции (остатки пересчитываются), категории и подсказки. */
 class FakeFinanceRepository : com.prostovasei.simpletasks.domain.repository.FinanceRepository {
     val accounts = MutableStateFlow<List<com.prostovasei.simpletasks.domain.model.finance.Account>>(emptyList())
+    val operations = MutableStateFlow<List<com.prostovasei.simpletasks.domain.model.finance.Operation>>(emptyList())
+    val categories = MutableStateFlow<List<com.prostovasei.simpletasks.domain.model.finance.Category>>(emptyList())
+    val hints = MutableStateFlow(com.prostovasei.simpletasks.domain.model.finance.FormHints())
     val calls = mutableListOf<String>()
 
     override fun observeAccounts(): Flow<List<com.prostovasei.simpletasks.domain.model.finance.Account>> = accounts
+    override fun observeOperations(): Flow<List<com.prostovasei.simpletasks.domain.model.finance.Operation>> = operations
+    override fun observeCategories(): Flow<List<com.prostovasei.simpletasks.domain.model.finance.Category>> = categories
+    override fun observeFormHints(): Flow<com.prostovasei.simpletasks.domain.model.finance.FormHints> = hints
 
     override suspend fun createAccount(draft: com.prostovasei.simpletasks.domain.model.finance.AccountDraft): String {
         val id = "a${accounts.value.size + 1}"
@@ -434,6 +440,47 @@ class FakeFinanceRepository : com.prostovasei.simpletasks.domain.repository.Fina
         calls += "update:$id:${draft.name}:${draft.type}:${draft.emoji}:${draft.balance}"
         accounts.value = accounts.value.map { if (it.id == id) account(id, draft.name, draft.balance, draft.type, draft.emoji) else it }
     }
+
+    private fun name(accountId: String?) = accounts.value.firstOrNull { it.id == accountId }?.name
+
+    private fun com.prostovasei.simpletasks.domain.model.finance.OperationDraft.toOperation(id: String) = com.prostovasei.simpletasks.domain.model.finance.Operation(
+        id, kind, amount, accountId, name(accountId).orEmpty(), toAccountId, name(toAccountId), categoryId, categories.value.firstOrNull { it.id == categoryId }?.name,
+        place?.takeIf { it.isNotBlank() }, comment?.takeIf { it.isNotBlank() }, date,
+    )
+
+    override suspend fun createOperation(draft: com.prostovasei.simpletasks.domain.model.finance.OperationDraft): String {
+        val id = "o${operations.value.size + 1}"
+        calls += "operation:${draft.kind}:${draft.amount}:${draft.accountId}:${draft.toAccountId}:${draft.categoryId}:${draft.place}:${draft.comment}:${draft.date}"
+        operations.value = listOf(draft.toOperation(id)) + operations.value
+        return id
+    }
+
+    override suspend fun updateOperation(id: String, draft: com.prostovasei.simpletasks.domain.model.finance.OperationDraft) {
+        calls += "updateOperation:$id:${draft.kind}:${draft.amount}:${draft.accountId}:${draft.categoryId}:${draft.date}"
+        operations.value = operations.value.map { if (it.id == id) draft.toOperation(id) else it }
+    }
+
+    override suspend fun trashOperation(id: String) {
+        calls += "trash:$id"
+        operations.value = operations.value.filterNot { it.id == id }
+    }
+
+    override suspend fun createCategory(name: String, kind: com.prostovasei.simpletasks.domain.model.finance.OperationKind): String {
+        val id = "c${categories.value.size + 1}"
+        calls += "category:$name:$kind"
+        categories.value += com.prostovasei.simpletasks.domain.model.finance.Category(id, name, kind, archived = false)
+        return id
+    }
+
+    override suspend fun renameCategory(id: String, name: String) {
+        calls += "rename:$id:$name"
+        categories.value = categories.value.map { if (it.id == id) it.copy(name = name) else it }
+    }
+
+    override suspend fun setCategoryArchived(id: String, archived: Boolean) {
+        calls += "archive:$id:$archived"
+        categories.value = categories.value.map { if (it.id == id) it.copy(archived = archived) else it }
+    }
 }
 
 fun account(
@@ -443,3 +490,19 @@ fun account(
     type: com.prostovasei.simpletasks.domain.model.finance.AccountType = com.prostovasei.simpletasks.domain.model.finance.AccountType.CARD,
     emoji: String? = null,
 ) = com.prostovasei.simpletasks.domain.model.finance.Account(id, name, type, emoji, balance, balance, java.time.Instant.parse("2026-11-01T09:00:00Z"))
+
+fun category(id: String, name: String, kind: com.prostovasei.simpletasks.domain.model.finance.OperationKind = com.prostovasei.simpletasks.domain.model.finance.OperationKind.EXPENSE, archived: Boolean = false) =
+    com.prostovasei.simpletasks.domain.model.finance.Category(id, name, kind, archived)
+
+fun operation(
+    id: String,
+    amount: Long,
+    date: String,
+    kind: com.prostovasei.simpletasks.domain.model.finance.OperationKind = com.prostovasei.simpletasks.domain.model.finance.OperationKind.EXPENSE,
+    category: String? = null,
+    account: String = "Карта",
+    to: String? = null,
+    place: String? = null,
+) = com.prostovasei.simpletasks.domain.model.finance.Operation(
+    id, kind, amount, "a1", account, to?.let { "a2" }, to, category?.let { "c-$it" }, category, place, null, java.time.LocalDate.parse(date),
+)

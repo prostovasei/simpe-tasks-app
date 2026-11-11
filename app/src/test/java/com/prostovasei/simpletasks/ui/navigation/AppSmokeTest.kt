@@ -135,14 +135,30 @@ class AppSmokeTest {
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("42\u00A0300\u00A0₽") }
         composeRule.onNodeWithText("Карта").assertExists()
 
+        // Этап 2 (#225): категория из шестерёнки, расход через «+» — остаток счёта уменьшается, операция в списке.
+        composeRule.onNodeWithTag("module_settings").performClick()
+        composeRule.onNodeWithTag("category_add").performClick()
+        composeRule.onNodeWithTag("category_name").performTextReplacement("Продукты")
+        composeRule.onNodeWithTag("category_save").performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Продукты") }
+        composeRule.onNodeWithTag("module_bar").assertDoesNotExist()
+        composeRule.onNodeWithContentDescription("Назад").performClick()
+        composeRule.onNodeWithTag("finance_add").performClick()
+        composeRule.onNodeWithTag("operation_amount").performTextReplacement("850")
+        composeRule.onNodeWithText("Продукты").performClick()
+        composeRule.onNodeWithTag("operation_save").performClick()
+        // Окно остаётся для следующей операции; закрываем его.
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("41\u00A0450\u00A0₽") }
+        composeRule.onNodeWithTag("operation_window:close").performClick()
+
         // Вкладка «Операции» запоминается при уходе в задачи; задачи возвращаются на «Списки».
         composeRule.onNodeWithTag("finance_tab:OPERATIONS").performClick()
-        composeRule.onNodeWithText("Операций пока нет").assertExists()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("− 850\u00A0₽") }
         composeRule.onNodeWithTag("module:TASKS").performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists(TAG_LISTS_SCROLL) }
         composeRule.onNodeWithTag("finance_bar").assertDoesNotExist()
         composeRule.onNodeWithTag("module:FINANCE").performClick()
-        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Операций пока нет") }
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("− 850\u00A0₽") }
 
         // На вложенных экранах задач бара модулей нет.
         composeRule.onNodeWithTag("module:TASKS").performClick()

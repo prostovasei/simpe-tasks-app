@@ -108,4 +108,6 @@ data class AppSizes(
     val financeField: Dp = SizeTokens.FINANCE_FIELD.dp,
     val financeClose: Dp = SizeTokens.FINANCE_CLOSE.dp,
     val financeAction: Dp = SizeTokens.FINANCE_ACTION.dp,
+    val financeChip: Dp = SizeTokens.FINANCE_CHIP.dp,
+    val operationRow: Dp = SizeTokens.OPERATION_ROW.dp,
 )

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -45,7 +46,7 @@ enum class AppModule(@param:StringRes val label: Int, @param:DrawableRes val ico
  * активный подсвечен серым. Заголовков модулей нет. Сам занимает место под строкой состояния.
  */
 @Composable
-fun ModuleBar(selected: AppModule, onSelect: (AppModule) -> Unit, modifier: Modifier = Modifier) {
+fun ModuleBar(selected: AppModule, onSelect: (AppModule) -> Unit, modifier: Modifier = Modifier, onSettings: (() -> Unit)? = null) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
     val sizes = AppTheme.sizes
@@ -79,6 +80,20 @@ fun ModuleBar(selected: AppModule, onSelect: (AppModule) -> Unit, modifier: Modi
                     Icon(painterResource(module.icon), contentDescription = null, tint = if (active) colors.textPrimary else colors.inactive, modifier = Modifier.size(sizes.moduleIcon))
                 }
             }
+        }
+        // Настройки модуля — справа в той же строке (решение PM 10.11.2026); у задач их здесь нет.
+        if (onSettings != null) {
+            Spacer(Modifier.weight(1f))
+            val label = stringResource(R.string.finance_settings)
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(sizes.moduleButtonWidth)
+                    .clip(AppTheme.shapes.large)
+                    .clickable(role = Role.Button, onClick = onSettings)
+                    .semantics { contentDescription = label }
+                    .testTag(TAG_MODULE_SETTINGS),
+            ) { Icon(painterResource(R.drawable.ic_nav_settings), contentDescription = null, tint = colors.textSecondary, modifier = Modifier.size(sizes.moduleIcon)) }
         }
     }
 }
@@ -139,6 +154,7 @@ private fun FinanceNavTab(tab: FinanceTab, @DrawableRes icon: Int, @StringRes la
 
 const val TAG_MODULE_BAR = "module_bar"
 const val TAG_MODULE = "module"
+const val TAG_MODULE_SETTINGS = "module_settings"
 const val TAG_FINANCE_BAR = "finance_bar"
 const val TAG_FINANCE_TAB = "finance_tab"
 const val TAG_FINANCE_ADD = "finance_add"

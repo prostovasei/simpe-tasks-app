@@ -90,6 +90,10 @@ object SizeTokens {
     const val FINANCE_FIELD = 48
     const val FINANCE_CLOSE = 36
     const val FINANCE_ACTION = 46
+
+    /** Финансы, этап 2 (#225): кнопка категории и часть переключателя «Расход / Доход / Перевод» — высота не меньше; строка операции в списке. */
+    const val FINANCE_CHIP = 36
+    const val OPERATION_ROW = 52
     const val NAV_SHADOW = 10
     const val CHECKBOX = 18
     const val CHECKBOX_STROKE = 2

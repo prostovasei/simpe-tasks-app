@@ -1,13 +1,13 @@
 # Архитектура Simple Tasks
 
-## Актуальное устройство на 11.11.2026 (0.58.0)
+## Актуальное устройство на 11.11.2026 (0.59.0)
 
 - Один Gradle-модуль `:app`, один Android APK; серверных микросервисов в этом проекте нет.
 - `domain/` — модели, контракты репозиториев и операции; `data/` — Room, DAO, реализации репозиториев, импорт/экспорт.
 - `ui/` — Compose, навигация, экраны и ViewModel; `designsystem/` — токены, темы, общие компоненты.
 - `widget/` — виджет; `notifications/` — напоминания, полоска и озвучка; `core/` — общие средства, DI, обновление приложения.
-- Общая Room-база версии 6; история схем лежит в `app/schemas/`.
-- Финансы (#217) — модуль в том же приложении: `domain/model/finance`, `FinanceRepository`, таблицы `finance_*`, экраны `ui/feature/finance` (§4.63).
+- Общая Room-база версии 7; история схем лежит в `app/schemas/`.
+- Финансы (#217) — модуль в том же приложении: `domain/model/finance`, `FinanceRepository`, таблицы `finance_*`, экраны `ui/feature/finance` (§4.63–4.64).
 - Кроме MainActivity есть TaskPopupActivity и UpdateActivity, а также Activity виджета.
   Старое описание «единственная Activity» ниже относится к начальному плану.
 - Android Service для озвучки и полоски — компоненты того же приложения.
@@ -1364,6 +1364,27 @@ PM поменял порядок: шторка для созданных зад�
   (курсор не заходит за знак). Не задавать полям ввода ширину через `IntrinsicSize`. Тест проверяет видимую ширину поля, не только текст.
 - **Тесты.** `MoneyTest`, `FinanceRepositoryTest` (в т. ч. `clearingTaskDataKeepsAccounts`), `MigrationTest.financeAccountsTableIsAddedAndTasksAreKept`,
   `FinanceViewModelTest`, `FinanceScreenTest` (скриншоты `finance_*`), `AppSmokeTest.switchToFinanceCreateAccountAndComeBack`.
+
+### 4.64. Финансы, этап 2 — операции и категории (0.59.0, #225)
+
+Макеты `design/approved/217/service-screens.html` — экраны 1.1–1.6, 2.3, 3.2–3.4; решения PM — `requirements.md` §3–§5, §7, §10.
+
+- **Данные.** Миграция 6 → 7 (автоматическая, только новые таблицы): `finance_categories` (название, тип expense/income, архив) и
+  `finance_operations` (тип expense/income/transfer, сумма — положительные копейки, счёт, счёт назначения, категория, место, комментарий,
+  день операции числом дней от 1970 года — без часового пояса, признак корзины). Остаток счёта считает запрос `FinanceAccountDao.BALANCE`:
+  начальный + доходы − расходы − переводы со счёта + переводы на счёт; Room сам обновляет поток счетов при изменении операций.
+- **Перевод** — одна строка с двумя счетами, поэтому правка, корзина и восстановление всегда согласованы с обеих сторон.
+- **Подсказки окна** (`FormHints`): счёт последней операции, категории по давности использования, места — запросами к операциям;
+  отдельной таблицы мест нет. Кнопки категорий — `FinanceState.categoryChips`: до пяти действующих, недавние первыми, выбранная всегда видна.
+- **Окно операции.** Поля — `OperationForm` в `FinanceState.form` (не в составном окне): черновик (`draft`) переживает закрытие окна и смену
+  модуля, но не полное закрытие приложения. `SaveForm` оставляет окно с очищенными суммой, местом и комментарием; `SetKind` сбрасывает
+  категорию и место; при правке тип не меняется. `OperationDialog` — на `FinanceWindow`; сумма — общий `AmountField`.
+- **Правка остатка в окне счёта** при имеющихся операциях сдвигает начальный остаток (операции не трогает) — до сверки этапа 4.
+- **Категории** — маршрут `FinanceCategoriesDestination` (вложенный экран: без баров), тот же `FinanceViewModel`. Удаления нет — архив.
+- **Корзина.** `trashOperation` помечает `is_deleted`; экран корзины, восстановление и окончательное удаление — этап 4.
+- **Тесты.** `FinanceRepositoryTest` (остатки, список, подсказки, категории, проверки), `MigrationTest.operationsAndCategoriesTablesAreAddedAndAccountsAreKept`,
+  `FinanceViewModelTest` (черновик, окно после сохранения, смена типа, правка и корзина), `FinanceScreenTest` (окна, список, категории; снимки
+  `finance_operation_*`, `finance_operations_light`, `finance_categories_light`), `AppSmokeTest.switchToFinanceCreateAccountAndComeBack`.
 
 ### 4.45. Дорожная карта (обновлена)
 

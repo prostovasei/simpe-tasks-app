@@ -74,7 +74,15 @@ fun AccountType.label(): Int = when (this) {
  * содержимое прокручивается, кнопки [actions] внизу всегда видны. «Назад» и нажатие мимо — как «×».
  */
 @Composable
-fun FinanceWindow(title: String, tag: String, onDismiss: () -> Unit, actions: @Composable ColumnScope.() -> Unit, content: @Composable ColumnScope.() -> Unit) {
+fun FinanceWindow(
+    title: String,
+    tag: String,
+    onDismiss: () -> Unit,
+    actions: @Composable ColumnScope.() -> Unit,
+    /** Значок в заголовке перед «×» — корзина в окне правки операции. */
+    headerAction: (@Composable () -> Unit)? = null,
+    content: @Composable ColumnScope.() -> Unit,
+) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
     val sizes = AppTheme.sizes
@@ -90,6 +98,7 @@ fun FinanceWindow(title: String, tag: String, onDismiss: () -> Unit, actions: @C
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = spacing.md, end = spacing.xs, top = spacing.sm)) {
                 Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = colors.textPrimary, modifier = Modifier.weight(1f))
+                headerAction?.invoke()
                 val close = stringResource(R.string.finance_close)
                 Box(
                     contentAlignment = Alignment.Center,
@@ -120,7 +129,7 @@ fun FinanceField(label: String, modifier: Modifier = Modifier, value: @Composabl
 
 /** Значение-выбор в строке окна: жирный текст и стрелка «есть варианты». */
 @Composable
-private fun PickValue(text: String, tag: String, description: String, onClick: () -> Unit) {
+internal fun PickValue(text: String, tag: String, description: String, onClick: () -> Unit) {
     val colors = AppTheme.colors
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -213,48 +222,13 @@ fun AccountDialog(account: Account?, onSave: (AccountDraft) -> Unit, onDismiss: 
             color = colors.textSecondary,
             modifier = Modifier.padding(top = spacing.md),
         )
-        // 0.58.1 (замечание PM): поле во всю ширину, текст по центру, «₽» дописывается к тексту. Раньше ширина поля бралась
-        // по «естественному» размеру (IntrinsicSize.Min) — Compose считал её неверно, и сумма при открытии счёта обрезалась до пустоты.
-        val style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold, color = colors.textPrimary, textAlign = TextAlign.Center)
-        BasicTextField(
-            value = amount,
-            onValueChange = { amount = Money.filterInput(it) },
-            singleLine = true,
-            textStyle = style,
-            cursorBrush = SolidColor(colors.accent),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-            visualTransformation = RubleSuffix,
-            modifier = Modifier.fillMaxWidth().padding(vertical = spacing.sm).focusRequester(focus).testTag(TAG_ACCOUNT_AMOUNT),
-            decorationBox = { inner ->
-                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    if (amount.isEmpty()) Text("0$RUBLE", style = style, color = colors.inactive, modifier = Modifier.fillMaxWidth())
-                    inner()
-                }
-            },
-        )
+        AmountField(amount, onChange = { amount = it }, tag = TAG_ACCOUNT_AMOUNT, modifier = Modifier.focusRequester(focus))
         if (account == null) {
             Text(stringResource(R.string.account_balance_note), style = MaterialTheme.typography.bodySmall, color = colors.textSecondary)
         }
     }
     if (picker) {
         EmojiPickerDialog(emoji ?: type.defaultEmoji, onConfirm = { picked -> emoji = picked.takeIf { it != type.defaultEmoji }; picker = false }, onDismiss = { picker = false })
-    }
-}
-
-/** Знак рубля после суммы — неразрывный пробел и «₽». */
-private const val RUBLE = "\u00A0₽"
-
-/** Показывает «42300 ₽», а в поле хранит только «42300»: курсор не заходит за знак рубля. */
-private object RubleSuffix : VisualTransformation {
-    override fun filter(text: AnnotatedString): TransformedText {
-        val shown = AnnotatedString(text.text + RUBLE)
-        return TransformedText(
-            shown,
-            object : OffsetMapping {
-                override fun originalToTransformed(offset: Int) = offset
-                override fun transformedToOriginal(offset: Int) = minOf(offset, text.length)
-            },
-        )
     }
 }
 
