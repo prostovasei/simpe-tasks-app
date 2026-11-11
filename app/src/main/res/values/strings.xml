@@ -551,7 +551,6 @@
     <string name="finance_create_account">Создать счёт</string>
     <string name="finance_accounts">Счета</string>
     <string name="finance_add_account">Добавить счёт</string>
-    <string name="finance_analytics_soon">Аналитика расходов появится в следующей версии.</string>
     <string name="account_new_title">Новый счёт</string>
     <string name="account_edit_title">Счёт</string>
     <string name="account_name">Название</string>
@@ -608,4 +607,32 @@
     <string name="category_archive">В архив</string>
     <string name="category_restore">Вернуть из архива</string>
     <string name="category_name_hint">Например, Продукты</string>
+
+    <!-- Финансы, этап 3 (#229): аналитика -->
+    <string name="analytics_prev_month">Предыдущий месяц</string>
+    <string name="analytics_next_month">Следующий месяц</string>
+    <string name="analytics_expenses_days">Расходы · %1$s</string>
+    <string name="analytics_expenses_month">Расходы · за месяц</string>
+    <string name="analytics_compare">К %1$s · было %2$s</string>
+    <string name="analytics_compare_none">К %1$s · расходов не было</string>
+    <string name="analytics_by_category">По категориям</string>
+    <string name="analytics_share">доля расходов</string>
+    <string name="analytics_was_none">%1$s не было</string>
+    <string name="analytics_empty">В этом месяце расходов пока нет.</string>
+    <string-array name="months_nominative">
+        <item>Январь</item><item>Февраль</item><item>Март</item><item>Апрель</item><item>Май</item><item>Июнь</item>
+        <item>Июль</item><item>Август</item><item>Сентябрь</item><item>Октябрь</item><item>Ноябрь</item><item>Декабрь</item>
+    </string-array>
+    <string-array name="months_genitive">
+        <item>января</item><item>февраля</item><item>марта</item><item>апреля</item><item>мая</item><item>июня</item>
+        <item>июля</item><item>августа</item><item>сентября</item><item>октября</item><item>ноября</item><item>декабря</item>
+    </string-array>
+    <string-array name="months_dative">
+        <item>январю</item><item>февралю</item><item>марту</item><item>апрелю</item><item>маю</item><item>июню</item>
+        <item>июлю</item><item>августу</item><item>сентябрю</item><item>октябрю</item><item>ноябрю</item><item>декабрю</item>
+    </string-array>
+    <string-array name="months_prepositional">
+        <item>в январе</item><item>в феврале</item><item>в марте</item><item>в апреле</item><item>в мае</item><item>в июне</item>
+        <item>в июле</item><item>в августе</item><item>в сентябре</item><item>в октябре</item><item>в ноябре</item><item>в декабре</item>
+    </string-array>
 </resources>

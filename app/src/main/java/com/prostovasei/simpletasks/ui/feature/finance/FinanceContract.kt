@@ -8,6 +8,7 @@ import com.prostovasei.simpletasks.domain.model.finance.Money
 import com.prostovasei.simpletasks.domain.model.finance.Operation
 import com.prostovasei.simpletasks.domain.model.finance.OperationKind
 import java.time.LocalDate
+import java.time.YearMonth
 
 /** Вкладки нижней панели финансов (#217): аналитика со счетами сверху и операции. */
 enum class FinanceTab { ANALYTICS, OPERATIONS }
@@ -55,8 +56,14 @@ data class FinanceState(
     val form: OperationForm? = null,
     /** Незавершённый ввод новой операции: возвращается при следующем открытии окна (живёт, пока приложение не закрыто). */
     val draft: OperationForm? = null,
-    val today: LocalDate = LocalDate.MIN,
+    // Не LocalDate.EPOCH (только с Android 14) и не LocalDate.MIN (от него нельзя отнять месяц для аналитики).
+    val today: LocalDate = LocalDate.ofEpochDay(0),
+    /** Месяц аналитики (этап 3); сохраняется при смене вкладки и модуля, после полного закрытия — снова текущий. */
+    val month: YearMonth = YearMonth.from(today),
 ) {
+    /** Вперёд дальше текущего месяца листать нельзя. */
+    val canGoNextMonth: Boolean get() = month < YearMonth.from(today)
+
     val total: Long get() = accounts.orEmpty().sumOf { it.balance }
 
     /**
@@ -78,6 +85,9 @@ data class FinanceState(
 
 sealed interface FinanceIntent {
     data class SelectTab(val tab: FinanceTab) : FinanceIntent
+
+    /** Стрелки месяца в аналитике: -1 — предыдущий, 1 — следующий (не дальше текущего). */
+    data class ShiftMonth(val by: Int) : FinanceIntent
 
     /** Чёрный «+» нижней панели: без счетов — создание счёта, со счетами — окно операции (черновик, если был). */
     data object Add : FinanceIntent

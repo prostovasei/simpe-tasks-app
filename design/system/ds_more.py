@@ -1374,3 +1374,32 @@ def nav_bar(sel, inbox_count=None, left='upcoming'):
 
 README_MORE['ModuleBar'] = ('Верхний бар модулей и нижние панели (0.59.1).',
     'Решения PM 11.11.2026 (#227), заменяют вид 0.58. Бар модулей — полоса `size-module-bar` (48) на `surface` во всю ширину (фон заходит под строку состояния), по центру значки модулей через 16: «Задачи» — галочка `ic_module_tasks`, «Финансы» — знак рубля `ic_module_finance`, размер `size-icon` (24). Активный — `accent`, остальные — `inactive`; плашки выделения нет. В финансах справа шестерёнка `ic_nav_settings` (`text-secondary`). Виден на главных экранах задач и в финансах; на вложенных экранах и в режиме выбора его нет.\n\nНижние панели задач и финансов: места вкладок 72×40 без плашки — выбранная вкладка `accent`, остальные `inactive`; посередине чёрная «+» 72×44. Задачи: «Предстоящее» / «Неделя» (точка — есть меню), «Списки» — `ic_tab_lists` (три линии без точек) с числом неразобранных «Входящих». Финансы: «Аналитика» и «Операции».')
+
+
+# ---------------------------------------------------------------- финансы, этап 3 (0.60, #229): аналитика расходов
+
+def analytics_screen(empty=False):
+    arrow = lambda ic, dim=False: f'<span style="width:40px;height:40px;border-radius:var(--radius-lg);background:var(--surface);display:flex;align-items:center;justify-content:center;opacity:{.35 if dim else 1}">{mi(ic, 24)}</span>'
+    month = f'<div style="display:flex;align-items:center;padding:16px 16px 12px">{arrow("back")}<span style="flex:1;text-align:center;font-size:16px;line-height:24px;font-weight:700">Ноябрь 2026</span>{arrow("chevron", True)}</div>'
+    total, delta, versus = ('0 ₽', '−39 200 ₽ · −100,0%', 'К 1–10 октября · было 39 200 ₽') if empty else ('42 800 ₽', '+3 600 ₽ · +9,2%', 'К 1–10 октября · было 39 200 ₽')
+    summary = (f'<div style="margin:0 16px;border-radius:var(--radius-xl);background:var(--surface);padding:16px"><div style="font-size:12px;line-height:16px;color:var(--text-secondary)">Расходы · 1–10 ноября</div>'
+               f'<div style="font-size:32px;line-height:40px;font-weight:700;padding-top:4px">{total}</div>'
+               f'<span style="display:inline-block;margin-top:8px;padding:4px 8px;border-radius:var(--radius-sm);background:var(--selected);font-size:12px;line-height:16px;font-weight:700">{delta}</span>'
+               f'<div style="padding-top:8px;font-size:11px;line-height:16px;color:var(--text-secondary)">{versus}</div></div>')
+    def cat(name, amount, foot, share):
+        return (f'<div style="padding:12px 16px;border-bottom:1px solid var(--divider)"><div style="display:flex;font-size:14px;line-height:20px"><span style="flex:1;font-weight:600">{name}</span><span style="font-weight:700">{amount}</span></div>'
+                f'<div style="margin-top:8px;height:6px;border-radius:var(--radius-sm);background:var(--selected)"><div style="width:{share}%;height:100%;border-radius:var(--radius-sm);background:var(--text-secondary)"></div></div>'
+                f'<div style="display:flex;padding-top:8px;font-size:11px;line-height:16px;color:var(--text-secondary)"><span style="flex:1">{foot}</span><span>{share}%</span></div></div>')
+    if empty:
+        body = '<div style="margin:16px 16px 0;border-radius:var(--radius-xl);background:var(--surface);padding:16px;font-size:14px;line-height:20px;color:var(--text-secondary)">В этом месяце расходов пока нет.</div>'
+    else:
+        body = ('<div style="display:flex;align-items:center;padding:24px 20px 12px"><span style="flex:1;font-size:14px;line-height:20px;font-weight:700">По категориям</span><span style="font-size:11px;line-height:16px;color:var(--text-secondary)">доля расходов</span></div>'
+                f'<div style="margin:0 16px;border-radius:var(--radius-xl);background:var(--surface);overflow:hidden">{cat("Продукты", "21 000 ₽", "+3 000 ₽ · +16,7%", 49)}{cat("Кафе", "10 000 ₽", "−1 000 ₽ · −9,1%", 23)}'
+                f'{cat("Подарки", "6 800 ₽", "+6 800 ₽ · в октябре не было", 16)}{cat("Без категории", "5 000 ₽", "+1 000 ₽ · +25,0%", 12)}</div>')
+    return frame(f'{module_bar()}{account_tiles()}{month}{summary}{body}{finance_bar()}', 860)
+
+
+PREVIEWS['ScreenAnalytics'] = lambda: doc('Экраны', 890, 'Финансы, этап 3 (0.60): аналитика расходов за месяц и месяц без расходов',
+                                          f'<div class="row" style="align-items:flex-start">{analytics_screen()}{analytics_screen(True)}</div>')
+README_MORE['ScreenAnalytics'] = ('Экран «Аналитика» финансов (0.60).',
+    'Этап 3 (#229; макеты design/approved/217 — compact-module-bar.html, экраны 4.1, 4.2). Под карточками счетов: переключатель месяца — две кнопки 40×40 (`surface`, `radius-lg`) и название месяца `title-medium` Bold по центру; правая стрелка на текущем месяце бледная (0,35) и не нажимается. Карточка итога (`surface`, `radius-xl`, поля 16): подпись «Расходы · 1–10 ноября» или «Расходы · за месяц» `label-medium` `text-secondary`, сумма `headline-large` Bold, плашка разницы («+3 600 ₽ · +9,2%»; `selected`, `radius-sm`, Bold) и строка сравнения `label-small` («К 1–10 октября · было 39 200 ₽», для целого месяца — «К октябрю · …», при нуле — «… · расходов не было»). «По категориям» — заголовок `title-small` Bold и подпись «доля расходов»; карточка строк: название SemiBold и сумма Bold, полоска высотой `size-progress-height` (подложка `selected`, заполнение `text-secondary`, ширина — доля), под ней разница с прошлым периодом и доля в процентах `label-small` `text-secondary`. Прошлый период 0 ₽ — вместо процента «в октябре не было». Категории без расходов не показываются; месяц без расходов — карточка «В этом месяце расходов пока нет». Цветных графиков, доходов и переводов нет.')

@@ -60,7 +60,7 @@ fun FinanceRoute(viewModel: FinanceViewModel) {
 
 /**
  * Экран финансов (этап 1 — #221, этап 2 — #225; макеты design/approved/217/service-screens.html): без заголовка модуля.
- * Счетов нет — «Начнём со счёта»; есть — карточки счетов сверху аналитики и вкладка «Операции». Сама аналитика — этап 3.
+ * Счетов нет — «Начнём со счёта»; есть — карточки счетов сверху, под ними аналитика расходов за месяц (этап 3 — #229), и вкладка «Операции».
  */
 @Composable
 fun FinanceScreen(state: FinanceState, onIntent: (FinanceIntent) -> Unit) {
@@ -73,12 +73,8 @@ fun FinanceScreen(state: FinanceState, onIntent: (FinanceIntent) -> Unit) {
             state.tab == FinanceTab.OPERATIONS -> state.operations?.let { OperationsList(it, state.today) { id -> onIntent(FinanceIntent.OpenOperation(id)) } }
             else -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
                 AccountsBlock(accounts, state.total, onIntent)
-                Text(
-                    stringResource(R.string.finance_analytics_soon),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = colors.textSecondary,
-                    modifier = Modifier.padding(horizontal = AppTheme.spacing.md + AppTheme.spacing.xxs, vertical = AppTheme.spacing.md),
-                )
+                AnalyticsBlock(state, onIntent)
+                Box(Modifier.padding(bottom = AppTheme.spacing.lg))
             }
         }
     }
