@@ -21,7 +21,7 @@ android {
         versionCode = providers.exec { commandLine("git", "rev-list", "--count", "HEAD"); isIgnoreExitValue = true }
             .standardOutput.asText.get().trim().toIntOrNull() ?: 1
         // 0.<итерация>.<доработка>: 0.5.0 — Итерация 05.
-        versionName = "0.59.0"
+        versionName = "0.59.1"
     }
 
     signingConfigs {

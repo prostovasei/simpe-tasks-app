@@ -1386,6 +1386,15 @@ PM поменял порядок: шторка для созданных зад�
   `FinanceViewModelTest` (черновик, окно после сохранения, смена типа, правка и корзина), `FinanceScreenTest` (окна, список, категории; снимки
   `finance_operation_*`, `finance_operations_light`, `finance_categories_light`), `AppSmokeTest.switchToFinanceCreateAccountAndComeBack`.
 
+### 4.65. Панели без плашек и пустая сумма (0.59.1, #227)
+
+Замечания PM к 0.59.0. `ModuleBar` — `Box` на `surface` во всю ширину (фон заходит под строку состояния), значки модулей по центру,
+шестерёнка `align(CenterEnd)`; значки `ic_module_tasks` (галочка) и `ic_module_finance` (знак рубля) размером `size-icon`, активный `accent`,
+остальные `inactive`, без фона `selected`. `NavTab` (задачи) и `FinanceNavTab` — без фона `selected`, цвета те же. «Списки» — `ic_tab_lists`
+(линии без точек; `ic_widget_list` больше не используется приложением). `AmountField`: подсказка «0» — часть `VisualTransformation`
+(`RubleSuffix`), а не отдельный `Text` поверх поля: раньше пустое поле рисовало «0 ₽» подсказки и «₽» поля друг на друге.
+Тесты: `FinanceScreenTest.emptyExpenseWindowShowsOneRubleSign`, `taskBarsWithoutChips`, проверка пустой суммы в окне счёта.
+
 ### 4.45. Дорожная карта (обновлена)
 
 | Итерация | Название | Суть |
