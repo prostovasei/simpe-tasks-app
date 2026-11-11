@@ -259,6 +259,24 @@ class FinanceViewModelTest {
         assertTrue(vm.state.value.categories.single().archived)
     }
 
+    /** Месяц аналитики: назад — сколько угодно, вперёд — не дальше текущего. */
+    @Test
+    fun analyticsMonthShiftsButNotIntoFuture() = runTest(dispatcher) {
+        val vm = FinanceViewModel(finance, time)
+        val current = java.time.YearMonth.of(2026, 10)
+        assertEquals(current, vm.state.value.month)
+        assertFalse(vm.state.value.canGoNextMonth)
+
+        vm.onIntent(FinanceIntent.ShiftMonth(1))
+        assertEquals(current, vm.state.value.month)
+        vm.onIntent(FinanceIntent.ShiftMonth(-1))
+        vm.onIntent(FinanceIntent.ShiftMonth(-1))
+        assertEquals(java.time.YearMonth.of(2026, 8), vm.state.value.month)
+        assertTrue(vm.state.value.canGoNextMonth)
+        vm.onIntent(FinanceIntent.ShiftMonth(1))
+        assertEquals(java.time.YearMonth.of(2026, 9), vm.state.value.month)
+    }
+
     @Test
     fun tabIsRemembered() = runTest(dispatcher) {
         val vm = FinanceViewModel(finance, time)

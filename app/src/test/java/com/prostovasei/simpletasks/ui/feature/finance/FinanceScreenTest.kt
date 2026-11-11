@@ -96,7 +96,7 @@ class FinanceScreenTest {
 
     @Test
     fun accountsShowBalancesTotalAndOpen() {
-        show(FinanceState(accounts = three))
+        show(FinanceState(accounts = three, operations = emptyList(), today = today))
 
         composeRule.onNodeWithTag(TAG_ACCOUNTS_TOTAL).assertTextEquals(" · 128${s}450${s}₽")
         composeRule.onNodeWithText("42${s}300${s}₽").assertExists()
@@ -111,7 +111,7 @@ class FinanceScreenTest {
     @Test
     fun manyAccountsScrollSideways() {
         val many = three + listOf(account("a4", "Т-Банк", 1_248_000), account("a5", "Вклад", 25_000_000, AccountType.SAVINGS), account("a6", "Конверт", 1_500_000, AccountType.CASH))
-        show(FinanceState(accounts = many), dark = true)
+        show(FinanceState(accounts = many, operations = emptyList(), today = today), dark = true)
 
         composeRule.onNodeWithTag(TAG_ACCOUNTS_TOTAL).assertTextEquals(" · 405${s}930${s}₽")
         composeRule.onNodeWithTag("$TAG_ACCOUNT:a6").assertExists()
@@ -303,6 +303,77 @@ class FinanceScreenTest {
         composeRule.onNode(isDialog()).captureRoboImage("screenshots/finance_operation_edit_light.png")
         composeRule.onNodeWithTag(TAG_OPERATION_TRASH).performClick()
         assertEquals(listOf<FinanceIntent>(FinanceIntent.TrashOperation), intents)
+    }
+
+    private val spend = listOf(
+        operation("n1", 2_100_000, "2026-11-03", category = "Продукты"),
+        operation("n2", 1_000_000, "2026-11-10", category = "Кафе"),
+        operation("n3", 680_000, "2026-11-05", category = "Подарки"),
+        operation("n4", 500_000, "2026-11-01"),
+        operation("n5", 6_500_000, "2026-11-02", OperationKind.INCOME, category = "Зарплата"),
+        operation("o1", 1_800_000, "2026-10-10", category = "Продукты"),
+        operation("o2", 1_100_000, "2026-10-02", category = "Кафе"),
+        operation("o3", 400_000, "2026-10-01"),
+        operation("o4", 620_000, "2026-10-09", category = "Транспорт"),
+    )
+
+    /** Аналитика текущего месяца: итог, разница к тем же дням октября, категории с долями; «в октябре не было» вместо процента. */
+    @Test
+    fun analyticsShowsMonthTotalDeltaAndCategories() {
+        show(FinanceState(accounts = three, operations = spend, today = today))
+
+        composeRule.onNodeWithTag(TAG_MONTH_TITLE).assertTextEquals("Ноябрь 2026")
+        composeRule.onNodeWithText("Расходы · 1–10 ноября").assertExists()
+        composeRule.onNodeWithTag(TAG_ANALYTICS_TOTAL).assertTextEquals("42${s}800${s}₽")
+        composeRule.onNodeWithTag(TAG_ANALYTICS_DELTA).assertTextEquals("+3${s}600${s}₽ · +9,2%")
+        composeRule.onNodeWithTag(TAG_ANALYTICS_COMPARE).assertTextEquals("К 1–10 октября · было 39${s}200${s}₽")
+        composeRule.onNodeWithText("+3${s}000${s}₽ · +16,7%").assertExists()
+        composeRule.onNodeWithText("−1${s}000${s}₽ · −9,1%").assertExists()
+        composeRule.onNodeWithText("+6${s}800${s}₽ · в октябре не было").assertExists()
+        composeRule.onNodeWithText("49%").assertExists()
+        composeRule.onNodeWithTag("$TAG_ANALYTICS_CATEGORY:none").assertExists()
+        composeRule.onNodeWithText("Транспорт").assertDoesNotExist()
+        composeRule.onNodeWithText("Зарплата").assertDoesNotExist()
+
+        composeRule.onNodeWithTag(TAG_MONTH_NEXT).performClick()
+        composeRule.onNodeWithTag(TAG_MONTH_PREV).performClick()
+        assertEquals(listOf<FinanceIntent>(FinanceIntent.ShiftMonth(-1)), intents)
+        composeRule.onRoot().captureRoboImage("screenshots/finance_analytics_light.png")
+    }
+
+    /** Завершённый месяц — «за месяц» и сравнение с целым прошлым месяцем, где расходов не было. */
+    @Test
+    fun finishedMonthComparesWithWholePreviousMonth() {
+        show(FinanceState(accounts = three, operations = spend, today = today, month = java.time.YearMonth.of(2026, 10)), dark = true)
+
+        composeRule.onNodeWithTag(TAG_MONTH_TITLE).assertTextEquals("Октябрь 2026")
+        composeRule.onNodeWithText("Расходы · за месяц").assertExists()
+        composeRule.onNodeWithTag(TAG_ANALYTICS_DELTA).assertTextEquals("+39${s}200${s}₽")
+        composeRule.onNodeWithTag(TAG_ANALYTICS_COMPARE).assertTextEquals("К сентябрю · расходов не было")
+        composeRule.onNodeWithText("+18${s}000${s}₽ · в сентябре не было").assertExists()
+        composeRule.onNodeWithTag(TAG_MONTH_NEXT).performClick()
+        assertEquals(listOf<FinanceIntent>(FinanceIntent.ShiftMonth(1)), intents)
+        composeRule.onRoot().captureRoboImage("screenshots/finance_analytics_month_dark.png")
+    }
+
+    /** Месяц без расходов: итог 0 ₽ с разницей к прошлому, вместо списка — строка; без расходов вообще — без плашки разницы. */
+    @Test
+    fun monthWithoutExpensesShowsNote() {
+        show(FinanceState(accounts = three, operations = spend.filter { it.date.monthValue == 10 }, today = today))
+
+        composeRule.onNodeWithTag(TAG_ANALYTICS_TOTAL).assertTextEquals("0${s}₽")
+        composeRule.onNodeWithTag(TAG_ANALYTICS_DELTA).assertTextEquals("−39${s}200${s}₽ · −100,0%")
+        composeRule.onNodeWithText("В этом месяце расходов пока нет.").assertExists()
+        composeRule.onNodeWithText("По категориям").assertDoesNotExist()
+        composeRule.onRoot().captureRoboImage("screenshots/finance_analytics_empty_light.png")
+    }
+
+    @Test
+    fun noOperationsAtAllHidesDelta() {
+        show(FinanceState(accounts = three, operations = emptyList(), today = today))
+        composeRule.onNodeWithTag(TAG_ANALYTICS_TOTAL).assertTextEquals("0${s}₽")
+        composeRule.onNodeWithTag(TAG_ANALYTICS_DELTA).assertDoesNotExist()
+        composeRule.onNodeWithTag(TAG_ANALYTICS_COMPARE).assertDoesNotExist()
     }
 
     /** Экран «Категории»: два списка, архив внизу, правка названия и «В архив», возврат из архива. */

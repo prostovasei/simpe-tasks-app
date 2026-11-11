@@ -31,6 +31,7 @@ class FinanceViewModel @Inject constructor(
     override fun onIntent(intent: FinanceIntent) {
         when (intent) {
             is FinanceIntent.SelectTab -> setState { copy(tab = intent.tab) }
+            is FinanceIntent.ShiftMonth -> shiftMonth(intent.by)
             FinanceIntent.Add -> add()
             FinanceIntent.NewAccount -> setState { copy(window = AccountWindow.Create) }
             is FinanceIntent.OpenAccount -> currentState.accounts?.firstOrNull { it.id == intent.id }?.let { setState { copy(window = AccountWindow.Edit(it)) } }
@@ -46,6 +47,12 @@ class FinanceViewModel @Inject constructor(
             is FinanceIntent.RenameCategory -> viewModelScope.launch { finance.renameCategory(intent.id, intent.name) }
             is FinanceIntent.ArchiveCategory -> viewModelScope.launch { finance.setCategoryArchived(intent.id, intent.archived) }
         }
+    }
+
+    private fun shiftMonth(by: Int) {
+        val today = time.today()
+        val target = currentState.month.plusMonths(by.toLong())
+        if (target <= java.time.YearMonth.from(today)) setState { copy(month = target, today = today) }
     }
 
     private fun add() {
