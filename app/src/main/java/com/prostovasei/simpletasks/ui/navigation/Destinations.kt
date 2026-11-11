@@ -82,3 +82,7 @@ data class SnoozeDestination(val taskId: String)
 /** Экран задач списка. Имя поля — ключ аргумента в SavedStateHandle. */
 @Serializable
 data class ProjectDestination(val projectId: String)
+
+/** Раздел «Финансы» (#217, этап 1 — #221): открывается значком «₽» верхнего бара модулей. */
+@Serializable
+data object FinanceDestination

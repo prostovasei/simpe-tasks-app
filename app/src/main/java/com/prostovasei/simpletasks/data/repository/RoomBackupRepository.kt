@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import java.io.InputStream
 import java.io.OutputStream
+import androidx.room.withTransaction
 import javax.inject.Inject
 
 class RoomBackupRepository @Inject internal constructor(
@@ -35,7 +36,11 @@ class RoomBackupRepository @Inject internal constructor(
         withContext(Dispatchers.IO) { output.use { exporter.export(it) } }
 
     override suspend fun clearAllData() = withContext(Dispatchers.IO) {
-        db.clearAllTables()
+        // Только таблицы задач: финансы (#217) этой кнопкой не стираются — у них своя резервная копия и своё удаление.
+        db.withTransaction {
+            val sql = db.openHelper.writableDatabase
+            TASK_TABLES.forEach { sql.execSQL("DELETE FROM $it") }
+        }
         InboxSeed(time).seed(db.openHelper.writableDatabase)
     }
 
@@ -44,3 +49,6 @@ class RoomBackupRepository @Inject internal constructor(
             .map { DataStats(totalTasks = it.totalTasks, activeTasks = it.activeTasks, lists = it.lists) }
             .distinctUntilChanged()
 }
+
+/** Таблицы задач в порядке удаления: сначала зависимые (FOREIGN KEY). */
+private val TASK_TABLES = listOf("checklist_items", "tasks", "projects", "project_groups")

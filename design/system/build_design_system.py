@@ -90,6 +90,12 @@ RADIUS_USAGE = {
 }
 SIZE_PICK = {
     'HAIRLINE': ('hairline', 'Тонкие рамки и линии.'),
+    'MODULE_BAR': ('module-bar', 'Верхний бар модулей (0.58): высота строки.'), 'MODULE_BUTTON_W': ('module-button-w', 'Кнопка модуля в баре: ширина.'),
+    'MODULE_BUTTON_H': ('module-button-h', 'Кнопка модуля в баре: высота.'), 'MODULE_ICON': ('module-icon', 'Значок модуля в баре.'),
+    'ACCOUNT_TILE': ('account-tile', 'Карточка счёта: наименьшая ширина, когда счетов больше трёх и ряд листается.'),
+    'ACCOUNT_ADD': ('account-add', 'Маленький «+» у заголовка «Счета».'), 'ACCOUNT_ADD_ICON': ('account-add-icon', 'Значок в маленьком «+», стрелка выбора в окне счёта.'),
+    'FINANCE_EMPTY_ICON': ('finance-empty-icon', 'Значок пустого экрана финансов.'), 'FINANCE_FIELD': ('finance-field', 'Строка поля в окне финансов: не ниже.'),
+    'FINANCE_CLOSE': ('finance-close', 'Кнопка «×» окна финансов.'),
     'CARD_GAP': ('card-gap', 'Щель между плашками задач.'),
     'LIST_SQUARE': ('list-square', 'Место под эмодзи списка перед названием (итерация 47: эмодзи вместо квадратика).'), 'LIST_GLYPH': ('list-glyph', 'Размер эмодзи списка в строке задачи.'),
     'LIST_SQUARE_LARGE': ('list-square-large', 'Поле крупного эмодзи: экран «Списки», заголовок списка, кнопка списка в шторке (без подложки).'), 'LIST_GLYPH_LARGE': ('list-glyph-large', 'Размер крупного эмодзи.'),

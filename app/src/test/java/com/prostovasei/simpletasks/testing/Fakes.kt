@@ -415,3 +415,31 @@ class FakeChecklistRepository : com.prostovasei.simpletasks.domain.repository.Ch
     override suspend fun deleteItem(itemId: String) { calls += "delete:$itemId" }
     override suspend fun reorder(taskId: String, orderedItemIds: List<String>) { calls += "reorder:$taskId:${orderedItemIds.joinToString(",")}" }
 }
+
+/** Счета финансов в памяти (#221). */
+class FakeFinanceRepository : com.prostovasei.simpletasks.domain.repository.FinanceRepository {
+    val accounts = MutableStateFlow<List<com.prostovasei.simpletasks.domain.model.finance.Account>>(emptyList())
+    val calls = mutableListOf<String>()
+
+    override fun observeAccounts(): Flow<List<com.prostovasei.simpletasks.domain.model.finance.Account>> = accounts
+
+    override suspend fun createAccount(draft: com.prostovasei.simpletasks.domain.model.finance.AccountDraft): String {
+        val id = "a${accounts.value.size + 1}"
+        calls += "create:${draft.name}:${draft.type}:${draft.emoji}:${draft.balance}"
+        accounts.value += account(id, draft.name, draft.balance, draft.type, draft.emoji)
+        return id
+    }
+
+    override suspend fun updateAccount(id: String, draft: com.prostovasei.simpletasks.domain.model.finance.AccountDraft) {
+        calls += "update:$id:${draft.name}:${draft.type}:${draft.emoji}:${draft.balance}"
+        accounts.value = accounts.value.map { if (it.id == id) account(id, draft.name, draft.balance, draft.type, draft.emoji) else it }
+    }
+}
+
+fun account(
+    id: String,
+    name: String,
+    balance: Long,
+    type: com.prostovasei.simpletasks.domain.model.finance.AccountType = com.prostovasei.simpletasks.domain.model.finance.AccountType.CARD,
+    emoji: String? = null,
+) = com.prostovasei.simpletasks.domain.model.finance.Account(id, name, type, emoji, balance, balance, java.time.Instant.parse("2026-11-01T09:00:00Z"))

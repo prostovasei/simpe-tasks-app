@@ -539,4 +539,31 @@
     <!-- Итерация 55: нижняя панель из трёх мест, «Входящие», «Поиск», «Настройки» — в «Списках». -->
     <string name="tab_upcoming">Предстоящее</string>
     <string name="tab_switch_hint">Удерживайте, чтобы выбрать «Предстоящее» или «Неделю»</string>
+
+    <!-- Финансы, этап 1 (#221) -->
+    <string name="module_tasks">Задачи</string>
+    <string name="module_finance">Финансы</string>
+    <string name="finance_tab_analytics">Аналитика</string>
+    <string name="finance_tab_operations">Операции</string>
+    <string name="finance_add">Добавить операцию</string>
+    <string name="finance_empty_title">Начнём со счёта</string>
+    <string name="finance_empty_text">Добавь наличные, карту или накопления\nи укажи, сколько на них сейчас.</string>
+    <string name="finance_create_account">Создать счёт</string>
+    <string name="finance_accounts">Счета</string>
+    <string name="finance_add_account">Добавить счёт</string>
+    <string name="finance_operations_soon_title">Операций пока нет</string>
+    <string name="finance_operations_soon_text">Расходы, доходы и переводы появятся в следующей версии.</string>
+    <string name="finance_analytics_soon">Аналитика расходов появится, когда будут операции.</string>
+    <string name="finance_operations_soon_toast">Операции появятся в следующей версии</string>
+    <string name="account_new_title">Новый счёт</string>
+    <string name="account_edit_title">Счёт</string>
+    <string name="account_name">Название</string>
+    <string name="account_type">Тип</string>
+    <string name="account_emoji">Эмодзи</string>
+    <string name="account_balance">Остаток сейчас</string>
+    <string name="account_balance_note">Это деньги на счёте сегодня. Доходом не считается.</string>
+    <string name="account_type_cash">Наличные</string>
+    <string name="account_type_card">Карта</string>
+    <string name="account_type_savings">Накопления</string>
+    <string name="finance_close">Закрыть</string>
 </resources>

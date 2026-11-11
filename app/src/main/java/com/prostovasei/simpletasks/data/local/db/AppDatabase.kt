@@ -11,10 +11,12 @@ import com.prostovasei.simpletasks.domain.model.Priority
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.prostovasei.simpletasks.core.time.TimeProvider
 import com.prostovasei.simpletasks.data.local.dao.ChecklistDao
+import com.prostovasei.simpletasks.data.local.dao.FinanceAccountDao
 import com.prostovasei.simpletasks.data.local.dao.ProjectDao
 import com.prostovasei.simpletasks.data.local.dao.ProjectGroupDao
 import com.prostovasei.simpletasks.data.local.dao.TaskDao
 import com.prostovasei.simpletasks.data.local.entity.ChecklistItemEntity
+import com.prostovasei.simpletasks.data.local.entity.FinanceAccountEntity
 import com.prostovasei.simpletasks.data.local.entity.ProjectEntity
 import com.prostovasei.simpletasks.data.local.entity.ProjectGroupEntity
 import com.prostovasei.simpletasks.data.local.entity.TaskEntity
@@ -26,19 +28,22 @@ import java.util.concurrent.Executor
         ProjectEntity::class,
         TaskEntity::class,
         ChecklistItemEntity::class,
+        FinanceAccountEntity::class,
     ],
     // 1 → 2 (итерация 14): колонка projects.icon. 2 → 3 (итерация 47): колонка projects.emoji и два приоритета ([V2to3]).
     // 3 → 4 (итерация 47, проверка PM): колонка tasks.is_repeat_done — выполненный раз повтора. Данные PM сохраняются автоматической миграцией Room.
     // 4 → 5 (итерация 56): колонка project_groups.emoji — эмодзи папки ([V4to5]).
-    version = 5,
+    // 5 → 6 (финансы, этап 1, #221): новая таблица finance_accounts; таблицы задач не меняются.
+    version = 6,
     exportSchema = true,
-    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3, spec = V2to3::class), AutoMigration(from = 3, to = 4), AutoMigration(from = 4, to = 5, spec = V4to5::class)],
+    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3, spec = V2to3::class), AutoMigration(from = 3, to = 4), AutoMigration(from = 4, to = 5, spec = V4to5::class), AutoMigration(from = 5, to = 6)],
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun projectGroupDao(): ProjectGroupDao
     abstract fun projectDao(): ProjectDao
     abstract fun taskDao(): TaskDao
     abstract fun checklistDao(): ChecklistDao
+    abstract fun financeAccountDao(): FinanceAccountDao
 
     companion object {
         const val NAME = "simple_tasks.db"
