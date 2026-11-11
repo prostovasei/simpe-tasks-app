@@ -21,6 +21,7 @@ import com.prostovasei.simpletasks.domain.model.finance.AccountDraft
 import com.prostovasei.simpletasks.domain.model.finance.AccountType
 import com.prostovasei.simpletasks.testing.account
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -119,7 +120,7 @@ class FinanceScreenTest {
         composeRule.onNodeWithTag(TAG_ACCOUNT_TYPE).performClick()
         composeRule.onNodeWithTag("$TAG_ACCOUNT_TYPE:CASH").performClick()
         composeRule.onNodeWithTag(TAG_ACCOUNT_AMOUNT).performTextInput("6150,5")
-        composeRule.onNodeWithTag(TAG_ACCOUNT_AMOUNT).assertTextEquals("6150,5")
+        composeRule.onNodeWithTag(TAG_ACCOUNT_AMOUNT).assertTextEquals("6150,5${s}₽")
         composeRule.waitForIdle()
         composeRule.onNode(isDialog()).captureRoboImage("screenshots/finance_account_new_light.png")
         composeRule.onNodeWithTag(TAG_ACCOUNT_SAVE).performClick()
@@ -140,7 +141,13 @@ class FinanceScreenTest {
 
         composeRule.onNodeWithText("Счёт").assertExists()
         composeRule.onNodeWithTag(TAG_ACCOUNT_NAME).assertTextEquals("Карта")
-        composeRule.onNodeWithTag(TAG_ACCOUNT_AMOUNT).assertTextEquals("42300,50")
+        composeRule.onNodeWithTag(TAG_ACCOUNT_AMOUNT).assertTextEquals("42300,50${s}₽")
+        // 0.58.1: сумма видна целиком — поле во всю ширину окна, а не по «естественному» размеру (на телефоне PM было пусто).
+        val field = composeRule.onNodeWithTag(TAG_ACCOUNT_AMOUNT).fetchSemanticsNode().boundsInRoot
+        val window = composeRule.onNodeWithTag(TAG_ACCOUNT_WINDOW).fetchSemanticsNode().boundsInRoot
+        assertTrue("Поле суммы уже окна: $field", field.width > window.width / 2)
+        composeRule.onNode(isDialog()).captureRoboImage("screenshots/finance_account_edit_light.png")
+        composeRule.onNode(isDialog()).captureRoboImage("screenshots/finance_account_edit_light.png")
         composeRule.onNodeWithText("Это деньги на счёте сегодня. Доходом не считается.").assertDoesNotExist()
         composeRule.onNodeWithTag(TAG_ACCOUNT_SAVE).performClick()
         assertEquals(AccountDraft("Карта", AccountType.CARD, "🪙", 4_230_050), saved)

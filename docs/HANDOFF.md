@@ -9,18 +9,12 @@
 - Макеты и требования финансов и порядок передачи задач Codex — в main (PR [#220](https://github.com/prostovasei/simpe-tasks-app/pull/220)).
 - Старый бэклог перенесён в Issues `[T-N]`: открыто 25 (19 «Бэклог», 6 «Приостановлен»).
 
-## Текущая работа — финансы, этап 1 «Каркас и счета» (Claude Code)
+## Текущая работа — исправление 0.58.1 (Claude Code)
 
-- Issue [#221](https://github.com/prostovasei/simpe-tasks-app/issues/221) (часть [#217](https://github.com/prostovasei/simpe-tasks-app/issues/217)). Исполнитель: Claude Code. Версия 0.58.0.
-- Ветка `ccr-899ee205-ffqd23` от свежего main; PR — см. Issue #221. После merge точка передачи — merge commit этого PR.
-- Сделано: верхний бар модулей, раздел финансов со своей нижней панелью, первый запуск, создание и правка счетов, Room 5 → 6
-  (таблица `finance_accounts`). «Очистить все данные» в настройках задач больше не стирает финансы. Подробности — ARCHITECTURE §4.63, SPEC §7.
-- Временно до следующих этапов: «+» при наличии счетов и вкладка «Операции» — заглушки; шестерёнки финансов нет; остаток правится в окне счёта.
-- Проверки (локально, облачная среда): `./gradlew assembleDebug check recordRoborazziDebug` — успешно, 681 тест, 0 падений; после этого
-  поправлен размер подписи в карточке счёта и перезаписаны скриншоты `finance_*` (тесты `FinanceScreenTest` пройдены повторно). Итог — Android CI в PR.
-- Не проверено: телефон PM — пункты F1–F13 [чек-листа](TESTING-CHECKLIST.md); окно счёта с настоящей клавиатурой на маленьком экране (F13).
-- Дизайн-система: генератор `design/system` дополнен (`ModuleBar`, `FinanceWindow`, `ScreenFinance`, размеры); приватный холст дизайн-системы
-  в Claude не перепубликован.
+- Issue [#223](https://github.com/prostovasei/simpe-tasks-app/issues/223): в окне счёта не была видна сумма остатка (замечание PM к 0.58.0). Причина и решение — ARCHITECTURE §4.63.
+- Этап 1 финансов (0.58.0) завершён: Issue [#221](https://github.com/prostovasei/simpe-tasks-app/issues/221), PR [#222](https://github.com/prostovasei/simpe-tasks-app/pull/222).
+- Ветка `ccr-899ee205-ffqd23` от main; PR — см. Issue #223.
+- Проверки: `./gradlew assembleDebug check recordRoborazziDebug` локально; итог — Android CI в PR. Остальные пункты F1–F13 на телефоне PM ещё не подтверждены.
 
 ## Следующий шаг
 
