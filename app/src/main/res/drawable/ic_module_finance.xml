@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Модуль «Финансы» в верхнем баре (#221): монетка со знаком рубля. Цвет задаётся оттенком. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:strokeColor="@android:color/white" android:strokeWidth="2" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M12,3a9,9 0,1 0,0 18a9,9 0,1 0,0 -18z" />
+    <path android:strokeColor="@android:color/white" android:strokeWidth="1.7" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M10.3,17V7.5h2.6a2.4,2.4 0,0 1,0 4.8H8.8 M8.8,14.6h4.4" />
+</vector>

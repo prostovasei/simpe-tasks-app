@@ -118,6 +118,13 @@ import com.prostovasei.simpletasks.ui.feature.search.SearchRoute
 import com.prostovasei.simpletasks.ui.feature.settings.SettingsRoute
 import com.prostovasei.simpletasks.ui.feature.task.QuickAddRoute
 import com.prostovasei.simpletasks.ui.feature.task.TaskDetailRoute
+import com.prostovasei.simpletasks.ui.feature.finance.AppModule
+import com.prostovasei.simpletasks.ui.feature.finance.FinanceBottomBar
+import com.prostovasei.simpletasks.ui.feature.finance.FinanceIntent
+import com.prostovasei.simpletasks.ui.feature.finance.FinanceRoute
+import com.prostovasei.simpletasks.ui.feature.finance.FinanceViewModel
+import com.prostovasei.simpletasks.ui.feature.finance.ModuleBar
+import androidx.compose.runtime.saveable.rememberSaveable
 import kotlin.reflect.KClass
 
 /**
@@ -168,6 +175,15 @@ fun AppNavHost(
     // Левое место панели: «Предстоящее» или «Неделя» — что выбрано удержанием (с ним приложение и открывается).
     var left by remember { mutableStateOf(NavPrefs.left(context)) }
     val startDestination = remember { left.route }
+
+    // Финансы (#217, этап 1 — #221): отдельный модуль со своей нижней панелью. Верхний бар модулей виден на главных экранах
+    // задач и в финансах; при возврате в модуль открывается то же место (сохранённое состояние вкладки).
+    val inFinance = destination?.hasRoute(FinanceDestination::class) == true
+    val onRoot = destination == null || inFinance || Tab.entries.any { destination.isOn(it) }
+    val finance = hiltViewModel<FinanceViewModel>()
+    val financeState by finance.state.collectAsStateWithLifecycle()
+    var lastTaskTab by rememberSaveable { mutableStateOf(left.name) }
+    LaunchedEffect(currentTab) { currentTab?.let { lastTaskTab = it.name } }
 
     // Итерация 52: число неразобранных на вкладке «Входящие».
     val sortCounts by hiltViewModel<SortCountsHost>().counts.collectAsStateWithLifecycle(SortCounts())
@@ -228,7 +244,20 @@ fun AppNavHost(
     Scaffold(
         containerColor = AppTheme.colors.background,
         snackbarHost = { UndoSnackbarHost(snackbar) },
+        topBar = {
+            if (!selectionMode.value && onRoot) {
+                ModuleBar(if (inFinance) AppModule.FINANCE else AppModule.TASKS, onSelect = { module ->
+                    when {
+                        module == AppModule.FINANCE && !inFinance -> navController.openRoot(FinanceDestination, restore = true)
+                        module == AppModule.TASKS && inFinance -> navController.openTab(Tab.valueOf(lastTaskTab))
+                    }
+                })
+            }
+        },
         bottomBar = {
+            if (inFinance) {
+                FinanceBottomBar(financeState.tab, onSelect = { finance.onIntent(FinanceIntent.SelectTab(it)) }, onAdd = { finance.onIntent(FinanceIntent.Add) })
+            } else
             // На экране списка нижний бар скрыт: это вложенный экран с кнопкой «Назад». В режиме выбора — тоже.
             if (!selectionMode.value && (destination == null || currentTab != null)) {
                 val selected = currentTab ?: left
@@ -308,6 +337,7 @@ fun AppNavHost(
             composable<CompletedDestination> { CompletedRoute(onBack = { navController.popBackStack() }, onOpenTask = openTask) }
             composable<SearchDestination> { SearchRoute(onOpenTask = openTask) }
             composable<SettingsDestination> { SettingsRoute() }
+            composable<FinanceDestination> { FinanceRoute(finance) }
             composable<ProjectDestination> { entry ->
                 val projectId = entry.toRoute<ProjectDestination>().projectId
                 ProjectRoute(
@@ -438,6 +468,8 @@ private fun NavDestination.isSheet() = hasRoute(QuickAddDestination::class) || h
 private fun NavDestination.order(): Int = when {
     isOn(Tab.UPCOMING) || isOn(Tab.WEEK) -> 0
     isOn(Tab.LISTS) -> 1
+    // Финансы — правее всего: модуль приходит справа и уходит вправо.
+    hasRoute(FinanceDestination::class) -> 3
     else -> 2
 }
 
@@ -458,12 +490,15 @@ private fun AnimatedContentTransitionScope<NavBackStackEntry>.slideOut(push: Boo
 }
 
 /** Переход на вкладку с сохранением состояния каждой вкладки (стандартное поведение нижнего бара). */
-private fun NavHostController.openTab(tab: Tab) {
-    navigate(tab.route) {
+// Итерация 55: «Списки» всегда открываются с корня — «Входящие», «Поиск» и «Настройки» внутри не «залипают».
+private fun NavHostController.openTab(tab: Tab) = openRoot(tab.route, restore = tab != Tab.LISTS)
+
+/** Главный экран вкладки или модуля: прежний уходит с сохранением состояния, [restore] — вернуть сохранённое состояние нового. */
+private fun NavHostController.openRoot(route: Any, restore: Boolean) {
+    navigate(route) {
         popUpTo(graph.findStartDestination().id) { saveState = true }
         launchSingleTop = true
-        // Итерация 55: «Списки» всегда открываются с корня — «Входящие», «Поиск» и «Настройки» внутри не «залипают».
-        restoreState = tab != Tab.LISTS
+        restoreState = restore
     }
 }
 

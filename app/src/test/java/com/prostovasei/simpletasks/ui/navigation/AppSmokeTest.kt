@@ -119,6 +119,38 @@ class AppSmokeTest {
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Всё сделано") }
     }
 
+    /** Финансы, этап 1 (#221): бар модулей, первый счёт и возврат в то же место при смене модуля. */
+    @Test
+    fun switchToFinanceCreateAccountAndComeBack() {
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Всё сделано") }
+        composeRule.onNodeWithTag("tab:LISTS").performClick()
+        composeRule.onNodeWithTag("module:FINANCE").performClick()
+
+        // Первый запуск: счетов нет, нижняя панель — финансовая, «+» ведёт к созданию счёта.
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Начнём со счёта") }
+        composeRule.onNodeWithTag("tab:LISTS").assertDoesNotExist()
+        composeRule.onNodeWithTag("finance_add").performClick()
+        composeRule.onNodeWithTag("account_amount").performTextReplacement("42300")
+        composeRule.onNodeWithTag("account_save").performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("42\u00A0300\u00A0₽") }
+        composeRule.onNodeWithText("Карта").assertExists()
+
+        // Вкладка «Операции» запоминается при уходе в задачи; задачи возвращаются на «Списки».
+        composeRule.onNodeWithTag("finance_tab:OPERATIONS").performClick()
+        composeRule.onNodeWithText("Операций пока нет").assertExists()
+        composeRule.onNodeWithTag("module:TASKS").performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists(TAG_LISTS_SCROLL) }
+        composeRule.onNodeWithTag("finance_bar").assertDoesNotExist()
+        composeRule.onNodeWithTag("module:FINANCE").performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Операций пока нет") }
+
+        // На вложенных экранах задач бара модулей нет.
+        composeRule.onNodeWithTag("module:TASKS").performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists(TAG_LISTS_SCROLL) }
+        composeRule.onNodeWithTag(TAG_LISTS_SETTINGS).performClick()
+        composeRule.onNodeWithTag("module_bar").assertDoesNotExist()
+    }
+
     @Test
     fun createTaskOpenItAndRename() {
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Всё сделано") }

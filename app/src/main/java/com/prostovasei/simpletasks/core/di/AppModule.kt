@@ -14,10 +14,12 @@ import com.prostovasei.simpletasks.core.update.GitHubAppUpdater
 import com.prostovasei.simpletasks.data.local.db.AppDatabase
 import com.prostovasei.simpletasks.data.repository.RoomChecklistRepository
 import com.prostovasei.simpletasks.data.repository.RoomBackupRepository
+import com.prostovasei.simpletasks.data.repository.RoomFinanceRepository
 import com.prostovasei.simpletasks.data.repository.RoomProjectRepository
 import com.prostovasei.simpletasks.data.repository.RoomTaskRepository
 import com.prostovasei.simpletasks.domain.repository.ChecklistRepository
 import com.prostovasei.simpletasks.domain.repository.BackupRepository
+import com.prostovasei.simpletasks.domain.repository.FinanceRepository
 import com.prostovasei.simpletasks.domain.repository.ProjectRepository
 import com.prostovasei.simpletasks.domain.repository.TaskRepository
 import dagger.Binds
@@ -69,6 +71,9 @@ abstract class RepositoryModule {
 
     @Binds
     abstract fun bindProjectRepository(impl: RoomProjectRepository): ProjectRepository
+
+    @Binds
+    abstract fun bindFinanceRepository(impl: RoomFinanceRepository): FinanceRepository
 
     @Binds
     abstract fun bindBackupRepository(impl: RoomBackupRepository): BackupRepository

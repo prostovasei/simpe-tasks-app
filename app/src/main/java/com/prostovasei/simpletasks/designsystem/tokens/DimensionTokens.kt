@@ -73,6 +73,23 @@ object SizeTokens {
 
     /** Итерация 56: значок-стрелка на плашке эмодзи. */
     const val EMOJI_BUTTON_MARK = 20
+
+    /**
+     * Финансы, этап 1 (#221, макеты design/approved/217): верхний бар модулей — высота строки, кнопка модуля (ширина и высота),
+     * значок в ней; карточка счёта в ряду, когда счетов больше трёх; маленький «+» у заголовка «Счета»; значок пустого экрана;
+     * строка поля в окне счёта и кнопка «×» окна.
+     */
+    const val MODULE_BAR = 48
+    const val MODULE_BUTTON_W = 44
+    const val MODULE_BUTTON_H = 36
+    const val MODULE_ICON = 20
+    const val ACCOUNT_TILE = 108
+    const val ACCOUNT_ADD = 32
+    const val ACCOUNT_ADD_ICON = 18
+    const val FINANCE_EMPTY_ICON = 40
+    const val FINANCE_FIELD = 48
+    const val FINANCE_CLOSE = 36
+    const val FINANCE_ACTION = 46
     const val NAV_SHADOW = 10
     const val CHECKBOX = 18
     const val CHECKBOX_STROKE = 2

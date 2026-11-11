@@ -17,7 +17,7 @@ interface BackupRepository {
     /** Сохраняет все задачи в CSV формата TickTick. Возвращает количество задач. */
     suspend fun exportTickTick(output: OutputStream): Int
 
-    /** Физически удаляет все данные и заново создаёт «Входящие». */
+    /** Физически удаляет все данные задач и заново создаёт «Входящие». Финансы не затрагиваются. */
     suspend fun clearAllData()
 
     fun observeStats(): Flow<DataStats>

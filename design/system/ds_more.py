@@ -14,6 +14,7 @@ MAT = {
     'range': 'M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z',
     'list': 'M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z',
     'add': 'M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z',
+    'expand': 'M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z',
     'check': 'M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z',
     'close': 'M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z',
     'more': 'M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z',
@@ -1171,3 +1172,85 @@ README_MORE = {
     'ScreenSettings': ('Экран «Настройки».', 'С 0.55 открывается шестерёнкой в шапке «Списков» (отдельной вкладки нет). Заголовок и секции: напоминания (переключатели), обновление, импорт из TickTick, резервная копия, данные; внизу версия. Кнопки Material 3, предупреждения `overdue`, опасные действия `danger`.'),
     'ScreenNewTask': ('Окно создания задачи.', 'Шторка `SheetCard` стоит над клавиатурой поверх экрана под затемнением `scrim`. Подробности — в `SheetCard`, `DateFields`, `ToolButton`.'),
 }
+
+
+# ---------------------------------------------------------------- финансы, этап 1 (0.58, #221): бар модулей, счета, окно счёта
+
+def module_bar(sel='finance'):
+    """Верхний бар модулей (0.58): белая плашка со значками «Задачи» и «₽», активный — на `selected`. Заголовков модулей нет."""
+    b = lambda ic, on: (f'<span style="width:44px;height:36px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;'
+                        f'background:{"var(--selected)" if on else "transparent"};color:{"var(--text-primary)" if on else "var(--inactive)"}">{svg(ic, 20)}</span>')
+    return (f'<div style="height:48px;display:flex;align-items:center;padding:0 12px"><span style="display:flex;gap:4px;padding:4px;border-radius:var(--radius-lg);background:var(--surface)">'
+            f'{b("ic_module_tasks", sel == "tasks")}{b("ic_module_finance", sel == "finance")}</span></div>')
+
+
+def finance_bar(sel='analytics'):
+    """Нижняя панель финансов (0.58): аналитика, чёрный «+», операции — только значки, размеры как у панели задач."""
+    tab = lambda ic, on: (f'<span style="width:72px;height:40px;border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:center;'
+                          f'background:{"var(--selected)" if on else "transparent"};color:{"var(--accent)" if on else "var(--text-secondary)"}">{svg(ic, 24)}</span>')
+    add = f'<span style="width:72px;height:44px;border-radius:var(--radius-xl);background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center">{mi("add", 24)}</span>'
+    return (f'<div style="position:absolute;left:0;right:0;bottom:0;height:57px;background:var(--surface);border-top:1px solid var(--divider);display:flex;align-items:center;justify-content:space-around">'
+            f'{tab("ic_finance_analytics", sel == "analytics")}{add}{tab("ic_finance_operations", sel == "operations")}</div>')
+
+
+def primary_action(label, plus=False):
+    return (f'<span style="display:flex;align-items:center;justify-content:center;gap:8px;border-radius:var(--radius-lg);background:var(--accent);color:var(--on-accent);'
+            f'padding:12px 0;font-size:14px;line-height:20px;font-weight:700">{mi("add", 18) if plus else ""}{label}</span>')
+
+
+ACCOUNTS = [('💳', 'Карта', '42 300 ₽'), ('👛', 'Наличные', '6 150 ₽'), ('🏦', 'Накопления', '80 000 ₽')]
+
+
+def account_tiles(items=ACCOUNTS, total='128 450 ₽', wide=True):
+    tile = lambda e, n, v: (f'<span style="{"flex:1;min-width:0" if wide else "flex:0 0 108px"};background:var(--surface);border-radius:var(--radius-lg);padding:12px;box-sizing:border-box">'
+                            f'<span style="display:flex;gap:4px;align-items:center;font-size:12px;line-height:16px;color:var(--text-secondary);white-space:nowrap"><span style="font-size:14px">{e}</span>{n}</span>'
+                            f'<span style="display:block;padding-top:8px;font-size:14px;line-height:20px;font-weight:700;white-space:nowrap">{v}</span></span>')
+    head = (f'<div style="display:flex;align-items:center;padding:8px 16px 8px 20px"><span style="font-size:14px;line-height:20px;font-weight:700">Счета</span>'
+            f'<span style="flex:1;font-size:14px;line-height:20px;color:var(--text-secondary)">&nbsp;· {total}</span>'
+            f'<span style="width:32px;height:32px;border-radius:var(--radius-md);background:var(--surface);display:flex;align-items:center;justify-content:center">{mi("add", 18)}</span></div>')
+    return f'{head}<div style="display:flex;gap:8px;padding:0 16px;overflow:hidden">{"".join(tile(*a) for a in items)}</div>'
+
+
+def finance_empty_screen():
+    msg = (f'<div style="position:absolute;left:32px;right:32px;top:250px;text-align:center"><span style="color:var(--inactive)">{svg("ic_finance_wallet", 40)}</span>'
+           '<div style="font-size:16px;line-height:24px;font-weight:700;padding-top:16px">Начнём со счёта</div>'
+           '<div style="font-size:12px;line-height:16px;color:var(--text-secondary);padding:8px 0 24px">Добавь наличные, карту или накопления<br>и укажи, сколько на них сейчас.</div>'
+           f'{primary_action("Создать счёт", plus=True)}</div>')
+    return frame(f'{module_bar()}{msg}{finance_bar()}', 730)
+
+
+def finance_accounts_screen(many=False):
+    items = ACCOUNTS + [('💳', 'Т-Банк', '12 480 ₽')] if many else ACCOUNTS
+    note = '<div style="padding:16px 20px;font-size:12px;line-height:16px;color:var(--text-secondary)">Аналитика расходов появится, когда будут операции.</div>'
+    return frame(f'{module_bar()}{account_tiles(items, "140 930 ₽" if many else "128 450 ₽", wide=not many)}{note}{finance_bar()}', 730)
+
+
+def account_window(new=True):
+    field = lambda label, value, pick=False: (f'<div style="display:flex;align-items:center;min-height:48px;border-bottom:1px solid var(--divider)"><span style="flex:1;font-size:14px;line-height:20px;color:var(--text-secondary)">{label}</span>'
+                                              f'<span style="display:flex;align-items:center;font-size:14px;line-height:20px;font-weight:700">{value}{f"""<span style="color:var(--inactive)">{mi("expand", 18)}</span>""" if pick else ""}</span></div>')
+    note = '<div style="font-size:12px;line-height:16px;color:var(--text-secondary)">Это деньги на счёте сегодня. Доходом не считается.</div>' if new else ''
+    return (f'<div style="width:380px;border-radius:var(--radius-nav);background:var(--surface);overflow:hidden;flex-shrink:0">'
+            f'<div style="display:flex;align-items:center;padding:12px 8px 0 16px"><span style="flex:1;font-size:22px;line-height:28px;font-weight:700">{"Новый счёт" if new else "Счёт"}</span>'
+            f'<span style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary)">{mi("close")}</span></div>'
+            f'<div style="padding:0 16px">{field("Название", "Карта")}{field("Тип", "Карта", True)}{field("Эмодзи", "💳", True)}'
+            f'<div style="padding-top:16px;font-size:12px;line-height:16px;color:var(--text-secondary)">Остаток сейчас</div>'
+            f'<div style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 0"><span style="font-size:32px;line-height:40px;font-weight:700">42300</span><span style="font-size:28px;line-height:36px;font-weight:700">₽</span></div>{note}</div>'
+            f'<div style="padding:16px">{primary_action("Создать счёт" if new else "Сохранить")}</div></div>')
+
+
+PREVIEWS.update({
+    'ModuleBar': lambda: doc('Панель и поля', 150, 'Верхний бар модулей и нижняя панель финансов (0.58)',
+                             f'<div class="row" style="align-items:flex-start">{frame(module_bar("tasks"), 48)}{frame(module_bar("finance"), 48)}{frame(finance_bar(), 58)}</div>'),
+    'FinanceWindow': lambda: doc('Окна', 470, 'Окно счёта по центру экрана: новый счёт и правка (0.58)', f'<div class="row" style="align-items:flex-start">{account_window(True)}{account_window(False)}</div>'),
+    'ScreenFinance': lambda: doc('Экраны', 760, 'Финансы, этап 1 (0.58): первый запуск, счета, много счетов',
+                                 f'<div class="row" style="align-items:flex-start">{finance_empty_screen()}{finance_accounts_screen()}{finance_accounts_screen(True)}</div>'),
+})
+
+README_MORE.update({
+    'ModuleBar': ('Верхний бар модулей и нижняя панель финансов (0.58).',
+                  'Этап 1 финансов (#221, решения PM 10.11.2026, макет design/approved/217/compact-module-bar.html). Бар модулей — строка `size-module-bar` (48) на фоне `background`, слева белая плашка (`surface`, `radius-lg`, поля 4) с кнопками `size-module-button-w`×`size-module-button-h` (44×36, `radius-md`): «Задачи» (`ic_module_tasks`) и «Финансы» (`ic_module_finance`), значок `size-module-icon` (20). Активная — фон `selected`, значок `text-primary`; остальные — `inactive`. Заголовков модулей нет. Виден на главных экранах задач («Предстоящее», «Неделя», «Списки») и в финансах; на вложенных экранах и в режиме выбора его нет. Новые модули добавляются справа.\n\nНижняя панель финансов повторяет панель задач (`BottomBar`): высота `size-nav-bar`, вкладки 72×40 только значками — «Аналитика» (`ic_finance_analytics`) и «Операции» (`ic_finance_operations`), посередине чёрная «+» 72×44. Без счетов «+» открывает новый счёт.'),
+    'FinanceWindow': ('Окно финансов по центру экрана: счёт (0.58).',
+                      'Не нижняя шторка (решение PM): окно `radius-nav` на `surface`, поля от краёв 16. Сверху заголовок `title-large` Bold и «×» (`size-finance-close`, `text-secondary`); «Назад» и нажатие мимо — как «×». Строки полей `size-finance-field` (48): подпись `text-secondary` слева, значение Bold справа, у выбора — стрелка `inactive`; под строкой линия `divider`. Сумма — крупно по центру (`headline-large` Bold) со знаком «₽», клавиатура цифровая, копейки через запятую. Внизу одна чёрная кнопка во всю ширину (`accent` / `on-accent`, `radius-lg`); недоступная — `divider` / `text-secondary`. Окно счёта: название (пустое — название типа), тип (наличные / карта / накопления), эмодзи (по умолчанию от типа: 👛 💳 🏦), «Остаток сейчас». Удаления и архива счёта нет.'),
+    'ScreenFinance': ('Экран «Финансы», этап 1 (0.58).',
+                      'Без заголовка модуля. Счетов нет — по центру значок `ic_finance_wallet` (`size-finance-empty-icon`, `inactive`), «Начнём со счёта», пояснение и чёрная кнопка «+ Создать счёт». Есть счета — блок «Счета · сумма» (сумма `text-secondary`) с маленьким «+» (`size-account-add`, `surface`, `radius-md`) и карточки счетов (`surface`, `radius-lg`, поля 12): эмодзи и название `label-medium` `text-secondary`, остаток `title-small` Bold. До трёх счетов карточки делят ширину поровну; больше — ряд листается вбок, карточка не уже `size-account-tile` (108), следующая выглядывает. Суммы — «42 300 ₽», копейки только если есть. Операции и аналитика — следующие этапы.'),
+})

@@ -45,8 +45,41 @@ class MigrationTest {
         }
     }
 
-    private fun createVersion4(file: File) {
-        val schema = JSONObject(File(SCHEMA_DIR, "4.json").readText()).getJSONObject("database")
+    /**
+     * Миграция 5 → 6 (финансы, этап 1, #221): появляется пустая таблица счетов, а папки, списки и задачи PM остаются как были.
+     */
+    @Test
+    fun financeAccountsTableIsAddedAndTasksAreKept() {
+        val file = context.getDatabasePath(AppDatabase.NAME).apply { parentFile?.mkdirs(); delete() }
+        createVersion(file, 5) { sql ->
+            sql.execSQL("INSERT INTO project_groups (id, name, sort_order, is_deleted, created_at, updated_at, emoji) VALUES ('g1', 'Дом', 0, 0, 1, 1, '🏠')")
+            sql.execSQL("INSERT INTO projects (id, group_id, name, sort_order, is_inbox, is_deleted, created_at, updated_at) VALUES ('p1', 'g1', 'Ремонт', 0, 0, 0, 1, 1)")
+            sql.execSQL("INSERT INTO tasks (id, project_id, title, status, priority, is_all_day, sort_order, is_deleted, created_at, updated_at) VALUES ('t1', 'p1', 'Купить краску', 0, 0, 1, 0, 0, 1, 1)")
+        }
+
+        val db = AppDatabase.build(context, FakeTimeProvider())
+        try {
+            assertEquals(emptyList<Any>(), runBlocking { db.financeAccountDao().observeAll().first() })
+            assertEquals("🏠", runBlocking { db.projectGroupDao().getById("g1") }!!.emoji)
+            assertEquals("Ремонт", runBlocking { db.projectDao().getById("p1") }!!.name)
+            val title = db.openHelper.readableDatabase.query("SELECT title FROM tasks WHERE id = 't1'").use { it.moveToFirst(); it.getString(0) }
+            assertEquals("Купить краску", title)
+        } finally {
+            db.close()
+        }
+    }
+
+    private fun createVersion4(file: File) = createVersion(file, 4) { sql ->
+        sql.execSQL("INSERT INTO project_groups (id, name, sort_order, is_deleted, created_at, updated_at) VALUES ('g1', '🏠Дом', 0, 0, 1, 1)")
+        sql.execSQL("INSERT INTO project_groups (id, name, sort_order, is_deleted, created_at, updated_at) VALUES ('g2', 'Работа', 1, 0, 1, 1)")
+        sql.execSQL(
+            "INSERT INTO projects (id, group_id, name, sort_order, is_inbox, is_deleted, created_at, updated_at) VALUES ('p1', 'g1', 'Ремонт', 0, 0, 0, 1, 1)",
+        )
+    }
+
+    /** База версии [version] по выгруженной схеме, затем строки [fill]. */
+    private fun createVersion(file: File, version: Int, fill: (SQLiteDatabase) -> Unit) {
+        val schema = JSONObject(File(SCHEMA_DIR, "$version.json").readText()).getJSONObject("database")
         SQLiteDatabase.openOrCreateDatabase(file, null).use { sql ->
             val entities = schema.getJSONArray("entities")
             for (i in 0 until entities.length()) {
@@ -58,12 +91,8 @@ class MigrationTest {
             }
             val setup = schema.getJSONArray("setupQueries")
             for (i in 0 until setup.length()) sql.execSQL(setup.getString(i))
-            sql.version = 4
-            sql.execSQL("INSERT INTO project_groups (id, name, sort_order, is_deleted, created_at, updated_at) VALUES ('g1', '🏠Дом', 0, 0, 1, 1)")
-            sql.execSQL("INSERT INTO project_groups (id, name, sort_order, is_deleted, created_at, updated_at) VALUES ('g2', 'Работа', 1, 0, 1, 1)")
-            sql.execSQL(
-                "INSERT INTO projects (id, group_id, name, sort_order, is_inbox, is_deleted, created_at, updated_at) VALUES ('p1', 'g1', 'Ремонт', 0, 0, 0, 1, 1)",
-            )
+            sql.version = version
+            fill(sql)
         }
     }
 

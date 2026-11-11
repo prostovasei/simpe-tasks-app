@@ -1,12 +1,13 @@
 # Архитектура Simple Tasks
 
-## Актуальное устройство на 10.11.2026 (0.57.0)
+## Актуальное устройство на 11.11.2026 (0.58.0)
 
 - Один Gradle-модуль `:app`, один Android APK; серверных микросервисов в этом проекте нет.
 - `domain/` — модели, контракты репозиториев и операции; `data/` — Room, DAO, реализации репозиториев, импорт/экспорт.
 - `ui/` — Compose, навигация, экраны и ViewModel; `designsystem/` — токены, темы, общие компоненты.
 - `widget/` — виджет; `notifications/` — напоминания, полоска и озвучка; `core/` — общие средства, DI, обновление приложения.
-- Общая Room-база версии 5; история схем лежит в `app/schemas/`.
+- Общая Room-база версии 6; история схем лежит в `app/schemas/`.
+- Финансы (#217) — модуль в том же приложении: `domain/model/finance`, `FinanceRepository`, таблицы `finance_*`, экраны `ui/feature/finance` (§4.63).
 - Кроме MainActivity есть TaskPopupActivity и UpdateActivity, а также Activity виджета.
   Старое описание «единственная Activity» ниже относится к начальному плану.
 - Android Service для озвучки и полоски — компоненты того же приложения.
@@ -1338,6 +1339,28 @@ PM поменял порядок: шторка для созданных зад�
 - Удалены `ic_widget_open_app`, `widget_bar_tab_selected` и размеры галочки, старой даты и вкладок с подложкой.
 - Тесты: `WidgetWeekTest.barShowsTodayDate`, `WidgetListTest.bottomBarOverList`, `WidgetScreenshotTest.bottomBarKeepsAllButtons`,
   `WidgetUiTest.widgetShowsDayBlocksAndBottomBar`; скриншоты `widget_*`.
+
+### 4.63. Финансы, этап 1 — каркас и счета (0.58.0, #221)
+
+Решения PM 10–11.11.2026, макеты `design/approved/217/` (`compact-module-bar.html`, `service-screens.html` — экраны 2.1, 2.2, 2.4, 2.5, 4.3).
+
+- **Модули.** `AppModule` (TASKS, FINANCE) и `ModuleBar` — в `topBar` общего `Scaffold` в `AppNavHost`. Бар виден на главных экранах вкладок задач
+  и на `FinanceDestination`; на вложенных экранах и в режиме выбора его нет. Финансы — обычный маршрут того же `NavHost`: переход как у вкладок
+  (`openRoot`: `popUpTo(start) { saveState }`, `restoreState`), поэтому состояние задач и финансов сохраняется при смене модуля. Возврат в задачи —
+  на последнюю вкладку (`lastTaskTab`). Нижняя панель — `FinanceBottomBar` в том же слоте `bottomBar`.
+- **Состояние.** `FinanceViewModel` получается в `AppNavHost` (живёт с окном приложения): его читают и экран, и нижняя панель; выбранная вкладка
+  не теряется при уходе в задачи. MVI как у остальных экранов: `FinanceState` / `FinanceIntent` / `FinanceEffect`.
+- **Данные.** Таблица `finance_accounts` (миграция 5 → 6, автоматическая; таблицы задач не меняются). Суммы — `Long` в копейках (`Money`: вывод
+  «42 300 ₽», копейки только если есть; ввод — цифры и одна запятая, два знака). `Account.balance` — остаток сейчас; пока операций нет, равен
+  `initialBalance`. `FinanceRepository` — контракт в domain, `RoomFinanceRepository` — в data. Удаления и архива счёта нет (решение PM).
+- **Защита данных.** `BackupRepository.clearAllData` раньше вызывал `clearAllTables()`; теперь удаляет только таблицы задач — «Очистить все данные»
+  в настройках не стирает финансы. Резервная копия финансов — отдельная, этап 4.
+- **Окна.** `FinanceWindow` — окно по центру (заголовок, «×», прокручиваемое содержимое, кнопка внизу), `FinanceField` — строка «подпись — значение».
+  `AccountDialog` — создание и правка счёта; пустое название заменяется названием типа.
+- **Временно до следующих этапов.** «+» при наличии счетов и вкладка «Операции» — заглушка; шестерёнки финансов нет (категории, корзина и копия —
+  этапы 2 и 4); остаток правится в окне счёта, с этапа 4 — через сверку.
+- **Тесты.** `MoneyTest`, `FinanceRepositoryTest` (в т. ч. `clearingTaskDataKeepsAccounts`), `MigrationTest.financeAccountsTableIsAddedAndTasksAreKept`,
+  `FinanceViewModelTest`, `FinanceScreenTest` (скриншоты `finance_*`), `AppSmokeTest.switchToFinanceCreateAccountAndComeBack`.
 
 ### 4.45. Дорожная карта (обновлена)
 
