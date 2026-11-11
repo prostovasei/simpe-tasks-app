@@ -1359,6 +1359,9 @@ PM поменял порядок: шторка для созданных зад�
   `AccountDialog` — создание и правка счёта; пустое название заменяется названием типа.
 - **Временно до следующих этапов.** «+» при наличии счетов и вкладка «Операции» — заглушка; шестерёнки финансов нет (категории, корзина и копия —
   этапы 2 и 4); остаток правится в окне счёта, с этапа 4 — через сверку.
+- **0.58.1 (#223, замечание PM).** Поле суммы в окне счёта было шириной `IntrinsicSize.Min`: у `BasicTextField` этот размер считается
+  неверно, и при открытии готового счёта сумма не была видна. Теперь поле во всю ширину, текст по центру, «₽» дописывает `VisualTransformation`
+  (курсор не заходит за знак). Не задавать полям ввода ширину через `IntrinsicSize`. Тест проверяет видимую ширину поля, не только текст.
 - **Тесты.** `MoneyTest`, `FinanceRepositoryTest` (в т. ч. `clearingTaskDataKeepsAccounts`), `MigrationTest.financeAccountsTableIsAddedAndTasksAreKept`,
   `FinanceViewModelTest`, `FinanceScreenTest` (скриншоты `finance_*`), `AppSmokeTest.switchToFinanceCreateAccountAndComeBack`.
 

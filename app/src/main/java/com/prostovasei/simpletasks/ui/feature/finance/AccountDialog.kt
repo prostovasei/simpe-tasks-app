@@ -7,13 +7,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
@@ -49,6 +47,10 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -211,31 +213,48 @@ fun AccountDialog(account: Account?, onSave: (AccountDraft) -> Unit, onDismiss: 
             color = colors.textSecondary,
             modifier = Modifier.padding(top = spacing.md),
         )
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth().padding(vertical = spacing.sm)) {
-            val style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold, color = colors.textPrimary, textAlign = TextAlign.End)
-            BasicTextField(
-                value = amount,
-                onValueChange = { amount = Money.filterInput(it) },
-                singleLine = true,
-                textStyle = style,
-                cursorBrush = SolidColor(colors.accent),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                modifier = Modifier.width(IntrinsicSize.Min).focusRequester(focus).testTag(TAG_ACCOUNT_AMOUNT),
-                decorationBox = { inner ->
-                    Box(contentAlignment = Alignment.CenterEnd) {
-                        if (amount.isEmpty()) Text("0", style = style, color = colors.inactive)
-                        inner()
-                    }
-                },
-            )
-            Text("₽", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = colors.textPrimary, modifier = Modifier.padding(start = spacing.xs))
-        }
+        // 0.58.1 (замечание PM): поле во всю ширину, текст по центру, «₽» дописывается к тексту. Раньше ширина поля бралась
+        // по «естественному» размеру (IntrinsicSize.Min) — Compose считал её неверно, и сумма при открытии счёта обрезалась до пустоты.
+        val style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold, color = colors.textPrimary, textAlign = TextAlign.Center)
+        BasicTextField(
+            value = amount,
+            onValueChange = { amount = Money.filterInput(it) },
+            singleLine = true,
+            textStyle = style,
+            cursorBrush = SolidColor(colors.accent),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            visualTransformation = RubleSuffix,
+            modifier = Modifier.fillMaxWidth().padding(vertical = spacing.sm).focusRequester(focus).testTag(TAG_ACCOUNT_AMOUNT),
+            decorationBox = { inner ->
+                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    if (amount.isEmpty()) Text("0$RUBLE", style = style, color = colors.inactive, modifier = Modifier.fillMaxWidth())
+                    inner()
+                }
+            },
+        )
         if (account == null) {
             Text(stringResource(R.string.account_balance_note), style = MaterialTheme.typography.bodySmall, color = colors.textSecondary)
         }
     }
     if (picker) {
         EmojiPickerDialog(emoji ?: type.defaultEmoji, onConfirm = { picked -> emoji = picked.takeIf { it != type.defaultEmoji }; picker = false }, onDismiss = { picker = false })
+    }
+}
+
+/** Знак рубля после суммы — неразрывный пробел и «₽». */
+private const val RUBLE = "\u00A0₽"
+
+/** Показывает «42300 ₽», а в поле хранит только «42300»: курсор не заходит за знак рубля. */
+private object RubleSuffix : VisualTransformation {
+    override fun filter(text: AnnotatedString): TransformedText {
+        val shown = AnnotatedString(text.text + RUBLE)
+        return TransformedText(
+            shown,
+            object : OffsetMapping {
+                override fun originalToTransformed(offset: Int) = offset
+                override fun transformedToOriginal(offset: Int) = minOf(offset, text.length)
+            },
+        )
     }
 }
 
