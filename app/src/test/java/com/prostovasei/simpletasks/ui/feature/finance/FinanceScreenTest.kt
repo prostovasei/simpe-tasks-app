@@ -1,6 +1,8 @@
 package com.prostovasei.simpletasks.ui.feature.finance
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -12,6 +14,8 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
@@ -153,6 +157,32 @@ class FinanceScreenTest {
         show(FinanceState(accounts = three, tab = FinanceTab.OPERATIONS, operations = emptyList(), today = today))
         composeRule.onNodeWithText("Операций пока нет").assertExists()
         composeRule.onNodeWithTag(TAG_ACCOUNTS).assertDoesNotExist()
+    }
+
+    /** 0.59.1 (#227): панели задач — бар модулей без плашки (активна галочка) и нижняя панель без плашек, «Списки» — линии без точек. */
+    @Test
+    fun taskBarsWithoutChips() {
+        composeRule.setContent {
+            AppTheme {
+                Column(Modifier.fillMaxSize()) {
+                    ModuleBar(AppModule.TASKS, onSelect = {})
+                    Box(Modifier.weight(1f).fillMaxWidth().background(AppTheme.colors.background))
+                    com.prostovasei.simpletasks.ui.navigation.BottomBar(selected = com.prostovasei.simpletasks.ui.navigation.Tab.LISTS, onSelect = {}, inboxCount = 3)
+                }
+            }
+        }
+        composeRule.onNodeWithTag("$TAG_MODULE:TASKS").assertIsSelected()
+        composeRule.onNodeWithTag(TAG_MODULE_SETTINGS).assertDoesNotExist()
+        composeRule.onRoot().captureRoboImage("screenshots/task_bars_light.png")
+    }
+
+    /** 0.59.1 (#227): новое пустое окно расхода — снимок пустой суммы. */
+    @Test
+    fun emptyExpenseWindowShowsOneRubleSign() {
+        val form = OperationForm(OperationKind.EXPENSE, "a1", today)
+        composeRule.setContent { AppTheme { OperationDialog(full(form).copy(categories = emptyList()), form) {} } }
+        composeRule.onNodeWithTag(TAG_OPERATION_AMOUNT).assertTextEquals("0${s}₽")
+        composeRule.onNode(isDialog()).captureRoboImage("screenshots/finance_operation_empty_light.png")
     }
 
     /** Окно расхода: тип, сумма, счёт, пять категорий (недавняя первой) и «Все категории», место, комментарий, дата. */
@@ -321,6 +351,9 @@ class FinanceScreenTest {
         var saved: AccountDraft? = null
         composeRule.setContent { AppTheme { AccountDialog(null, onSave = { saved = it }, onDismiss = {}) } }
 
+        // 0.59.1 (#227): пустая сумма — бледный «0» и один «₽» в том же тексте, без отдельной надписи поверх.
+        composeRule.onNodeWithTag(TAG_ACCOUNT_AMOUNT).assertTextEquals("0${s}₽")
+        composeRule.onAllNodesWithText("0${s}₽", substring = true).assertCountEquals(1)
         // Название не введено — берётся название типа; сумма с копейками.
         composeRule.onNodeWithTag(TAG_ACCOUNT_TYPE).performClick()
         composeRule.onNodeWithTag("$TAG_ACCOUNT_TYPE:CASH").performClick()

@@ -2,7 +2,6 @@ package com.prostovasei.simpletasks.ui.navigation
 
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.material.icons.filled.Check
@@ -135,7 +134,7 @@ import kotlin.reflect.KClass
 enum class Tab(val route: Any, val routeClass: KClass<*>, @param:StringRes val label: Int, @param:DrawableRes val icon: Int) {
     UPCOMING(AllDestination, AllDestination::class, R.string.tab_upcoming, R.drawable.ic_widget_all),
     WEEK(WeekDestination, WeekDestination::class, R.string.tab_week, R.drawable.ic_tab_week),
-    LISTS(ListsDestination, ListsDestination::class, R.string.tab_lists, R.drawable.ic_widget_list),
+    LISTS(ListsDestination, ListsDestination::class, R.string.tab_lists, R.drawable.ic_tab_lists),
 }
 
 /** «Входящие», «Поиск», «Настройки» (итерация 55) — экраны раздела «Списки»: панель видна, выбрана вкладка «Списки». */
@@ -428,20 +427,22 @@ fun BottomBar(
     }
 }
 
-/** Вкладка панели: плашка `size-nav-tab` (выбранная — `selected`, значок `accent`), [badge] — число справа сверху, [hint] — точка «есть меню». */
+/**
+ * Вкладка панели: место `size-nav-tab` без плашки (0.59.1, решение PM): выбранная — чёрный значок `accent`, остальные — серый `inactive`.
+ * [badge] — число справа сверху, [hint] — точка «есть меню».
+ */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun NavTab(tab: Tab, active: Boolean, onClick: () -> Unit, badge: Int = 0, hint: Boolean = false, onLongClick: (() -> Unit)? = null) {
     val colors = AppTheme.colors
     val sizes = AppTheme.sizes
-    val tint = if (active) colors.accent else colors.textSecondary
+    val tint = if (active) colors.accent else colors.inactive
     val label = stringResource(tab.label)
     val hintLabel = stringResource(R.string.tab_switch_hint)
     Box(
         Modifier
             .size(width = sizes.navTabWidth, height = sizes.navTabHeight)
             .clip(AppTheme.shapes.large)
-            .background(if (active) colors.selected else Color.Transparent)
             .combinedClickable(role = Role.Button, onClick = onClick, onLongClick = onLongClick, onLongClickLabel = if (onLongClick != null) hintLabel else null)
             .semantics { contentDescription = label }
             .testTag("tab:${if (hint) TAG_LEFT_TAB else tab.name}"),

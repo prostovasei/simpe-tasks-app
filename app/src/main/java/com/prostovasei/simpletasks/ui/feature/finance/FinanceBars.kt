@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -25,7 +24,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -42,28 +40,26 @@ enum class AppModule(@param:StringRes val label: Int, @param:DrawableRes val ico
 }
 
 /**
- * Компактный верхний бар модулей (макет design/approved/217/compact-module-bar.html): слева белая плашка со значками модулей,
- * активный подсвечен серым. Заголовков модулей нет. Сам занимает место под строкой состояния.
+ * Верхний бар модулей (0.59.1, решение PM; было — плашка слева по макету compact-module-bar.html): белый фон на всю ширину,
+ * значки модулей по центру без плашки выделения — активный чёрный, остальные серые. Настройки модуля — справа.
+ * Заголовков модулей нет. Фон заходит под строку состояния.
  */
 @Composable
 fun ModuleBar(selected: AppModule, onSelect: (AppModule) -> Unit, modifier: Modifier = Modifier, onSettings: (() -> Unit)? = null) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
     val sizes = AppTheme.sizes
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
+    Box(
+        contentAlignment = Alignment.Center,
         modifier = modifier
             .fillMaxWidth()
-            .background(colors.background)
+            .background(colors.surface)
             .windowInsetsPadding(WindowInsets.statusBars)
             .height(sizes.moduleBar)
             .padding(horizontal = spacing.sm)
             .testTag(TAG_MODULE_BAR),
     ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(spacing.xxs),
-            modifier = Modifier.clip(AppTheme.shapes.large).background(colors.surface).padding(spacing.xxs),
-        ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(spacing.md)) {
             AppModule.entries.forEach { module ->
                 val active = module == selected
                 val label = stringResource(module.label)
@@ -72,22 +68,21 @@ fun ModuleBar(selected: AppModule, onSelect: (AppModule) -> Unit, modifier: Modi
                     modifier = Modifier
                         .size(width = sizes.moduleButtonWidth, height = sizes.moduleButtonHeight)
                         .clip(AppTheme.shapes.medium)
-                        .background(if (active) colors.selected else Color.Transparent)
                         .selectable(selected = active, role = Role.Tab, onClick = { onSelect(module) })
                         .semantics { contentDescription = label }
                         .testTag("$TAG_MODULE:${module.name}"),
                 ) {
-                    Icon(painterResource(module.icon), contentDescription = null, tint = if (active) colors.textPrimary else colors.inactive, modifier = Modifier.size(sizes.moduleIcon))
+                    Icon(painterResource(module.icon), contentDescription = null, tint = if (active) colors.accent else colors.inactive, modifier = Modifier.size(sizes.icon))
                 }
             }
         }
         // Настройки модуля — справа в той же строке (решение PM 10.11.2026); у задач их здесь нет.
         if (onSettings != null) {
-            Spacer(Modifier.weight(1f))
             val label = stringResource(R.string.finance_settings)
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
+                    .align(Alignment.CenterEnd)
                     .size(sizes.moduleButtonWidth)
                     .clip(AppTheme.shapes.large)
                     .clickable(role = Role.Button, onClick = onSettings)
@@ -100,6 +95,7 @@ fun ModuleBar(selected: AppModule, onSelect: (AppModule) -> Unit, modifier: Modi
 
 /**
  * Нижняя панель финансов (макет compact-module-bar.html): аналитика, чёрный «+», операции — только значки, размеры как у панели задач.
+ * 0.59.1 (решение PM): без плашки выделения — выбранная вкладка чёрная, другая серая.
  */
 @Composable
 fun FinanceBottomBar(selected: FinanceTab, onSelect: (FinanceTab) -> Unit, onAdd: () -> Unit) {
@@ -145,11 +141,10 @@ private fun FinanceNavTab(tab: FinanceTab, @DrawableRes icon: Int, @StringRes la
         modifier = Modifier
             .size(width = sizes.navTabWidth, height = sizes.navTabHeight)
             .clip(AppTheme.shapes.large)
-            .background(if (active) colors.selected else Color.Transparent)
             .selectable(selected = active, role = Role.Tab, onClick = { onSelect(tab) })
             .semantics { contentDescription = description }
             .testTag("$TAG_FINANCE_TAB:${tab.name}"),
-    ) { Icon(painterResource(icon), contentDescription = null, tint = if (active) colors.accent else colors.textSecondary, modifier = Modifier.size(sizes.icon)) }
+    ) { Icon(painterResource(icon), contentDescription = null, tint = if (active) colors.accent else colors.inactive, modifier = Modifier.size(sizes.icon)) }
 }
 
 const val TAG_MODULE_BAR = "module_bar"

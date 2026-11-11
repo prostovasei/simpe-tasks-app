@@ -26,6 +26,9 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
@@ -39,10 +42,20 @@ import com.prostovasei.simpletasks.domain.model.finance.Money
 /** Знак рубля после суммы — неразрывный пробел и «₽». */
 private const val RUBLE = " ₽"
 
-/** Показывает «42300 ₽», а в поле хранит только «42300»: курсор не заходит за знак рубля. */
-private object RubleSuffix : VisualTransformation {
+/**
+ * Показывает «42300 ₽», а в поле хранит только «42300»: курсор не заходит за знак рубля. Пустое поле — бледный «0» и тот же «₽»:
+ * подсказка — часть того же текста, а не отдельная надпись поверх (0.59.1, #227: отдельная «0 ₽» наезжала на «₽» поля).
+ */
+private class RubleSuffix(private val placeholder: Color) : VisualTransformation {
     override fun filter(text: AnnotatedString): TransformedText {
-        val shown = AnnotatedString(text.text + RUBLE)
+        val shown = if (text.isEmpty()) {
+            buildAnnotatedString {
+                withStyle(SpanStyle(color = placeholder)) { append("0") }
+                append(RUBLE)
+            }
+        } else {
+            AnnotatedString(text.text + RUBLE)
+        }
         return TransformedText(
             shown,
             object : OffsetMapping {
@@ -68,14 +81,8 @@ fun AmountField(value: String, onChange: (String) -> Unit, tag: String, modifier
         textStyle = style,
         cursorBrush = SolidColor(colors.accent),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-        visualTransformation = RubleSuffix,
+        visualTransformation = RubleSuffix(colors.inactive),
         modifier = modifier.fillMaxWidth().padding(vertical = AppTheme.spacing.sm).testTag(tag),
-        decorationBox = { inner ->
-            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                if (value.isEmpty()) Text("0$RUBLE", style = style, color = colors.inactive, modifier = Modifier.fillMaxWidth())
-                inner()
-            }
-        },
     )
 }
 

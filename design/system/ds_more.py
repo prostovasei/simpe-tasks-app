@@ -1335,3 +1335,42 @@ README_MORE.update({
     'ScreenOperations': ('Экраны «Операции» и «Категории» (0.59).',
                          'Операции: группы по дням — подпись `label-large` Bold («10 ноября · сегодня», в другом году — с годом), карточка `surface` `radius-lg` со строками `size-operation-row` (52): слева категория SemiBold (без категории — «Без категории»), справа сумма Bold: расход «− 850 ₽», доход «+ 65 000 ₽». Перевод — «Карта → Наличные» и сумма без знака цветом `text-secondary`, под названием подпись «Перевод»; новых цветов нет. Справа в баре модулей — шестерёнка финансов (`ic_nav_settings`, `text-secondary`). Категории — вложенный экран без баров: стрелка назад, заголовок, чёрная «+» 36; переключатель «Расходы / Доходы»; карточка строк со стрелкой; «Архив» — серые названия со значком возврата `ic_snack_restore`.'),
 })
+
+
+# ---------------------------------------------------------------- 0.59.1 (#227): панели без плашек, новые значки модулей и «Списков»
+
+def module_bar(sel='finance', gear=True):
+    """Верхний бар модулей (0.59.1): белая полоса во всю ширину, по центру галочка и знак рубля; активный чёрный, другой серый, без плашки."""
+    b = lambda ic, on: f'<span style="width:44px;height:36px;display:flex;align-items:center;justify-content:center;color:{"var(--accent)" if on else "var(--inactive)"}">{svg(ic, 24)}</span>'
+    g = f'<span style="position:absolute;right:12px;top:2px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary)">{svg("ic_nav_settings", 20)}</span>' if gear and sel == 'finance' else ''
+    return (f'<div style="position:relative;height:48px;display:flex;align-items:center;justify-content:center;gap:16px;background:var(--surface)">'
+            f'{b("ic_module_tasks", sel == "tasks")}{b("ic_module_finance", sel == "finance")}{g}</div>')
+
+
+def _bar_tab(ic, on, extra=''):
+    return (f'<span style="position:relative;width:72px;height:40px;display:flex;align-items:center;justify-content:center;'
+            f'color:{"var(--accent)" if on else "var(--inactive)"}">{svg(ic, 24)}{extra}</span>')
+
+
+def finance_bar(sel='analytics'):
+    """Нижняя панель финансов (0.59.1): без плашки — выбранная вкладка чёрная, другая серая."""
+    add = f'<span style="width:72px;height:44px;border-radius:var(--radius-xl);background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center">{mi("add", 24)}</span>'
+    return (f'<div style="position:absolute;left:0;right:0;bottom:0;height:57px;background:var(--surface);border-top:1px solid var(--divider);display:flex;align-items:center;justify-content:space-around">'
+            f'{_bar_tab("ic_finance_analytics", sel == "analytics")}{add}{_bar_tab("ic_finance_operations", sel == "operations")}</div>')
+
+
+def nav_bar(sel, inbox_count=None, left='upcoming'):
+    """Нижняя панель задач (0.59.1): без плашек, выбранная вкладка чёрная, остальные серые; «Списки» — линии без точек."""
+    if sel == 2:
+        left = 'week'
+    lists_on = sel not in (1, 2)
+    dot = '<span style="position:absolute;bottom:4px;left:50%;margin-left:-2px;width:4px;height:4px;border-radius:50%;background:currentColor;opacity:.6"></span>'
+    badge = (f'<span style="position:absolute;top:-4px;right:6px;min-width:16px;height:16px;padding:0 4px;box-sizing:border-box;border-radius:8px;'
+             f'background:var(--accent);color:var(--on-accent);font-size:10px;line-height:16px;font-weight:700;text-align:center">{inbox_count}</span>') if inbox_count else ''
+    add = f'<span style="width:72px;height:44px;border-radius:var(--radius-xl);background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center">{mi("add", 24)}</span>'
+    return (f'<div style="position:absolute;left:0;right:0;bottom:0;height:57px;background:var(--surface);border-top:1px solid var(--divider);display:flex;align-items:center;justify-content:space-around">'
+            f'{_bar_tab("ic_tab_week" if left == "week" else "ic_widget_all", not lists_on, dot)}{add}{_bar_tab("ic_tab_lists", lists_on, badge)}</div>')
+
+
+README_MORE['ModuleBar'] = ('Верхний бар модулей и нижние панели (0.59.1).',
+    'Решения PM 11.11.2026 (#227), заменяют вид 0.58. Бар модулей — полоса `size-module-bar` (48) на `surface` во всю ширину (фон заходит под строку состояния), по центру значки модулей через 16: «Задачи» — галочка `ic_module_tasks`, «Финансы» — знак рубля `ic_module_finance`, размер `size-icon` (24). Активный — `accent`, остальные — `inactive`; плашки выделения нет. В финансах справа шестерёнка `ic_nav_settings` (`text-secondary`). Виден на главных экранах задач и в финансах; на вложенных экранах и в режиме выбора его нет.\n\nНижние панели задач и финансов: места вкладок 72×40 без плашки — выбранная вкладка `accent`, остальные `inactive`; посередине чёрная «+» 72×44. Задачи: «Предстоящее» / «Неделя» (точка — есть меню), «Списки» — `ic_tab_lists` (три линии без точек) с числом неразобранных «Входящих». Финансы: «Аналитика» и «Операции».')
