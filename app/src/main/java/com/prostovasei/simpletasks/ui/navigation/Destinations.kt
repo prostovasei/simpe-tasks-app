@@ -86,3 +86,7 @@ data class ProjectDestination(val projectId: String)
 /** Раздел «Финансы» (#217, этап 1 — #221): открывается значком «₽» верхнего бара модулей. */
 @Serializable
 data object FinanceDestination
+
+/** Категории финансов (этап 2, #225): открываются шестерёнкой финансов. */
+@Serializable
+data object FinanceCategoriesDestination
