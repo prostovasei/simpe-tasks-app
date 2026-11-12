@@ -46,7 +46,13 @@ import com.prostovasei.simpletasks.domain.model.finance.Account
 import com.prostovasei.simpletasks.domain.model.finance.Money
 
 @Composable
-fun FinanceRoute(viewModel: FinanceViewModel, onOpenCategories: () -> Unit = {}, onOpenTrash: () -> Unit = {}) {
+fun FinanceRoute(
+    viewModel: FinanceViewModel,
+    onOpenCategories: () -> Unit = {},
+    onOpenTrash: () -> Unit = {},
+    onOpenBank: () -> Unit = {},
+    onOpenUnsorted: () -> Unit = {},
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     LaunchedEffect(viewModel) {
@@ -59,10 +65,16 @@ fun FinanceRoute(viewModel: FinanceViewModel, onOpenCategories: () -> Unit = {},
                 FinanceEffect.BackupFailed -> Toast.makeText(context, R.string.backup_failed, Toast.LENGTH_LONG).show()
                 FinanceEffect.BackupInvalid -> Toast.makeText(context, R.string.backup_invalid, Toast.LENGTH_LONG).show()
                 FinanceEffect.BackupRestored -> Toast.makeText(context, R.string.backup_restored, Toast.LENGTH_SHORT).show()
+                FinanceEffect.PurchaseRecorded -> Toast.makeText(context, R.string.bank_recorded, Toast.LENGTH_SHORT).show()
             }
         }
     }
-    FinanceScreen(state, viewModel::onIntent)
+    // Значок доступа в меню шестерёнки должен быть свежим после возврата из настроек Android.
+    androidx.lifecycle.compose.LifecycleResumeEffect(viewModel) {
+        viewModel.onIntent(FinanceIntent.RefreshBankAccess)
+        onPauseOrDispose {}
+    }
+    FinanceScreen(state, onOpenUnsorted, viewModel::onIntent)
 
     // Этап 4: меню шестерёнки и резервная копия. Место сохранения и файл копии выбираются в системном окне.
     val saver = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(BACKUP_MIME)) { uri -> uri?.let { viewModel.onIntent(FinanceIntent.ExportBackup(it.toString())) } }
@@ -81,6 +93,10 @@ fun FinanceRoute(viewModel: FinanceViewModel, onOpenCategories: () -> Unit = {},
             },
             onBackup = { viewModel.onIntent(FinanceIntent.OpenBackup) },
             onDismiss = close,
+            onBank = {
+                close()
+                onOpenBank()
+            },
         )
     }
     when (val backup = state.backup) {
@@ -100,14 +116,14 @@ fun FinanceRoute(viewModel: FinanceViewModel, onOpenCategories: () -> Unit = {},
  * Счетов нет — «Начнём со счёта»; есть — карточки счетов сверху, под ними аналитика расходов за месяц (этап 3 — #229), и вкладка «Операции».
  */
 @Composable
-fun FinanceScreen(state: FinanceState, onIntent: (FinanceIntent) -> Unit) {
+fun FinanceScreen(state: FinanceState, onOpenUnsorted: () -> Unit = {}, onIntent: (FinanceIntent) -> Unit) {
     val colors = AppTheme.colors
     val accounts = state.accounts
     Box(Modifier.fillMaxSize().background(colors.background).testTag(TAG_FINANCE)) {
         when {
             accounts == null -> Unit
             accounts.isEmpty() -> FinanceEmpty { onIntent(FinanceIntent.NewAccount) }
-            state.tab == FinanceTab.OPERATIONS -> state.operations?.let { OperationsList(it, state.today) { id -> onIntent(FinanceIntent.OpenOperation(id)) } }
+            state.tab == FinanceTab.OPERATIONS -> state.operations?.let { OperationsList(it, state.today, unsorted = state.pending.size, onUnsorted = onOpenUnsorted) { id -> onIntent(FinanceIntent.OpenOperation(id)) } }
             else -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
                 AccountsBlock(accounts, state.total, onIntent)
                 AnalyticsBlock(state, onIntent)

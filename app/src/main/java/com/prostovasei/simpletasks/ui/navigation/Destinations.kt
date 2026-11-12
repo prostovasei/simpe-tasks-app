@@ -43,6 +43,17 @@ data class QuickAddDestination(
 @Serializable
 data object MoveOverdueDestination
 
+/** Уведомления банка (#233): настройки распознавания покупок. */
+@Serializable
+data object FinanceBankDestination
+
+/** «Не разобрано» (#233): покупки из уведомлений банка без ответа. */
+@Serializable
+data object FinanceUnsortedDestination
+
+/** Не экран: «Изменить» в уведомлении о покупке — финансы с окном нового расхода (#233). */
+data class OpenBankPurchase(val purchaseId: String)
+
 /** Корзина (итерация 39). */
 @Serializable
 data object TrashDestination

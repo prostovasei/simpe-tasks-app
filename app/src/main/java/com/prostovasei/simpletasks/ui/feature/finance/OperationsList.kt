@@ -3,6 +3,7 @@ package com.prostovasei.simpletasks.ui.feature.finance
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -73,10 +74,13 @@ fun Operation.amountText(): String = when (kind) {
  * серым с подписью, в расходы и доходы он не входит. Нажатие открывает правку. Поиска и фильтров нет (решение PM).
  */
 @Composable
-fun OperationsList(operations: List<Operation>, today: LocalDate, onOpen: (String) -> Unit) {
+fun OperationsList(operations: List<Operation>, today: LocalDate, unsorted: Int = 0, onUnsorted: () -> Unit = {}, onOpen: (String) -> Unit) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
+    // #233: «Не разобрано» над списком — только когда есть покупки без ответа (макет 2.2).
+    val unsortedRow: @Composable () -> Unit = { if (unsorted > 0) UnsortedRow(unsorted, onUnsorted, Modifier.padding(top = spacing.sm)) }
     if (operations.isEmpty()) {
+        if (unsorted > 0) Box(Modifier.padding(horizontal = spacing.md)) { unsortedRow() }
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center, modifier = Modifier.fillMaxSize().padding(horizontal = spacing.xl).testTag(TAG_OPERATIONS_EMPTY)) {
             Text(stringResource(R.string.operations_empty_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = colors.textPrimary)
             Text(stringResource(R.string.operations_empty_text), style = MaterialTheme.typography.bodySmall, color = colors.textSecondary, textAlign = TextAlign.Center, modifier = Modifier.padding(top = spacing.xs))
@@ -85,6 +89,7 @@ fun OperationsList(operations: List<Operation>, today: LocalDate, onOpen: (Strin
     }
     val days = operations.groupBy { it.date }.toList()
     LazyColumn(Modifier.fillMaxSize().testTag(TAG_OPERATIONS), contentPadding = PaddingValues(start = spacing.md, end = spacing.md, bottom = spacing.lg)) {
+        if (unsorted > 0) item(key = "unsorted") { unsortedRow() }
         items(days, key = { it.first.toEpochDay() }) { (date, list) ->
             Text(
                 dayTitle(date, today),

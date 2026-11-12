@@ -67,6 +67,8 @@ class MainActivity : ComponentActivity() {
     companion object {
         /** Экран из интента: задача ([EXTRA_TASK_ID]) или создание задачи ([EXTRA_QUICK_ADD]). */
         fun routeFrom(intent: Intent): Any? = when {
+            // #233: «Изменить» или нажатие на уведомление о покупке.
+            intent.getStringExtra(EXTRA_BANK_PURCHASE) != null -> com.prostovasei.simpletasks.ui.navigation.OpenBankPurchase(checkNotNull(intent.getStringExtra(EXTRA_BANK_PURCHASE)))
             intent.getBooleanExtra(EXTRA_QUICK_ADD, false) -> QuickAddDestination(
                 projectId = intent.getStringExtra(EXTRA_QUICK_ADD_PROJECT),
                 today = intent.getBooleanExtra(EXTRA_QUICK_ADD_TODAY, false),
@@ -79,6 +81,7 @@ class MainActivity : ComponentActivity() {
         }
 
         const val EXTRA_TASK_ID = "open_task_id"
+        const val EXTRA_BANK_PURCHASE = "bank_purchase_id"
         const val EXTRA_OPEN_DATE = "open_date"
         const val EXTRA_SNOOZE_TASK = "snooze_task_id"
         const val EXTRA_OPEN_DAY = "open_day"

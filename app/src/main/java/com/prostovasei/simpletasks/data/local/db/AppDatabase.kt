@@ -10,12 +10,14 @@ import com.prostovasei.simpletasks.domain.model.ListEmoji
 import com.prostovasei.simpletasks.domain.model.Priority
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.prostovasei.simpletasks.core.time.TimeProvider
+import com.prostovasei.simpletasks.data.local.dao.BankPurchaseDao
 import com.prostovasei.simpletasks.data.local.dao.ChecklistDao
 import com.prostovasei.simpletasks.data.local.dao.FinanceAccountDao
 import com.prostovasei.simpletasks.data.local.dao.FinanceOperationDao
 import com.prostovasei.simpletasks.data.local.dao.ProjectDao
 import com.prostovasei.simpletasks.data.local.dao.ProjectGroupDao
 import com.prostovasei.simpletasks.data.local.dao.TaskDao
+import com.prostovasei.simpletasks.data.local.entity.BankPurchaseEntity
 import com.prostovasei.simpletasks.data.local.entity.ChecklistItemEntity
 import com.prostovasei.simpletasks.data.local.entity.FinanceAccountEntity
 import com.prostovasei.simpletasks.data.local.entity.FinanceCategoryEntity
@@ -34,15 +36,17 @@ import java.util.concurrent.Executor
         FinanceAccountEntity::class,
         FinanceCategoryEntity::class,
         FinanceOperationEntity::class,
+        BankPurchaseEntity::class,
     ],
     // 1 → 2 (итерация 14): колонка projects.icon. 2 → 3 (итерация 47): колонка projects.emoji и два приоритета ([V2to3]).
     // 3 → 4 (итерация 47, проверка PM): колонка tasks.is_repeat_done — выполненный раз повтора. Данные PM сохраняются автоматической миграцией Room.
     // 4 → 5 (итерация 56): колонка project_groups.emoji — эмодзи папки ([V4to5]).
     // 5 → 6 (финансы, этап 1, #221): новая таблица finance_accounts; таблицы задач не меняются.
     // 6 → 7 (финансы, этап 2, #225): новые таблицы finance_categories и finance_operations.
-    version = 7,
+    // 7 → 8 (уведомления банка, #233): новая таблица bank_purchases; операции и задачи не меняются.
+    version = 8,
     exportSchema = true,
-    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3, spec = V2to3::class), AutoMigration(from = 3, to = 4), AutoMigration(from = 4, to = 5, spec = V4to5::class), AutoMigration(from = 5, to = 6), AutoMigration(from = 6, to = 7)],
+    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3, spec = V2to3::class), AutoMigration(from = 3, to = 4), AutoMigration(from = 4, to = 5, spec = V4to5::class), AutoMigration(from = 5, to = 6), AutoMigration(from = 6, to = 7), AutoMigration(from = 7, to = 8)],
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun projectGroupDao(): ProjectGroupDao
@@ -51,6 +55,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun checklistDao(): ChecklistDao
     abstract fun financeAccountDao(): FinanceAccountDao
     abstract fun financeOperationDao(): FinanceOperationDao
+    abstract fun bankPurchaseDao(): BankPurchaseDao
 
     companion object {
         const val NAME = "simple_tasks.db"

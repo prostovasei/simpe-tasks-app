@@ -1430,6 +1430,29 @@ PM поменял порядок: шторка для созданных зад�
   `finance_menu_light`, `finance_backup_*`), `AppSmokeTest.switchToFinanceCreateAccountAndComeBack`.
 - **Урок CI (0.60.0).** `LocalDate.EPOCH` есть только с Android 14 — ловит lint `NewApi` в шаге `check`. Перед отправкой запускать именно `check`.
 
+### 4.68. Уведомления банка — распознавание покупок Яндекс Банка (0.62.0, #233)
+
+Требования и решения PM — `design/approved/233/requirements.md`; макеты — `screens.html` (согласованы 12.11.2026). База 7 → 8.
+
+- **Распознавание.** `domain/bank/BankPurchaseParser` — чистый Kotlin: пакет `com.yandex*`, текст начинается с «Покупка на <сумма с копейками> RUB»,
+  дальше конец, «,» или «.». Тесты — на вымышленных копиях всех видов со скриншота PM (`BankPurchaseParserTest`).
+- **Чтение.** `notifications/bank/BankNotificationListener` (NotificationListenerService) отбрасывает чужие пакеты до чтения текста, при выключенном
+  распознавании ничего не делает; передаёт сумму, время и ключ `sbn.key|when` в `BankPurchases.onPurchase`. Текст нигде не сохраняется и не пишется в журналы.
+- **Данные.** Таблица `bank_purchases` (AutoMigration 7 → 8): сумма, счёт, время, день, состояние (не разобрано / записано / пропущено), операция,
+  похожий расход; уникальный ключ уведомления — защита от повторов. Без FOREIGN KEY: список временный, не входит в копию и очищается в `restoreBackup`.
+  Разобранные покупки хранятся 7 дней (повторы того же уведомления), затем удаляются. Настройки — `PrefsBankSettingsStore` («bank»).
+- **Ответы.** `RoomBankPurchases`: `record`/`recordAs` создают операцию через `FinanceRepository.createOperation` и отмечают покупку в одной транзакции —
+  повторное нажатие второй операции не создаёт; после ответа наше уведомление снимается (`BankPurchaseNotifier.cancel`).
+- **Дубль.** При появлении покупки — расход не из корзины на тот же счёт, сумму и день, не связанный с другой покупкой (`findDuplicate`); пометка
+  исчезает, если тот расход ушёл в корзину.
+- **Интерфейс.** `FinanceViewModel` получает `BankPurchases`: настройки, доступ (`RefreshBankAccess` при возврате на экран), «Не разобрано»,
+  `EditPurchase` — `OperationForm.purchaseId`; закрытое без сохранения окно покупки черновиком не становится. Экраны — `BankScreens.kt`
+  (`FinanceBankDestination`, `FinanceUnsortedDestination`). «Изменить» в уведомлении — `MainActivity.EXTRA_BANK_PURCHASE` → `OpenBankPurchase`
+  (не маршрут): финансы и окно расхода; при холодном запуске покупка открывается после чтения списка.
+- **Уведомление.** `AndroidBankNotifier`: канал `bank_purchases`, без звука и вибрации; кнопки — `BankPurchaseReceiver` (не экспортируется).
+- **Проверки.** `BankPurchasesTest`, `FinanceViewModelTest` (покупки, выключатель), `FinanceScreenTest` (снимки `finance_bank_*`, `finance_unsorted_light`,
+  `finance_operations_unsorted_light`, меню), `MigrationTest.bankPurchasesTableIsAddedAndOperationsAreKept`. Реальная покупка и системный доступ — только на телефоне (FB1–FB12).
+
 ### 4.45. Дорожная карта (обновлена)
 
 | Итерация | Название | Суть |
