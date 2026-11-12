@@ -59,6 +59,7 @@ fun OperationKind.label(): Int = when (this) {
     OperationKind.EXPENSE -> R.string.operation_expense
     OperationKind.INCOME -> R.string.operation_income
     OperationKind.TRANSFER -> R.string.operation_transfer
+    OperationKind.CORRECTION -> R.string.operation_correction
 }
 
 private val FIELD_DATE: DateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy")
@@ -119,7 +120,7 @@ fun OperationDialog(state: FinanceState, form: OperationForm, onIntent: (Finance
     ) {
         if (!editing) {
             Segments(
-                options = OperationKind.entries.map { it to stringResource(it.label()) },
+                options = OperationKind.MANUAL.map { it to stringResource(it.label()) },
                 selected = form.kind,
                 tag = TAG_OPERATION_KIND,
                 onSelect = { onIntent(FinanceIntent.SetKind(it)) },

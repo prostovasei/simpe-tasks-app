@@ -1,7 +1,11 @@
 package com.prostovasei.simpletasks.ui.feature.finance
 
 import androidx.lifecycle.viewModelScope
+import com.prostovasei.simpletasks.core.di.IoDispatcher
+import com.prostovasei.simpletasks.core.files.DocumentOpener
 import com.prostovasei.simpletasks.core.time.TimeProvider
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.withContext
 import com.prostovasei.simpletasks.domain.model.finance.Operation
 import com.prostovasei.simpletasks.domain.model.finance.OperationDraft
 import com.prostovasei.simpletasks.domain.model.finance.OperationKind
@@ -19,13 +23,18 @@ import javax.inject.Inject
 class FinanceViewModel @Inject constructor(
     private val finance: FinanceRepository,
     private val time: TimeProvider,
-) : MviViewModel<FinanceState, FinanceIntent, FinanceEffect>(FinanceState(today = time.today())) {
+    private val documents: DocumentOpener,
+    private val backupStore: FinanceBackupStore,
+    @IoDispatcher private val io: CoroutineDispatcher,
+) : MviViewModel<FinanceState, FinanceIntent, FinanceEffect>(FinanceState(today = time.today(), lastBackupAt = backupStore.lastBackupAt)) {
 
     init {
         viewModelScope.launch { finance.observeAccounts().collect { accounts -> setState { copy(accounts = accounts) } } }
         viewModelScope.launch { finance.observeOperations().collect { operations -> setState { copy(operations = operations) } } }
         viewModelScope.launch { finance.observeCategories().collect { categories -> setState { copy(categories = categories) } } }
         viewModelScope.launch { finance.observeFormHints().collect { hints -> setState { copy(hints = hints) } } }
+        viewModelScope.launch { finance.observeTrash().collect { trash -> setState { copy(trash = trash) } } }
+        viewModelScope.launch { finance.observeCounts().collect { counts -> setState { copy(counts = counts) } } }
     }
 
     override fun onIntent(intent: FinanceIntent) {
@@ -37,7 +46,30 @@ class FinanceViewModel @Inject constructor(
             is FinanceIntent.OpenAccount -> currentState.accounts?.firstOrNull { it.id == intent.id }?.let { setState { copy(window = AccountWindow.Edit(it)) } }
             FinanceIntent.CloseWindow -> setState { copy(window = AccountWindow.None) }
             is FinanceIntent.SaveAccount -> saveAccount(intent)
-            is FinanceIntent.OpenOperation -> currentState.operations?.firstOrNull { it.id == intent.id }?.let { setState { copy(form = it.toForm(), today = time.today()) } }
+            is FinanceIntent.OpenOperation -> currentState.operations?.firstOrNull { it.id == intent.id }?.let { operation ->
+                // Корректировку сверки не правят: её можно только посмотреть и отправить в корзину.
+                if (operation.kind == OperationKind.CORRECTION) setState { copy(correction = operation) } else setState { copy(form = operation.toForm(), today = time.today()) }
+            }
+            FinanceIntent.OpenMenu -> setState { copy(menu = true) }
+            FinanceIntent.CloseMenu -> setState { copy(menu = false) }
+            is FinanceIntent.RestoreOperation -> viewModelScope.launch {
+                finance.restoreOperation(intent.id)
+                sendEffect(FinanceEffect.OperationRestored)
+            }
+            is FinanceIntent.DeleteForever -> viewModelScope.launch { finance.deleteOperationForever(intent.id) }
+            FinanceIntent.EmptyTrash -> viewModelScope.launch { finance.emptyTrash() }
+            FinanceIntent.OpenReconcile -> (currentState.window as? AccountWindow.Edit)?.let { setState { copy(window = AccountWindow.None, reconcile = Reconcile.Choose(it.account)) } }
+            is FinanceIntent.PickReconcile -> setState { copy(reconcile = intent.step) }
+            FinanceIntent.FindOperation -> setState { copy(reconcile = null, tab = FinanceTab.OPERATIONS) }
+            is FinanceIntent.SaveInitialBalance -> reconcile { finance.setInitialBalance(it, intent.initialBalance) }
+            is FinanceIntent.SaveRealBalance -> reconcile { finance.correctBalance(it, intent.realBalance, time.today()) }
+            FinanceIntent.CloseReconcile -> setState { copy(reconcile = null) }
+            FinanceIntent.CloseCorrection -> setState { copy(correction = null) }
+            FinanceIntent.OpenBackup -> setState { copy(menu = false, backup = BackupWindow.Actions) }
+            FinanceIntent.CloseBackup -> setState { copy(backup = null) }
+            is FinanceIntent.ExportBackup -> exportBackup(intent.uri)
+            is FinanceIntent.PickBackup -> pickBackup(intent.uri)
+            FinanceIntent.ConfirmRestore -> restoreBackup()
             is FinanceIntent.SetKind -> setKind(intent.kind)
             is FinanceIntent.EditForm -> setState { copy(form = form?.let(intent.change)) }
             FinanceIntent.CloseForm -> closeForm()
@@ -95,11 +127,53 @@ class FinanceViewModel @Inject constructor(
     }
 
     private fun trash() {
-        val id = currentState.form?.editingId ?: return
-        setState { copy(form = null) }
+        val id = currentState.form?.editingId ?: currentState.correction?.id ?: return
+        setState { copy(form = null, correction = null) }
         viewModelScope.launch {
             finance.trashOperation(id)
             sendEffect(FinanceEffect.OperationTrashed)
+        }
+    }
+
+    private fun reconcile(action: suspend (accountId: String) -> Unit) {
+        val accountId = currentState.reconcile?.account?.id ?: return
+        setState { copy(reconcile = null) }
+        viewModelScope.launch { action(accountId) }
+    }
+
+    private fun exportBackup(uri: String) {
+        viewModelScope.launch {
+            val saved = runCatching {
+                val json = finance.exportBackup()
+                withContext(io) { documents.openOutput(uri).use { it.write(json.toByteArray()) } }
+            }.isSuccess
+            if (saved) {
+                val now = time.now().toEpochMilli()
+                backupStore.lastBackupAt = now
+                setState { copy(lastBackupAt = now) }
+            }
+            sendEffect(if (saved) FinanceEffect.BackupSaved else FinanceEffect.BackupFailed)
+        }
+    }
+
+    /** Файл выбран: читаем и проверяем; годный — окно подтверждения с содержимым копии, негодный — подсказка, данные не трогаем. */
+    private fun pickBackup(uri: String) {
+        viewModelScope.launch {
+            val preview = runCatching {
+                val json = withContext(io) { documents.openInput(uri).use { it.readBytes().decodeToString() } }
+                BackupWindow.Confirm(json, finance.inspectBackup(json))
+            }.getOrNull()
+            if (preview == null) sendEffect(FinanceEffect.BackupInvalid) else setState { copy(backup = preview) }
+        }
+    }
+
+    private fun restoreBackup() {
+        val confirm = currentState.backup as? BackupWindow.Confirm ?: return
+        // Черновик и открытые окна ссылаются на прежние счета и категории — после замены данных они недействительны.
+        setState { copy(backup = null, form = null, draft = null, window = AccountWindow.None, reconcile = null, correction = null) }
+        viewModelScope.launch {
+            val restored = runCatching { finance.restoreBackup(confirm.json) }.isSuccess
+            sendEffect(if (restored) FinanceEffect.BackupRestored else FinanceEffect.BackupInvalid)
         }
     }
 

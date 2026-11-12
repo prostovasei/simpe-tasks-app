@@ -20,20 +20,50 @@ interface FinanceOperationDao {
     @Query("SELECT * FROM finance_operations WHERE id = :id")
     suspend fun getById(id: String): FinanceOperationEntity?
 
-    @Query(
-        "SELECT o.*, a.name AS account_name, t.name AS to_account_name, c.name AS category_name FROM finance_operations o" +
-            " JOIN finance_accounts a ON a.id = o.account_id" +
-            " LEFT JOIN finance_accounts t ON t.id = o.to_account_id" +
-            " LEFT JOIN finance_categories c ON c.id = o.category_id" +
-            " WHERE o.is_deleted = 0 ORDER BY o.date DESC, o.created_at DESC",
-    )
+    @Query("$ROWS WHERE o.is_deleted = 0 ORDER BY o.date DESC, o.created_at DESC")
     fun observeActive(): Flow<List<OperationRow>>
 
     @Query("UPDATE finance_operations SET is_deleted = 1, deleted_at = :now, updated_at = :now WHERE id = :id AND is_deleted = 0")
     suspend fun trash(id: String, now: Long): Int
 
-    /** Счёт последней введённой операции (пустой список — операций нет). */
-    @Query("SELECT account_id FROM finance_operations WHERE is_deleted = 0 ORDER BY created_at DESC LIMIT 1")
+    @Query("$ROWS WHERE o.is_deleted = 1 ORDER BY o.deleted_at DESC, o.created_at DESC")
+    fun observeTrash(): Flow<List<OperationRow>>
+
+    @Query("UPDATE finance_operations SET is_deleted = 0, deleted_at = NULL, updated_at = :now WHERE id = :id AND is_deleted = 1")
+    suspend fun restore(id: String, now: Long): Int
+
+    @Query("DELETE FROM finance_operations WHERE id = :id AND is_deleted = 1")
+    suspend fun deleteTrashed(id: String): Int
+
+    @Query("DELETE FROM finance_operations WHERE is_deleted = 1")
+    suspend fun emptyTrash(): Int
+
+    @Query("SELECT * FROM finance_operations ORDER BY created_at")
+    suspend fun getAll(): List<FinanceOperationEntity>
+
+    @Insert
+    suspend fun insertAll(operations: List<FinanceOperationEntity>)
+
+    @Query("DELETE FROM finance_operations")
+    suspend fun deleteAll()
+
+    @Query("SELECT COUNT(*) FROM finance_operations")
+    fun observeCount(): Flow<Int>
+
+    @Query("SELECT * FROM finance_categories ORDER BY sort_order, created_at")
+    suspend fun getAllCategories(): List<FinanceCategoryEntity>
+
+    @Insert
+    suspend fun insertAllCategories(categories: List<FinanceCategoryEntity>)
+
+    @Query("DELETE FROM finance_categories")
+    suspend fun deleteAllCategories()
+
+    @Query("SELECT COUNT(*) FROM finance_categories")
+    fun observeCategoryCount(): Flow<Int>
+
+    /** Счёт последней введённой вручную операции (пустой список — операций нет); корректировки сверки не считаются. */
+    @Query("SELECT account_id FROM finance_operations WHERE is_deleted = 0 AND kind != 'correction' ORDER BY created_at DESC LIMIT 1")
     fun observeLastAccount(): Flow<List<String>>
 
     /** Категории по давности последнего использования: недавние первыми. */
@@ -58,4 +88,11 @@ interface FinanceOperationDao {
 
     @Query("UPDATE finance_categories SET is_archived = :archived, updated_at = :now WHERE id = :id")
     suspend fun setCategoryArchived(id: String, archived: Boolean, now: Long): Int
+
+    private companion object {
+        const val ROWS = "SELECT o.*, a.name AS account_name, t.name AS to_account_name, c.name AS category_name FROM finance_operations o" +
+            " JOIN finance_accounts a ON a.id = o.account_id" +
+            " LEFT JOIN finance_accounts t ON t.id = o.to_account_id" +
+            " LEFT JOIN finance_categories c ON c.id = o.category_id"
+    }
 }

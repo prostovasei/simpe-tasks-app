@@ -13,6 +13,7 @@ import com.prostovasei.simpletasks.domain.model.finance.Account
 import com.prostovasei.simpletasks.domain.model.finance.AccountDraft
 import com.prostovasei.simpletasks.domain.model.finance.AccountType
 import com.prostovasei.simpletasks.domain.model.finance.Category
+import com.prostovasei.simpletasks.domain.model.finance.FinanceCounts
 import com.prostovasei.simpletasks.domain.model.finance.FormHints
 import com.prostovasei.simpletasks.domain.model.finance.Operation
 import com.prostovasei.simpletasks.domain.model.finance.OperationDraft
@@ -62,11 +63,58 @@ class RoomFinanceRepository @Inject constructor(
 
     override suspend fun updateAccount(id: String, draft: AccountDraft) {
         require(draft.name.isNotBlank()) { "Название счёта не может быть пустым" }
+        accounts.update(id, draft.name.trim(), draft.type.code, draft.emoji, now())
+    }
+
+    override suspend fun setInitialBalance(id: String, initialBalance: Long) {
+        accounts.setInitialBalance(id, initialBalance, now())
+    }
+
+    override suspend fun correctBalance(id: String, realBalance: Long, date: LocalDate): Long = db.withTransaction {
+        val current = accounts.getWithBalance(id) ?: return@withTransaction 0L
+        val difference = realBalance - current.balance
+        if (difference != 0L) {
+            val now = now()
+            operations.insert(
+                FinanceOperationEntity(ids.newId(), OperationKind.CORRECTION.code, difference, accountId = id, date = date.toEpochDay(), createdAt = now, updatedAt = now),
+            )
+        }
+        difference
+    }
+
+    override fun observeTrash(): Flow<List<Operation>> =
+        operations.observeTrash().map { list -> list.map { it.toDomain() } }.distinctUntilChanged()
+
+    override suspend fun restoreOperation(id: String) {
+        operations.restore(id, now())
+    }
+
+    override suspend fun deleteOperationForever(id: String) {
+        operations.deleteTrashed(id)
+    }
+
+    override suspend fun emptyTrash(): Int = operations.emptyTrash()
+
+    override fun observeCounts(): Flow<FinanceCounts> =
+        combine(accounts.observeCount(), operations.observeCategoryCount(), operations.observeCount()) { a, c, o -> FinanceCounts(a, c, o) }.distinctUntilChanged()
+
+    override suspend fun exportBackup(): String = db.withTransaction {
+        FinanceBackupCodec.encode(FinanceBackup(accounts.getAll(), operations.getAllCategories(), operations.getAll()), exportedAt = now())
+    }
+
+    override fun inspectBackup(json: String): FinanceCounts =
+        FinanceBackupCodec.decode(json).let { FinanceCounts(it.accounts.size, it.categories.size, it.operations.size) }
+
+    override suspend fun restoreBackup(json: String) {
+        // Сначала полный разбор и проверка: негодный файл не должен стереть данные.
+        val backup = FinanceBackupCodec.decode(json)
         db.withTransaction {
-            val current = accounts.getWithBalance(id) ?: return@withTransaction
-            // Остаток сейчас = начальный + операции. Указали новый остаток — сдвигаем начальный, операции не трогаем.
-            val operationsSum = current.balance - current.account.initialBalance
-            accounts.update(id, draft.name.trim(), draft.type.code, draft.emoji, draft.balance - operationsSum, now())
+            operations.deleteAll()
+            operations.deleteAllCategories()
+            accounts.deleteAll()
+            accounts.insertAll(backup.accounts)
+            operations.insertAllCategories(backup.categories)
+            operations.insertAll(backup.operations)
         }
     }
 
@@ -92,6 +140,8 @@ class RoomFinanceRepository @Inject constructor(
     override suspend fun updateOperation(id: String, draft: OperationDraft) {
         val checked = draft.checked()
         db.withTransaction {
+            // Корректировку сверки не правят — только корзина.
+
             val current = operations.getById(id) ?: return@withTransaction
             operations.update(checked.toEntity(id, createdAt = current.createdAt, updatedAt = now()).copy(isDeleted = current.isDeleted, deletedAt = current.deletedAt))
         }
@@ -123,6 +173,7 @@ class RoomFinanceRepository @Inject constructor(
 
     /** Проверяет и приводит поля: у перевода нет категории и места, у расхода и дохода — второго счёта; пустые строки — null. */
     private fun OperationDraft.checked(): OperationDraft {
+        require(kind != OperationKind.CORRECTION) { "Корректировку создаёт только сверка" }
         require(amount > 0) { "Сумма операции должна быть больше нуля" }
         return if (kind == OperationKind.TRANSFER) {
             require(toAccountId != null && toAccountId != accountId) { "Перевод — между двумя разными счетами" }
@@ -161,6 +212,7 @@ class RoomFinanceRepository @Inject constructor(
         place = operation.place,
         comment = operation.comment,
         date = LocalDate.ofEpochDay(operation.date),
+        deletedOn = operation.deletedAt?.let { Instant.ofEpochMilli(it).atZone(time.zone()).toLocalDate() },
     )
 
     private fun AccountWithBalance.toDomain() = Account(

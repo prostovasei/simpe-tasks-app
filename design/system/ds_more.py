@@ -1403,3 +1403,67 @@ PREVIEWS['ScreenAnalytics'] = lambda: doc('Экраны', 890, 'Финансы, 
                                           f'<div class="row" style="align-items:flex-start">{analytics_screen()}{analytics_screen(True)}</div>')
 README_MORE['ScreenAnalytics'] = ('Экран «Аналитика» финансов (0.60).',
     'Этап 3 (#229; макеты design/approved/217 — compact-module-bar.html, экраны 4.1, 4.2). Под карточками счетов: переключатель месяца — две кнопки 40×40 (`surface`, `radius-lg`) и название месяца `title-medium` Bold по центру; правая стрелка на текущем месяце бледная (0,35) и не нажимается. Карточка итога (`surface`, `radius-xl`, поля 16): подпись «Расходы · 1–10 ноября» или «Расходы · за месяц» `label-medium` `text-secondary`, сумма `headline-large` Bold, плашка разницы («+3 600 ₽ · +9,2%»; `selected`, `radius-sm`, Bold) и строка сравнения `label-small` («К 1–10 октября · было 39 200 ₽», для целого месяца — «К октябрю · …», при нуле — «… · расходов не было»). «По категориям» — заголовок `title-small` Bold и подпись «доля расходов»; карточка строк: название SemiBold и сумма Bold, полоска высотой `size-progress-height` (подложка `selected`, заполнение `text-secondary`, ширина — доля), под ней разница с прошлым периодом и доля в процентах `label-small` `text-secondary`. Прошлый период 0 ₽ — вместо процента «в октябре не было». Категории без расходов не показываются; месяц без расходов — карточка «В этом месяце расходов пока нет». Цветных графиков, доходов и переводов нет.')
+
+
+# ---------------------------------------------------------------- финансы, этап 4 (0.61, #231): меню, корзина, сверка, копия
+
+def fin_window(title, body, actions=''):
+    return (f'<div style="width:380px;border-radius:var(--radius-nav);background:var(--surface);overflow:hidden;flex-shrink:0">'
+            f'<div style="display:flex;align-items:center;padding:12px 8px 0 16px"><span style="flex:1;font-size:22px;line-height:28px;font-weight:700">{title}</span>'
+            f'<span style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary)">{mi("close")}</span></div>'
+            f'<div style="padding:0 16px">{body}</div><div style="padding:16px;display:flex;flex-direction:column;gap:8px">{actions}</div></div>')
+
+
+def menu_row(ic, title, sub):
+    return (f'<div style="display:flex;align-items:center;gap:12px;min-height:52px;padding:8px 0;border-bottom:1px solid var(--divider)"><span>{svg(ic, 20)}</span>'
+            f'<span><div style="font-size:16px;line-height:24px;font-weight:600">{title}</div><div style="font-size:11px;line-height:16px;color:var(--text-secondary)">{sub}</div></span></div>')
+
+
+def secondary_action(label):
+    return f'<span style="display:flex;align-items:center;justify-content:center;border-radius:var(--radius-lg);background:var(--selected);padding:12px 0;font-size:14px;line-height:20px;font-weight:700">{label}</span>'
+
+
+def win_text(t):
+    return f'<div style="padding:8px 0;font-size:12px;line-height:16px;color:var(--text-secondary)">{t}</div>'
+
+
+def two_actions(a, b):
+    return f'<div style="display:flex;gap:8px"><span style="flex:1">{secondary_action(a)}</span><span style="flex:1">{primary_action(b)}</span></div>'
+
+
+def finance_service():
+    menu = fin_window('Финансы', menu_row('ic_finance_categories', 'Категории', 'Действующих: 13') + menu_row('ic_tool_delete', 'Корзина', 'Операций: 3') + menu_row('ic_finance_backup', 'Резервная копия', 'Последняя копия: 09.11.2026, 21:40'))
+    account = fin_window('Счёт', fin_field('Название', 'Карта') + fin_field('Тип', 'Карта', True) + fin_field('Эмодзи', '💳', True) + fin_field('Остаток сейчас', '42 300 ₽')
+                         + fin_field('Начальный остаток', '<span style="font-weight:400">30 000 ₽ · 01.11.2026</span>'), secondary_action('Остаток не сходится') + primary_action('Сохранить'))
+    choose = fin_window('Остаток не сходится', menu_row('ic_finance_operations', 'Найти операцию', 'Открыть операции и исправить пропуск или ошибку')
+                        + menu_row('ic_snack_restore', 'Изменить начальный остаток', 'Пересчитает остаток за всё время') + menu_row('ic_finance_wallet', 'Указать реальный остаток', 'Создаст корректировку на разницу')
+                        + win_text('Карта · по приложению 42 300 ₽'))
+    real = fin_window('Реальный остаток', '<div style="text-align:center;padding-top:12px;font-size:12px;line-height:16px;color:var(--text-secondary)">Сколько на счёте «Карта» на самом деле</div>'
+                      '<div style="text-align:center;padding:12px 0;font-size:32px;line-height:40px;font-weight:700">42450 ₽</div>' + fin_field('По приложению', '<span style="font-weight:500">42 300 ₽</span>')
+                      + fin_field('Корректировка', '+150 ₽') + fin_field('Дата', '<span style="font-weight:500">10.11.2026 · сегодня</span>') + win_text('Корректировка видна в операциях, но не входит в доходы и расходы.'), primary_action('Сохранить'))
+    backup = fin_window('Резервная копия', win_text('В файл попадают счета, начальные остатки, категории, операции и корзина. Задачи — нет.') + win_text('Последняя копия: 09.11.2026, 21:40'),
+                        primary_action('Сохранить в файл') + secondary_action('Восстановить из файла'))
+    confirm = fin_window('Заменить данные финансов?', fin_field('В копии', '<span style="font-size:12px">счетов 3 · категорий 13 · операций 214</span>')
+                         + fin_field('Сейчас', '<span style="font-size:12px;font-weight:400">счетов 3 · категорий 13 · операций 221</span>')
+                         + win_text('Все текущие данные финансов будут заменены содержимым копии. Задачи не затрагиваются.'), two_actions('Отмена', 'Заменить'))
+    return f'<div class="row" style="align-items:flex-start;flex-wrap:wrap">{menu}{account}{choose}{real}{backup}{confirm}</div>'
+
+
+def finance_trash_screen():
+    mini = lambda ic: f'<span style="width:36px;height:36px;border-radius:var(--radius-md);background:var(--background);display:flex;align-items:center;justify-content:center">{svg(ic, 18)}</span>'
+    row = lambda t, sub, v: (f'<div style="display:flex;align-items:center;gap:8px;min-height:52px;padding:8px 16px;border-bottom:1px solid var(--divider)"><span style="flex:1;min-width:0"><div style="font-size:14px;line-height:20px;font-weight:600">{t}</div>'
+                             f'<div style="font-size:11px;line-height:16px;color:var(--text-secondary)">{sub}</div></span><span style="font-size:14px;line-height:20px;font-weight:700">{v}</span>{mini("ic_snack_restore")}{mini("ic_tool_delete")}</div>')
+    top = (f'<div style="display:flex;align-items:center;padding:8px 12px 0 0"><span style="width:48px;height:48px;display:flex;align-items:center;justify-content:center">{mi("back")}</span>'
+           '<span style="flex:1;font-size:22px;line-height:28px;font-weight:700">Корзина</span><span style="padding:8px;font-size:14px;line-height:20px;font-weight:700">Очистить</span></div>')
+    body = (f'<div style="margin:8px 16px 0;border-radius:var(--radius-lg);background:var(--surface);overflow:hidden">{row("Кафе", "9 ноября · удалено сегодня", "− 620 ₽")}'
+            f'{row("Карта → Наличные", "7 ноября · удалено вчера", "5 000 ₽")}{row("Продукты", "5 ноября · удалено 6 ноября", "− 1 350 ₽")}</div>'
+            '<div style="padding:12px 20px;font-size:12px;line-height:16px;color:var(--text-secondary)">Операции в корзине не влияют на остатки и аналитику. Сами не удаляются — только вручную.</div>')
+    return frame(f'{top}{body}', 640)
+
+
+PREVIEWS['FinanceService'] = lambda: doc('Окна', 980, 'Финансы, этап 4 (0.61): меню шестерёнки, окно счёта, сверка, резервная копия', finance_service())
+PREVIEWS['ScreenFinanceTrash'] = lambda: doc('Экраны', 670, 'Финансы, этап 4 (0.61): корзина операций', f'<div class="row" style="align-items:flex-start">{finance_trash_screen()}</div>')
+README_MORE['FinanceService'] = ('Служебные окна финансов: меню, счёт, сверка, резервная копия (0.61).',
+    'Этап 4 (#231; макеты design/approved/217, экраны 2.5–2.8, 3.1, 3.7–3.8). Все — окна `FinanceWindow`. Меню шестерёнки и выбор способа сверки — строки `size-operation-row`: значок 20, название `body-large` SemiBold, подпись `label-small` `text-secondary`, линия `divider` между строками. Окно счёта: название, тип, эмодзи; «Остаток сейчас» Bold и «Начальный остаток · дата» только показаны; серая кнопка «Остаток не сходится» над чёрной «Сохранить». Окна сверки: подпись-вопрос по центру, крупная сумма, строки «Было указано» / «Остаток сейчас станет» или «По приложению» / «Корректировка» (со знаком, Bold) / «Дата», пояснение `body-small`. Резервная копия: пояснение, строка «Последняя копия», чёрная «Сохранить в файл» и серая «Восстановить из файла». Подтверждение замены и удаления: две кнопки в ряд — серая «Отмена» слева, чёрная справа. Красного цвета в финансах нет.')
+README_MORE['ScreenFinanceTrash'] = ('Экран «Корзина» финансов (0.61).',
+    'Вложенный экран без баров: стрелка назад, заголовок, справа текстовая кнопка «Очистить» (только если корзина не пуста). Карточка `surface` `radius-lg`: в строке название операции SemiBold, под ним «9 ноября · удалено сегодня» `label-small` `text-secondary`, сумма Bold и две кнопки 36×36 (`background`, `radius-md`, значок 18): «восстановить» `ic_snack_restore` и «удалить навсегда» `ic_tool_delete`. Под карточкой пояснение. Восстановление — сразу; удаление одной операции и очистка — через окно подтверждения. Пустая корзина — «Корзина пуста» по центру.')

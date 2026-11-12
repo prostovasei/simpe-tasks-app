@@ -49,11 +49,23 @@ fun dayTitle(date: LocalDate, today: LocalDate): String {
     }
 }
 
-/** Сумма в строке списка: расход «− 850 ₽», доход «+ 65 000 ₽», перевод — без знака. */
+/** День коротко для подписи: «сегодня», «вчера», иначе «6 ноября» (в другом году — с годом). */
+@Composable
+fun shortDay(date: LocalDate, today: LocalDate): String = when (date) {
+    today -> stringResource(R.string.finance_today)
+    today.minusDays(1) -> stringResource(R.string.finance_yesterday)
+    else -> date.format(if (date.year == today.year) DAY else DAY_YEAR)
+}
+
+/** День без «сегодня / вчера»: «9 ноября». */
+fun plainDay(date: LocalDate, today: LocalDate): String = date.format(if (date.year == today.year) DAY else DAY_YEAR)
+
+/** Сумма в строке списка: расход «− 850 ₽», доход «+ 65 000 ₽», перевод — без знака, корректировка — со своим знаком. */
 fun Operation.amountText(): String = when (kind) {
     OperationKind.EXPENSE -> "− ${Money.format(amount)}"
     OperationKind.INCOME -> "+ ${Money.format(amount)}"
     OperationKind.TRANSFER -> Money.format(amount)
+    OperationKind.CORRECTION -> Money.format(amount, sign = true)
 }
 
 /**
@@ -91,12 +103,21 @@ fun OperationsList(operations: List<Operation>, today: LocalDate, onOpen: (Strin
     }
 }
 
+/** Название строки: категория (или «Без категории»), у перевода — «Карта → Наличные», у корректировки — счёт. */
+@Composable
+fun Operation.title(): String = when (kind) {
+    OperationKind.TRANSFER -> "$accountName → ${toAccountName.orEmpty()}"
+    OperationKind.CORRECTION -> accountName
+    else -> categoryName ?: stringResource(R.string.category_none)
+}
+
 @Composable
 private fun OperationRow(operation: Operation, onClick: () -> Unit) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
-    val transfer = operation.kind == OperationKind.TRANSFER
-    val title = if (transfer) "${operation.accountName} → ${operation.toAccountName.orEmpty()}" else operation.categoryName ?: stringResource(R.string.category_none)
+    // Перевод и корректировка — серым с подписью: в расходы и доходы они не входят.
+    val transfer = operation.kind == OperationKind.TRANSFER || operation.kind == OperationKind.CORRECTION
+    val title = operation.title()
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -108,7 +129,7 @@ private fun OperationRow(operation: Operation, onClick: () -> Unit) {
     ) {
         Column(Modifier.weight(1f).padding(end = spacing.sm)) {
             Text(title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = if (transfer) colors.textSecondary else colors.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            if (transfer) Text(stringResource(R.string.operation_transfer), style = MaterialTheme.typography.labelSmall, color = colors.textSecondary)
+            if (transfer) Text(stringResource(if (operation.kind == OperationKind.TRANSFER) R.string.operation_transfer else R.string.operation_correction_caption), style = MaterialTheme.typography.labelSmall, color = colors.textSecondary)
         }
         Text(
             operation.amountText(),

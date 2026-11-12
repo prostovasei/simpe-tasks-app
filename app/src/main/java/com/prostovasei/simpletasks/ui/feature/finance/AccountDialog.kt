@@ -147,11 +147,11 @@ internal fun PickValue(text: String, tag: String, description: String, onClick: 
 
 /**
  * Окно счёта (экраны 2.2 и 2.5): название, тип, необязательный эмодзи и остаток сейчас. [account] = null — новый счёт.
- * Пустое название заменяется названием типа («Карта»). Этап 1: операций нет, поэтому остаток правится прямо здесь;
- * с этапа 4 его заменит сверка «Остаток не сходится». Удаления и архива счёта нет — решение PM.
+ * Пустое название заменяется названием типа («Карта»). Остаток вводится только при создании; у готового счёта он показан
+ * вместе с начальным, а меняется через «Остаток не сходится» (сверка, этап 4). Удаления и архива счёта нет — решение PM.
  */
 @Composable
-fun AccountDialog(account: Account?, onSave: (AccountDraft) -> Unit, onDismiss: () -> Unit) {
+fun AccountDialog(account: Account?, onSave: (AccountDraft) -> Unit, onDismiss: () -> Unit, onReconcile: () -> Unit = {}) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
     var name by rememberSaveable { mutableStateOf(account?.name.orEmpty()) }
@@ -161,7 +161,8 @@ fun AccountDialog(account: Account?, onSave: (AccountDraft) -> Unit, onDismiss: 
     var typeMenu by remember { mutableStateOf(false) }
     var picker by rememberSaveable { mutableStateOf(false) }
     val typeLabel = stringResource(type.label())
-    val balance = Money.parse(amount)
+    // Правка не меняет остаток: для него «Остаток не сходится» (этап 4).
+    val balance = if (account == null) Money.parse(amount) else account.balance
     val focus = remember { FocusRequester() }
     if (account == null) LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
     FinanceWindow(
@@ -169,6 +170,7 @@ fun AccountDialog(account: Account?, onSave: (AccountDraft) -> Unit, onDismiss: 
         tag = TAG_ACCOUNT_WINDOW,
         onDismiss = onDismiss,
         actions = {
+            if (account != null) SecondaryAction(stringResource(R.string.reconcile_title), TAG_ACCOUNT_RECONCILE, onReconcile)
             PrimaryAction(
                 label = stringResource(if (account == null) R.string.finance_create_account else R.string.action_save),
                 tag = TAG_ACCOUNT_SAVE,
@@ -216,15 +218,22 @@ fun AccountDialog(account: Account?, onSave: (AccountDraft) -> Unit, onDismiss: 
             val shown = emoji ?: type.defaultEmoji
             PickValue(shown, TAG_ACCOUNT_EMOJI, "${stringResource(R.string.account_emoji)}: $shown") { picker = true }
         }
-        Text(
-            stringResource(R.string.account_balance),
-            style = MaterialTheme.typography.labelMedium,
-            color = colors.textSecondary,
-            modifier = Modifier.padding(top = spacing.md),
-        )
-        AmountField(amount, onChange = { amount = it }, tag = TAG_ACCOUNT_AMOUNT, modifier = Modifier.focusRequester(focus))
         if (account == null) {
+            Text(
+                stringResource(R.string.account_balance),
+                style = MaterialTheme.typography.labelMedium,
+                color = colors.textSecondary,
+                modifier = Modifier.padding(top = spacing.md),
+            )
+            AmountField(amount, onChange = { amount = it }, tag = TAG_ACCOUNT_AMOUNT, modifier = Modifier.focusRequester(focus))
             Text(stringResource(R.string.account_balance_note), style = MaterialTheme.typography.bodySmall, color = colors.textSecondary)
+        } else {
+            FinanceField(stringResource(R.string.account_balance)) {
+                Text(Money.format(account.balance), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = colors.textPrimary, modifier = Modifier.testTag(TAG_ACCOUNT_BALANCE))
+            }
+            FinanceField(stringResource(R.string.account_initial_balance)) {
+                Text("${Money.format(account.initialBalance)} · ${account.openedOn()}", style = MaterialTheme.typography.bodyMedium, color = colors.textPrimary, modifier = Modifier.testTag(TAG_ACCOUNT_INITIAL))
+            }
         }
     }
     if (picker) {
@@ -242,3 +251,6 @@ const val TAG_ACCOUNT_TYPE = "account_type"
 const val TAG_ACCOUNT_EMOJI = "account_emoji"
 const val TAG_ACCOUNT_AMOUNT = "account_amount"
 const val TAG_ACCOUNT_SAVE = "account_save"
+const val TAG_ACCOUNT_BALANCE = "account_balance"
+const val TAG_ACCOUNT_INITIAL = "account_initial"
+const val TAG_ACCOUNT_RECONCILE = "account_reconcile"

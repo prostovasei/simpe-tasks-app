@@ -26,6 +26,7 @@ import com.prostovasei.simpletasks.domain.model.finance.AccountType
 import com.prostovasei.simpletasks.testing.account
 import com.prostovasei.simpletasks.testing.category
 import com.prostovasei.simpletasks.testing.operation
+import com.prostovasei.simpletasks.domain.model.finance.FinanceCounts
 import com.prostovasei.simpletasks.domain.model.finance.FormHints
 import com.prostovasei.simpletasks.domain.model.finance.OperationKind
 import androidx.compose.runtime.getValue
@@ -442,26 +443,186 @@ class FinanceScreenTest {
     }
 
     @Test
-    fun editWindowShowsAccountAndCloses() {
+    fun editWindowShowsBalancesAndOffersReconcile() {
         var saved: AccountDraft? = null
         var closed = false
-        val account = account("a1", "Карта", 4_230_050, emoji = "🪙")
-        composeRule.setContent { AppTheme { AccountDialog(account, onSave = { saved = it }, onDismiss = { closed = true }) } }
+        var reconcile = false
+        val account = account("a1", "Карта", 4_230_050, emoji = "🪙").copy(initialBalance = 3_000_000)
+        composeRule.setContent { AppTheme { AccountDialog(account, onSave = { saved = it }, onDismiss = { closed = true }, onReconcile = { reconcile = true }) } }
 
         composeRule.onNodeWithText("Счёт").assertExists()
         composeRule.onNodeWithTag(TAG_ACCOUNT_NAME).assertTextEquals("Карта")
-        composeRule.onNodeWithTag(TAG_ACCOUNT_AMOUNT).assertTextEquals("42300,50${s}₽")
-        // 0.58.1: сумма видна целиком — поле во всю ширину окна, а не по «естественному» размеру (на телефоне PM было пусто).
-        val field = composeRule.onNodeWithTag(TAG_ACCOUNT_AMOUNT).fetchSemanticsNode().boundsInRoot
-        val window = composeRule.onNodeWithTag(TAG_ACCOUNT_WINDOW).fetchSemanticsNode().boundsInRoot
-        assertTrue("Поле суммы уже окна: $field", field.width > window.width / 2)
+        // Этап 4: остаток в окне счёта не вводится — показан вместе с начальным, меняется сверкой.
+        composeRule.onNodeWithTag(TAG_ACCOUNT_AMOUNT).assertDoesNotExist()
+        composeRule.onNodeWithTag(TAG_ACCOUNT_BALANCE).assertTextEquals("42${s}300,50${s}₽")
+        composeRule.onNodeWithTag(TAG_ACCOUNT_INITIAL).assertTextEquals("30${s}000${s}₽ · 01.11.2026")
         composeRule.onNode(isDialog()).captureRoboImage("screenshots/finance_account_edit_light.png")
-        composeRule.onNode(isDialog()).captureRoboImage("screenshots/finance_account_edit_light.png")
-        composeRule.onNodeWithText("Это деньги на счёте сегодня. Доходом не считается.").assertDoesNotExist()
+        composeRule.onNodeWithTag(TAG_ACCOUNT_NAME).performTextReplacement("Яндекс")
         composeRule.onNodeWithTag(TAG_ACCOUNT_SAVE).performClick()
-        assertEquals(AccountDraft("Карта", AccountType.CARD, "🪙", 4_230_050), saved)
+        assertEquals(AccountDraft("Яндекс", AccountType.CARD, "🪙", 4_230_050), saved)
 
+        composeRule.onNodeWithTag(TAG_ACCOUNT_RECONCILE).performClick()
         composeRule.onNodeWithTag("$TAG_ACCOUNT_WINDOW:$TAG_WINDOW_CLOSE").performClick()
-        assertEquals(true, closed)
+        assertEquals(true to true, reconcile to closed)
+    }
+
+    private val card = account("a1", "Карта", 4_230_000).copy(initialBalance = 3_000_000)
+
+    /** Сверка: три способа; «Найти операцию» и выбор окна уходят намерениями. */
+    @Test
+    fun reconcileOffersThreeWays() {
+        composeRule.setContent { AppTheme { ReconcileDialogs(Reconcile.Choose(card), today) { intents += it } } }
+
+        composeRule.onNodeWithText("Остаток не сходится").assertExists()
+        composeRule.onNodeWithText("Карта · по приложению 42${s}300${s}₽").assertExists()
+        composeRule.onNode(isDialog()).captureRoboImage("screenshots/finance_reconcile_light.png")
+        composeRule.onNodeWithTag(TAG_RECONCILE_FIND).performClick()
+        composeRule.onNodeWithTag(TAG_RECONCILE_INITIAL).performClick()
+        composeRule.onNodeWithTag(TAG_RECONCILE_REAL).performClick()
+        assertEquals(listOf(FinanceIntent.FindOperation, FinanceIntent.PickReconcile(Reconcile.Initial(card)), FinanceIntent.PickReconcile(Reconcile.Real(card))), intents)
+    }
+
+    /** Реальный остаток: разница считается сама; без разницы «Сохранить» не нажимается. */
+    @Test
+    fun realBalanceShowsCorrection() {
+        composeRule.setContent { AppTheme { ReconcileDialogs(Reconcile.Real(card), today) { intents += it } } }
+
+        composeRule.onNodeWithTag(TAG_RECONCILE_AMOUNT).assertTextEquals("42300${s}₽")
+        composeRule.onNodeWithTag(TAG_RECONCILE_RESULT).assertTextEquals("0${s}₽")
+        composeRule.onNodeWithTag(TAG_RECONCILE_SAVE).performClick()
+        assertTrue(intents.isEmpty())
+
+        composeRule.onNodeWithTag(TAG_RECONCILE_AMOUNT).performTextReplacement("42450")
+        composeRule.onNodeWithTag(TAG_RECONCILE_WAS).assertTextEquals("42${s}300${s}₽")
+        composeRule.onNodeWithTag(TAG_RECONCILE_RESULT).assertTextEquals("+150${s}₽")
+        composeRule.onNode(isDialog()).captureRoboImage("screenshots/finance_reconcile_real_light.png")
+        composeRule.onNodeWithTag(TAG_RECONCILE_AMOUNT).performTextReplacement("42000")
+        composeRule.onNodeWithTag(TAG_RECONCILE_RESULT).assertTextEquals("−300${s}₽")
+        composeRule.onNodeWithTag(TAG_RECONCILE_SAVE).performClick()
+        assertEquals(listOf<FinanceIntent>(FinanceIntent.SaveRealBalance(4_200_000)), intents)
+    }
+
+    /** Начальный остаток: видно, каким станет остаток сейчас (сдвиг на ту же величину). */
+    @Test
+    fun initialBalanceShowsResultingBalance() {
+        composeRule.setContent { AppTheme { ReconcileDialogs(Reconcile.Initial(card), today) { intents += it } } }
+
+        composeRule.onNodeWithText("Сколько было на счёте «Карта» 01.11.2026").assertExists()
+        composeRule.onNodeWithTag(TAG_RECONCILE_AMOUNT).assertTextEquals("30000${s}₽")
+        composeRule.onNodeWithTag(TAG_RECONCILE_RESULT).assertTextEquals("42${s}300${s}₽")
+        composeRule.onNodeWithTag(TAG_RECONCILE_AMOUNT).performTextReplacement("30150")
+        composeRule.onNodeWithTag(TAG_RECONCILE_WAS).assertTextEquals("30${s}000${s}₽")
+        composeRule.onNodeWithTag(TAG_RECONCILE_RESULT).assertTextEquals("42${s}450${s}₽")
+        composeRule.onNodeWithTag(TAG_RECONCILE_SAVE).performClick()
+        assertEquals(listOf<FinanceIntent>(FinanceIntent.SaveInitialBalance(3_015_000)), intents)
+    }
+
+    /** Корректировка в списке операций — серым с подписью и своим знаком; её окно — только просмотр и корзина. */
+    @Test
+    fun correctionIsShownInListAndReadOnlyWindow() {
+        val correction = operation("k1", -30_000, "2026-11-10", OperationKind.CORRECTION, account = "Наличные")
+        show(full().copy(operations = listOf(correction) + ops))
+        composeRule.onNodeWithText("Корректировка остатка").assertExists()
+        composeRule.onNodeWithText("−300${s}₽").assertExists()
+        composeRule.onNodeWithTag("$TAG_OPERATION:k1").performClick()
+        assertEquals(listOf<FinanceIntent>(FinanceIntent.OpenOperation("k1")), intents)
+    }
+
+    @Test
+    fun correctionWindowOnlyTrashes() {
+        var trashed = false
+        val correction = operation("k1", 15_000, "2026-11-09", OperationKind.CORRECTION, account = "Наличные")
+        composeRule.setContent { AppTheme { CorrectionDialog(correction, today, onTrash = { trashed = true }, onDismiss = {}) } }
+        composeRule.onNodeWithTag("$TAG_CORRECTION_WINDOW:amount").assertTextEquals("+150${s}₽")
+        composeRule.onNodeWithTag("$TAG_CORRECTION_WINDOW:date").assertTextEquals("09.11.2026 · вчера")
+        composeRule.onNodeWithTag(TAG_OPERATION_TRASH).performClick()
+        assertEquals(true, trashed)
+    }
+
+    private val trashed = listOf(
+        operation("t1", 62_000, "2026-11-09", category = "Кафе").copy(deletedOn = today),
+        operation("t2", 500_000, "2026-11-07", OperationKind.TRANSFER, to = "Наличные").copy(deletedOn = today.minusDays(1)),
+        operation("t3", 135_000, "2026-11-05", category = "Продукты").copy(deletedOn = LocalDate.parse("2026-11-06")),
+    )
+
+    /** Корзина: строки с днём операции и днём удаления; восстановление сразу, удаление и очистка — после подтверждения. */
+    @Test
+    fun trashRestoresAtOnceAndAsksBeforeDeleting() {
+        var back = false
+        composeRule.setContent { AppTheme { FinanceTrashScreen(trashed, today, { intents += it }, onBack = { back = true }) } }
+
+        composeRule.onNodeWithText("9 ноября · удалено сегодня").assertExists()
+        composeRule.onNodeWithText("7 ноября · удалено вчера").assertExists()
+        composeRule.onNodeWithText("5 ноября · удалено 6 ноября").assertExists()
+        composeRule.onNodeWithText("Карта → Наличные").assertExists()
+        composeRule.onRoot().captureRoboImage("screenshots/finance_trash_light.png")
+
+        composeRule.onNodeWithTag("$TAG_TRASH_RESTORE:t2").performClick()
+        composeRule.onNodeWithTag("$TAG_TRASH_DELETE:t1").performClick()
+        composeRule.onNodeWithText("Удалить навсегда?").assertExists()
+        assertEquals(listOf<FinanceIntent>(FinanceIntent.RestoreOperation("t2")), intents)
+        composeRule.onNodeWithTag("$TAG_TRASH_CONFIRM:cancel").performClick()
+        composeRule.onNodeWithTag("$TAG_TRASH_DELETE:t1").performClick()
+        composeRule.onNodeWithTag("$TAG_TRASH_CONFIRM:confirm").performClick()
+
+        composeRule.onNodeWithTag(TAG_TRASH_CLEAR).performClick()
+        composeRule.onNodeWithText("Операций в корзине: 3. Они будут удалены навсегда, восстановить их будет нельзя.").assertExists()
+        composeRule.onNodeWithTag("$TAG_TRASH_CONFIRM:confirm").performClick()
+        composeRule.onNodeWithContentDescription("Назад").performClick()
+        assertEquals(listOf(FinanceIntent.RestoreOperation("t2"), FinanceIntent.DeleteForever("t1"), FinanceIntent.EmptyTrash), intents)
+        assertEquals(true, back)
+    }
+
+    @Test
+    fun emptyTrashHasNoClearButton() {
+        composeRule.setContent { AppTheme { FinanceTrashScreen(emptyList(), today, {}, onBack = {}) } }
+        composeRule.onNodeWithText("Корзина пуста").assertExists()
+        composeRule.onNodeWithTag(TAG_TRASH_CLEAR).assertDoesNotExist()
+    }
+
+    /** Меню шестерёнки: категории, корзина и копия с подписями-счётчиками. */
+    @Test
+    fun gearMenuLeadsToCategoriesTrashAndBackup() {
+        val clicks = mutableListOf<String>()
+        val state = full().copy(trash = trashed, lastBackupAt = null)
+        composeRule.setContent { AppTheme { FinanceMenu(state, { clicks += "categories" }, { clicks += "trash" }, { clicks += "backup" }, { clicks += "close" }) } }
+
+        composeRule.onNodeWithText("Действующих: 7").assertExists()
+        composeRule.onNodeWithText("Операций: 3").assertExists()
+        composeRule.onNodeWithText("Копия ещё не сохранялась").assertExists()
+        composeRule.onNode(isDialog()).captureRoboImage("screenshots/finance_menu_light.png")
+        composeRule.onNodeWithTag(TAG_MENU_CATEGORIES).performClick()
+        composeRule.onNodeWithTag(TAG_MENU_TRASH).performClick()
+        composeRule.onNodeWithTag(TAG_MENU_BACKUP).performClick()
+        composeRule.onNodeWithTag("$TAG_FINANCE_MENU:$TAG_WINDOW_CLOSE").performClick()
+        assertEquals(listOf("categories", "trash", "backup", "close"), clicks)
+    }
+
+    /** Окна копии: действия и подтверждение замены с содержимым копии и текущими данными. */
+    @Test
+    fun backupWindowsSaveRestoreAndConfirm() {
+        val clicks = mutableListOf<String>()
+        var confirm by mutableStateOf(false)
+        composeRule.setContent {
+            AppTheme {
+                if (!confirm) {
+                    BackupDialog(lastBackupAt = null, onSave = { clicks += "save" }, onRestore = { clicks += "restore" }, onDismiss = {})
+                } else {
+                    RestoreConfirmDialog(FinanceCounts(3, 13, 214), FinanceCounts(3, 13, 221), onConfirm = { clicks += "replace" }, onDismiss = { clicks += "cancel" })
+                }
+            }
+        }
+        composeRule.onNodeWithTag(TAG_BACKUP_LAST).assertTextEquals("Копия ещё не сохранялась")
+        composeRule.onNodeWithTag(TAG_BACKUP_SAVE).performClick()
+        composeRule.onNodeWithTag(TAG_BACKUP_RESTORE).performClick()
+        composeRule.onNode(isDialog()).captureRoboImage("screenshots/finance_backup_light.png")
+
+        confirm = true
+        composeRule.onNodeWithText("счетов 3 · категорий 13 · операций 214").assertExists()
+        composeRule.onNodeWithText("счетов 3 · категорий 13 · операций 221").assertExists()
+        composeRule.onNode(isDialog()).captureRoboImage("screenshots/finance_backup_confirm_light.png")
+        composeRule.onNodeWithTag("$TAG_RESTORE_WINDOW:cancel").performClick()
+        composeRule.onNodeWithTag("$TAG_RESTORE_WINDOW:confirm").performClick()
+        assertEquals(listOf("save", "restore", "cancel", "replace"), clicks)
     }
 }

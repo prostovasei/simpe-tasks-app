@@ -460,9 +460,50 @@ class FakeFinanceRepository : com.prostovasei.simpletasks.domain.repository.Fina
         operations.value = operations.value.map { if (it.id == id) draft.toOperation(id) else it }
     }
 
+    val trash = MutableStateFlow<List<com.prostovasei.simpletasks.domain.model.finance.Operation>>(emptyList())
+    var backupJson = "{backup}"
+    var backupCounts: com.prostovasei.simpletasks.domain.model.finance.FinanceCounts? = com.prostovasei.simpletasks.domain.model.finance.FinanceCounts(3, 13, 214)
+
     override suspend fun trashOperation(id: String) {
         calls += "trash:$id"
+        trash.value = operations.value.filter { it.id == id } + trash.value
         operations.value = operations.value.filterNot { it.id == id }
+    }
+
+    override fun observeTrash(): Flow<List<com.prostovasei.simpletasks.domain.model.finance.Operation>> = trash
+
+    override suspend fun restoreOperation(id: String) {
+        calls += "restore:$id"
+        operations.value = trash.value.filter { it.id == id } + operations.value
+        trash.value = trash.value.filterNot { it.id == id }
+    }
+
+    override suspend fun deleteOperationForever(id: String) {
+        calls += "deleteForever:$id"
+        trash.value = trash.value.filterNot { it.id == id }
+    }
+
+    override suspend fun emptyTrash(): Int {
+        calls += "emptyTrash"
+        return trash.value.size.also { trash.value = emptyList() }
+    }
+
+    override suspend fun setInitialBalance(id: String, initialBalance: Long) { calls += "initial:$id:$initialBalance" }
+
+    override suspend fun correctBalance(id: String, realBalance: Long, date: java.time.LocalDate): Long {
+        calls += "correct:$id:$realBalance:$date"
+        return 0
+    }
+
+    override fun observeCounts(): Flow<com.prostovasei.simpletasks.domain.model.finance.FinanceCounts> = MutableStateFlow(com.prostovasei.simpletasks.domain.model.finance.FinanceCounts(accounts.value.size, categories.value.size, operations.value.size))
+
+    override suspend fun exportBackup(): String = backupJson.also { calls += "export" }
+
+    override fun inspectBackup(json: String): com.prostovasei.simpletasks.domain.model.finance.FinanceCounts = backupCounts ?: throw com.prostovasei.simpletasks.domain.model.finance.InvalidFinanceBackupException("плохой файл")
+
+    override suspend fun restoreBackup(json: String) {
+        if (backupCounts == null) throw com.prostovasei.simpletasks.domain.model.finance.InvalidFinanceBackupException("плохой файл")
+        calls += "restoreBackup:$json"
     }
 
     override suspend fun createCategory(name: String, kind: com.prostovasei.simpletasks.domain.model.finance.OperationKind): String {

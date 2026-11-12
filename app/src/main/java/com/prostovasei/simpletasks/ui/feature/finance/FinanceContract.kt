@@ -3,6 +3,7 @@ package com.prostovasei.simpletasks.ui.feature.finance
 import com.prostovasei.simpletasks.domain.model.finance.Account
 import com.prostovasei.simpletasks.domain.model.finance.AccountDraft
 import com.prostovasei.simpletasks.domain.model.finance.Category
+import com.prostovasei.simpletasks.domain.model.finance.FinanceCounts
 import com.prostovasei.simpletasks.domain.model.finance.FormHints
 import com.prostovasei.simpletasks.domain.model.finance.Money
 import com.prostovasei.simpletasks.domain.model.finance.Operation
@@ -18,6 +19,21 @@ sealed interface AccountWindow {
     data object None : AccountWindow
     data object Create : AccountWindow
     data class Edit(val account: Account) : AccountWindow
+}
+
+/** Сверка остатка счёта (этап 4, #231): выбор способа и два окна ввода. «Найти операцию» окна не имеет — открывает список. */
+sealed interface Reconcile {
+    val account: Account
+
+    data class Choose(override val account: Account) : Reconcile
+    data class Initial(override val account: Account) : Reconcile
+    data class Real(override val account: Account) : Reconcile
+}
+
+/** Окно резервной копии: действия или подтверждение замены данных содержимым выбранного файла. */
+sealed interface BackupWindow {
+    data object Actions : BackupWindow
+    data class Confirm(val json: String, val inFile: FinanceCounts) : BackupWindow
 }
 
 /**
@@ -58,6 +74,14 @@ data class FinanceState(
     val draft: OperationForm? = null,
     // Не LocalDate.EPOCH (только с Android 14) и не LocalDate.MIN (от него нельзя отнять месяц для аналитики).
     val today: LocalDate = LocalDate.ofEpochDay(0),
+    /** Этап 4: меню шестерёнки, корзина, сверка, просмотр корректировки, резервная копия. */
+    val menu: Boolean = false,
+    val trash: List<Operation> = emptyList(),
+    val counts: FinanceCounts = FinanceCounts(),
+    val reconcile: Reconcile? = null,
+    val correction: Operation? = null,
+    val backup: BackupWindow? = null,
+    val lastBackupAt: Long? = null,
     /** Месяц аналитики (этап 3); сохраняется при смене вкладки и модуля, после полного закрытия — снова текущий. */
     val month: YearMonth = YearMonth.from(today),
 ) {
@@ -114,9 +138,39 @@ sealed interface FinanceIntent {
     data class CreateCategory(val name: String, val kind: OperationKind, val select: Boolean = false) : FinanceIntent
     data class RenameCategory(val id: String, val name: String) : FinanceIntent
     data class ArchiveCategory(val id: String, val archived: Boolean) : FinanceIntent
+
+    /** Шестерёнка финансов: меню «Категории / Корзина / Резервная копия». */
+    data object OpenMenu : FinanceIntent
+    data object CloseMenu : FinanceIntent
+
+    /** Корзина: вернуть операцию, удалить её навсегда, очистить всю корзину. */
+    data class RestoreOperation(val id: String) : FinanceIntent
+    data class DeleteForever(val id: String) : FinanceIntent
+    data object EmptyTrash : FinanceIntent
+
+    /** Сверка: «Остаток не сходится» в окне счёта, выбор способа, сохранение. */
+    data object OpenReconcile : FinanceIntent
+    data class PickReconcile(val step: Reconcile) : FinanceIntent
+    data object FindOperation : FinanceIntent
+    data class SaveInitialBalance(val initialBalance: Long) : FinanceIntent
+    data class SaveRealBalance(val realBalance: Long) : FinanceIntent
+    data object CloseReconcile : FinanceIntent
+    data object CloseCorrection : FinanceIntent
+
+    /** Резервная копия: окно, сохранение в выбранный файл, выбор файла для восстановления и подтверждение замены. */
+    data object OpenBackup : FinanceIntent
+    data object CloseBackup : FinanceIntent
+    data class ExportBackup(val uri: String) : FinanceIntent
+    data class PickBackup(val uri: String) : FinanceIntent
+    data object ConfirmRestore : FinanceIntent
 }
 
 sealed interface FinanceEffect {
     data object OperationSaved : FinanceEffect
     data object OperationTrashed : FinanceEffect
+    data object OperationRestored : FinanceEffect
+    data object BackupSaved : FinanceEffect
+    data object BackupFailed : FinanceEffect
+    data object BackupInvalid : FinanceEffect
+    data object BackupRestored : FinanceEffect
 }
