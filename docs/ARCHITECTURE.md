@@ -1,6 +1,6 @@
 # Архитектура Simple Tasks
 
-## Актуальное устройство на 11.11.2026 (0.60.0)
+## Актуальное устройство на 11.11.2026 (0.61.0)
 
 - Один Gradle-модуль `:app`, один Android APK; серверных микросервисов в этом проекте нет.
 - `domain/` — модели, контракты репозиториев и операции; `data/` — Room, DAO, реализации репозиториев, импорт/экспорт.
@@ -1408,6 +1408,27 @@ PM поменял порядок: шторка для созданных зад�
   падежах — массивы строк `months_*`.
 - **Тесты.** `MonthAnalyticsTest`, `FinanceViewModelTest.analyticsMonthShiftsButNotIntoFuture`, `FinanceScreenTest` (снимки `finance_analytics_*`).
 - Отдельного запроса к базе нет: при тысячах операций расчёт идёт по списку в памяти. Если станет медленно — перенести суммы в запрос.
+
+### 4.67. Финансы, этап 4 — корзина, сверка, резервная копия (0.61.0, #231)
+
+Решения PM — `requirements.md` §5, §6, §9; макеты — экраны 2.5–2.8, 3.1, 3.5–3.8. Таблицы базы не меняются (версия 7).
+
+- **Корзина.** Запросы к `finance_operations` по `is_deleted`: `observeTrash`, `restore`, `deleteTrashed` (только из корзины), `emptyTrash`.
+  `Operation.deletedOn` — день удаления. Экран — маршрут `FinanceTrashDestination`, тот же `FinanceViewModel`.
+- **Корректировка.** Новый тип операции `correction` (значение текстовой колонки `kind`, миграция не нужна) — единственный со знаковой суммой.
+  Остаток: `CASE kind WHEN 'income' … WHEN 'correction' THEN amount ELSE -amount`. Создаётся только `correctBalance` (разница между реальным
+  остатком и остатком по приложению), вручную не создаётся и не правится; в подсказки счёта и аналитику не входит.
+- **Сверка.** `Reconcile` в состоянии: `Choose` → `Initial` (`setInitialBalance`) или `Real` (`correctBalance`); «Найти операцию» открывает вкладку
+  операций. `updateAccount` больше не меняет остаток — только название, тип и эмодзи.
+- **Резервная копия.** `FinanceBackupCodec` — JSON с пометкой `simple-tasks-finance` и версией 1: строки трёх таблиц как есть. `decode` проверяет
+  пометку, версию, типы полей и ссылки; `restoreBackup` сначала разбирает файл целиком и только потом в одной транзакции заменяет данные —
+  негодный файл ничего не стирает. Файлы — через системные окна (`CreateDocument` / `OpenDocument`) и `DocumentOpener`; время последней копии —
+  `FinanceBackupStore` (настройки приложения). После восстановления сбрасываются черновик и открытые окна: они ссылались на прежние счета.
+- **Меню.** Шестерёнка шлёт `OpenMenu`; `FinanceMenu` рисуется в `FinanceRoute` и ведёт в категории, корзину или окно копии.
+- **Тесты.** `FinanceRepositoryTest` (корзина, корректировка, начальный остаток, копия туда-обратно, негодные файлы, задачи не затронуты),
+  `FinanceViewModelTest` (корзина, сверка, копия и восстановление), `FinanceScreenTest` (окна и снимки `finance_trash_light`, `finance_reconcile_*`,
+  `finance_menu_light`, `finance_backup_*`), `AppSmokeTest.switchToFinanceCreateAccountAndComeBack`.
+- **Урок CI (0.60.0).** `LocalDate.EPOCH` есть только с Android 14 — ловит lint `NewApi` в шаге `check`. Перед отправкой запускать именно `check`.
 
 ### 4.45. Дорожная карта (обновлена)
 

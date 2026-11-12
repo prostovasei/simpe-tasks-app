@@ -87,6 +87,10 @@ data class ProjectDestination(val projectId: String)
 @Serializable
 data object FinanceDestination
 
-/** Категории финансов (этап 2, #225): открываются шестерёнкой финансов. */
+/** Корзина финансов (этап 4, #231): из меню шестерёнки. */
+@Serializable
+data object FinanceTrashDestination
+
+/** Категории финансов (этап 2, #225): из меню шестерёнки финансов. */
 @Serializable
 data object FinanceCategoriesDestination

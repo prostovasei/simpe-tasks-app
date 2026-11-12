@@ -635,4 +635,57 @@
         <item>в январе</item><item>в феврале</item><item>в марте</item><item>в апреле</item><item>в мае</item><item>в июне</item>
         <item>в июле</item><item>в августе</item><item>в сентябре</item><item>в октябре</item><item>в ноябре</item><item>в декабре</item>
     </string-array>
+
+    <!-- Финансы, этап 4 (#231): меню, корзина, сверка, резервная копия -->
+    <string name="finance_trash">Корзина</string>
+    <string name="menu_categories_count">Действующих: %1$d</string>
+    <string name="menu_trash_count">Операций: %1$d</string>
+    <string name="operation_correction">Корректировка</string>
+    <string name="operation_correction_caption">Корректировка остатка</string>
+    <string name="operation_restored">Операция восстановлена</string>
+    <string name="account_amount">Сумма</string>
+    <string name="account_initial_balance">Начальный остаток</string>
+    <string name="reconcile_title">Остаток не сходится</string>
+    <string name="reconcile_find">Найти операцию</string>
+    <string name="reconcile_find_text">Открыть операции и исправить пропуск или ошибку</string>
+    <string name="reconcile_initial">Изменить начальный остаток</string>
+    <string name="reconcile_initial_text">Пересчитает остаток за всё время</string>
+    <string name="reconcile_real">Указать реальный остаток</string>
+    <string name="reconcile_real_text">Создаст корректировку на разницу</string>
+    <string name="reconcile_app_balance">%1$s · по приложению %2$s</string>
+    <string name="reconcile_initial_caption">Сколько было на счёте «%1$s» %2$s</string>
+    <string name="reconcile_was">Было указано</string>
+    <string name="reconcile_will_be">Остаток сейчас станет</string>
+    <string name="reconcile_initial_note">Операции не меняются — пересчитывается только остаток.</string>
+    <string name="reconcile_real_title">Реальный остаток</string>
+    <string name="reconcile_real_caption">Сколько на счёте «%1$s» на самом деле</string>
+    <string name="reconcile_in_app">По приложению</string>
+    <string name="reconcile_real_note">Корректировка видна в операциях, но не входит в доходы и расходы.</string>
+    <string name="trash_clear">Очистить</string>
+    <string name="trash_empty_title">Корзина пуста</string>
+    <string name="trash_empty_text">Удалённые операции появятся здесь и будут лежать, пока вы их не вернёте или не сотрёте.</string>
+    <string name="trash_note">Операции в корзине не влияют на остатки и аналитику. Сами не удаляются — только вручную.</string>
+    <string name="finance_trash_deleted_on">удалено %1$s</string>
+    <string name="finance_trash_restore">Восстановить</string>
+    <string name="finance_trash_delete_forever">Удалить навсегда</string>
+    <string name="trash_clear_title">Очистить корзину?</string>
+    <string name="trash_clear_text">Операций в корзине: %1$d. Они будут удалены навсегда, восстановить их будет нельзя.</string>
+    <string name="trash_delete_title">Удалить навсегда?</string>
+    <string name="trash_delete_text">Операция будет удалена навсегда, восстановить её будет нельзя.</string>
+    <string name="backup_title">Резервная копия</string>
+    <string name="backup_text">В файл попадают счета, начальные остатки, категории, операции и корзина. Задачи — нет.</string>
+    <string name="backup_never">Копия ещё не сохранялась</string>
+    <string name="backup_last">Последняя копия: %1$s</string>
+    <string name="backup_save">Сохранить в файл</string>
+    <string name="backup_restore">Восстановить из файла</string>
+    <string name="backup_saved">Копия сохранена</string>
+    <string name="backup_failed">Не удалось сохранить копию</string>
+    <string name="backup_invalid">Это не резервная копия финансов или файл повреждён. Данные не изменены.</string>
+    <string name="backup_restored">Данные финансов восстановлены</string>
+    <string name="backup_confirm_title">Заменить данные финансов?</string>
+    <string name="backup_in_file">В копии</string>
+    <string name="backup_now">Сейчас</string>
+    <string name="backup_counts">счетов %1$d · категорий %2$d · операций %3$d</string>
+    <string name="backup_confirm_text">Все текущие данные финансов будут заменены содержимым копии. Задачи не затрагиваются.</string>
+    <string name="backup_replace">Заменить</string>
 </resources>

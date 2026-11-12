@@ -122,6 +122,7 @@ import com.prostovasei.simpletasks.ui.feature.finance.CategoriesRoute
 import com.prostovasei.simpletasks.ui.feature.finance.FinanceBottomBar
 import com.prostovasei.simpletasks.ui.feature.finance.FinanceIntent
 import com.prostovasei.simpletasks.ui.feature.finance.FinanceRoute
+import com.prostovasei.simpletasks.ui.feature.finance.FinanceTrashRoute
 import com.prostovasei.simpletasks.ui.feature.finance.FinanceViewModel
 import com.prostovasei.simpletasks.ui.feature.finance.ModuleBar
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -254,8 +255,8 @@ fun AppNavHost(
                             module == AppModule.TASKS && inFinance -> navController.openTab(Tab.valueOf(lastTaskTab))
                         }
                     },
-                    // Этап 2: шестерёнка финансов ведёт в категории; с этапа 4 — меню с корзиной и резервной копией.
-                    onSettings = if (inFinance) { { navController.navigate(FinanceCategoriesDestination) { launchSingleTop = true } } } else null,
+                    // Шестерёнка финансов — меню «Категории / Корзина / Резервная копия» (этап 4).
+                    onSettings = if (inFinance) { { finance.onIntent(FinanceIntent.OpenMenu) } } else null,
                 )
             }
         },
@@ -342,7 +343,14 @@ fun AppNavHost(
             composable<CompletedDestination> { CompletedRoute(onBack = { navController.popBackStack() }, onOpenTask = openTask) }
             composable<SearchDestination> { SearchRoute(onOpenTask = openTask) }
             composable<SettingsDestination> { SettingsRoute() }
-            composable<FinanceDestination> { FinanceRoute(finance) }
+            composable<FinanceDestination> {
+                FinanceRoute(
+                    finance,
+                    onOpenCategories = { navController.navigate(FinanceCategoriesDestination) { launchSingleTop = true } },
+                    onOpenTrash = { navController.navigate(FinanceTrashDestination) { launchSingleTop = true } },
+                )
+            }
+            composable<FinanceTrashDestination> { FinanceTrashRoute(finance, onBack = { navController.popBackStack() }) }
             composable<FinanceCategoriesDestination> { CategoriesRoute(finance, onBack = { navController.popBackStack() }) }
             composable<ProjectDestination> { entry ->
                 val projectId = entry.toRoute<ProjectDestination>().projectId

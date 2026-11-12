@@ -76,5 +76,8 @@ abstract class RepositoryModule {
     abstract fun bindFinanceRepository(impl: RoomFinanceRepository): FinanceRepository
 
     @Binds
+    abstract fun bindFinanceBackupStore(impl: com.prostovasei.simpletasks.ui.feature.finance.PrefsFinanceBackupStore): com.prostovasei.simpletasks.ui.feature.finance.FinanceBackupStore
+
+    @Binds
     abstract fun bindBackupRepository(impl: RoomBackupRepository): BackupRepository
 }

@@ -42,6 +42,22 @@ class FinanceViewModelTest {
     @After
     fun tearDown() = Dispatchers.resetMain()
 
+    private val files = mutableMapOf<String, String>()
+    private val documents = object : com.prostovasei.simpletasks.core.files.DocumentOpener {
+        override fun openInput(uri: String) = (files[uri] ?: throw java.io.FileNotFoundException(uri)).byteInputStream()
+        override fun openOutput(uri: String) = object : java.io.ByteArrayOutputStream() {
+            override fun close() {
+                if (uri == "readonly") throw java.io.IOException("нельзя записать")
+                files[uri] = toString(Charsets.UTF_8)
+            }
+        }
+    }
+    private val store = object : FinanceBackupStore {
+        override var lastBackupAt: Long? = null
+    }
+
+    private fun vm() = FinanceViewModel(finance, time, documents, store, dispatcher)
+
     private fun twoAccounts() {
         finance.accounts.value = listOf(account("a1", "Карта", 4_230_000), account("a2", "Наличные", 615_000, AccountType.CASH))
     }
@@ -50,7 +66,7 @@ class FinanceViewModelTest {
 
     @Test
     fun plusWithoutAccountsOpensNewAccountAndSavesIt() = runTest(dispatcher) {
-        val vm = FinanceViewModel(finance, time)
+        val vm = vm()
         assertNull(vm.state.value.accounts)
         // Пока счета читаются, «+» ничего не делает.
         vm.onIntent(FinanceIntent.Add)
@@ -72,7 +88,7 @@ class FinanceViewModelTest {
     @Test
     fun accountOpensForEditAndTotalSumsBalances() = runTest(dispatcher) {
         twoAccounts()
-        val vm = FinanceViewModel(finance, time)
+        val vm = vm()
         runCurrent()
         assertEquals(4_845_000L, vm.state.value.total)
 
@@ -91,7 +107,7 @@ class FinanceViewModelTest {
     fun plusOpensExpenseOnLastAccountAndSaves() = runTest(dispatcher) {
         twoAccounts()
         finance.hints.value = FormHints(lastAccountId = "a2")
-        val vm = FinanceViewModel(finance, time)
+        val vm = vm()
         runCurrent()
 
         vm.onIntent(FinanceIntent.Add)
@@ -115,7 +131,7 @@ class FinanceViewModelTest {
     @Test
     fun windowStaysAfterSaveKeepingAccountCategoryAndDate() = runTest(dispatcher) {
         twoAccounts()
-        val vm = FinanceViewModel(finance, time)
+        val vm = vm()
         runCurrent()
         vm.onIntent(FinanceIntent.Add)
         val yesterday = today.minusDays(1)
@@ -138,7 +154,7 @@ class FinanceViewModelTest {
     @Test
     fun unfinishedInputIsKeptAsDraft() = runTest(dispatcher) {
         twoAccounts()
-        val vm = FinanceViewModel(finance, time)
+        val vm = vm()
         runCurrent()
         vm.onIntent(FinanceIntent.Add)
         vm.onIntent(FinanceIntent.SetKind(OperationKind.INCOME))
@@ -162,7 +178,7 @@ class FinanceViewModelTest {
     @Test
     fun kindSwitchKeepsAmountDateCommentAndResetsCategoryAndPlace() = runTest(dispatcher) {
         twoAccounts()
-        val vm = FinanceViewModel(finance, time)
+        val vm = vm()
         runCurrent()
         vm.onIntent(FinanceIntent.Add)
         val date = today.minusDays(3)
@@ -187,7 +203,7 @@ class FinanceViewModelTest {
     @Test
     fun operationIsEditedAndTrashed() = runTest(dispatcher) {
         twoAccounts()
-        val vm = FinanceViewModel(finance, time)
+        val vm = vm()
         runCurrent()
         vm.onIntent(FinanceIntent.Add)
         vm.edit { copy(amount = "850,5", place = "Пятёрочка") }
@@ -230,7 +246,7 @@ class FinanceViewModelTest {
         twoAccounts()
         finance.categories.value = (1..7).map { category("c$it", "Категория $it") } + category("i1", "Зарплата", OperationKind.INCOME) + category("old", "Такси", archived = true)
         finance.hints.value = FormHints(recentCategoryIds = listOf("c6", "i1", "old", "c3"))
-        val vm = FinanceViewModel(finance, time)
+        val vm = vm()
         runCurrent()
         vm.onIntent(FinanceIntent.Add)
         val state = vm.state.value
@@ -243,7 +259,7 @@ class FinanceViewModelTest {
     @Test
     fun categoryCreatedFromFormIsSelected() = runTest(dispatcher) {
         twoAccounts()
-        val vm = FinanceViewModel(finance, time)
+        val vm = vm()
         runCurrent()
         vm.onIntent(FinanceIntent.Add)
         vm.onIntent(FinanceIntent.CreateCategory("Продукты", OperationKind.EXPENSE, select = true))
@@ -262,7 +278,7 @@ class FinanceViewModelTest {
     /** Месяц аналитики: назад — сколько угодно, вперёд — не дальше текущего. */
     @Test
     fun analyticsMonthShiftsButNotIntoFuture() = runTest(dispatcher) {
-        val vm = FinanceViewModel(finance, time)
+        val vm = vm()
         val current = java.time.YearMonth.of(2026, 10)
         assertEquals(current, vm.state.value.month)
         assertFalse(vm.state.value.canGoNextMonth)
@@ -277,9 +293,141 @@ class FinanceViewModelTest {
         assertEquals(java.time.YearMonth.of(2026, 9), vm.state.value.month)
     }
 
+    /** Корзина: операция уходит из списка, возвращается, удаляется навсегда; очистка — вся корзина. */
+    @Test
+    fun trashRestoresAndDeletesForever() = runTest(dispatcher) {
+        twoAccounts()
+        finance.operations.value = listOf(com.prostovasei.simpletasks.testing.operation("o1", 85_000, "2026-10-13"), com.prostovasei.simpletasks.testing.operation("o2", 62_000, "2026-10-12"))
+        val vm = vm()
+        runCurrent()
+        vm.onIntent(FinanceIntent.OpenOperation("o1"))
+        vm.onIntent(FinanceIntent.TrashOperation)
+        vm.onIntent(FinanceIntent.OpenOperation("o2"))
+        vm.onIntent(FinanceIntent.TrashOperation)
+        runCurrent()
+        assertEquals(listOf("o2", "o1"), vm.state.value.trash.map { it.id })
+
+        vm.onIntent(FinanceIntent.RestoreOperation("o1"))
+        runCurrent()
+        assertEquals(listOf("o1"), vm.state.value.operations!!.map { it.id })
+        vm.onIntent(FinanceIntent.DeleteForever("o2"))
+        runCurrent()
+        assertTrue(vm.state.value.trash.isEmpty())
+        vm.onIntent(FinanceIntent.EmptyTrash)
+        runCurrent()
+        assertEquals(listOf("trash:o1", "trash:o2", "restore:o1", "deleteForever:o2", "emptyTrash"), finance.calls)
+    }
+
+    /** Сверка из окна счёта: три способа — список операций, начальный остаток, реальный остаток (корректировка сегодняшним днём). */
+    @Test
+    fun reconcileOffersThreeWays() = runTest(dispatcher) {
+        twoAccounts()
+        val vm = vm()
+        runCurrent()
+        vm.onIntent(FinanceIntent.OpenReconcile)
+        assertNull(vm.state.value.reconcile)
+
+        vm.onIntent(FinanceIntent.OpenAccount("a1"))
+        vm.onIntent(FinanceIntent.OpenReconcile)
+        val card = vm.state.value.accounts!!.first()
+        assertEquals(AccountWindow.None, vm.state.value.window)
+        assertEquals(Reconcile.Choose(card), vm.state.value.reconcile)
+
+        vm.onIntent(FinanceIntent.FindOperation)
+        assertNull(vm.state.value.reconcile)
+        assertEquals(FinanceTab.OPERATIONS, vm.state.value.tab)
+
+        vm.onIntent(FinanceIntent.PickReconcile(Reconcile.Initial(card)))
+        vm.onIntent(FinanceIntent.SaveInitialBalance(3_015_000))
+        vm.onIntent(FinanceIntent.PickReconcile(Reconcile.Real(card)))
+        vm.onIntent(FinanceIntent.SaveRealBalance(4_245_000))
+        runCurrent()
+        assertNull(vm.state.value.reconcile)
+        assertEquals(listOf("initial:a1:3015000", "correct:a1:4245000:2026-10-13"), finance.calls)
+    }
+
+    /** Корректировку из списка не правят: окно просмотра, из него — только корзина. */
+    @Test
+    fun correctionOpensReadOnlyAndCanBeTrashed() = runTest(dispatcher) {
+        twoAccounts()
+        finance.operations.value = listOf(com.prostovasei.simpletasks.testing.operation("k1", 15_000, "2026-10-13", OperationKind.CORRECTION))
+        val vm = vm()
+        runCurrent()
+        vm.onIntent(FinanceIntent.OpenOperation("k1"))
+        assertNull(vm.state.value.form)
+        assertEquals("k1", vm.state.value.correction!!.id)
+        vm.onIntent(FinanceIntent.TrashOperation)
+        runCurrent()
+        assertNull(vm.state.value.correction)
+        assertEquals("trash:k1", finance.calls.single())
+    }
+
+    /** Копия: сохранение в выбранный файл запоминает время; ошибка записи — подсказка, время не меняется. */
+    @Test
+    fun backupIsSavedToFile() = runTest(dispatcher) {
+        val vm = vm()
+        runCurrent()
+        vm.onIntent(FinanceIntent.OpenMenu)
+        vm.onIntent(FinanceIntent.OpenBackup)
+        assertFalse(vm.state.value.menu)
+        assertEquals(BackupWindow.Actions, vm.state.value.backup)
+
+        vm.effects.test {
+            vm.onIntent(FinanceIntent.ExportBackup("readonly"))
+            runCurrent()
+            assertEquals(FinanceEffect.BackupFailed, awaitItem())
+            assertNull(vm.state.value.lastBackupAt)
+
+            vm.onIntent(FinanceIntent.ExportBackup("file"))
+            runCurrent()
+            assertEquals(FinanceEffect.BackupSaved, awaitItem())
+        }
+        assertEquals("{backup}", files["file"])
+        assertEquals(time.now.toEpochMilli(), vm.state.value.lastBackupAt)
+        assertEquals(time.now.toEpochMilli(), store.lastBackupAt)
+    }
+
+    /** Восстановление: годный файл — подтверждение с содержимым копии, затем замена; негодный — подсказка, данные не трогаются. */
+    @Test
+    fun backupIsRestoredOnlyAfterConfirmation() = runTest(dispatcher) {
+        twoAccounts()
+        files["good"] = "{copy}"
+        files["bad"] = "мусор"
+        val vm = vm()
+        runCurrent()
+        vm.onIntent(FinanceIntent.Add)
+        vm.edit { copy(amount = "850") }
+        vm.onIntent(FinanceIntent.CloseForm)
+
+        vm.effects.test {
+            vm.onIntent(FinanceIntent.PickBackup("missing"))
+            runCurrent()
+            assertEquals(FinanceEffect.BackupInvalid, awaitItem())
+            finance.backupCounts = null
+            vm.onIntent(FinanceIntent.PickBackup("bad"))
+            runCurrent()
+            assertEquals(FinanceEffect.BackupInvalid, awaitItem())
+            assertNull(vm.state.value.backup)
+
+            finance.backupCounts = com.prostovasei.simpletasks.domain.model.finance.FinanceCounts(3, 13, 214)
+            vm.onIntent(FinanceIntent.PickBackup("good"))
+            runCurrent()
+            assertEquals(BackupWindow.Confirm("{copy}", com.prostovasei.simpletasks.domain.model.finance.FinanceCounts(3, 13, 214)), vm.state.value.backup)
+            assertTrue(finance.calls.none { it.startsWith("restoreBackup") })
+
+            vm.onIntent(FinanceIntent.ConfirmRestore)
+            runCurrent()
+            assertEquals(FinanceEffect.BackupRestored, awaitItem())
+        }
+        assertEquals("restoreBackup:{copy}", finance.calls.last())
+        assertNull(vm.state.value.backup)
+        // Черновик ссылался на прежние счета.
+        assertNull(vm.state.value.draft)
+    }
+
     @Test
     fun tabIsRemembered() = runTest(dispatcher) {
-        val vm = FinanceViewModel(finance, time)
+        val vm = vm()
         assertEquals(FinanceTab.ANALYTICS, vm.state.value.tab)
         vm.onIntent(FinanceIntent.SelectTab(FinanceTab.OPERATIONS))
         assertEquals(FinanceTab.OPERATIONS, vm.state.value.tab)

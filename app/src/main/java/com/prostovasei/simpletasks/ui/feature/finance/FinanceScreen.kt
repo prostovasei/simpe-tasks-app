@@ -1,6 +1,8 @@
 package com.prostovasei.simpletasks.ui.feature.finance
 
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -44,7 +46,7 @@ import com.prostovasei.simpletasks.domain.model.finance.Account
 import com.prostovasei.simpletasks.domain.model.finance.Money
 
 @Composable
-fun FinanceRoute(viewModel: FinanceViewModel) {
+fun FinanceRoute(viewModel: FinanceViewModel, onOpenCategories: () -> Unit = {}, onOpenTrash: () -> Unit = {}) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     LaunchedEffect(viewModel) {
@@ -52,10 +54,45 @@ fun FinanceRoute(viewModel: FinanceViewModel) {
             when (effect) {
                 FinanceEffect.OperationSaved -> Toast.makeText(context, R.string.operation_saved, Toast.LENGTH_SHORT).show()
                 FinanceEffect.OperationTrashed -> Toast.makeText(context, R.string.operation_trashed, Toast.LENGTH_SHORT).show()
+                FinanceEffect.OperationRestored -> Toast.makeText(context, R.string.operation_restored, Toast.LENGTH_SHORT).show()
+                FinanceEffect.BackupSaved -> Toast.makeText(context, R.string.backup_saved, Toast.LENGTH_SHORT).show()
+                FinanceEffect.BackupFailed -> Toast.makeText(context, R.string.backup_failed, Toast.LENGTH_LONG).show()
+                FinanceEffect.BackupInvalid -> Toast.makeText(context, R.string.backup_invalid, Toast.LENGTH_LONG).show()
+                FinanceEffect.BackupRestored -> Toast.makeText(context, R.string.backup_restored, Toast.LENGTH_SHORT).show()
             }
         }
     }
     FinanceScreen(state, viewModel::onIntent)
+
+    // Этап 4: меню шестерёнки и резервная копия. Место сохранения и файл копии выбираются в системном окне.
+    val saver = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(BACKUP_MIME)) { uri -> uri?.let { viewModel.onIntent(FinanceIntent.ExportBackup(it.toString())) } }
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let { viewModel.onIntent(FinanceIntent.PickBackup(it.toString())) } }
+    if (state.menu) {
+        val close = { viewModel.onIntent(FinanceIntent.CloseMenu) }
+        FinanceMenu(
+            state,
+            onCategories = {
+                close()
+                onOpenCategories()
+            },
+            onTrash = {
+                close()
+                onOpenTrash()
+            },
+            onBackup = { viewModel.onIntent(FinanceIntent.OpenBackup) },
+            onDismiss = close,
+        )
+    }
+    when (val backup = state.backup) {
+        null -> Unit
+        BackupWindow.Actions -> BackupDialog(
+            state.lastBackupAt,
+            onSave = { saver.launch("simple-tasks-finance-${state.today}.json") },
+            onRestore = { picker.launch(arrayOf(BACKUP_MIME, "*/*")) },
+            onDismiss = { viewModel.onIntent(FinanceIntent.CloseBackup) },
+        )
+        is BackupWindow.Confirm -> RestoreConfirmDialog(backup.inFile, state.counts, onConfirm = { viewModel.onIntent(FinanceIntent.ConfirmRestore) }, onDismiss = { viewModel.onIntent(FinanceIntent.CloseBackup) })
+    }
 }
 
 /**
@@ -82,8 +119,10 @@ fun FinanceScreen(state: FinanceState, onIntent: (FinanceIntent) -> Unit) {
     when (val window = state.window) {
         AccountWindow.None -> Unit
         AccountWindow.Create -> AccountDialog(null, onSave = { onIntent(FinanceIntent.SaveAccount(it)) }, onDismiss = { onIntent(FinanceIntent.CloseWindow) })
-        is AccountWindow.Edit -> AccountDialog(window.account, onSave = { onIntent(FinanceIntent.SaveAccount(it)) }, onDismiss = { onIntent(FinanceIntent.CloseWindow) })
+        is AccountWindow.Edit -> AccountDialog(window.account, onSave = { onIntent(FinanceIntent.SaveAccount(it)) }, onDismiss = { onIntent(FinanceIntent.CloseWindow) }, onReconcile = { onIntent(FinanceIntent.OpenReconcile) })
     }
+    state.reconcile?.let { ReconcileDialogs(it, state.today, onIntent) }
+    state.correction?.let { CorrectionDialog(it, state.today, onTrash = { onIntent(FinanceIntent.TrashOperation) }, onDismiss = { onIntent(FinanceIntent.CloseCorrection) }) }
 }
 
 /** Блок «Счета · сумма» с маленьким «+»: до трёх счетов — карточки во всю ширину, больше — листаются вбок, следующая выглядывает. */

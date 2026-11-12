@@ -137,6 +137,8 @@ class AppSmokeTest {
 
         // Этап 2 (#225): категория из шестерёнки, расход через «+» — остаток счёта уменьшается, операция в списке.
         composeRule.onNodeWithTag("module_settings").performClick()
+        composeRule.onNodeWithTag("finance_menu_categories").performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists("category_add") }
         composeRule.onNodeWithTag("category_add").performClick()
         composeRule.onNodeWithTag("category_name").performTextReplacement("Продукты")
         composeRule.onNodeWithTag("category_save").performClick()
@@ -158,6 +160,19 @@ class AppSmokeTest {
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists(TAG_LISTS_SCROLL) }
         composeRule.onNodeWithTag("finance_bar").assertDoesNotExist()
         composeRule.onNodeWithTag("module:FINANCE").performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("− 850\u00A0₽") }
+
+        // Этап 4 (#231): операция в корзину из окна правки — остаток вернулся; из корзины (меню шестерёнки) — обратно.
+        composeRule.onNodeWithText("Продукты").performClick()
+        composeRule.onNodeWithTag("operation_trash").performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Операций пока нет") }
+        composeRule.onNodeWithTag("module_settings").performClick()
+        composeRule.onNodeWithText("Операций: 1").assertExists()
+        composeRule.onNodeWithTag("finance_menu_trash").performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists("finance_trash") }
+        composeRule.onNodeWithContentDescription("Восстановить").performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Корзина пуста") }
+        composeRule.onNodeWithContentDescription("Назад").performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("− 850\u00A0₽") }
 
         // На вложенных экранах задач бара модулей нет.
