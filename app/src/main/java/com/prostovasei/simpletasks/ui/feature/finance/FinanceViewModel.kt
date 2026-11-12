@@ -6,9 +6,11 @@ import com.prostovasei.simpletasks.core.files.DocumentOpener
 import com.prostovasei.simpletasks.core.time.TimeProvider
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
+import com.prostovasei.simpletasks.domain.model.finance.Money
 import com.prostovasei.simpletasks.domain.model.finance.Operation
 import com.prostovasei.simpletasks.domain.model.finance.OperationDraft
 import com.prostovasei.simpletasks.domain.model.finance.OperationKind
+import com.prostovasei.simpletasks.domain.repository.BankPurchases
 import com.prostovasei.simpletasks.domain.repository.FinanceRepository
 import com.prostovasei.simpletasks.ui.mvi.MviViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,7 +28,13 @@ class FinanceViewModel @Inject constructor(
     private val documents: DocumentOpener,
     private val backupStore: FinanceBackupStore,
     @IoDispatcher private val io: CoroutineDispatcher,
-) : MviViewModel<FinanceState, FinanceIntent, FinanceEffect>(FinanceState(today = time.today(), lastBackupAt = backupStore.lastBackupAt)) {
+    private val purchases: BankPurchases,
+) : MviViewModel<FinanceState, FinanceIntent, FinanceEffect>(
+    FinanceState(today = time.today(), lastBackupAt = backupStore.lastBackupAt, bankAccess = purchases.hasAccess()),
+) {
+    /** «Изменить» из уведомления при холодном запуске: покупка откроется, когда список прочитается из базы. */
+    private var waitingPurchase: String? = null
+    private var pendingLoaded = false
 
     init {
         viewModelScope.launch { finance.observeAccounts().collect { accounts -> setState { copy(accounts = accounts) } } }
@@ -35,6 +43,17 @@ class FinanceViewModel @Inject constructor(
         viewModelScope.launch { finance.observeFormHints().collect { hints -> setState { copy(hints = hints) } } }
         viewModelScope.launch { finance.observeTrash().collect { trash -> setState { copy(trash = trash) } } }
         viewModelScope.launch { finance.observeCounts().collect { counts -> setState { copy(counts = counts) } } }
+        viewModelScope.launch { purchases.observeSettings().collect { settings -> setState { copy(bank = settings) } } }
+        viewModelScope.launch {
+            purchases.observePending().collect { pending ->
+                setState { copy(pending = pending) }
+                pendingLoaded = true
+                waitingPurchase?.let { id ->
+                    waitingPurchase = null
+                    editPurchase(id)
+                }
+            }
+        }
     }
 
     override fun onIntent(intent: FinanceIntent) {
@@ -70,6 +89,15 @@ class FinanceViewModel @Inject constructor(
             is FinanceIntent.ExportBackup -> exportBackup(intent.uri)
             is FinanceIntent.PickBackup -> pickBackup(intent.uri)
             FinanceIntent.ConfirmRestore -> restoreBackup()
+            FinanceIntent.RefreshBankAccess -> setState { copy(bankAccess = purchases.hasAccess()) }
+            is FinanceIntent.SetBankEnabled -> setBankEnabled(intent.enabled)
+            is FinanceIntent.SetBankAccount -> viewModelScope.launch { purchases.setAccount(intent.accountId) }
+            is FinanceIntent.RecordPurchase -> viewModelScope.launch {
+                purchases.record(intent.id)
+                sendEffect(FinanceEffect.PurchaseRecorded)
+            }
+            is FinanceIntent.EditPurchase -> editPurchase(intent.id)
+            is FinanceIntent.SkipPurchase -> viewModelScope.launch { purchases.skip(intent.id) }
             is FinanceIntent.SetKind -> setKind(intent.kind)
             is FinanceIntent.EditForm -> setState { copy(form = form?.let(intent.change)) }
             FinanceIntent.CloseForm -> closeForm()
@@ -100,6 +128,27 @@ class FinanceViewModel @Inject constructor(
         setState { copy(form = draft ?: OperationForm(OperationKind.EXPENSE, accountId, today), today = today) }
     }
 
+    /** Включить можно, только когда доступ выдан и счёт выбран (макет 1.2); выключить — всегда. */
+    private fun setBankEnabled(enabled: Boolean) {
+        val access = purchases.hasAccess()
+        setState { copy(bankAccess = access) }
+        if (enabled && (!access || currentState.bankAccount == null)) return
+        viewModelScope.launch { purchases.setEnabled(enabled) }
+    }
+
+    /** «Изменить»: окно нового расхода — сумма, счёт и дата покупки подставлены, категории нет (§4.3, макет 2.4). */
+    private fun editPurchase(id: String) {
+        val purchase = currentState.pending.firstOrNull { it.id == id }
+        if (purchase == null) {
+            if (!pendingLoaded) waitingPurchase = id
+            return
+        }
+        val accounts = currentState.accounts.orEmpty()
+        val accountId = purchase.accountId.takeIf { id -> accounts.isEmpty() || accounts.any { it.id == id } } ?: accounts.first().id
+        val form = OperationForm(OperationKind.EXPENSE, accountId, purchase.date, amount = Money.input(purchase.amount), purchaseId = id)
+        setState { copy(form = form, tab = FinanceTab.OPERATIONS, today = time.today(), menu = false) }
+    }
+
     private fun setKind(kind: OperationKind) {
         val form = currentState.form ?: return
         if (form.editingId != null || form.kind == kind) return
@@ -110,7 +159,8 @@ class FinanceViewModel @Inject constructor(
     /** Закрытие окна: незавершённый ввод новой операции остаётся черновиком, правка просто закрывается. */
     private fun closeForm() {
         val form = currentState.form ?: return
-        setState { copy(form = null, draft = if (form.editingId == null) form.takeIf { it.hasInput } else draft) }
+        // Окно покупки из банка черновиком не становится: покупка остаётся в «Не разобрано».
+        setState { copy(form = null, draft = if (form.editingId == null && form.purchaseId == null) form.takeIf { it.hasInput } else draft) }
     }
 
     private fun saveForm() {
@@ -119,9 +169,13 @@ class FinanceViewModel @Inject constructor(
         if (!form.canSave) return
         val draft = OperationDraft(form.kind, amount, form.accountId, form.toAccountId, form.categoryId, form.place, form.comment, form.date)
         // Окно остаётся для следующей новой операции: сумма, место и комментарий очищаются; тип, счета, категория и дата — прежние.
-        setState { copy(form = form.copy(editingId = null, amount = "", place = "", comment = ""), draft = null) }
+        setState { copy(form = form.copy(editingId = null, purchaseId = null, amount = "", place = "", comment = ""), draft = if (form.purchaseId == null) null else this.draft) }
         viewModelScope.launch {
-            if (form.editingId == null) finance.createOperation(draft) else finance.updateOperation(form.editingId, draft)
+            when {
+                form.purchaseId != null -> purchases.recordAs(form.purchaseId, draft)
+                form.editingId == null -> finance.createOperation(draft)
+                else -> finance.updateOperation(form.editingId, draft)
+            }
             sendEffect(FinanceEffect.OperationSaved)
         }
     }

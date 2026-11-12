@@ -547,3 +547,36 @@ fun operation(
 ) = com.prostovasei.simpletasks.domain.model.finance.Operation(
     id, kind, amount, "a1", account, to?.let { "a2" }, to, category?.let { "c-$it" }, category, place, null, java.time.LocalDate.parse(date),
 )
+
+/** Покупки из уведомлений банка (#233) для тестов экрана: всё в памяти, вызовы записываются в [calls]. */
+class FakeBankPurchases : com.prostovasei.simpletasks.domain.repository.BankPurchases {
+    val settings = MutableStateFlow(com.prostovasei.simpletasks.domain.model.finance.BankSettings())
+    val pending = MutableStateFlow<List<com.prostovasei.simpletasks.domain.model.finance.PendingPurchase>>(emptyList())
+    var access = false
+    val calls = mutableListOf<String>()
+    val recorded = mutableListOf<com.prostovasei.simpletasks.domain.model.finance.OperationDraft>()
+
+    override fun observeSettings(): Flow<com.prostovasei.simpletasks.domain.model.finance.BankSettings> = settings
+    override fun hasAccess(): Boolean = access
+    override suspend fun setEnabled(enabled: Boolean) {
+        settings.value = settings.value.copy(enabled = enabled)
+    }
+    override suspend fun setAccount(accountId: String) {
+        settings.value = settings.value.copy(accountId = accountId)
+    }
+    override fun observePending(): Flow<List<com.prostovasei.simpletasks.domain.model.finance.PendingPurchase>> = pending
+    override suspend fun onPurchase(key: String, amount: Long, at: java.time.Instant) = null
+    override suspend fun record(id: String) {
+        calls += "record:$id"
+        pending.value = pending.value.filterNot { it.id == id }
+    }
+    override suspend fun recordAs(id: String, draft: com.prostovasei.simpletasks.domain.model.finance.OperationDraft) {
+        calls += "recordAs:$id"
+        recorded += draft
+        pending.value = pending.value.filterNot { it.id == id }
+    }
+    override suspend fun skip(id: String) {
+        calls += "skip:$id"
+        pending.value = pending.value.filterNot { it.id == id }
+    }
+}

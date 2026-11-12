@@ -91,6 +91,25 @@ class MigrationTest {
         }
     }
 
+    /** Миграция 7 → 8 (уведомления банка, #233): появляется пустая таблица покупок; счета и операции остаются. */
+    @Test
+    fun bankPurchasesTableIsAddedAndOperationsAreKept() {
+        val file = context.getDatabasePath(AppDatabase.NAME).apply { parentFile?.mkdirs(); delete() }
+        createVersion(file, 7) { sql ->
+            sql.execSQL("INSERT INTO finance_accounts (id, name, type, emoji, initial_balance, sort_order, created_at, updated_at) VALUES ('a1', 'Карта', 'card', NULL, 1000000, 0, 1, 1)")
+            sql.execSQL("INSERT INTO finance_operations (id, kind, amount, account_id, date, is_deleted, created_at, updated_at) VALUES ('o1', 'expense', 68000, 'a1', 20739, 0, 1, 1)")
+        }
+
+        val db = AppDatabase.build(context, FakeTimeProvider())
+        try {
+            assertEquals(932_000L, runBlocking { db.financeAccountDao().observeAll().first() }.single().balance)
+            assertEquals("o1", runBlocking { db.financeOperationDao().observeActive().first() }.single().operation.id)
+            assertEquals(emptyList<Any>(), runBlocking { db.bankPurchaseDao().observePending().first() })
+        } finally {
+            db.close()
+        }
+    }
+
     private fun createVersion4(file: File) = createVersion(file, 4) { sql ->
         sql.execSQL("INSERT INTO project_groups (id, name, sort_order, is_deleted, created_at, updated_at) VALUES ('g1', '🏠Дом', 0, 0, 1, 1)")
         sql.execSQL("INSERT INTO project_groups (id, name, sort_order, is_deleted, created_at, updated_at) VALUES ('g2', 'Работа', 1, 0, 1, 1)")

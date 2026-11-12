@@ -688,4 +688,33 @@
     <string name="backup_counts">счетов %1$d · категорий %2$d · операций %3$d</string>
     <string name="backup_confirm_text">Все текущие данные финансов будут заменены содержимым копии. Задачи не затрагиваются.</string>
     <string name="backup_replace">Заменить</string>
+    <!-- Уведомления банка (#233) -->
+    <string name="bank_listener_label">Покупки по карте</string>
+    <string name="bank_channel">Покупки по карте</string>
+    <string name="bank_notification_text">Яндекс Банк · %1$s</string>
+    <string name="bank_duplicate">Похоже, уже записано: «%1$s», −%2$s %3$s</string>
+    <string name="bank_record">Записать</string>
+    <string name="bank_edit">Изменить</string>
+    <string name="bank_skip">Пропустить</string>
+    <string name="bank_title">Уведомления банка</string>
+    <string name="bank_menu_off">Выключено</string>
+    <string name="bank_menu_on">Включено · %1$s</string>
+    <string name="bank_menu_no_access">Нет доступа</string>
+    <string name="bank_switch">Распознавать покупки</string>
+    <string name="bank_working">Работает. Новая покупка в Яндекс Банке → наше уведомление с кнопками.</string>
+    <string name="bank_revoked">Доступ к уведомлениям отключён в настройках Android. Покупки не распознаются.</string>
+    <string name="bank_steps">Что нужно</string>
+    <string name="bank_access_title">1. Доступ к уведомлениям</string>
+    <string name="bank_access_hint">Системное окно Android: найти Simple Tasks и включить</string>
+    <string name="bank_access_give">Дать доступ</string>
+    <string name="bank_access_ok">Есть</string>
+    <string name="bank_account_title">2. Счёт для Яндекс Банка</string>
+    <string name="bank_account_hint">Сюда записываются покупки</string>
+    <string name="bank_account_pick">Выбрать</string>
+    <string name="bank_privacy">Читаем только уведомления Яндекса о покупках («Покупка на … RUB»). Текст уведомлений не сохраняется и никуда не отправляется: остаются только сумма, счёт и время.</string>
+    <string name="bank_unsorted">Не разобрано</string>
+    <string name="bank_unsorted_note">Покупки, на которые ещё не ответил: уведомление смахнули, не нажали или телефон перезагрузился. Сами не исчезают.</string>
+    <string name="bank_unsorted_empty">Всё разобрано</string>
+    <string name="bank_purchase_caption">Яндекс Банк · %1$s · %2$s, %3$s</string>
+    <string name="bank_recorded">Записано</string>
 </resources>

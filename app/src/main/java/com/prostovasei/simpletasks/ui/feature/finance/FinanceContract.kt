@@ -2,12 +2,14 @@ package com.prostovasei.simpletasks.ui.feature.finance
 
 import com.prostovasei.simpletasks.domain.model.finance.Account
 import com.prostovasei.simpletasks.domain.model.finance.AccountDraft
+import com.prostovasei.simpletasks.domain.model.finance.BankSettings
 import com.prostovasei.simpletasks.domain.model.finance.Category
 import com.prostovasei.simpletasks.domain.model.finance.FinanceCounts
 import com.prostovasei.simpletasks.domain.model.finance.FormHints
 import com.prostovasei.simpletasks.domain.model.finance.Money
 import com.prostovasei.simpletasks.domain.model.finance.Operation
 import com.prostovasei.simpletasks.domain.model.finance.OperationKind
+import com.prostovasei.simpletasks.domain.model.finance.PendingPurchase
 import java.time.LocalDate
 import java.time.YearMonth
 
@@ -50,6 +52,8 @@ data class OperationForm(
     val categoryId: String? = null,
     val place: String = "",
     val comment: String = "",
+    /** «Изменить» у покупки из уведомления банка (#233): после «Сохранить» покупка считается разобранной. */
+    val purchaseId: String? = null,
 ) {
     val kopecks: Long? get() = Money.parse(amount)
 
@@ -84,7 +88,17 @@ data class FinanceState(
     val lastBackupAt: Long? = null,
     /** Месяц аналитики (этап 3); сохраняется при смене вкладки и модуля, после полного закрытия — снова текущий. */
     val month: YearMonth = YearMonth.from(today),
+    /** Уведомления банка (#233): настройки, системный доступ и «Не разобрано». */
+    val bank: BankSettings = BankSettings(),
+    val bankAccess: Boolean = false,
+    val pending: List<PendingPurchase> = emptyList(),
 ) {
+    /** Счёт для Яндекс Банка; после восстановления копии выбранного счёта может уже не быть. */
+    val bankAccount: Account? get() = accounts?.firstOrNull { it.id == bank.accountId }
+
+    /** Распознавание работает: включено, доступ есть, счёт выбран. */
+    val bankActive: Boolean get() = bank.enabled && bankAccess && bankAccount != null
+
     /** Вперёд дальше текущего месяца листать нельзя. */
     val canGoNextMonth: Boolean get() = month < YearMonth.from(today)
 
@@ -163,6 +177,16 @@ sealed interface FinanceIntent {
     data class ExportBackup(val uri: String) : FinanceIntent
     data class PickBackup(val uri: String) : FinanceIntent
     data object ConfirmRestore : FinanceIntent
+
+    /** Уведомления банка (#233): проверить доступ (после возврата из настроек Android), выключатель, счёт. */
+    data object RefreshBankAccess : FinanceIntent
+    data class SetBankEnabled(val enabled: Boolean) : FinanceIntent
+    data class SetBankAccount(val accountId: String) : FinanceIntent
+
+    /** Ответы на покупку из «Не разобрано» или нашего уведомления. «Изменить» открывает окно нового расхода с подстановкой. */
+    data class RecordPurchase(val id: String) : FinanceIntent
+    data class EditPurchase(val id: String) : FinanceIntent
+    data class SkipPurchase(val id: String) : FinanceIntent
 }
 
 sealed interface FinanceEffect {
@@ -173,4 +197,5 @@ sealed interface FinanceEffect {
     data object BackupFailed : FinanceEffect
     data object BackupInvalid : FinanceEffect
     data object BackupRestored : FinanceEffect
+    data object PurchaseRecorded : FinanceEffect
 }

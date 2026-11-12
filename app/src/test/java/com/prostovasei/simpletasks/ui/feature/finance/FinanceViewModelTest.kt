@@ -56,7 +56,9 @@ class FinanceViewModelTest {
         override var lastBackupAt: Long? = null
     }
 
-    private fun vm() = FinanceViewModel(finance, time, documents, store, dispatcher)
+    private val bank = com.prostovasei.simpletasks.testing.FakeBankPurchases()
+
+    private fun vm() = FinanceViewModel(finance, time, documents, store, dispatcher, bank)
 
     private fun twoAccounts() {
         finance.accounts.value = listOf(account("a1", "Карта", 4_230_000), account("a2", "Наличные", 615_000, AccountType.CASH))
@@ -431,5 +433,101 @@ class FinanceViewModelTest {
         assertEquals(FinanceTab.ANALYTICS, vm.state.value.tab)
         vm.onIntent(FinanceIntent.SelectTab(FinanceTab.OPERATIONS))
         assertEquals(FinanceTab.OPERATIONS, vm.state.value.tab)
+    }
+
+    private fun purchase(id: String = "p1", account: String = "a1") = com.prostovasei.simpletasks.domain.model.finance.PendingPurchase(
+        id, 68_000, account, "Карта", java.time.Instant.parse("2026-10-12T09:30:00Z"), today.minusDays(1),
+    )
+
+    /** #233: «Изменить» — окно нового расхода с суммой, счётом и датой покупки; «Сохранить» разбирает покупку. */
+    @Test
+    fun editPurchaseOpensPrefilledExpenseAndRecordsIt() = runTest(dispatcher) {
+        twoAccounts()
+        bank.pending.value = listOf(purchase(account = "a2"))
+        val vm = vm()
+        runCurrent()
+        vm.onIntent(FinanceIntent.EditPurchase("p1"))
+        val form = vm.state.value.form!!
+        assertEquals(OperationKind.EXPENSE, form.kind)
+        assertEquals("680", form.amount)
+        assertEquals("a2", form.accountId)
+        assertEquals(today.minusDays(1), form.date)
+        assertNull(form.categoryId)
+        assertEquals(FinanceTab.OPERATIONS, vm.state.value.tab)
+
+        vm.onIntent(FinanceIntent.SaveForm)
+        runCurrent()
+        assertEquals(listOf("recordAs:p1"), bank.calls)
+        assertEquals(68_000L, bank.recorded.single().amount)
+        assertNull(vm.state.value.form!!.purchaseId)
+        assertTrue(finance.calls.none { it.startsWith("operation:") })
+    }
+
+    /** Закрыл окно покупки без сохранения — покупка остаётся в «Не разобрано», черновиком не становится. */
+    @Test
+    fun closingPurchaseWindowKeepsItPending() = runTest(dispatcher) {
+        twoAccounts()
+        bank.pending.value = listOf(purchase())
+        val vm = vm()
+        runCurrent()
+        vm.onIntent(FinanceIntent.EditPurchase("p1"))
+        vm.onIntent(FinanceIntent.CloseForm)
+        assertNull(vm.state.value.form)
+        assertNull(vm.state.value.draft)
+        assertTrue(bank.calls.isEmpty())
+        assertEquals(1, vm.state.value.pending.size)
+    }
+
+    /** Из уведомления при холодном запуске покупка открывается, когда список прочитан. */
+    @Test
+    fun editPurchaseWaitsForPendingList() = runTest(dispatcher) {
+        twoAccounts()
+        bank.pending.value = listOf(purchase())
+        val vm = vm()
+        vm.onIntent(FinanceIntent.EditPurchase("p1"))
+        runCurrent()
+        assertEquals("p1", vm.state.value.form?.purchaseId)
+    }
+
+    @Test
+    fun recordAndSkipAnswerPurchase() = runTest(dispatcher) {
+        bank.pending.value = listOf(purchase("p1"), purchase("p2"))
+        val vm = vm()
+        runCurrent()
+        vm.onIntent(FinanceIntent.RecordPurchase("p1"))
+        vm.onIntent(FinanceIntent.SkipPurchase("p2"))
+        runCurrent()
+        assertEquals(listOf("record:p1", "skip:p2"), bank.calls)
+        assertTrue(vm.state.value.pending.isEmpty())
+    }
+
+    /** Выключатель включается, только когда есть доступ и счёт (макет 1.2); выключается всегда. */
+    @Test
+    fun bankSwitchNeedsAccessAndAccount() = runTest(dispatcher) {
+        twoAccounts()
+        val vm = vm()
+        runCurrent()
+        vm.onIntent(FinanceIntent.SetBankEnabled(true))
+        runCurrent()
+        assertFalse(bank.settings.value.enabled)
+
+        vm.onIntent(FinanceIntent.SetBankAccount("a1"))
+        runCurrent()
+        vm.onIntent(FinanceIntent.SetBankEnabled(true))
+        runCurrent()
+        assertFalse(bank.settings.value.enabled)
+
+        bank.access = true
+        vm.onIntent(FinanceIntent.SetBankEnabled(true))
+        runCurrent()
+        assertTrue(vm.state.value.bankActive)
+
+        bank.access = false
+        vm.onIntent(FinanceIntent.RefreshBankAccess)
+        assertFalse(vm.state.value.bankActive)
+        assertTrue(vm.state.value.bank.enabled)
+        vm.onIntent(FinanceIntent.SetBankEnabled(false))
+        runCurrent()
+        assertFalse(bank.settings.value.enabled)
     }
 }

@@ -63,12 +63,14 @@ fun WindowText(text: String, modifier: Modifier = Modifier) {
 
 /** Меню шестерёнки финансов (этап 4, #231; экран 3.1): единственный вход в категории, корзину и резервную копию. */
 @Composable
-fun FinanceMenu(state: FinanceState, onCategories: () -> Unit, onTrash: () -> Unit, onBackup: () -> Unit, onDismiss: () -> Unit) {
+fun FinanceMenu(state: FinanceState, onCategories: () -> Unit, onTrash: () -> Unit, onBackup: () -> Unit, onDismiss: () -> Unit, onBank: () -> Unit = {}) {
     val active = state.categories.filterNot { it.archived }
     FinanceWindow(title = stringResource(R.string.module_finance), tag = TAG_FINANCE_MENU, onDismiss = onDismiss, actions = {}) {
         MenuRow(R.drawable.ic_finance_categories, stringResource(R.string.categories_title), stringResource(R.string.menu_categories_count, active.size), TAG_MENU_CATEGORIES, onClick = onCategories)
         MenuRow(R.drawable.ic_tool_delete, stringResource(R.string.finance_trash), stringResource(R.string.menu_trash_count, state.trash.size), TAG_MENU_TRASH, onClick = onTrash)
-        MenuRow(R.drawable.ic_finance_backup, stringResource(R.string.backup_title), lastBackupText(state.lastBackupAt), TAG_MENU_BACKUP, last = true, onClick = onBackup)
+        MenuRow(R.drawable.ic_finance_backup, stringResource(R.string.backup_title), lastBackupText(state.lastBackupAt), TAG_MENU_BACKUP, onClick = onBackup)
+        // #233: уведомления банка — четвёртая строка (макет 1.1).
+        MenuRow(R.drawable.ic_bank_notifications, stringResource(R.string.bank_title), bankMenuSubtitle(state), TAG_MENU_BANK, last = true, onClick = onBank)
     }
 }
 

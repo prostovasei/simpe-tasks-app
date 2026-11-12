@@ -585,17 +585,20 @@ class FinanceScreenTest {
     fun gearMenuLeadsToCategoriesTrashAndBackup() {
         val clicks = mutableListOf<String>()
         val state = full().copy(trash = trashed, lastBackupAt = null)
-        composeRule.setContent { AppTheme { FinanceMenu(state, { clicks += "categories" }, { clicks += "trash" }, { clicks += "backup" }, { clicks += "close" }) } }
+        composeRule.setContent { AppTheme { FinanceMenu(state, { clicks += "categories" }, { clicks += "trash" }, { clicks += "backup" }, { clicks += "close" }, onBank = { clicks += "bank" }) } }
 
         composeRule.onNodeWithText("Действующих: 7").assertExists()
+        composeRule.onNodeWithText("Уведомления банка").assertExists()
+        composeRule.onNodeWithText("Выключено").assertExists()
         composeRule.onNodeWithText("Операций: 3").assertExists()
         composeRule.onNodeWithText("Копия ещё не сохранялась").assertExists()
         composeRule.onNode(isDialog()).captureRoboImage("screenshots/finance_menu_light.png")
         composeRule.onNodeWithTag(TAG_MENU_CATEGORIES).performClick()
         composeRule.onNodeWithTag(TAG_MENU_TRASH).performClick()
         composeRule.onNodeWithTag(TAG_MENU_BACKUP).performClick()
+        composeRule.onNodeWithTag(TAG_MENU_BANK).performClick()
         composeRule.onNodeWithTag("$TAG_FINANCE_MENU:$TAG_WINDOW_CLOSE").performClick()
-        assertEquals(listOf("categories", "trash", "backup", "close"), clicks)
+        assertEquals(listOf("categories", "trash", "backup", "bank", "close"), clicks)
     }
 
     /** Окна копии: действия и подтверждение замены с содержимым копии и текущими данными. */
@@ -624,5 +627,100 @@ class FinanceScreenTest {
         composeRule.onNodeWithTag("$TAG_RESTORE_WINDOW:cancel").performClick()
         composeRule.onNodeWithTag("$TAG_RESTORE_WINDOW:confirm").performClick()
         assertEquals(listOf("save", "restore", "cancel", "replace"), clicks)
+    }
+
+    // ---------- Уведомления банка (#233; макеты design/approved/233/screens.html) ----------
+
+    private val purchases = listOf(
+        com.prostovasei.simpletasks.domain.model.finance.PendingPurchase("p1", 68_000, "a1", "Карта", java.time.Instant.parse("2026-11-10T11:32:00Z"), today),
+        com.prostovasei.simpletasks.domain.model.finance.PendingPurchase(
+            "p2", 124_000, "a1", "Карта", java.time.Instant.parse("2026-11-10T09:05:00Z"), today,
+            com.prostovasei.simpletasks.domain.model.finance.DuplicateHint("Продукты", 124_000, today),
+        ),
+        com.prostovasei.simpletasks.domain.model.finance.PendingPurchase("p3", 35_000, "a1", "Карта", java.time.Instant.parse("2026-11-09T16:47:00Z"), today.minusDays(1)),
+    )
+
+    private fun bankState(enabled: Boolean, access: Boolean, account: String?) =
+        full().copy(bank = com.prostovasei.simpletasks.domain.model.finance.BankSettings(enabled, account), bankAccess = access)
+
+    private fun showBank(state: FinanceState, onAccess: () -> Unit = {}) {
+        composeRule.setContent { AppTheme { BankSettingsScreen(state, { intents += it }, onBack = {}, onGiveAccess = onAccess) } }
+    }
+
+    /** Макет 1.2: первая настройка — выключатель недоступен, пока нет доступа и счёта. */
+    @Test
+    fun bankSettingsFirstRun() {
+        var asked = false
+        showBank(bankState(enabled = false, access = false, account = null)) { asked = true }
+        composeRule.onNodeWithText("Распознавать покупки").assertExists()
+        composeRule.onNodeWithText("Выбрать").assertExists()
+        composeRule.onRoot().captureRoboImage("screenshots/finance_bank_off_light.png")
+        composeRule.onNodeWithTag(TAG_BANK_ACCESS).performClick()
+        assertTrue(asked)
+        composeRule.onNodeWithTag(TAG_BANK_ACCOUNT).performClick()
+        composeRule.onNodeWithTag("$TAG_BANK_ACCOUNT:a2").performClick()
+        assertEquals(listOf<FinanceIntent>(FinanceIntent.SetBankAccount("a2")), intents)
+    }
+
+    /** Макет 1.3: включено — доступ есть, счёт выбран. */
+    @Test
+    fun bankSettingsOn() {
+        showBank(bankState(enabled = true, access = true, account = "a1"))
+        composeRule.onNodeWithTag(TAG_BANK_ACCESS_OK).assertExists()
+        composeRule.onNodeWithText("💳 Карта").assertExists()
+        composeRule.onRoot().captureRoboImage("screenshots/finance_bank_on_light.png")
+        composeRule.onNodeWithTag(TAG_BANK_SWITCH).performClick()
+        assertEquals(listOf<FinanceIntent>(FinanceIntent.SetBankEnabled(false)), intents)
+    }
+
+    /** Макет 1.4: доступ отозван в Android — предупреждение, выключатель выключен. */
+    @Test
+    fun bankSettingsRevoked() {
+        showBank(bankState(enabled = true, access = false, account = "a1"))
+        composeRule.onNodeWithTag(TAG_BANK_REVOKED).assertExists()
+        composeRule.onNodeWithTag(TAG_BANK_ACCESS).assertExists()
+        composeRule.onRoot().captureRoboImage("screenshots/finance_bank_revoked_light.png")
+    }
+
+    /** Макет 2.2: «Не разобрано» над списком операций, только когда есть покупки. */
+    @Test
+    fun unsortedRowAboveOperations() {
+        var opened = false
+        composeRule.setContent {
+            AppTheme {
+                Column(Modifier.fillMaxSize()) {
+                    ModuleBar(AppModule.FINANCE, onSelect = {}, onSettings = {})
+                    Box(Modifier.weight(1f)) { FinanceScreen(full().copy(pending = purchases), onOpenUnsorted = { opened = true }) { intents += it } }
+                    FinanceBottomBar(FinanceTab.OPERATIONS, onSelect = {}, onAdd = {})
+                }
+            }
+        }
+        composeRule.onNodeWithTag(TAG_UNSORTED_ROW).assertExists()
+        composeRule.onNodeWithText("3").assertExists()
+        composeRule.onRoot().captureRoboImage("screenshots/finance_operations_unsorted_light.png")
+        composeRule.onNodeWithTag(TAG_UNSORTED_ROW).performClick()
+        assertTrue(opened)
+    }
+
+    @Test
+    fun noUnsortedRowWithoutPurchases() {
+        show(full())
+        composeRule.onNodeWithTag(TAG_UNSORTED_ROW).assertDoesNotExist()
+    }
+
+    /** Макет 2.3: покупки, пометка дубля и три действия. */
+    @Test
+    fun unsortedScreenAnswersPurchases() {
+        val edited = mutableListOf<String>()
+        composeRule.setContent { AppTheme { UnsortedScreen(purchases, today, { intents += it }, onBack = {}, onEdit = { edited += it }, zone = java.time.ZoneId.of("Europe/Moscow")) } }
+        composeRule.onNodeWithText("Яндекс Банк · Карта · сегодня, 14:32").assertExists()
+        composeRule.onNodeWithText("Яндекс Банк · Карта · вчера, 19:47").assertExists()
+        composeRule.onNodeWithTag("$TAG_PURCHASE_DUPLICATE:p2").assertTextEquals("Похоже, уже записано: «Продукты», −1${s}240${s}₽ сегодня")
+        composeRule.onRoot().captureRoboImage("screenshots/finance_unsorted_light.png")
+        composeRule.onNodeWithTag("$TAG_PURCHASE_RECORD:p1").performClick()
+        composeRule.onNodeWithTag("$TAG_PURCHASE_SKIP:p3").performClick()
+        composeRule.onNodeWithTag("$TAG_PURCHASE_EDIT:p2").performClick()
+        assertEquals(listOf<FinanceIntent>(FinanceIntent.RecordPurchase("p1"), FinanceIntent.SkipPurchase("p3")), intents)
+        assertEquals(listOf("p2"), edited)
     }
 }

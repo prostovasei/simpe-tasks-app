@@ -118,7 +118,9 @@ import com.prostovasei.simpletasks.ui.feature.settings.SettingsRoute
 import com.prostovasei.simpletasks.ui.feature.task.QuickAddRoute
 import com.prostovasei.simpletasks.ui.feature.task.TaskDetailRoute
 import com.prostovasei.simpletasks.ui.feature.finance.AppModule
+import com.prostovasei.simpletasks.ui.feature.finance.BankSettingsRoute
 import com.prostovasei.simpletasks.ui.feature.finance.CategoriesRoute
+import com.prostovasei.simpletasks.ui.feature.finance.UnsortedRoute
 import com.prostovasei.simpletasks.ui.feature.finance.FinanceBottomBar
 import com.prostovasei.simpletasks.ui.feature.finance.FinanceIntent
 import com.prostovasei.simpletasks.ui.feature.finance.FinanceRoute
@@ -162,6 +164,8 @@ fun AppNavHost(
     // При холодном запуске ждём, пока NavHost построит граф, — иначе navigate() падает.
     LaunchedEffect(openRoute) {
         openRoute ?: return@LaunchedEffect
+        // Покупка из уведомления банка (#233) открывается ниже, когда готова модель финансов.
+        if (openRoute is OpenBankPurchase) return@LaunchedEffect
         navController.currentBackStackEntryFlow.first()
         navController.navigate(openRoute) { launchSingleTop = true }
         onRouteOpened()
@@ -183,6 +187,15 @@ fun AppNavHost(
     val onRoot = destination == null || inFinance || Tab.entries.any { destination.isOn(it) }
     val finance = hiltViewModel<FinanceViewModel>()
     val financeState by finance.state.collectAsStateWithLifecycle()
+    // #233: «Изменить» в уведомлении о покупке — раздел финансов с окном нового расхода.
+    LaunchedEffect(openRoute) {
+        val purchase = openRoute as? OpenBankPurchase ?: return@LaunchedEffect
+        navController.currentBackStackEntryFlow.first()
+        val inStack = runCatching { navController.getBackStackEntry<FinanceDestination>() }.isSuccess
+        if (inStack) navController.popBackStack<FinanceDestination>(inclusive = false) else navController.openRoot(FinanceDestination, restore = true)
+        finance.onIntent(FinanceIntent.EditPurchase(purchase.purchaseId))
+        onRouteOpened()
+    }
     var lastTaskTab by rememberSaveable { mutableStateOf(left.name) }
     LaunchedEffect(currentTab) { currentTab?.let { lastTaskTab = it.name } }
 
@@ -348,9 +361,13 @@ fun AppNavHost(
                     finance,
                     onOpenCategories = { navController.navigate(FinanceCategoriesDestination) { launchSingleTop = true } },
                     onOpenTrash = { navController.navigate(FinanceTrashDestination) { launchSingleTop = true } },
+                    onOpenBank = { navController.navigate(FinanceBankDestination) { launchSingleTop = true } },
+                    onOpenUnsorted = { navController.navigate(FinanceUnsortedDestination) { launchSingleTop = true } },
                 )
             }
             composable<FinanceTrashDestination> { FinanceTrashRoute(finance, onBack = { navController.popBackStack() }) }
+            composable<FinanceBankDestination> { BankSettingsRoute(finance, onBack = { navController.popBackStack() }) }
+            composable<FinanceUnsortedDestination> { UnsortedRoute(finance, onBack = { navController.popBackStack() }) }
             composable<FinanceCategoriesDestination> { CategoriesRoute(finance, onBack = { navController.popBackStack() }) }
             composable<ProjectDestination> { entry ->
                 val projectId = entry.toRoute<ProjectDestination>().projectId

@@ -44,3 +44,11 @@
 Этап 2 (0.59.0, #225) — операции и категории; экраны 1.1–1.6, 2.3, 3.2–3.4; компоненты `OperationWindow`, `ScreenOperations`. Этап 3 (0.60.0, #229) — аналитика; экраны 4.1, 4.2; компонент `ScreenAnalytics`.
 Вид панелей изменён решением PM 11.11.2026 (#227): бар модулей во всю ширину, вкладки без плашек — макеты 217 в этой части устарели.
 Этап 4 (0.61.0, #231) — корзина, сверка, копия; экраны 2.5–2.8, 3.1, 3.5–3.8; компоненты `FinanceService`, `ScreenFinanceTrash`. Комплект 217 реализован целиком.
+
+## Уведомления банка — #233
+
+Согласовано PM 12.11.2026 («Макеты ок»): 8 экранов — [screens.html](approved/233/screens.html), [1. Настройка](approved/233/screens-1.png),
+[2. Покупка и «Не разобрано»](approved/233/screens-2.png); [требования](approved/233/requirements.md). Основа — стиль макетов 217 с видом панелей #227.
+Реализовано в 0.62.0: экраны 1.1–1.4, 2.2–2.4 — `BankScreens.kt`, снимки `app/screenshots/finance_bank_*`, `finance_unsorted_light`,
+`finance_operations_unsorted_light`; 2.1 — системное уведомление Android (`AndroidBankNotifier`), автоснимка нет. Новых токенов и компонентов
+дизайн-системы нет: экраны собраны из существующих (`FinanceField`, `PickValue`, `PrimaryAction`, `SecondaryAction`, `MenuRow`).

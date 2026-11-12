@@ -103,6 +103,22 @@
                 android:resource="@xml/tasks_widget_info" />
         </receiver>
 
+        <!-- Уведомления банка (#233): чтение уведомлений Яндекса о покупках; доступ выдаёт PM в настройках Android. -->
+        <service
+            android:name=".notifications.bank.BankNotificationListener"
+            android:exported="true"
+            android:label="@string/bank_listener_label"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
+        <!-- Кнопки «Записать» и «Пропустить» уведомления о покупке — только от самого приложения. -->
+        <receiver
+            android:name=".notifications.bank.BankPurchaseReceiver"
+            android:exported="false" />
+
         <!-- Ответ установщика Android при обновлении приложения. -->
         <receiver
             android:name=".core.update.UpdateInstallReceiver"

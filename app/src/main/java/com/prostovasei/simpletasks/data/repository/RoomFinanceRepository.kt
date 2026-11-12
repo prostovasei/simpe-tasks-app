@@ -109,6 +109,8 @@ class RoomFinanceRepository @Inject constructor(
         // Сначала полный разбор и проверка: негодный файл не должен стереть данные.
         val backup = FinanceBackupCodec.decode(json)
         db.withTransaction {
+            // «Не разобрано» в копию не входит (решение PM, #233) и ссылается на прежние счета — очищается.
+            db.bankPurchaseDao().deleteAll()
             operations.deleteAll()
             operations.deleteAllCategories()
             accounts.deleteAll()
