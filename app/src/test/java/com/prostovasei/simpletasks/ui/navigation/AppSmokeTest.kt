@@ -5,7 +5,6 @@ import com.prostovasei.simpletasks.ui.feature.lists.TAG_LISTS_SCROLL
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.performScrollToNode
-import com.prostovasei.simpletasks.ui.feature.lists.TAG_LISTS_SETTINGS
 import com.prostovasei.simpletasks.ui.feature.lists.TAG_LISTS_SEARCH
 import com.prostovasei.simpletasks.ui.feature.lists.TAG_LISTS_INBOX
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -28,6 +27,14 @@ import androidx.compose.ui.test.performTextReplacement
 import com.prostovasei.simpletasks.MainActivity
 import com.prostovasei.simpletasks.designsystem.components.TAG_NAME_FIELD
 import com.prostovasei.simpletasks.ui.common.TAG_ADD_TASK
+import com.prostovasei.simpletasks.ui.feature.settings.TAG_APP_INFO
+import com.prostovasei.simpletasks.ui.feature.settings.TAG_APP_SETTINGS
+import com.prostovasei.simpletasks.ui.feature.settings.TAG_SETTINGS_APP
+import com.prostovasei.simpletasks.ui.feature.settings.TAG_SETTINGS_FINANCE
+import com.prostovasei.simpletasks.ui.feature.settings.TAG_SETTINGS_TASKS
+import com.prostovasei.simpletasks.ui.navigation.TAG_APP_BAR
+import com.prostovasei.simpletasks.ui.navigation.TAG_MODULE_BUTTON
+import com.prostovasei.simpletasks.ui.navigation.TAG_MODULE_SETTINGS
 import com.prostovasei.simpletasks.ui.feature.lists.TAG_NEW_LIST
 import com.prostovasei.simpletasks.ui.feature.task.TAG_DETAIL_CLOSE
 import com.prostovasei.simpletasks.ui.feature.task.TAG_DETAIL_DELETE
@@ -76,16 +83,17 @@ class AppSmokeTest {
     @Test
     fun walkThroughTabsAndCreateList() {
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Всё сделано") }
-        composeRule.onNodeWithText("Предстоящее").assertExists()
+        // #241: заголовка «Предстоящее» над лентой нет; названия страниц — только в нижней панели.
+        composeRule.onNodeWithText("Предстоящее").assertDoesNotExist()
+        composeRule.onNodeWithContentDescription("Предстоящее").assertExists()
 
-        // Итерация 55: «Входящие», «Поиск», «Настройки» — в «Списках».
+        // Итерация 55: «Входящие» и «Поиск» — в «Списках» (настройки с #241 — из меню кнопки модуля).
         composeRule.onNodeWithTag("tab:LISTS").performClick()
         composeRule.onNodeWithTag(TAG_LISTS_INBOX).performClick()
         composeRule.onNodeWithText("Всё разобрано").assertExists()
 
-        // «Неделя» — удержанием левого значка: меню «Предстоящее / Неделя».
-        composeRule.onNodeWithTag("tab:left").performTouchInput { longClick() }
-        composeRule.onNodeWithTag("$TAG_LEFT_MENU:WEEK").performClick()
+        // «Неделя» — отдельная страница панели (#241: скрытого выбора удержанием больше нет).
+        composeRule.onNodeWithTag("tab:WEEK").performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists("week-screen") }
         composeRule.onNodeWithTag("week-calendar").assertExists()
 
@@ -95,9 +103,24 @@ class AppSmokeTest {
         composeRule.onNodeWithTag(TAG_SEARCH_FIELD).performTextReplacement("молоко")
         composeRule.onNodeWithText("Ничего не найдено").assertExists()
 
+        // Единые настройки (#241): меню кнопки модуля → «Настройки» → «Задачи» → «Импорт из TickTick»; «Назад» — на главную страницу настроек.
+        composeRule.onNodeWithTag(TAG_MODULE_BUTTON).performClick()
+        composeRule.onNodeWithTag(TAG_MODULE_SETTINGS).performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists(TAG_APP_SETTINGS) }
+        composeRule.onNodeWithTag("tab:LISTS").assertDoesNotExist()
+        composeRule.onNodeWithTag(TAG_SETTINGS_TASKS).performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Импорт из TickTick") }
+        composeRule.onNodeWithText("Обновление").assertDoesNotExist()
+        composeRule.onNodeWithContentDescription("Назад").performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists(TAG_APP_SETTINGS) }
+        composeRule.onNodeWithTag(TAG_SETTINGS_APP).performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists(TAG_APP_INFO) }
+        composeRule.onNodeWithText("Обновление").assertExists()
+        composeRule.onNodeWithContentDescription("Назад").performClick()
+        composeRule.onNodeWithContentDescription("Назад").performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists("tab:LISTS") }
+
         composeRule.onNodeWithTag("tab:LISTS").performClick()
-        composeRule.onNodeWithTag(TAG_LISTS_SETTINGS).performClick()
-        composeRule.onNodeWithText("Импорт из TickTick").assertExists()
 
         composeRule.onNodeWithTag("tab:LISTS").performClick()
         composeRule.onNodeWithTag(TAG_LISTS_SCROLL).performScrollToNode(hasText("Списков пока нет"))
@@ -108,14 +131,13 @@ class AppSmokeTest {
 
         // Новый список открывается сразу, нижний бар скрыт.
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("В списке пусто") }
-        composeRule.onNodeWithTag("tab:left").assertDoesNotExist()
+        composeRule.onNodeWithTag("tab:LISTS").assertDoesNotExist()
 
         composeRule.onNodeWithContentDescription("Назад").performClick()
         // «Списки» прокручиваются: новый список — под системными строками, на тестовом экране ниже края.
         composeRule.waitUntil(5_000) { runCatching { composeRule.onNodeWithTag(TAG_LISTS_SCROLL).performScrollToNode(hasText("Покупки")) }.isSuccess }
-        // Левое место запомнило «Неделю»; «Предстоящее» — снова через меню.
-        composeRule.onNodeWithTag("tab:left").performTouchInput { longClick() }
-        composeRule.onNodeWithTag("$TAG_LEFT_MENU:UPCOMING").performClick()
+        // «Предстоящее» — своя страница панели.
+        composeRule.onNodeWithTag("tab:UPCOMING").performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Всё сделано") }
     }
 
@@ -124,7 +146,7 @@ class AppSmokeTest {
     fun switchToFinanceCreateAccountAndComeBack() {
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Всё сделано") }
         composeRule.onNodeWithTag("tab:LISTS").performClick()
-        composeRule.onNodeWithTag("module:FINANCE").performClick()
+        switchModule("FINANCE")
 
         // Первый запуск: счетов нет, нижняя панель — финансовая, «+» ведёт к созданию счёта.
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Начнём со счёта") }
@@ -135,18 +157,20 @@ class AppSmokeTest {
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("42\u00A0300\u00A0₽") }
         composeRule.onNodeWithText("Карта").assertExists()
 
-        // Этап 2 (#225): категория из шестерёнки, расход через «+» — остаток счёта уменьшается, операция в списке.
-        composeRule.onNodeWithTag("module_settings").performClick()
+        // Этап 2 (#225): категория из настроек, расход через «+» — остаток счёта уменьшается, операция в списке.
+        openFinanceSettings()
         composeRule.onNodeWithTag("finance_menu_categories").performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists("category_add") }
         composeRule.onNodeWithTag("category_add").performClick()
         composeRule.onNodeWithTag("category_name").performTextReplacement("Продукты")
         composeRule.onNodeWithTag("category_save").performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Продукты") }
-        composeRule.onNodeWithTag("module_bar").assertDoesNotExist()
-        // #239: «Назад» из категорий — на страницу настроек, ещё раз — в финансы.
+        composeRule.onNodeWithTag("app_bar").assertDoesNotExist()
+        // «Назад» из категорий — в настройки финансов, затем на главную страницу настроек, затем в финансы.
         composeRule.onNodeWithContentDescription("Назад").performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists("finance_settings") }
+        composeRule.onNodeWithContentDescription("Назад").performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists(TAG_APP_SETTINGS) }
         composeRule.onNodeWithContentDescription("Назад").performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists("finance_add") }
         composeRule.onNodeWithTag("finance_add").performClick()
@@ -160,17 +184,17 @@ class AppSmokeTest {
         // Вкладка «Операции» запоминается при уходе в задачи; задачи возвращаются на «Списки».
         composeRule.onNodeWithTag("finance_tab:OPERATIONS").performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("− 850\u00A0₽") }
-        composeRule.onNodeWithTag("module:TASKS").performClick()
+        switchModule("TASKS")
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists(TAG_LISTS_SCROLL) }
-        composeRule.onNodeWithTag("finance_bar").assertDoesNotExist()
-        composeRule.onNodeWithTag("module:FINANCE").performClick()
+        composeRule.onNodeWithTag("finance_tab:OPERATIONS").assertDoesNotExist()
+        switchModule("FINANCE")
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("− 850\u00A0₽") }
 
         // Этап 4 (#231): операция в корзину из окна правки — остаток вернулся; из корзины (меню шестерёнки) — обратно.
         composeRule.onNodeWithText("Продукты").performClick()
         composeRule.onNodeWithTag("operation_trash").performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Операций пока нет") }
-        composeRule.onNodeWithTag("module_settings").performClick()
+        openFinanceSettings()
         composeRule.onNodeWithText("Операций: 1").assertExists()
         composeRule.onNodeWithTag("finance_menu_trash").performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists("finance_trash") }
@@ -179,13 +203,32 @@ class AppSmokeTest {
         composeRule.onNodeWithContentDescription("Назад").performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists("finance_settings") }
         composeRule.onNodeWithContentDescription("Назад").performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists(TAG_APP_SETTINGS) }
+        composeRule.onNodeWithContentDescription("Назад").performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("− 850\u00A0₽") }
 
-        // На вложенных экранах задач бара модулей нет.
-        composeRule.onNodeWithTag("module:TASKS").performClick()
+        // На вложенных экранах (настройки) нижней панели нет.
+        switchModule("TASKS")
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists(TAG_LISTS_SCROLL) }
-        composeRule.onNodeWithTag(TAG_LISTS_SETTINGS).performClick()
-        composeRule.onNodeWithTag("module_bar").assertDoesNotExist()
+        composeRule.onNodeWithTag(TAG_MODULE_BUTTON).performClick()
+        composeRule.onNodeWithTag(TAG_MODULE_SETTINGS).performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists(TAG_APP_SETTINGS) }
+        composeRule.onNodeWithTag(TAG_APP_BAR).assertDoesNotExist()
+    }
+
+    /** Меню кнопки модуля: выбрать модуль. */
+    private fun switchModule(name: String) {
+        composeRule.onNodeWithTag(TAG_MODULE_BUTTON).performClick()
+        composeRule.onNodeWithTag("module:$name").performClick()
+    }
+
+    /** Единые настройки → «Финансы» (#241). */
+    private fun openFinanceSettings() {
+        composeRule.onNodeWithTag(TAG_MODULE_BUTTON).performClick()
+        composeRule.onNodeWithTag(TAG_MODULE_SETTINGS).performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists(TAG_APP_SETTINGS) }
+        composeRule.onNodeWithTag(TAG_SETTINGS_FINANCE).performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists("finance_settings") }
     }
 
     @Test
@@ -204,7 +247,7 @@ class AppSmokeTest {
         composeRule.onNodeWithTag(TAG_LISTS_SEARCH).performClick()
         composeRule.onNodeWithTag(TAG_SEARCH_FIELD).performTextReplacement("прод")
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("НАЙДЕНА 1 ЗАДАЧА") }
-        composeRule.onNodeWithTag("tab:left").performClick()
+        composeRule.onNodeWithTag("tab:UPCOMING").performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_SEARCH_FIELD).fetchSemanticsNodes().isEmpty() }
 
         // Тап по карточке → шторка задачи → переименование → «Готово».
@@ -279,7 +322,7 @@ class AppSmokeTest {
 
         composeRule.onNodeWithText("Первая").performTouchInput { longClick() }
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_SELECTION_BAR).fetchSemanticsNodes().isNotEmpty() }
-        composeRule.onNodeWithTag("tab:left").assertDoesNotExist()
+        composeRule.onNodeWithTag("tab:UPCOMING").assertDoesNotExist()
         composeRule.onNodeWithText("Вторая").performClick()
         composeRule.onNodeWithTag(TAG_SELECTION_COUNT).assertTextEquals("Выбрано: 2")
 
@@ -287,7 +330,7 @@ class AppSmokeTest {
         composeRule.onNodeWithTag(TAG_BULK_DELETE).performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Удалено: 2") }
         composeRule.onNodeWithTag(TAG_SELECTION_BAR).assertDoesNotExist()
-        composeRule.onNodeWithTag("tab:left").assertExists()
+        composeRule.onNodeWithTag("tab:UPCOMING").assertExists()
         composeRule.waitUntil(5_000) { !composeRule.onAllNodesWithTextExists("Первая") }
 
         composeRule.onNodeWithText("Отмена").performClick()
@@ -329,7 +372,7 @@ class AppSmokeTest {
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_TRASH_EMPTY).fetchSemanticsNodes().isNotEmpty() }
 
         composeRule.onNodeWithContentDescription("Назад").performClick()
-        composeRule.onNodeWithTag("tab:left").performClick()
+        composeRule.onNodeWithTag("tab:UPCOMING").performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("В корзину") }
     }
 

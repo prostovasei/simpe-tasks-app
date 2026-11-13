@@ -96,6 +96,12 @@ object SizeTokens {
 
     /** Финансы, #237: плитка категории-эмодзи в окне операции, значок категории в списке, ширина боковых значков нижней строки окна (назад, корзина). */
     const val FINANCE_EMOJI = 44
+
+    /** Единая нижняя панель (#241, решение PM 13.11.2026): высота 44, кнопки «+» и модуля 72×34, ширина кнопки страницы, обводка кнопки модуля. */
+    const val APP_BAR = 44
+    const val APP_BAR_BUTTON = 34
+    const val APP_BAR_PAGE_W = 64
+    const val APP_BAR_OUTLINE = 2
     const val FINANCE_MARK = 28
     const val FINANCE_BAR_SIDE = 56
     const val OPERATION_ROW = 52

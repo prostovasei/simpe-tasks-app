@@ -1,7 +1,7 @@
 """Интерфейс #241 — макеты на согласование PM (13.11.2026): новая структура — без верхнего бара, единый нижний бар
 («+» слева, страницы модуля посередине, кнопка модуля справа), единые настройки.
 Основа — стиль макетов 217/233/237/239. Содержимое экранов задач — снимки app/screenshots (вымышленные данные).
-Запуск из корня: python3 design/drafts/ui-241/screens.py → screens.html; PNG: node design/drafts/ui-241/render.js."""
+Запуск из корня: python3 design/approved/241/screens.py → screens.html; PNG: node design/approved/241/render.js."""
 from pathlib import Path
 
 from PIL import Image
@@ -9,7 +9,7 @@ from PIL import Image
 here = Path(__file__).parent
 root = here.parent.parent.parent
 shots = root / 'app' / 'screenshots'
-p233 = here.parent.parent / 'approved' / '233' / 'screens.py'
+p233 = here.parent / '233' / 'screens.py'
 src233 = p233.read_text()
 G = {'__file__': str(p233)}
 exec(src233[:src233.index('# ---------- 1. Настройка')], G)
@@ -35,7 +35,7 @@ P.update({
 })
 
 # ---------- содержимое экранов задач: снимки, вписанные по высоте области над панелью ----------
-BAR_H = 48  # новая панель (сейчас 56)
+BAR_H = 44  # новая панель (сейчас 56)
 CONTENT_H = 844 - BAR_H - 17  # телефон 844 − панель − жестовая полоса
 
 
@@ -94,7 +94,7 @@ FIN_OPS = phone(OPS, 'finance', 1)
 FIN_AN = phone(analytics(), 'finance', 0)
 
 s1 = [
-    fig('1.1 Задачи · «Предстоящее»', 'Верхнего бара и заголовка «Предстоящее» нет — экран начинается с «Просрочено». Панель ниже (48 вместо 56): «+» слева, три страницы посередине без подложки, кнопка модуля справа — той же ширины и с теми же скруглениями, что «+».', phone('', 'tasks', 0, 'O', img=IMG['all_light'])),
+    fig('1.1 Задачи · «Предстоящее»', 'Верхнего бара и заголовка «Предстоящее» нет — экран начинается с «Просрочено». Панель ниже (44 вместо 56): «+» слева, три страницы посередине без подложки, кнопка модуля справа — той же ширины и с теми же скруглениями, что «+».', phone('', 'tasks', 0, 'O', img=IMG['all_light'])),
     fig('1.2 Задачи · «Неделя»', 'Выбранная страница чёрная, остальные серые; точки-подсказки и выбора удержанием больше нет.', phone('', 'tasks', 1, 'O', img=IMG['week_light'])),
     fig('1.3 Задачи · «Списки»', 'Счётчика «Входящих» на значке нет. Шестерёнка в ряду инструментов уходит (остальные кнопки распределятся поровну): настройки — из меню кнопки модуля.', phone('', 'tasks', 2, 'O', img=IMG['lists_light'])),
     fig('1.4 Финансы · «Операции»', 'Тот же каркас: «+» (новая операция), две страницы «Аналитика» и «Операции», кнопка модуля с ₽.', phone(OPS, 'finance', 1, 'O')),
@@ -155,26 +155,26 @@ def new_bar_strip(module, variant='O', active=0):
 
 s4 = [
     f'<figure style="width:390px"><div class="bars">{old_bar("tasks")}{new_bar_strip("tasks")}</div><figcaption><b>4.1 Задачи: было и стало</b>'
-    'Было (56): слева «Предстоящее»/«Неделя» с точкой «есть меню», «+» по центру, «Списки» со счётчиком. Стало (48): «+» слева, три страницы, кнопка модуля; точки и счётчика нет.</figcaption></figure>',
+    'Было (56): слева «Предстоящее»/«Неделя» с точкой «есть меню», «+» по центру, «Списки» со счётчиком. Стало (44): «+» слева, три страницы, кнопка модуля; точки и счётчика нет.</figcaption></figure>',
     f'<figure style="width:390px"><div class="bars">{old_bar("finance")}{new_bar_strip("finance")}</div><figcaption><b>4.2 Финансы: было и стало</b>'
     'Было: «Аналитика», «+», «Операции» и сверху ещё полоса ✓ / ₽ с шестерёнкой. Стало: тот же каркас, что у задач; верхней полосы нет.</figcaption></figure>',
     f'<figure style="width:390px"><div class="bars">{new_bar_strip("tasks", "O", 1)}{new_bar_strip("tasks", "S", 1)}</div><figcaption><b>4.3 Кнопка модуля: обводка или заливка</b>'
-    'Размер и скругление — как у «+» (72×38, радиус 12). Обводка (основной вариант) отличается от чёрной «+»; серая заливка — спокойнее, но слабее заметна.</figcaption></figure>',
+    'Размер и скругление — как у «+» (72×34, радиус 12). Обводка (основной вариант) отличается от чёрной «+»; серая заливка — спокойнее, но слабее заметна.</figcaption></figure>',
 ]
 
 extra = '''
 .v-screen{position:relative}
-.shot{display:block;width:100%;height:779px;object-fit:cover;object-position:top}
-.navbar{display:flex;align-items:center;justify-content:space-between;gap:10px;height:48px;background:#fff;padding:5px 14px;flex-shrink:0;border-top:1px solid var(--line)}
-.navbar .add{width:72px;height:38px;border-radius:12px;background:var(--text);color:#fff;display:grid;place-items:center;flex-shrink:0}.navbar .add svg{width:22px;height:22px}
+.shot{display:block;width:100%;height:783px;object-fit:cover;object-position:top}
+.navbar{display:flex;align-items:center;justify-content:space-between;gap:10px;height:44px;background:#fff;padding:5px 14px;flex-shrink:0;border-top:1px solid var(--line)}
+.navbar .add{width:72px;height:34px;border-radius:12px;background:var(--text);color:#fff;display:grid;place-items:center;flex-shrink:0}.navbar .add svg{width:22px;height:22px}
 .navbar .pages{display:flex;align-items:center;justify-content:center;gap:2px;flex:1}
-.navbar .pg{width:64px;height:38px;display:grid;place-items:center;color:var(--inactive);border-radius:12px}.navbar .pg.on{color:var(--text)}.navbar .pg svg{width:22px;height:22px}
-.navbar .modbtn{width:72px;height:38px;border-radius:12px;display:grid;place-items:center;flex-shrink:0;color:var(--text)}.navbar .modbtn svg{width:21px;height:21px}
+.navbar .pg{width:64px;height:34px;display:grid;place-items:center;color:var(--inactive);border-radius:12px}.navbar .pg.on{color:var(--text)}.navbar .pg svg{width:22px;height:22px}
+.navbar .modbtn{width:72px;height:34px;border-radius:12px;display:grid;place-items:center;flex-shrink:0;color:var(--text)}.navbar .modbtn svg{width:21px;height:21px}
 .navbar.vO .modbtn{box-shadow:inset 0 0 0 1.6px var(--text)}
 .navbar.vS .modbtn{background:var(--soft)}
 .navbar .modbtn.open{background:var(--text);color:#fff;box-shadow:none}
-.dim{position:absolute;left:0;right:0;top:0;bottom:65px;background:#0000002e;z-index:3}
-.amenu{position:absolute;right:12px;bottom:72px;width:196px;background:#fff;border-radius:18px;box-shadow:0 12px 32px #0003;padding:6px;z-index:4}
+.dim{position:absolute;left:0;right:0;top:0;bottom:61px;background:#0000002e;z-index:3}
+.amenu{position:absolute;right:12px;bottom:68px;width:196px;background:#fff;border-radius:18px;box-shadow:0 12px 32px #0003;padding:6px;z-index:4}
 .mrow{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:12px 12px;border-radius:12px;font-size:14px}.mrow svg{width:20px;height:20px}.mrow span{flex:1}.mrow.cur{font-weight:700}.cdot{width:8px;height:8px;border-radius:50%;background:var(--text)}
 .msep{height:1px;background:var(--line);margin:4px 10px}
 .set-row{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:14px 16px;border-bottom:1px solid var(--line);font-size:14px}
@@ -196,4 +196,4 @@ secs = [('1. Новая нижняя панель', 'Верхнего бара �
 html = (f'<!doctype html><html lang="ru"><meta charset="utf-8"><title>Интерфейс — новая структура (#241)</title><style>{g217["style"]}{G["extra217"]}{extra233}{extra}</style>'
         '<div class="board">' + ''.join(f'<section class="sec" id="s{i+1}"><h2>{t}</h2><p>{d}</p><div class="rowp">{"".join(f)}</div></section>' for i, (t, d, f) in enumerate(secs)) + '</div></html>')
 (here / 'screens.html').write_text(html)
-print('screens.html готов; картинки: node design/drafts/ui-241/render.js')
+print('screens.html готов; картинки: node design/approved/241/render.js')

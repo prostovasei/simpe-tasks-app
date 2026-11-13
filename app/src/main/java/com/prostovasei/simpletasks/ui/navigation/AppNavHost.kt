@@ -119,20 +119,22 @@ import com.prostovasei.simpletasks.ui.feature.trash.TrashTaskRoute
 import com.prostovasei.simpletasks.ui.feature.trash.TrashRoute
 import com.prostovasei.simpletasks.ui.feature.search.SearchRoute
 import com.prostovasei.simpletasks.ui.feature.settings.SettingsRoute
+import com.prostovasei.simpletasks.ui.feature.settings.AppSettingsRoute
+import com.prostovasei.simpletasks.ui.feature.settings.AppInfoRoute
 import com.prostovasei.simpletasks.ui.feature.task.QuickAddRoute
 import com.prostovasei.simpletasks.ui.feature.task.TaskDetailRoute
-import com.prostovasei.simpletasks.ui.feature.finance.AppModule
+import com.prostovasei.simpletasks.ui.feature.finance.FinanceTab
+import com.prostovasei.simpletasks.ui.feature.finance.TAG_FINANCE_ADD
+import com.prostovasei.simpletasks.ui.feature.finance.TAG_FINANCE_TAB
 import com.prostovasei.simpletasks.ui.feature.finance.BankSettingsRoute
 import com.prostovasei.simpletasks.ui.feature.finance.CategoriesRoute
 import com.prostovasei.simpletasks.ui.feature.finance.UnsortedRoute
-import com.prostovasei.simpletasks.ui.feature.finance.FinanceBottomBar
 import com.prostovasei.simpletasks.ui.feature.finance.FinanceIntent
 import com.prostovasei.simpletasks.ui.feature.finance.FinanceRoute
 import com.prostovasei.simpletasks.ui.feature.finance.FinanceSettingsRoute
 import com.prostovasei.simpletasks.ui.feature.finance.PlacesRoute
 import com.prostovasei.simpletasks.ui.feature.finance.FinanceTrashRoute
 import com.prostovasei.simpletasks.ui.feature.finance.FinanceViewModel
-import com.prostovasei.simpletasks.ui.feature.finance.ModuleBar
 import androidx.compose.runtime.saveable.rememberSaveable
 import kotlin.reflect.KClass
 
@@ -146,10 +148,39 @@ enum class Tab(val route: Any, val routeClass: KClass<*>, @param:StringRes val l
     LISTS(ListsDestination, ListsDestination::class, R.string.tab_lists, R.drawable.ic_tab_lists),
 }
 
-/** «Входящие», «Поиск», «Настройки» (итерация 55) — экраны раздела «Списки»: панель видна, выбрана вкладка «Списки». */
-private val LISTS_CHILDREN: List<KClass<*>> = listOf(InboxDestination::class, SearchDestination::class, SettingsDestination::class)
+/** «Входящие» и «Поиск» (итерация 55) — экраны раздела «Списки»: панель видна, выбрана страница «Списки». Настройки (#241) — отдельные страницы без панели. */
+private val LISTS_CHILDREN: List<KClass<*>> = listOf(InboxDestination::class, SearchDestination::class)
 
-/** Какой вид открыт в левом месте панели: «Предстоящее» или «Неделя» (итерация 55; выбор удержанием запоминается). */
+/** Страницы модуля «Задачи» в нижней панели (#241): все три всегда на виду; теги `tab:<имя>` прежние. */
+internal val TASK_PAGES: List<BarPage> = Tab.entries.map { BarPage(it.name, it.icon, it.label, "tab:${it.name}") }
+
+/** Нижняя панель модуля «Задачи» (#241): три страницы, «+» — новая задача. */
+@Composable
+internal fun TasksBottomBar(
+    selected: Tab,
+    onSelect: (Tab) -> Unit,
+    onAdd: () -> Unit,
+    onModule: (AppModule) -> Unit,
+    onSettings: () -> Unit,
+) = AppBottomBar(TASK_PAGES, selected.name, { onSelect(Tab.valueOf(it)) }, onAdd, TAG_ADD_TASK, R.string.add_task, AppModule.TASKS, onModule, onSettings)
+
+/** Нижняя панель модуля «Финансы» (#241): «Аналитика» и «Операции», «+» — новая операция. */
+@Composable
+internal fun FinanceBottomBar(
+    selected: FinanceTab,
+    onSelect: (FinanceTab) -> Unit,
+    onAdd: () -> Unit,
+    onModule: (AppModule) -> Unit,
+    onSettings: () -> Unit,
+) = AppBottomBar(FINANCE_PAGES, selected.name, { onSelect(FinanceTab.valueOf(it)) }, onAdd, TAG_FINANCE_ADD, R.string.finance_add, AppModule.FINANCE, onModule, onSettings)
+
+/** Страницы модуля «Финансы» в нижней панели (#241): «Аналитика» и «Операции». */
+internal val FINANCE_PAGES: List<BarPage> = listOf(
+    BarPage(FinanceTab.ANALYTICS.name, R.drawable.ic_finance_tab_analytics, R.string.finance_tab_analytics, "$TAG_FINANCE_TAB:${FinanceTab.ANALYTICS.name}"),
+    BarPage(FinanceTab.OPERATIONS.name, R.drawable.ic_finance_tab_operations, R.string.finance_tab_operations, "$TAG_FINANCE_TAB:${FinanceTab.OPERATIONS.name}"),
+)
+
+/** С какой страницы открывается приложение: «Предстоящее» или «Неделя» — та, что была выбрана последней (#241; раньше — выбор удержанием). */
 object NavPrefs {
     private const val PREFS = "navigation"
     private const val KEY = "left_tab"
@@ -183,14 +214,13 @@ fun AppNavHost(
     val currentTab = Tab.entries.firstOrNull { destination.isOn(it) }
         ?: Tab.LISTS.takeIf { LISTS_CHILDREN.any { child -> destination?.hasRoute(child) == true } }
     val context = LocalContext.current
-    // Левое место панели: «Предстоящее» или «Неделя» — что выбрано удержанием (с ним приложение и открывается).
+    // Страница, с которой открывается приложение: «Предстоящее» или «Неделя» — выбранная последней.
     var left by remember { mutableStateOf(NavPrefs.left(context)) }
     val startDestination = remember { left.route }
 
-    // Финансы (#217, этап 1 — #221): отдельный модуль со своей нижней панелью. Верхний бар модулей виден на главных экранах
-    // задач и в финансах; при возврате в модуль открывается то же место (сохранённое состояние вкладки).
+    // Финансы (#217, этап 1 — #221): отдельный модуль. Нижняя панель общая (#241): модуль меняется кнопкой справа;
+    // при возврате в модуль открывается то же место (сохранённое состояние страницы).
     val inFinance = destination?.hasRoute(FinanceDestination::class) == true
-    val onRoot = destination == null || inFinance || Tab.entries.any { destination.isOn(it) }
     val finance = hiltViewModel<FinanceViewModel>()
     val financeState by finance.state.collectAsStateWithLifecycle()
     // #233: «Изменить» в уведомлении о покупке — раздел финансов с окном нового расхода.
@@ -204,9 +234,6 @@ fun AppNavHost(
     }
     var lastTaskTab by rememberSaveable { mutableStateOf(left.name) }
     LaunchedEffect(currentTab) { currentTab?.let { lastTaskTab = it.name } }
-
-    // Итерация 52: число неразобранных на вкладке «Входящие».
-    val sortCounts by hiltViewModel<SortCountsHost>().counts.collectAsStateWithLifecycle(SortCounts())
 
     // Задачу удалили в шторке — под ней «Задача удалена · Отмена» (итерация 36); пока приложение не на экране, событие не доходит.
     val deletions = hiltViewModel<TaskDeletionsHost>().deletions
@@ -264,47 +291,44 @@ fun AppNavHost(
     Scaffold(
         containerColor = AppTheme.colors.background,
         snackbarHost = { UndoSnackbarHost(snackbar) },
-        topBar = {
-            if (!selectionMode.value && onRoot) {
-                ModuleBar(
-                    if (inFinance) AppModule.FINANCE else AppModule.TASKS,
-                    onSelect = { module ->
-                        when {
-                            module == AppModule.FINANCE && !inFinance -> navController.openRoot(FinanceDestination, restore = true)
-                            module == AppModule.TASKS && inFinance -> navController.openTab(Tab.valueOf(lastTaskTab))
-                        }
-                    },
-                    // Шестерёнка финансов — меню «Категории / Корзина / Резервная копия» (этап 4).
-                    onSettings = if (inFinance) { { navController.navigate(FinanceSettingsDestination) { launchSingleTop = true } } } else null,
-                )
-            }
-        },
         bottomBar = {
+            val switchModule: (AppModule) -> Unit = { target ->
+                when {
+                    target == AppModule.FINANCE && !inFinance -> navController.openRoot(FinanceDestination, restore = true)
+                    target == AppModule.TASKS && inFinance -> navController.openTab(Tab.valueOf(lastTaskTab))
+                }
+            }
+            val openSettings = { navController.navigate(AppSettingsDestination) { launchSingleTop = true } }
             if (inFinance) {
-                FinanceBottomBar(financeState.tab, onSelect = { finance.onIntent(FinanceIntent.SelectTab(it)) }, onAdd = { finance.onIntent(FinanceIntent.Add) })
+                FinanceBottomBar(
+                    selected = financeState.tab,
+                    onSelect = { finance.onIntent(FinanceIntent.SelectTab(it)) },
+                    onAdd = { finance.onIntent(FinanceIntent.Add) },
+                    onModule = switchModule,
+                    onSettings = openSettings,
+                )
             } else
-            // На экране списка нижний бар скрыт: это вложенный экран с кнопкой «Назад». В режиме выбора — тоже.
+            // На вложенных экранах (список, настройки) панели нет. В режиме выбора — тоже: там лента действий.
             if (!selectionMode.value && (destination == null || currentTab != null)) {
                 val selected = currentTab ?: left
-                BottomBar(
+                TasksBottomBar(
                     selected = selected,
-                    left = left,
-                    inboxCount = sortCounts.inbox,
                     onSelect = { tab ->
-                        // «Списки» из «Входящих», «Поиска» или «Настроек» — назад к самим «Спискам».
+                        if (tab != Tab.LISTS) {
+                            left = tab
+                            NavPrefs.setLeft(context, tab)
+                        }
+                        // «Списки» из «Входящих» или «Поиска» — назад к самим «Спискам».
                         if (tab == Tab.LISTS && currentTab == Tab.LISTS && destination?.hasRoute(ListsDestination::class) != true) {
                             navController.popBackStack(ListsDestination, inclusive = false)
                         } else {
                             navController.openTab(tab)
                         }
                     },
-                    onPickLeft = { tab ->
-                        left = tab
-                        NavPrefs.setLeft(context, tab)
-                        navController.openTab(tab)
-                    },
                     // На «Предстоящем» и «Неделе» новая задача — на сегодня, в «Списках» — во «Входящие».
                     onAdd = { navController.navigate(QuickAddDestination(today = selected != Tab.LISTS)) },
+                    onModule = switchModule,
+                    onSettings = openSettings,
                 )
             }
         },
@@ -341,7 +365,6 @@ fun AppNavHost(
                 ListsRoute(
                     onOpenInbox = { navController.navigate(InboxDestination) },
                     onOpenSearch = { navController.navigate(SearchDestination) },
-                    onOpenSettings = { navController.navigate(SettingsDestination) },
                     onOpenProject = { navController.navigate(ProjectDestination(it)) },
                     onOpenCompleted = { navController.navigate(CompletedDestination) },
                     onOpenTrash = { navController.navigate(TrashDestination) },
@@ -365,7 +388,17 @@ fun AppNavHost(
             dialog<WontDoTaskDestination>(dialogProperties = SHEET_DIALOG) { WontDoTaskRoute(onClose = { navController.popBackStack() }) }
             composable<CompletedDestination> { CompletedRoute(onBack = { navController.popBackStack() }, onOpenTask = openTask) }
             composable<SearchDestination> { SearchRoute(onOpenTask = openTask) }
-            composable<SettingsDestination> { SettingsRoute() }
+            // Единые настройки (#241): главная страница и разделы — «Задачи», «Финансы», «Приложение».
+            composable<AppSettingsDestination> {
+                AppSettingsRoute(
+                    onBack = { navController.popBackStack() },
+                    onTasks = { navController.navigate(SettingsDestination) { launchSingleTop = true } },
+                    onFinance = { navController.navigate(FinanceSettingsDestination) { launchSingleTop = true } },
+                    onApp = { navController.navigate(AppInfoDestination) { launchSingleTop = true } },
+                )
+            }
+            composable<SettingsDestination> { SettingsRoute(onBack = { navController.popBackStack() }) }
+            composable<AppInfoDestination> { AppInfoRoute(onBack = { navController.popBackStack() }) }
             composable<FinanceDestination> {
                 FinanceRoute(finance, onOpenUnsorted = { navController.navigate(FinanceUnsortedDestination) { launchSingleTop = true } })
             }
@@ -403,102 +436,6 @@ fun AppNavHost(
     }
 }
 
-/**
- * Нижняя панель (итерация 55, решение PM, макет iteration55.py): три места — слева «Предстоящее» или «Неделя» ([left]; удержание —
- * меню из двух пунктов, точка под значком подсказывает, что оно есть), посередине чёрная «+», справа «Списки» с числом неразобранных
- * во «Входящих». Вкладки — как в нижней строке виджета: контурный значок, у выбранной — плашка `selected`. Закреплена внизу на всю
- * ширину (итерация 44), сверху тонкая линия, фон доходит до низа экрана.
- */
-@Composable
-fun BottomBar(
-    selected: Tab,
-    onSelect: (Tab) -> Unit,
-    onAdd: () -> Unit = {},
-    inboxCount: Int = 0,
-    left: Tab = Tab.UPCOMING,
-    onPickLeft: (Tab) -> Unit = {},
-) {
-    val colors = AppTheme.colors
-    val spacing = AppTheme.spacing
-    val sizes = AppTheme.sizes
-    var menu by remember { mutableStateOf(false) }
-    Column(Modifier.fillMaxWidth().background(colors.surface)) {
-        Box(Modifier.fillMaxWidth().height(sizes.hairline).background(colors.divider))
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .windowInsetsPadding(WindowInsets.navigationBars)
-                .height(sizes.navBar)
-                .padding(horizontal = spacing.xs),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                NavTab(left, selected == left || (selected != Tab.LISTS), hint = true, onClick = { onSelect(left) }, onLongClick = { menu = true })
-                DropdownMenu(expanded = menu, onDismissRequest = { menu = false }, containerColor = colors.surface, modifier = Modifier.testTag(TAG_LEFT_MENU)) {
-                    listOf(Tab.UPCOMING, Tab.WEEK).forEach { tab ->
-                        DropdownMenuItem(
-                            text = { Text(stringResource(tab.label), color = colors.textPrimary, fontWeight = if (tab == left) FontWeight.Bold else FontWeight.SemiBold) },
-                            leadingIcon = { Icon(painterResource(tab.icon), null, tint = colors.textSecondary, modifier = Modifier.size(sizes.icon)) },
-                            trailingIcon = if (tab == left) { { Icon(Icons.Default.Check, null, tint = colors.accent) } } else null,
-                            onClick = {
-                                menu = false
-                                onPickLeft(tab)
-                            },
-                            modifier = Modifier.testTag("$TAG_LEFT_MENU:${tab.name}"),
-                        )
-                    }
-                }
-            }
-            Box(
-                modifier = Modifier
-                    .size(width = sizes.navAddWidth, height = sizes.navAddHeight)
-                    .clip(AppTheme.shapes.extraLarge)
-                    .background(colors.accent)
-                    .clickable(onClick = onAdd)
-                    .testTag(TAG_ADD_TASK),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_task), tint = colors.onAccent)
-            }
-            Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                NavTab(Tab.LISTS, selected == Tab.LISTS, badge = inboxCount, onClick = { onSelect(Tab.LISTS) })
-            }
-        }
-    }
-}
-
-/**
- * Вкладка панели: место `size-nav-tab` без плашки (0.59.1, решение PM): выбранная — чёрный значок `accent`, остальные — серый `inactive`.
- * [badge] — число справа сверху, [hint] — точка «есть меню».
- */
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-private fun NavTab(tab: Tab, active: Boolean, onClick: () -> Unit, badge: Int = 0, hint: Boolean = false, onLongClick: (() -> Unit)? = null) {
-    val colors = AppTheme.colors
-    val sizes = AppTheme.sizes
-    val tint = if (active) colors.accent else colors.inactive
-    val label = stringResource(tab.label)
-    val hintLabel = stringResource(R.string.tab_switch_hint)
-    Box(
-        Modifier
-            .size(width = sizes.navTabWidth, height = sizes.navTabHeight)
-            .clip(AppTheme.shapes.large)
-            .combinedClickable(role = Role.Button, onClick = onClick, onLongClick = onLongClick, onLongClickLabel = if (onLongClick != null) hintLabel else null)
-            .semantics { contentDescription = label }
-            .testTag("tab:${if (hint) TAG_LEFT_TAB else tab.name}"),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(painterResource(tab.icon), contentDescription = null, tint = tint, modifier = Modifier.size(sizes.icon))
-        if (hint) {
-            Box(Modifier.align(Alignment.BottomCenter).padding(bottom = AppTheme.spacing.xxs).size(sizes.navHintDot).background(tint.copy(alpha = HINT_ALPHA), CircleShape))
-        }
-        if (badge > 0) {
-            Badge(containerColor = colors.accent, contentColor = colors.onAccent, modifier = Modifier.align(Alignment.TopEnd).padding(end = AppTheme.spacing.xs).testTag(TAG_INBOX_BADGE)) { Text(badge.toString()) }
-        }
-    }
-}
-
-private const val HINT_ALPHA = 0.6f
 
 private const val SLIDE_MS = 300
 
@@ -514,11 +451,12 @@ private fun NavDestination.isSheet() = hasRoute(QuickAddDestination::class) || h
 
 /** Порядок экрана слева направо: «Предстоящее» и «Неделя» — слева, «Списки» — справа, вложенные экраны — правее всех. */
 private fun NavDestination.order(): Int = when {
-    isOn(Tab.UPCOMING) || isOn(Tab.WEEK) -> 0
-    isOn(Tab.LISTS) -> 1
+    isOn(Tab.UPCOMING) -> 0
+    isOn(Tab.WEEK) -> 1
+    isOn(Tab.LISTS) -> 2
     // Финансы — правее всего: модуль приходит справа и уходит вправо.
-    hasRoute(FinanceDestination::class) -> 3
-    else -> 2
+    hasRoute(FinanceDestination::class) -> 4
+    else -> 3
 }
 
 /** 1 — новый экран приходит справа, -1 — слева. Между экранами одного уровня: вперёд — справа, «Назад» — слева. */
@@ -561,9 +499,3 @@ private fun NavHostController.openRoot(route: Any, restore: Boolean) {
 }
 
 private fun NavDestination?.isOn(tab: Tab): Boolean = this?.hasRoute(tab.routeClass) == true
-
-const val TAG_INBOX_BADGE = "inbox_badge"
-
-/** Левое место панели («Предстоящее» или «Неделя»): тег `tab:left`, меню удержания — `tab_left_menu`. */
-const val TAG_LEFT_TAB = "left"
-const val TAG_LEFT_MENU = "tab_left_menu"
