@@ -10,6 +10,7 @@ import com.prostovasei.simpletasks.domain.model.finance.Money
 import com.prostovasei.simpletasks.domain.model.finance.Operation
 import com.prostovasei.simpletasks.domain.model.finance.OperationKind
 import com.prostovasei.simpletasks.domain.model.finance.PendingPurchase
+import com.prostovasei.simpletasks.domain.model.finance.Place
 import java.time.LocalDate
 import java.time.YearMonth
 
@@ -71,6 +72,8 @@ data class FinanceState(
     val window: AccountWindow = AccountWindow.None,
     val operations: List<Operation>? = null,
     val categories: List<Category> = emptyList(),
+    /** Справочник мест (#239), включая архивные. */
+    val places: List<Place> = emptyList(),
     val hints: FormHints = FormHints(),
     /** Открытое окно операции. */
     val form: OperationForm? = null,
@@ -79,7 +82,6 @@ data class FinanceState(
     // Не LocalDate.EPOCH (только с Android 14) и не LocalDate.MIN (от него нельзя отнять месяц для аналитики).
     val today: LocalDate = LocalDate.ofEpochDay(0),
     /** Этап 4: меню шестерёнки, корзина, сверка, просмотр корректировки, резервная копия. */
-    val menu: Boolean = false,
     val trash: List<Operation> = emptyList(),
     val counts: FinanceCounts = FinanceCounts(),
     val reconcile: Reconcile? = null,
@@ -153,9 +155,14 @@ sealed interface FinanceIntent {
     data class UpdateCategory(val id: String, val name: String, val emoji: String?) : FinanceIntent
     data class ArchiveCategory(val id: String, val archived: Boolean) : FinanceIntent
 
-    /** Шестерёнка финансов: меню «Категории / Корзина / Резервная копия». */
-    data object OpenMenu : FinanceIntent
-    data object CloseMenu : FinanceIntent
+    /** Удаление категории навсегда (#239): операции остаются «Без категории». */
+    data class DeleteCategory(val id: String) : FinanceIntent
+
+    /** Справочник мест (#239). */
+    data class CreatePlace(val name: String) : FinanceIntent
+    data class RenamePlace(val id: String, val name: String) : FinanceIntent
+    data class ArchivePlace(val id: String, val archived: Boolean) : FinanceIntent
+    data class DeletePlace(val id: String) : FinanceIntent
 
     /** Корзина: вернуть операцию, удалить её навсегда, очистить всю корзину. */
     data class RestoreOperation(val id: String) : FinanceIntent

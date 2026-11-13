@@ -591,7 +591,7 @@
     <string name="categories_incomes">Доходы</string>
     <string name="categories_archive">Архив</string>
     <string name="categories_empty">Категорий пока нет. Нажми «+», чтобы добавить первую.</string>
-    <string name="categories_note">Архивная категория остаётся в старых операциях, но для новых не предлагается.</string>
+    <string name="categories_note">По алфавиту. Архивная категория остаётся в старых операциях, но для новых не предлагается; нажатие на неё — вернуть или удалить навсегда.</string>
     <string name="categories_of_expense">Категории расходов</string>
     <string name="categories_of_income">Категории доходов</string>
     <string name="category_all">Все категории</string>
@@ -695,6 +695,24 @@
     <string name="category_emoji">Эмодзи</string>
     <string name="category_emoji_remove">Убрать</string>
     <string name="category_none_selected">Без категории</string>
+
+    <!-- Справочники, настройки финансов (#239) -->
+    <string name="places_title">Места</string>
+    <string name="places_empty">Мест пока нет. Нажми «+» или впиши место в окне операции.</string>
+    <string name="places_note">По алфавиту. Новое место, набранное в окне операции, попадает сюда само.</string>
+    <string name="place_title">Место</string>
+    <string name="place_new">Новое место</string>
+    <string name="place_name_hint">Например, Пятёрочка</string>
+    <string name="place_add">Добавить место</string>
+    <string name="menu_places_count">Действующих: %1$d</string>
+    <string name="archive_confirm_title">Перенести в архив?</string>
+    <string name="archive_confirm_category">Категория «%1$s» не будет предлагаться в новых операциях. В старых операциях останется. Вернуть можно из архива.</string>
+    <string name="archive_confirm_place">Место «%1$s» не будет предлагаться при выборе места. В старых операциях останется. Вернуть можно из архива.</string>
+    <string name="archived_uses">В архиве. Операций: %1$d.</string>
+    <string name="delete_forever">Удалить навсегда</string>
+    <string name="delete_forever_title">Удалить навсегда?</string>
+    <string name="delete_forever_category">Категория «%1$s» будет удалена. Операций, у которых категория станет «Без категории»: %2$d. Сами операции не удаляются. Это нельзя отменить.</string>
+    <string name="delete_forever_place">Место «%1$s» будет удалено. Операций, у которых место станет пустым: %2$d. Сами операции не удаляются. Это нельзя отменить.</string>
 
     <!-- Уведомления банка (#233) -->
     <string name="bank_listener_label">Покупки по карте</string>

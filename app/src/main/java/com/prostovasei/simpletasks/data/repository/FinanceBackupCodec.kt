@@ -3,6 +3,7 @@ package com.prostovasei.simpletasks.data.repository
 import com.prostovasei.simpletasks.data.local.entity.FinanceAccountEntity
 import com.prostovasei.simpletasks.data.local.entity.FinanceCategoryEntity
 import com.prostovasei.simpletasks.data.local.entity.FinanceOperationEntity
+import com.prostovasei.simpletasks.data.local.entity.FinancePlaceEntity
 import com.prostovasei.simpletasks.domain.model.finance.InvalidFinanceBackupException
 import org.json.JSONArray
 import org.json.JSONException
@@ -13,6 +14,8 @@ internal data class FinanceBackup(
     val accounts: List<FinanceAccountEntity>,
     val categories: List<FinanceCategoryEntity>,
     val operations: List<FinanceOperationEntity>,
+    /** Справочник мест (#239). В копиях до 0.65.0 его нет — места берутся из операций. */
+    val places: List<FinancePlaceEntity> = emptyList(),
 )
 
 /**
@@ -35,6 +38,9 @@ internal object FinanceBackupCodec {
         .put("categories", JSONArray(backup.categories.map { c ->
             JSONObject().put("id", c.id).put("name", c.name).put("kind", c.kind).put("is_archived", c.isArchived)
                 .put("sort_order", c.sortOrder).put("created_at", c.createdAt).put("updated_at", c.updatedAt).putOpt("emoji", c.emoji)
+        }))
+        .put("places", JSONArray(backup.places.map { p ->
+            JSONObject().put("id", p.id).put("name", p.name).put("is_archived", p.isArchived).put("created_at", p.createdAt).put("updated_at", p.updatedAt)
         }))
         .put("operations", JSONArray(backup.operations.map { o ->
             JSONObject().put("id", o.id).put("kind", o.kind).put("amount", o.amount).put("account_id", o.accountId)
@@ -67,7 +73,16 @@ internal object FinanceBackupCodec {
             val broken = operations.any { it.accountId !in accountIds || (it.toAccountId != null && it.toAccountId !in accountIds) || (it.categoryId != null && it.categoryId !in categoryIds) }
             val duplicates = accountIds.size != accounts.size || categoryIds.size != categories.size || operations.map { it.id }.toSet().size != operations.size
             if (broken || duplicates) throw InvalidFinanceBackupException("Резервная копия повреждена")
-            return FinanceBackup(accounts, categories, operations)
+            val places = root.optJSONArray("places")?.objects()?.map { p ->
+                FinancePlaceEntity(p.getString("id"), p.getString("name"), p.getBoolean("is_archived"), p.getLong("created_at"), p.getLong("updated_at"))
+            } ?: operations.mapNotNull { it.place?.trim()?.takeIf(String::isNotEmpty) }.distinct().mapIndexed { i, name ->
+                // Старая копия без справочника: места — из операций, как при обновлении базы (#239).
+                FinancePlaceEntity("place-$i", name, createdAt = 0, updatedAt = 0)
+            }
+            if (places.map { it.id }.toSet().size != places.size || places.map { it.name }.toSet().size != places.size) {
+                throw InvalidFinanceBackupException("Резервная копия повреждена")
+            }
+            return FinanceBackup(accounts, categories, operations, places)
         } catch (e: JSONException) {
             throw InvalidFinanceBackupException("Файл не читается как резервная копия", e)
         }

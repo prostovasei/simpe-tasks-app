@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Update
+import com.prostovasei.simpletasks.data.local.entity.CategoryRow
 import com.prostovasei.simpletasks.data.local.entity.FinanceCategoryEntity
 import com.prostovasei.simpletasks.data.local.entity.FinanceOperationEntity
 import com.prostovasei.simpletasks.data.local.entity.OperationRow
@@ -70,15 +71,26 @@ interface FinanceOperationDao {
     @Query("SELECT category_id FROM finance_operations WHERE is_deleted = 0 AND category_id IS NOT NULL GROUP BY category_id ORDER BY MAX(created_at) DESC")
     fun observeRecentCategories(): Flow<List<String>>
 
-    /** Ранее введённые места: недавние первыми. */
-    @Query("SELECT place FROM finance_operations WHERE is_deleted = 0 AND place IS NOT NULL AND place != '' GROUP BY place ORDER BY MAX(created_at) DESC LIMIT 200")
-    fun observePlaces(): Flow<List<String>>
 
     @Insert
     suspend fun insertCategory(category: FinanceCategoryEntity)
 
-    @Query("SELECT * FROM finance_categories ORDER BY sort_order, created_at")
-    fun observeCategories(): Flow<List<FinanceCategoryEntity>>
+    @Query("SELECT c.*, (SELECT COUNT(*) FROM finance_operations o WHERE o.category_id = c.id) AS uses FROM finance_categories c ORDER BY c.sort_order, c.created_at")
+    fun observeCategories(): Flow<List<CategoryRow>>
+
+    /** Удаление категории навсегда (#239): операции остаются «Без категории». */
+    @Query("UPDATE finance_operations SET category_id = NULL, updated_at = :now WHERE category_id = :id")
+    suspend fun clearCategory(id: String, now: Long): Int
+
+    @Query("DELETE FROM finance_categories WHERE id = :id")
+    suspend fun deleteCategory(id: String): Int
+
+    /** Справочник мест (#239): переименование и удаление места меняют текст места в операциях (в том числе в корзине). */
+    @Query("UPDATE finance_operations SET place = :name, updated_at = :now WHERE place = :old")
+    suspend fun renamePlace(old: String, name: String, now: Long): Int
+
+    @Query("UPDATE finance_operations SET place = NULL, updated_at = :now WHERE place = :name")
+    suspend fun clearPlace(name: String, now: Long): Int
 
     @Query("SELECT COALESCE(MAX(sort_order), -1) + 1 FROM finance_categories")
     suspend fun nextCategoryOrder(): Int

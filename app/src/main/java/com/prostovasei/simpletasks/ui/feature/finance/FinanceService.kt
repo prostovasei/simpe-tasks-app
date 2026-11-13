@@ -49,10 +49,10 @@ fun MenuRow(@DrawableRes icon: Int, title: String, subtitle: String, tag: String
 
 /** Две кнопки окна в ряд: серая слева, чёрная справа («Отмена» / «Удалить»). */
 @Composable
-fun TwoActions(cancel: String, confirm: String, tag: String, onCancel: () -> Unit, onConfirm: () -> Unit) {
+fun TwoActions(cancel: String, confirm: String, tag: String, onCancel: () -> Unit, onConfirm: () -> Unit, danger: Boolean = false) {
     Row(horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.xs)) {
         Box(Modifier.weight(1f)) { SecondaryAction(cancel, "$tag:cancel", onCancel) }
-        Box(Modifier.weight(1f)) { PrimaryAction(confirm, "$tag:confirm", onConfirm) }
+        Box(Modifier.weight(1f)) { PrimaryAction(confirm, "$tag:confirm", onConfirm, danger = danger) }
     }
 }
 
@@ -61,23 +61,10 @@ fun WindowText(text: String, modifier: Modifier = Modifier) {
     Text(text, style = MaterialTheme.typography.bodySmall, color = AppTheme.colors.textSecondary, modifier = modifier.padding(vertical = AppTheme.spacing.xs))
 }
 
-/** Меню шестерёнки финансов (этап 4, #231; экран 3.1): единственный вход в категории, корзину и резервную копию. */
-@Composable
-fun FinanceMenu(state: FinanceState, onCategories: () -> Unit, onTrash: () -> Unit, onBackup: () -> Unit, onDismiss: () -> Unit, onBank: () -> Unit = {}) {
-    val active = state.categories.filterNot { it.archived }
-    FinanceWindow(title = stringResource(R.string.module_finance), tag = TAG_FINANCE_MENU, onDismiss = onDismiss, actions = {}) {
-        MenuRow(R.drawable.ic_finance_categories, stringResource(R.string.categories_title), stringResource(R.string.menu_categories_count, active.size), TAG_MENU_CATEGORIES, onClick = onCategories)
-        MenuRow(R.drawable.ic_tool_delete, stringResource(R.string.finance_trash), stringResource(R.string.menu_trash_count, state.trash.size), TAG_MENU_TRASH, onClick = onTrash)
-        MenuRow(R.drawable.ic_finance_backup, stringResource(R.string.backup_title), lastBackupText(state.lastBackupAt), TAG_MENU_BACKUP, onClick = onBackup)
-        // #233: уведомления банка — четвёртая строка (макет 1.1).
-        MenuRow(R.drawable.ic_bank_notifications, stringResource(R.string.bank_title), bankMenuSubtitle(state), TAG_MENU_BANK, last = true, onClick = onBank)
-    }
-}
-
 private val BACKUP_TIME: DateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy, HH:mm")
 
 @Composable
-private fun lastBackupText(at: Long?): String =
+internal fun lastBackupText(at: Long?): String =
     if (at == null) stringResource(R.string.backup_never) else stringResource(R.string.backup_last, Instant.ofEpochMilli(at).atZone(ZoneId.systemDefault()).format(BACKUP_TIME))
 
 @Composable
@@ -119,15 +106,14 @@ fun RestoreConfirmDialog(inFile: FinanceCounts, current: FinanceCounts, onConfir
 
 /** Подтверждение необратимого действия: текст и «Отмена» / [confirm]. */
 @Composable
-fun ConfirmDialog(title: String, text: String, confirm: String, tag: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
-    FinanceWindow(title = title, tag = tag, onDismiss = onDismiss, actions = { TwoActions(stringResource(R.string.action_cancel), confirm, tag, onDismiss, onConfirm) }) {
+fun ConfirmDialog(title: String, text: String, confirm: String, tag: String, onConfirm: () -> Unit, onDismiss: () -> Unit, danger: Boolean = false) {
+    FinanceWindow(title = title, tag = tag, onDismiss = onDismiss, actions = { TwoActions(stringResource(R.string.action_cancel), confirm, tag, onDismiss, onConfirm, danger) }) {
         WindowText(text)
     }
 }
 
 const val BACKUP_MIME = "application/json"
 
-const val TAG_FINANCE_MENU = "finance_menu"
 const val TAG_MENU_CATEGORIES = "finance_menu_categories"
 const val TAG_MENU_TRASH = "finance_menu_trash"
 const val TAG_MENU_BACKUP = "finance_menu_backup"

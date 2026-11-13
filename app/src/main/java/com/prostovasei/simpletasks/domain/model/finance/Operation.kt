@@ -22,7 +22,10 @@ enum class OperationKind(val code: String) {
 }
 
 /** Категория расходов или доходов ([kind] — EXPENSE или INCOME). В архиве остаётся в старых операциях, для новых не предлагается. [emoji] — значок категории (#237), необязательный. */
-data class Category(val id: String, val name: String, val kind: OperationKind, val archived: Boolean, val emoji: String? = null)
+data class Category(val id: String, val name: String, val kind: OperationKind, val archived: Boolean, val emoji: String? = null, val uses: Int = 0)
+
+/** Место из справочника мест (#239). [uses] — сколько операций с этим местом (вместе с корзиной): для предупреждения об удалении. */
+data class Place(val id: String, val name: String, val archived: Boolean, val uses: Int = 0)
 
 /**
  * Операция: расход, доход или перевод между своими счетами. [amount] — положительная сумма в копейках (у корректировки — со знаком).

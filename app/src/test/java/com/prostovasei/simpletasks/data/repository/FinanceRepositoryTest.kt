@@ -159,7 +159,11 @@ class FinanceRepositoryTest : DatabaseTest() {
 
         assertEquals(FormHints(card, listOf(food, cafe), listOf("Озон", "Пятёрочка", "Кофейня")), finance.observeFormHints().first())
         finance.trashOperation(last)
-        assertEquals(FormHints(cash, listOf(food, cafe), listOf("Пятёрочка", "Кофейня")), finance.observeFormHints().first())
+        // #239: места — из справочника; «Озон» остался в нём, но без действующих операций — в конце.
+        assertEquals(FormHints(cash, listOf(food, cafe), listOf("Пятёрочка", "Кофейня", "Озон")), finance.observeFormHints().first())
+        // Архивное место не предлагается.
+        finance.setPlaceArchived(finance.observePlaces().first().single { it.name == "Кофейня" }.id, true)
+        assertEquals(listOf("Пятёрочка", "Озон"), finance.observeFormHints().first().places)
     }
 
     /** Категории: отдельно расходы и доходы, архив вместо удаления — в старых операциях название остаётся. */
@@ -173,7 +177,7 @@ class FinanceRepositoryTest : DatabaseTest() {
         finance.updateCategory(food, " Еда ", "🍔")
         finance.setCategoryArchived(food, true)
 
-        assertEquals(listOf(Category(food, "Еда", OperationKind.EXPENSE, true, "🍔"), Category(salary, "Зарплата", OperationKind.INCOME, false)), finance.observeCategories().first())
+        assertEquals(listOf(Category(food, "Еда", OperationKind.EXPENSE, true, "🍔", uses = 1), Category(salary, "Зарплата", OperationKind.INCOME, false)), finance.observeCategories().first())
         assertEquals("Еда", finance.observeOperations().first().single().categoryName)
         finance.setCategoryArchived(food, false)
         assertFalse(finance.observeCategories().first().first().archived)
@@ -323,5 +327,78 @@ class FinanceRepositoryTest : DatabaseTest() {
         }
         assertEquals(2, finance.observeAccounts().first().size)
         assertEquals(1, finance.observeOperations().first().size)
+    }
+
+    /** Справочник мест (#239): место из операции попадает в справочник само, повтор — не дубль; создание вручную. */
+    @Test
+    fun placesDirectoryFillsFromOperations() = runTest {
+        val (card, _) = twoAccounts()
+        finance.createOperation(expense(card, 100, place = "Пятёрочка"))
+        finance.createOperation(expense(card, 200, place = "Пятёрочка"))
+        val ozon = finance.createPlace(" Озон ")
+        assertEquals(ozon, finance.createPlace("Озон"))
+        val list = finance.observePlaces().first()
+        assertEquals(setOf("Пятёрочка", "Озон"), list.map { it.name }.toSet())
+        assertEquals(2, list.single { it.name == "Пятёрочка" }.uses)
+        assertEquals(0, list.single { it.name == "Озон" }.uses)
+    }
+
+    /** Переименование места меняет его во всех операциях (в том числе в корзине); совпадение с другим местом — объединение. */
+    @Test
+    fun renamingPlaceUpdatesOperationsAndMerges() = runTest {
+        val (card, _) = twoAccounts()
+        finance.createOperation(expense(card, 100, place = "Пятерочка"))
+        val trashed = finance.createOperation(expense(card, 50, place = "Пятерочка"))
+        finance.trashOperation(trashed)
+        finance.createOperation(expense(card, 300, place = "Пятёрочка"))
+        val typo = finance.observePlaces().first().single { it.name == "Пятерочка" }.id
+
+        finance.renamePlace(typo, "Пятёрочка")
+
+        assertEquals(listOf("Пятёрочка"), finance.observePlaces().first().map { it.name })
+        assertEquals(3, finance.observePlaces().first().single().uses)
+        assertEquals(listOf("Пятёрочка", "Пятёрочка"), finance.observeOperations().first().map { it.place })
+        assertEquals("Пятёрочка", finance.observeTrash().first().single().place)
+    }
+
+    /** Удаление навсегда (#239): у операций места или категории становятся пустыми, сами операции и остатки не меняются. */
+    @Test
+    fun deletingForeverClearsOperations() = runTest {
+        val (card, _) = twoAccounts()
+        val food = finance.createCategory("Продукты", OperationKind.EXPENSE)
+        finance.createOperation(expense(card, 100, category = food, place = "Кофейня"))
+        val balance = finance.observeAccounts().first().first().balance
+        val cafe = finance.observePlaces().first().single().id
+        finance.setPlaceArchived(cafe, true)
+        assertTrue(finance.observePlaces().first().single().archived)
+
+        finance.deletePlaceForever(cafe)
+        finance.setCategoryArchived(food, true)
+        finance.deleteCategoryForever(food)
+
+        assertTrue(finance.observePlaces().first().isEmpty())
+        assertTrue(finance.observeCategories().first().isEmpty())
+        val operation = finance.observeOperations().first().single()
+        assertNull(operation.place)
+        assertNull(operation.categoryId)
+        assertEquals(balance, finance.observeAccounts().first().first().balance)
+    }
+
+    /** Резервная копия со справочником мест; старая копия без него — места берутся из операций. */
+    @Test
+    fun backupKeepsPlacesAndReadsOldCopies() = runTest {
+        val (card, _) = twoAccounts()
+        finance.createOperation(expense(card, 100, place = "Озон"))
+        val archived = finance.createPlace("Кофейня")
+        finance.setPlaceArchived(archived, true)
+        val json = finance.exportBackup()
+        val before = finance.observePlaces().first()
+        finance.deletePlaceForever(archived)
+        finance.restoreBackup(json)
+        assertEquals(before.sortedBy { it.name }, finance.observePlaces().first().sortedBy { it.name })
+
+        val old = org.json.JSONObject(json).apply { remove("places") }.toString()
+        finance.restoreBackup(old)
+        assertEquals(listOf("Озон" to false), finance.observePlaces().first().map { it.name to it.archived })
     }
 }

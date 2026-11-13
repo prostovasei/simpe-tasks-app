@@ -31,6 +31,10 @@ import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
@@ -124,6 +128,8 @@ import com.prostovasei.simpletasks.ui.feature.finance.UnsortedRoute
 import com.prostovasei.simpletasks.ui.feature.finance.FinanceBottomBar
 import com.prostovasei.simpletasks.ui.feature.finance.FinanceIntent
 import com.prostovasei.simpletasks.ui.feature.finance.FinanceRoute
+import com.prostovasei.simpletasks.ui.feature.finance.FinanceSettingsRoute
+import com.prostovasei.simpletasks.ui.feature.finance.PlacesRoute
 import com.prostovasei.simpletasks.ui.feature.finance.FinanceTrashRoute
 import com.prostovasei.simpletasks.ui.feature.finance.FinanceViewModel
 import com.prostovasei.simpletasks.ui.feature.finance.ModuleBar
@@ -269,7 +275,7 @@ fun AppNavHost(
                         }
                     },
                     // Шестерёнка финансов — меню «Категории / Корзина / Резервная копия» (этап 4).
-                    onSettings = if (inFinance) { { finance.onIntent(FinanceIntent.OpenMenu) } } else null,
+                    onSettings = if (inFinance) { { navController.navigate(FinanceSettingsDestination) { launchSingleTop = true } } } else null,
                 )
             }
         },
@@ -314,6 +320,10 @@ fun AppNavHost(
             exitTransition = { slideOut(push = true) },
             popEnterTransition = { slideIn(push = false) },
             popExitTransition = { slideOut(push = false) },
+            // #239: жест «назад» — то же движение, что и стрелка «назад», экран следует за пальцем. Без этих двух строк навигация
+            // показывала свою анимацию по умолчанию — экран сжимался в карточку (запись экрана PM 13.11.2026).
+            predictivePopEnterTransition = { slideIn(push = false) },
+            predictivePopExitTransition = { slideOut(push = false) },
         ) {
             val openTask: (String) -> Unit = { navController.navigate(TaskDetailDestination(it)) }
             composable<InboxDestination> {
@@ -357,14 +367,19 @@ fun AppNavHost(
             composable<SearchDestination> { SearchRoute(onOpenTask = openTask) }
             composable<SettingsDestination> { SettingsRoute() }
             composable<FinanceDestination> {
-                FinanceRoute(
+                FinanceRoute(finance, onOpenUnsorted = { navController.navigate(FinanceUnsortedDestination) { launchSingleTop = true } })
+            }
+            composable<FinanceSettingsDestination> {
+                FinanceSettingsRoute(
                     finance,
-                    onOpenCategories = { navController.navigate(FinanceCategoriesDestination) { launchSingleTop = true } },
-                    onOpenTrash = { navController.navigate(FinanceTrashDestination) { launchSingleTop = true } },
-                    onOpenBank = { navController.navigate(FinanceBankDestination) { launchSingleTop = true } },
-                    onOpenUnsorted = { navController.navigate(FinanceUnsortedDestination) { launchSingleTop = true } },
+                    onBack = { navController.popBackStack() },
+                    onCategories = { navController.navigate(FinanceCategoriesDestination) { launchSingleTop = true } },
+                    onPlaces = { navController.navigate(FinancePlacesDestination) { launchSingleTop = true } },
+                    onTrash = { navController.navigate(FinanceTrashDestination) { launchSingleTop = true } },
+                    onBank = { navController.navigate(FinanceBankDestination) { launchSingleTop = true } },
                 )
             }
+            composable<FinancePlacesDestination> { PlacesRoute(finance, onBack = { navController.popBackStack() }) }
             composable<FinanceTrashDestination> { FinanceTrashRoute(finance, onBack = { navController.popBackStack() }) }
             composable<FinanceBankDestination> { BankSettingsRoute(finance, onBack = { navController.popBackStack() }) }
             composable<FinanceUnsortedDestination> { UnsortedRoute(finance, onBack = { navController.popBackStack() }) }
@@ -485,7 +500,7 @@ private fun NavTab(tab: Tab, active: Boolean, onClick: () -> Unit, badge: Int = 
 
 private const val HINT_ALPHA = 0.6f
 
-private const val SLIDE_MS = 270
+private const val SLIDE_MS = 300
 
 /** Шторка задачи — диалог навигации на весь экран: экран под ней виден, затемнение и «Назад» — свои. */
 private val SHEET_DIALOG = DialogProperties(
@@ -512,15 +527,25 @@ private fun AnimatedContentTransitionScope<NavBackStackEntry>.direction(push: Bo
     return if (delta != 0) delta else if (push) 1 else -1
 }
 
+/**
+ * Переход «сдвиг с растворением» (#239, вариант C, решение PM 13.11.2026; превью — design/approved/239/motion-C.gif): новый экран
+ * сдвигается на десятую часть ширины в сторону [direction] и проявляется во второй половине перехода, прежний — сдвигается на столько же
+ * и растворяется в первой. Одно движение для вкладок, модулей, вложенных экранов, «назад» и жеста «назад».
+ */
 private fun AnimatedContentTransitionScope<NavBackStackEntry>.slideIn(push: Boolean): EnterTransition {
     val dir = direction(push)
-    return slideInHorizontally(tween(SLIDE_MS, easing = FastOutSlowInEasing)) { it * dir }
+    return slideInHorizontally(tween(SLIDE_MS, easing = FastOutSlowInEasing)) { it * dir / SHIFT_PART } +
+        fadeIn(tween(SLIDE_MS / 2, delayMillis = SLIDE_MS / 2, easing = LinearOutSlowInEasing))
 }
 
 private fun AnimatedContentTransitionScope<NavBackStackEntry>.slideOut(push: Boolean): ExitTransition {
     val dir = direction(push)
-    return slideOutHorizontally(tween(SLIDE_MS, easing = FastOutSlowInEasing)) { -it * dir }
+    return slideOutHorizontally(tween(SLIDE_MS, easing = FastOutSlowInEasing)) { -it * dir / SHIFT_PART } +
+        fadeOut(tween(SLIDE_MS / 2, easing = FastOutLinearInEasing))
 }
+
+/** Сдвиг экрана при переходе — десятая часть ширины. */
+private const val SHIFT_PART = 10
 
 /** Переход на вкладку с сохранением состояния каждой вкладки (стандартное поведение нижнего бара). */
 // Итерация 55: «Списки» всегда открываются с корня — «Входящие», «Поиск» и «Настройки» внутри не «залипают».

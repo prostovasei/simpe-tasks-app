@@ -14,6 +14,7 @@ import com.prostovasei.simpletasks.data.local.dao.BankPurchaseDao
 import com.prostovasei.simpletasks.data.local.dao.ChecklistDao
 import com.prostovasei.simpletasks.data.local.dao.FinanceAccountDao
 import com.prostovasei.simpletasks.data.local.dao.FinanceOperationDao
+import com.prostovasei.simpletasks.data.local.dao.FinancePlaceDao
 import com.prostovasei.simpletasks.data.local.dao.ProjectDao
 import com.prostovasei.simpletasks.data.local.dao.ProjectGroupDao
 import com.prostovasei.simpletasks.data.local.dao.TaskDao
@@ -22,6 +23,7 @@ import com.prostovasei.simpletasks.data.local.entity.ChecklistItemEntity
 import com.prostovasei.simpletasks.data.local.entity.FinanceAccountEntity
 import com.prostovasei.simpletasks.data.local.entity.FinanceCategoryEntity
 import com.prostovasei.simpletasks.data.local.entity.FinanceOperationEntity
+import com.prostovasei.simpletasks.data.local.entity.FinancePlaceEntity
 import com.prostovasei.simpletasks.data.local.entity.ProjectEntity
 import com.prostovasei.simpletasks.data.local.entity.ProjectGroupEntity
 import com.prostovasei.simpletasks.data.local.entity.TaskEntity
@@ -37,6 +39,7 @@ import java.util.concurrent.Executor
         FinanceCategoryEntity::class,
         FinanceOperationEntity::class,
         BankPurchaseEntity::class,
+        FinancePlaceEntity::class,
     ],
     // 1 → 2 (итерация 14): колонка projects.icon. 2 → 3 (итерация 47): колонка projects.emoji и два приоритета ([V2to3]).
     // 3 → 4 (итерация 47, проверка PM): колонка tasks.is_repeat_done — выполненный раз повтора. Данные PM сохраняются автоматической миграцией Room.
@@ -45,9 +48,10 @@ import java.util.concurrent.Executor
     // 6 → 7 (финансы, этап 2, #225): новые таблицы finance_categories и finance_operations.
     // 7 → 8 (уведомления банка, #233): новая таблица bank_purchases; операции и задачи не меняются.
     // 8 → 9 (эмодзи категорий, #237): колонка finance_categories.emoji.
-    version = 9,
+    // 9 → 10 (справочник мест, #239): таблица finance_places, заполняется местами из операций ([V9to10]).
+    version = 10,
     exportSchema = true,
-    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3, spec = V2to3::class), AutoMigration(from = 3, to = 4), AutoMigration(from = 4, to = 5, spec = V4to5::class), AutoMigration(from = 5, to = 6), AutoMigration(from = 6, to = 7), AutoMigration(from = 7, to = 8), AutoMigration(from = 8, to = 9)],
+    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3, spec = V2to3::class), AutoMigration(from = 3, to = 4), AutoMigration(from = 4, to = 5, spec = V4to5::class), AutoMigration(from = 5, to = 6), AutoMigration(from = 6, to = 7), AutoMigration(from = 7, to = 8), AutoMigration(from = 8, to = 9), AutoMigration(from = 9, to = 10, spec = V9to10::class)],
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun projectGroupDao(): ProjectGroupDao
@@ -57,6 +61,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun financeAccountDao(): FinanceAccountDao
     abstract fun financeOperationDao(): FinanceOperationDao
     abstract fun bankPurchaseDao(): BankPurchaseDao
+    abstract fun financePlaceDao(): FinancePlaceDao
 
     companion object {
         const val NAME = "simple_tasks.db"
@@ -73,6 +78,20 @@ abstract class AppDatabase : RoomDatabase() {
             if (executor != null) builder.allowMainThreadQueries().setQueryExecutor(executor).setTransactionExecutor(executor)
             return builder.addCallback(InboxSeed(time)).build()
         }
+    }
+}
+
+/**
+ * Миграция 9 → 10 (#239, решение PM): справочник мест заполняется местами, уже введёнными в операциях (без пустых, по одному на название).
+ * Операции не меняются — они по-прежнему хранят место текстом.
+ */
+class V9to10 : AutoMigrationSpec {
+    override fun onPostMigrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "INSERT OR IGNORE INTO finance_places (id, name, is_archived, created_at, updated_at) " +
+                "SELECT lower(hex(randomblob(16))), place, 0, MIN(created_at), MAX(updated_at) FROM finance_operations " +
+                "WHERE place IS NOT NULL AND trim(place) != '' GROUP BY place",
+        )
     }
 }
 

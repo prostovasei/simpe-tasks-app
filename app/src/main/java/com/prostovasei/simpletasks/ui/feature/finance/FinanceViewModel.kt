@@ -40,6 +40,7 @@ class FinanceViewModel @Inject constructor(
         viewModelScope.launch { finance.observeAccounts().collect { accounts -> setState { copy(accounts = accounts) } } }
         viewModelScope.launch { finance.observeOperations().collect { operations -> setState { copy(operations = operations) } } }
         viewModelScope.launch { finance.observeCategories().collect { categories -> setState { copy(categories = categories) } } }
+        viewModelScope.launch { finance.observePlaces().collect { places -> setState { copy(places = places) } } }
         viewModelScope.launch { finance.observeFormHints().collect { hints -> setState { copy(hints = hints) } } }
         viewModelScope.launch { finance.observeTrash().collect { trash -> setState { copy(trash = trash) } } }
         viewModelScope.launch { finance.observeCounts().collect { counts -> setState { copy(counts = counts) } } }
@@ -69,8 +70,11 @@ class FinanceViewModel @Inject constructor(
                 // Корректировку сверки не правят: её можно только посмотреть и отправить в корзину.
                 if (operation.kind == OperationKind.CORRECTION) setState { copy(correction = operation) } else setState { copy(form = operation.toForm(), today = time.today()) }
             }
-            FinanceIntent.OpenMenu -> setState { copy(menu = true) }
-            FinanceIntent.CloseMenu -> setState { copy(menu = false) }
+            is FinanceIntent.DeleteCategory -> viewModelScope.launch { finance.deleteCategoryForever(intent.id) }
+            is FinanceIntent.CreatePlace -> if (intent.name.isNotBlank()) viewModelScope.launch { finance.createPlace(intent.name) }
+            is FinanceIntent.RenamePlace -> if (intent.name.isNotBlank()) viewModelScope.launch { finance.renamePlace(intent.id, intent.name) }
+            is FinanceIntent.ArchivePlace -> viewModelScope.launch { finance.setPlaceArchived(intent.id, intent.archived) }
+            is FinanceIntent.DeletePlace -> viewModelScope.launch { finance.deletePlaceForever(intent.id) }
             is FinanceIntent.RestoreOperation -> viewModelScope.launch {
                 finance.restoreOperation(intent.id)
                 sendEffect(FinanceEffect.OperationRestored)
@@ -84,7 +88,7 @@ class FinanceViewModel @Inject constructor(
             is FinanceIntent.SaveRealBalance -> reconcile { finance.correctBalance(it, intent.realBalance, time.today()) }
             FinanceIntent.CloseReconcile -> setState { copy(reconcile = null) }
             FinanceIntent.CloseCorrection -> setState { copy(correction = null) }
-            FinanceIntent.OpenBackup -> setState { copy(menu = false, backup = BackupWindow.Actions) }
+            FinanceIntent.OpenBackup -> setState { copy(backup = BackupWindow.Actions) }
             FinanceIntent.CloseBackup -> setState { copy(backup = null) }
             is FinanceIntent.ExportBackup -> exportBackup(intent.uri)
             is FinanceIntent.PickBackup -> pickBackup(intent.uri)
@@ -146,7 +150,7 @@ class FinanceViewModel @Inject constructor(
         val accounts = currentState.accounts.orEmpty()
         val accountId = purchase.accountId.takeIf { id -> accounts.isEmpty() || accounts.any { it.id == id } } ?: accounts.first().id
         val form = OperationForm(OperationKind.EXPENSE, accountId, purchase.date, amount = Money.input(purchase.amount), purchaseId = id)
-        setState { copy(form = form, tab = FinanceTab.OPERATIONS, today = time.today(), menu = false) }
+        setState { copy(form = form, tab = FinanceTab.OPERATIONS, today = time.today()) }
     }
 
     private fun setKind(kind: OperationKind) {

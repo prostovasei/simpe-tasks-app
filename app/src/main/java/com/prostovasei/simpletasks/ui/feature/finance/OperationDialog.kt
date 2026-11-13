@@ -199,7 +199,7 @@ fun OperationDialog(state: FinanceState, form: OperationForm, onIntent: (Finance
     if (allCategories) {
         CategoryPicker(
             kind = form.kind,
-            categories = state.categories.filter { it.kind == form.kind && (!it.archived || it.id == form.categoryId) },
+            categories = state.categories.filter { it.kind == form.kind && (!it.archived || it.id == form.categoryId) }.sortedByName { it.name },
             selectedId = form.categoryId,
             onSelect = { id ->
                 edit { copy(categoryId = id) }

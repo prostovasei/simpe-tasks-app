@@ -123,10 +123,33 @@ class MigrationTest {
         val db = AppDatabase.build(context, FakeTimeProvider())
         try {
             val category = runBlocking { db.financeOperationDao().observeCategories().first() }.single()
-            assertEquals("Продукты", category.name)
-            assertEquals(null, category.emoji)
+            assertEquals("Продукты", category.category.name)
+            assertEquals(null, category.category.emoji)
             assertEquals("Продукты", runBlocking { db.financeOperationDao().observeActive().first() }.single().categoryName)
             assertEquals(932_000L, runBlocking { db.financeAccountDao().observeAll().first() }.single().balance)
+        } finally {
+            db.close()
+        }
+    }
+
+    /** Миграция 9 → 10 (справочник мест, #239): места из операций попадают в справочник по одному на название; операции не меняются. */
+    @Test
+    fun placesDirectoryIsFilledFromOperations() {
+        val file = context.getDatabasePath(AppDatabase.NAME).apply { parentFile?.mkdirs(); delete() }
+        createVersion(file, 9) { sql ->
+            sql.execSQL("INSERT INTO finance_accounts (id, name, type, emoji, initial_balance, sort_order, created_at, updated_at) VALUES ('a1', 'Карта', 'card', NULL, 1000000, 0, 1, 1)")
+            sql.execSQL("INSERT INTO finance_operations (id, kind, amount, account_id, place, date, is_deleted, created_at, updated_at) VALUES ('o1', 'expense', 100, 'a1', 'Пятёрочка', 20739, 0, 1, 1)")
+            sql.execSQL("INSERT INTO finance_operations (id, kind, amount, account_id, place, date, is_deleted, created_at, updated_at) VALUES ('o2', 'expense', 200, 'a1', 'Пятёрочка', 20739, 0, 2, 2)")
+            sql.execSQL("INSERT INTO finance_operations (id, kind, amount, account_id, place, date, is_deleted, created_at, updated_at) VALUES ('o3', 'expense', 300, 'a1', 'Озон', 20739, 1, 3, 3)")
+            sql.execSQL("INSERT INTO finance_operations (id, kind, amount, account_id, place, date, is_deleted, created_at, updated_at) VALUES ('o4', 'expense', 400, 'a1', NULL, 20739, 0, 4, 4)")
+        }
+
+        val db = AppDatabase.build(context, FakeTimeProvider())
+        try {
+            val places = runBlocking { db.financePlaceDao().observeAll().first() }
+            assertEquals(setOf("Пятёрочка" to 2, "Озон" to 1), places.map { it.place.name to it.uses }.toSet())
+            assertEquals(4, runBlocking { db.financeOperationDao().getAll() }.size)
+            assertEquals(1_000_000L - 100 - 200 - 400, runBlocking { db.financeAccountDao().observeAll().first() }.single().balance)
         } finally {
             db.close()
         }

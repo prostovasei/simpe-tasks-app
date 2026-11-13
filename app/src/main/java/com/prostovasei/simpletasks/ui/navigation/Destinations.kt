@@ -99,6 +99,14 @@ data class ProjectDestination(val projectId: String)
 data object FinanceDestination
 
 /** Корзина финансов (этап 4, #231): из меню шестерёнки. */
+/** Страница «Настройки финансов» (#239) — вместо окна-меню шестерёнки. */
+@Serializable
+data object FinanceSettingsDestination
+
+/** Справочник мест (#239). */
+@Serializable
+data object FinancePlacesDestination
+
 @Serializable
 data object FinanceTrashDestination
 

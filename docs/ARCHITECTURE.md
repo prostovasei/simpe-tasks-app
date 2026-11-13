@@ -1479,6 +1479,27 @@ PM поменял порядок: шторка для созданных зад�
 - **Тесты.** `FinanceScreenTest` (окно без заголовка, плитки, выбор места, формат даты, эмодзи категории, снимки `finance_operation_*`, `finance_place_picker_light`, `finance_categories_emoji_light`),
   `FinanceViewModelTest`, `FinanceRepositoryTest` (эмодзи в копии), `MigrationTest.categoryEmojiColumnIsAddedAndCategoriesAreKept`.
 
+### 4.71. Справочник мест, страница настроек финансов, удаление навсегда, переходы (0.65.0, #239)
+
+Макеты и превью анимаций — `design/approved/239/` (экраны без замечаний, анимация — вариант C; решения PM 13.11.2026). База 9 → 10.
+
+- **Места.** Таблица `finance_places` (id, name — уникальный индекс, is_archived). Операции по-прежнему хранят место текстом (`finance_operations.place`): справочник связан
+  по названию. `V9to10` (AutoMigration со spec) заполняет справочник местами из операций. `createOperation`/`updateOperation` добавляют новое место в справочник (`INSERT OR IGNORE`).
+  `renamePlace` меняет текст в операциях (вместе с корзиной), при совпадении с другим местом объединяет; `deletePlaceForever` очищает место у операций. Подсказки окна
+  (`FormHints.places`) — действующие места справочника: недавно использованные первыми, остальные по названию.
+- **Удаление категории навсегда.** `deleteCategoryForever`: `category_id = NULL` у операций, затем удаление категории (связь FOREIGN KEY не мешает). Число затронутых операций —
+  `Category.uses` / `Place.uses` (подзапрос `COUNT(*)` в `observeCategories` / `observeAll`), для текста предупреждения.
+- **Интерфейс.** `FinanceSettingsScreen` (маршрут `FinanceSettingsDestination`) заменил окно `FinanceMenu`; резервная копия (окна и системные выборы файла) переехала на эту страницу,
+  подсказки — общий `FinanceEffects` (главный экран и страница настроек). `PlacesScreen` (`FinancePlacesDestination`). Общие `sortedByName` (русский `Collator`, без учёта регистра)
+  и `ArchivedDialog`; `ConfirmDialog(danger = true)` — красная кнопка (`colors.danger`). Интенты `CreatePlace / RenamePlace / ArchivePlace / DeletePlace / DeleteCategory`;
+  `OpenMenu / CloseMenu` и поле `menu` убраны.
+- **Копия.** Массив `places` в JSON (необязательный: старые копии — места из операций); восстановление заменяет справочник.
+- **Переходы.** `AppNavHost`: `slideIn/slideOut` — сдвиг на 1/10 ширины + растворение (прежний экран гаснет за первую половину `SLIDE_MS` = 300 мс, новый проявляется во второй).
+  Причина «сжатия в карточку» на записи PM — `NavHost` из navigation-compose 2.10 для жеста «назад» берёт `predictivePopEnterTransition / predictivePopExitTransition`, а они не были заданы
+  и оставались стандартными (масштаб). Теперь им передаются те же `slideIn/slideOut(push = false)` — жест ведёт тот же переход, что и стрелка.
+- **Тесты.** `FinanceRepositoryTest` (справочник из операций, переименование и объединение, удаление навсегда, копия со справочником и без), `MigrationTest.placesDirectoryIsFilledFromOperations`,
+  `FinanceScreenTest` (страница настроек, места, предупреждения; снимки `finance_settings_light`, `finance_places_light`, `finance_archive_confirm_light`, `finance_delete_confirm_light`), `AppSmokeTest`.
+
 ### 4.45. Дорожная карта (обновлена)
 
 | Итерация | Название | Суть |
