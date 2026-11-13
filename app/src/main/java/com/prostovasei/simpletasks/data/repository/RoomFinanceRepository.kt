@@ -8,6 +8,7 @@ import com.prostovasei.simpletasks.data.local.entity.AccountWithBalance
 import com.prostovasei.simpletasks.data.local.entity.FinanceAccountEntity
 import com.prostovasei.simpletasks.data.local.entity.FinanceCategoryEntity
 import com.prostovasei.simpletasks.data.local.entity.FinanceOperationEntity
+import com.prostovasei.simpletasks.data.local.entity.FinancePlaceEntity
 import com.prostovasei.simpletasks.data.local.entity.OperationRow
 import com.prostovasei.simpletasks.domain.model.finance.Account
 import com.prostovasei.simpletasks.domain.model.finance.AccountDraft
@@ -18,6 +19,7 @@ import com.prostovasei.simpletasks.domain.model.finance.FormHints
 import com.prostovasei.simpletasks.domain.model.finance.Operation
 import com.prostovasei.simpletasks.domain.model.finance.OperationDraft
 import com.prostovasei.simpletasks.domain.model.finance.OperationKind
+import com.prostovasei.simpletasks.domain.model.finance.Place
 import com.prostovasei.simpletasks.domain.repository.FinanceRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -34,6 +36,7 @@ class RoomFinanceRepository @Inject constructor(
 ) : FinanceRepository {
     private val accounts = db.financeAccountDao()
     private val operations = db.financeOperationDao()
+    private val places = db.financePlaceDao()
 
     private fun now() = time.now().toEpochMilli()
 
@@ -99,7 +102,7 @@ class RoomFinanceRepository @Inject constructor(
         combine(accounts.observeCount(), operations.observeCategoryCount(), operations.observeCount()) { a, c, o -> FinanceCounts(a, c, o) }.distinctUntilChanged()
 
     override suspend fun exportBackup(): String = db.withTransaction {
-        FinanceBackupCodec.encode(FinanceBackup(accounts.getAll(), operations.getAllCategories(), operations.getAll()), exportedAt = now())
+        FinanceBackupCodec.encode(FinanceBackup(accounts.getAll(), operations.getAllCategories(), operations.getAll(), places.getAll()), exportedAt = now())
     }
 
     override fun inspectBackup(json: String): FinanceCounts =
@@ -113,10 +116,12 @@ class RoomFinanceRepository @Inject constructor(
             db.bankPurchaseDao().deleteAll()
             operations.deleteAll()
             operations.deleteAllCategories()
+            places.deleteAll()
             accounts.deleteAll()
             accounts.insertAll(backup.accounts)
             operations.insertAllCategories(backup.categories)
             operations.insertAll(backup.operations)
+            places.insertAll(backup.places)
         }
     }
 
@@ -124,10 +129,10 @@ class RoomFinanceRepository @Inject constructor(
         operations.observeActive().map { list -> list.map { it.toDomain() } }.distinctUntilChanged()
 
     override fun observeCategories(): Flow<List<Category>> =
-        operations.observeCategories().map { list -> list.map { Category(it.id, it.name, OperationKind.fromCode(it.kind), it.isArchived, it.emoji) } }.distinctUntilChanged()
+        operations.observeCategories().map { list -> list.map { Category(it.category.id, it.category.name, OperationKind.fromCode(it.category.kind), it.category.isArchived, it.category.emoji, it.uses) } }.distinctUntilChanged()
 
     override fun observeFormHints(): Flow<FormHints> =
-        combine(operations.observeLastAccount(), operations.observeRecentCategories(), operations.observePlaces()) { last, recent, places ->
+        combine(operations.observeLastAccount(), operations.observeRecentCategories(), places.observeHints()) { last, recent, places ->
             FormHints(lastAccountId = last.firstOrNull(), recentCategoryIds = recent, places = places)
         }.distinctUntilChanged()
 
@@ -135,8 +140,16 @@ class RoomFinanceRepository @Inject constructor(
         val checked = draft.checked()
         val id = ids.newId()
         val now = now()
-        operations.insert(checked.toEntity(id, createdAt = now, updatedAt = now))
+        db.withTransaction {
+            operations.insert(checked.toEntity(id, createdAt = now, updatedAt = now))
+            checked.place?.let { ensurePlace(it, now) }
+        }
         return id
+    }
+
+    /** Новое место из окна операции само попадает в справочник (#239); архивное так и остаётся в архиве. */
+    private suspend fun ensurePlace(name: String, now: Long) {
+        places.insert(FinancePlaceEntity(ids.newId(), name, createdAt = now, updatedAt = now))
     }
 
     override suspend fun updateOperation(id: String, draft: OperationDraft) {
@@ -146,6 +159,7 @@ class RoomFinanceRepository @Inject constructor(
 
             val current = operations.getById(id) ?: return@withTransaction
             operations.update(checked.toEntity(id, createdAt = current.createdAt, updatedAt = now()).copy(isDeleted = current.isDeleted, deletedAt = current.deletedAt))
+            checked.place?.let { ensurePlace(it, now()) }
         }
     }
 
@@ -171,6 +185,49 @@ class RoomFinanceRepository @Inject constructor(
 
     override suspend fun setCategoryArchived(id: String, archived: Boolean) {
         operations.setCategoryArchived(id, archived, now())
+    }
+
+    override suspend fun deleteCategoryForever(id: String) {
+        db.withTransaction {
+            operations.clearCategory(id, now())
+            operations.deleteCategory(id)
+        }
+    }
+
+    override fun observePlaces(): Flow<List<Place>> =
+        places.observeAll().map { list -> list.map { Place(it.place.id, it.place.name, it.place.isArchived, it.uses) } }.distinctUntilChanged()
+
+    override suspend fun createPlace(name: String): String {
+        val clean = name.trim()
+        require(clean.isNotEmpty()) { "Название места не может быть пустым" }
+        return db.withTransaction {
+            places.getByName(clean)?.id ?: ids.newId().also { id -> places.insert(FinancePlaceEntity(id, clean, createdAt = now(), updatedAt = now())) }
+        }
+    }
+
+    override suspend fun renamePlace(id: String, name: String) {
+        val clean = name.trim()
+        require(clean.isNotEmpty()) { "Название места не может быть пустым" }
+        db.withTransaction {
+            val place = places.getById(id) ?: return@withTransaction
+            if (place.name == clean) return@withTransaction
+            val now = now()
+            operations.renamePlace(place.name, clean, now)
+            // Такое место уже есть — два места становятся одним.
+            if (places.getByName(clean) != null) places.delete(id) else places.rename(id, clean, now)
+        }
+    }
+
+    override suspend fun setPlaceArchived(id: String, archived: Boolean) {
+        places.setArchived(id, archived, now())
+    }
+
+    override suspend fun deletePlaceForever(id: String) {
+        db.withTransaction {
+            val place = places.getById(id) ?: return@withTransaction
+            operations.clearPlace(place.name, now())
+            places.delete(id)
+        }
     }
 
     /** Проверяет и приводит поля: у перевода нет категории и места, у расхода и дохода — второго счёта; пустые строки — null. */

@@ -198,11 +198,12 @@ private fun Card(modifier: Modifier = Modifier, content: @Composable () -> Unit)
 
 /** Заголовок служебного экрана: стрелка назад и название (как у корзины финансов). */
 @Composable
-private fun ServiceHeader(title: String, onBack: () -> Unit) {
+internal fun ServiceHeader(title: String, onBack: () -> Unit, action: (@Composable () -> Unit)? = null) {
     val colors = AppTheme.colors
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(end = AppTheme.spacing.sm)) {
         IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.project_back), tint = colors.textPrimary) }
         Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = colors.textPrimary, modifier = Modifier.weight(1f))
+        action?.invoke()
     }
 }
 

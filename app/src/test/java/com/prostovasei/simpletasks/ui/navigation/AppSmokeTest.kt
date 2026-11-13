@@ -144,7 +144,11 @@ class AppSmokeTest {
         composeRule.onNodeWithTag("category_save").performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Продукты") }
         composeRule.onNodeWithTag("module_bar").assertDoesNotExist()
+        // #239: «Назад» из категорий — на страницу настроек, ещё раз — в финансы.
         composeRule.onNodeWithContentDescription("Назад").performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists("finance_settings") }
+        composeRule.onNodeWithContentDescription("Назад").performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists("finance_add") }
         composeRule.onNodeWithTag("finance_add").performClick()
         composeRule.onNodeWithTag("operation_amount").performTextReplacement("850")
         composeRule.onNodeWithContentDescription("Продукты").performClick()
@@ -172,6 +176,8 @@ class AppSmokeTest {
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists("finance_trash") }
         composeRule.onNodeWithContentDescription("Восстановить").performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Корзина пуста") }
+        composeRule.onNodeWithContentDescription("Назад").performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists("finance_settings") }
         composeRule.onNodeWithContentDescription("Назад").performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("− 850\u00A0₽") }
 

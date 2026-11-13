@@ -522,6 +522,37 @@ class FakeFinanceRepository : com.prostovasei.simpletasks.domain.repository.Fina
         calls += "archive:$id:$archived"
         categories.value = categories.value.map { if (it.id == id) it.copy(archived = archived) else it }
     }
+
+    override suspend fun deleteCategoryForever(id: String) {
+        calls += "deleteCategory:$id"
+        categories.value = categories.value.filterNot { it.id == id }
+    }
+
+    val places = MutableStateFlow<List<com.prostovasei.simpletasks.domain.model.finance.Place>>(emptyList())
+
+    override fun observePlaces(): Flow<List<com.prostovasei.simpletasks.domain.model.finance.Place>> = places
+
+    override suspend fun createPlace(name: String): String {
+        val id = "p${places.value.size + 1}"
+        calls += "place:$name"
+        places.value += com.prostovasei.simpletasks.domain.model.finance.Place(id, name, archived = false)
+        return id
+    }
+
+    override suspend fun renamePlace(id: String, name: String) {
+        calls += "renamePlace:$id:$name"
+        places.value = places.value.map { if (it.id == id) it.copy(name = name) else it }
+    }
+
+    override suspend fun setPlaceArchived(id: String, archived: Boolean) {
+        calls += "archivePlace:$id:$archived"
+        places.value = places.value.map { if (it.id == id) it.copy(archived = archived) else it }
+    }
+
+    override suspend fun deletePlaceForever(id: String) {
+        calls += "deletePlace:$id"
+        places.value = places.value.filterNot { it.id == id }
+    }
 }
 
 fun account(
@@ -534,6 +565,8 @@ fun account(
 
 fun category(id: String, name: String, kind: com.prostovasei.simpletasks.domain.model.finance.OperationKind = com.prostovasei.simpletasks.domain.model.finance.OperationKind.EXPENSE, archived: Boolean = false, emoji: String? = null) =
     com.prostovasei.simpletasks.domain.model.finance.Category(id, name, kind, archived, emoji)
+
+fun place(id: String, name: String, archived: Boolean = false, uses: Int = 0) = com.prostovasei.simpletasks.domain.model.finance.Place(id, name, archived, uses)
 
 fun operation(
     id: String,

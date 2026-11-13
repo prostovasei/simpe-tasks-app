@@ -26,6 +26,7 @@ import com.prostovasei.simpletasks.domain.model.finance.AccountType
 import com.prostovasei.simpletasks.testing.account
 import com.prostovasei.simpletasks.testing.category
 import com.prostovasei.simpletasks.testing.operation
+import com.prostovasei.simpletasks.testing.place
 import com.prostovasei.simpletasks.ui.feature.task.TAG_DIALOG_DONE
 import com.prostovasei.simpletasks.ui.feature.project.TAG_EMOJI_DIALOG
 import com.prostovasei.simpletasks.ui.feature.project.TAG_EMOJI_FIELD
@@ -454,12 +455,14 @@ class FinanceScreenTest {
         composeRule.onRoot().captureRoboImage("screenshots/finance_categories_light.png")
 
         composeRule.onNodeWithTag("$TAG_CATEGORY:old").performClick()
+        composeRule.onNodeWithTag("$TAG_ARCHIVED_WINDOW:$TAG_ARCHIVED_RESTORE").performClick()
         composeRule.onNodeWithTag("$TAG_CATEGORY:c2").performClick()
         composeRule.onNodeWithText("Категория расходов").assertExists()
         composeRule.onNodeWithTag(TAG_CATEGORY_NAME).performTextReplacement("Кофе")
         composeRule.onNodeWithTag(TAG_CATEGORY_SAVE).performClick()
         composeRule.onNodeWithTag("$TAG_CATEGORY:c3").performClick()
         composeRule.onNodeWithTag(TAG_CATEGORY_ARCHIVE).performClick()
+        composeRule.onNodeWithTag("$TAG_ARCHIVE_CONFIRM:confirm").performClick()
 
         composeRule.onNodeWithTag("$TAG_CATEGORY_KIND:INCOME").performClick()
         composeRule.onNodeWithText("Зарплата").assertExists()
@@ -645,25 +648,27 @@ class FinanceScreenTest {
         composeRule.onNodeWithTag(TAG_TRASH_CLEAR).assertDoesNotExist()
     }
 
-    /** Меню шестерёнки: категории, корзина и копия с подписями-счётчиками. */
+    /** Страница настроек (#239): вместо окна — экран со стрелкой назад; пункты с подписями-счётчиками, в том числе «Места». */
     @Test
-    fun gearMenuLeadsToCategoriesTrashAndBackup() {
+    fun settingsPageLeadsToDirectoriesTrashBackupAndBank() {
         val clicks = mutableListOf<String>()
-        val state = full().copy(trash = trashed, lastBackupAt = null)
-        composeRule.setContent { AppTheme { FinanceMenu(state, { clicks += "categories" }, { clicks += "trash" }, { clicks += "backup" }, { clicks += "close" }, onBank = { clicks += "bank" }) } }
-
+        val places = listOf(place("p1", "Пятёрочка"), place("p2", "Озон"), place("p3", "Кофейня", archived = true))
+        val state = full().copy(trash = trashed, lastBackupAt = null, places = places)
+        composeRule.setContent {
+            AppTheme {
+                FinanceSettingsScreen(state, onBack = { clicks += "back" }, onCategories = { clicks += "categories" }, onPlaces = { clicks += "places" }, onTrash = { clicks += "trash" }, onBackup = { clicks += "backup" }, onBank = { clicks += "bank" })
+            }
+        }
+        composeRule.onNodeWithText("Настройки финансов").assertExists()
         composeRule.onNodeWithText("Действующих: 7").assertExists()
-        composeRule.onNodeWithText("Уведомления банка").assertExists()
-        composeRule.onNodeWithText("Выключено").assertExists()
+        composeRule.onNodeWithText("Действующих: 2").assertExists()
         composeRule.onNodeWithText("Операций: 3").assertExists()
         composeRule.onNodeWithText("Копия ещё не сохранялась").assertExists()
-        composeRule.onNode(isDialog()).captureRoboImage("screenshots/finance_menu_light.png")
-        composeRule.onNodeWithTag(TAG_MENU_CATEGORIES).performClick()
-        composeRule.onNodeWithTag(TAG_MENU_TRASH).performClick()
-        composeRule.onNodeWithTag(TAG_MENU_BACKUP).performClick()
-        composeRule.onNodeWithTag(TAG_MENU_BANK).performClick()
-        composeRule.onNodeWithTag("$TAG_FINANCE_MENU:$TAG_WINDOW_CLOSE").performClick()
-        assertEquals(listOf("categories", "trash", "backup", "bank", "close"), clicks)
+        composeRule.onNodeWithText("Выключено").assertExists()
+        composeRule.onRoot().captureRoboImage("screenshots/finance_settings_light.png")
+        listOf(TAG_MENU_CATEGORIES, TAG_MENU_PLACES, TAG_MENU_TRASH, TAG_MENU_BACKUP, TAG_MENU_BANK).forEach { composeRule.onNodeWithTag(it).performClick() }
+        composeRule.onNodeWithContentDescription("Назад").performClick()
+        assertEquals(listOf("categories", "places", "trash", "backup", "bank", "back"), clicks)
     }
 
     /** Окна копии: действия и подтверждение замены с содержимым копии и текущими данными. */
@@ -811,5 +816,71 @@ class FinanceScreenTest {
         composeRule.onNodeWithTag(TAG_CATEGORY_SAVE).performClick()
 
         assertEquals(listOf<FinanceIntent>(FinanceIntent.UpdateCategory("c2", "Кафе", null), FinanceIntent.UpdateCategory("c1", "Продукты", "🛒")), intents)
+    }
+
+    /** Справочник мест (#239): по алфавиту, архив внизу; правка, архив с предупреждением, удаление навсегда только из архива. */
+    @Test
+    fun placesDirectoryArchivesAndDeletesWithWarnings() {
+        val places = listOf(place("p1", "Пятёрочка", uses = 4), place("p2", "Азбука вкуса"), place("p3", "озон"), place("p4", "Кофейня у дома", archived = true, uses = 5))
+        var back = false
+        composeRule.setContent { AppTheme { PlacesScreen(places, { intents += it }, onBack = { back = true }) } }
+        val order = composeRule.onAllNodes(androidx.compose.ui.test.hasTestTag("$TAG_PLACE:p2").or(androidx.compose.ui.test.hasTestTag("$TAG_PLACE:p3")).or(androidx.compose.ui.test.hasTestTag("$TAG_PLACE:p1")))
+            .fetchSemanticsNodes().sortedBy { it.boundsInRoot.top }.map { it.config[androidx.compose.ui.semantics.SemanticsProperties.TestTag] }
+        assertEquals(listOf("$TAG_PLACE:p2", "$TAG_PLACE:p3", "$TAG_PLACE:p1"), order)
+        composeRule.onRoot().captureRoboImage("screenshots/finance_places_light.png")
+
+        // Правка: переименование, затем «В архив» — с предупреждением.
+        composeRule.onNodeWithTag("$TAG_PLACE:p1").performClick()
+        composeRule.onNodeWithTag(TAG_PLACE_NAME).performTextReplacement("Пятёрочка у дома")
+        composeRule.onNodeWithTag(TAG_PLACE_SAVE).performClick()
+        composeRule.onNodeWithTag("$TAG_PLACE:p3").performClick()
+        composeRule.onNodeWithTag(TAG_PLACE_ARCHIVE).performClick()
+        composeRule.onNodeWithText("Перенести в архив?").assertExists()
+        composeRule.onNodeWithTag("$TAG_ARCHIVE_CONFIRM:confirm").performClick()
+
+        // Архивное: окно «вернуть / удалить навсегда», удаление — с числом операций и подтверждением.
+        composeRule.onNodeWithTag("$TAG_PLACE:p4").performClick()
+        composeRule.onNodeWithText("В архиве. Операций: 5.").assertExists()
+        composeRule.onNodeWithTag("$TAG_ARCHIVED_WINDOW:$TAG_ARCHIVED_DELETE").performClick()
+        composeRule.onNodeWithText("Место «Кофейня у дома» будет удалено. Операций, у которых место станет пустым: 5. Сами операции не удаляются. Это нельзя отменить.").assertExists()
+        composeRule.onNode(isDialog().and(androidx.compose.ui.test.hasTestTag(TAG_DELETE_CONFIRM))).captureRoboImage("screenshots/finance_delete_confirm_light.png")
+        composeRule.onNodeWithTag("$TAG_DELETE_CONFIRM:confirm").performClick()
+        composeRule.onNodeWithTag(TAG_PLACE_ADD).performClick()
+        composeRule.onNodeWithTag(TAG_PLACE_NAME).performTextInput("ВкусВилл")
+        composeRule.onNodeWithTag(TAG_PLACE_SAVE).performClick()
+        composeRule.onNodeWithContentDescription("Назад").performClick()
+
+        assertEquals(
+            listOf(FinanceIntent.RenamePlace("p1", "Пятёрочка у дома"), FinanceIntent.ArchivePlace("p3", true), FinanceIntent.DeletePlace("p4"), FinanceIntent.CreatePlace("ВкусВилл")),
+            intents,
+        )
+        assertTrue(back)
+    }
+
+    /** Категории (#239): архив — с предупреждением, архивная — вернуть или удалить навсегда; «Отмена» ничего не делает. */
+    @Test
+    fun categoryArchiveAndDeleteAskFirst() {
+        val withUses = cats.map { if (it.id == "old") it.copy(uses = 14) else it }
+        composeRule.setContent { AppTheme { CategoriesScreen(withUses, { intents += it }, onBack = {}) } }
+        composeRule.onNodeWithTag("$TAG_CATEGORY:c2").performClick()
+        composeRule.onNodeWithTag(TAG_CATEGORY_ARCHIVE).performClick()
+        composeRule.onNodeWithText("Категория «Кафе» не будет предлагаться в новых операциях. В старых операциях останется. Вернуть можно из архива.").assertExists()
+        composeRule.onNode(isDialog().and(androidx.compose.ui.test.hasTestTag(TAG_ARCHIVE_CONFIRM))).captureRoboImage("screenshots/finance_archive_confirm_light.png")
+        composeRule.onNodeWithTag("$TAG_ARCHIVE_CONFIRM:cancel").performClick()
+        assertTrue(intents.isEmpty())
+        composeRule.onNodeWithTag(TAG_CATEGORY_ARCHIVE).performClick()
+        composeRule.onNodeWithTag("$TAG_ARCHIVE_CONFIRM:confirm").performClick()
+
+        composeRule.onNodeWithTag("$TAG_CATEGORY:old").performClick()
+        composeRule.onNodeWithTag("$TAG_ARCHIVED_WINDOW:$TAG_ARCHIVED_RESTORE").performClick()
+        composeRule.onNodeWithTag("$TAG_CATEGORY:old").performClick()
+        composeRule.onNodeWithTag("$TAG_ARCHIVED_WINDOW:$TAG_ARCHIVED_DELETE").performClick()
+        composeRule.onNodeWithText("Категория «Такси» будет удалена. Операций, у которых категория станет «Без категории»: 14. Сами операции не удаляются. Это нельзя отменить.").assertExists()
+        composeRule.onNodeWithTag("$TAG_DELETE_CONFIRM:confirm").performClick()
+
+        assertEquals(
+            listOf(FinanceIntent.ArchiveCategory("c2", true), FinanceIntent.ArchiveCategory("old", false), FinanceIntent.DeleteCategory("old")),
+            intents,
+        )
     }
 }

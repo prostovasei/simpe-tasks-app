@@ -370,9 +370,7 @@ class FinanceViewModelTest {
     fun backupIsSavedToFile() = runTest(dispatcher) {
         val vm = vm()
         runCurrent()
-        vm.onIntent(FinanceIntent.OpenMenu)
         vm.onIntent(FinanceIntent.OpenBackup)
-        assertFalse(vm.state.value.menu)
         assertEquals(BackupWindow.Actions, vm.state.value.backup)
 
         vm.effects.test {

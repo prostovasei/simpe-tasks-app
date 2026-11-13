@@ -78,4 +78,21 @@ interface FinanceRepository {
     suspend fun updateCategory(id: String, name: String, emoji: String?)
 
     suspend fun setCategoryArchived(id: String, archived: Boolean)
+
+    /** Удаление категории навсегда (#239): её операции становятся «Без категории», сами не удаляются. */
+    suspend fun deleteCategoryForever(id: String)
+
+    /** Справочник мест (#239): все места, включая архивные. */
+    fun observePlaces(): Flow<List<com.prostovasei.simpletasks.domain.model.finance.Place>>
+
+    /** Новое место; такое название уже есть — возвращается его id. */
+    suspend fun createPlace(name: String): String
+
+    /** Переименование меняет место во всех операциях; совпало с другим местом — они объединяются. */
+    suspend fun renamePlace(id: String, name: String)
+
+    suspend fun setPlaceArchived(id: String, archived: Boolean)
+
+    /** Удаление места навсегда: у его операций место становится пустым. */
+    suspend fun deletePlaceForever(id: String)
 }

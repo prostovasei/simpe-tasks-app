@@ -137,7 +137,7 @@ fun <T> Segments(options: List<Pair<T, String>>, selected: T, tag: String, onSel
 
 /** Серая кнопка во всю ширину: второе действие окна («В архив», «Новая категория»). */
 @Composable
-fun SecondaryAction(label: String, tag: String, onClick: () -> Unit, plus: Boolean = false) {
+fun SecondaryAction(label: String, tag: String, onClick: () -> Unit, plus: Boolean = false, danger: Boolean = false) {
     val colors = AppTheme.colors
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -151,7 +151,7 @@ fun SecondaryAction(label: String, tag: String, onClick: () -> Unit, plus: Boole
             .testTag(tag),
     ) {
         if (plus) Icon(Icons.Default.Add, contentDescription = null, tint = colors.textPrimary, modifier = Modifier.padding(end = AppTheme.spacing.xs).size(AppTheme.sizes.accountAddIcon))
-        Text(label, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+        Text(label, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = if (danger) colors.danger else colors.textPrimary)
     }
 }
 

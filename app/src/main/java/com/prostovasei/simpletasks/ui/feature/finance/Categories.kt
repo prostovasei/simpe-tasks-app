@@ -68,7 +68,11 @@ fun CategoriesScreen(categories: List<Category>, onIntent: (FinanceIntent) -> Un
     var kind by rememberSaveable { mutableStateOf(OperationKind.EXPENSE) }
     var creating by rememberSaveable { mutableStateOf(false) }
     var editingId by rememberSaveable { mutableStateOf<String?>(null) }
-    val (archived, active) = categories.filter { it.kind == kind }.partition { it.archived }
+    var archivingId by rememberSaveable { mutableStateOf<String?>(null) }
+    var archivedId by rememberSaveable { mutableStateOf<String?>(null) }
+    var deletingId by rememberSaveable { mutableStateOf<String?>(null) }
+    // #239: по алфавиту (решение PM); архив — внизу.
+    val (archived, active) = categories.filter { it.kind == kind }.sortedByName { it.name }.partition { it.archived }
     Column(Modifier.fillMaxSize().background(colors.background).testTag(TAG_CATEGORIES)) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(end = spacing.sm)) {
             IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.project_back), tint = colors.textPrimary) }
@@ -105,7 +109,7 @@ fun CategoriesScreen(categories: List<Category>, onIntent: (FinanceIntent) -> Un
                     Text(stringResource(R.string.categories_archive), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = colors.textPrimary, modifier = Modifier.padding(start = spacing.xxs, top = spacing.md, bottom = spacing.xs))
                 }
                 item(key = "archive") {
-                    Card { archived.forEachIndexed { i, category -> CategoryRow(category, last = i == archived.lastIndex) { onIntent(FinanceIntent.ArchiveCategory(category.id, archived = false)) } } }
+                    Card { archived.forEachIndexed { i, category -> CategoryRow(category, last = i == archived.lastIndex) { archivedId = category.id } } }
                 }
             }
             item(key = "note") {
@@ -135,11 +139,51 @@ fun CategoriesScreen(categories: List<Category>, onIntent: (FinanceIntent) -> Un
                 onIntent(FinanceIntent.UpdateCategory(category.id, name, emoji))
                 editingId = null
             },
-            onArchive = {
+            onArchive = { archivingId = category.id },
+            onDismiss = { editingId = null },
+        )
+    }
+    // #239: архив — с предупреждением; архивная запись — вернуть или удалить навсегда (с предупреждением).
+    categories.firstOrNull { it.id == archivingId }?.let { category ->
+        ConfirmDialog(
+            title = stringResource(R.string.archive_confirm_title),
+            text = stringResource(R.string.archive_confirm_category, category.name),
+            confirm = stringResource(R.string.category_archive),
+            tag = TAG_ARCHIVE_CONFIRM,
+            onConfirm = {
                 onIntent(FinanceIntent.ArchiveCategory(category.id, archived = true))
+                archivingId = null
                 editingId = null
             },
-            onDismiss = { editingId = null },
+            onDismiss = { archivingId = null },
+        )
+    }
+    categories.firstOrNull { it.id == archivedId }?.let { category ->
+        ArchivedDialog(
+            title = category.name,
+            uses = category.uses,
+            tag = TAG_ARCHIVED_WINDOW,
+            onRestore = {
+                onIntent(FinanceIntent.ArchiveCategory(category.id, archived = false))
+                archivedId = null
+            },
+            onDelete = { deletingId = category.id },
+            onDismiss = { archivedId = null },
+        )
+    }
+    categories.firstOrNull { it.id == deletingId }?.let { category ->
+        ConfirmDialog(
+            title = stringResource(R.string.delete_forever_title),
+            text = stringResource(R.string.delete_forever_category, category.name, category.uses),
+            confirm = stringResource(R.string.action_delete),
+            tag = TAG_DELETE_CONFIRM,
+            danger = true,
+            onConfirm = {
+                onIntent(FinanceIntent.DeleteCategory(category.id))
+                deletingId = null
+                archivedId = null
+            },
+            onDismiss = { deletingId = null },
         )
     }
 }
@@ -174,11 +218,7 @@ private fun CategoryRow(category: Category, last: Boolean, onClick: () -> Unit) 
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f).padding(start = spacing.sm),
         )
-        if (category.archived) {
-            Icon(painterResource(R.drawable.ic_snack_restore), contentDescription = restore, tint = colors.textSecondary, modifier = Modifier.size(AppTheme.sizes.moduleIcon))
-        } else {
-            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = colors.inactive)
-        }
+        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = if (category.archived) restore else null, tint = colors.inactive)
     }
     if (!last) HorizontalDivider(color = colors.divider, thickness = AppTheme.sizes.hairline, modifier = Modifier.padding(start = spacing.md))
 }

@@ -1,8 +1,6 @@
 package com.prostovasei.simpletasks.ui.feature.finance
 
 import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -46,14 +44,20 @@ import com.prostovasei.simpletasks.domain.model.finance.Account
 import com.prostovasei.simpletasks.domain.model.finance.Money
 
 @Composable
-fun FinanceRoute(
-    viewModel: FinanceViewModel,
-    onOpenCategories: () -> Unit = {},
-    onOpenTrash: () -> Unit = {},
-    onOpenBank: () -> Unit = {},
-    onOpenUnsorted: () -> Unit = {},
-) {
+fun FinanceRoute(viewModel: FinanceViewModel, onOpenUnsorted: () -> Unit = {}) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    FinanceEffects(viewModel)
+    // Подпись «Уведомления банка» на странице настроек должна быть свежей после возврата из настроек Android.
+    androidx.lifecycle.compose.LifecycleResumeEffect(viewModel) {
+        viewModel.onIntent(FinanceIntent.RefreshBankAccess)
+        onPauseOrDispose {}
+    }
+    FinanceScreen(state, onOpenUnsorted, viewModel::onIntent)
+}
+
+/** Подсказки финансов (сохранено, корзина, копия): на главном экране и на странице настроек, где открывается резервная копия. */
+@Composable
+fun FinanceEffects(viewModel: FinanceViewModel) {
     val context = LocalContext.current
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
@@ -68,46 +72,6 @@ fun FinanceRoute(
                 FinanceEffect.PurchaseRecorded -> Toast.makeText(context, R.string.bank_recorded, Toast.LENGTH_SHORT).show()
             }
         }
-    }
-    // Значок доступа в меню шестерёнки должен быть свежим после возврата из настроек Android.
-    androidx.lifecycle.compose.LifecycleResumeEffect(viewModel) {
-        viewModel.onIntent(FinanceIntent.RefreshBankAccess)
-        onPauseOrDispose {}
-    }
-    FinanceScreen(state, onOpenUnsorted, viewModel::onIntent)
-
-    // Этап 4: меню шестерёнки и резервная копия. Место сохранения и файл копии выбираются в системном окне.
-    val saver = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(BACKUP_MIME)) { uri -> uri?.let { viewModel.onIntent(FinanceIntent.ExportBackup(it.toString())) } }
-    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let { viewModel.onIntent(FinanceIntent.PickBackup(it.toString())) } }
-    if (state.menu) {
-        val close = { viewModel.onIntent(FinanceIntent.CloseMenu) }
-        FinanceMenu(
-            state,
-            onCategories = {
-                close()
-                onOpenCategories()
-            },
-            onTrash = {
-                close()
-                onOpenTrash()
-            },
-            onBackup = { viewModel.onIntent(FinanceIntent.OpenBackup) },
-            onDismiss = close,
-            onBank = {
-                close()
-                onOpenBank()
-            },
-        )
-    }
-    when (val backup = state.backup) {
-        null -> Unit
-        BackupWindow.Actions -> BackupDialog(
-            state.lastBackupAt,
-            onSave = { saver.launch("simple-tasks-finance-${state.today}.json") },
-            onRestore = { picker.launch(arrayOf(BACKUP_MIME, "*/*")) },
-            onDismiss = { viewModel.onIntent(FinanceIntent.CloseBackup) },
-        )
-        is BackupWindow.Confirm -> RestoreConfirmDialog(backup.inFile, state.counts, onConfirm = { viewModel.onIntent(FinanceIntent.ConfirmRestore) }, onDismiss = { viewModel.onIntent(FinanceIntent.CloseBackup) })
     }
 }
 
@@ -243,7 +207,7 @@ private fun FinanceEmpty(onCreate: () -> Unit) {
 
 /** Чёрная кнопка во всю ширину: «Создать счёт», «Сохранить». [plus] — значок «+» слева. */
 @Composable
-internal fun PrimaryAction(label: String, tag: String, onClick: () -> Unit, enabled: Boolean = true, plus: Boolean = false) {
+internal fun PrimaryAction(label: String, tag: String, onClick: () -> Unit, enabled: Boolean = true, plus: Boolean = false, danger: Boolean = false) {
     val colors = AppTheme.colors
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -251,7 +215,7 @@ internal fun PrimaryAction(label: String, tag: String, onClick: () -> Unit, enab
         modifier = Modifier
             .fillMaxWidth()
             .clip(AppTheme.shapes.large)
-            .background(if (enabled) colors.accent else colors.divider)
+            .background(if (!enabled) colors.divider else if (danger) colors.danger else colors.accent)
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
             .padding(vertical = AppTheme.spacing.sm)
             .testTag(tag),

@@ -1,5 +1,5 @@
 """Финансы #239, пункт 7 — превью анимаций перехода на выбор PM (13.11.2026). Кадры собираются из снимков экранов приложения (app/screenshots).
-Запуск из корня: python3 design/drafts/finance-239/motion.py → motion-A.gif, motion-B.gif, motion-C.gif и motion-storyboard.png.
+Запуск из корня: python3 design/approved/239/motion.py → motion-A.gif, motion-B.gif, motion-C.gif и motion-storyboard.png.
 Три сцены в каждом превью: «вперёд» (Операции → Категории), «назад жестом» (палец ведёт экран, затем отпускает), «смена модуля» (Финансы → Задачи).
 Панели модулей в превью едут вместе с экраном — на телефоне верхняя и нижняя панели стоят на месте, двигается только содержимое."""
 from pathlib import Path

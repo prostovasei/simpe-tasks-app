@@ -1,10 +1,10 @@
 """Финансы #239 — макеты на согласование PM (13.11.2026): страница настроек, справочник мест, сортировка по алфавиту, архив и удаление навсегда.
-Основа — стиль и компоненты макетов 217/233/237. Запуск из корня: python3 design/drafts/finance-239/screens.py → screens.html;
-PNG: node design/drafts/finance-239/render.js. Превью анимаций — python3 design/drafts/finance-239/motion.py. Все названия и суммы вымышленные."""
+Основа — стиль и компоненты макетов 217/233/237. Запуск из корня: python3 design/approved/239/screens.py → screens.html;
+PNG: node design/approved/239/render.js. Превью анимаций — python3 design/approved/239/motion.py. Все названия и суммы вымышленные."""
 from pathlib import Path
 
 here = Path(__file__).parent
-p233 = here.parent.parent / 'approved' / '233' / 'screens.py'
+p233 = here.parent / '233' / 'screens.py'
 src233 = p233.read_text()
 G = {'__file__': str(p233)}
 exec(src233[:src233.index('# ---------- 1. Настройка')], G)
@@ -118,4 +118,4 @@ secs = [('1. Настройки и справочники', 'Пункты 1–3 
 html = (f'<!doctype html><html lang="ru"><meta charset="utf-8"><title>Финансы — справочники (#239)</title><style>{g217["style"]}{G["extra217"]}{extra233}{extra}</style>'
         '<div class="board">' + ''.join(f'<section class="sec" id="s{i+1}"><h2>{t}</h2><p>{d}</p><div class="rowp">{"".join(f)}</div></section>' for i, (t, d, f) in enumerate(secs)) + '</div></html>')
 (here / 'screens.html').write_text(html)
-print('screens.html готов; картинки: node design/drafts/finance-239/render.js')
+print('screens.html готов; картинки: node design/approved/239/render.js')
