@@ -71,7 +71,6 @@ fun ListsRoute(
     onOpenProject: (String) -> Unit,
     onOpenInbox: () -> Unit = {},
     onOpenSearch: () -> Unit = {},
-    onOpenSettings: () -> Unit = {},
     onOpenCompleted: () -> Unit = {},
     onOpenTrash: () -> Unit = {},
     onOpenWontDo: () -> Unit = {},
@@ -87,7 +86,7 @@ fun ListsRoute(
             }
         }
     }
-    ListsScreen(state, viewModel::onIntent, onOpenProject, onOpenCompleted, onOpenTrash, onOpenWontDo, onOpenSomeday, onOpenNoList, onOpenInbox, onOpenSearch, onOpenSettings)
+    ListsScreen(state, viewModel::onIntent, onOpenProject, onOpenCompleted, onOpenTrash, onOpenWontDo, onOpenSomeday, onOpenNoList, onOpenInbox, onOpenSearch)
 }
 
 /** Строка карточки «Моих списков»: папка или список (в папке — с отступом). */
@@ -120,7 +119,6 @@ fun ListsScreen(
     onOpenNoList: () -> Unit = {},
     onOpenInbox: () -> Unit = {},
     onOpenSearch: () -> Unit = {},
-    onOpenSettings: () -> Unit = {},
 ) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
@@ -178,7 +176,6 @@ fun ListsScreen(
                 onSearch = onOpenSearch,
                 onNewFolder = { onIntent(ListsIntent.OpenDialog(ListsDialog.CreateFolder)) },
                 onNewList = { onIntent(ListsIntent.OpenDialog(ListsDialog.CreateList)) },
-                onSettings = onOpenSettings,
                 modifier = Modifier.align(Alignment.BottomCenter),
             )
         }
@@ -339,9 +336,9 @@ private fun ProjectRow(item: ProjectWithCount, indented: Boolean, pos: CardPos, 
     lead = { ListBadge(item.project.emojiShown, large = true) },
 )
 
-/** Строка значков над нижней панелью (итерация 56): поиск, новая папка, новый список, настройки — всегда на месте. */
+/** Строка значков над нижней панелью (итерация 56): поиск, новая папка, новый список — всегда на месте. Настройки — из меню кнопки модуля (#241). */
 @Composable
-private fun ListsToolbar(onSearch: () -> Unit, onNewFolder: () -> Unit, onNewList: () -> Unit, onSettings: () -> Unit, modifier: Modifier = Modifier) {
+private fun ListsToolbar(onSearch: () -> Unit, onNewFolder: () -> Unit, onNewList: () -> Unit, modifier: Modifier = Modifier) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
     Row(
@@ -355,7 +352,6 @@ private fun ListsToolbar(onSearch: () -> Unit, onNewFolder: () -> Unit, onNewLis
         ToolButton(R.drawable.ic_nav_search, R.string.search_hint, TAG_LISTS_SEARCH, onSearch)
         ToolButton(R.drawable.ic_folder_plus, R.string.lists_new_folder_action, TAG_NEW_FOLDER, onNewFolder)
         ToolButton(R.drawable.ic_list_plus, R.string.lists_new_list_action, TAG_NEW_LIST, onNewList)
-        ToolButton(R.drawable.ic_nav_settings, R.string.tab_settings, TAG_LISTS_SETTINGS, onSettings)
     }
 }
 
@@ -422,7 +418,6 @@ private fun ListsDialogs(state: ListsState, onIntent: (ListsIntent) -> Unit) {
 /** Свёрнутая папка — стрелка смотрит вправо. */
 private const val COLLAPSED_ANGLE = -90f
 
-const val TAG_LISTS_SETTINGS = "lists_settings"
 const val TAG_LISTS_SEARCH = "lists_search"
 const val TAG_LISTS_INBOX = "lists_inbox"
 const val TAG_LISTS_SCROLL = "lists_scroll"

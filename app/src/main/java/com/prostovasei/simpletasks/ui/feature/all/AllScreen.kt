@@ -1,7 +1,6 @@
 package com.prostovasei.simpletasks.ui.feature.all
 
 import androidx.compose.foundation.layout.Column
-import com.prostovasei.simpletasks.designsystem.components.ScreenTitle
 import com.prostovasei.simpletasks.ui.feature.bulk.selectionBottomInset
 import com.prostovasei.simpletasks.ui.feature.bulk.rememberSelection
 import com.prostovasei.simpletasks.ui.feature.bulk.Selectable
@@ -61,7 +60,6 @@ fun AllScreen(
     ) { padding ->
         if (!state.isLoading && state.isEmpty) {
             Column(Modifier.padding(padding)) {
-                ScreenTitle(stringResource(R.string.tab_upcoming))
                 EmptyTasks(stringResource(R.string.all_empty), stringResource(R.string.empty_hint))
             }
             return@Scaffold
@@ -72,10 +70,9 @@ fun AllScreen(
         SelectionFrame(selection, allItems.filterNot { it.isGhost }.map { Selectable(it.id, it.isDone, it.isRecurring, it.due != null) }, Modifier.padding(padding)) {
         LazyColumn(
             Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = selectionBottomInset(selection)),
+            contentPadding = PaddingValues(top = AppTheme.spacing.xs, bottom = selectionBottomInset(selection)),
         ) {
-            // Итерация 55: лента «Все» называется «Предстоящее» — заголовок сверху, как на «Списках».
-            item(key = "title") { ScreenTitle(stringResource(R.string.tab_upcoming)) }
+            // #241 (решение PM): заголовка «Предстоящее» над лентой больше нет — название страницы видно по значку в нижней панели.
             val groups = state.dayGroups()
             // «Просрочено · N» над первым прошедшим днём (итерация 37): стрелка сворачивает все прошедшие дни, значок — переносит на сегодня.
             val overdueCount = groups.filter { it.isOverdue }.sumOf { group -> group.items.count { !it.showsDone } }

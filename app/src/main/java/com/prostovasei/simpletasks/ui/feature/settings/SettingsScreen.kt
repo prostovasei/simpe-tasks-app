@@ -7,7 +7,6 @@ import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -52,16 +51,16 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.prostovasei.simpletasks.BuildConfig
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
+import com.prostovasei.simpletasks.ui.feature.finance.ServiceHeader
 import com.prostovasei.simpletasks.domain.model.DataStats
 import com.prostovasei.simpletasks.domain.model.ImportReport
 import com.prostovasei.simpletasks.notifications.ExactPrefs
 import com.prostovasei.simpletasks.notifications.PopupPrefs
 import com.prostovasei.simpletasks.notifications.SummaryPrefs
-import com.prostovasei.simpletasks.widget.WidgetLog
 
 /** Экран «Настройки» с ViewModel. */
 @Composable
-fun SettingsRoute(viewModel: SettingsViewModel = hiltViewModel()) {
+fun SettingsRoute(onBack: () -> Unit = {}, viewModel: SettingsViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     val clearedMessage = stringResource(R.string.settings_cleared)
@@ -89,6 +88,7 @@ fun SettingsRoute(viewModel: SettingsViewModel = hiltViewModel()) {
     SettingsScreen(
         state = state,
         onIntent = viewModel::onIntent,
+        onBack = onBack,
         snackbarHostState = snackbar,
         notificationsOff = notificationsOff,
         onEnableNotifications = {
@@ -134,14 +134,6 @@ fun SettingsRoute(viewModel: SettingsViewModel = hiltViewModel()) {
                 ).show()
             },
         ),
-        widgetLog = WidgetLogActions(
-            read = { WidgetLog.read(context) },
-            share = { text ->
-                val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
-                context.startActivity(Intent.createChooser(send, null))
-            },
-            clear = { WidgetLog.clear(context) },
-        ),
     )
 }
 
@@ -150,16 +142,14 @@ fun SettingsScreen(
     state: SettingsState,
     onIntent: (SettingsIntent) -> Unit,
     modifier: Modifier = Modifier,
+    onBack: () -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
-    appVersion: AppVersion = AppVersion.current,
     notificationsOff: Boolean = false,
     onEnableNotifications: () -> Unit = {},
     popup: PopupSettings = PopupSettings(),
     exact: ExactSettings = ExactSettings(),
     summary: SummarySettings = SummarySettings(),
-    widgetLog: WidgetLogActions = WidgetLogActions.None,
 ) {
-    var logText by remember { mutableStateOf<String?>(null) }
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let { onIntent(SettingsIntent.FileSelected(it.toString())) }
     }
@@ -175,20 +165,16 @@ fun SettingsScreen(
         contentWindowInsets = WindowInsets(0),
         snackbarHost = { UndoSnackbarHost(snackbarHostState) },
     ) { padding ->
+        Column(Modifier.fillMaxSize().padding(padding)) {
+        // #241: раздел «Задачи» единых настроек — со стрелкой назад на главную страницу настроек.
+        ServiceHeader(stringResource(R.string.settings_home_tasks), onBack)
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
                 .verticalScroll(rememberScrollState())
                 .padding(spacing.md),
             verticalArrangement = Arrangement.spacedBy(spacing.sm),
         ) {
-            Text(
-                text = stringResource(R.string.settings_title),
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = colors.textPrimary,
-            )
 
             SectionTitle(R.string.settings_input_title)
             SmartDatesSection(state.smartDates) { onIntent(SettingsIntent.SetSmartDates(it)) }
@@ -208,9 +194,6 @@ fun SettingsScreen(
             PopupSection(popup)
             ExactSection(exact)
             SummarySection(summary)
-            HorizontalDivider(color = colors.divider, modifier = Modifier.padding(vertical = spacing.xs))
-
-            UpdateSection(state.update, onIntent)
             HorizontalDivider(color = colors.divider, modifier = Modifier.padding(vertical = spacing.xs))
 
             SectionTitle(R.string.settings_import_title)
@@ -262,40 +245,8 @@ fun SettingsScreen(
                 Text(stringResource(if (state.isClearing) R.string.settings_clearing else R.string.settings_clear_button))
             }
 
-            // Долгое нажатие на версию — журнал виджета (скрытый пункт для диагностики, доработка 0.9.1).
-            Text(
-                text = stringResource(R.string.settings_version, appVersion.name, appVersion.build),
-                style = MaterialTheme.typography.bodySmall,
-                color = colors.textSecondary,
-                modifier = Modifier
-                    .padding(top = spacing.lg)
-                    .combinedClickable(onClick = {}, onLongClick = { logText = widgetLog.read() })
-                    .testTag(TAG_VERSION),
-            )
         }
-    }
-
-    logText?.let { text ->
-        AlertDialog(
-            onDismissRequest = { logText = null },
-            title = { Text(stringResource(R.string.widget_log_title)) },
-            text = {
-                Text(
-                    text.ifBlank { stringResource(R.string.widget_log_empty) },
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.heightIn(max = AppTheme.sizes.pickerMaxHeight).verticalScroll(rememberScrollState()).testTag(TAG_WIDGET_LOG),
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = { widgetLog.share(text) }, enabled = text.isNotBlank()) { Text(stringResource(R.string.widget_log_share)) }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    widgetLog.clear()
-                    logText = null
-                }) { Text(stringResource(R.string.widget_log_clear)) }
-            },
-        )
+        }
     }
 
     if (state.showClearConfirmation) {
@@ -398,7 +349,7 @@ private fun ImportReportView(report: ImportReport) {
 
 /** «Обновление»: проверить → «Доступна версия…» → «Обновить» → окно Android (итерация 10). */
 @Composable
-private fun UpdateSection(update: UpdateState, onIntent: (SettingsIntent) -> Unit) {
+internal fun UpdateSection(update: UpdateState, onIntent: (SettingsIntent) -> Unit) {
     val colors = AppTheme.colors
     SectionTitle(R.string.update_title)
     val message = when (update) {

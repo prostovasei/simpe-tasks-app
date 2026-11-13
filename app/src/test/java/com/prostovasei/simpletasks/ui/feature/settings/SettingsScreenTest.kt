@@ -3,6 +3,7 @@ package com.prostovasei.simpletasks.ui.feature.settings
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
@@ -35,7 +36,7 @@ class SettingsScreenTest {
     private fun show(state: SettingsState, darkTheme: Boolean = false) {
         composeRule.setContent {
             AppTheme(darkTheme = darkTheme) {
-                SettingsScreen(state = state, onIntent = { intents += it }, appVersion = AppVersion("0.3.1", 42))
+                SettingsScreen(state = state, onIntent = { intents += it })
             }
         }
     }
@@ -46,9 +47,14 @@ class SettingsScreenTest {
         export = ExportState.Done(3399),
     )
 
+    private fun showInfo(state: SettingsState, widgetLog: WidgetLogActions = WidgetLogActions.None) {
+        composeRule.setContent { AppTheme { AppInfoScreen(state, { intents += it }, onBack = {}, appVersion = AppVersion("0.3.1", 42), widgetLog = widgetLog) } }
+    }
+
+    /** #241: обновление и версия — в разделе «Приложение» единых настроек, а не в настройках задач. */
     @Test
     fun updateSectionShowsAvailableVersionAndInstallButton() {
-        show(doneState.copy(update = UpdateState.Available(com.prostovasei.simpletasks.core.update.AvailableUpdate(40, "0.10.1", "u"))))
+        showInfo(doneState.copy(update = UpdateState.Available(com.prostovasei.simpletasks.core.update.AvailableUpdate(40, "0.10.1", "u"))))
         composeRule.onNodeWithText("Доступна версия 0.10.1 (сборка 40)").assertExists()
         composeRule.onNodeWithTag(TAG_UPDATE_BUTTON).performClick()
         assertEquals(SettingsIntent.InstallUpdate, intents.last())
@@ -56,7 +62,7 @@ class SettingsScreenTest {
 
     @Test
     fun updateSectionCheckButton() {
-        show(doneState)
+        showInfo(doneState)
         composeRule.onNodeWithTag(TAG_UPDATE_CHECK).performClick()
         assertEquals(SettingsIntent.CheckUpdate, intents.last())
     }
@@ -66,17 +72,8 @@ class SettingsScreenTest {
     fun longPressOnVersionShowsWidgetLog() {
         val shared = mutableListOf<String>()
         var cleared = false
-        composeRule.setContent {
-            AppTheme {
-                SettingsScreen(
-                    state = doneState,
-                    onIntent = {},
-                    appVersion = AppVersion("0.9.1", 30),
-                    widgetLog = WidgetLogActions(read = { "16.10 17:37  вкладка: inbox" }, share = { shared += it }, clear = { cleared = true }),
-                )
-            }
-        }
-        composeRule.onNodeWithTag(TAG_VERSION).performScrollTo().performTouchInput { longClick() }
+        showInfo(doneState, WidgetLogActions(read = { "16.10 17:37  вкладка: inbox" }, share = { shared += it }, clear = { cleared = true }))
+        composeRule.onNodeWithTag(TAG_VERSION).performTouchInput { longClick() }
         composeRule.onNodeWithText("Журнал виджета").assertExists()
         composeRule.onNodeWithText("16.10 17:37  вкладка: inbox").assertExists()
         composeRule.onNodeWithText("Отправить").performClick()
@@ -99,11 +96,34 @@ class SettingsScreenTest {
     }
 
     @Test
-    fun showsExportResultAndVersion() {
+    fun showsExportResultAndVersionLivesInAppSection() {
         show(doneState)
-
         composeRule.onNodeWithText("Сохранено задач: 3399").assertExists()
+        composeRule.onNodeWithText("Версия 0.3.1 (сборка 42)").assertDoesNotExist()
+        composeRule.onNodeWithTag(TAG_UPDATE_CHECK).assertDoesNotExist()
+    }
+
+    @Test
+    fun appSectionShowsVersion() {
+        showInfo(doneState)
         composeRule.onNodeWithText("Версия 0.3.1 (сборка 42)").assertExists()
+    }
+
+    /** Единые настройки (#241): три раздела, подпись «Приложения» с версией; каждый ведёт на свою страницу. */
+    @Test
+    fun settingsHomeLeadsToThreeSections() {
+        val clicks = mutableListOf<String>()
+        composeRule.setContent {
+            AppTheme { AppSettingsScreen(AppVersion("0.66.0", 320), onBack = { clicks += "back" }, onTasks = { clicks += "tasks" }, onFinance = { clicks += "finance" }, onApp = { clicks += "app" }) }
+        }
+        composeRule.onNodeWithText("Настройки").assertExists()
+        composeRule.onNodeWithText("Версия 0.66.0 · обновление").assertExists()
+        composeRule.onRoot().captureRoboImage("screenshots/settings_home_light.png")
+        composeRule.onNodeWithTag(TAG_SETTINGS_TASKS).performClick()
+        composeRule.onNodeWithTag(TAG_SETTINGS_FINANCE).performClick()
+        composeRule.onNodeWithTag(TAG_SETTINGS_APP).performClick()
+        composeRule.onNodeWithContentDescription("Назад").performClick()
+        assertEquals(listOf("tasks", "finance", "app", "back"), clicks)
     }
 
     @Test

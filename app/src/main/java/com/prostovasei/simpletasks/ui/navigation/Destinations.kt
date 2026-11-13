@@ -99,7 +99,15 @@ data class ProjectDestination(val projectId: String)
 data object FinanceDestination
 
 /** Корзина финансов (этап 4, #231): из меню шестерёнки. */
-/** Страница «Настройки финансов» (#239) — вместо окна-меню шестерёнки. */
+/** Единые настройки (#241): три раздела — «Задачи», «Финансы», «Приложение». Открываются из меню кнопки модуля в нижней панели. */
+@Serializable
+data object AppSettingsDestination
+
+/** Раздел «Приложение» единых настроек (#241): обновление и версия. */
+@Serializable
+data object AppInfoDestination
+
+/** Страница «Финансы» единых настроек (#239). */
 @Serializable
 data object FinanceSettingsDestination
 

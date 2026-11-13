@@ -7,6 +7,7 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -101,7 +102,11 @@ import com.prostovasei.simpletasks.ui.feature.project.ProjectIntent
 import com.prostovasei.simpletasks.ui.feature.project.ProjectScreen
 import com.prostovasei.simpletasks.ui.feature.project.ProjectState
 import com.prostovasei.simpletasks.ui.feature.project.TAG_PROJECT_MENU
-import com.prostovasei.simpletasks.ui.navigation.BottomBar
+import com.prostovasei.simpletasks.ui.navigation.AppModule
+import com.prostovasei.simpletasks.ui.navigation.TAG_MODULE
+import com.prostovasei.simpletasks.ui.navigation.TAG_MODULE_BUTTON
+import com.prostovasei.simpletasks.ui.navigation.TAG_MODULE_SETTINGS
+import com.prostovasei.simpletasks.ui.navigation.TasksBottomBar
 import com.prostovasei.simpletasks.ui.navigation.Tab
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -713,48 +718,62 @@ class ScreensUiTest {
         composeRule.onNodeWithTag(TAG_PROJECT_MENU).assertDoesNotExist()
     }
 
-    /** Итерация 55: три места — «Предстоящее» (удержание — меню «Предстоящее / Неделя»), «+», «Списки». */
+    /** #241: «+» слева, три страницы посередине (всегда все три, без выбора удержанием), кнопка модуля справа. */
     @Test
     fun bottomBarSwitchesTabs() {
         val selected = mutableListOf<Tab>()
-        val picked = mutableListOf<Tab>()
         var added = 0
-        show { BottomBar(selected = Tab.UPCOMING, onSelect = { selected += it }, onAdd = { added++ }, onPickLeft = { picked += it }) }
+        show { TasksBottomBar(selected = Tab.UPCOMING, onSelect = { selected += it }, onAdd = { added++ }, onModule = {}, onSettings = {}) }
 
         composeRule.onNodeWithContentDescription("Предстоящее").assertExists()
+        composeRule.onNodeWithContentDescription("Неделя").assertExists()
+        composeRule.onNodeWithContentDescription("Списки").assertExists()
         composeRule.onNodeWithContentDescription("Входящие").assertDoesNotExist()
+        composeRule.onNodeWithTag("tab:left").assertDoesNotExist()
+        composeRule.onNodeWithTag("tab:UPCOMING").assertIsSelected()
         composeRule.onNodeWithContentDescription("Списки").performClick()
-        composeRule.onNodeWithTag("tab:left").performClick()
+        composeRule.onNodeWithContentDescription("Неделя").performClick()
         composeRule.onNodeWithTag(TAG_ADD_TASK).performClick()
-        composeRule.onNodeWithTag("tab:left").performTouchInput { longClick() }
-        composeRule.onNodeWithTag("${com.prostovasei.simpletasks.ui.navigation.TAG_LEFT_MENU}:WEEK").performClick()
 
-        assertEquals(listOf(Tab.LISTS, Tab.UPCOMING), selected)
-        assertEquals(listOf(Tab.WEEK), picked)
+        assertEquals(listOf(Tab.LISTS, Tab.WEEK), selected)
         assertEquals(1, added)
     }
 
-    /** Итерация 55: левое место показывает «Неделю», если она выбрана; в меню она с галочкой. */
+    /** #241: кнопка модуля открывает меню «Задачи / Финансы / Настройки»; текущий модуль не переключается на себя. */
     @Test
-    fun bottomBarLeftShowsWeek() {
-        show { BottomBar(selected = Tab.WEEK, left = Tab.WEEK, onSelect = {}) }
-        composeRule.onNodeWithContentDescription("Неделя").assertExists()
-        composeRule.onNodeWithTag("tab:left").performTouchInput { longClick() }
-        composeRule.onNodeWithTag(com.prostovasei.simpletasks.ui.navigation.TAG_LEFT_MENU).assertExists()
+    fun moduleButtonOpensMenuWithModulesAndSettings() {
+        val modules = mutableListOf<AppModule>()
+        var settings = 0
+        show { TasksBottomBar(selected = Tab.WEEK, onSelect = {}, onAdd = {}, onModule = { modules += it }, onSettings = { settings++ }) }
+
+        composeRule.onNodeWithContentDescription("Раздел: Задачи").assertExists()
+        composeRule.onNodeWithTag(TAG_MODULE_BUTTON).performClick()
+        composeRule.onNodeWithTag("$TAG_MODULE:FINANCE").assertExists()
+        composeRule.onNodeWithTag(TAG_MODULE_SETTINGS).assertExists()
         composeRule.onRoot().captureRoboImage("screenshots/bottom_bar_menu.png")
+        composeRule.onNodeWithTag("$TAG_MODULE:TASKS").performClick()
+        composeRule.onNodeWithTag(TAG_MODULE_BUTTON).performClick()
+        composeRule.onNodeWithTag("$TAG_MODULE:FINANCE").performClick()
+        composeRule.onNodeWithTag(TAG_MODULE_BUTTON).performClick()
+        composeRule.onNodeWithTag(TAG_MODULE_SETTINGS).performClick()
+
+        assertEquals(listOf(AppModule.FINANCE), modules)
+        assertEquals(1, settings)
     }
 
-    /** Итерация 55: на самом узком экране три места и «+» на экране и нажимаются. */
+    /** #241: на самом узком экране «+», три страницы и кнопка модуля на экране и нажимаются. */
     @Test
     @Config(qualifiers = "w320dp-h900dp-xhdpi")
-    fun bottomBarFitsNarrowScreenWithWeekTab() {
+    fun bottomBarFitsNarrowScreen() {
         val selected = mutableListOf<Tab>()
         var added = 0
-        show { BottomBar(selected = Tab.WEEK, left = Tab.WEEK, onSelect = { selected += it }, onAdd = { added++ }) }
+        show { TasksBottomBar(selected = Tab.WEEK, onSelect = { selected += it }, onAdd = { added++ }, onModule = {}, onSettings = {}) }
 
-        composeRule.onNodeWithTag("tab:left").assertIsDisplayed()
+        composeRule.onNodeWithTag("tab:UPCOMING").assertIsDisplayed()
+        composeRule.onNodeWithTag("tab:WEEK").assertIsDisplayed()
         composeRule.onNodeWithTag("tab:LISTS").assertIsDisplayed()
-        composeRule.onNodeWithTag("tab:left").performClick()
+        composeRule.onNodeWithTag(TAG_MODULE_BUTTON).assertIsDisplayed()
+        composeRule.onNodeWithTag("tab:WEEK").performClick()
         composeRule.onNodeWithTag(TAG_ADD_TASK).assertIsDisplayed().performClick()
         assertEquals(listOf(Tab.WEEK), selected)
         assertEquals(1, added)
@@ -803,20 +822,8 @@ class ScreensUiTest {
 
     @Test
     fun screenshotBottomBar() {
-        show { BottomBar(selected = Tab.LISTS, onSelect = {}, inboxCount = 3) }
+        show { TasksBottomBar(selected = Tab.LISTS, onSelect = {}, onAdd = {}, onModule = {}, onSettings = {}) }
         composeRule.onRoot().captureRoboImage("screenshots/bottom_bar_light.png")
-    }
-
-    /** Итерация 52 (с 0.55 — на «Списках»): число неразобранных во «Входящих»; при нуле кружка нет. */
-    @Test
-    fun bottomBarShowsInboxCount() {
-        var count by mutableStateOf(3)
-        show { BottomBar(selected = Tab.UPCOMING, onSelect = {}, inboxCount = count) }
-        composeRule.onNodeWithTag(com.prostovasei.simpletasks.ui.navigation.TAG_INBOX_BADGE, useUnmergedTree = true).assertExists()
-        composeRule.onNodeWithText("3", useUnmergedTree = true).assertExists()
-        count = 0
-        composeRule.waitForIdle()
-        composeRule.onNodeWithTag(com.prostovasei.simpletasks.ui.navigation.TAG_INBOX_BADGE, useUnmergedTree = true).assertDoesNotExist()
     }
 
     /** Итерация 52: «Когда-нибудь» и «Без списка» на «Списках» — над «Выполненными», с числами. */
@@ -840,21 +847,21 @@ class ScreensUiTest {
         assertTrue(someday && noList)
     }
 
-    /** Итерация 55: в «Списках» — шестерёнка «Настройки», поле «Поиск задач» и «📥 Входящие» первой строкой с числом. */
+    /** Итерация 55: в «Списках» — поиск и «📥 Входящие» первой строкой с числом. С #241 шестерёнки «Настройки» в ряду инструментов нет. */
     @Test
-    fun listsOpenInboxSearchAndSettings() {
+    fun listsOpenInboxAndSearch() {
         val opened = mutableListOf<String>()
         show {
             ListsScreen(
                 ListsState(tree = ProjectTree(null, emptyList(), emptyList()), inboxCount = 5), { intents += it }, {},
-                onOpenInbox = { opened += "inbox" }, onOpenSearch = { opened += "search" }, onOpenSettings = { opened += "settings" },
+                onOpenInbox = { opened += "inbox" }, onOpenSearch = { opened += "search" },
             )
         }
         composeRule.onNodeWithTag("${com.prostovasei.simpletasks.ui.feature.lists.TAG_LISTS_INBOX}:count", useUnmergedTree = true).assertTextEquals("5")
         composeRule.onNodeWithTag(com.prostovasei.simpletasks.ui.feature.lists.TAG_LISTS_INBOX).assertTextContains("📥")
         composeRule.onNodeWithTag(com.prostovasei.simpletasks.ui.feature.lists.TAG_LISTS_INBOX).performClick()
         composeRule.onNodeWithTag(com.prostovasei.simpletasks.ui.feature.lists.TAG_LISTS_SEARCH).performClick()
-        composeRule.onNodeWithTag(com.prostovasei.simpletasks.ui.feature.lists.TAG_LISTS_SETTINGS).performClick()
-        assertEquals(listOf("inbox", "search", "settings"), opened)
+        composeRule.onNodeWithContentDescription("Настройки").assertDoesNotExist()
+        assertEquals(listOf("inbox", "search"), opened)
     }
 }

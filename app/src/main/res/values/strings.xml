@@ -564,7 +564,7 @@
     <string name="finance_close">Закрыть</string>
 
     <!-- Финансы, этап 2 (#225) -->
-    <string name="finance_settings">Настройки финансов</string>
+    <string name="finance_settings">Финансы</string>
     <string name="finance_today">сегодня</string>
     <string name="finance_yesterday">вчера</string>
     <string name="operation_new_title">Новая операция</string>
@@ -695,6 +695,15 @@
     <string name="category_emoji">Эмодзи</string>
     <string name="category_emoji_remove">Убрать</string>
     <string name="category_none_selected">Без категории</string>
+
+    <!-- Единая нижняя панель и единые настройки (#241) -->
+    <string name="bar_module">Раздел: %1$s</string>
+    <string name="settings_home_tasks">Задачи</string>
+    <string name="settings_home_tasks_hint">Ввод, напоминания, импорт и резервная копия</string>
+    <string name="settings_home_finance">Финансы</string>
+    <string name="settings_home_finance_hint">Категории, места, корзина, копия, банк</string>
+    <string name="settings_home_app">Приложение</string>
+    <string name="settings_home_app_hint">Версия %1$s · обновление</string>
 
     <!-- Справочники, настройки финансов (#239) -->
     <string name="places_title">Места</string>

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.isDialog
@@ -27,6 +28,7 @@ import com.prostovasei.simpletasks.testing.account
 import com.prostovasei.simpletasks.testing.category
 import com.prostovasei.simpletasks.testing.operation
 import com.prostovasei.simpletasks.testing.place
+import com.prostovasei.simpletasks.ui.navigation.FinanceBottomBar
 import com.prostovasei.simpletasks.ui.feature.task.TAG_DIALOG_DONE
 import com.prostovasei.simpletasks.ui.feature.project.TAG_EMOJI_DIALOG
 import com.prostovasei.simpletasks.ui.feature.project.TAG_EMOJI_FIELD
@@ -65,14 +67,13 @@ class FinanceScreenTest {
         account("a3", "Накопления", 8_000_000, AccountType.SAVINGS),
     )
 
-    /** Экран в каркасе: бар модулей сверху, нижняя панель финансов снизу — как в приложении. */
+    /** Экран в каркасе: нижняя панель — как в приложении (верхнего бара с 0.66.0 нет). */
     private fun show(state: FinanceState, dark: Boolean = false, onSettings: (() -> Unit)? = null, extra: @Composable () -> Unit = {}) {
         composeRule.setContent {
             AppTheme(darkTheme = dark) {
                 Column(Modifier.fillMaxSize()) {
-                    ModuleBar(AppModule.FINANCE, onSelect = {}, onSettings = onSettings)
                     Box(Modifier.weight(1f)) { FinanceScreen(state) { intents += it } }
-                    FinanceBottomBar(state.tab, onSelect = { intents += FinanceIntent.SelectTab(it) }, onAdd = { intents += FinanceIntent.Add })
+                    FinanceBottomBar(state.tab, onSelect = { intents += FinanceIntent.SelectTab(it) }, onAdd = { intents += FinanceIntent.Add }, onModule = {}, onSettings = { onSettings?.invoke() })
                 }
                 extra()
             }
@@ -87,7 +88,7 @@ class FinanceScreenTest {
         composeRule.onNodeWithTag(TAG_FINANCE_CREATE).performClick()
         composeRule.onNodeWithTag(TAG_FINANCE_ADD).performClick()
         assertEquals(listOf(FinanceIntent.NewAccount, FinanceIntent.Add), intents)
-        composeRule.onNodeWithTag("$TAG_MODULE:FINANCE").assertIsSelected()
+        composeRule.onNodeWithContentDescription("Раздел: Финансы").assertExists()
         composeRule.onNodeWithTag("$TAG_FINANCE_TAB:ANALYTICS").assertIsSelected()
         composeRule.onRoot().captureRoboImage("screenshots/finance_empty_light.png")
     }
@@ -141,7 +142,7 @@ class FinanceScreenTest {
     /** Список операций: дни, знаки сумм, перевод с подписью, «Без категории»; нажатие открывает правку. */
     @Test
     fun operationsAreGroupedByDayWithSigns() {
-        show(full(), onSettings = { intents += FinanceIntent.CloseWindow })
+        show(full())
 
         composeRule.onNodeWithText("10 ноября · сегодня").assertExists()
         composeRule.onNodeWithText("9 ноября · вчера").assertExists()
@@ -152,8 +153,7 @@ class FinanceScreenTest {
         composeRule.onNodeWithText("5${s}000${s}₽").assertExists()
         composeRule.onNodeWithText("Без категории").assertExists()
         composeRule.onNodeWithTag("$TAG_OPERATION:o4").performClick()
-        composeRule.onNodeWithTag(TAG_MODULE_SETTINGS).performClick()
-        assertEquals(listOf(FinanceIntent.OpenOperation("o4"), FinanceIntent.CloseWindow), intents)
+        assertEquals(listOf<FinanceIntent>(FinanceIntent.OpenOperation("o4")), intents)
         composeRule.onRoot().captureRoboImage("screenshots/finance_operations_light.png")
     }
 
@@ -164,20 +164,22 @@ class FinanceScreenTest {
         composeRule.onNodeWithTag(TAG_ACCOUNTS).assertDoesNotExist()
     }
 
-    /** 0.59.1 (#227): панели задач — бар модулей без плашки (активна галочка) и нижняя панель без плашек, «Списки» — линии без точек. */
+    /** #241: нижняя панель задач — «+», три страницы без плашек и кнопка модуля с обводкой; верхнего бара нет, значка со счётчиком нет. */
     @Test
-    fun taskBarsWithoutChips() {
+    fun taskBarWithoutChipsAndTopBar() {
         composeRule.setContent {
             AppTheme {
                 Column(Modifier.fillMaxSize()) {
-                    ModuleBar(AppModule.TASKS, onSelect = {})
                     Box(Modifier.weight(1f).fillMaxWidth().background(AppTheme.colors.background))
-                    com.prostovasei.simpletasks.ui.navigation.BottomBar(selected = com.prostovasei.simpletasks.ui.navigation.Tab.LISTS, onSelect = {}, inboxCount = 3)
+                    com.prostovasei.simpletasks.ui.navigation.TasksBottomBar(
+                        selected = com.prostovasei.simpletasks.ui.navigation.Tab.LISTS, onSelect = {}, onAdd = {}, onModule = {}, onSettings = {},
+                    )
                 }
             }
         }
-        composeRule.onNodeWithTag("$TAG_MODULE:TASKS").assertIsSelected()
-        composeRule.onNodeWithTag(TAG_MODULE_SETTINGS).assertDoesNotExist()
+        composeRule.onNodeWithContentDescription("Раздел: Задачи").assertExists()
+        composeRule.onNodeWithTag("tab:LISTS").assertIsSelected()
+        composeRule.onNodeWithTag("tab:UPCOMING").assertIsNotSelected()
         composeRule.onRoot().captureRoboImage("screenshots/task_bars_light.png")
     }
 
@@ -659,7 +661,7 @@ class FinanceScreenTest {
                 FinanceSettingsScreen(state, onBack = { clicks += "back" }, onCategories = { clicks += "categories" }, onPlaces = { clicks += "places" }, onTrash = { clicks += "trash" }, onBackup = { clicks += "backup" }, onBank = { clicks += "bank" })
             }
         }
-        composeRule.onNodeWithText("Настройки финансов").assertExists()
+        composeRule.onNodeWithText("Финансы").assertExists()
         composeRule.onNodeWithText("Действующих: 7").assertExists()
         composeRule.onNodeWithText("Действующих: 2").assertExists()
         composeRule.onNodeWithText("Операций: 3").assertExists()
@@ -759,9 +761,8 @@ class FinanceScreenTest {
         composeRule.setContent {
             AppTheme {
                 Column(Modifier.fillMaxSize()) {
-                    ModuleBar(AppModule.FINANCE, onSelect = {}, onSettings = {})
                     Box(Modifier.weight(1f)) { FinanceScreen(full().copy(pending = purchases), onOpenUnsorted = { opened = true }) { intents += it } }
-                    FinanceBottomBar(FinanceTab.OPERATIONS, onSelect = {}, onAdd = {})
+                    FinanceBottomBar(FinanceTab.OPERATIONS, onSelect = {}, onAdd = {}, onModule = {}, onSettings = {})
                 }
             }
         }
