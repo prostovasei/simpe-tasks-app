@@ -1,5 +1,5 @@
 """Интерфейс #241 — макеты на согласование PM (13.11.2026): новая структура — без верхнего бара, единый нижний бар
-(«+» слева, страницы модуля посередине, аватарка модуля справа), единые настройки.
+(«+» слева, страницы модуля посередине, кнопка модуля справа), единые настройки.
 Основа — стиль макетов 217/233/237/239. Содержимое экранов задач — снимки app/screenshots (вымышленные данные).
 Запуск из корня: python3 design/drafts/ui-241/screens.py → screens.html; PNG: node design/drafts/ui-241/render.js."""
 from pathlib import Path
@@ -35,7 +35,8 @@ P.update({
 })
 
 # ---------- содержимое экранов задач: снимки, вписанные по высоте области над панелью ----------
-CONTENT_H = 844 - 72 - 17  # телефон 844 − панель − жестовая полоса
+BAR_H = 48  # новая панель (сейчас 56)
+CONTENT_H = 844 - BAR_H - 17  # телефон 844 − панель − жестовая полоса
 
 
 def content(name, bg=(245, 245, 245)):
@@ -43,6 +44,8 @@ def content(name, bg=(245, 245, 245)):
     if name == 'lists_light':  # шестерёнка настроек из ряда инструментов уходит (настройки — из меню аватарки)
         from PIL import ImageDraw
         ImageDraw.Draw(im).rectangle([592, 1690, 800, 1790], fill=bg)
+    if name == 'all_light':  # заголовок «Предстоящее» убран (решение PM): экран начинается с «Просрочено»
+        im = im.crop((0, 120, im.width, im.height))
     h = CONTENT_H * 2
     w = round(im.width * h / im.height)
     im = im.resize((w, h), Image.LANCZOS)
@@ -65,22 +68,23 @@ TASK_PAGES = [('cal', 'Предстоящее'), ('week', 'Неделя'), ('lin
 FIN_PAGES = [('trend', 'Аналитика'), ('swap', 'Операции')]
 
 
-def navbar(module='tasks', active=0, variant='A', menu_open=False):
+def navbar(module='tasks', active=0, variant='O', menu_open=False):
+    """variant: O — кнопка модуля с обводкой, S — серая заливка. Размер и скругление кнопки модуля — как у «+»."""
     pages = TASK_PAGES if module == 'tasks' else FIN_PAGES
     cells = ''.join(f'<button class="pg{" on" if i == active else ""}">{ico(n)}</button>' for i, (n, _) in enumerate(pages))
-    av_icon = ico('tick') if module == 'tasks' else ico('ruble')
+    mod_icon = ico('tick') if module == 'tasks' else ico('ruble')
     return (f'<nav class="navbar v{variant}"><button class="add">{ico("plus")}</button><div class="pages">{cells}</div>'
-            f'<button class="avatar{" open" if menu_open else ""}">{av_icon}</button></nav>{gesture()}')
+            f'<button class="modbtn{" open" if menu_open else ""}">{mod_icon}</button></nav>{gesture()}')
 
 
 def menu(module='tasks'):
     def row(icon, title, current=False):
-        return f'<button class="mrow{" cur" if current else ""}">{ico(icon)}<span>{title}</span>{'<i class="cdot"></i>' if current else ""}</button>'
+        return f'<button class="mrow{" cur" if current else ""}">{ico(icon)}<span>{title}</span>{"<i class=cdot></i>" if current else ""}</button>'
     return ('<div class="amenu">' + row('tick', 'Задачи', module == 'tasks') + row('ruble', 'Финансы', module == 'finance')
             + '<div class="msep"></div>' + row('gear', 'Настройки') + '</div>')
 
 
-def phone(body, module='tasks', active=0, variant='A', menu_open=False, img=None):
+def phone(body, module='tasks', active=0, variant='O', menu_open=False, img=None):
     inner = f'<img class="shot" src="{img}">' if img else f'<main class="content">{body}</main>'
     return (f'<div class="phone"><div class="screen v-screen">{inner}{navbar(module, active, variant, menu_open)}</div>'
             + (f'<div class="dim"></div>{menu(module)}' if menu_open else '') + '</div>')
@@ -90,16 +94,15 @@ FIN_OPS = phone(OPS, 'finance', 1)
 FIN_AN = phone(analytics(), 'finance', 0)
 
 s1 = [
-    fig('1.1 Задачи · «Предстоящее»', 'Верхнего бара нет. Внизу: «+» слева, страницы посередине (три — выбранная чёрная, остальные серые), аватарка модуля справа. Вариант А.', phone('', 'tasks', 0, 'A', img=IMG['all_light'])),
-    fig('1.2 Задачи · «Неделя»', 'Страницы «Предстоящее», «Неделя», «Списки» — всегда все три, скрытого выбора удержанием больше нет, точки-подсказки под значком нет.', phone('', 'tasks', 1, 'A', img=IMG['week_light'])),
-    fig('1.3 Задачи · «Списки»', 'Счётчика «Входящих» на значке нет. Шестерёнка в ряду инструментов внизу списка уходит (остальные кнопки распределятся поровну): настройки — из меню аватарки.', phone('', 'tasks', 2, 'A', img=IMG['lists_light'])),
-    fig('1.4 Финансы · «Операции»', 'Тот же каркас: «+» (новая операция), две страницы «Аналитика» и «Операции», аватарка с ₽.', FIN_OPS),
+    fig('1.1 Задачи · «Предстоящее»', 'Верхнего бара и заголовка «Предстоящее» нет — экран начинается с «Просрочено». Панель ниже (48 вместо 56): «+» слева, три страницы посередине без подложки, кнопка модуля справа — той же ширины и с теми же скруглениями, что «+».', phone('', 'tasks', 0, 'O', img=IMG['all_light'])),
+    fig('1.2 Задачи · «Неделя»', 'Выбранная страница чёрная, остальные серые; точки-подсказки и выбора удержанием больше нет.', phone('', 'tasks', 1, 'O', img=IMG['week_light'])),
+    fig('1.3 Задачи · «Списки»', 'Счётчика «Входящих» на значке нет. Шестерёнка в ряду инструментов уходит (остальные кнопки распределятся поровну): настройки — из меню кнопки модуля.', phone('', 'tasks', 2, 'O', img=IMG['lists_light'])),
+    fig('1.4 Финансы · «Операции»', 'Тот же каркас: «+» (новая операция), две страницы «Аналитика» и «Операции», кнопка модуля с ₽.', phone(OPS, 'finance', 1, 'O')),
 ]
 s2 = [
-    fig('2.1 Вариант Б — без подложки', 'Страницы без серой капсулы: только значки; аватарка — круг с тонкой обводкой. Остальное то же.', phone('', 'tasks', 0, 'B', img=IMG['all_light'])),
-    fig('2.2 Вариант Б · финансы', 'Тот же вариант в финансах.', phone(analytics(), 'finance', 0, 'B')),
-    fig('2.3 Меню аватарки · задачи', 'Нажатие на аватарку: меню над панелью — «Задачи» (отмечено) и «Финансы», внизу «Настройки». Смена модуля — одно нажатие.', phone('', 'tasks', 0, 'A', True, img=IMG['all_light'])),
-    fig('2.4 Меню аватарки · финансы', 'В финансах отмечены «Финансы», аватарка с ₽. «Настройки» — те же единые настройки.', phone(OPS, 'finance', 1, 'A', True)),
+    fig('2.1 Меню кнопки модуля · задачи', 'Нажатие на кнопку модуля: меню над панелью — «Задачи» (отмечено) и «Финансы», внизу «Настройки». Кнопка при этом чёрная.', phone('', 'tasks', 0, 'O', True, img=IMG['all_light'])),
+    fig('2.2 Меню кнопки модуля · финансы', 'В финансах отмечены «Финансы». «Настройки» — те же единые настройки.', phone(OPS, 'finance', 1, 'O', True)),
+    fig('2.3 Финансы · «Аналитика»', 'Без верхней полосы со значками модулей и шестерёнки — счета и аналитика начинаются сразу под краем экрана.', phone(analytics(), 'finance', 0, 'O')),
 ]
 
 # ---------- единые настройки ----------
@@ -141,38 +144,37 @@ s3 = [
 
 def old_bar(mode='tasks'):
     if mode == 'tasks':
-        return ('<div class="barbox"><nav class="footer finance-footer"><button class="nav active old-left">' + ico('cal') + '<i class="hintdot"></i></button><button class="add">' + ico('plus')
+        return ('<div class="barbox old"><nav class="footer finance-footer"><button class="nav active old-left">' + ico('cal') + '<i class="hintdot"></i></button><button class="add">' + ico('plus')
                 + '</button><button class="nav old-lists">' + ico('lines') + '<b class="badge">51</b></button></nav></div>')
-    return ('<div class="barbox"><nav class="footer finance-footer"><button class="nav active">' + ico('trend') + '</button><button class="add">' + ico('plus') + '</button><button class="nav">' + ico('swap') + '</button></nav></div>')
+    return ('<div class="barbox old"><nav class="footer finance-footer"><button class="nav active">' + ico('trend') + '</button><button class="add">' + ico('plus') + '</button><button class="nav">' + ico('swap') + '</button></nav></div>')
 
 
-def new_bar_strip(module, variant='A'):
-    return f'<div class="barbox">{navbar(module, 0, variant).replace(gesture(), "")}</div>'
+def new_bar_strip(module, variant='O', active=0):
+    return f'<div class="barbox">{navbar(module, active, variant).replace(gesture(), "")}</div>'
 
 
 s4 = [
     f'<figure style="width:390px"><div class="bars">{old_bar("tasks")}{new_bar_strip("tasks")}</div><figcaption><b>4.1 Задачи: было и стало</b>'
-    'Было: слева «Предстоящее»/«Неделя» с точкой «есть меню» (выбор удержанием), «+» по центру, «Списки» со счётчиком «Входящих». Стало: «+» слева, три страницы, аватарка; точки и счётчика нет (решение PM).</figcaption></figure>',
+    'Было (56): слева «Предстоящее»/«Неделя» с точкой «есть меню», «+» по центру, «Списки» со счётчиком. Стало (48): «+» слева, три страницы, кнопка модуля; точки и счётчика нет.</figcaption></figure>',
     f'<figure style="width:390px"><div class="bars">{old_bar("finance")}{new_bar_strip("finance")}</div><figcaption><b>4.2 Финансы: было и стало</b>'
-    'Было: «Аналитика», «+», «Операции»; сверху ещё полоса ✓ / ₽ и шестерёнка. Стало: «+» слева, две страницы, аватарка; верхней полосы нет.</figcaption></figure>',
-    f'<figure style="width:390px"><div class="bars">{new_bar_strip("tasks", "A")}{new_bar_strip("tasks", "B")}</div><figcaption><b>4.3 Варианты панели</b>'
-    'А — страницы в серой капсуле, аватарка — серый круг. Б — страницы без подложки, аватарка — круг с обводкой. Выбранная страница чёрная, остальные серые.</figcaption></figure>',
+    'Было: «Аналитика», «+», «Операции» и сверху ещё полоса ✓ / ₽ с шестерёнкой. Стало: тот же каркас, что у задач; верхней полосы нет.</figcaption></figure>',
+    f'<figure style="width:390px"><div class="bars">{new_bar_strip("tasks", "O", 1)}{new_bar_strip("tasks", "S", 1)}</div><figcaption><b>4.3 Кнопка модуля: обводка или заливка</b>'
+    'Размер и скругление — как у «+» (72×38, радиус 12). Обводка (основной вариант) отличается от чёрной «+»; серая заливка — спокойнее, но слабее заметна.</figcaption></figure>',
 ]
 
 extra = '''
 .v-screen{position:relative}
-.shot{display:block;width:100%;height:755px;object-fit:cover;object-position:top}
-.navbar{display:flex;align-items:center;justify-content:space-between;gap:10px;height:72px;background:#fff;padding:6px 14px;flex-shrink:0}
-.navbar .add{width:72px;height:44px;border-radius:12px;background:var(--text);color:#fff;display:grid;place-items:center;flex-shrink:0}
-.navbar .pages{display:flex;align-items:center;justify-content:center;gap:4px;flex:1}
-.navbar .pg{width:56px;height:40px;display:grid;place-items:center;color:var(--inactive);border-radius:12px}.navbar .pg.on{color:var(--text)}.navbar .pg svg{width:24px;height:24px}
-.navbar.vA .pages{background:var(--soft);border-radius:14px;padding:2px 4px;flex:0 1 auto;margin:0 auto}
-.navbar .avatar{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;flex-shrink:0}.navbar .avatar svg{width:22px;height:22px}
-.navbar.vA .avatar{background:var(--soft);color:var(--text)}
-.navbar.vB .avatar{box-shadow:inset 0 0 0 1.6px var(--text);color:var(--text)}
-.navbar .avatar.open{background:var(--text);color:#fff;box-shadow:none}
-.dim{position:absolute;left:0;right:0;top:0;bottom:89px;background:#0000002e;z-index:3}
-.amenu{position:absolute;right:12px;bottom:92px;width:196px;background:#fff;border-radius:18px;box-shadow:0 12px 32px #0003;padding:6px;z-index:4}
+.shot{display:block;width:100%;height:779px;object-fit:cover;object-position:top}
+.navbar{display:flex;align-items:center;justify-content:space-between;gap:10px;height:48px;background:#fff;padding:5px 14px;flex-shrink:0;border-top:1px solid var(--line)}
+.navbar .add{width:72px;height:38px;border-radius:12px;background:var(--text);color:#fff;display:grid;place-items:center;flex-shrink:0}.navbar .add svg{width:22px;height:22px}
+.navbar .pages{display:flex;align-items:center;justify-content:center;gap:2px;flex:1}
+.navbar .pg{width:64px;height:38px;display:grid;place-items:center;color:var(--inactive);border-radius:12px}.navbar .pg.on{color:var(--text)}.navbar .pg svg{width:22px;height:22px}
+.navbar .modbtn{width:72px;height:38px;border-radius:12px;display:grid;place-items:center;flex-shrink:0;color:var(--text)}.navbar .modbtn svg{width:21px;height:21px}
+.navbar.vO .modbtn{box-shadow:inset 0 0 0 1.6px var(--text)}
+.navbar.vS .modbtn{background:var(--soft)}
+.navbar .modbtn.open{background:var(--text);color:#fff;box-shadow:none}
+.dim{position:absolute;left:0;right:0;top:0;bottom:65px;background:#0000002e;z-index:3}
+.amenu{position:absolute;right:12px;bottom:72px;width:196px;background:#fff;border-radius:18px;box-shadow:0 12px 32px #0003;padding:6px;z-index:4}
 .mrow{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:12px 12px;border-radius:12px;font-size:14px}.mrow svg{width:20px;height:20px}.mrow span{flex:1}.mrow.cur{font-weight:700}.cdot{width:8px;height:8px;border-radius:50%;background:var(--text)}
 .msep{height:1px;background:var(--line);margin:4px 10px}
 .set-row{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:14px 16px;border-bottom:1px solid var(--line);font-size:14px}
@@ -183,12 +185,12 @@ extra = '''
 .switch.on{background:var(--text)}.switch.on span{left:19px}
 .bars{display:flex;flex-direction:column;gap:12px}.barbox{border-radius:18px;overflow:hidden;background:#fff;box-shadow:0 0 0 1px #d6d6d6;position:relative}
 .barbox .navbar{height:72px}
-.hintdot{position:absolute;left:50%;bottom:6px;width:4px;height:4px;border-radius:50%;background:var(--text);opacity:.4;transform:translateX(-50%)}
-.old-left,.old-lists{position:relative;min-width:72px;height:56px}.hintdot{bottom:2px;width:5px;height:5px;opacity:.55}
+.hintdot{position:absolute;left:50%;bottom:2px;width:5px;height:5px;border-radius:50%;background:var(--text);opacity:.55;transform:translateX(-50%)}
+.old-left,.old-lists{position:relative;min-width:72px;height:56px}.barbox.old .footer{height:56px;padding:0 14px}.hintdot{position:absolute;left:50%;bottom:2px;width:5px;height:5px;border-radius:50%;background:var(--text);opacity:.55;transform:translateX(-50%)}
 .badge{position:absolute;right:14px;top:2px;background:var(--text);color:#fff;border-radius:9px;min-width:18px;height:18px;font-size:10px;display:grid;place-items:center;padding:0 5px}
 '''
-secs = [('1. Новая нижняя панель', 'Пункты 3–8: верхнего бара нет; «+» слева, страницы модуля посередине, аватарка модуля справа. Вариант А.', s1),
-        ('2. Вариант Б и меню аватарки', 'Второй вариант оформления и меню смены модуля с настройками.', s2),
+secs = [('1. Новая нижняя панель', 'Верхнего бара и заголовка «Предстоящее» нет; панель в стиле «Б» (страницы без подложки), ниже прежней; кнопка модуля — как «+».', s1),
+        ('2. Меню кнопки модуля', 'Смена модуля и вход в единые настройки.', s2),
         ('3. Единые настройки', 'Пункт 2: один раздел настроек для задач и финансов.', s3),
         ('4. Что убрано', 'Точка «есть меню» и счётчик «Входящих» (решение PM), верхняя полоса, шестерёнки.', s4)]
 html = (f'<!doctype html><html lang="ru"><meta charset="utf-8"><title>Интерфейс — новая структура (#241)</title><style>{g217["style"]}{G["extra217"]}{extra233}{extra}</style>'
