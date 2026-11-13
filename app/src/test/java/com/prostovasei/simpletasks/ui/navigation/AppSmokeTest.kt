@@ -120,9 +120,9 @@ class AppSmokeTest {
         composeRule.onNodeWithContentDescription("Назад").performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists("tab:LISTS") }
 
+        // После настроек открыт поиск (откуда уходили): «Списки» ведут к самим «Спискам» — ждём, пока переход закончится.
         composeRule.onNodeWithTag("tab:LISTS").performClick()
-
-        composeRule.onNodeWithTag("tab:LISTS").performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists(TAG_LISTS_SCROLL) && !composeRule.onAllNodesWithTagExists(TAG_SEARCH_FIELD) }
         composeRule.onNodeWithTag(TAG_LISTS_SCROLL).performScrollToNode(hasText("Списков пока нет"))
         composeRule.onNodeWithText("Списков пока нет").assertExists()
         composeRule.onNodeWithTag(TAG_NEW_LIST).performClick()
