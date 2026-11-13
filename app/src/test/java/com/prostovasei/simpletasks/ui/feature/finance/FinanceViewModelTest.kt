@@ -270,11 +270,12 @@ class FinanceViewModelTest {
 
         vm.onIntent(FinanceIntent.CreateCategory("  ", OperationKind.EXPENSE))
         vm.onIntent(FinanceIntent.CreateCategory("Перевод", OperationKind.TRANSFER))
-        vm.onIntent(FinanceIntent.RenameCategory("c1", "Еда"))
+        vm.onIntent(FinanceIntent.UpdateCategory("c1", "Еда", "🍔"))
         vm.onIntent(FinanceIntent.ArchiveCategory("c1", true))
         runCurrent()
-        assertEquals(listOf("category:Продукты:EXPENSE", "rename:c1:Еда", "archive:c1:true"), finance.calls)
+        assertEquals(listOf("category:Продукты:EXPENSE", "update:c1:Еда:🍔", "archive:c1:true"), finance.calls)
         assertTrue(vm.state.value.categories.single().archived)
+        assertEquals("🍔", vm.state.value.categories.single().emoji)
     }
 
     /** Месяц аналитики: назад — сколько угодно, вперёд — не дальше текущего. */

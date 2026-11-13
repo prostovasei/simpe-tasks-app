@@ -44,9 +44,10 @@ import java.util.concurrent.Executor
     // 5 → 6 (финансы, этап 1, #221): новая таблица finance_accounts; таблицы задач не меняются.
     // 6 → 7 (финансы, этап 2, #225): новые таблицы finance_categories и finance_operations.
     // 7 → 8 (уведомления банка, #233): новая таблица bank_purchases; операции и задачи не меняются.
-    version = 8,
+    // 8 → 9 (эмодзи категорий, #237): колонка finance_categories.emoji.
+    version = 9,
     exportSchema = true,
-    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3, spec = V2to3::class), AutoMigration(from = 3, to = 4), AutoMigration(from = 4, to = 5, spec = V4to5::class), AutoMigration(from = 5, to = 6), AutoMigration(from = 6, to = 7), AutoMigration(from = 7, to = 8)],
+    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3, spec = V2to3::class), AutoMigration(from = 3, to = 4), AutoMigration(from = 4, to = 5, spec = V4to5::class), AutoMigration(from = 5, to = 6), AutoMigration(from = 6, to = 7), AutoMigration(from = 7, to = 8), AutoMigration(from = 8, to = 9)],
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun projectGroupDao(): ProjectGroupDao

@@ -109,5 +109,8 @@ data class AppSizes(
     val financeClose: Dp = SizeTokens.FINANCE_CLOSE.dp,
     val financeAction: Dp = SizeTokens.FINANCE_ACTION.dp,
     val financeChip: Dp = SizeTokens.FINANCE_CHIP.dp,
+    val financeEmoji: Dp = SizeTokens.FINANCE_EMOJI.dp,
+    val financeMark: Dp = SizeTokens.FINANCE_MARK.dp,
+    val financeBarSide: Dp = SizeTokens.FINANCE_BAR_SIDE.dp,
     val operationRow: Dp = SizeTokens.OPERATION_ROW.dp,
 )

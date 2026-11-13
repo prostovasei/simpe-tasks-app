@@ -1462,6 +1462,23 @@ PM поменял порядок: шторка для созданных зад�
   (`EXTRA_TITLE`) и пропускает групповые сводки (`FLAG_GROUP_SUMMARY`), чтобы покупка не удваивалась. Пакеты — `com.yandex*` и `ru.yandex*`; заголовок, как и текст, не сохраняется.
 - **Тесты.** `WidgetNextRepeatTest`, `BankPurchaseParserTest` (+5 на вид Пэй).
 
+### 4.70. Окно операции, эмодзи категорий и значки панели (0.64.0, #237)
+
+Макеты — `design/approved/237/` (вариант окна «Плотный», набор значков «В»; решения PM 13.11.2026). База 8 → 9.
+
+- **Данные.** Колонка `finance_categories.emoji` (AutoMigration 8 → 9, без значения по умолчанию — null). `Category.emoji`; `FinanceRepository.createCategory(name, kind, emoji)` и
+  `updateCategory(id, name, emoji)` (вместо `renameCategory`); интент `UpdateCategory`. Резервная копия: поле `emoji` у категории необязательное при чтении (старые копии читаются), версия копии прежняя.
+- **Окно операции** (`OperationDialog.kt`). Свой контейнер `OperationWindow` без заголовка и «×» (поверх `Dialog`, содержимое прокручивается, строка значков внизу вне прокрутки — поэтому над клавиатурой видна всегда).
+  `IconBar`: корзина (только при правке), назад (`CloseForm`, черновик остаётся) и «✓» (`SaveForm`, недоступно без суммы/счёта). Сумма и `AccountPill` в одной строке (`AmountField(align = Start)`);
+  `CategoryTiles` — до пяти плиток-эмодзи и «⋯», выбранная — акцентная подложка, под рядом `TAG_OPERATION_CATEGORY_NAME`; `PairBox` — «дата · место»; `PlaceDialog` — выбор места
+  (ввод + подсказки из `FormHints.places`). Дата: `shortDate` («пт. 13 ноя 2026»), подпись «сегодня / вчера» из `FinanceState.today`. Перевод: «Со счёта» / «На счёт» полями, без категорий и места.
+- **Категории.** `CategoryNameDialog(initialEmoji, onSave(name, emoji))`: поле «Эмодзи» открывает `EmojiPickerDialog` (общий с папками и списками задач), «Убрать» — без значка. `CategoryMark` — эмодзи или плитка
+  с первой буквой; используется в списке категорий и «Все категории».
+- **Токены.** `FINANCE_EMOJI` (плитка), `FINANCE_MARK` (значок в списке), `FINANCE_BAR_SIDE` (боковые значки нижней строки). HEX и dp вне токенов не появились.
+- **Значки панели.** `ic_finance_tab_analytics` (график роста) и `ic_finance_tab_operations` (две стрелки); `ic_finance_operations` остался значком строки «Найти операцию» в сверке.
+- **Тесты.** `FinanceScreenTest` (окно без заголовка, плитки, выбор места, формат даты, эмодзи категории, снимки `finance_operation_*`, `finance_place_picker_light`, `finance_categories_emoji_light`),
+  `FinanceViewModelTest`, `FinanceRepositoryTest` (эмодзи в копии), `MigrationTest.categoryEmojiColumnIsAddedAndCategoriesAreKept`.
+
 ### 4.45. Дорожная карта (обновлена)
 
 | Итерация | Название | Суть |

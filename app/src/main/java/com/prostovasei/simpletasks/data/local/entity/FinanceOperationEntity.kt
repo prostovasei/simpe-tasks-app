@@ -17,6 +17,8 @@ data class FinanceCategoryEntity(
     @ColumnInfo(name = "sort_order", defaultValue = "0") val sortOrder: Int = 0,
     @ColumnInfo(name = "created_at") val createdAt: Long,
     @ColumnInfo(name = "updated_at") val updatedAt: Long,
+    /** Эмодзи-значок категории (#237; миграция 8 → 9); null — без значка, в окне операции плитка с первой буквой. */
+    @ColumnInfo(name = "emoji") val emoji: String? = null,
 )
 
 /**

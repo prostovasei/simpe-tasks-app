@@ -124,7 +124,7 @@ class RoomFinanceRepository @Inject constructor(
         operations.observeActive().map { list -> list.map { it.toDomain() } }.distinctUntilChanged()
 
     override fun observeCategories(): Flow<List<Category>> =
-        operations.observeCategories().map { list -> list.map { Category(it.id, it.name, OperationKind.fromCode(it.kind), it.isArchived) } }.distinctUntilChanged()
+        operations.observeCategories().map { list -> list.map { Category(it.id, it.name, OperationKind.fromCode(it.kind), it.isArchived, it.emoji) } }.distinctUntilChanged()
 
     override fun observeFormHints(): Flow<FormHints> =
         combine(operations.observeLastAccount(), operations.observeRecentCategories(), operations.observePlaces()) { last, recent, places ->
@@ -153,20 +153,20 @@ class RoomFinanceRepository @Inject constructor(
         operations.trash(id, now())
     }
 
-    override suspend fun createCategory(name: String, kind: OperationKind): String {
+    override suspend fun createCategory(name: String, kind: OperationKind, emoji: String?): String {
         require(name.isNotBlank()) { "Название категории не может быть пустым" }
         require(kind != OperationKind.TRANSFER) { "У переводов нет категорий" }
         val id = ids.newId()
         val now = now()
         db.withTransaction {
-            operations.insertCategory(FinanceCategoryEntity(id, name.trim(), kind.code, sortOrder = operations.nextCategoryOrder(), createdAt = now, updatedAt = now))
+            operations.insertCategory(FinanceCategoryEntity(id, name.trim(), kind.code, sortOrder = operations.nextCategoryOrder(), createdAt = now, updatedAt = now, emoji = emoji?.trim()?.takeIf { it.isNotEmpty() }))
         }
         return id
     }
 
-    override suspend fun renameCategory(id: String, name: String) {
+    override suspend fun updateCategory(id: String, name: String, emoji: String?) {
         require(name.isNotBlank()) { "Название категории не может быть пустым" }
-        operations.renameCategory(id, name.trim(), now())
+        operations.updateCategory(id, name.trim(), emoji?.trim()?.takeIf { it.isNotEmpty() }, now())
     }
 
     override suspend fun setCategoryArchived(id: String, archived: Boolean) {

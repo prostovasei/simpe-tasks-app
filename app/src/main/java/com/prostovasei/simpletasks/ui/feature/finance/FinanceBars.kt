@@ -112,7 +112,7 @@ fun FinanceBottomBar(selected: FinanceTab, onSelect: (FinanceTab) -> Unit, onAdd
                 .padding(horizontal = AppTheme.spacing.xs),
         ) {
             Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                FinanceNavTab(FinanceTab.ANALYTICS, R.drawable.ic_finance_analytics, R.string.finance_tab_analytics, selected, onSelect)
+                FinanceNavTab(FinanceTab.ANALYTICS, R.drawable.ic_finance_tab_analytics, R.string.finance_tab_analytics, selected, onSelect)
             }
             Box(
                 contentAlignment = Alignment.Center,
@@ -124,7 +124,7 @@ fun FinanceBottomBar(selected: FinanceTab, onSelect: (FinanceTab) -> Unit, onAdd
                     .testTag(TAG_FINANCE_ADD),
             ) { Icon(Icons.Default.Add, contentDescription = stringResource(R.string.finance_add), tint = colors.onAccent) }
             Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                FinanceNavTab(FinanceTab.OPERATIONS, R.drawable.ic_finance_operations, R.string.finance_tab_operations, selected, onSelect)
+                FinanceNavTab(FinanceTab.OPERATIONS, R.drawable.ic_finance_tab_operations, R.string.finance_tab_operations, selected, onSelect)
             }
         }
     }

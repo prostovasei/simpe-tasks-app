@@ -149,8 +149,8 @@ sealed interface FinanceIntent {
     data object TrashOperation : FinanceIntent
 
     /** [select] — сразу выбрать новую категорию в открытом окне операции. */
-    data class CreateCategory(val name: String, val kind: OperationKind, val select: Boolean = false) : FinanceIntent
-    data class RenameCategory(val id: String, val name: String) : FinanceIntent
+    data class CreateCategory(val name: String, val kind: OperationKind, val select: Boolean = false, val emoji: String? = null) : FinanceIntent
+    data class UpdateCategory(val id: String, val name: String, val emoji: String?) : FinanceIntent
     data class ArchiveCategory(val id: String, val archived: Boolean) : FinanceIntent
 
     /** Шестерёнка финансов: меню «Категории / Корзина / Резервная копия». */

@@ -71,9 +71,9 @@ private class RubleSuffix(private val placeholder: Color) : VisualTransformation
  * Ширину поля нельзя задавать через IntrinsicSize: Compose считает её для поля ввода неверно, и сумма пропадает (0.58.1, #223).
  */
 @Composable
-fun AmountField(value: String, onChange: (String) -> Unit, tag: String, modifier: Modifier = Modifier) {
+fun AmountField(value: String, onChange: (String) -> Unit, tag: String, modifier: Modifier = Modifier, align: TextAlign = TextAlign.Center) {
     val colors = AppTheme.colors
-    val style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold, color = colors.textPrimary, textAlign = TextAlign.Center)
+    val style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold, color = colors.textPrimary, textAlign = align)
     BasicTextField(
         value = value,
         onValueChange = { onChange(Money.filterInput(it)) },

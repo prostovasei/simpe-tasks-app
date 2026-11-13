@@ -688,6 +688,14 @@
     <string name="backup_counts">счетов %1$d · категорий %2$d · операций %3$d</string>
     <string name="backup_confirm_text">Все текущие данные финансов будут заменены содержимым копии. Задачи не затрагиваются.</string>
     <string name="backup_replace">Заменить</string>
+    <!-- Окно операции и категории (#237) -->
+    <string name="operation_place_hint">Место платежа</string>
+    <string name="operation_place_note">Нажмите на место — оно подставится. Новое — просто напишите и нажмите ✓.</string>
+    <string name="operation_save_hint">Сохранить</string>
+    <string name="category_emoji">Эмодзи</string>
+    <string name="category_emoji_remove">Убрать</string>
+    <string name="category_none_selected">Без категории</string>
+
     <!-- Уведомления банка (#233) -->
     <string name="bank_listener_label">Покупки по карте</string>
     <string name="bank_channel">Покупки по карте</string>

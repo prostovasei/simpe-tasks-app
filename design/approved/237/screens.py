@@ -1,11 +1,11 @@
 """Финансы #237 — макеты доработок на согласование PM (13.11.2026): окно операции, выбор места, эмодзи категорий, значки нижнего бара.
 Основа — общие компоненты и стиль макетов 217 и 233 (вид панелей по решению PM 11.11.2026, #227).
-Запуск из корня: python3 design/drafts/finance-237/screens.py → screens.html; PNG: node design/drafts/finance-237/render.js (Playwright).
+Запуск из корня: python3 design/approved/237/screens.py → screens.html; PNG: node design/approved/237/render.js (Playwright).
 Все суммы и названия вымышленные. Дата «сегодня» в макетах — пт. 13 ноя 2026."""
 from pathlib import Path
 
 here = Path(__file__).parent
-p233 = here.parent.parent / 'approved' / '233' / 'screens.py'
+p233 = here.parent / '233' / 'screens.py'
 src233 = p233.read_text()
 G = {'__file__': str(p233)}
 exec(src233[:src233.index('# ---------- 1. Настройка')], G)  # ico, service, dialog, field, val, fig, top, footer, OPS … (в том числе из 217 и 233)
@@ -207,4 +207,4 @@ secs = [('1. Окно операции — три варианта', 'Пункт
 html = (f'<!doctype html><html lang="ru"><meta charset="utf-8"><title>Финансы — доработки (#237)</title><style>{g217["style"]}{g217["extra"] if "extra" in g217 else ""}{G["extra217"]}{extra233}{extra}</style>'
         '<div class="board">' + ''.join(f'<section class="sec" id="s{i+1}"><h2>{t}</h2><p>{d}</p><div class="rowp">{"".join(f)}</div></section>' for i, (t, d, f) in enumerate(secs)) + '</div></html>')
 (here / 'screens.html').write_text(html)
-print('screens.html готов; картинки: node design/drafts/finance-237/render.js')
+print('screens.html готов; картинки: node design/approved/237/render.js')
