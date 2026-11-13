@@ -39,9 +39,12 @@ class BankNotificationListener : NotificationListenerService() {
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
         if (!BankPurchaseParser.isBankApp(sbn.packageName) || !settings.settings.value.enabled) return
+        // Сводка группы («Яндекс Пэй · 2 уведомления») повторяет отдельные уведомления — их и читаем, иначе покупка удвоится.
+        if (sbn.notification.flags and Notification.FLAG_GROUP_SUMMARY != 0) return
         val extras = sbn.notification.extras
         val amount = BankPurchaseParser.parse(
             sbn.packageName,
+            extras.getCharSequence(Notification.EXTRA_TITLE),
             listOf(extras.getCharSequence(Notification.EXTRA_TEXT), extras.getCharSequence(Notification.EXTRA_BIG_TEXT)),
         ) ?: return
         // Ключ — пакет, номер уведомления и время его создания: обновление того же уведомления — та же покупка (§4.6).
