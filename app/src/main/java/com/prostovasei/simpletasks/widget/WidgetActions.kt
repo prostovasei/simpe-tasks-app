@@ -3,7 +3,16 @@ package com.prostovasei.simpletasks.widget
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.os.Handler
+import android.os.Looper
+import android.widget.Toast
 import androidx.core.net.toUri
+import com.prostovasei.simpletasks.R
+import com.prostovasei.simpletasks.core.time.TimeProvider
+import com.prostovasei.simpletasks.domain.model.Completion
+import com.prostovasei.simpletasks.domain.model.Task
+import com.prostovasei.simpletasks.ui.common.DayNames
+import com.prostovasei.simpletasks.ui.common.DueFormatter
 import com.prostovasei.simpletasks.ui.feature.week.monthAfterPick
 import com.prostovasei.simpletasks.ui.feature.week.weekStart
 import java.time.LocalDate
@@ -35,6 +44,20 @@ class WidgetActionReceiver : BroadcastReceiver() {
     companion object {
         private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
+        /** Короткая системная подсказка «Следующий повтор: завтра, 10:00» (без «Отмены» — её у Toast нет; отмена — в приложении). */
+        private fun showNextRepeat(context: Context, next: Task, time: TimeProvider) {
+            val message = nextRepeatMessage(context, next, time) ?: return
+            // Toast показывается из потока приложения, а не из фонового потока обработки нажатия.
+            Handler(Looper.getMainLooper()).post { Toast.makeText(context, message, Toast.LENGTH_SHORT).show() }
+        }
+
+        /** Текст подсказки (#235): тот же формат срока, что у Snackbar в приложении; нет срока — null. */
+        internal fun nextRepeatMessage(context: Context, next: Task, time: TimeProvider): String? {
+            val days = DayNames(context.getString(R.string.day_today), context.getString(R.string.day_tomorrow), context.getString(R.string.day_yesterday))
+            val due = DueFormatter.format(next.due, next.start, time.today(), time.zone())?.let(days::format) ?: return null
+            return context.getString(R.string.task_rescheduled, due)
+        }
+
         suspend fun handle(context: Context, intent: Intent) {
             when (intent.action) {
                 WidgetActions.SWITCH -> {
@@ -47,8 +70,11 @@ class WidgetActionReceiver : BroadcastReceiver() {
                 WidgetActions.COMPLETE -> {
                     val taskId = intent.getStringExtra(WidgetActions.EXTRA_TASK_ID) ?: return
                     WidgetLog.add(context, "галочка: задача выполнена")
-                    context.widgetEntryPoint().tasks().complete(taskId)
+                    val entry = context.widgetEntryPoint()
+                    val completion = entry.tasks().complete(taskId)
                     WidgetRenderer.renderAll(context, "галочка")
+                    // #235: у повторяющейся — подсказка, на какое число она переехала (в приложении то же — Snackbar «Следующий повтор»).
+                    (completion as? Completion.Rescheduled)?.let { showNextRepeat(context, it.next, entry.time()) }
                 }
                 WidgetActions.UNCOMPLETE -> {
                     val taskId = intent.getStringExtra(WidgetActions.EXTRA_TASK_ID) ?: return
