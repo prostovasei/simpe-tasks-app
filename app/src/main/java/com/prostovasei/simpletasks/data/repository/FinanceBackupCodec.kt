@@ -34,7 +34,7 @@ internal object FinanceBackupCodec {
         }))
         .put("categories", JSONArray(backup.categories.map { c ->
             JSONObject().put("id", c.id).put("name", c.name).put("kind", c.kind).put("is_archived", c.isArchived)
-                .put("sort_order", c.sortOrder).put("created_at", c.createdAt).put("updated_at", c.updatedAt)
+                .put("sort_order", c.sortOrder).put("created_at", c.createdAt).put("updated_at", c.updatedAt).putOpt("emoji", c.emoji)
         }))
         .put("operations", JSONArray(backup.operations.map { o ->
             JSONObject().put("id", o.id).put("kind", o.kind).put("amount", o.amount).put("account_id", o.accountId)
@@ -52,7 +52,7 @@ internal object FinanceBackupCodec {
                 FinanceAccountEntity(a.getString("id"), a.getString("name"), a.getString("type"), a.text("emoji"), a.getLong("initial_balance"), a.getInt("sort_order"), a.getLong("created_at"), a.getLong("updated_at"))
             }
             val categories = root.getJSONArray("categories").objects().map { c ->
-                FinanceCategoryEntity(c.getString("id"), c.getString("name"), c.getString("kind"), c.getBoolean("is_archived"), c.getInt("sort_order"), c.getLong("created_at"), c.getLong("updated_at"))
+                FinanceCategoryEntity(c.getString("id"), c.getString("name"), c.getString("kind"), c.getBoolean("is_archived"), c.getInt("sort_order"), c.getLong("created_at"), c.getLong("updated_at"), c.text("emoji"))
             }
             val operations = root.getJSONArray("operations").objects().map { o ->
                 FinanceOperationEntity(

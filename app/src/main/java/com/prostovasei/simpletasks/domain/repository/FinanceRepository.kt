@@ -72,9 +72,10 @@ interface FinanceRepository {
      */
     suspend fun restoreBackup(json: String)
 
-    suspend fun createCategory(name: String, kind: OperationKind): String
+    suspend fun createCategory(name: String, kind: OperationKind, emoji: String? = null): String
 
-    suspend fun renameCategory(id: String, name: String)
+    /** Правка названия и эмодзи категории (#237); [emoji] = null — значка нет. */
+    suspend fun updateCategory(id: String, name: String, emoji: String?)
 
     suspend fun setCategoryArchived(id: String, archived: Boolean)
 }

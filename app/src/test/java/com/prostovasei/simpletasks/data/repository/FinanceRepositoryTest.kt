@@ -170,10 +170,10 @@ class FinanceRepositoryTest : DatabaseTest() {
         time.advance()
         val salary = finance.createCategory("Зарплата", OperationKind.INCOME)
         finance.createOperation(expense(card, 100, category = food))
-        finance.renameCategory(food, " Еда ")
+        finance.updateCategory(food, " Еда ", "🍔")
         finance.setCategoryArchived(food, true)
 
-        assertEquals(listOf(Category(food, "Еда", OperationKind.EXPENSE, true), Category(salary, "Зарплата", OperationKind.INCOME, false)), finance.observeCategories().first())
+        assertEquals(listOf(Category(food, "Еда", OperationKind.EXPENSE, true, "🍔"), Category(salary, "Зарплата", OperationKind.INCOME, false)), finance.observeCategories().first())
         assertEquals("Еда", finance.observeOperations().first().single().categoryName)
         finance.setCategoryArchived(food, false)
         assertFalse(finance.observeCategories().first().first().archived)
@@ -271,7 +271,7 @@ class FinanceRepositoryTest : DatabaseTest() {
     @Test
     fun backupRoundTripReplacesFinanceDataOnly() = runTest {
         val (card, cash) = twoAccounts()
-        val food = finance.createCategory("Продукты", OperationKind.EXPENSE)
+        val food = finance.createCategory("Продукты", OperationKind.EXPENSE, "🛒")
         val old = finance.createCategory("Такси", OperationKind.EXPENSE)
         finance.setCategoryArchived(old, true)
         finance.createOperation(expense(card, 85_000, category = food, place = "Пятёрочка"))
@@ -291,7 +291,7 @@ class FinanceRepositoryTest : DatabaseTest() {
         // После копии данные меняются — восстановление возвращает состояние копии целиком.
         finance.createAccount(AccountDraft("Лишний", AccountType.CARD, null, 5))
         finance.createOperation(expense(card, 777))
-        finance.renameCategory(food, "Еда")
+        finance.updateCategory(food, "Еда", null)
         finance.emptyTrash()
         finance.restoreBackup(json)
 

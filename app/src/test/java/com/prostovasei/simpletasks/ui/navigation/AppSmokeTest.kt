@@ -147,11 +147,11 @@ class AppSmokeTest {
         composeRule.onNodeWithContentDescription("Назад").performClick()
         composeRule.onNodeWithTag("finance_add").performClick()
         composeRule.onNodeWithTag("operation_amount").performTextReplacement("850")
-        composeRule.onNodeWithText("Продукты").performClick()
+        composeRule.onNodeWithContentDescription("Продукты").performClick()
         composeRule.onNodeWithTag("operation_save").performClick()
         // Окно остаётся для следующей операции; закрываем его.
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("41\u00A0450\u00A0₽") }
-        composeRule.onNodeWithTag("operation_window:close").performClick()
+        composeRule.onNodeWithTag("operation_back").performClick()
 
         // Вкладка «Операции» запоминается при уходе в задачи; задачи возвращаются на «Списки».
         composeRule.onNodeWithTag("finance_tab:OPERATIONS").performClick()

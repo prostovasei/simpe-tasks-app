@@ -93,6 +93,11 @@ object SizeTokens {
 
     /** Финансы, этап 2 (#225): кнопка категории и часть переключателя «Расход / Доход / Перевод» — высота не меньше; строка операции в списке. */
     const val FINANCE_CHIP = 36
+
+    /** Финансы, #237: плитка категории-эмодзи в окне операции, значок категории в списке, ширина боковых значков нижней строки окна (назад, корзина). */
+    const val FINANCE_EMOJI = 44
+    const val FINANCE_MARK = 28
+    const val FINANCE_BAR_SIDE = 56
     const val OPERATION_ROW = 52
     const val NAV_SHADOW = 10
     const val CHECKBOX = 18

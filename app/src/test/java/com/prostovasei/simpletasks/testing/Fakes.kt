@@ -506,16 +506,16 @@ class FakeFinanceRepository : com.prostovasei.simpletasks.domain.repository.Fina
         calls += "restoreBackup:$json"
     }
 
-    override suspend fun createCategory(name: String, kind: com.prostovasei.simpletasks.domain.model.finance.OperationKind): String {
+    override suspend fun createCategory(name: String, kind: com.prostovasei.simpletasks.domain.model.finance.OperationKind, emoji: String?): String {
         val id = "c${categories.value.size + 1}"
-        calls += "category:$name:$kind"
-        categories.value += com.prostovasei.simpletasks.domain.model.finance.Category(id, name, kind, archived = false)
+        calls += if (emoji == null) "category:$name:$kind" else "category:$name:$kind:$emoji"
+        categories.value += com.prostovasei.simpletasks.domain.model.finance.Category(id, name, kind, archived = false, emoji = emoji)
         return id
     }
 
-    override suspend fun renameCategory(id: String, name: String) {
-        calls += "rename:$id:$name"
-        categories.value = categories.value.map { if (it.id == id) it.copy(name = name) else it }
+    override suspend fun updateCategory(id: String, name: String, emoji: String?) {
+        calls += if (emoji == null) "update:$id:$name" else "update:$id:$name:$emoji"
+        categories.value = categories.value.map { if (it.id == id) it.copy(name = name, emoji = emoji) else it }
     }
 
     override suspend fun setCategoryArchived(id: String, archived: Boolean) {
@@ -532,8 +532,8 @@ fun account(
     emoji: String? = null,
 ) = com.prostovasei.simpletasks.domain.model.finance.Account(id, name, type, emoji, balance, balance, java.time.Instant.parse("2026-11-01T09:00:00Z"))
 
-fun category(id: String, name: String, kind: com.prostovasei.simpletasks.domain.model.finance.OperationKind = com.prostovasei.simpletasks.domain.model.finance.OperationKind.EXPENSE, archived: Boolean = false) =
-    com.prostovasei.simpletasks.domain.model.finance.Category(id, name, kind, archived)
+fun category(id: String, name: String, kind: com.prostovasei.simpletasks.domain.model.finance.OperationKind = com.prostovasei.simpletasks.domain.model.finance.OperationKind.EXPENSE, archived: Boolean = false, emoji: String? = null) =
+    com.prostovasei.simpletasks.domain.model.finance.Category(id, name, kind, archived, emoji)
 
 fun operation(
     id: String,

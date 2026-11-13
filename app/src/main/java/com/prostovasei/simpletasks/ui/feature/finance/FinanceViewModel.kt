@@ -104,7 +104,7 @@ class FinanceViewModel @Inject constructor(
             FinanceIntent.SaveForm -> saveForm()
             FinanceIntent.TrashOperation -> trash()
             is FinanceIntent.CreateCategory -> createCategory(intent)
-            is FinanceIntent.RenameCategory -> viewModelScope.launch { finance.renameCategory(intent.id, intent.name) }
+            is FinanceIntent.UpdateCategory -> viewModelScope.launch { finance.updateCategory(intent.id, intent.name, intent.emoji) }
             is FinanceIntent.ArchiveCategory -> viewModelScope.launch { finance.setCategoryArchived(intent.id, intent.archived) }
         }
     }
@@ -234,7 +234,7 @@ class FinanceViewModel @Inject constructor(
     private fun createCategory(intent: FinanceIntent.CreateCategory) {
         if (intent.name.isBlank() || intent.kind == OperationKind.TRANSFER) return
         viewModelScope.launch {
-            val id = finance.createCategory(intent.name, intent.kind)
+            val id = finance.createCategory(intent.name, intent.kind, intent.emoji)
             if (intent.select) setState { copy(form = form?.takeIf { it.kind == intent.kind }?.copy(categoryId = id) ?: form) }
         }
     }

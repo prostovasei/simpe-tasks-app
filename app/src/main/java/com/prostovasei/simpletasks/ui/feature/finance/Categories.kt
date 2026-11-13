@@ -32,6 +32,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
@@ -47,6 +48,7 @@ import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.domain.model.finance.Category
 import com.prostovasei.simpletasks.domain.model.finance.OperationKind
+import com.prostovasei.simpletasks.ui.feature.project.EmojiPickerDialog
 
 @Composable
 fun CategoriesRoute(viewModel: FinanceViewModel, onBack: () -> Unit) {
@@ -116,8 +118,8 @@ fun CategoriesScreen(categories: List<Category>, onIntent: (FinanceIntent) -> Un
             title = stringResource(if (kind == OperationKind.INCOME) R.string.category_new_income else R.string.category_new_expense),
             initialName = "",
             saveLabel = stringResource(R.string.action_create),
-            onSave = { name ->
-                onIntent(FinanceIntent.CreateCategory(name, kind))
+            onSave = { name, emoji ->
+                onIntent(FinanceIntent.CreateCategory(name, kind, emoji = emoji))
                 creating = false
             },
             onDismiss = { creating = false },
@@ -127,9 +129,10 @@ fun CategoriesScreen(categories: List<Category>, onIntent: (FinanceIntent) -> Un
         CategoryNameDialog(
             title = stringResource(if (category.kind == OperationKind.INCOME) R.string.category_income else R.string.category_expense),
             initialName = category.name,
+            initialEmoji = category.emoji,
             saveLabel = stringResource(R.string.action_save),
-            onSave = { name ->
-                onIntent(FinanceIntent.RenameCategory(category.id, name))
+            onSave = { name, emoji ->
+                onIntent(FinanceIntent.UpdateCategory(category.id, name, emoji))
                 editingId = null
             },
             onArchive = {
@@ -161,6 +164,7 @@ private fun CategoryRow(category: Category, last: Boolean, onClick: () -> Unit) 
             .padding(horizontal = spacing.md)
             .testTag("$TAG_CATEGORY:${category.id}"),
     ) {
+        CategoryMark(category.emoji, category.name)
         Text(
             category.name,
             style = MaterialTheme.typography.bodyLarge,
@@ -168,7 +172,7 @@ private fun CategoryRow(category: Category, last: Boolean, onClick: () -> Unit) 
             color = if (category.archived) colors.textSecondary else colors.textPrimary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).padding(start = spacing.sm),
         )
         if (category.archived) {
             Icon(painterResource(R.drawable.ic_snack_restore), contentDescription = restore, tint = colors.textSecondary, modifier = Modifier.size(AppTheme.sizes.moduleIcon))
@@ -179,10 +183,35 @@ private fun CategoryRow(category: Category, last: Boolean, onClick: () -> Unit) 
     if (!last) HorizontalDivider(color = colors.divider, thickness = AppTheme.sizes.hairline, modifier = Modifier.padding(start = spacing.md))
 }
 
-/** Окно названия категории: новая (только «Создать») или правка («В архив» и «Сохранить»). */
+/** Значок категории (#237): эмодзи или, если его нет, серая плитка с первой буквой названия. */
 @Composable
-fun CategoryNameDialog(title: String, initialName: String, saveLabel: String, onSave: (String) -> Unit, onDismiss: () -> Unit, onArchive: (() -> Unit)? = null) {
+fun CategoryMark(emoji: String?, name: String) {
+    val colors = AppTheme.colors
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier.size(AppTheme.sizes.financeMark).clip(AppTheme.shapes.medium).background(if (emoji == null) colors.selected else Color.Transparent),
+    ) {
+        Text(emoji ?: name.take(1).uppercase(), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = if (emoji == null) colors.textSecondary else colors.textPrimary)
+    }
+}
+
+/**
+ * Окно категории: новая (только «Создать») или правка («В архив» и «Сохранить»). Сверху — эмодзи (#237, необязательный): нажатие открывает выбор,
+ * «Убрать» снимает значок; ниже название.
+ */
+@Composable
+fun CategoryNameDialog(
+    title: String,
+    initialName: String,
+    saveLabel: String,
+    onSave: (name: String, emoji: String?) -> Unit,
+    onDismiss: () -> Unit,
+    onArchive: (() -> Unit)? = null,
+    initialEmoji: String? = null,
+) {
     var name by rememberSaveable { mutableStateOf(initialName) }
+    var emoji by rememberSaveable { mutableStateOf(initialEmoji) }
+    var picking by rememberSaveable { mutableStateOf(false) }
     val focus = remember { FocusRequester() }
     if (initialName.isEmpty()) LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
     FinanceWindow(
@@ -191,12 +220,45 @@ fun CategoryNameDialog(title: String, initialName: String, saveLabel: String, on
         onDismiss = onDismiss,
         actions = {
             if (onArchive != null) SecondaryAction(stringResource(R.string.category_archive), TAG_CATEGORY_ARCHIVE, onArchive)
-            PrimaryAction(saveLabel, TAG_CATEGORY_SAVE, onClick = { onSave(name.trim()) }, enabled = name.isNotBlank())
+            PrimaryAction(saveLabel, TAG_CATEGORY_SAVE, onClick = { onSave(name.trim(), emoji) }, enabled = name.isNotBlank())
         },
     ) {
+        FinanceField(stringResource(R.string.category_emoji)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (emoji != null) {
+                    Text(
+                        stringResource(R.string.category_emoji_remove),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = AppTheme.colors.textSecondary,
+                        modifier = Modifier.clip(AppTheme.shapes.medium).clickable(role = Role.Button) { emoji = null }.padding(AppTheme.spacing.xs).testTag(TAG_CATEGORY_EMOJI_CLEAR),
+                    )
+                }
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(AppTheme.sizes.financeEmoji)
+                        .clip(AppTheme.shapes.large)
+                        .background(AppTheme.colors.selected)
+                        .clickable(role = Role.Button) { picking = true }
+                        .testTag(TAG_CATEGORY_EMOJI),
+                ) {
+                    Text(emoji ?: "＋", style = MaterialTheme.typography.titleLarge, color = if (emoji == null) AppTheme.colors.textSecondary else AppTheme.colors.textPrimary)
+                }
+            }
+        }
         FinanceField(stringResource(R.string.account_name)) {
             FieldInput(name, { name = it }, stringResource(R.string.category_name_hint), TAG_CATEGORY_NAME, Modifier.focusRequester(focus), bold = true, maxLength = CATEGORY_NAME_MAX)
         }
+    }
+    if (picking) {
+        EmojiPickerDialog(
+            selected = emoji.orEmpty(),
+            onConfirm = {
+                emoji = it.trim().takeIf { value -> value.isNotEmpty() }
+                picking = false
+            },
+            onDismiss = { picking = false },
+        )
     }
 }
 
@@ -210,17 +272,21 @@ fun CategoryPicker(kind: OperationKind, categories: List<Category>, selectedId: 
         actions = { SecondaryAction(stringResource(R.string.category_new), TAG_CATEGORY_PICKER_NEW, onCreate, plus = true) },
     ) {
         PickRow(stringResource(R.string.category_none), selectedId == null, "$TAG_CATEGORY_PICKER:none") { onSelect(null) }
-        categories.forEach { category -> PickRow(category.name, category.id == selectedId, "$TAG_CATEGORY_PICKER:${category.id}") { onSelect(category.id) } }
+        categories.forEach { category -> PickRow(category.name, category.id == selectedId, "$TAG_CATEGORY_PICKER:${category.id}", mark = { CategoryMark(category.emoji, category.name) }) { onSelect(category.id) } }
     }
 }
 
 @Composable
-private fun PickRow(label: String, selected: Boolean, tag: String, onClick: () -> Unit) {
+private fun PickRow(label: String, selected: Boolean, tag: String, mark: (@Composable () -> Unit)? = null, onClick: () -> Unit) {
     val colors = AppTheme.colors
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth().heightIn(min = AppTheme.sizes.financeField).clickable(role = Role.RadioButton, onClick = onClick).testTag(tag),
     ) {
+        mark?.let {
+            it()
+            Box(Modifier.size(AppTheme.spacing.sm))
+        }
         Text(label, style = MaterialTheme.typography.bodyLarge, fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium, color = colors.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
         if (selected) Icon(Icons.Default.Check, contentDescription = null, tint = colors.accent, modifier = Modifier.size(AppTheme.sizes.moduleIcon))
     }
@@ -236,6 +302,8 @@ const val TAG_CATEGORY_KIND = "category_kind"
 const val TAG_CATEGORY_WINDOW = "category_window"
 const val TAG_CATEGORY_NAME = "category_name"
 const val TAG_CATEGORY_SAVE = "category_save"
+const val TAG_CATEGORY_EMOJI = "category_emoji"
+const val TAG_CATEGORY_EMOJI_CLEAR = "category_emoji_clear"
 const val TAG_CATEGORY_ARCHIVE = "category_archive"
 const val TAG_CATEGORY_PICKER = "category_picker"
 const val TAG_CATEGORY_PICKER_NEW = "category_picker_new"

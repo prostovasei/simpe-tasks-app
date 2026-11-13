@@ -83,8 +83,8 @@ interface FinanceOperationDao {
     @Query("SELECT COALESCE(MAX(sort_order), -1) + 1 FROM finance_categories")
     suspend fun nextCategoryOrder(): Int
 
-    @Query("UPDATE finance_categories SET name = :name, updated_at = :now WHERE id = :id")
-    suspend fun renameCategory(id: String, name: String, now: Long): Int
+    @Query("UPDATE finance_categories SET name = :name, emoji = :emoji, updated_at = :now WHERE id = :id")
+    suspend fun updateCategory(id: String, name: String, emoji: String?, now: Long): Int
 
     @Query("UPDATE finance_categories SET is_archived = :archived, updated_at = :now WHERE id = :id")
     suspend fun setCategoryArchived(id: String, archived: Boolean, now: Long): Int

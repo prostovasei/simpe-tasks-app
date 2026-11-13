@@ -26,6 +26,9 @@ import com.prostovasei.simpletasks.domain.model.finance.AccountType
 import com.prostovasei.simpletasks.testing.account
 import com.prostovasei.simpletasks.testing.category
 import com.prostovasei.simpletasks.testing.operation
+import com.prostovasei.simpletasks.ui.feature.task.TAG_DIALOG_DONE
+import com.prostovasei.simpletasks.ui.feature.project.TAG_EMOJI_DIALOG
+import com.prostovasei.simpletasks.ui.feature.project.TAG_EMOJI_FIELD
 import com.prostovasei.simpletasks.domain.model.finance.FinanceCounts
 import com.prostovasei.simpletasks.domain.model.finance.FormHints
 import com.prostovasei.simpletasks.domain.model.finance.OperationKind
@@ -199,11 +202,16 @@ class FinanceScreenTest {
             }
         }
 
-        composeRule.onNodeWithText("Новая операция").assertExists()
+        // #237: без заголовка «Новая операция» и кнопки «×»; «назад» и «✓» — значки внизу.
+        composeRule.onNodeWithText("Новая операция").assertDoesNotExist()
+        composeRule.onNodeWithTag("$TAG_OPERATION_WINDOW:$TAG_WINDOW_CLOSE").assertDoesNotExist()
         composeRule.onNodeWithTag(TAG_OPERATION_AMOUNT).assertTextEquals("850${s}₽")
         composeRule.onNodeWithTag(TAG_OPERATION_ACCOUNT).assertContentDescriptionEquals("Счёт: 💳 Карта")
-        composeRule.onNodeWithTag(TAG_OPERATION_DATE).assertContentDescriptionEquals("Дата: 10.11.2026 · сегодня")
+        composeRule.onNodeWithTag(TAG_OPERATION_DATE).assertContentDescriptionEquals("Дата: вт. 10 ноя 2026")
+        composeRule.onNodeWithText("сегодня").assertExists()
+        composeRule.onNodeWithTag(TAG_OPERATION_PLACE).assertContentDescriptionEquals("Место: Место платежа")
         composeRule.onNodeWithTag("$TAG_OPERATION_CATEGORY:c2").assertIsSelected()
+        composeRule.onNodeWithTag(TAG_OPERATION_CATEGORY_NAME).assertTextEquals("Кафе")
         composeRule.onNodeWithTag("$TAG_OPERATION_CATEGORY:c6").assertDoesNotExist()
         composeRule.onNodeWithTag("$TAG_OPERATION_CATEGORY:old").assertDoesNotExist()
         composeRule.onNodeWithTag(TAG_OPERATION_TRASH).assertDoesNotExist()
@@ -215,11 +223,16 @@ class FinanceScreenTest {
         composeRule.onNodeWithTag("$TAG_OPERATION_CATEGORY:c1").performClick()
         assertEquals(null, form.categoryId)
 
-        // Место: подсказки из ранее введённых по набранному тексту.
-        composeRule.onNodeWithTag(TAG_OPERATION_PLACE).performTextInput("пе")
-        composeRule.onNodeWithTag("$TAG_OPERATION_PLACE_HINTS:Озон").assertDoesNotExist()
-        composeRule.onNodeWithTag("$TAG_OPERATION_PLACE_HINTS:Перекрёсток").performClick()
+        composeRule.onNodeWithTag(TAG_OPERATION_CATEGORY_NAME).assertTextEquals("Без категории")
+
+        // Место: нажатие открывает выбор, подсказки из ранее введённых по набранному тексту; нажатие на место подставляет его.
+        composeRule.onNodeWithTag(TAG_OPERATION_PLACE).performClick()
+        composeRule.onNodeWithTag(TAG_PLACE_INPUT).performTextInput("пе")
+        composeRule.onNodeWithTag("$TAG_PLACE_HINT:Озон").assertDoesNotExist()
+        composeRule.onNodeWithTag("$TAG_PLACE_HINT:Перекрёсток").performClick()
         assertEquals("Перекрёсток", form.place)
+        composeRule.onNodeWithTag(TAG_PLACE_DIALOG).assertDoesNotExist()
+        composeRule.onNodeWithTag(TAG_OPERATION_PLACE).assertContentDescriptionEquals("Место: Перекрёсток")
         composeRule.onNodeWithTag(TAG_OPERATION_COMMENT).performTextInput("хлеб")
         assertEquals("хлеб", form.comment)
 
@@ -230,8 +243,59 @@ class FinanceScreenTest {
         intents.clear()
         composeRule.onNodeWithTag("$TAG_OPERATION_KIND:INCOME").performClick()
         composeRule.onNodeWithTag(TAG_OPERATION_SAVE).performClick()
-        composeRule.onNodeWithTag("$TAG_OPERATION_WINDOW:$TAG_WINDOW_CLOSE").performClick()
+        composeRule.onNodeWithTag(TAG_OPERATION_BACK).performClick()
         assertEquals(listOf(FinanceIntent.SetKind(OperationKind.INCOME), FinanceIntent.SaveForm, FinanceIntent.CloseForm), intents)
+    }
+
+    /** Выбор места (#237): набранное — по «✓»; «назад» закрывает, ничего не меняя; введённое место видно в поле и сохраняется как есть. */
+    @Test
+    fun placePickerAppliesTypedTextOrCancels() {
+        var form by mutableStateOf(OperationForm(OperationKind.EXPENSE, "a1", today, amount = "850", place = "Озон"))
+        composeRule.setContent {
+            AppTheme {
+                OperationDialog(full(form), form) { intent ->
+                    intents += intent
+                    if (intent is FinanceIntent.EditForm) form = intent.change(form)
+                }
+            }
+        }
+        composeRule.onNodeWithTag(TAG_OPERATION_PLACE).assertContentDescriptionEquals("Место: Озон")
+        composeRule.onNodeWithTag(TAG_OPERATION_PLACE).performClick()
+        composeRule.onNodeWithTag(TAG_PLACE_INPUT).performTextReplacement("Новое место ")
+        composeRule.onNode(isDialog().and(androidx.compose.ui.test.hasTestTag(TAG_PLACE_DIALOG))).captureRoboImage("screenshots/finance_place_picker_light.png")
+        composeRule.onNodeWithTag(TAG_PLACE_BACK).performClick()
+        assertEquals("Озон", form.place)
+
+        composeRule.onNodeWithTag(TAG_OPERATION_PLACE).performClick()
+        composeRule.onNodeWithTag(TAG_PLACE_INPUT).performTextReplacement("Новое место ")
+        composeRule.onNodeWithTag(TAG_PLACE_DONE).performClick()
+        assertEquals("Новое место", form.place)
+        composeRule.onNodeWithTag(TAG_OPERATION_PLACE).performClick()
+        composeRule.onNodeWithTag(TAG_PLACE_INPUT).performTextReplacement("")
+        composeRule.onNodeWithTag(TAG_PLACE_DONE).performClick()
+        assertEquals("", form.place)
+    }
+
+    /** Категории иконками (#237): эмодзи на плитке, у категории без эмодзи — первая буква; название выбранной — под рядом. */
+    @Test
+    fun categoryTilesShowEmojiOrFirstLetter() {
+        val withEmoji = cats.map { if (it.id == "c1") it.copy(emoji = "🛒") else it }
+        val form = OperationForm(OperationKind.EXPENSE, "a1", today, amount = "850", categoryId = "c1")
+        composeRule.setContent { AppTheme { OperationDialog(full(form).copy(categories = withEmoji), form) {} } }
+        composeRule.onNodeWithTag("$TAG_OPERATION_CATEGORY:c1").assertContentDescriptionEquals("Продукты")
+        composeRule.onNodeWithText("🛒").assertExists()
+        composeRule.onNodeWithText("К").assertExists()
+        composeRule.onNodeWithTag(TAG_OPERATION_CATEGORY_NAME).assertTextEquals("Продукты")
+        composeRule.onNode(isDialog()).captureRoboImage("screenshots/finance_operation_emoji_light.png")
+    }
+
+    /** Формат даты окна (#237): «ср. 15 окт 2026». */
+    @Test
+    fun shortDateFormat() {
+        assertEquals("ср. 15 окт 2025", shortDate(LocalDate.parse("2025-10-15")))
+        assertEquals("чт. 15 окт 2026", shortDate(LocalDate.parse("2026-10-15")))
+        assertEquals("пт. 13 ноя 2026", shortDate(LocalDate.parse("2026-11-13")))
+        assertEquals("вс. 3 мая 2026", shortDate(LocalDate.parse("2026-05-03")))
     }
 
     /** «Все категории»: полный список без архивных, «Без категории» и создание новой прямо из операции. */
@@ -296,14 +360,15 @@ class FinanceScreenTest {
         val form = OperationForm(OperationKind.EXPENSE, "a1", today.minusDays(1), editingId = "o4", amount = "620", categoryId = "old", place = "Кофейня")
         composeRule.setContent { AppTheme { OperationDialog(full(form), form) { intents += it } } }
 
-        composeRule.onNodeWithText("Расход").assertExists()
         composeRule.onNodeWithTag("$TAG_OPERATION_KIND:INCOME").assertDoesNotExist()
-        composeRule.onNodeWithTag(TAG_OPERATION_DATE).assertContentDescriptionEquals("Дата: 09.11.2026 · вчера")
+        composeRule.onNodeWithTag(TAG_OPERATION_DATE).assertContentDescriptionEquals("Дата: пн. 9 ноя 2026")
+        composeRule.onNodeWithText("вчера").assertExists()
         // Архивная категория операции остаётся видна и выбрана.
         composeRule.onNodeWithTag("$TAG_OPERATION_CATEGORY:old").assertIsSelected()
         composeRule.onNode(isDialog()).captureRoboImage("screenshots/finance_operation_edit_light.png")
         composeRule.onNodeWithTag(TAG_OPERATION_TRASH).performClick()
-        assertEquals(listOf<FinanceIntent>(FinanceIntent.TrashOperation), intents)
+        composeRule.onNodeWithTag(TAG_OPERATION_BACK).performClick()
+        assertEquals(listOf(FinanceIntent.TrashOperation, FinanceIntent.CloseForm), intents)
     }
 
     private val spend = listOf(
@@ -409,7 +474,7 @@ class FinanceScreenTest {
         assertEquals(
             listOf(
                 FinanceIntent.ArchiveCategory("old", archived = false),
-                FinanceIntent.RenameCategory("c2", "Кофе"),
+                FinanceIntent.UpdateCategory("c2", "Кофе", null),
                 FinanceIntent.ArchiveCategory("c3", archived = true),
                 FinanceIntent.CreateCategory("Подарки", OperationKind.INCOME),
             ),
@@ -722,5 +787,29 @@ class FinanceScreenTest {
         composeRule.onNodeWithTag("$TAG_PURCHASE_EDIT:p2").performClick()
         assertEquals(listOf<FinanceIntent>(FinanceIntent.RecordPurchase("p1"), FinanceIntent.SkipPurchase("p3")), intents)
         assertEquals(listOf("p2"), edited)
+    }
+
+    /** Эмодзи категории (#237): выбор в окне правки, «Убрать» снимает значок; в списке — эмодзи или первая буква. */
+    @Test
+    fun categoryEmojiIsPickedAndRemoved() {
+        val withEmoji = cats.map { if (it.id == "c2") it.copy(emoji = "☕") else it }
+        composeRule.setContent { AppTheme { CategoriesScreen(withEmoji, { intents += it }, onBack = {}) } }
+        composeRule.onNodeWithText("☕").assertExists()
+        composeRule.onNodeWithTag("$TAG_CATEGORY:c1").assertTextEquals("П", "Продукты")
+        composeRule.onRoot().captureRoboImage("screenshots/finance_categories_emoji_light.png")
+
+        // Кафе: убрать значок.
+        composeRule.onNodeWithTag("$TAG_CATEGORY:c2").performClick()
+        composeRule.onNodeWithTag(TAG_CATEGORY_EMOJI_CLEAR).performClick()
+        composeRule.onNodeWithTag(TAG_CATEGORY_SAVE).performClick()
+        // Продукты: выбрать эмодзи.
+        composeRule.onNodeWithTag("$TAG_CATEGORY:c1").performClick()
+        composeRule.onNodeWithTag(TAG_CATEGORY_EMOJI_CLEAR).assertDoesNotExist()
+        composeRule.onNodeWithTag(TAG_CATEGORY_EMOJI).performClick()
+        composeRule.onNodeWithTag(TAG_EMOJI_FIELD).performTextReplacement("🛒")
+        composeRule.onNodeWithTag("$TAG_EMOJI_DIALOG:$TAG_DIALOG_DONE").performClick()
+        composeRule.onNodeWithTag(TAG_CATEGORY_SAVE).performClick()
+
+        assertEquals(listOf<FinanceIntent>(FinanceIntent.UpdateCategory("c2", "Кафе", null), FinanceIntent.UpdateCategory("c1", "Продукты", "🛒")), intents)
     }
 }
