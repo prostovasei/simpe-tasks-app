@@ -33,6 +33,7 @@ class WeekViewModel @Inject constructor(
     projects: ProjectRepository,
     dayTicker: DayTicker,
     private val time: TimeProvider,
+    private val weekFilter: AppWeekFilter,
 ) : MviViewModel<WeekState, TaskListIntent, TaskListEffect>(WeekState()) {
 
     private val completion = CompletionTracker(viewModelScope, tasks, time)
@@ -43,8 +44,9 @@ class WeekViewModel @Inject constructor(
         viewModelScope.launch {
             val week = combine(dayTicker.today(), selected) { today, picked -> today to (picked ?: today.weekStart()) }
                 .flatMapLatest { (today, start) -> tasks.observeWeek(start).map { Triple(today, start, it) } }
-            combine(week, projects.observeProjectTree(), completion.pending, shownMonth) { (today, start, data), tree, pending, month ->
-                val days = buildWeek(start, data, tree.projectsById(), today, time.zone(), pending)
+            combine(week, projects.observeProjectTree(), completion.pending, shownMonth, weekFilter.filter) { (today, start, data), tree, pending, month, filter ->
+                val byId = tree.projectsById()
+                val days = buildWeek(start, data.filtered(filter, byId), byId, today, time.zone(), pending)
                 WeekState(weekStart = start, today = today, days = days, month = month ?: YearMonth.from(today), isLoading = false)
             }.collect { fresh -> setState { fresh } }
         }

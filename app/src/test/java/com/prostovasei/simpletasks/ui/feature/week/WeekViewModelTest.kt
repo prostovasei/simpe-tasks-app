@@ -2,6 +2,8 @@ package com.prostovasei.simpletasks.ui.feature.week
 
 import com.prostovasei.simpletasks.core.time.DayTicker
 import com.prostovasei.simpletasks.domain.model.TaskDue
+import com.prostovasei.simpletasks.domain.model.WeekFilter
+import com.prostovasei.simpletasks.domain.model.WeekFilterMode
 import com.prostovasei.simpletasks.testing.FakeProjectRepository
 import com.prostovasei.simpletasks.testing.FakeTaskRepository
 import com.prostovasei.simpletasks.testing.FakeTimeProvider
@@ -49,7 +51,9 @@ class WeekViewModelTest {
     @After
     fun tearDown() = Dispatchers.resetMain()
 
-    private fun viewModel() = WeekViewModel(tasks, projects, DayTicker { day }, time)
+    private val store = AppWeekFilter(WeekFilter()) {}
+
+    private fun viewModel() = WeekViewModel(tasks, projects, DayTicker { day }, time, store)
 
     @Test
     fun showsCurrentWeekFromMonday() = runTest(dispatcher) {
@@ -63,6 +67,22 @@ class WeekViewModelTest {
         assertEquals(listOf("mon"), state.days[0].items.map { it.id })
         assertEquals(listOf("wed"), state.days[2].items.map { it.id })
         assertTrue(state.days.drop(3).all { it.items.isEmpty() })
+    }
+
+    /** #243: фильтр по спискам; задачи теста лежат во «Входящих» — это пункт «Без списка». */
+    @Test
+    fun filterHidesAndReturnsTasks() = runTest(dispatcher) {
+        val vm = viewModel()
+        runCurrent()
+        store.set(WeekFilter(WeekFilterMode.HIDE, setOf(WeekFilter.NO_LIST)))
+        runCurrent()
+        assertTrue(vm.state.value.days.all { it.items.isEmpty() })
+        store.set(WeekFilter(WeekFilterMode.SHOW, setOf(WeekFilter.NO_LIST)))
+        runCurrent()
+        assertEquals(listOf("mon"), vm.state.value.days[0].items.map { it.id })
+        store.set(WeekFilter())
+        runCurrent()
+        assertEquals(listOf("wed"), vm.state.value.days[2].items.map { it.id })
     }
 
     @Test

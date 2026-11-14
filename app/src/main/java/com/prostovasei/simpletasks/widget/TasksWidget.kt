@@ -308,10 +308,8 @@ private fun TimelineRow(row: WidgetRow.Task, line: Line, overdue: Boolean, filte
                     modifier = GlanceModifier.defaultWeight(),
                 )
                 item.reminder?.let { ReminderIcon(it, done) }
-                if (filter !is WidgetFilter.ProjectList) {
-                    Spacer(GlanceModifier.width(SpacingTokens.XS.dp))
-                    ListSquare(item)
-                }
+                Spacer(GlanceModifier.width(SpacingTokens.XS.dp))
+                ListSquare(item)
             }
         }
     }
@@ -632,7 +630,6 @@ fun quickAddIntent(context: Context, filter: WidgetFilter): Intent = Intent(cont
     .setData("simpletasks://add/${filter.encode()}".toUri())
     .putExtra(MainActivity.EXTRA_QUICK_ADD, true)
     .putExtra(MainActivity.EXTRA_QUICK_ADD_TODAY, filter == WidgetFilter.All)
-    .putExtra(MainActivity.EXTRA_QUICK_ADD_PROJECT, (filter as? WidgetFilter.ProjectList)?.projectId)
     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
 
 /** «Перенести просроченные на сегодня»: прозрачное окно поверх рабочего стола переносит и показывает «Отмена» (итерация 37). */

@@ -88,12 +88,6 @@ class WidgetScreenshotTest {
                 listOf(item("doc", "Записаться к врачу", DueText(DayLabel.Date(today.plusDays(3), false), "09:30"), list = "Здоровье")),
             ),
         ),
-        tabs = listOf(
-            WidgetTab(WidgetFilter.All),
-            WidgetTab(WidgetFilter.Inbox),
-            WidgetTab(WidgetFilter.ProjectList("work"), "Работа", "💼"),
-            WidgetTab(WidgetFilter.ProjectList("home"), "Дом", "🏠"),
-        ),
         // Сейчас 09:40: «Зарядка» прошла, отметка «сейчас» — перед «Созвоном».
         nowMinute = 9 * 60 + 40,
     )

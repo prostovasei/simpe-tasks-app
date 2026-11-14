@@ -1,6 +1,8 @@
 package com.prostovasei.simpletasks.ui.feature.week
 
 import com.prostovasei.simpletasks.domain.model.Project
+import com.prostovasei.simpletasks.domain.model.Task
+import com.prostovasei.simpletasks.domain.model.WeekFilter
 import com.prostovasei.simpletasks.domain.model.WeekTasks
 import com.prostovasei.simpletasks.domain.model.upcomingRepeats
 import com.prostovasei.simpletasks.ui.common.TaskItem
@@ -23,6 +25,13 @@ fun LocalDate.weekStart(): LocalDate = with(TemporalAdjusters.previousOrSame(Day
  * Семь дней недели с [weekStart]: задачи недели по их дню (начало интервала или срок), выполненные — на своём дне; будущие разы
  * повторяющихся (после сегодняшнего дня) — бледными копиями. Внутри дня: «весь день», потом по времени, настоящие раньше будущих повторов.
  */
+/** Неделя без задач списков, которые отсеял [filter] (#243); неизвестный список (удалён) — как «Без списка» не считается, задача остаётся. */
+fun WeekTasks.filtered(filter: WeekFilter, projects: Map<String, Project>): WeekTasks {
+    if (!filter.isActive) return this
+    fun keep(task: Task) = projects[task.projectId]?.let { filter.allows(it.id, it.isInbox) } ?: true
+    return WeekTasks(inRange.filter(::keep), repeating.filter(::keep))
+}
+
 fun buildWeek(weekStart: LocalDate, week: WeekTasks, projects: Map<String, Project>, today: LocalDate, zone: ZoneId, pending: Set<String>): List<WeekDay> {
     val last = weekStart.plusDays(WEEK_LENGTH - 1L)
     val real = week.inRange.map { it to it.toItem(projects, today, zone, pending) }

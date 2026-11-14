@@ -3,11 +3,12 @@ package com.prostovasei.simpletasks.widget
 import android.content.Context
 import com.prostovasei.simpletasks.core.time.DayTicker
 import com.prostovasei.simpletasks.core.time.TimeProvider
+import com.prostovasei.simpletasks.domain.model.WeekFilter
 import com.prostovasei.simpletasks.domain.repository.ProjectRepository
 import com.prostovasei.simpletasks.domain.repository.TaskRepository
 import com.prostovasei.simpletasks.ui.feature.all.OverdueFold
 import com.prostovasei.simpletasks.ui.feature.all.projectsById
-import com.prostovasei.simpletasks.ui.feature.task.options
+import com.prostovasei.simpletasks.ui.feature.week.filtered
 import com.prostovasei.simpletasks.ui.feature.week.buildWeek
 import com.prostovasei.simpletasks.ui.feature.week.weekStart
 import dagger.hilt.EntryPoint
@@ -41,9 +42,9 @@ fun Context.widgetEntryPoint(): WidgetEntryPoint = EntryPointAccessors.fromAppli
  */
 data class WeekPick(val start: LocalDate? = null, val month: YearMonth? = null)
 
-/** Данные виджета для выбранного [filter]; обновляются при любых изменениях задач, в начале и конце сегодняшних задач и в полночь. */
+/** Данные виджета для выбранного [filter]; [weekFilter] — фильтр по спискам для вида «Неделя» (#243); обновляются при любых изменениях задач, в начале и конце сегодняшних задач и в полночь. */
 @OptIn(ExperimentalCoroutinesApi::class)
-fun WidgetEntryPoint.observeModel(filter: WidgetFilter, pick: WeekPick = WeekPick()): Flow<WidgetModel> = dayTicker().today().flatMapLatest { today ->
+fun WidgetEntryPoint.observeModel(filter: WidgetFilter, pick: WeekPick = WeekPick(), weekFilter: WeekFilter = WeekFilter()): Flow<WidgetModel> = dayTicker().today().flatMapLatest { today ->
     val zone = time().zone()
     val tree = projects().observeProjectTree()
     val model = when (filter) {
@@ -52,21 +53,16 @@ fun WidgetEntryPoint.observeModel(filter: WidgetFilter, pick: WeekPick = WeekPic
         WidgetFilter.Week -> {
             val start = pick.start ?: today.weekStart()
             combine(tasks().observeWeek(start), tree) { week, t ->
-                val days = buildWeek(start, week, t.projectsById(), today, zone, emptySet())
+                val projects = t.projectsById()
+                val days = buildWeek(start, week.filtered(weekFilter, projects), projects, today, zone, emptySet())
                 WidgetModel(WidgetFilter.Week, null, today, emptyList(), week = WidgetWeek(start, pick.month ?: YearMonth.from(today), days, today)) to t
             }
         }
-        is WidgetFilter.ProjectList -> combine(tasks().observeProjectTasks(filter.projectId, today), tree) { list, t ->
-            val projects = t.projectsById()
-            // Список удалили — виджет возвращается к «Все».
-            (projects[filter.projectId]?.let { WidgetModels.list(filter, it.name, list, projects, today, zone) }
-                ?: WidgetModel(WidgetFilter.All, null, today, emptyList())) to t
-        }
     }
-    model.map { (m, t) ->
+    model.map { (m, _) ->
         val now = time().now().atZone(zone)
         val nowMinute = if (now.toLocalDate() == today) now.hour * MINUTES_PER_HOUR + now.minute else null
-        m.copy(tabs = WidgetModels.tabs(m.filter, t.options()), nowMinute = nowMinute, overdueCollapsed = overdueFold().collapsed.value)
+        m.copy(nowMinute = nowMinute, overdueCollapsed = overdueFold().collapsed.value)
     }
 }
 

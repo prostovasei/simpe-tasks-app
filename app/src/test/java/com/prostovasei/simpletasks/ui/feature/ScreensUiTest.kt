@@ -739,6 +739,23 @@ class ScreensUiTest {
         assertEquals(1, added)
     }
 
+    /** #243: долгое нажатие на «Неделю» открывает фильтр недели, обычное — страницу; у остальных страниц долгого нажатия нет. */
+    @Test
+    fun longPressOnWeekOpensFilter() {
+        val selected = mutableListOf<Tab>()
+        var filters = 0
+        show { TasksBottomBar(selected = Tab.WEEK, onSelect = { selected += it }, onAdd = {}, onModule = {}, onSettings = {}, onWeekFilter = { filters++ }) }
+
+        composeRule.onNodeWithTag("tab:LISTS").performTouchInput { longClick() }
+        composeRule.onNodeWithTag("tab:UPCOMING").performTouchInput { longClick() }
+        assertEquals(0, filters)
+        composeRule.onNodeWithTag("tab:WEEK").performTouchInput { longClick() }
+        assertEquals(1, filters)
+        assertEquals(emptyList<Tab>(), selected)
+        composeRule.onNodeWithTag("tab:WEEK").performClick()
+        assertEquals(listOf(Tab.WEEK), selected)
+    }
+
     /** #241: кнопка модуля открывает меню «Задачи / Финансы / Настройки»; текущий модуль не переключается на себя. */
     @Test
     fun moduleButtonOpensMenuWithModulesAndSettings() {

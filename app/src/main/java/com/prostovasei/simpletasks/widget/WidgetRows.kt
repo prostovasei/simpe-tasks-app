@@ -156,8 +156,8 @@ object WidgetRows {
                 visible(R.id.row_bell_early, masks.early != null)
                 masks.early?.let { setImageViewBitmap(R.id.row_bell_early, it) }
             }
-            // Эмодзи списка (итерация 47) вместо цветного квадратика со значком; в виджете одного списка не нужен.
-            visible(R.id.row_emoji, filter !is WidgetFilter.ProjectList)
+            // Эмодзи списка (итерация 47) вместо цветного квадратика со значком.
+            visible(R.id.row_emoji, true)
             setTextViewText(R.id.row_emoji, item.listEmoji)
         }
     }

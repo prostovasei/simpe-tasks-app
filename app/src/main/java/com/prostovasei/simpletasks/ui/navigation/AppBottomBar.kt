@@ -4,7 +4,9 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,7 +18,6 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -38,6 +39,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected as semanticsSelected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import com.prostovasei.simpletasks.R
@@ -70,6 +72,7 @@ fun AppBottomBar(
     onModule: (AppModule) -> Unit,
     onSettings: () -> Unit,
     modifier: Modifier = Modifier,
+    onPageLongClick: (String) -> Unit = {},
 ) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
@@ -109,8 +112,8 @@ fun AppBottomBar(
                         modifier = Modifier
                             .size(width = sizes.appBarPageWidth, height = sizes.appBar)
                             .clip(AppTheme.shapes.large)
-                            .selectable(selected = active, role = Role.Tab, onClick = { onSelect(page.key) })
-                            .semantics { contentDescription = label }
+                            .combinedClickable(role = Role.Tab, onClick = { onSelect(page.key) }, onLongClick = { onPageLongClick(page.key) })
+                            .semantics { contentDescription = label; semanticsSelected = active }
                             .testTag(page.tag),
                     ) { Icon(painterResource(page.icon), contentDescription = null, tint = if (active) colors.accent else colors.inactive, modifier = Modifier.size(sizes.icon)) }
                 }

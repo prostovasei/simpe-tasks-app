@@ -16,11 +16,24 @@ import androidx.test.core.app.ApplicationProvider
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.prostovasei.simpletasks.MainActivity
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
+import com.prostovasei.simpletasks.domain.model.GroupWithProjects
 import com.prostovasei.simpletasks.domain.model.Priority
+import com.prostovasei.simpletasks.domain.model.Project
+import com.prostovasei.simpletasks.domain.model.ProjectGroup
+import com.prostovasei.simpletasks.domain.model.ProjectTree
+import com.prostovasei.simpletasks.domain.model.ProjectWithCount
+import com.prostovasei.simpletasks.domain.model.WeekFilter
+import com.prostovasei.simpletasks.domain.model.WeekFilterMode
 import com.prostovasei.simpletasks.ui.common.DayLabel
 import com.prostovasei.simpletasks.ui.common.DueText
 import com.prostovasei.simpletasks.ui.common.TaskItem
-import com.prostovasei.simpletasks.ui.feature.task.ProjectOption
+import com.prostovasei.simpletasks.ui.feature.week.TAG_WEEK_FILTER_DONE
+import com.prostovasei.simpletasks.ui.feature.week.TAG_WEEK_FILTER_GROUP
+import com.prostovasei.simpletasks.ui.feature.week.TAG_WEEK_FILTER_HIDE
+import com.prostovasei.simpletasks.ui.feature.week.TAG_WEEK_FILTER_LIST
+import com.prostovasei.simpletasks.ui.feature.week.TAG_WEEK_FILTER_NONE
+import com.prostovasei.simpletasks.ui.feature.week.TAG_WEEK_FILTER_RESET
+import com.prostovasei.simpletasks.ui.feature.week.WeekFilterPanel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Rule
@@ -61,7 +74,6 @@ class WidgetUiTest {
             WidgetDayBlock(WidgetDay.On(today.plusDays(1)), listOf(item("net", "Оплатить интернет", DueText(DayLabel.Tomorrow, null)))),
             WidgetDayBlock(WidgetDay.On(today.plusDays(3)), listOf(item("gym@0", "Зарядка", DueText(DayLabel.Date(today.plusDays(3), false), "08:00"), list = null, ghostOf = "gym"))),
         ),
-        tabs = listOf(WidgetTab(WidgetFilter.All), WidgetTab(WidgetFilter.Inbox), WidgetTab(WidgetFilter.ProjectList("work"), "Работа", "💼")),
     )
 
     @Test
@@ -121,8 +133,7 @@ class WidgetUiTest {
     fun emptyListWidget() = runGlanceAppWidgetUnitTest {
         setAppWidgetSize(DpSize(320.dp, 200.dp))
         setContext(context)
-        val tabs = listOf(WidgetTab(WidgetFilter.All), WidgetTab(WidgetFilter.Inbox), WidgetTab(WidgetFilter.ProjectList("p"), "Покупки", null))
-        provideComposable { WidgetContent(WidgetModel(WidgetFilter.ProjectList("p"), "Покупки", today, emptyList(), tabs), appWidgetId = 7) }
+        provideComposable { WidgetContent(WidgetModel(WidgetFilter.Inbox, null, today, emptyList()), appWidgetId = 7) }
         onNode(hasText("Задач нет")).assertExists()
         // Итерация 25: даты внизу больше нет.
         onNode(hasTextEqualTo("пт, 16 окт")).assertDoesNotExist()
@@ -143,36 +154,53 @@ class WidgetUiTest {
         assertEquals(true, addToday.getBooleanExtra(MainActivity.EXTRA_QUICK_ADD_TODAY, false))
         assertNull(addToday.getStringExtra(MainActivity.EXTRA_QUICK_ADD_PROJECT))
 
-        val addToList = quickAddIntent(context, WidgetFilter.ProjectList("work"))
-        assertEquals("work", addToList.getStringExtra(MainActivity.EXTRA_QUICK_ADD_PROJECT))
-        assertEquals(false, addToList.getBooleanExtra(MainActivity.EXTRA_QUICK_ADD_TODAY, true))
+        val addToInbox = quickAddIntent(context, WidgetFilter.Inbox)
+        assertEquals(false, addToInbox.getBooleanExtra(MainActivity.EXTRA_QUICK_ADD_TODAY, true))
         assertEquals("Разные адреса — разные нажатия", false, openTaskIntent(context, "a").filterEquals(openTaskIntent(context, "b")))
         assertEquals(android.content.Intent.ACTION_MAIN, openAppIntent(context).action)
         assertEquals(MainActivity::class.java.name, openAppIntent(context).component?.className)
     }
 
-    private val options = listOf(
-        ProjectOption("inbox", "Inbox", "📥", isInbox = true),
-        ProjectOption("work", "Работа", "💼", isInbox = false),
-        ProjectOption("home", "Дом", "🏠", isInbox = false),
+    private fun at() = java.time.Instant.parse("2026-10-16T09:00:00Z")
+
+    private fun project(id: String, name: String, groupId: String? = null, inbox: Boolean = false, emoji: String? = null) =
+        ProjectWithCount(Project(id, groupId, name, null, 0, inbox, at(), at(), null, emoji), 0)
+
+    private val tree = ProjectTree(
+        inbox = project("inbox", "Входящие", inbox = true),
+        groups = listOf(
+            GroupWithProjects(ProjectGroup("g-work", "Работа", 0, at(), at(), "💼"), listOf(project("meet", "Встречи", "g-work", emoji = "📅"), project("proj", "Проекты", "g-work", emoji = "🗂"))),
+        ),
+        ungrouped = listOf(project("shop", "Покупки", emoji = "🛒")),
     )
 
     @Test
-    fun pickerShowsChoicesAndReturnsSelection() {
-        val picked = mutableListOf<WidgetFilter>()
-        composeRule.setContent { AppTheme { WidgetPicker(options, WidgetFilter.All, onPick = { picked += it }, onDismiss = {}) } }
+    fun filterPanelReturnsMarkedListsAndMode() {
+        var applied: WeekFilter? = null
+        composeRule.setContent { AppTheme { WeekFilterPanel(tree, WeekFilter(), onApply = { applied = it }) } }
 
-        composeRule.onNodeWithText("Просроченные и ближайшие 30 дней").assertIsDisplayed()
-        composeRule.onNodeWithText("Inbox").assertDoesNotExist()
-        composeRule.onNodeWithTag(TAG_PICK_INBOX).performClick()
-        composeRule.onNodeWithTag("$TAG_PICK_LIST:home").performClick()
-        assertEquals(listOf(WidgetFilter.Inbox, WidgetFilter.ProjectList("home")), picked)
+        composeRule.onNodeWithTag("$TAG_WEEK_FILTER_GROUP:g-work").performClick()
+        composeRule.onNodeWithTag("$TAG_WEEK_FILTER_LIST:proj").performClick()
+        composeRule.onNodeWithTag(TAG_WEEK_FILTER_NONE).performClick()
+        composeRule.onNodeWithTag(TAG_WEEK_FILTER_HIDE).performClick()
+        composeRule.onNodeWithTag(TAG_WEEK_FILTER_DONE).performClick()
+        // Папка отметила оба списка, затем «Проекты» сняли; «Без списка» добавлен.
+        assertEquals(WeekFilter(WeekFilterMode.HIDE, setOf("meet", WeekFilter.NO_LIST)), applied)
     }
 
     @Test
-    fun screenshotPicker() {
-        composeRule.setContent { AppTheme { WidgetPicker(options, WidgetFilter.ProjectList("work"), onPick = {}, onDismiss = {}) } }
-        composeRule.onRoot().captureRoboImage("screenshots/widget_picker_light.png")
+    fun filterPanelResetClearsMarks() {
+        var applied: WeekFilter? = null
+        composeRule.setContent { AppTheme { WeekFilterPanel(tree, WeekFilter(WeekFilterMode.SHOW, setOf("shop")), onApply = { applied = it }) } }
+        composeRule.onNodeWithTag(TAG_WEEK_FILTER_RESET).performClick()
+        composeRule.onNodeWithTag(TAG_WEEK_FILTER_DONE).performClick()
+        assertEquals(WeekFilter(), applied)
+    }
+
+    @Test
+    fun screenshotFilter() {
+        composeRule.setContent { AppTheme { WeekFilterPanel(tree, WeekFilter(WeekFilterMode.SHOW, setOf("meet", "proj", "shop")), onApply = {}) } }
+        composeRule.onRoot().captureRoboImage("screenshots/widget_filter_light.png")
     }
 
     /** Галочка в виджете: задача из настоящей базы приложения выполняется, повторяющаяся — переезжает. */
