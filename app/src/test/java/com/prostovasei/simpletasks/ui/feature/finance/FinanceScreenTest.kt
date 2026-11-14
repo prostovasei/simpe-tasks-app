@@ -139,6 +139,27 @@ class FinanceScreenTest {
     private fun full(form: OperationForm? = null, tab: FinanceTab = FinanceTab.OPERATIONS) =
         FinanceState(accounts = three, tab = tab, operations = ops, categories = cats, hints = FormHints("a1", listOf("c2"), listOf("Пятёрочка", "Перекрёсток", "Озон")), form = form, today = today)
 
+    /** #245: плашка — значок категории, «📍 место · 💳 счёт», «💬» при комментарии, итог дня (только расходы), «?» без категории. */
+    @Test
+    fun operationLineShowsIconPlaceAccountCommentAndDayTotal() {
+        val list = listOf(
+            operation("p1", 85_000, "2026-11-10", category = "Продукты", place = "Пятёрочка", comment = "к ужину", categoryEmoji = "🍽"),
+            operation("p2", 20_000, "2026-11-10", category = "Кафе"),
+            operation("p3", 6_500_000, "2026-11-10", OperationKind.INCOME, category = "Зарплата"),
+            operation("p4", 500_000, "2026-11-10", OperationKind.TRANSFER, to = "Наличные"),
+            operation("p5", 68_000, "2026-11-10"),
+        )
+        show(full().copy(operations = list))
+
+        composeRule.onNodeWithText("📍 Пятёрочка · 💳 Карта").assertExists()
+        composeRule.onNodeWithText("🍽").assertExists()
+        composeRule.onNodeWithTag("$TAG_OPERATION_COMMENT_MARK:p1", useUnmergedTree = true).assertExists()
+        composeRule.onNodeWithTag("$TAG_OPERATION_COMMENT_MARK:p2", useUnmergedTree = true).assertDoesNotExist()
+        composeRule.onNodeWithText("?").assertExists()
+        // Итог дня — расходы: 850 + 200 + 680 = 1 730 ₽; доход и перевод не считаются.
+        composeRule.onNodeWithTag("$TAG_OPERATIONS_DAY_TOTAL:${today.toEpochDay()}").assertTextEquals("− 1${s}730${s}₽")
+    }
+
     /** Список операций: дни, знаки сумм, перевод с подписью, «Без категории»; нажатие открывает правку. */
     @Test
     fun operationsAreGroupedByDayWithSigns() {
@@ -147,9 +168,10 @@ class FinanceScreenTest {
         composeRule.onNodeWithText("10 ноября · сегодня").assertExists()
         composeRule.onNodeWithText("9 ноября · вчера").assertExists()
         composeRule.onNodeWithText("30 декабря 2025").assertExists()
-        composeRule.onNodeWithText("− 850${s}₽").assertExists()
+        // «− 850 ₽» — и сумма операции, и итог дня (других расходов в тот день нет).
+        composeRule.onAllNodesWithText("− 850${s}₽").assertCountEquals(2)
         composeRule.onNodeWithText("+ 65${s}000${s}₽").assertExists()
-        composeRule.onNodeWithText("Карта → Наличные").assertExists()
+        composeRule.onNodeWithText("💳 Карта → 👛 Наличные").assertExists()
         composeRule.onNodeWithText("5${s}000${s}₽").assertExists()
         composeRule.onNodeWithText("Без категории").assertExists()
         composeRule.onNodeWithTag("$TAG_OPERATION:o4").performClick()
@@ -621,10 +643,10 @@ class FinanceScreenTest {
         var back = false
         composeRule.setContent { AppTheme { FinanceTrashScreen(trashed, today, { intents += it }, onBack = { back = true }) } }
 
-        composeRule.onNodeWithText("9 ноября · удалено сегодня").assertExists()
-        composeRule.onNodeWithText("7 ноября · удалено вчера").assertExists()
-        composeRule.onNodeWithText("5 ноября · удалено 6 ноября").assertExists()
-        composeRule.onNodeWithText("Карта → Наличные").assertExists()
+        composeRule.onNodeWithText("9 ноября · удалено сегодня · 💳 Карта").assertExists()
+        composeRule.onNodeWithText("7 ноября · удалено вчера · Перевод").assertExists()
+        composeRule.onNodeWithText("5 ноября · удалено 6 ноября · 💳 Карта").assertExists()
+        composeRule.onNodeWithText("💳 Карта → 👛 Наличные").assertExists()
         composeRule.onRoot().captureRoboImage("screenshots/finance_trash_light.png")
 
         composeRule.onNodeWithTag("$TAG_TRASH_RESTORE:t2").performClick()

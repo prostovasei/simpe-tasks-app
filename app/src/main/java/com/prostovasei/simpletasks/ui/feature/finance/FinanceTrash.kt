@@ -125,19 +125,9 @@ fun FinanceTrashScreen(trash: List<Operation>, today: LocalDate, onIntent: (Fina
 
 @Composable
 private fun TrashRow(operation: Operation, today: LocalDate, onRestore: () -> Unit, onDelete: () -> Unit) {
-    val colors = AppTheme.colors
-    val spacing = AppTheme.spacing
     val deleted = operation.deletedOn?.let { stringResource(R.string.finance_trash_deleted_on, shortDay(it, today)) }
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(spacing.xs),
-        modifier = Modifier.fillMaxWidth().heightIn(min = AppTheme.sizes.operationRow).padding(horizontal = spacing.md, vertical = spacing.xs).testTag("$TAG_FINANCE_TRASH:${operation.id}"),
-    ) {
-        Column(Modifier.weight(1f)) {
-            Text(operation.title(), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = colors.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(listOfNotNull(plainDay(operation.date, today), deleted).joinToString(" · "), style = MaterialTheme.typography.labelSmall, color = colors.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        }
-        Text(operation.amountText(), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = colors.textPrimary, maxLines = 1, softWrap = false)
+    val details = listOfNotNull(plainDay(operation.date, today), deleted, operation.lineDetails()).joinToString(" · ")
+    OperationLine(operation, details, Modifier.testTag("$TAG_FINANCE_TRASH:${operation.id}")) {
         MiniButton(R.drawable.ic_snack_restore, stringResource(R.string.finance_trash_restore), "$TAG_TRASH_RESTORE:${operation.id}", onRestore)
         MiniButton(R.drawable.ic_tool_delete, stringResource(R.string.finance_trash_delete_forever), "$TAG_TRASH_DELETE:${operation.id}", onDelete)
     }

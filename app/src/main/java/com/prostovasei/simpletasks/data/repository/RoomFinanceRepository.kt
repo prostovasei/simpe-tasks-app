@@ -272,6 +272,9 @@ class RoomFinanceRepository @Inject constructor(
         comment = operation.comment,
         date = LocalDate.ofEpochDay(operation.date),
         deletedOn = operation.deletedAt?.let { Instant.ofEpochMilli(it).atZone(time.zone()).toLocalDate() },
+        categoryEmoji = categoryEmoji,
+        accountEmoji = accountEmoji ?: AccountType.fromCode(accountType).defaultEmoji,
+        toAccountEmoji = toAccountType?.let { toAccountEmoji ?: AccountType.fromCode(it).defaultEmoji },
     )
 
     private fun AccountWithBalance.toDomain() = Account(

@@ -102,7 +102,8 @@ interface FinanceOperationDao {
     suspend fun setCategoryArchived(id: String, archived: Boolean, now: Long): Int
 
     private companion object {
-        const val ROWS = "SELECT o.*, a.name AS account_name, t.name AS to_account_name, c.name AS category_name FROM finance_operations o" +
+        const val ROWS = "SELECT o.*, a.name AS account_name, t.name AS to_account_name, c.name AS category_name, c.emoji AS category_emoji," +
+            " a.emoji AS account_emoji, a.type AS account_type, t.emoji AS to_account_emoji, t.type AS to_account_type FROM finance_operations o" +
             " JOIN finance_accounts a ON a.id = o.account_id" +
             " LEFT JOIN finance_accounts t ON t.id = o.to_account_id" +
             " LEFT JOIN finance_categories c ON c.id = o.category_id"

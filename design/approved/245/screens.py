@@ -1,9 +1,9 @@
 """Плашки операций #245 — макеты на согласование PM (15.11.2026): значок категории, место, счёт, типы операций, итог дня.
-Основа — стиль 217/233/241. Данные вымышленные. Запуск из корня: python3 design/drafts/ui-245/screens.py → screens.html; PNG: node design/drafts/ui-245/render.js."""
+Основа — стиль 217/233/241. Данные вымышленные. Запуск из корня: python3 design/approved/245/screens.py → screens.html; PNG: node design/approved/245/render.js."""
 from pathlib import Path
 
 here = Path(__file__).parent
-p241 = here.parent.parent / 'approved' / '241' / 'screens.py'
+p241 = here.parent / '241' / 'screens.py'
 src = p241.read_text()
 ns = {'__file__': str(p241)}
 exec(src[:src.index('IMG = {')], ns)
@@ -100,4 +100,4 @@ secs = [('1. Операции', 'Главная страница «Операц�
 html = (f'<!doctype html><html lang="ru"><meta charset="utf-8"><title>Плашки операций (#245)</title><style>{g217["style"]}{G["extra217"]}{extra233}{extra241}{extra}</style>'
         '<div class="board">' + ''.join(f'<section class="sec" id="s{i+1}"><h2>{t}</h2><p>{d}</p><div class="rowp">{"".join(f)}</div></section>' for i, (t, d, f) in enumerate(secs)) + '</div></html>')
 (here / 'screens.html').write_text(html)
-print('screens.html готов; картинки: node design/drafts/ui-245/render.js')
+print('screens.html готов; картинки: node design/approved/245/render.js')

@@ -575,6 +575,10 @@
     <string name="operation_expense">Расход</string>
     <string name="operation_income">Доход</string>
     <string name="operation_transfer">Перевод</string>
+    <string name="operation_title_transfer">%1$s → %2$s</string>
+    <string name="operation_details_place">📍 %1$s · %2$s</string>
+    <string name="operation_comment_mark">💬</string>
+    <string name="operation_day_expenses">− %1$s</string>
     <string name="operation_account">Счёт</string>
     <string name="operation_from">Со счёта</string>
     <string name="operation_to">На счёт</string>

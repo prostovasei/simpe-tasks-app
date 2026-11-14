@@ -43,6 +43,8 @@ data class BankPurchaseEntity(
 data class PendingPurchaseRow(
     @Embedded val purchase: BankPurchaseEntity,
     @ColumnInfo(name = "account_name") val accountName: String,
+    @ColumnInfo(name = "account_emoji") val accountEmoji: String?,
+    @ColumnInfo(name = "account_type") val accountType: String,
     @ColumnInfo(name = "dup_id") val duplicateId: String?,
     @ColumnInfo(name = "dup_category") val duplicateCategory: String?,
     @ColumnInfo(name = "dup_amount") val duplicateAmount: Long?,

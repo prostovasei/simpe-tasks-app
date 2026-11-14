@@ -18,6 +18,8 @@ data class PendingPurchase(
     val postedAt: Instant,
     val date: LocalDate,
     val duplicate: DuplicateHint? = null,
+    /** Значок счёта для плашки (#245). */
+    val accountEmoji: String = "",
 )
 
 /** Расход, похожий на покупку: тот же счёт, сумма и день. [categoryName] = null — «Без категории». */

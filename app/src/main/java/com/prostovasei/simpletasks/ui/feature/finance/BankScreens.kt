@@ -46,6 +46,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.prostovasei.simpletasks.R
@@ -282,13 +283,21 @@ private fun PurchaseItem(purchase: PendingPurchase, today: LocalDate, zone: Zone
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
     Column(Modifier.fillMaxWidth().padding(spacing.md).testTag("$TAG_PURCHASE:${purchase.id}")) {
-        Text("− ${Money.format(purchase.amount)}", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = colors.textPrimary)
-        Text(
-            stringResource(R.string.bank_purchase_caption, purchase.accountName, shortDay(purchase.date, today), purchase.postedAt.atZone(zone).format(TIME)),
-            style = MaterialTheme.typography.labelSmall,
-            color = colors.textSecondary,
-            modifier = Modifier.padding(top = spacing.xxs),
-        )
+        // Та же плашка, что в «Операциях» (#245): «?» и «Без категории», серая строка — банк, счёт и время, справа сумма.
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(spacing.xs)) {
+            UnknownMark()
+            Column(Modifier.weight(1f).padding(horizontal = spacing.xs)) {
+                Text(stringResource(R.string.category_none), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = colors.textPrimary)
+                Text(
+                    stringResource(R.string.bank_purchase_caption, accountLabel(purchase.accountEmoji, purchase.accountName), shortDay(purchase.date, today), purchase.postedAt.atZone(zone).format(TIME)),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = colors.textSecondary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Text("− ${Money.format(purchase.amount)}", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = colors.textPrimary, maxLines = 1, softWrap = false)
+        }
         purchase.duplicate?.let { dup ->
             Text(
                 stringResource(R.string.bank_duplicate, dup.categoryName ?: stringResource(R.string.category_none), Money.format(dup.amount), shortDay(dup.date, today)),

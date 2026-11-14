@@ -91,13 +91,19 @@ fun OperationsList(operations: List<Operation>, today: LocalDate, unsorted: Int 
     LazyColumn(Modifier.fillMaxSize().testTag(TAG_OPERATIONS), contentPadding = PaddingValues(start = spacing.md, end = spacing.md, bottom = spacing.lg)) {
         if (unsorted > 0) item(key = "unsorted") { unsortedRow() }
         items(days, key = { it.first.toEpochDay() }) { (date, list) ->
-            Text(
-                dayTitle(date, today),
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-                color = colors.textPrimary,
-                modifier = Modifier.padding(start = spacing.xxs, top = spacing.sm, bottom = spacing.xs),
-            )
+            // Итог дня (#245): расходы за день; переводы и корректировки в него не входят.
+            val expenses = list.filter { it.kind == OperationKind.EXPENSE }.sumOf { it.amount }
+            Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxWidth().padding(start = spacing.xxs, end = spacing.xxs, top = spacing.sm, bottom = spacing.xs)) {
+                Text(dayTitle(date, today), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = colors.textPrimary, modifier = Modifier.weight(1f))
+                if (expenses > 0) {
+                    Text(
+                        stringResource(R.string.operation_day_expenses, Money.format(expenses)),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = colors.textSecondary,
+                        modifier = Modifier.testTag("$TAG_OPERATIONS_DAY_TOTAL:${date.toEpochDay()}"),
+                    )
+                }
+            }
             Column(Modifier.fillMaxWidth().clip(AppTheme.shapes.large).background(colors.surface)) {
                 list.forEachIndexed { i, operation ->
                     OperationRow(operation) { onOpen(operation.id) }
@@ -118,35 +124,10 @@ fun Operation.title(): String = when (kind) {
 
 @Composable
 private fun OperationRow(operation: Operation, onClick: () -> Unit) {
-    val colors = AppTheme.colors
-    val spacing = AppTheme.spacing
-    // Перевод и корректировка — серым с подписью: в расходы и доходы они не входят.
-    val transfer = operation.kind == OperationKind.TRANSFER || operation.kind == OperationKind.CORRECTION
-    val title = operation.title()
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = AppTheme.sizes.operationRow)
-            .clickable(role = Role.Button, onClick = onClick)
-            .padding(horizontal = spacing.md, vertical = spacing.xs)
-            .testTag("$TAG_OPERATION:${operation.id}"),
-    ) {
-        Column(Modifier.weight(1f).padding(end = spacing.sm)) {
-            Text(title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = if (transfer) colors.textSecondary else colors.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            if (transfer) Text(stringResource(if (operation.kind == OperationKind.TRANSFER) R.string.operation_transfer else R.string.operation_correction_caption), style = MaterialTheme.typography.labelSmall, color = colors.textSecondary)
-        }
-        Text(
-            operation.amountText(),
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = if (transfer) FontWeight.Medium else FontWeight.Bold,
-            color = if (transfer) colors.textSecondary else colors.textPrimary,
-            maxLines = 1,
-            softWrap = false,
-        )
-    }
+    OperationLine(operation, operation.lineDetails(), Modifier.clickable(role = Role.Button, onClick = onClick).testTag("$TAG_OPERATION:${operation.id}"))
 }
 
 const val TAG_OPERATIONS = "finance_operations"
+const val TAG_OPERATIONS_DAY_TOTAL = "finance_operations_day_total"
 const val TAG_OPERATIONS_EMPTY = "finance_operations_empty"
 const val TAG_OPERATION = "operation"
