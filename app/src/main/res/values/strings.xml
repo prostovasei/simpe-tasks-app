@@ -437,7 +437,6 @@
     <string name="widget_name">Задачи</string>
     <string name="widget_description">Задачи на сегодня и ближайшие дни, с галочками</string>
     <string name="widget_all">Все</string>
-    <string name="widget_all_hint">Просроченные и ближайшие 30 дней</string>
     <string name="widget_empty">Задач нет</string>
     <string name="widget_complete">Выполнить</string>
     <string name="task_uncomplete">Снять отметку «выполнено»</string>
@@ -484,7 +483,12 @@
     <string name="widget_log_empty">Пока пусто</string>
     <string name="widget_log_share">Отправить</string>
     <string name="widget_log_clear">Очистить</string>
-    <string name="widget_pick_title">Показывать в виджете</string>
+    <string name="week_filter_title">Фильтр недели</string>
+    <string name="week_filter_show">Показать выбранные</string>
+    <string name="week_filter_hide">Скрыть выбранные</string>
+    <string name="week_filter_no_list">Без списка</string>
+    <string name="week_filter_reset">Сбросить</string>
+    <string name="week_filter_done">Готово</string>
 
     <!-- Итерация 49: «Не буду делать» и удаление повторяющейся задачи (макет iteration49.py). -->
     <string name="action_wont_do">Не буду делать</string>

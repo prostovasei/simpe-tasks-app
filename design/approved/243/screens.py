@@ -1,10 +1,10 @@
 """Виджет и приложение #243 — макеты на согласование PM (14.11.2026): окно фильтра вида «Неделя» (по спискам, режимы «показать/скрыть
 выбранные», папки, «Без списка»). Основа — стиль 217/233/241. Содержимое — снимки app/screenshots (вымышленные данные).
-Запуск из корня: python3 design/drafts/ui-243/screens.py → screens.html; PNG: node design/drafts/ui-243/render.js."""
+Запуск из корня: python3 design/approved/243/screens.py → screens.html; PNG: node design/approved/243/render.js."""
 from pathlib import Path
 
 here = Path(__file__).parent
-p241 = here.parent.parent / 'approved' / '241' / 'screens.py'
+p241 = here.parent / "241" / "screens.py"
 src = p241.read_text()
 ns = {'__file__': str(p241)}
 exec(src[:src.index('IMG = {')], ns)
@@ -68,7 +68,7 @@ def widget_phone(dialog_html=None, ringed=False):
 
 
 s1 = [
-    fig('1.1 Виджет «Неделя» — как открыть фильтр', 'Заголовка у виджета нет, поэтому предлагаю: нажатие на значок «Неделя» в переключателе, когда вид уже «Неделя». Остальные вкладки и «+» работают как раньше. Тот же значок на другом виде просто переключает вид.', widget_phone(ringed=True)),
+    fig('1.1 Виджет «Неделя»', 'Вкладки «Все», «Входящие», «Неделя» и «+» работают как раньше. Решение PM: фильтр открывается только через «Настроить» по долгому нажатию на виджет (нажатие на значок «Неделя» не используется).', widget_phone()),
     fig('1.2 Окно фильтра — показать выбранные', 'Окно поверх рабочего стола, как прежнее. Выбрана папка «Работа» — отмечены все её списки: в «Неделе» остались задачи только из них. «Готово» применяет, «Сбросить» снимает все отметки.', widget_phone(filter_dialog('show', ROWS_WORK))),
     fig('1.3 Режим «Скрыть выбранные» и частичная папка', 'Режим «Скрыть выбранные»: отмеченное из недели убирается. У папки «Работа» стоит «–» — отмечена часть списков. «Без списка» — задачи с датой, у которых нет списка.', widget_phone(filter_dialog('hide', ROWS_PART))),
     fig('1.4 Фильтр выключен', 'Ничего не отмечено — фильтра нет, в «Неделе» всё, как сейчас. Так выглядит окно после «Сбросить» или после обновления приложения.', widget_phone(filter_dialog('show', ROWS_OFF))),
@@ -101,4 +101,4 @@ secs = [('1. Виджет «Неделя»', 'Как открыть фильтр
 html = (f'<!doctype html><html lang="ru"><meta charset="utf-8"><title>Фильтр недели — виджет и приложение (#243)</title><style>{g217["style"]}{G["extra217"]}{extra233}{extra241}{extra}</style>'
         '<div class="board">' + ''.join(f'<section class="sec" id="s{i+1}"><h2>{t}</h2><p>{d}</p><div class="rowp">{"".join(f)}</div></section>' for i, (t, d, f) in enumerate(secs)) + '</div></html>')
 (here / 'screens.html').write_text(html)
-print('screens.html готов; картинки: node design/drafts/ui-243/render.js')
+print('screens.html готов; картинки: node design/approved/243/render.js')

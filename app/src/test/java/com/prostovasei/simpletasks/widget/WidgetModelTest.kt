@@ -4,7 +4,6 @@ import com.prostovasei.simpletasks.domain.model.AllScreenTasks
 import com.prostovasei.simpletasks.domain.model.TaskDue
 import com.prostovasei.simpletasks.testing.project
 import com.prostovasei.simpletasks.testing.task
-import com.prostovasei.simpletasks.ui.feature.task.ProjectOption
 import com.prostovasei.simpletasks.ui.common.TaskItem
 import com.prostovasei.simpletasks.domain.model.Priority
 import org.junit.Assert.assertEquals
@@ -50,7 +49,7 @@ class WidgetModelTest {
         assertEquals(15, all.days.sumOf { it.items.size })
         assertEquals(15, all.overdueCount)
         val tasks = (1..45).map { task("n$it", projectId = "work") }
-        val list = WidgetModels.list(WidgetFilter.ProjectList("work"), "Работа", tasks, projects, today, ZoneOffset.UTC)
+        val list = WidgetModels.list(WidgetFilter.Inbox, null, tasks, projects, today, ZoneOffset.UTC)
         assertEquals(45, list.days.sumOf { it.items.size })
     }
 
@@ -90,8 +89,7 @@ class WidgetModelTest {
             task("late", projectId = "work", due = day(-1)),
             task("now", projectId = "work", due = day(0)),
         )
-        val model = WidgetModels.list(WidgetFilter.ProjectList("work"), "Работа", tasks, projects, today, ZoneOffset.UTC)
-        assertEquals("Работа", model.title)
+        val model = WidgetModels.list(WidgetFilter.Inbox, null, tasks, projects, today, ZoneOffset.UTC)
         assertEquals(
             listOf(WidgetDay.On(today.minusDays(1)), WidgetDay.On(today), WidgetDay.On(today.plusDays(3)), WidgetDay.NoDate),
             model.days.map { it.day },
@@ -107,38 +105,14 @@ class WidgetModelTest {
         assertEquals("пн, 19 окт", WidgetDates.withWeekday(LocalDate.of(2026, 10, 19)))
     }
 
-    private val lists = listOf(
-        ProjectOption("inbox", "Inbox", "📥", isInbox = true),
-        ProjectOption("work", "Работа", "💼", isInbox = false),
-        ProjectOption("home", "Дом", "🏠", isInbox = false),
-        ProjectOption("health", "Здоровье", "📁", isInbox = false),
-    )
-
-    @Test
-    fun tabsShowAllInboxAndFirstTwoLists() {
-        assertEquals(
-            listOf(WidgetTab(WidgetFilter.All), WidgetTab(WidgetFilter.Inbox), WidgetTab(WidgetFilter.ProjectList("work"), "Работа", "💼"), WidgetTab(WidgetFilter.ProjectList("home"), "Дом", "🏠")),
-            WidgetModels.tabs(WidgetFilter.All, lists),
-        )
-    }
-
-    @Test
-    fun listPickedFromMoreReplacesSecondListTab() {
-        val tabs = WidgetModels.tabs(WidgetFilter.ProjectList("health"), lists).map { it.filter }
-        assertEquals(listOf(WidgetFilter.All, WidgetFilter.Inbox, WidgetFilter.ProjectList("work"), WidgetFilter.ProjectList("health")), tabs)
-    }
-
-    @Test
-    fun noOwnListsOnlyAllAndInbox() {
-        assertEquals(listOf(WidgetFilter.All, WidgetFilter.Inbox), WidgetModels.tabs(WidgetFilter.Inbox, lists.take(1)).map { it.filter })
-    }
-
     @Test
     fun filterIsStoredAsText() {
-        listOf(WidgetFilter.All, WidgetFilter.Inbox, WidgetFilter.ProjectList("p-1")).forEach {
+        listOf(WidgetFilter.All, WidgetFilter.Inbox, WidgetFilter.Week).forEach {
             assertEquals(it, WidgetFilter.decode(it.encode()))
         }
         assertEquals("По умолчанию — «Все»", WidgetFilter.All, WidgetFilter.decode(null))
+        // Прежний выбор отдельного списка (до #243) сбрасывается на «Все».
+        assertEquals(WidgetFilter.All, WidgetFilter.decode("project:p-1"))
     }
 
     @Test

@@ -109,6 +109,8 @@ import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.ui.common.TAG_ADD_TASK
 import com.prostovasei.simpletasks.ui.feature.all.AllRoute
 import com.prostovasei.simpletasks.ui.feature.week.DayRoute
+import com.prostovasei.simpletasks.ui.feature.week.WeekFilterDialog
+import com.prostovasei.simpletasks.ui.feature.week.WeekFilterViewModel
 import com.prostovasei.simpletasks.ui.feature.week.WeekRoute
 import com.prostovasei.simpletasks.ui.feature.inbox.InboxRoute
 import com.prostovasei.simpletasks.ui.feature.lists.ListsRoute
@@ -162,7 +164,11 @@ internal fun TasksBottomBar(
     onAdd: () -> Unit,
     onModule: (AppModule) -> Unit,
     onSettings: () -> Unit,
-) = AppBottomBar(TASK_PAGES, selected.name, { onSelect(Tab.valueOf(it)) }, onAdd, TAG_ADD_TASK, R.string.add_task, AppModule.TASKS, onModule, onSettings)
+    onWeekFilter: () -> Unit = {},
+) = AppBottomBar(
+    TASK_PAGES, selected.name, { onSelect(Tab.valueOf(it)) }, onAdd, TAG_ADD_TASK, R.string.add_task, AppModule.TASKS, onModule, onSettings,
+    onPageLongClick = { if (it == Tab.WEEK.name) onWeekFilter() },
+)
 
 /** Нижняя панель модуля «Финансы» (#241): «Аналитика» и «Операции», «+» — новая операция. */
 @Composable
@@ -279,6 +285,14 @@ fun AppNavHost(
     // Массовое редактирование (итерация 40): подсказка «Выполнено: N · Отмена» и т. п.; в режиме выбора нижней панели нет — там лента действий.
     val bulk = hiltViewModel<BulkActionsHost>()
     val selectionMode = remember { mutableStateOf(false) }
+    // Фильтр страницы «Неделя» (#243): долгое нажатие на значок «Неделя» в нижней панели.
+    var weekFilterOpen by remember { mutableStateOf(false) }
+    if (weekFilterOpen) {
+        val filterModel: WeekFilterViewModel = hiltViewModel()
+        val tree by filterModel.tree.collectAsStateWithLifecycle()
+        val applied by filterModel.filter.collectAsStateWithLifecycle()
+        WeekFilterDialog(tree, applied, onApply = { filterModel.apply(it); weekFilterOpen = false }, onDismiss = { weekFilterOpen = false })
+    }
     val bulkTexts = BulkTexts.load()
     LaunchedEffect(bulk) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -329,6 +343,7 @@ fun AppNavHost(
                     onAdd = { navController.navigate(QuickAddDestination(today = selected != Tab.LISTS)) },
                     onModule = switchModule,
                     onSettings = openSettings,
+                    onWeekFilter = { weekFilterOpen = true },
                 )
             }
         },

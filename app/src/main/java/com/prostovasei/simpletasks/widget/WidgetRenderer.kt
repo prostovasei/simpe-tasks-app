@@ -14,6 +14,7 @@ import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.GlanceRemoteViews
 import androidx.glance.appwidget.state.getAppWidgetState
 import androidx.glance.state.PreferencesGlanceStateDefinition
+import com.prostovasei.simpletasks.domain.model.WeekFilter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -53,9 +54,7 @@ object WidgetRenderer {
             // Вид «Неделя» — на Android 12+ (лента на элементах Android); на 10–11 вместо него «Все».
             val chosen = selection(context, appWidgetId)
             val filter = if (chosen == WidgetFilter.Week && Build.VERSION.SDK_INT < Build.VERSION_CODES.S) WidgetFilter.All else chosen
-            val model = context.widgetEntryPoint().observeModel(filter, WidgetSelection.weekPick(context, appWidgetId)).first()
-            // Список удалили — виджет вернулся к «Все», запоминаем.
-            if (model.filter != chosen && model.filter != filter) WidgetSelection.set(context, appWidgetId, model.filter)
+            val model = context.widgetEntryPoint().observeModel(filter, WidgetSelection.weekPick(context, appWidgetId), WidgetSelection.weekFilter(context, appWidgetId)).first()
             val manager = AppWidgetManager.getInstance(context)
             val options = manager.getAppWidgetOptions(appWidgetId)
             // Прокручиваемая лента — только Android 12+: корень и строки — обычные элементы, Glance — нижняя панель поверх.
@@ -130,7 +129,7 @@ object WidgetSelection {
     }
 
     fun remove(context: Context, appWidgetId: Int) {
-        prefs(context).edit().remove(key(appWidgetId)).remove(weekKey(appWidgetId)).remove(monthKey(appWidgetId)).commit()
+        prefs(context).edit().remove(key(appWidgetId)).remove(weekFilterKey(appWidgetId)).remove(weekKey(appWidgetId)).remove(monthKey(appWidgetId)).commit()
     }
 
     /** Выбор в виде «Неделя» (итерация 45): выбранная неделя и месяц мини-календаря этого виджета. */
@@ -139,6 +138,13 @@ object WidgetSelection {
         month = prefs(context).getString(monthKey(appWidgetId), null)?.let { runCatching { YearMonth.parse(it) }.getOrNull() },
     )
 
+    /** Фильтр недели по спискам (#243) — свой у каждого виджета. */
+    fun weekFilter(context: Context, appWidgetId: Int): WeekFilter = WeekFilter.decode(prefs(context).getString(weekFilterKey(appWidgetId), null))
+
+    fun setWeekFilter(context: Context, appWidgetId: Int, filter: WeekFilter) {
+        prefs(context).edit().putString(weekFilterKey(appWidgetId), filter.encode()).commit()
+    }
+
     fun setWeekPick(context: Context, appWidgetId: Int, pick: WeekPick) {
         prefs(context).edit()
             .putString(weekKey(appWidgetId), pick.start?.toString())
@@ -146,6 +152,7 @@ object WidgetSelection {
             .commit()
     }
 
+    private fun weekFilterKey(appWidgetId: Int) = "week_filter_$appWidgetId"
     private fun weekKey(appWidgetId: Int) = "week_$appWidgetId"
     private fun monthKey(appWidgetId: Int) = "month_$appWidgetId"
 
