@@ -108,6 +108,14 @@ class WidgetWeekTest {
         val hit = friday.findViewById<View>(slot.hit)
         assertTrue("зона ${hit.width}", kotlin.math.abs(hit.width - px(SizeTokens.WIDGET_WEEK_HIT.toFloat())) <= 1)
         assertEquals(friday.findViewById<View>(slot.plaque).height, hit.height)
+        val time = friday.findViewById<TextView>(slot.time)
+        val day = friday.findViewById<TextView>(WeekIds.LEFT.weekday)
+        val timeLocation = IntArray(2).also(time::getLocationOnScreen)
+        val dayLocation = IntArray(2).also(day::getLocationOnScreen)
+        assertEquals("день и время по одной левой линии", dayLocation[0], timeLocation[0])
+        assertEquals(android.view.Gravity.START, time.gravity and android.view.Gravity.RELATIVE_HORIZONTAL_GRAVITY_MASK)
+        assertTrue("минимальное поле", kotlin.math.abs(friday.findViewById<View>(R.id.wl_root).paddingLeft - px(SizeTokens.WEEK_EDGE.toFloat())) <= 1)
+
         assertTrue("кружок ${friday.findViewById<View>(slot.check).width}", kotlin.math.abs(friday.findViewById<View>(slot.check).width - px(SizeTokens.WIDGET_WEEK_TASK.toFloat())) <= 1)
         assertTrue("зона поверх начала названия", friday.findViewById<View>(slot.title).left < hit.right)
     }

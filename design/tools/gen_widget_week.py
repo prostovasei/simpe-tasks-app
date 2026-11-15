@@ -35,7 +35,7 @@ def cell(p):
                 android:id="@+id/{p}_s{i}_time"
                 android:layout_width="@dimen/widget_week_time_column"
                 android:layout_height="wrap_content"
-                android:gravity="end"
+                android:gravity="start"
                 android:includeFontPadding="false"
                 android:maxLines="1"
                 android:textColor="@color/widget_text_secondary"
@@ -104,7 +104,7 @@ def cell(p):
     android:layout_weight="1"
     android:background="@drawable/widget_week_cell"
     android:orientation="vertical"
-    android:paddingStart="@dimen/widget_space_xxs"
+    android:paddingStart="@dimen/widget_week_edge"
     android:paddingTop="@dimen/widget_week_cell_top"
     android:paddingEnd="@dimen/widget_space_xxs"
     android:paddingBottom="@dimen/widget_week_task_gap">

@@ -34,7 +34,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -76,7 +75,7 @@ fun WeekCell(
                 drawLine(divider, Offset(size.width - w / 2, 0f), Offset(size.width - w / 2, size.height), w)
                 drawLine(divider, Offset(0f, size.height - w / 2), Offset(size.width, size.height - w / 2), w)
             }
-            .padding(horizontal = spacing.xxs, vertical = spacing.xs)
+            .padding(horizontal = SizeTokens.WEEK_EDGE.dp, vertical = spacing.xs)
             .testTag("week-day:$date"),
     ) {
         val rowHeight = SizeTokens.WEEKVIEW_TASK.dp + SizeTokens.WEEKVIEW_TASK_GAP.dp
@@ -109,7 +108,7 @@ private fun WeekDayHeader(date: LocalDate, isToday: Boolean, hidden: Int, onClic
             style = MaterialTheme.typography.labelSmall,
             fontWeight = weight,
             color = color,
-            modifier = if (isToday) Modifier.testTag("week-today:$date") else Modifier,
+            modifier = if (isToday) Modifier.testTag("week-today:$date") else Modifier.testTag("week-date:$date"),
         )
         if (hidden > 0) {
             Spacer(Modifier.weight(1f))
@@ -130,7 +129,7 @@ private fun WeekDayHeader(date: LocalDate, isToday: Boolean, hidden: Int, onClic
 /**
  * Строка задачи в ячейке (0.46.0, `VariantK2`; итерация 47 — `VariantH2`): белый фон без плашек;
  * кружок приоритета (нажатие — «выполнено» или «вернуть»), у повторяющейся — знак повтора; время слева и название фиолетовые у высокого приоритета (просрочка не красная).
- * Выполненная — бледно-фиолетовая у высокого приоритета, иначе серая; название зачёркнуто, кружок залит тусклым цветом приоритета; будущий повтор — как обычная, но без нажатия на знак.
+ * Выполненная — бледно-фиолетовая у высокого приоритета, иначе серая; без зачёркивания, кружок залит тусклым цветом приоритета; будущий повтор — как обычная, но без нажатия на знак.
  */
 @Composable
 private fun WeekTaskRow(item: TaskItem, onToggle: () -> Unit, onOpen: () -> Unit) {
@@ -139,10 +138,10 @@ private fun WeekTaskRow(item: TaskItem, onToggle: () -> Unit, onOpen: () -> Unit
     val done = item.showsDone
     val high = item.priority == Priority.HIGH
     val priorityColor = Color(if (done) TaskCanvasTokens.priorityDone.light else TaskCanvasTokens.priority.light)
-    val titleColor = if (high) priorityColor else if (done) colors.inactive else colors.textPrimary
-    val timeColor = if (high) priorityColor else if (done) colors.inactive else colors.textSecondary
+    val titleColor = if (high) priorityColor else if (done) Color(TaskCanvasTokens.done.light) else colors.textPrimary
+    val timeColor = if (high) priorityColor else if (done) Color(TaskCanvasTokens.done.light) else colors.textSecondary
     val ring = if (high) priorityColor else colors.inactive
-    val doneFill = if (high) priorityColor else colors.weekRow.doneMark
+    val doneFill = if (high) priorityColor else Color(TaskCanvasTokens.done.light)
     val label = stringResource(if (done) R.string.task_uncomplete else R.string.widget_complete)
     Row(
         Modifier
@@ -159,7 +158,7 @@ private fun WeekTaskRow(item: TaskItem, onToggle: () -> Unit, onOpen: () -> Unit
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.SemiBold,
             color = timeColor,
-            textAlign = TextAlign.End,
+            textAlign = TextAlign.Start,
             maxLines = 1,
             modifier = Modifier.width((SizeTokens.WEEK_TIME_COLUMN * LocalDensity.current.fontScale).dp)
                 .testTag("week-time:${item.id}"),
@@ -187,13 +186,12 @@ private fun WeekTaskRow(item: TaskItem, onToggle: () -> Unit, onOpen: () -> Unit
             style = MaterialTheme.typography.bodySmall,
             fontWeight = FontWeight.Bold,
             color = titleColor,
-            textDecoration = if (done) TextDecoration.LineThrough else null,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
         // #249: эмодзи остаётся справа, время — в отдельной колонке слева.
-        Text(item.listEmoji, style = MaterialTheme.typography.labelMedium, maxLines = 1, modifier = Modifier.padding(start = spacing.xxs).testTag("week-emoji:${item.id}"))
+        Text(item.listEmoji, style = MaterialTheme.typography.labelMedium, maxLines = 1, modifier = Modifier.padding(start = spacing.xxs).alpha(if (done) TaskCanvasTokens.DONE_EMOJI_ALPHA else 1f).testTag("week-emoji:${item.id}"))
 
     }
 }
