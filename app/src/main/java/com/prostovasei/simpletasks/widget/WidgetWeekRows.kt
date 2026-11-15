@@ -5,7 +5,6 @@ import android.graphics.Typeface
 import android.os.Build
 import android.text.SpannableString
 import android.text.Spanned
-import android.text.style.StrikethroughSpan
 import android.text.style.StyleSpan
 import android.util.TypedValue
 import android.view.View
@@ -17,7 +16,6 @@ import com.prostovasei.simpletasks.designsystem.tokens.ColorTokens
 import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
 import com.prostovasei.simpletasks.designsystem.tokens.ThemedColor
 import com.prostovasei.simpletasks.designsystem.tokens.TaskCanvasTokens
-import com.prostovasei.simpletasks.designsystem.tokens.WeekRowTokens
 import com.prostovasei.simpletasks.domain.model.Priority
 import com.prostovasei.simpletasks.ui.common.TaskItem
 import com.prostovasei.simpletasks.ui.feature.week.WEEK_LENGTH
@@ -115,7 +113,7 @@ object WidgetWeekRows {
 
     /**
      * #249: время слева от выполнения, название и эмодзи справа, без фона строки.
-     * Высокий приоритет фиолетовый; выполненный — бледно-фиолетовый, название зачёркнуто.
+     * Высокий приоритет фиолетовый; выполненный — бледно-фиолетовый, без зачёркивания.
      * Все зависимые от задачи свойства записываются заново для безопасного reapply.
      */
     private fun RemoteViews.slot(context: Context, ids: SlotIds, item: TaskItem, click: Click) {
@@ -123,7 +121,7 @@ object WidgetWeekRows {
         val high = item.priority == Priority.HIGH
         val nodeColor = when {
             done && high -> TaskCanvasTokens.priorityDone
-            done -> WeekRowTokens.doneMark
+            done -> TaskCanvasTokens.done
             high -> TaskCanvasTokens.priority
             else -> ColorTokens.inactive
         }
@@ -157,22 +155,23 @@ object WidgetWeekRows {
         }
         setTextViewText(
             ids.title,
-            if (done) SpannableString(item.title).apply { setSpan(StrikethroughSpan(), 0, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE) } else item.title,
+            item.title,
         )
         taskCanvasColor(
             ids.title,
             "setTextColor",
-            when { high && done -> TaskCanvasTokens.priorityDone; high -> TaskCanvasTokens.priority; done -> ColorTokens.inactive; else -> ColorTokens.textPrimary },
+            when { high && done -> TaskCanvasTokens.priorityDone; high -> TaskCanvasTokens.priority; done -> TaskCanvasTokens.done; else -> ColorTokens.textPrimary },
         )
         // #249: время слева от кружка, эмодзи списка остаётся справа.
         setTextViewText(ids.emoji, item.listEmoji)
+        taskCanvasColor(ids.emoji, "setTextColor", ColorTokens.textPrimary, if (done) TaskCanvasTokens.DONE_EMOJI_ALPHA else 1f)
         val time = item.startTime()
         visible(ids.time, true)
         setTextViewText(ids.time, time.orEmpty())
         taskCanvasColor(
             ids.time,
             "setTextColor",
-            when { high && done -> TaskCanvasTokens.priorityDone; high -> TaskCanvasTokens.priority; done -> ColorTokens.inactive; else -> ColorTokens.textSecondary },
+            when { high && done -> TaskCanvasTokens.priorityDone; high -> TaskCanvasTokens.priority; done -> TaskCanvasTokens.done; else -> ColorTokens.textSecondary },
         )
         // Пустая колонка времени держит кружки выровненными; эмодзи всегда у правого края.
         setViewPadding(ids.plaque, 0, 0, dp(context, SizeTokens.WIDGET_WEEK_INLINE_GAP), 0)

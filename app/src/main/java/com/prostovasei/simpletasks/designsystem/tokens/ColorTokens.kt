@@ -103,7 +103,9 @@ object WeekRowTokens {
 object TaskCanvasTokens {
     /** Неделя, #249: высокий приоритет и его выполненное состояние. */
     val priority = PriorityTokens.high.content
-    val priorityDone = WidgetCheckTokens.high.done
+    val priorityDone = ThemedColor(light = 0xFFDED0EC, dark = 0xFFDED0EC)
+    val done = ThemedColor(light = 0xFFC9CBD0, dark = 0xFFC9CBD0)
+    const val DONE_EMOJI_ALPHA = 0.35f
     val background = ThemedColor(light = 0xFFFFFFFF, dark = 0xFFFFFFFF)
     val divider = ThemedColor(light = 0xFFE8E8EA, dark = 0xFFE8E8EA)
 }

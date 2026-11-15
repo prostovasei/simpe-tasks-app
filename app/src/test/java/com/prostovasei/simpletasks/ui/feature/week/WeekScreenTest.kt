@@ -204,6 +204,8 @@ class WeekScreenTest {
         val time = composeRule.onNodeWithTag("week-time:a1", useUnmergedTree = true).getUnclippedBoundsInRoot()
         val timed = composeRule.onNodeWithTag("week-check:a1").getUnclippedBoundsInRoot()
         val untimed = composeRule.onNodeWithTag("week-check:a2").getUnclippedBoundsInRoot()
+        val day = composeRule.onNodeWithTag("week-date:$monday", useUnmergedTree = true).getUnclippedBoundsInRoot()
+        assertEquals(day.left, time.left)
         assertTrue(time.right <= timed.left)
         assertEquals(timed.left, untimed.left)
         composeRule.onNodeWithTag("week-time:a1", useUnmergedTree = true).performTouchInput { click() }

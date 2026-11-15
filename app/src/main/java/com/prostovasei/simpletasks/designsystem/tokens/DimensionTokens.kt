@@ -324,6 +324,7 @@ object SizeTokens {
      * «пн…вс», кружок «сегодня» — он же кружок у числа в строке даты).
      */
     /** #249: постоянная колонка времени перед кружком. */
+    const val WEEK_EDGE = 2
     const val WEEK_TIME_COLUMN = 34
     const val WEEKVIEW_TASK = 22
     const val WEEKVIEW_TASK_GAP = 3
