@@ -119,6 +119,21 @@ class WidgetScreenshotTest {
     @Config(qualifiers = "+night")
     fun widgetWeekDark() = capture("screenshots/widget_week_dark.png", heightDp = 640, shown = weekModel, scrollable = true)
 
+    @Test
+    fun widgetWeekPriorityStates() {
+        val model = weekModel
+        val week = requireNotNull(model.week)
+        val first = week.days.first().items.first()
+        val day = week.days.first().copy(items = listOf(
+            first.copy(id = "p1", title = "Высокий приоритет", priority = Priority.HIGH, isDone = false),
+            first.copy(id = "p2", title = "Выполненный приоритет", priority = Priority.HIGH, isDone = true),
+            first.copy(id = "p3", title = "Повтор выполнен", priority = Priority.HIGH, isDone = true, isRecurring = true),
+            first.copy(id = "p4", title = "Без времени", priority = Priority.HIGH, isDone = false, due = DueText(DayLabel.Today, null)),
+        ))
+        capture("screenshots/widget_week_priority_states.png", heightDp = 640,
+            shown = model.copy(week = week.copy(days = listOf(day) + week.days.drop(1))), scrollable = true)
+    }
+
     private val weekModel: WidgetModel
         get() {
             val monday = today.minusDays(4)

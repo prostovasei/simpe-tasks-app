@@ -220,19 +220,20 @@ class WidgetWeekTest {
      * (дубль не убирается); день недели капсом.
      */
     @Test
-    fun listEmojiBeforeTimeAndUppercaseWeekday() {
+    fun timeBeforeCheckAndEmojiAtEndWithUppercaseWeekday() {
         val inbox = TaskItem("i1", "📥Разобрать", Priority.NONE, DueText(DayLabel.Today, "09:00"), "Входящие", "📥", isInboxList = true)
         val monday = list(week { day -> if (day == 0) listOf(item("w1", "Синк", "11:00"), inbox) else emptyList() }).rows()[0]
         val slots = WeekIds.LEFT.slots
         assertEquals("💼", monday.findViewById<TextView>(slots[0].emoji).text.toString())
         assertEquals("📥", monday.findViewById<TextView>(slots[1].emoji).text.toString())
         assertEquals("📥Разобрать", monday.findViewById<TextView>(slots[1].title).text.toString())
-        // Эмодзи стоит между названием и временем.
+        // #249: время → кружок → название → эмодзи.
         // Итерация 50: строка плашки — под зоной нажатия, первым слоем.
         val line = monday.findViewById<ViewGroup>(slots[0].plaque).getChildAt(0) as ViewGroup
         val order = (0 until line.childCount).map { line.getChildAt(it).id }
         assertTrue(order.indexOf(slots[0].title) < order.indexOf(slots[0].emoji))
-        assertTrue(order.indexOf(slots[0].emoji) < order.indexOf(slots[0].time))
+        assertTrue(order.indexOf(slots[0].time) < order.indexOf(slots[0].check))
+        assertTrue(order.indexOf(slots[0].check) < order.indexOf(slots[0].title))
         assertEquals("ПН", monday.findViewById<TextView>(WeekIds.LEFT.weekday).text.toString())
         assertEquals("ВТ", monday.findViewById<TextView>(WeekIds.RIGHT.weekday).text.toString())
     }

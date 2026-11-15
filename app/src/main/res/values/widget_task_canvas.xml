@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- TaskCanvasTokens / ColorTokens light, #247. Fixed across Android themes. -->
 <resources>
-    <color name="widget_task_background">#FFFAFAFA</color>
+    <color name="widget_task_background">#FFFFFFFF</color>
     <color name="widget_task_divider">#FFE8E8EA</color>
     <color name="widget_task_accent">#FF16171D</color>
     <color name="widget_task_surface">#FFFFFFFF</color>

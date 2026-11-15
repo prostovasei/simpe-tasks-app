@@ -1,4 +1,4 @@
-"""Генератор разметки вида «Неделя» в виджете (итерация 45; 48 — мельче дата и название, эмодзи списка слева от времени, макет week_tune.py; 50 — зона нажатия кружка ~40 dp поверх начала строки, макет iteration50.py; 0.46.0 — компактные строки, календарь без месяца и стрелок, строки недели, строки задач
+"""Генератор разметки вида «Неделя» в виджете (итерация 45; 48 — мельче дата и название, время слева от кружка (#249), эмодзи справа, макет week_tune.py; 50 — зона нажатия кружка ~40 dp поверх начала строки, макет iteration50.py; 0.46.0 — компактные строки, календарь без месяца и стрелок, строки недели, строки задач
 и недели календаря делят высоту поровну — weight, а не размер от рабочего стола): ячейки дней, мини-календарь и строки ленты + таблица id для Kotlin.
 
 Ячейка и календарь состоят из десятков элементов с уникальными id (в RemoteViews id внутри одной разметки не должны повторяться, а левая и правая
@@ -31,6 +31,15 @@ def cell(p):
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
+            <TextView
+                android:id="@+id/{p}_s{i}_time"
+                android:layout_width="@dimen/widget_week_time_column"
+                android:layout_height="wrap_content"
+                android:gravity="end"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textColor="@color/widget_text_secondary"
+                android:textSize="10sp" />
             <FrameLayout
                 android:id="@+id/{p}_s{i}_check"
                 android:layout_width="@dimen/widget_week_task"
@@ -75,26 +84,18 @@ def cell(p):
                 android:maxLines="1"
                 android:textSize="10sp" />
 
-            <TextView
-                android:id="@+id/{p}_s{i}_time"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/widget_week_inline_gap"
-                android:layout_marginEnd="@dimen/widget_week_inline_gap"
-                android:maxLines="1"
-                android:textColor="@color/widget_text_secondary"
-                android:textSize="10sp" />
         </LinearLayout>
 
             <!-- Итерация 50: невидимая зона «выполнить» поверх кружка и начала названия — кружок и название на месте. -->
             <FrameLayout
                 android:id="@+id/{p}_s{i}_hit"
+                android:layout_marginStart="@dimen/widget_week_time_column"
                 android:layout_width="@dimen/widget_week_hit"
                 android:layout_height="match_parent" />
         </FrameLayout>
 '''
     return f'''<?xml version="1.0" encoding="utf-8"?>
-<!-- Сгенерировано design/tools/gen_widget_week.py (итерация 45; 48 — строка даты по высоте текста, эмодзи списка слева от времени): ячейка дня вида «Неделя» в виджете. Не править руками. -->
+<!-- Сгенерировано design/tools/gen_widget_week.py (итерация 45; 48 — строка даты по высоте текста, время слева от кружка (#249), эмодзи справа): ячейка дня вида «Неделя» в виджете. Не править руками. -->
 <LinearLayout {NS}
     tools:ignore="UselessLeaf"
     android:id="@+id/{p}_root"
