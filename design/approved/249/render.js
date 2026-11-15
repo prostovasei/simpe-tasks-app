@@ -1,0 +1,3 @@
+// На основе approved/241/render.js, альбом из фактических Android-снимков.
+const {chromium}=require('playwright');const fs=require('fs'),path=require('path');
+(async()=>{const b=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',args:['--no-sandbox','--disable-dev-shm-usage']});const p=await b.newPage({viewport:{width:1350,height:1200}});await p.setContent(fs.readFileSync(path.join(__dirname,'screens.html'),'utf8'));for(let i=0;i<await p.locator('.sec').count();i++)await p.locator('.sec').nth(i).screenshot({path:path.join(__dirname,`screens-${i+1}.png`)});await b.close()})();

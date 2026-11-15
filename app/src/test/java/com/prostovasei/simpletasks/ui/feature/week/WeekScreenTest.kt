@@ -8,6 +8,8 @@ import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.click
 import androidx.compose.ui.test.performClick
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
@@ -194,6 +196,33 @@ class WeekScreenTest {
         show()
         composeRule.onNodeWithTag("week-day-open:${monday.plusDays(1)}").performClick()
         assertEquals(listOf(monday.plusDays(1)), openedDays)
+    }
+
+    @Test
+    fun timeColumnPrecedesToggleAndUntimedTasksStayAligned() {
+        show()
+        val time = composeRule.onNodeWithTag("week-time:a1", useUnmergedTree = true).getUnclippedBoundsInRoot()
+        val timed = composeRule.onNodeWithTag("week-check:a1").getUnclippedBoundsInRoot()
+        val untimed = composeRule.onNodeWithTag("week-check:a2").getUnclippedBoundsInRoot()
+        assertTrue(time.right <= timed.left)
+        assertEquals(timed.left, untimed.left)
+        composeRule.onNodeWithTag("week-time:a1", useUnmergedTree = true).performTouchInput { click() }
+        assertEquals(listOf("a1"), opened)
+        assertTrue(intents.isEmpty())
+    }
+
+    @Test
+    fun weekPriorityStates() {
+        val state = weekState.copy(days = weekState.days.mapIndexed { i, day ->
+            if (i == 0) day.copy(items = listOf(
+                item("p1", "Высокий приоритет", "10:00", Priority.HIGH),
+                item("p2", "Выполненный приоритет", "11:00", Priority.HIGH, done = true),
+                item("p3", "Повтор выполнен", "12:00", Priority.HIGH, done = true).copy(isRecurring = true),
+                item("p4", "Без времени", priority = Priority.HIGH),
+            )) else day
+        })
+        show(state = state)
+        composeRule.onNodeWithTag("week-screen").captureRoboImage("screenshots/week_priority_states.png")
     }
 
     @Test

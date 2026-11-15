@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
@@ -24,12 +25,15 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -37,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.components.RepeatMark
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
+import com.prostovasei.simpletasks.designsystem.tokens.TaskCanvasTokens
 import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
 import com.prostovasei.simpletasks.domain.model.Priority
 import com.prostovasei.simpletasks.ui.common.TaskItem
@@ -46,7 +51,7 @@ import java.util.Locale
 
 /**
  * Ячейка дня в виде «Неделя» (итерация 44; 0.46.0 — макет `VariantK2`; 0.55 — как в виджете: «ПН 9» капсом, эмодзи списка слева от времени): строка даты (у сегодня число в кружке цвета акцента)
- * и задачи компактными строками: кружок приоритета, название, время справа. Высота ячейки задана снаружи (все ячейки недели одинаковые), поэтому
+ * и задачи компактными строками: время, кружок приоритета, название, эмодзи справа. Высота ячейки задана снаружи (все ячейки недели одинаковые), поэтому
  * показывается столько плашек, сколько влезает; остальное — «+N» справа в строке даты. Нажатие на строку даты открывает полный
  * список дня. Правая и нижняя линии — сетка между ячейками.
  */
@@ -123,9 +128,9 @@ private fun WeekDayHeader(date: LocalDate, isToday: Boolean, hidden: Int, onClic
 }
 
 /**
- * Строка задачи в ячейке (0.46.0, `VariantK2`; итерация 47 — `VariantH2`): фон — бледный фиолетовый у высокого приоритета, иначе белый;
- * кружок приоритета (нажатие — «выполнено» или «вернуть»), у повторяющейся — знак повтора; название, время справа (просрочка не красная).
- * Выполненная — серая и зачёркнутая, кружок залит тусклым цветом приоритета; будущий повтор — как обычная, но без нажатия на знак.
+ * Строка задачи в ячейке (0.46.0, `VariantK2`; итерация 47 — `VariantH2`): белый фон без плашек;
+ * кружок приоритета (нажатие — «выполнено» или «вернуть»), у повторяющейся — знак повтора; время слева и название фиолетовые у высокого приоритета (просрочка не красная).
+ * Выполненная — бледно-фиолетовая у высокого приоритета, иначе серая; название зачёркнуто, кружок залит тусклым цветом приоритета; будущий повтор — как обычная, но без нажатия на знак.
  */
 @Composable
 private fun WeekTaskRow(item: TaskItem, onToggle: () -> Unit, onOpen: () -> Unit) {
@@ -133,8 +138,11 @@ private fun WeekTaskRow(item: TaskItem, onToggle: () -> Unit, onOpen: () -> Unit
     val spacing = AppTheme.spacing
     val done = item.showsDone
     val high = item.priority == Priority.HIGH
-    val ring = if (high) colors.checkRings.high else colors.inactive
-    val doneFill = if (high) colors.checkRings.highDone else colors.weekRow.doneMark
+    val priorityColor = Color(if (done) TaskCanvasTokens.priorityDone.light else TaskCanvasTokens.priority.light)
+    val titleColor = if (high) priorityColor else if (done) colors.inactive else colors.textPrimary
+    val timeColor = if (high) priorityColor else if (done) colors.inactive else colors.textSecondary
+    val ring = if (high) priorityColor else colors.inactive
+    val doneFill = if (high) priorityColor else colors.weekRow.doneMark
     val label = stringResource(if (done) R.string.task_uncomplete else R.string.widget_complete)
     Row(
         Modifier
@@ -146,6 +154,16 @@ private fun WeekTaskRow(item: TaskItem, onToggle: () -> Unit, onOpen: () -> Unit
             .testTag("week-task:${item.id}"),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        Text(
+            item.startTime().orEmpty(),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = timeColor,
+            textAlign = TextAlign.End,
+            maxLines = 1,
+            modifier = Modifier.width((SizeTokens.WEEK_TIME_COLUMN * LocalDensity.current.fontScale).dp)
+                .testTag("week-time:${item.id}"),
+        )
         // Зона нажатия кружка — вся высота плашки, сам кружок — WEEKVIEW_CHECK.
         Box(
             Modifier
@@ -168,24 +186,14 @@ private fun WeekTaskRow(item: TaskItem, onToggle: () -> Unit, onOpen: () -> Unit
             item.title,
             style = MaterialTheme.typography.bodySmall,
             fontWeight = FontWeight.Bold,
-            color = if (done) colors.inactive else colors.textPrimary,
+            color = titleColor,
             textDecoration = if (done) TextDecoration.LineThrough else null,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
-        // Итерация 55 (как в виджете, 0.48): эмодзи списка слева от времени, время у края плашки.
+        // #249: эмодзи остаётся справа, время — в отдельной колонке слева.
         Text(item.listEmoji, style = MaterialTheme.typography.labelMedium, maxLines = 1, modifier = Modifier.padding(start = spacing.xxs).testTag("week-emoji:${item.id}"))
-        item.startTime()?.let {
-            Text(
-                it,
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.SemiBold,
-                // Итерация 47 (решение PM): прошедшее время в «Неделе» не красное.
-                color = if (done) colors.inactive else colors.textSecondary,
-                maxLines = 1,
-                modifier = Modifier.padding(start = spacing.xxs, end = spacing.xxs),
-            )
-        } ?: Box(Modifier.size(spacing.xxs))
+
     }
 }

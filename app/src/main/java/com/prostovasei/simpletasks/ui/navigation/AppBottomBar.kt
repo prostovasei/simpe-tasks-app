@@ -78,7 +78,7 @@ fun AppBottomBar(
     val spacing = AppTheme.spacing
     val sizes = AppTheme.sizes
     var menu by remember { mutableStateOf(false) }
-    Column(modifier.fillMaxWidth().background(colors.surface).testTag(TAG_APP_BAR)) {
+    Column(modifier.fillMaxWidth().background(colors.background).testTag(TAG_APP_BAR)) {
         Box(Modifier.fillMaxWidth().height(sizes.hairline).background(colors.divider))
         Row(
             verticalAlignment = Alignment.CenterVertically,

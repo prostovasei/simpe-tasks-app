@@ -7,6 +7,10 @@ import android.widget.TextView
 import androidx.test.core.app.ApplicationProvider
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.tokens.ColorTokens
+import com.prostovasei.simpletasks.designsystem.tokens.TaskCanvasTokens
+import android.text.Spanned
+import android.text.style.StrikethroughSpan
+import org.junit.Assert.assertTrue
 import com.prostovasei.simpletasks.domain.model.Priority
 import com.prostovasei.simpletasks.ui.common.DayLabel
 import com.prostovasei.simpletasks.ui.common.DueText
@@ -54,15 +58,25 @@ class TaskCanvasWidgetTest {
     @Test
     fun weekPriorityChangesKeepFlatRowsAndLightText() {
         val start = today.minusDays(6)
-        fun views(priority: Priority) = WidgetWeekRows.views(context,
-            WidgetWeek(start, YearMonth.from(today), (0L..6).map { WeekDay(start.plusDays(it), if (it == 0L) listOf(item(priority)) else emptyList()) }, today),
+        fun views(priority: Priority, done: Boolean = false, timed: Boolean = true) = WidgetWeekRows.views(context,
+            WidgetWeek(start, YearMonth.from(today), (0L..6).map { WeekDay(start.plusDays(it), if (it == 0L) listOf(item(priority).copy(isDone = done, due = DueText(DayLabel.Today, if (timed) "10:00" else null))) else emptyList()) }, today),
             androidx.compose.ui.unit.DpSize.Unspecified, WidgetWeekRows.Click { _, _, _ -> })[0]
         val high = views(Priority.HIGH)
         val root = high.apply(context, FrameLayout(context))
         val slot = WeekIds.LEFT.slots.first()
         assertNull(root.findViewById<View>(slot.plaque).background)
-        assertEquals(ColorTokens.textPrimary.light.toInt(), root.findViewById<TextView>(slot.title).currentTextColor)
-        views(Priority.NONE).reapply(context, root)
+        assertEquals(TaskCanvasTokens.priority.light.toInt(), root.findViewById<TextView>(slot.title).currentTextColor)
+        assertEquals(TaskCanvasTokens.priority.light.toInt(), root.findViewById<TextView>(slot.time).currentTextColor)
+        views(Priority.HIGH, done = true).reapply(context, root)
+        val title = root.findViewById<TextView>(slot.title)
+        assertEquals(TaskCanvasTokens.priorityDone.light.toInt(), title.currentTextColor)
+        assertEquals(TaskCanvasTokens.priorityDone.light.toInt(), root.findViewById<TextView>(slot.time).currentTextColor)
+        assertTrue((title.text as Spanned).getSpans(0, title.length(), StrikethroughSpan::class.java).isNotEmpty())
+        views(Priority.NONE, timed = false).reapply(context, root)
+        assertEquals(ColorTokens.textPrimary.light.toInt(), title.currentTextColor)
+        assertEquals("", root.findViewById<TextView>(slot.time).text.toString())
+        assertEquals(View.VISIBLE, root.findViewById<View>(slot.time).visibility)
+        assertTrue(title.text !is Spanned || (title.text as Spanned).getSpans(0, title.length(), StrikethroughSpan::class.java).isEmpty())
         assertNull(root.findViewById<View>(slot.plaque).background)
     }
 }

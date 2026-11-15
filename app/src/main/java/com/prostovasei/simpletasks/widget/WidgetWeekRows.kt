@@ -16,8 +16,8 @@ import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.tokens.ColorTokens
 import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
 import com.prostovasei.simpletasks.designsystem.tokens.ThemedColor
+import com.prostovasei.simpletasks.designsystem.tokens.TaskCanvasTokens
 import com.prostovasei.simpletasks.designsystem.tokens.WeekRowTokens
-import com.prostovasei.simpletasks.designsystem.tokens.WidgetCheckTokens
 import com.prostovasei.simpletasks.domain.model.Priority
 import com.prostovasei.simpletasks.ui.common.TaskItem
 import com.prostovasei.simpletasks.ui.feature.week.WEEK_LENGTH
@@ -114,17 +114,17 @@ object WidgetWeekRows {
     }
 
     /**
-     * Строка задачи в ячейке (0.46.0, `VariantK2`; итерация 47 — `VariantH2`): фон — бледный фиолетовый у высокого приоритета, иначе
-     * белый; у повторяющейся — знак повтора вместо кружка; выполненная — серая и зачёркнутая, кружок залит тусклым цветом приоритета;
-     * будущий повтор — как обычная, но без нажатия на знак; просроченное время не красное. Всё, что зависит от задачи, пишется заново.
+     * #249: время слева от выполнения, название и эмодзи справа, без фона строки.
+     * Высокий приоритет фиолетовый; выполненный — бледно-фиолетовый, название зачёркнуто.
+     * Все зависимые от задачи свойства записываются заново для безопасного reapply.
      */
     private fun RemoteViews.slot(context: Context, ids: SlotIds, item: TaskItem, click: Click) {
         val done = item.showsDone
         val high = item.priority == Priority.HIGH
         val nodeColor = when {
-            done && high -> WidgetCheckTokens.high.done
+            done && high -> TaskCanvasTokens.priorityDone
             done -> WeekRowTokens.doneMark
-            high -> WidgetCheckTokens.high.ring
+            high -> TaskCanvasTokens.priority
             else -> ColorTokens.inactive
         }
         setInt(ids.plaque, "setBackgroundResource", 0)
@@ -162,20 +162,20 @@ object WidgetWeekRows {
         taskCanvasColor(
             ids.title,
             "setTextColor",
-            if (done) ColorTokens.inactive else ColorTokens.textPrimary,
+            when { high && done -> TaskCanvasTokens.priorityDone; high -> TaskCanvasTokens.priority; done -> ColorTokens.inactive; else -> ColorTokens.textPrimary },
         )
-        // Эмодзи списка слева от времени (итерация 48, вариант В — решение PM): у каждой задачи, и у «Входящих»; эмодзи в названии не убирается.
+        // #249: время слева от кружка, эмодзи списка остаётся справа.
         setTextViewText(ids.emoji, item.listEmoji)
         val time = item.startTime()
-        visible(ids.time, time != null)
+        visible(ids.time, true)
         setTextViewText(ids.time, time.orEmpty())
         taskCanvasColor(
             ids.time,
             "setTextColor",
-            if (done) ColorTokens.inactive else ColorTokens.textSecondary,
+            when { high && done -> TaskCanvasTokens.priorityDone; high -> TaskCanvasTokens.priority; done -> ColorTokens.inactive; else -> ColorTokens.textSecondary },
         )
-        // Без времени крайний справа — эмодзи: тот же отступ до края плашки, что у времени (итерация 48 — минимальный).
-        setViewPadding(ids.plaque, 0, 0, if (time == null) dp(context, SizeTokens.WIDGET_WEEK_INLINE_GAP) else 0, 0)
+        // Пустая колонка времени держит кружки выровненными; эмодзи всегда у правого края.
+        setViewPadding(ids.plaque, 0, 0, dp(context, SizeTokens.WIDGET_WEEK_INLINE_GAP), 0)
         with(click) { set(ids.plaque, WidgetClicks.OPEN, item.taskId) }
     }
 

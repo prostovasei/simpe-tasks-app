@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Сгенерировано design/tools/gen_widget_week.py (итерация 45; 48 — строка даты по высоте текста, эмодзи списка слева от времени): ячейка дня вида «Неделя» в виджете. Не править руками. -->
+<!-- Сгенерировано design/tools/gen_widget_week.py (итерация 45; 48 — строка даты по высоте текста, время слева от кружка (#249), эмодзи справа): ячейка дня вида «Неделя» в виджете. Не править руками. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     tools:ignore="UselessLeaf"
@@ -76,6 +76,15 @@
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
+            <TextView
+                android:id="@+id/wr_s1_time"
+                android:layout_width="@dimen/widget_week_time_column"
+                android:layout_height="wrap_content"
+                android:gravity="end"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textColor="@color/widget_text_secondary"
+                android:textSize="10sp" />
             <FrameLayout
                 android:id="@+id/wr_s1_check"
                 android:layout_width="@dimen/widget_week_task"
@@ -120,20 +129,12 @@
                 android:maxLines="1"
                 android:textSize="10sp" />
 
-            <TextView
-                android:id="@+id/wr_s1_time"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/widget_week_inline_gap"
-                android:layout_marginEnd="@dimen/widget_week_inline_gap"
-                android:maxLines="1"
-                android:textColor="@color/widget_text_secondary"
-                android:textSize="10sp" />
         </LinearLayout>
 
             <!-- Итерация 50: невидимая зона «выполнить» поверх кружка и начала названия — кружок и название на месте. -->
             <FrameLayout
                 android:id="@+id/wr_s1_hit"
+                android:layout_marginStart="@dimen/widget_week_time_column"
                 android:layout_width="@dimen/widget_week_hit"
                 android:layout_height="match_parent" />
         </FrameLayout>
@@ -153,6 +154,15 @@
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
+            <TextView
+                android:id="@+id/wr_s2_time"
+                android:layout_width="@dimen/widget_week_time_column"
+                android:layout_height="wrap_content"
+                android:gravity="end"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textColor="@color/widget_text_secondary"
+                android:textSize="10sp" />
             <FrameLayout
                 android:id="@+id/wr_s2_check"
                 android:layout_width="@dimen/widget_week_task"
@@ -197,20 +207,12 @@
                 android:maxLines="1"
                 android:textSize="10sp" />
 
-            <TextView
-                android:id="@+id/wr_s2_time"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/widget_week_inline_gap"
-                android:layout_marginEnd="@dimen/widget_week_inline_gap"
-                android:maxLines="1"
-                android:textColor="@color/widget_text_secondary"
-                android:textSize="10sp" />
         </LinearLayout>
 
             <!-- Итерация 50: невидимая зона «выполнить» поверх кружка и начала названия — кружок и название на месте. -->
             <FrameLayout
                 android:id="@+id/wr_s2_hit"
+                android:layout_marginStart="@dimen/widget_week_time_column"
                 android:layout_width="@dimen/widget_week_hit"
                 android:layout_height="match_parent" />
         </FrameLayout>
@@ -230,6 +232,15 @@
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
+            <TextView
+                android:id="@+id/wr_s3_time"
+                android:layout_width="@dimen/widget_week_time_column"
+                android:layout_height="wrap_content"
+                android:gravity="end"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textColor="@color/widget_text_secondary"
+                android:textSize="10sp" />
             <FrameLayout
                 android:id="@+id/wr_s3_check"
                 android:layout_width="@dimen/widget_week_task"
@@ -274,20 +285,12 @@
                 android:maxLines="1"
                 android:textSize="10sp" />
 
-            <TextView
-                android:id="@+id/wr_s3_time"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/widget_week_inline_gap"
-                android:layout_marginEnd="@dimen/widget_week_inline_gap"
-                android:maxLines="1"
-                android:textColor="@color/widget_text_secondary"
-                android:textSize="10sp" />
         </LinearLayout>
 
             <!-- Итерация 50: невидимая зона «выполнить» поверх кружка и начала названия — кружок и название на месте. -->
             <FrameLayout
                 android:id="@+id/wr_s3_hit"
+                android:layout_marginStart="@dimen/widget_week_time_column"
                 android:layout_width="@dimen/widget_week_hit"
                 android:layout_height="match_parent" />
         </FrameLayout>
@@ -307,6 +310,15 @@
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
+            <TextView
+                android:id="@+id/wr_s4_time"
+                android:layout_width="@dimen/widget_week_time_column"
+                android:layout_height="wrap_content"
+                android:gravity="end"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textColor="@color/widget_text_secondary"
+                android:textSize="10sp" />
             <FrameLayout
                 android:id="@+id/wr_s4_check"
                 android:layout_width="@dimen/widget_week_task"
@@ -351,20 +363,12 @@
                 android:maxLines="1"
                 android:textSize="10sp" />
 
-            <TextView
-                android:id="@+id/wr_s4_time"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/widget_week_inline_gap"
-                android:layout_marginEnd="@dimen/widget_week_inline_gap"
-                android:maxLines="1"
-                android:textColor="@color/widget_text_secondary"
-                android:textSize="10sp" />
         </LinearLayout>
 
             <!-- Итерация 50: невидимая зона «выполнить» поверх кружка и начала названия — кружок и название на месте. -->
             <FrameLayout
                 android:id="@+id/wr_s4_hit"
+                android:layout_marginStart="@dimen/widget_week_time_column"
                 android:layout_width="@dimen/widget_week_hit"
                 android:layout_height="match_parent" />
         </FrameLayout>
@@ -384,6 +388,15 @@
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
+            <TextView
+                android:id="@+id/wr_s5_time"
+                android:layout_width="@dimen/widget_week_time_column"
+                android:layout_height="wrap_content"
+                android:gravity="end"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textColor="@color/widget_text_secondary"
+                android:textSize="10sp" />
             <FrameLayout
                 android:id="@+id/wr_s5_check"
                 android:layout_width="@dimen/widget_week_task"
@@ -428,20 +441,12 @@
                 android:maxLines="1"
                 android:textSize="10sp" />
 
-            <TextView
-                android:id="@+id/wr_s5_time"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/widget_week_inline_gap"
-                android:layout_marginEnd="@dimen/widget_week_inline_gap"
-                android:maxLines="1"
-                android:textColor="@color/widget_text_secondary"
-                android:textSize="10sp" />
         </LinearLayout>
 
             <!-- Итерация 50: невидимая зона «выполнить» поверх кружка и начала названия — кружок и название на месте. -->
             <FrameLayout
                 android:id="@+id/wr_s5_hit"
+                android:layout_marginStart="@dimen/widget_week_time_column"
                 android:layout_width="@dimen/widget_week_hit"
                 android:layout_height="match_parent" />
         </FrameLayout>
@@ -461,6 +466,15 @@
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
+            <TextView
+                android:id="@+id/wr_s6_time"
+                android:layout_width="@dimen/widget_week_time_column"
+                android:layout_height="wrap_content"
+                android:gravity="end"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textColor="@color/widget_text_secondary"
+                android:textSize="10sp" />
             <FrameLayout
                 android:id="@+id/wr_s6_check"
                 android:layout_width="@dimen/widget_week_task"
@@ -505,20 +519,12 @@
                 android:maxLines="1"
                 android:textSize="10sp" />
 
-            <TextView
-                android:id="@+id/wr_s6_time"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/widget_week_inline_gap"
-                android:layout_marginEnd="@dimen/widget_week_inline_gap"
-                android:maxLines="1"
-                android:textColor="@color/widget_text_secondary"
-                android:textSize="10sp" />
         </LinearLayout>
 
             <!-- Итерация 50: невидимая зона «выполнить» поверх кружка и начала названия — кружок и название на месте. -->
             <FrameLayout
                 android:id="@+id/wr_s6_hit"
+                android:layout_marginStart="@dimen/widget_week_time_column"
                 android:layout_width="@dimen/widget_week_hit"
                 android:layout_height="match_parent" />
         </FrameLayout>
