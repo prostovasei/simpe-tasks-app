@@ -46,6 +46,10 @@ data class Operation(
     val comment: String?,
     val date: LocalDate,
     val deletedOn: LocalDate? = null,
+    /** Значки для плашки (#245): эмодзи категории (null — не выбран), счёта и счёта назначения (у счёта без своего — значок его типа). */
+    val categoryEmoji: String? = null,
+    val accountEmoji: String = "",
+    val toAccountEmoji: String? = null,
 )
 
 /** Поля операции для создания и правки. */

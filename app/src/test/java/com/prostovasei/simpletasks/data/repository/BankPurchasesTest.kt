@@ -73,7 +73,7 @@ class BankPurchasesTest : DatabaseTest() {
         val account = card()
         val purchase = bank.onPurchase("k1", 68_000, at)
         assertNotNull(purchase)
-        assertEquals(PendingPurchase(purchase!!.id, 68_000, account, "Карта", at, day), purchase)
+        assertEquals(PendingPurchase(purchase!!.id, 68_000, account, "Карта", at, day, accountEmoji = "💳"), purchase)
         assertEquals(listOf(purchase), shown)
         // То же уведомление ещё раз (обновлено или показано повторно) — новой покупки нет (§4.6).
         assertNull(bank.onPurchase("k1", 68_000, at))

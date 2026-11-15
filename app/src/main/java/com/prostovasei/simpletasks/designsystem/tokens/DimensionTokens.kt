@@ -103,6 +103,8 @@ object SizeTokens {
     const val APP_BAR_PAGE_W = 64
     const val APP_BAR_OUTLINE = 2
     const val FINANCE_MARK = 28
+    /** Серый кружок «?» у операции без категории (#245). */
+    const val FINANCE_UNKNOWN_MARK = 26
     const val FINANCE_BAR_SIDE = 56
     const val OPERATION_ROW = 52
     const val NAV_SHADOW = 10

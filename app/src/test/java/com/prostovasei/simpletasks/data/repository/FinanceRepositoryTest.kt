@@ -29,6 +29,27 @@ import java.time.YearMonth
 class FinanceRepositoryTest : DatabaseTest() {
     private val finance by lazy { RoomFinanceRepository(db, time, UuidIdGenerator()) }
 
+    /** #245: операция несёт значки для плашки — эмодзи категории и счетов (у счёта без своего — значок его типа). */
+    @Test
+    fun operationCarriesIconsOfCategoryAndAccounts() = runTest {
+        val card = finance.createAccount(AccountDraft("Карта", AccountType.CARD, null, 0))
+        val cash = finance.createAccount(AccountDraft("Наличные", AccountType.CASH, "💰", 0))
+        val food = finance.createCategory("Еда", OperationKind.EXPENSE, "🍽")
+        val day = LocalDate.parse("2026-11-14")
+        finance.createOperation(OperationDraft(OperationKind.EXPENSE, 40_000, card, categoryId = food, place = "Пятёрочка", comment = "к ужину", date = day))
+        finance.createOperation(OperationDraft(OperationKind.TRANSFER, 500_000, card, toAccountId = cash, date = day))
+        finance.createOperation(OperationDraft(OperationKind.EXPENSE, 10_000, cash, date = day))
+
+        val ops = finance.observeOperations().first()
+        val expense = ops.single { it.categoryName == "Еда" }
+        assertEquals(Triple("🍽", "💳", null), Triple(expense.categoryEmoji, expense.accountEmoji, expense.toAccountEmoji))
+        val transfer = ops.single { it.kind == OperationKind.TRANSFER }
+        assertEquals("💳" to "💰", transfer.accountEmoji to transfer.toAccountEmoji)
+        val none = ops.single { it.kind == OperationKind.EXPENSE && it.categoryName == null }
+        assertNull(none.categoryEmoji)
+        assertEquals("💰", none.accountEmoji)
+    }
+
     @Test
     fun accountsAreCreatedInOrderWithBalance() = runTest {
         assertTrue(finance.observeAccounts().first().isEmpty())

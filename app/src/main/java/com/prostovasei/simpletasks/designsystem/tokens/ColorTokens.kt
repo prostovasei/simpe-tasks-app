@@ -45,6 +45,9 @@ object ColorTokens {
     /** Опасные действия (удаление). Совпадает с [overdue], но означает другое — отдельная роль. */
     val danger = ThemedColor(light = 0xFFC62828, dark = 0xFFFF6B6B)
 
+    /** Доходы в списке операций (#245): сумма со знаком «+». */
+    val income = ThemedColor(light = 0xFF1F8F4E, dark = 0xFF4CC38A)
+
     /** Затемнение под всплывающим окном (выбор списка виджета). */
     val scrim = ThemedColor(light = 0x66000000, dark = 0x99000000)
 }

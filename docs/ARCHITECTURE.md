@@ -1567,3 +1567,16 @@ PM поменял порядок: шторка для созданных зад�
   на «Неделю» в нижней панели (`AppBottomBar.onPageLongClick`, `TasksBottomBar.onWeekFilter`, `WeekFilterViewModel`); в виджете — `WidgetConfigActivity`.
 - **Убрано.** Окно «Показывать в виджете» и режим виджета «один список»: `WidgetFilter.ProjectList`, `WidgetTab`, `WidgetModels.tabs`, `WidgetPicker`. Прежний сохранённый выбор списка читается как «Все».
 - **Тесты.** `WeekFilterTest`, `WeekViewModelTest.filterHidesAndReturnsTasks`, `WidgetUiTest` (окно фильтра, снимок `widget_filter_light`), `ScreensUiTest.longPressOnWeekOpensFilter`, `WidgetModelTest`.
+
+### 4.74. Плашки операций со значками (0.68.0, #245)
+
+Макеты — `design/approved/245/`. Схема БД не менялась: значки берутся запросом (JOIN) из счетов и категорий.
+
+- **Данные.** `OperationRow` (запрос `FinanceOperationDao.ROWS`) получил `category_emoji`, `account_emoji/type`, `to_account_emoji/type`; `Operation` — `categoryEmoji`, `accountEmoji`, `toAccountEmoji`
+  (у счёта без своего эмодзи — значок его типа, `AccountType.defaultEmoji`). `PendingPurchase.accountEmoji` — то же для «Не разобрано».
+- **Плашка.** `OperationLine` (`ui/feature/finance/OperationLine.kt`) — одна для «Операций», «Корзины» и (значок `UnknownMark`) «Не разобрано»: слева значок (`OperationMark`: эмодзи категории, «⇄» у перевода, «⚖» у корректировки,
+  серый кружок «?» без категории), название (`lineTitle`: категория / «💳 Карта → 👛 Наличные» / счёт), серая строка (`lineDetails`: «📍 место · 💳 счёт», у перевода и корректировки — подпись), «💬» при комментарии, сумма.
+  Цвет суммы: расход — основной, доход — `colors.income` (новый токен), перевод и корректировка — серый. В корзине к строке деталей добавлены день операции и день удаления, справа — кнопки.
+- **Итог дня.** В заголовке дня «Операций» справа — сумма расходов дня серым (`TAG_OPERATIONS_DAY_TOTAL`); переводы, корректировки и доходы не входят.
+- **Токены.** `ColorTokens.income`, `SizeTokens.FINANCE_UNKNOWN_MARK`.
+- **Тесты.** `FinanceScreenTest.operationLineShowsIconPlaceAccountCommentAndDayTotal`, `FinanceRepositoryTest.operationCarriesIconsOfCategoryAndAccounts`, `BankPurchasesTest`.

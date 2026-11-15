@@ -10,6 +10,7 @@ import com.prostovasei.simpletasks.domain.bank.BankPurchaseNotifier
 import com.prostovasei.simpletasks.domain.bank.BankSettingsStore
 import com.prostovasei.simpletasks.domain.bank.NotificationAccess
 import com.prostovasei.simpletasks.domain.model.finance.BankSettings
+import com.prostovasei.simpletasks.domain.model.finance.AccountType
 import com.prostovasei.simpletasks.domain.model.finance.DuplicateHint
 import com.prostovasei.simpletasks.domain.model.finance.OperationDraft
 import com.prostovasei.simpletasks.domain.model.finance.OperationKind
@@ -103,6 +104,7 @@ class RoomBankPurchases @Inject constructor(
         amount = purchase.amount,
         accountId = purchase.accountId,
         accountName = accountName,
+        accountEmoji = accountEmoji ?: AccountType.fromCode(accountType).defaultEmoji,
         postedAt = Instant.ofEpochMilli(purchase.postedAt),
         date = LocalDate.ofEpochDay(purchase.date),
         duplicate = if (duplicateId != null && duplicateAmount != null && duplicateDate != null) {

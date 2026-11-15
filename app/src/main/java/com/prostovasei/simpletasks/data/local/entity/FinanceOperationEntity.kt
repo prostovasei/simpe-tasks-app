@@ -68,4 +68,9 @@ data class OperationRow(
     @ColumnInfo(name = "account_name") val accountName: String,
     @ColumnInfo(name = "to_account_name") val toAccountName: String?,
     @ColumnInfo(name = "category_name") val categoryName: String?,
+    @ColumnInfo(name = "category_emoji") val categoryEmoji: String?,
+    @ColumnInfo(name = "account_emoji") val accountEmoji: String?,
+    @ColumnInfo(name = "account_type") val accountType: String,
+    @ColumnInfo(name = "to_account_emoji") val toAccountEmoji: String?,
+    @ColumnInfo(name = "to_account_type") val toAccountType: String?,
 )

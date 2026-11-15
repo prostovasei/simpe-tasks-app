@@ -45,6 +45,11 @@
 Вид панелей изменён решением PM 11.11.2026 (#227): бар модулей во всю ширину, вкладки без плашек — макеты 217 в этой части устарели.
 Этап 4 (0.61.0, #231) — корзина, сверка, копия; экраны 2.5–2.8, 3.1, 3.5–3.8; компоненты `FinanceService`, `ScreenFinanceTrash`. Комплект 217 реализован целиком.
 
+## Плашки операций — #245
+
+Согласовано PM 15.11.2026 («Делай»). [Пакет](approved/245/README.md), [screens.html](approved/245/screens.html).
+Реализовано в 0.68.0: `OperationLine.kt`, `OperationsList.kt`, `FinanceTrash.kt`, `BankScreens.kt`; токены `income` и `FINANCE_UNKNOWN_MARK`; снимки `finance_operations_light`, `finance_trash_light` и связанные.
+
 ## Фильтр недели по спискам — #243
 
 Согласовано PM 14.11.2026 («Только долгое нажатие на виджет и „Настроить“. Делай»). [Пакет](approved/243/README.md), [screens.html](approved/243/screens.html).

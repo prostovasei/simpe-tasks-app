@@ -46,7 +46,7 @@ interface BankPurchaseDao {
     suspend fun deleteAll()
 
     private companion object {
-        const val ROWS = "SELECT p.*, a.name AS account_name, o.id AS dup_id, c.name AS dup_category, o.amount AS dup_amount, o.date AS dup_date" +
+        const val ROWS = "SELECT p.*, a.name AS account_name, a.emoji AS account_emoji, a.type AS account_type, o.id AS dup_id, c.name AS dup_category, o.amount AS dup_amount, o.date AS dup_date" +
             " FROM bank_purchases p JOIN finance_accounts a ON a.id = p.account_id" +
             " LEFT JOIN finance_operations o ON o.id = p.duplicate_id AND o.is_deleted = 0" +
             " LEFT JOIN finance_categories c ON c.id = o.category_id"

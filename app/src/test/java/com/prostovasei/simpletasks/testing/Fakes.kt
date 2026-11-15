@@ -577,8 +577,11 @@ fun operation(
     account: String = "Карта",
     to: String? = null,
     place: String? = null,
+    comment: String? = null,
+    categoryEmoji: String? = null,
 ) = com.prostovasei.simpletasks.domain.model.finance.Operation(
-    id, kind, amount, "a1", account, to?.let { "a2" }, to, category?.let { "c-$it" }, category, place, null, java.time.LocalDate.parse(date),
+    id, kind, amount, "a1", account, to?.let { "a2" }, to, category?.let { "c-$it" }, category, place, comment, java.time.LocalDate.parse(date),
+    categoryEmoji = categoryEmoji, accountEmoji = "💳", toAccountEmoji = to?.let { "👛" },
 )
 
 /** Покупки из уведомлений банка (#233) для тестов экрана: всё в памяти, вызовы записываются в [calls]. */

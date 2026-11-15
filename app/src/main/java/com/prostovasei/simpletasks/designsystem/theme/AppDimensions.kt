@@ -115,6 +115,7 @@ data class AppSizes(
     val appBarPageWidth: Dp = SizeTokens.APP_BAR_PAGE_W.dp,
     val appBarOutline: Dp = SizeTokens.APP_BAR_OUTLINE.dp,
     val financeMark: Dp = SizeTokens.FINANCE_MARK.dp,
+    val financeUnknownMark: Dp = SizeTokens.FINANCE_UNKNOWN_MARK.dp,
     val financeBarSide: Dp = SizeTokens.FINANCE_BAR_SIDE.dp,
     val operationRow: Dp = SizeTokens.OPERATION_ROW.dp,
 )
