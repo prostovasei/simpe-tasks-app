@@ -1602,3 +1602,10 @@ PM поменял порядок: шторка для созданных зад�
 - WEEK_EDGE = 2 dp общий для дня/времени; WeekTaskRow TextAlign.Start, RemoteViews time gravity=start. Фиксированная колонка сохраняется, overlay выполнения остаётся после неё.
 - TaskCanvasTokens.done/priorityDone — более бледные цвета выполненных. Emoji выполненной задачи — DONE_EMOJI_ALPHA (35%); Compose применяет alpha, RemoteViews — alpha цвета текста (цветные emoji сохраняют RGB и получают прозрачность). При reapply всегда записывается нормальный текст без StrikethroughSpan и альфа emoji, включая восстановление 100% у активной задачи.
 - Фон не менялся: токен и widget_task_background остаются #FFFFFF, нет подложки задач. Room/данные, алгоритмы сроков и прочие экраны без изменений.
+
+### 4.78. Зазоры 1 dp, общие значки и +N (0.70.2, #253)
+
+- WeekTaskRow: ширина времени по TextMeasurer HH:mm в том же стиле/масштабе с fontFeatureSettings=tnum; WEEK_CONTENT_GAP по обе стороны значка, горизонтальные поля внутри Box удалены. Время и название явно открывают задачу, выполнение остаётся отдельным действием.
+- weekNodeIcon() — общие ресурсы ring/fill/repeat для Compose и RemoteViews; круг/виджет 14 dp, галочка 9 dp. Общий ring имеет обводку 1.5 dp без скрытых полей. Галочка виджета использует фиксированный белый tint и при тёмной системе.
+- WidgetWeekRows считает HH:mm через TextPaint с той же типографикой, задаёт layout width и смещение зоны выполнения через RemoteViews API31. Зона выполнения виджета прежняя 40 dp, визуальную компоновку не расширяет. XML margins по 1 dp, генератор gen_widget_week.py воспроизводит разметку. Цвета/reapply и высоты прежние.
+- +N без background в XML и Compose, RemoteViews каждый bind сбрасывает фон в 0. Room, данные, расписание, фильтры и прочие экраны не менялись.

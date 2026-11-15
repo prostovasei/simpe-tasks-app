@@ -34,9 +34,9 @@
     <dimen name="widget_radius_lg">12dp</dimen>
     <dimen name="widget_week_task">18dp</dimen>
     <dimen name="widget_week_hit">40dp</dimen>
-    <dimen name="widget_week_time_column">34dp</dimen>
+    <dimen name="widget_week_content_gap">1dp</dimen>
     <dimen name="widget_week_edge">2dp</dimen>
-    <dimen name="widget_week_check">13dp</dimen>
+    <dimen name="widget_week_check">14dp</dimen>
     <dimen name="widget_week_tick">9dp</dimen>
     <dimen name="widget_week_header">12dp</dimen>
     <dimen name="widget_week_cell_top">1dp</dimen>

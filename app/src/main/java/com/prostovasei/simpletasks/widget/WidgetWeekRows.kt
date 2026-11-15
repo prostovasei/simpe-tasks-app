@@ -2,6 +2,9 @@ package com.prostovasei.simpletasks.widget
 
 import android.content.Context
 import android.graphics.Typeface
+import android.text.TextPaint
+import kotlin.math.ceil
+import com.prostovasei.simpletasks.ui.common.weekNodeIcon
 import android.os.Build
 import android.text.SpannableString
 import android.text.Spanned
@@ -100,7 +103,7 @@ object WidgetWeekRows {
         visible(ids.more, hidden > 0)
         setTextViewText(ids.more, "+$hidden")
         taskCanvasColor(ids.more, "setTextColor", ColorTokens.textPrimary)
-        setInt(ids.more, "setBackgroundResource", R.drawable.widget_task_week_more)
+        setInt(ids.more, "setBackgroundResource", 0)
         with(click) { set(ids.head, WidgetClicks.DAY, day.date.toString()) }
         // Строк задач в ячейке — [capacity], они делят высоту под строкой даты поровну; пустые места невидимы, но держат размер,
         // поэтому строки во всех ячейках одной высоты. Лишние места убраны совсем.
@@ -126,15 +129,7 @@ object WidgetWeekRows {
             else -> ColorTokens.inactive
         }
         setInt(ids.plaque, "setBackgroundResource", 0)
-        setImageViewResource(
-            ids.node,
-            when {
-                // Проверка PM (0.47.0): выполненная повторяющаяся — знак повтора тусклым цветом, без галочки.
-                item.isRecurring -> R.drawable.ic_repeat_round
-                done -> R.drawable.ic_widget_node_fill
-                else -> R.drawable.ic_widget_node_ring
-            },
-        )
+        setImageViewResource(ids.node, item.weekNodeIcon())
         taskCanvasColor(ids.node, "setColorFilter", nodeColor)
         visible(ids.tick, done && !item.isRecurring)
         setContentDescription(
@@ -166,6 +161,15 @@ object WidgetWeekRows {
         setTextViewText(ids.emoji, item.listEmoji)
         taskCanvasColor(ids.emoji, "setTextColor", ColorTokens.textPrimary, if (done) TaskCanvasTokens.DONE_EMOJI_ALPHA else 1f)
         val time = item.startTime()
+        val paint = TextPaint().apply {
+            typeface = Typeface.DEFAULT
+            textSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, SizeTokens.WIDGET_WEEK_TIME_TEXT.toFloat(), context.resources.displayMetrics)
+            fontFeatureSettings = "tnum"
+        }
+        val timeWidth = ceil(paint.measureText("00:00")).toInt()
+        setViewLayoutWidth(ids.time, timeWidth.toFloat(), TypedValue.COMPLEX_UNIT_PX)
+        setViewLayoutMargin(ids.hit, RemoteViews.MARGIN_START,
+            (timeWidth + dp(context, SizeTokens.WEEK_CONTENT_GAP)).toFloat(), TypedValue.COMPLEX_UNIT_PX)
         visible(ids.time, true)
         setTextViewText(ids.time, time.orEmpty())
         taskCanvasColor(

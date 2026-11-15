@@ -116,7 +116,11 @@ class WidgetWeekTest {
         assertEquals(android.view.Gravity.START, time.gravity and android.view.Gravity.RELATIVE_HORIZONTAL_GRAVITY_MASK)
         assertTrue("минимальное поле", kotlin.math.abs(friday.findViewById<View>(R.id.wl_root).paddingLeft - px(SizeTokens.WEEK_EDGE.toFloat())) <= 1)
 
-        assertTrue("кружок ${friday.findViewById<View>(slot.check).width}", kotlin.math.abs(friday.findViewById<View>(slot.check).width - px(SizeTokens.WIDGET_WEEK_TASK.toFloat())) <= 1)
+        assertTrue("кружок ${friday.findViewById<View>(slot.check).width}", kotlin.math.abs(friday.findViewById<View>(slot.check).width - px(SizeTokens.WIDGET_WEEK_CHECK.toFloat())) <= 1)
+        val node = friday.findViewById<View>(slot.check)
+        val title = friday.findViewById<View>(slot.title)
+        assertTrue("зазор время/значок 1dp", kotlin.math.abs(node.left - time.right - px(1f)) <= 1)
+        assertTrue("зазор значок/название 1dp", kotlin.math.abs(title.left - node.right - px(1f)) <= 1)
         assertTrue("зона поверх начала названия", friday.findViewById<View>(slot.title).left < hit.right)
     }
 
@@ -131,6 +135,7 @@ class WidgetWeekTest {
         val more = friday.findViewById<TextView>(WeekIds.LEFT.more)
         assertEquals(View.VISIBLE, more.visibility)
         assertEquals("+${8 - capacity}", more.text.toString())
+        assertNull("без плашки +N", more.background)
         // Субботние две задачи помещаются: «+N» нет.
         assertEquals(View.GONE, friday.findViewById<View>(WeekIds.RIGHT.more).visibility)
     }

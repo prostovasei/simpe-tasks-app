@@ -33,7 +33,9 @@ def cell(p):
 
             <TextView
                 android:id="@+id/{p}_s{i}_time"
-                android:layout_width="@dimen/widget_week_time_column"
+                android:layout_width="wrap_content"
+                android:layout_marginEnd="@dimen/widget_week_content_gap"
+                android:fontFeatureSettings="tnum"
                 android:layout_height="wrap_content"
                 android:gravity="start"
                 android:includeFontPadding="false"
@@ -42,7 +44,8 @@ def cell(p):
                 android:textSize="10sp" />
             <FrameLayout
                 android:id="@+id/{p}_s{i}_check"
-                android:layout_width="@dimen/widget_week_task"
+                android:layout_width="@dimen/widget_week_check"
+                android:layout_marginEnd="@dimen/widget_week_content_gap"
                 android:layout_height="match_parent">
 
                 <ImageView
@@ -60,7 +63,7 @@ def cell(p):
                     android:layout_gravity="center"
                     android:contentDescription="@null"
                     android:src="@drawable/ic_node_check"
-                    android:tint="@color/widget_on_accent"
+                    android:tint="@color/widget_task_surface"
                     android:visibility="gone" />
             </FrameLayout>
 
@@ -89,7 +92,6 @@ def cell(p):
             <!-- Итерация 50: невидимая зона «выполнить» поверх кружка и начала названия — кружок и название на месте. -->
             <FrameLayout
                 android:id="@+id/{p}_s{i}_hit"
-                android:layout_marginStart="@dimen/widget_week_time_column"
                 android:layout_width="@dimen/widget_week_hit"
                 android:layout_height="match_parent" />
         </FrameLayout>
@@ -145,11 +147,8 @@ def cell(p):
             android:id="@+id/{p}_more"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="@drawable/widget_week_more"
             android:includeFontPadding="false"
             android:maxLines="1"
-            android:paddingStart="@dimen/widget_space_xs"
-            android:paddingEnd="@dimen/widget_space_xs"
             android:textColor="@color/widget_text_primary"
             android:textSize="9sp"
             android:textStyle="bold"

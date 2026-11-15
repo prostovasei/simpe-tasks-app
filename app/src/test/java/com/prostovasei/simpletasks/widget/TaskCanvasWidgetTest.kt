@@ -56,6 +56,27 @@ class TaskCanvasWidgetTest {
     }
 
     @Test
+    fun enlargedFontKeepsMeasuredTimeColumnAndOneDpGaps() {
+        val config = android.content.res.Configuration(context.resources.configuration).apply { fontScale = 1.5f }
+        val scaled = context.createConfigurationContext(config)
+        val start = today.minusDays(6)
+        val views = WidgetWeekRows.views(scaled,
+            WidgetWeek(start, YearMonth.from(today), (0L..6).map { WeekDay(start.plusDays(it), if (it == 0L) listOf(item()) else emptyList()) }, today),
+            androidx.compose.ui.unit.DpSize.Unspecified, WidgetWeekRows.Click { _, _, _ -> })[0]
+        val root = views.apply(scaled, FrameLayout(scaled))
+        root.measure(View.MeasureSpec.makeMeasureSpec(800, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(360, View.MeasureSpec.EXACTLY))
+        root.layout(0, 0, 800, 360)
+        val slot = WeekIds.LEFT.slots.first()
+        val time = root.findViewById<TextView>(slot.time)
+        val node = root.findViewById<View>(slot.check)
+        val title = root.findViewById<View>(slot.title)
+        val gap = scaled.resources.getDimensionPixelSize(R.dimen.widget_week_content_gap)
+        assertTrue("время не обрезано", time.width >= kotlin.math.ceil(time.paint.measureText("10:00")).toInt())
+        assertEquals(gap, node.left - time.right)
+        assertEquals(gap, title.left - node.right)
+    }
+
+    @Test
     fun weekPriorityChangesKeepFlatRowsAndLightText() {
         val start = today.minusDays(6)
         fun views(priority: Priority, done: Boolean = false, timed: Boolean = true) = WidgetWeekRows.views(context,
@@ -69,6 +90,7 @@ class TaskCanvasWidgetTest {
         assertEquals(TaskCanvasTokens.priority.light.toInt(), root.findViewById<TextView>(slot.time).currentTextColor)
         views(Priority.HIGH, done = true).reapply(context, root)
         val title = root.findViewById<TextView>(slot.title)
+        assertEquals("белая галочка и при тёмной системе", ColorTokens.onListSquare.light.toInt(), requireNotNull(root.findViewById<android.widget.ImageView>(slot.tick).imageTintList).defaultColor)
         assertEquals(TaskCanvasTokens.priorityDone.light.toInt(), title.currentTextColor)
         assertEquals(TaskCanvasTokens.priorityDone.light.toInt(), root.findViewById<TextView>(slot.time).currentTextColor)
         assertTrue(title.text !is Spanned || (title.text as Spanned).getSpans(0, title.length(), StrikethroughSpan::class.java).isEmpty())

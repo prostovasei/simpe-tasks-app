@@ -307,7 +307,7 @@ object SizeTokens {
     const val WIDGET_WEEK_TASK = 18
     const val WIDGET_WEEK_HIT = 40
     const val WIDGET_WEEK_TASK_GAP = 2
-    const val WIDGET_WEEK_CHECK = 13
+    const val WIDGET_WEEK_CHECK = 14
     const val WIDGET_WEEK_TICK = 9
     const val WIDGET_WEEK_HEADER = 12
     const val WIDGET_WEEK_CELL_TOP = 1
@@ -323,9 +323,10 @@ object SizeTokens {
      * и промежуток между плашками, кружок и галочка в нём, строка даты, мини-календарь (строка недели — наибольшая и наименьшая,
      * «пн…вс», кружок «сегодня» — он же кружок у числа в строке даты).
      */
-    /** #249: постоянная колонка времени перед кружком. */
+    /** #253: минимальное поле и равные зазоры; ширина времени измеряется по HH:mm. */
     const val WEEK_EDGE = 2
-    const val WEEK_TIME_COLUMN = 34
+    const val WEEK_CONTENT_GAP = 1
+    const val WIDGET_WEEK_TIME_TEXT = 10
     const val WEEKVIEW_TASK = 22
     const val WEEKVIEW_TASK_GAP = 3
     const val WEEKVIEW_CHECK = 14
