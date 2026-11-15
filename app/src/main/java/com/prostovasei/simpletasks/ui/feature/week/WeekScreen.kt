@@ -17,6 +17,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.prostovasei.simpletasks.designsystem.components.UndoSnackbarHost
+import com.prostovasei.simpletasks.designsystem.theme.TaskCanvasTheme
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.ui.common.TaskItem
 import com.prostovasei.simpletasks.ui.common.TaskListEffects
@@ -44,34 +45,37 @@ fun WeekScreen(
     onOpenTask: (String) -> Unit = {},
     onOpenDay: (LocalDate) -> Unit = {},
 ) {
-    val colors = AppTheme.colors
-    Scaffold(
-        containerColor = colors.background,
-        contentWindowInsets = WindowInsets(0),
-        snackbarHost = { UndoSnackbarHost(snackbarHostState) },
-    ) { padding ->
-        val weekStart = state.weekStart
-        val today = state.today
-        val month = state.month
-        if (weekStart == null || today == null || month == null) return@Scaffold
-        val toggle: (TaskItem) -> Unit = { onIntent(TaskListIntent.ToggleComplete(it.id, it.isRecurring, it.showsDone)) }
-        val open: (TaskItem) -> Unit = { onOpenTask(it.taskId) }
-        // Четыре строки одинаковой высоты делят весь экран: прокрутки нет.
-        Column(Modifier.padding(padding).fillMaxSize().testTag("week-screen")) {
-            state.days.chunked(2).forEach { pair ->
-                Row(Modifier.weight(1f).fillMaxWidth()) {
-                    pair.forEach { day ->
-                        WeekCell(day.date, day.items, day.date == today, toggle, open, { onOpenDay(day.date) }, Modifier.weight(1f).fillMaxHeight())
-                    }
-                    // Нечётный день (воскресенье) делит строку с мини-календарём.
-                    if (pair.size == 1) {
-                        WeekCalendar(
-                            month = month,
-                            selectedWeek = weekStart,
-                            today = today,
-                            onSelectWeek = { onIntent(SelectWeek(it)) },
-                            modifier = Modifier.weight(1f).fillMaxHeight(),
-                        )
+    TaskCanvasTheme {
+
+        val colors = AppTheme.colors
+        Scaffold(
+            containerColor = colors.background,
+            contentWindowInsets = WindowInsets(0),
+            snackbarHost = { UndoSnackbarHost(snackbarHostState) },
+        ) { padding ->
+            val weekStart = state.weekStart
+            val today = state.today
+            val month = state.month
+            if (weekStart == null || today == null || month == null) return@Scaffold
+            val toggle: (TaskItem) -> Unit = { onIntent(TaskListIntent.ToggleComplete(it.id, it.isRecurring, it.showsDone)) }
+            val open: (TaskItem) -> Unit = { onOpenTask(it.taskId) }
+            // Четыре строки одинаковой высоты делят весь экран: прокрутки нет.
+            Column(Modifier.padding(padding).fillMaxSize().testTag("week-screen")) {
+                state.days.chunked(2).forEach { pair ->
+                    Row(Modifier.weight(1f).fillMaxWidth()) {
+                        pair.forEach { day ->
+                            WeekCell(day.date, day.items, day.date == today, toggle, open, { onOpenDay(day.date) }, Modifier.weight(1f).fillMaxHeight())
+                        }
+                        // Нечётный день (воскресенье) делит строку с мини-календарём.
+                        if (pair.size == 1) {
+                            WeekCalendar(
+                                month = month,
+                                selectedWeek = weekStart,
+                                today = today,
+                                onSelectWeek = { onIntent(SelectWeek(it)) },
+                                modifier = Modifier.weight(1f).fillMaxHeight(),
+                            )
+                        }
                     }
                 }
             }

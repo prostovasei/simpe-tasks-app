@@ -104,6 +104,7 @@ fun widgetRootViews(
     if (week != null) {
         // Вид «Неделя» (итерация 45; 0.46.0 — не лента): четыре строки делят настоящую высоту виджета поровну над нижней панелью.
         return RemoteViews(context.packageName, R.layout.widget_root_week).apply {
+            setInt(R.id.widget_frame, "setBackgroundResource", R.drawable.widget_task_root_bg)
             val click = WidgetWeekRows.Click { viewId, code, id -> setOnClickPendingIntent(viewId, WidgetClicks.pending(context, appWidgetId, code, id)) }
             // Рабочий стол при обновлении применяет действия поверх уже показанного виджета (reapply): без очистки строки
             // добавлялись к прежним — проверка PM 0.46.0, неделя трижды в одном виджете.
@@ -114,6 +115,7 @@ fun widgetRootViews(
         }
     }
     return RemoteViews(context.packageName, R.layout.widget_root).apply {
+        setInt(R.id.widget_frame, "setBackgroundResource", if (model.filter == WidgetFilter.All) R.drawable.widget_task_root_bg else R.drawable.widget_root_bg)
         val items = RemoteViews.RemoteCollectionItems.Builder()
             .setHasStableIds(true)
             .setViewTypeCount(WidgetRows.VIEW_TYPES)

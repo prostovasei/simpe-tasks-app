@@ -48,6 +48,7 @@ import androidx.compose.ui.platform.LocalDensity
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.components.RepeatMark
 import com.prostovasei.simpletasks.designsystem.components.ListBadge
+import com.prostovasei.simpletasks.designsystem.theme.LocalTaskCanvas
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
 import com.prostovasei.simpletasks.domain.model.Priority
@@ -165,7 +166,7 @@ fun LazyItemScope.TimelineTaskRow(
                 .padding(vertical = SizeTokens.WIDGET_CARD_INSET.dp)
                 .alpha(1f - (1f - DONE_ALPHA) * done)
                 .clip(AppTheme.shapes.medium)
-                .background(if (selected == true) colors.selected else colors.surface)
+                .background(if (selected == true) colors.selected else if (LocalTaskCanvas.current) Color.Transparent else colors.surface)
                 .then(if (selected == true) Modifier.border(SizeTokens.CHECKBOX_STROKE.dp, colors.accent, AppTheme.shapes.medium) else Modifier)
                 .combinedClickable(onClick = onClick, onLongClick = onLongClick)
                 .padding(horizontal = spacing.sm),

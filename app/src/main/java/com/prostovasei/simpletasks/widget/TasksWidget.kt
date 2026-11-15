@@ -59,6 +59,9 @@ import com.prostovasei.simpletasks.ui.common.DayNames
 import com.prostovasei.simpletasks.ui.common.ReminderIconMasks
 import com.prostovasei.simpletasks.ui.common.TaskItem
 import com.prostovasei.simpletasks.widget.theme.WidgetCheckColors
+import androidx.compose.runtime.CompositionLocalProvider
+import com.prostovasei.simpletasks.widget.theme.LocalWidgetColors
+import com.prostovasei.simpletasks.widget.theme.TaskWidgetColors
 import com.prostovasei.simpletasks.widget.theme.WidgetColors
 import java.time.LocalDate
 import kotlin.math.roundToInt
@@ -76,25 +79,28 @@ import kotlin.math.roundToInt
  */
 @Composable
 fun WidgetContent(model: WidgetModel, appWidgetId: Int, scrollable: Boolean = true, liveClock: Boolean = true) {
-    val context = LocalContext.current
-    // Список идёт до самого низа, кнопки нижней панели лежат прямо на нём, без подложки и перехода к фону (итерация 43).
-    val frame = GlanceModifier.fillMaxSize()
-    Box(
-        modifier = if (scrollable) frame else frame.background(WidgetColors.background).cornerRadius(RadiusTokens.XL.dp),
-        contentAlignment = Alignment.BottomCenter,
-    ) {
-        // Правое поле плашек — у строк; слева поле минимальное: время прижато к краю (итерация 20).
-        Box(GlanceModifier.fillMaxSize().padding(start = SizeTokens.WIDGET_LIST_EDGE.dp, top = SizeTokens.WIDGET_EDGE.dp)) {
-            if (model.isEmpty) {
-                Box(GlanceModifier.fillMaxSize().padding(bottom = SizeTokens.WIDGET_TAIL.dp), contentAlignment = Alignment.Center) {
-                    Text(context.getString(R.string.widget_empty), style = TextStyle(color = WidgetColors.textSecondary, fontSize = 14.sp))
+    CompositionLocalProvider(LocalWidgetColors provides (if (model.filter == WidgetFilter.Inbox) WidgetColors else TaskWidgetColors)) {
+
+        val context = LocalContext.current
+        // Список идёт до самого низа, кнопки нижней панели лежат прямо на нём, без подложки и перехода к фону (итерация 43).
+        val frame = GlanceModifier.fillMaxSize()
+        Box(
+            modifier = if (scrollable) frame else frame.background(LocalWidgetColors.current.background).cornerRadius(RadiusTokens.XL.dp),
+            contentAlignment = Alignment.BottomCenter,
+        ) {
+            // Правое поле плашек — у строк; слева поле минимальное: время прижато к краю (итерация 20).
+            Box(GlanceModifier.fillMaxSize().padding(start = SizeTokens.WIDGET_LIST_EDGE.dp, top = SizeTokens.WIDGET_EDGE.dp)) {
+                if (model.isEmpty) {
+                    Box(GlanceModifier.fillMaxSize().padding(bottom = SizeTokens.WIDGET_TAIL.dp), contentAlignment = Alignment.Center) {
+                        Text(context.getString(R.string.widget_empty), style = TextStyle(color = LocalWidgetColors.current.textSecondary, fontSize = 14.sp))
+                    }
+                } else if (!scrollable) {
+                    val lines = model.lines(dayNames(context), withTail = false)
+                    Column(GlanceModifier.fillMaxSize()) { ManyRows(lines) { WidgetLineContent(it, model, liveClock) } }
                 }
-            } else if (!scrollable) {
-                val lines = model.lines(dayNames(context), withTail = false)
-                Column(GlanceModifier.fillMaxSize()) { ManyRows(lines) { WidgetLineContent(it, model, liveClock) } }
             }
+            BottomBar(model, appWidgetId, imageButtons = scrollable)
         }
-        BottomBar(model, appWidgetId, imageButtons = scrollable)
     }
 }
 
@@ -128,7 +134,7 @@ internal fun WidgetLineContent(line: WidgetLine, model: WidgetModel, liveClock: 
 @Composable
 private fun OverdueTitle(entry: WidgetEntry.Overdue, isFirst: Boolean) {
     val context = LocalContext.current
-    val style = TextStyle(color = WidgetColors.overdue, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+    val style = TextStyle(color = LocalWidgetColors.current.overdue, fontSize = 14.sp, fontWeight = FontWeight.Bold)
     val text = if (entry.count > 0) context.getString(R.string.overdue_count, entry.count) else context.getString(R.string.overdue_title)
     val fold = context.getString(if (entry.collapsed) R.string.overdue_fold_closed else R.string.overdue_fold_open)
     Row(
@@ -145,7 +151,7 @@ private fun OverdueTitle(entry: WidgetEntry.Overdue, isFirst: Boolean) {
             Image(
                 ImageProvider(if (entry.collapsed) R.drawable.ic_fold_closed else R.drawable.ic_fold_open),
                 contentDescription = fold,
-                colorFilter = ColorFilter.tint(WidgetColors.overdue),
+                colorFilter = ColorFilter.tint(LocalWidgetColors.current.overdue),
                 modifier = GlanceModifier.size(SizeTokens.WIDGET_FOLD_ICON.dp),
             )
         }
@@ -154,7 +160,7 @@ private fun OverdueTitle(entry: WidgetEntry.Overdue, isFirst: Boolean) {
             Image(
                 ImageProvider(R.drawable.ic_move_today),
                 contentDescription = context.getString(R.string.overdue_move_today),
-                colorFilter = ColorFilter.tint(WidgetColors.overdue),
+                colorFilter = ColorFilter.tint(LocalWidgetColors.current.overdue),
                 modifier = GlanceModifier.size(SizeTokens.WIDGET_FOLD_ICON.dp).then(GlanceModifier.clickable(actionStartActivity(moveOverdueIntent(context)))),
             )
         }
@@ -193,7 +199,7 @@ internal const val MAX_CHILDREN = 10
 @Composable
 private fun DayTitle(day: WidgetDay, today: LocalDate, isFirst: Boolean, progress: DayProgress? = null, count: Int? = null) {
     val title = widgetDayTitle(LocalContext.current, day, today)
-    val color = if (title.isPast) WidgetColors.overdue else WidgetColors.textPrimary
+    val color = if (title.isPast) LocalWidgetColors.current.overdue else LocalWidgetColors.current.textPrimary
     // Итерация 25 (вариант PM «А»): дата группы крупнее — 14 sp, метка «Сегодня» — 12 sp.
     val style = TextStyle(color = color, fontSize = 14.sp, fontWeight = FontWeight.Bold)
     Row(
@@ -209,7 +215,7 @@ private fun DayTitle(day: WidgetDay, today: LocalDate, isFirst: Boolean, progres
             Spacer(GlanceModifier.width(SpacingTokens.XXS.dp))
             Box(
                 GlanceModifier
-                    .background(WidgetColors.surface)
+                    .then(if (LocalWidgetColors.current === TaskWidgetColors) GlanceModifier else GlanceModifier.background(LocalWidgetColors.current.surface))
                     .cornerRadius(RadiusTokens.SM.dp)
                     .padding(horizontal = SpacingTokens.XXS.dp, vertical = SizeTokens.HAIRLINE.dp),
             ) {
@@ -220,7 +226,7 @@ private fun DayTitle(day: WidgetDay, today: LocalDate, isFirst: Boolean, progres
             DayProgressBar(progress)
         } else if (count != null) {
             Spacer(GlanceModifier.defaultWeight())
-            Text(count.toString(), style = TextStyle(color = WidgetColors.textSecondary, fontSize = 12.sp, fontWeight = FontWeight.Medium), maxLines = 1)
+            Text(count.toString(), style = TextStyle(color = LocalWidgetColors.current.textSecondary, fontSize = 12.sp, fontWeight = FontWeight.Medium), maxLines = 1)
         }
     }
 }
@@ -236,13 +242,13 @@ private fun RowScope.DayProgressBar(progress: DayProgress) {
     LinearProgressIndicator(
         progress = progress.fraction,
         modifier = GlanceModifier.defaultWeight().height(SizeTokens.WIDGET_PROGRESS.dp).cornerRadius(RadiusTokens.SM.dp),
-        color = WidgetColors.accent,
-        backgroundColor = WidgetColors.divider,
+        color = LocalWidgetColors.current.accent,
+        backgroundColor = LocalWidgetColors.current.divider,
     )
     Spacer(GlanceModifier.width(SpacingTokens.XS.dp))
     Text(
         context.getString(R.string.widget_progress, progress.done, progress.total),
-        style = TextStyle(color = WidgetColors.textSecondary, fontSize = 12.sp, fontWeight = FontWeight.Medium),
+        style = TextStyle(color = LocalWidgetColors.current.textSecondary, fontSize = 12.sp, fontWeight = FontWeight.Medium),
         maxLines = 1,
     )
 }
@@ -278,9 +284,9 @@ private fun TimelineRow(row: WidgetRow.Task, line: Line, overdue: Boolean, filte
     // Итерация 47: будущий повтор не тусклый.
     val faded = row.past
     val textColor = when {
-        done -> WidgetColors.textDone
-        faded -> WidgetColors.textSecondary
-        else -> WidgetColors.textPrimary
+        done -> LocalWidgetColors.current.textDone
+        faded -> LocalWidgetColors.current.textSecondary
+        else -> LocalWidgetColors.current.textPrimary
     }
     val height = if (row.isPeriod) SizeTokens.WIDGET_PERIOD_ROW else SizeTokens.WIDGET_ROW
     Row(GlanceModifier.fillMaxWidth().height(height.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -290,7 +296,7 @@ private fun TimelineRow(row: WidgetRow.Task, line: Line, overdue: Boolean, filte
             Row(
                 modifier = GlanceModifier
                     .fillMaxSize()
-                    .background(WidgetColors.surface)
+                    .then(if (LocalWidgetColors.current === TaskWidgetColors) GlanceModifier else GlanceModifier.background(LocalWidgetColors.current.surface))
                     .cornerRadius(RadiusTokens.MD.dp)
                     .padding(horizontal = SpacingTokens.SM.dp)
                     .then(GlanceModifier.clickable(actionStartActivity(openTaskIntent(context, item.taskId)))),
@@ -319,7 +325,7 @@ private fun TimelineRow(row: WidgetRow.Task, line: Line, overdue: Boolean, filte
 @Composable
 private fun TimeColumn(row: WidgetRow.Task, overdue: Boolean, textColor: ColorProvider) {
     val style = TextStyle(
-        color = if (overdue) WidgetColors.overdue else textColor,
+        color = if (overdue) LocalWidgetColors.current.overdue else textColor,
         fontSize = if (overdue) 11.sp else 13.sp,
         fontWeight = FontWeight.Bold,
         textAlign = TextAlign.End,
@@ -332,7 +338,7 @@ private fun TimeColumn(row: WidgetRow.Task, overdue: Boolean, textColor: ColorPr
         row.start?.let { Text(it, style = style, maxLines = 1) }
         row.end?.let {
             if (row.isPeriod) Spacer(GlanceModifier.height(SizeTokens.HAIRLINE.dp))
-            Text(it, style = style.copy(color = if (overdue) WidgetColors.overdue else WidgetColors.textSecondary), maxLines = 1)
+            Text(it, style = style.copy(color = if (overdue) LocalWidgetColors.current.overdue else LocalWidgetColors.current.textSecondary), maxLines = 1)
         }
     }
 }
@@ -349,9 +355,9 @@ private fun Rail(row: WidgetRow.Task, line: Line) {
     val done = item.showsDone
     // Итерация 27.1 (вариант PM «А»): кружок всегда цвета приоритета, просрочка — красными подписью дня и временем.
     val color = when {
-        row.past && !done -> WidgetColors.inactive
-        done -> widgetCheckColors(item.priority).done
-        else -> widgetCheckColors(item.priority).ring
+        row.past && !done -> LocalWidgetColors.current.inactive
+        done -> if (item.priority == Priority.HIGH) LocalWidgetColors.current.checkHigh.done else LocalWidgetColors.current.checkNone.done
+        else -> if (item.priority == Priority.HIGH) LocalWidgetColors.current.checkHigh.ring else LocalWidgetColors.current.checkNone.ring
     }
     // Итерация 47: у повторяющейся задачи вместо кружка — знак повтора (у периода — вытянутый).
     // Проверка PM (0.47.0): у выполненной повторяющейся знак остаётся (тусклым), галочки нет.
@@ -401,7 +407,7 @@ private fun NodeCheck() {
     Image(
         ImageProvider(R.drawable.ic_node_check),
         contentDescription = null,
-        colorFilter = ColorFilter.tint(WidgetColors.onAccent),
+        colorFilter = ColorFilter.tint(LocalWidgetColors.current.onAccent),
         modifier = GlanceModifier.size(SizeTokens.NODE_CHECK.dp),
     )
 }
@@ -409,7 +415,7 @@ private fun NodeCheck() {
 /** Отрезок линии шкалы ([visible] = false — пустое место той же высоты: у первой и последней строки дня). */
 @Composable
 private fun LineSegment(visible: Boolean, modifier: GlanceModifier) {
-    if (visible) Box(modifier.width(SizeTokens.HAIRLINE.dp).background(WidgetColors.divider)) {} else Spacer(modifier)
+    if (visible) Box(modifier.width(SizeTokens.HAIRLINE.dp).background(LocalWidgetColors.current.divider)) {} else Spacer(modifier)
 }
 
 /**
@@ -426,7 +432,7 @@ private fun NowRow(line: Line, nowMinute: Int?, liveClock: Boolean) {
             } else if (nowMinute != null) {
                 Text(
                     "%02d:%02d".format(nowMinute / MINUTES_PER_HOUR, nowMinute % MINUTES_PER_HOUR),
-                    style = TextStyle(color = WidgetColors.accent, fontSize = 11.sp, fontWeight = FontWeight.Bold),
+                    style = TextStyle(color = LocalWidgetColors.current.accent, fontSize = 11.sp, fontWeight = FontWeight.Bold),
                     maxLines = 1,
                 )
             }
@@ -439,11 +445,11 @@ private fun NowRow(line: Line, nowMinute: Int?, liveClock: Boolean) {
             Image(
                 ImageProvider(R.drawable.ic_widget_dot),
                 contentDescription = null,
-                colorFilter = ColorFilter.tint(WidgetColors.accent),
+                colorFilter = ColorFilter.tint(LocalWidgetColors.current.accent),
                 modifier = GlanceModifier.size(SizeTokens.WIDGET_NOW_DOT.dp),
             )
         }
-        Box(GlanceModifier.defaultWeight().height(SizeTokens.HAIRLINE.dp).background(WidgetColors.accent)) {}
+        Box(GlanceModifier.defaultWeight().height(SizeTokens.HAIRLINE.dp).background(LocalWidgetColors.current.accent)) {}
     }
 }
 
@@ -456,7 +462,7 @@ private fun MetaIcon(icon: Int, done: Boolean) {
     Image(
         ImageProvider(icon),
         contentDescription = null,
-        colorFilter = ColorFilter.tint(if (done) WidgetColors.iconDone else WidgetColors.textSecondary),
+        colorFilter = ColorFilter.tint(if (done) LocalWidgetColors.current.iconDone else LocalWidgetColors.current.textSecondary),
         modifier = GlanceModifier.size(SizeTokens.WIDGET_META_ICON.dp),
     )
 }
@@ -469,8 +475,8 @@ private fun ReminderIcon(mark: ReminderMark, done: Boolean) {
     val masks = ReminderIconMasks.of(mark, (size * context.resources.displayMetrics.density).roundToInt())
     Spacer(GlanceModifier.width(SpacingTokens.XXS.dp))
     Box(GlanceModifier.size(size.dp)) {
-        MaskImage(masks.bell, if (done) WidgetColors.iconDone else WidgetColors.textSecondary, size)
-        masks.early?.let { MaskImage(it, if (done) WidgetColors.accentDone else WidgetColors.accent, size) }
+        MaskImage(masks.bell, if (done) LocalWidgetColors.current.iconDone else LocalWidgetColors.current.textSecondary, size)
+        masks.early?.let { MaskImage(it, if (done) LocalWidgetColors.current.accentDone else LocalWidgetColors.current.accent, size) }
     }
 }
 
@@ -504,7 +510,7 @@ private fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boolea
         modifier = GlanceModifier
             .fillMaxWidth()
             .height(SizeTokens.WIDGET_BAR.dp)
-            .background(WidgetColors.background)
+            .background(LocalWidgetColors.current.background)
             .padding(horizontal = SizeTokens.WIDGET_EDGE.dp)
             .clickable(actionStartActivity(openAppIntent(context)))
             .semantics { contentDescription = openApp },
@@ -513,14 +519,14 @@ private fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boolea
         Box(
             modifier = GlanceModifier
                 .size(width = SizeTokens.WIDGET_ADD_W.dp, height = SizeTokens.WIDGET_ADD_H.dp)
-                .button(R.drawable.widget_bar_add, WidgetColors.accent, RadiusTokens.LG, imageButtons)
+                .button(if (model.filter == WidgetFilter.Inbox) R.drawable.widget_bar_add else R.drawable.widget_task_bar_add, LocalWidgetColors.current.accent, RadiusTokens.LG, imageButtons)
                 .clickable(actionStartActivity(quickAddIntent(context, model.filter))),
             contentAlignment = Alignment.Center,
         ) {
             Image(
                 ImageProvider(R.drawable.ic_widget_add),
                 contentDescription = context.getString(R.string.add_task),
-                colorFilter = ColorFilter.tint(WidgetColors.onAccent),
+                colorFilter = ColorFilter.tint(LocalWidgetColors.current.onAccent),
                 modifier = GlanceModifier.size(SizeTokens.WIDGET_ADD_ICON.dp),
             )
         }
@@ -528,7 +534,7 @@ private fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boolea
         Row(
             modifier = GlanceModifier
                 .height(SizeTokens.WIDGET_ADD_H.dp)
-                .button(R.drawable.widget_bar_tile, WidgetColors.surface, RadiusTokens.LG, imageButtons)
+                .button(if (model.filter == WidgetFilter.Inbox) R.drawable.widget_bar_tile else R.drawable.widget_task_bar_tile, LocalWidgetColors.current.surface, RadiusTokens.LG, imageButtons)
                 .padding(horizontal = SizeTokens.WIDGET_TAB_BLOCK_PAD.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -559,17 +565,17 @@ private fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boolea
         Row(
             modifier = GlanceModifier
                 .size(width = SizeTokens.WIDGET_ADD_W.dp, height = SizeTokens.WIDGET_ADD_H.dp)
-                .button(R.drawable.widget_bar_tile, WidgetColors.surface, RadiusTokens.LG, imageButtons)
+                .button(if (model.filter == WidgetFilter.Inbox) R.drawable.widget_bar_tile else R.drawable.widget_task_bar_tile, LocalWidgetColors.current.surface, RadiusTokens.LG, imageButtons)
                 .clickable(actionSendBroadcast(WidgetActions.today(context, appWidgetId)))
                 .semantics { contentDescription = description },
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(day, style = TextStyle(color = WidgetColors.textPrimary, fontSize = SizeTokens.WIDGET_DATE_DAY_SP.sp, fontWeight = FontWeight.Bold), maxLines = 1)
+            Text(day, style = TextStyle(color = LocalWidgetColors.current.textPrimary, fontSize = SizeTokens.WIDGET_DATE_DAY_SP.sp, fontWeight = FontWeight.Bold), maxLines = 1)
             Spacer(GlanceModifier.width(SizeTokens.WIDGET_DATE_GAP.dp))
             Column {
-                Text(weekday, style = TextStyle(color = WidgetColors.textPrimary, fontSize = SizeTokens.WIDGET_DATE_SMALL_SP.sp, fontWeight = FontWeight.Bold), maxLines = 1)
-                Text(month, style = TextStyle(color = WidgetColors.textSecondary, fontSize = SizeTokens.WIDGET_DATE_SMALL_SP.sp, fontWeight = FontWeight.Medium), maxLines = 1)
+                Text(weekday, style = TextStyle(color = LocalWidgetColors.current.textPrimary, fontSize = SizeTokens.WIDGET_DATE_SMALL_SP.sp, fontWeight = FontWeight.Bold), maxLines = 1)
+                Text(month, style = TextStyle(color = LocalWidgetColors.current.textSecondary, fontSize = SizeTokens.WIDGET_DATE_SMALL_SP.sp, fontWeight = FontWeight.Medium), maxLines = 1)
             }
         }
     }
@@ -595,7 +601,7 @@ private fun SwitchTab(icon: Int, label: String, selected: Boolean, action: Actio
         Image(
             ImageProvider(icon),
             contentDescription = label,
-            colorFilter = ColorFilter.tint(if (selected) WidgetColors.accent else WidgetColors.inactive),
+            colorFilter = ColorFilter.tint(if (selected) LocalWidgetColors.current.accent else LocalWidgetColors.current.inactive),
             modifier = GlanceModifier.size(SizeTokens.WIDGET_TAB_ICON.dp),
         )
     }

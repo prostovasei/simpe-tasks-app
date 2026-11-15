@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  «Просрочено · N» (итерация 42): нажатие на подпись со стрелкой сворачивает прошедшие дни,
+  значок рядом — переносит все просроченные на сегодня.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="UseCompoundDrawables,RtlSymmetry,ContentDescription"
+    android:id="@+id/overdue_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingStart="@dimen/widget_edge"
+    android:paddingTop="@dimen/widget_edge"
+    android:paddingBottom="@dimen/widget_day_gap">
+
+    <LinearLayout
+        android:id="@+id/overdue_toggle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/overdue_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:textColor="@color/widget_flat_overdue"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <ImageView
+            android:id="@+id/overdue_fold"
+            android:layout_width="@dimen/widget_fold_icon"
+            android:layout_height="@dimen/widget_fold_icon"
+            android:layout_marginStart="@dimen/widget_space_xxs"
+            android:tint="@color/widget_flat_overdue" />
+    </LinearLayout>
+
+    <ImageView
+        android:id="@+id/overdue_move"
+        android:layout_width="@dimen/widget_fold_icon"
+        android:layout_height="@dimen/widget_fold_icon"
+        android:layout_marginStart="@dimen/widget_space_sm"
+        android:contentDescription="@string/overdue_move_today"
+        android:src="@drawable/ic_move_today"
+        android:tint="@color/widget_flat_overdue" />
+</LinearLayout>

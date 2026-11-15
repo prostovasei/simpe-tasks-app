@@ -3,12 +3,12 @@
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:gravity="end" android:width="@dimen/widget_hairline">
         <shape android:shape="rectangle">
-            <solid android:color="@color/widget_divider" />
+            <solid android:color="@color/widget_task_divider" />
         </shape>
     </item>
     <item android:gravity="bottom" android:height="@dimen/widget_hairline">
         <shape android:shape="rectangle">
-            <solid android:color="@color/widget_divider" />
+            <solid android:color="@color/widget_task_divider" />
         </shape>
     </item>
 </layer-list>

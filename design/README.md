@@ -80,3 +80,7 @@
 Реализовано в 0.62.0: экраны 1.1–1.4, 2.2–2.4 — `BankScreens.kt`, снимки `app/screenshots/finance_bank_*`, `finance_unsorted_light`,
 `finance_operations_unsorted_light`; 2.1 — системное уведомление Android (`AndroidBankNotifier`), автоснимка нет. Новых токенов и компонентов
 дизайн-системы нет: экраны собраны из существующих (`FinanceField`, `PickValue`, `PrimaryAction`, `SecondaryAction`, `MenuRow`).
+
+## Редизайн задач, первая часть — #247
+
+PM выбрал А для недели, предстоящих (приложение/виджет) и проектов и поручил реализацию. [Макеты/решения](approved/247/README.md). 0.69.0: scoped TaskCanvasTheme/TaskCanvasTokens, плоские строки, светлая палитра Glance/RemoteViews с сохранением Inbox. Остальные экраны ещё не согласованы; не применять к ним варианты из общего раннего альбома.

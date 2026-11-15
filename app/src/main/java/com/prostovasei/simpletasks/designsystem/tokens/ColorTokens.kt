@@ -98,3 +98,9 @@ object WeekRowTokens {
     val high = ThemedColor(light = 0xFFF1E8FA, dark = 0xFF2E2440)
     val doneMark = ThemedColor(light = 0xFFBDBDBD, dark = 0xFF5A5A5A)
 }
+
+/** Согласованный вариант А, #247: только выбранные экраны задач и виджеты. */
+object TaskCanvasTokens {
+    val background = ThemedColor(light = 0xFFFAFAFA, dark = 0xFFFAFAFA)
+    val divider = ThemedColor(light = 0xFFE8E8EA, dark = 0xFFE8E8EA)
+}

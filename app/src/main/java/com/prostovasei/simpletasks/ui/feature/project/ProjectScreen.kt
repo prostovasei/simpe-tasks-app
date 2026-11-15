@@ -38,6 +38,7 @@ import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.components.ListBadge
 import com.prostovasei.simpletasks.designsystem.components.ConfirmDeleteDialog
 import com.prostovasei.simpletasks.designsystem.components.NameDialog
+import com.prostovasei.simpletasks.designsystem.theme.TaskCanvasTheme
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.ui.common.AddTaskButton
 import com.prostovasei.simpletasks.ui.common.FlatTaskList
@@ -66,59 +67,62 @@ fun ProjectScreen(
     onAddTask: () -> Unit = {},
     onOpenTask: (String) -> Unit = {},
 ) {
-    val colors = AppTheme.colors
-    val inboxName = stringResource(R.string.inbox_list_name)
-    val title = if (state.isInbox) inboxName else state.name
-    // Итерация 40: долгое нажатие на плашку — режим выбора; «+» на это время прячется — внизу лента действий.
-    val selection = rememberSelection()
-    Scaffold(
-        containerColor = colors.background,
-        contentWindowInsets = WindowInsets(0),
-        snackbarHost = { UndoSnackbarHost(snackbarHostState) },
-        floatingActionButton = { if (!selection.active) AddTaskButton(onAddTask) },
-    ) { padding ->
-        SelectionFrame(selection, state.tasks.filterNot { it.isGhost }.map { Selectable(it.id, it.isDone, it.isRecurring, it.due != null) }, Modifier.padding(padding)) {
-        Column(Modifier.fillMaxSize()) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(end = AppTheme.spacing.xxs),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.project_back), tint = colors.textPrimary)
-                }
-                if (!state.isInbox) {
-                    ListBadge(
-                        state.emoji,
-                        large = true,
-                        modifier = Modifier.padding(end = AppTheme.spacing.sm),
+    TaskCanvasTheme {
+
+        val colors = AppTheme.colors
+        val inboxName = stringResource(R.string.inbox_list_name)
+        val title = if (state.isInbox) inboxName else state.name
+        // Итерация 40: долгое нажатие на плашку — режим выбора; «+» на это время прячется — внизу лента действий.
+        val selection = rememberSelection()
+        Scaffold(
+            containerColor = colors.background,
+            contentWindowInsets = WindowInsets(0),
+            snackbarHost = { UndoSnackbarHost(snackbarHostState) },
+            floatingActionButton = { if (!selection.active) AddTaskButton(onAddTask) },
+        ) { padding ->
+            SelectionFrame(selection, state.tasks.filterNot { it.isGhost }.map { Selectable(it.id, it.isDone, it.isRecurring, it.due != null) }, Modifier.padding(padding)) {
+            Column(Modifier.fillMaxSize()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(end = AppTheme.spacing.xxs),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.project_back), tint = colors.textPrimary)
+                    }
+                    if (!state.isInbox) {
+                        ListBadge(
+                            state.emoji,
+                            large = true,
+                            modifier = Modifier.padding(end = AppTheme.spacing.sm),
+                        )
+                    }
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = colors.textPrimary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
                     )
+                    if (!state.isInbox) ProjectMenu(onIntent)
                 }
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = colors.textPrimary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
+                FlatTaskList(
+                    tasks = state.tasks,
+                    isLoading = state.isLoading,
+                    emptyText = stringResource(R.string.project_empty),
+                    onIntent = onIntent,
+                    showList = false,
+                    onOpenTask = onOpenTask,
+                    // «+» здесь плавает над списком в правом нижнем углу — стрелка над ним.
+                    emptyArrowLift = AppTheme.sizes.navBar + AppTheme.spacing.md,
+                    selection = selection,
                 )
-                if (!state.isInbox) ProjectMenu(onIntent)
             }
-            FlatTaskList(
-                tasks = state.tasks,
-                isLoading = state.isLoading,
-                emptyText = stringResource(R.string.project_empty),
-                onIntent = onIntent,
-                showList = false,
-                onOpenTask = onOpenTask,
-                // «+» здесь плавает над списком в правом нижнем углу — стрелка над ним.
-                emptyArrowLift = AppTheme.sizes.navBar + AppTheme.spacing.md,
-                selection = selection,
-            )
+            }
         }
-        }
+        ProjectDialogs(state, onIntent)
     }
-    ProjectDialogs(state, onIntent)
 }
 
 @Composable

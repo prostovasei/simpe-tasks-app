@@ -69,6 +69,7 @@
             </LinearLayout>
 
             <ImageView
+                android:id="@+id/now_dot"
                 android:layout_width="@dimen/widget_now_dot"
                 android:layout_height="@dimen/widget_now_dot"
                 android:layout_gravity="center"
@@ -78,6 +79,7 @@
         </FrameLayout>
 
         <FrameLayout
+            android:id="@+id/now_bar"
             android:layout_width="0dp"
             android:layout_height="@dimen/widget_hairline"
             android:layout_weight="1"
