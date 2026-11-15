@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fixed light copies of ColorTokens / TaskCanvasTokens for compact RemoteViews, #247. -->
+<resources>
+    <color name="widget_flat_accent_done">#B316171D</color>
+    <color name="widget_flat_divider">#FFE8E8EA</color>
+    <color name="widget_flat_icon_done">#B362656E</color>
+    <color name="widget_flat_now">#16171D</color>
+    <color name="widget_flat_on_accent">#FFFFFFFF</color>
+    <color name="widget_flat_overdue">#FFC62828</color>
+    <color name="widget_flat_ring_none">#FF8B949E</color>
+    <color name="widget_flat_text_done">#B316171D</color>
+    <color name="widget_flat_text_primary">#FF16171D</color>
+    <color name="widget_flat_text_secondary">#FF62656E</color>
+</resources>

@@ -24,7 +24,7 @@ import com.prostovasei.simpletasks.ui.feature.week.WEEK_LENGTH
 import com.prostovasei.simpletasks.ui.feature.week.WeekDay
 import com.prostovasei.simpletasks.ui.feature.week.startTime
 import com.prostovasei.simpletasks.ui.feature.week.weekStart
-import com.prostovasei.simpletasks.widget.WidgetRows.color
+import com.prostovasei.simpletasks.widget.WidgetRows.taskCanvasColor
 import com.prostovasei.simpletasks.widget.WidgetRows.ring
 import com.prostovasei.simpletasks.widget.WidgetRows.visible
 import java.time.DayOfWeek
@@ -96,11 +96,13 @@ object WidgetWeekRows {
         // день недели и число одним нежирным начертанием (Medium) и серые. Жирность — через начертание в тексте: у RemoteViews нет смены шрифта.
         // Итерация 48 (решение PM, макет `week_tune.py`): день недели капсом («ПТ 6»), остальные дни — обычным начертанием, мельче.
         setTextViewText(ids.weekday, day.date.dayOfWeek.getDisplayName(TextStyle.SHORT, RU).uppercase(RU).bold(isToday))
-        color(ids.weekday, "setTextColor", if (isToday) ColorTokens.textPrimary else ColorTokens.textSecondary)
+        taskCanvasColor(ids.weekday, "setTextColor", if (isToday) ColorTokens.textPrimary else ColorTokens.textSecondary)
         setTextViewText(ids.number, day.date.dayOfMonth.toString().bold(isToday))
-        color(ids.number, "setTextColor", if (isToday) ColorTokens.textPrimary else ColorTokens.textSecondary)
+        taskCanvasColor(ids.number, "setTextColor", if (isToday) ColorTokens.textPrimary else ColorTokens.textSecondary)
         visible(ids.more, hidden > 0)
         setTextViewText(ids.more, "+$hidden")
+        taskCanvasColor(ids.more, "setTextColor", ColorTokens.textPrimary)
+        setInt(ids.more, "setBackgroundResource", R.drawable.widget_task_week_more)
         with(click) { set(ids.head, WidgetClicks.DAY, day.date.toString()) }
         // Строк задач в ячейке — [capacity], они делят высоту под строкой даты поровну; пустые места невидимы, но держат размер,
         // поэтому строки во всех ячейках одной высоты. Лишние места убраны совсем.
@@ -125,7 +127,7 @@ object WidgetWeekRows {
             high -> WidgetCheckTokens.high.ring
             else -> ColorTokens.inactive
         }
-        setInt(ids.plaque, "setBackgroundResource", plaque(item.priority))
+        setInt(ids.plaque, "setBackgroundResource", 0)
         setImageViewResource(
             ids.node,
             when {
@@ -135,7 +137,7 @@ object WidgetWeekRows {
                 else -> R.drawable.ic_widget_node_ring
             },
         )
-        color(ids.node, "setColorFilter", nodeColor)
+        taskCanvasColor(ids.node, "setColorFilter", nodeColor)
         visible(ids.tick, done && !item.isRecurring)
         setContentDescription(
             ids.node,
@@ -157,7 +159,7 @@ object WidgetWeekRows {
             ids.title,
             if (done) SpannableString(item.title).apply { setSpan(StrikethroughSpan(), 0, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE) } else item.title,
         )
-        color(
+        taskCanvasColor(
             ids.title,
             "setTextColor",
             if (done) ColorTokens.inactive else ColorTokens.textPrimary,
@@ -167,7 +169,7 @@ object WidgetWeekRows {
         val time = item.startTime()
         visible(ids.time, time != null)
         setTextViewText(ids.time, time.orEmpty())
-        color(
+        taskCanvasColor(
             ids.time,
             "setTextColor",
             if (done) ColorTokens.inactive else ColorTokens.textSecondary,
@@ -183,19 +185,22 @@ object WidgetWeekRows {
      */
     private fun RemoteViews.calendar(week: WidgetWeek, click: Click) {
         val month: YearMonth = week.month
-        DayOfWeek.entries.forEachIndexed { index, day -> setTextViewText(WeekIds.CAL_WEEKDAYS[index], day.getDisplayName(TextStyle.SHORT, RU)) }
+        DayOfWeek.entries.forEachIndexed { index, day ->
+            setTextViewText(WeekIds.CAL_WEEKDAYS[index], day.getDisplayName(TextStyle.SHORT, RU))
+            taskCanvasColor(WeekIds.CAL_WEEKDAYS[index], "setTextColor", ColorTokens.textSecondary)
+        }
         // Шесть строк недель делят высоту под «пн…вс» поровну (weight в разметке).
         val first = month.atDay(1).weekStart()
         WeekIds.CAL_ROWS.forEachIndexed { index, row ->
             val start = first.plusDays(index * WEEK_LENGTH.toLong())
-            setInt(row.row, "setBackgroundResource", if (start == week.weekStart) R.drawable.widget_week_band else 0)
+            setInt(row.row, "setBackgroundResource", if (start == week.weekStart) R.drawable.widget_task_week_band else 0)
             with(click) { set(row.row, WidgetClicks.PICK_WEEK, start.toString()) }
             row.days.forEachIndexed { offset, id ->
                 val date = start.plusDays(offset.toLong())
                 val isToday = date == week.today
                 setTextViewText(id, date.dayOfMonth.toString())
-                color(id, "setTextColor", calendarDayColor(isToday, inMonth = YearMonth.from(date) == month))
-                setInt(id, "setBackgroundResource", if (isToday) R.drawable.widget_week_today else 0)
+                taskCanvasColor(id, "setTextColor", calendarDayColor(isToday, inMonth = YearMonth.from(date) == month))
+                setInt(id, "setBackgroundResource", if (isToday) R.drawable.widget_task_week_today else 0)
             }
         }
     }
@@ -209,12 +214,6 @@ object WidgetWeekRows {
     /** Текст жирным начертанием ([bold] = true) или как есть. */
     private fun String.bold(bold: Boolean): CharSequence =
         if (bold) SpannableString(this).apply { setSpan(StyleSpan(Typeface.BOLD), 0, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE) } else this
-
-    /** Фон строки задачи по приоритету. */
-    private fun plaque(priority: Priority): Int = when (priority) {
-        Priority.HIGH -> R.drawable.widget_week_plaque_high
-        Priority.NONE -> R.drawable.widget_week_plaque_plain
-    }
 
     private fun dp(context: Context, value: Int): Int = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, value.toFloat(), context.resources.displayMetrics).toInt()
 }

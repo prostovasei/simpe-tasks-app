@@ -142,7 +142,6 @@ private fun WeekTaskRow(item: TaskItem, onToggle: () -> Unit, onOpen: () -> Unit
             .fillMaxWidth()
             .height(SizeTokens.WEEKVIEW_TASK.dp)
             .clip(AppTheme.shapes.medium)
-            .background(if (high) colors.weekRow.high else colors.surface)
             .clickable(onClick = onOpen)
             .testTag("week-task:${item.id}"),
         verticalAlignment = Alignment.CenterVertically,

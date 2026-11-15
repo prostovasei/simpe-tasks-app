@@ -36,15 +36,15 @@ object WidgetRows {
     const val VIEW_TYPES = 10
 
     fun views(context: Context, line: WidgetLine, model: WidgetModel, liveClock: Boolean = true): RemoteViews = when (line) {
-        is WidgetLine.Overdue -> overdue(context, line)
+        is WidgetLine.Overdue -> overdue(context, line, model.filter == WidgetFilter.All)
         is WidgetLine.Title -> title(context, line, model)
         is WidgetLine.Task -> task(context, line, model.filter)
-        is WidgetLine.Now -> now(context, line, liveClock)
+        is WidgetLine.Now -> now(context, line, liveClock, model.filter == WidgetFilter.All)
         WidgetLine.Tail -> RemoteViews(context.packageName, R.layout.widget_row_tail)
     }
 
-    private fun overdue(context: Context, line: WidgetLine.Overdue): RemoteViews =
-        RemoteViews(context.packageName, R.layout.widget_row_overdue).apply {
+    private fun overdue(context: Context, line: WidgetLine.Overdue, flat: Boolean): RemoteViews =
+        RemoteViews(context.packageName, if (flat) R.layout.widget_row_overdue_flat else R.layout.widget_row_overdue).apply {
             val entry = line.entry
             val text = if (entry.count > 0) context.getString(R.string.overdue_count, entry.count) else context.getString(R.string.overdue_title)
             topPadding(context, R.id.overdue_root, line.isFirst)
@@ -60,10 +60,10 @@ object WidgetRows {
         }
 
     private fun title(context: Context, line: WidgetLine.Title, model: WidgetModel): RemoteViews =
-        RemoteViews(context.packageName, R.layout.widget_row_title).apply {
+        RemoteViews(context.packageName, if (model.filter == WidgetFilter.All) R.layout.widget_row_title_flat else R.layout.widget_row_title).apply {
             val title = widgetDayTitle(context, line.day, model.today)
             // Прошедший день — красным.
-            val color = if (title.isPast) ColorTokens.overdue else ColorTokens.textPrimary
+            val color = (if (title.isPast) ColorTokens.overdue else ColorTokens.textPrimary).forTaskCanvas(model.filter == WidgetFilter.All)
             topPadding(context, R.id.title_root, line.isFirst)
             setTextViewText(R.id.title_text, title.text)
             color(R.id.title_text, "setTextColor", color)
@@ -91,11 +91,12 @@ object WidgetRows {
         val done = item.showsDone
         // Итерация 47: будущий повтор не тусклый — тусклая только прошедшая задача.
         val faded = row.past
+        val flat = filter == WidgetFilter.All
         val layout = when {
-            row.isPeriod && done -> R.layout.widget_row_period_done
-            row.isPeriod -> R.layout.widget_row_period
-            done -> R.layout.widget_row_task_done
-            else -> R.layout.widget_row_task
+            row.isPeriod && done -> if (flat) R.layout.widget_row_period_done_flat else R.layout.widget_row_period_done
+            row.isPeriod -> if (flat) R.layout.widget_row_period_flat else R.layout.widget_row_period
+            done -> if (flat) R.layout.widget_row_task_done_flat else R.layout.widget_row_task_done
+            else -> if (flat) R.layout.widget_row_task_flat else R.layout.widget_row_task
         }
         return RemoteViews(context.packageName, layout).apply {
             val (textColor, textAlpha) = when {
@@ -104,8 +105,8 @@ object WidgetRows {
                 else -> ColorTokens.textPrimary to 1f
             }
             // Время: красное и мельче у прошедшего дня; конец периода — серым.
-            time(R.id.row_start, row.start, if (line.overdue) ColorTokens.overdue else textColor, if (line.overdue) 1f else textAlpha, line.overdue)
-            time(R.id.row_end, row.end, if (line.overdue) ColorTokens.overdue else ColorTokens.textSecondary, 1f, line.overdue)
+            time(R.id.row_start, row.start, if (line.overdue) ColorTokens.overdue else textColor, if (line.overdue) 1f else textAlpha, line.overdue, flat)
+            time(R.id.row_end, row.end, if (line.overdue) ColorTokens.overdue else ColorTokens.textSecondary, 1f, line.overdue, flat)
             if (row.isPeriod) visible(R.id.row_time_gap, row.end != null)
 
             // Шкала: линия вверх и вниз, кружок цвета приоритета (у прошедшей — серый). Итерация 47: у повторяющейся — знак повтора
@@ -119,7 +120,7 @@ object WidgetRows {
                     faded && !done -> ColorTokens.inactive
                     done -> doneFill(item.priority)
                     else -> ring(item.priority)
-                },
+                }.forTaskCanvas(flat),
             )
             // Проверка PM (0.47.0): у выполненной повторяющейся галочки нет — знак повтора остаётся тусклым. Рисунок и галочка
             // пишутся у каждой строки: строки одного макета переиспользуются лаунчером.
@@ -147,7 +148,7 @@ object WidgetRows {
                 R.id.row_title,
                 if (done) SpannableString(item.title).apply { setSpan(StrikethroughSpan(), 0, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE) } else item.title,
             )
-            if (!done) color(R.id.row_title, "setTextColor", textColor)
+            if (!done) color(R.id.row_title, "setTextColor", textColor.forTaskCanvas(flat))
             setOnClickFillInIntent(R.id.row_plaque, fillIn(WidgetClicks.OPEN, item.taskId))
             val masks = item.reminder?.let { ReminderIconMasks.of(it, (SizeTokens.WIDGET_REMINDER_ICON * context.resources.displayMetrics.density).roundToInt()) }
             visible(R.id.row_bell, masks != null)
@@ -162,16 +163,16 @@ object WidgetRows {
         }
     }
 
-    private fun RemoteViews.time(id: Int, text: String?, color: ThemedColor, alpha: Float, small: Boolean) {
+    private fun RemoteViews.time(id: Int, text: String?, color: ThemedColor, alpha: Float, small: Boolean, flat: Boolean) {
         visible(id, text != null)
         if (text == null) return
         setTextViewText(id, text)
-        color(id, "setTextColor", color, alpha)
+        color(id, "setTextColor", color.forTaskCanvas(flat), alpha)
         setTextViewTextSize(id, TypedValue.COMPLEX_UNIT_SP, if (small) OVERDUE_TIME_SP else TIME_SP)
     }
 
-    private fun now(context: Context, line: WidgetLine.Now, liveClock: Boolean): RemoteViews =
-        RemoteViews(context.packageName, R.layout.widget_row_now).apply {
+    private fun now(context: Context, line: WidgetLine.Now, liveClock: Boolean, flat: Boolean): RemoteViews =
+        RemoteViews(context.packageName, if (flat) R.layout.widget_row_now_flat else R.layout.widget_row_now).apply {
             setViewVisibility(R.id.now_line_top, if (line.line.top) View.VISIBLE else View.INVISIBLE)
             setViewVisibility(R.id.now_line_bottom, if (line.line.bottom) View.VISIBLE else View.INVISIBLE)
             // В снимках для тестов — неподвижное время из модели вместо часов системы.
@@ -198,6 +199,11 @@ object WidgetRows {
     /** Цвет темы: Android сам берёт светлый или тёмный по теме системы. */
     internal fun RemoteViews.color(id: Int, method: String, color: ThemedColor, alpha: Float = 1f) =
         setColorInt(id, method, argb(color.light, alpha), argb(color.dark, alpha))
+
+    internal fun RemoteViews.taskCanvasColor(id: Int, method: String, color: ThemedColor, alpha: Float = 1f) =
+        setColorInt(id, method, argb(color.light, alpha), argb(color.light, alpha))
+
+    private fun ThemedColor.forTaskCanvas(flat: Boolean) = if (flat) ThemedColor(light, light) else this
 
     private fun argb(color: Long, alpha: Float): Int = Color(color).let { it.copy(alpha = it.alpha * alpha) }.toArgb()
 

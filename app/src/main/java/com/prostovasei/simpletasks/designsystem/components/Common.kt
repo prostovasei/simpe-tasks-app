@@ -46,6 +46,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import com.prostovasei.simpletasks.R
+import com.prostovasei.simpletasks.designsystem.theme.LocalTaskCanvas
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 
 /** Заголовок экрана. */
@@ -95,7 +96,7 @@ fun DayHeader(text: String, relative: String?, isOverdue: Boolean, modifier: Mod
                 fontWeight = FontWeight.Bold,
                 color = color,
                 modifier = Modifier
-                    .background(colors.surface, AppTheme.shapes.small)
+                    .background(if (LocalTaskCanvas.current) Color.Transparent else colors.surface, AppTheme.shapes.small)
                     .padding(horizontal = spacing.xs, vertical = AppTheme.sizes.hairline),
             )
         }

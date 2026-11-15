@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Подпись дня (итерация 42): «ПТ, 16 ОКТ» + метка «Сегодня»; справа число задач дня (итерация 43), у сегодняшнего дня — прогресс «3 из 7». -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/title_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingStart="@dimen/widget_edge"
+    android:paddingTop="@dimen/widget_edge"
+    android:paddingEnd="@dimen/widget_list_edge"
+    android:paddingBottom="@dimen/widget_day_gap">
+
+    <TextView
+        android:id="@+id/title_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:textColor="@color/widget_flat_text_primary"
+        android:textSize="14sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/title_chip"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/widget_space_xxs"
+        android:maxLines="1"
+        android:textColor="@color/widget_flat_text_primary"
+        android:paddingStart="@dimen/widget_space_xxs"
+        android:paddingTop="@dimen/widget_hairline"
+        android:paddingEnd="@dimen/widget_space_xxs"
+        android:paddingBottom="@dimen/widget_hairline"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/title_count"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:fontFamily="sans-serif-medium"
+        android:gravity="end"
+        android:maxLines="1"
+        android:textColor="@color/widget_flat_text_secondary"
+        android:textSize="12sp" />
+
+    <ProgressBar
+        android:id="@+id/title_progress"
+        style="@android:style/Widget.ProgressBar.Horizontal"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/widget_progress"
+        android:layout_marginStart="@dimen/widget_space_xs"
+        android:layout_weight="1"
+        android:max="1000"
+        android:maxHeight="@dimen/widget_progress"
+        android:minHeight="@dimen/widget_progress"
+        android:progressDrawable="@drawable/widget_flat_progress"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/title_progress_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/widget_space_xs"
+        android:fontFamily="sans-serif-medium"
+        android:maxLines="1"
+        android:textColor="@color/widget_flat_text_secondary"
+        android:textSize="12sp"
+        android:visibility="gone" />
+</LinearLayout>

@@ -1,0 +1,68 @@
+package com.prostovasei.simpletasks.widget
+
+import android.app.Application
+import android.view.View
+import android.widget.FrameLayout
+import android.widget.TextView
+import androidx.test.core.app.ApplicationProvider
+import com.prostovasei.simpletasks.R
+import com.prostovasei.simpletasks.designsystem.tokens.ColorTokens
+import com.prostovasei.simpletasks.domain.model.Priority
+import com.prostovasei.simpletasks.ui.common.DayLabel
+import com.prostovasei.simpletasks.ui.common.DueText
+import com.prostovasei.simpletasks.ui.common.TaskItem
+import com.prostovasei.simpletasks.ui.feature.week.WeekDay
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+import java.time.LocalDate
+import java.time.YearMonth
+
+/** Проверяет реальный RemoteViews/reapply: тема Android не должна вернуть карточки или белый текст. */
+@RunWith(RobolectricTestRunner::class)
+@Config(qualifiers = "w400dp-h900dp-night-xhdpi")
+class TaskCanvasWidgetTest {
+    private val context = ApplicationProvider.getApplicationContext<Application>()
+    private val today = LocalDate.of(2026, 11, 15)
+    private fun item(priority: Priority = Priority.NONE) = TaskItem(
+        "a", "Проверить счета", priority, DueText(DayLabel.Today, "10:00"), "Дом", "🏠", isInboxList = false,
+    )
+    private fun model(filter: WidgetFilter) = WidgetModel(filter, null, today,
+        listOf(WidgetDayBlock(WidgetDay.On(today), listOf(item()))))
+
+    @Test
+    fun upcomingAndInboxKeepDistinctLayoutsAndReapplyKeepsFlatStyle() {
+        val all = model(WidgetFilter.All)
+        val line = all.lines(dayNames(context), withTail = false).filterIsInstance<WidgetLine.Task>().single()
+        val flat = WidgetRows.views(context, line, all)
+        var root = flat.apply(context, FrameLayout(context))
+        assertNull(root.findViewById<View>(R.id.row_plaque).background)
+        assertEquals(ColorTokens.textPrimary.light.toInt(), root.findViewById<TextView>(R.id.row_title).currentTextColor)
+        root = WidgetRows.views(context, line, model(WidgetFilter.Inbox)).apply(context, FrameLayout(context))
+        assertNotNull(root.findViewById<View>(R.id.row_plaque).background)
+        assertEquals(ColorTokens.textPrimary.dark.toInt(), root.findViewById<TextView>(R.id.row_title).currentTextColor)
+        root = flat.apply(context, FrameLayout(context))
+        flat.reapply(context, root)
+        assertNull(root.findViewById<View>(R.id.row_plaque).background)
+        assertEquals(ColorTokens.textPrimary.light.toInt(), root.findViewById<TextView>(R.id.row_title).currentTextColor)
+    }
+
+    @Test
+    fun weekPriorityChangesKeepFlatRowsAndLightText() {
+        val start = today.minusDays(6)
+        fun views(priority: Priority) = WidgetWeekRows.views(context,
+            WidgetWeek(start, YearMonth.from(today), (0L..6).map { WeekDay(start.plusDays(it), if (it == 0L) listOf(item(priority)) else emptyList()) }, today),
+            androidx.compose.ui.unit.DpSize.Unspecified, WidgetWeekRows.Click { _, _, _ -> })[0]
+        val high = views(Priority.HIGH)
+        val root = high.apply(context, FrameLayout(context))
+        val slot = WeekIds.LEFT.slots.first()
+        assertNull(root.findViewById<View>(slot.plaque).background)
+        assertEquals(ColorTokens.textPrimary.light.toInt(), root.findViewById<TextView>(slot.title).currentTextColor)
+        views(Priority.NONE).reapply(context, root)
+        assertNull(root.findViewById<View>(slot.plaque).background)
+    }
+}

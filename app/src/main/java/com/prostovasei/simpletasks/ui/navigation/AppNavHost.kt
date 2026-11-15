@@ -105,6 +105,13 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import kotlinx.coroutines.flow.first
 import com.prostovasei.simpletasks.R
+import android.app.Activity
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.Color
+import androidx.core.view.WindowInsetsControllerCompat
+import com.prostovasei.simpletasks.designsystem.tokens.TaskCanvasTokens
+import com.prostovasei.simpletasks.designsystem.theme.TaskCanvasTheme
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.ui.common.TAG_ADD_TASK
 import com.prostovasei.simpletasks.ui.feature.all.AllRoute
@@ -227,6 +234,17 @@ fun AppNavHost(
     // Финансы (#217, этап 1 — #221): отдельный модуль. Нижняя панель общая (#241): модуль меняется кнопкой справа;
     // при возврате в модуль открывается то же место (сохранённое состояние страницы).
     val inFinance = destination?.hasRoute(FinanceDestination::class) == true
+    val taskCanvas = currentTab == Tab.UPCOMING || currentTab == Tab.WEEK || destination?.hasRoute(ProjectDestination::class) == true
+    val lightBars = taskCanvas || !isSystemInDarkTheme()
+    SideEffect {
+        (context as? Activity)?.window?.let { window ->
+            WindowInsetsControllerCompat(window, window.decorView).apply {
+                isAppearanceLightStatusBars = lightBars
+                isAppearanceLightNavigationBars = lightBars
+            }
+        }
+    }
+
     val finance = hiltViewModel<FinanceViewModel>()
     val financeState by finance.state.collectAsStateWithLifecycle()
     // #233: «Изменить» в уведомлении о покупке — раздел финансов с окном нового расхода.
@@ -303,7 +321,7 @@ fun AppNavHost(
     }
 
     Scaffold(
-        containerColor = AppTheme.colors.background,
+        containerColor = if (taskCanvas) Color(TaskCanvasTokens.background.light) else AppTheme.colors.background,
         snackbarHost = { UndoSnackbarHost(snackbar) },
         bottomBar = {
             val switchModule: (AppModule) -> Unit = { target ->
@@ -325,6 +343,7 @@ fun AppNavHost(
             // На вложенных экранах (список, настройки) панели нет. В режиме выбора — тоже: там лента действий.
             if (!selectionMode.value && (destination == null || currentTab != null)) {
                 val selected = currentTab ?: left
+                TaskCanvasTheme(enabled = selected != Tab.LISTS) {
                 TasksBottomBar(
                     selected = selected,
                     onSelect = { tab ->
@@ -345,6 +364,7 @@ fun AppNavHost(
                     onSettings = openSettings,
                     onWeekFilter = { weekFilterOpen = true },
                 )
+                }
             }
         },
     ) { padding ->
