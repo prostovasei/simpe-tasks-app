@@ -1,7 +1,5 @@
 package com.prostovasei.simpletasks.ui.feature.week
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,7 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -35,10 +32,11 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.rememberTextMeasurer
+import com.prostovasei.simpletasks.ui.common.weekNodeIcon
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.prostovasei.simpletasks.R
-import com.prostovasei.simpletasks.designsystem.components.RepeatMark
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.designsystem.tokens.TaskCanvasTokens
 import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
@@ -118,8 +116,6 @@ private fun WeekDayHeader(date: LocalDate, isToday: Boolean, hidden: Int, onClic
                 fontWeight = FontWeight.ExtraBold,
                 color = colors.textPrimary,
                 modifier = Modifier
-                    .background(colors.accentSoft, CircleShape)
-                    .padding(horizontal = AppTheme.spacing.xs, vertical = AppTheme.sizes.hairline)
                     .testTag("week-more:$date"),
             )
         }
@@ -142,6 +138,9 @@ private fun WeekTaskRow(item: TaskItem, onToggle: () -> Unit, onOpen: () -> Unit
     val timeColor = if (high) priorityColor else if (done) Color(TaskCanvasTokens.done.light) else colors.textSecondary
     val ring = if (high) priorityColor else colors.inactive
     val doneFill = if (high) priorityColor else Color(TaskCanvasTokens.done.light)
+    val timeStyle = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold, fontFeatureSettings = "tnum")
+    val timeMeasurer = rememberTextMeasurer()
+    val timeWidth = with(LocalDensity.current) { timeMeasurer.measure("00:00", timeStyle).size.width.toDp() }
     val label = stringResource(if (done) R.string.task_uncomplete else R.string.widget_complete)
     Row(
         Modifier
@@ -155,32 +154,34 @@ private fun WeekTaskRow(item: TaskItem, onToggle: () -> Unit, onOpen: () -> Unit
     ) {
         Text(
             item.startTime().orEmpty(),
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.SemiBold,
+            style = timeStyle,
             color = timeColor,
             textAlign = TextAlign.Start,
             maxLines = 1,
-            modifier = Modifier.width((SizeTokens.WEEK_TIME_COLUMN * LocalDensity.current.fontScale).dp)
+            modifier = Modifier.width(timeWidth).clickable(onClick = onOpen)
                 .testTag("week-time:${item.id}"),
         )
-        // Зона нажатия кружка — вся высота плашки, сам кружок — WEEKVIEW_CHECK.
+        Spacer(Modifier.width(SizeTokens.WEEK_CONTENT_GAP.dp))
+        // Горизонтальных полей вокруг видимого значка нет, высота зоны прежняя.
         Box(
             Modifier
-                .size(SizeTokens.WEEKVIEW_TASK.dp)
+                .size(width = SizeTokens.WEEKVIEW_CHECK.dp, height = SizeTokens.WEEKVIEW_TASK.dp)
                 .then(
                     if (item.isGhost) Modifier else Modifier.clickable(onClick = onToggle).semantics { contentDescription = label }.testTag("week-check:${item.id}"),
                 ),
             contentAlignment = Alignment.Center,
         ) {
-            when {
-                // Проверка PM (0.47.0): выполненная повторяющаяся — знак повтора тусклым цветом, без галочки.
-                item.isRecurring -> RepeatMark(if (done) doneFill else ring, Modifier.size(SizeTokens.WEEKVIEW_CHECK.dp).testTag("week-repeat:${item.id}"))
-                done -> Box(Modifier.size(SizeTokens.WEEKVIEW_CHECK.dp).background(doneFill, CircleShape), contentAlignment = Alignment.Center) {
-                    Icon(painterResource(R.drawable.ic_node_check), null, tint = colors.onListSquare, modifier = Modifier.size(SizeTokens.WEEKVIEW_CHECK_ICON.dp))
-                }
-                else -> Box(Modifier.size(SizeTokens.WEEKVIEW_CHECK.dp).border(SizeTokens.CHECKBOX_STROKE.dp, ring, CircleShape))
+            Icon(painterResource(item.weekNodeIcon()), null,
+                tint = if (done) doneFill else ring,
+                modifier = Modifier.size(SizeTokens.WEEKVIEW_CHECK.dp)
+                    .then(if (item.isRecurring) Modifier.testTag("week-repeat:${item.id}") else Modifier),
+            )
+            if (done && !item.isRecurring) {
+                Icon(painterResource(R.drawable.ic_node_check), null, tint = colors.onListSquare,
+                    modifier = Modifier.size(SizeTokens.WEEKVIEW_CHECK_ICON.dp))
             }
         }
+        Spacer(Modifier.width(SizeTokens.WEEK_CONTENT_GAP.dp))
         Text(
             item.title,
             style = MaterialTheme.typography.bodySmall,
@@ -188,7 +189,7 @@ private fun WeekTaskRow(item: TaskItem, onToggle: () -> Unit, onOpen: () -> Unit
             color = titleColor,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).clickable(onClick = onOpen).testTag("week-title:${item.id}"),
         )
         // #249: эмодзи остаётся справа, время — в отдельной колонке слева.
         Text(item.listEmoji, style = MaterialTheme.typography.labelMedium, maxLines = 1, modifier = Modifier.padding(start = spacing.xxs).alpha(if (done) TaskCanvasTokens.DONE_EMOJI_ALPHA else 1f).testTag("week-emoji:${item.id}"))
