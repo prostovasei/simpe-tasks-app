@@ -69,6 +69,12 @@ COLOR_USAGE = {
     'divider': 'Тонкие линии, рамки кнопок и полей, линия шкалы.',
     'selected': 'Мягкая подсветка выбранного: кнопки панели, дни под сеткой, переключатель виджета. Значок на ней чёрный (`accent`).',
     'danger': 'Опасные действия: «Удалить». Совпадает по значению с `overdue`, но роль другая.',
+    'income': 'Доходы в списке операций (0.68): сумма со знаком «+»; в «Здоровье» (0.71) — снижение веса.',
+    'week-row-priority-done': 'Неделя и Предстоящие (0.70): выполненная задача высокого приоритета — бледно-фиолетовые время и название, без зачёркивания.',
+    'week-row-done': 'Неделя и Предстоящие (0.70): выполненная обычная задача — бледно-серые время и название, без зачёркивания.',
+    'week-row-background': 'Белый плоский фон экранов редизайна #247 (Неделя, Предстоящие, проекты, Здоровье).',
+    'week-row-divider': 'Тонкая бледная линия между строками экранов редизайна #247.',
+    'goal': 'Здоровье (0.71): пунктир цели на графике веса и его подпись; фиолетовый, как у высокого приоритета.',
     'scrim': 'Затемнение под окнами и шторкой.',
     'priority-high-bg': 'Высокий приоритет (итерация 47: фиолетовый; средний и низкий убраны): фон кнопки приоритета.', 'priority-high-text': 'Текст и значок на `priority-high-bg`.',
     'priority-none-bg': 'Обычный приоритет: фон.', 'priority-none-text': 'Текст на `priority-none-bg`.',
@@ -98,6 +104,13 @@ SIZE_PICK = {
     'FINANCE_CLOSE': ('finance-close', 'Кнопка «×» окна финансов.'),
     'FINANCE_CHIP': ('finance-chip', 'Кнопка категории и часть переключателя «Расход / Доход / Перевод»: высота не меньше (0.59).'),
     'OPERATION_ROW': ('operation-row', 'Строка операции в списке и строка категории: высота не меньше (0.59).'),
+    'HEALTH_DRUM_ITEM': ('health-drum-item', 'Здоровье (0.71): высота строки барабана выбора числа; в барабане видно пять строк.'),
+    'HEALTH_DRUM_WHOLE': ('health-drum-whole', 'Здоровье: ширина барабана килограммов и роста.'), 'HEALTH_DRUM_TENTH': ('health-drum-tenth', 'Здоровье: ширина барабана десятых долей.'),
+    'HEALTH_CHART_HEIGHT': ('health-chart-height', 'Здоровье: высота графика веса.'), 'HEALTH_CHART_AXIS': ('health-chart-axis', 'Здоровье: поле справа от графика под подписи килограммов и цели.'),
+    'HEALTH_POINT': ('health-point', 'Здоровье: радиус точки графика и точки «есть запись» в календаре.'), 'HEALTH_POINT_LAST': ('health-point-last', 'Здоровье: радиус последней, закрашенной точки графика.'),
+    'HEALTH_LINE': ('health-line', 'Здоровье: толщина линии графика.'), 'HEALTH_CAL_CELL': ('health-cal-cell', 'Здоровье: ячейка дня в календаре даты записи.'),
+    'HEALTH_TIP_HEIGHT': ('health-tip-height', 'Здоровье: высота подсказки «вес · дата» у точки графика.'), 'HEALTH_TIP_WIDTH': ('health-tip-width', 'Здоровье: наименьшая ширина подсказки у точки.'),
+    'HEALTH_DELTA_WIDTH': ('health-delta-width', 'Здоровье: колонка разницы с прошлой записью в истории.'),
     'CARD_GAP': ('card-gap', 'Щель между плашками задач.'),
     'LIST_SQUARE': ('list-square', 'Место под эмодзи списка перед названием (итерация 47: эмодзи вместо квадратика).'), 'LIST_GLYPH': ('list-glyph', 'Размер эмодзи списка в строке задачи.'),
     'LIST_SQUARE_LARGE': ('list-square-large', 'Поле крупного эмодзи: экран «Списки», заголовок списка, кнопка списка в шторке (без подложки).'), 'LIST_GLYPH_LARGE': ('list-glyph-large', 'Размер крупного эмодзи.'),
@@ -176,7 +189,7 @@ def contrast(a, b):
 def build_tokens():
     color = []
     order = ['background', 'surface', 'text-primary', 'text-secondary', 'accent', 'on-accent', 'accent-soft', 'selected', 'inactive', 'divider',
-             'overdue', 'danger', 'scrim', 'on-list-square']
+             'overdue', 'danger', 'income', 'goal', 'scrim', 'on-list-square']
     order += [n for n in COLORS if n.startswith('ring-')] + [n for n in COLORS if n.startswith('priority-')] + [n for n in COLORS if n.startswith('week-row-')]
     for n in order:
         light, dark = COLORS[n]

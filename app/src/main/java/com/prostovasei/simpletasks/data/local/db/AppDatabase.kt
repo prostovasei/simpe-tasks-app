@@ -18,6 +18,7 @@ import com.prostovasei.simpletasks.data.local.dao.FinancePlaceDao
 import com.prostovasei.simpletasks.data.local.dao.ProjectDao
 import com.prostovasei.simpletasks.data.local.dao.ProjectGroupDao
 import com.prostovasei.simpletasks.data.local.dao.TaskDao
+import com.prostovasei.simpletasks.data.local.dao.WeightEntryDao
 import com.prostovasei.simpletasks.data.local.entity.BankPurchaseEntity
 import com.prostovasei.simpletasks.data.local.entity.ChecklistItemEntity
 import com.prostovasei.simpletasks.data.local.entity.FinanceAccountEntity
@@ -27,6 +28,7 @@ import com.prostovasei.simpletasks.data.local.entity.FinancePlaceEntity
 import com.prostovasei.simpletasks.data.local.entity.ProjectEntity
 import com.prostovasei.simpletasks.data.local.entity.ProjectGroupEntity
 import com.prostovasei.simpletasks.data.local.entity.TaskEntity
+import com.prostovasei.simpletasks.data.local.entity.WeightEntryEntity
 import java.util.concurrent.Executor
 
 @Database(
@@ -40,6 +42,7 @@ import java.util.concurrent.Executor
         FinanceOperationEntity::class,
         BankPurchaseEntity::class,
         FinancePlaceEntity::class,
+        WeightEntryEntity::class,
     ],
     // 1 → 2 (итерация 14): колонка projects.icon. 2 → 3 (итерация 47): колонка projects.emoji и два приоритета ([V2to3]).
     // 3 → 4 (итерация 47, проверка PM): колонка tasks.is_repeat_done — выполненный раз повтора. Данные PM сохраняются автоматической миграцией Room.
@@ -49,9 +52,10 @@ import java.util.concurrent.Executor
     // 7 → 8 (уведомления банка, #233): новая таблица bank_purchases; операции и задачи не меняются.
     // 8 → 9 (эмодзи категорий, #237): колонка finance_categories.emoji.
     // 9 → 10 (справочник мест, #239): таблица finance_places, заполняется местами из операций ([V9to10]).
-    version = 10,
+    // 10 → 11 (раздел «Здоровье», #257): новая таблица weight_entries; остальные таблицы не меняются.
+    version = 11,
     exportSchema = true,
-    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3, spec = V2to3::class), AutoMigration(from = 3, to = 4), AutoMigration(from = 4, to = 5, spec = V4to5::class), AutoMigration(from = 5, to = 6), AutoMigration(from = 6, to = 7), AutoMigration(from = 7, to = 8), AutoMigration(from = 8, to = 9), AutoMigration(from = 9, to = 10, spec = V9to10::class)],
+    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3, spec = V2to3::class), AutoMigration(from = 3, to = 4), AutoMigration(from = 4, to = 5, spec = V4to5::class), AutoMigration(from = 5, to = 6), AutoMigration(from = 6, to = 7), AutoMigration(from = 7, to = 8), AutoMigration(from = 8, to = 9), AutoMigration(from = 9, to = 10, spec = V9to10::class), AutoMigration(from = 10, to = 11)],
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun projectGroupDao(): ProjectGroupDao
@@ -62,6 +66,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun financeOperationDao(): FinanceOperationDao
     abstract fun bankPurchaseDao(): BankPurchaseDao
     abstract fun financePlaceDao(): FinancePlaceDao
+    abstract fun weightEntryDao(): WeightEntryDao
 
     companion object {
         const val NAME = "simple_tasks.db"

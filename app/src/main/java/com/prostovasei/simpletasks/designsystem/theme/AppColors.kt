@@ -45,6 +45,7 @@ data class AppColors(
     val weekRow: WeekRowColors,
     val danger: Color,
     val income: Color,
+    val goal: Color,
     val scrim: Color,
     val priority: PriorityPalette,
     val isDark: Boolean,
@@ -77,6 +78,7 @@ internal fun appColors(isDark: Boolean): AppColors {
         ),
         danger = ColorTokens.danger.resolve(),
         income = ColorTokens.income.resolve(),
+        goal = ColorTokens.goal.resolve(),
         scrim = ColorTokens.scrim.resolve(),
         priority = PriorityPalette(
             high = PriorityTokens.high.resolve(),

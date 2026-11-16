@@ -109,21 +109,22 @@ class SettingsScreenTest {
         composeRule.onNodeWithText("Версия 0.3.1 (сборка 42)").assertExists()
     }
 
-    /** Единые настройки (#241): три раздела, подпись «Приложения» с версией; каждый ведёт на свою страницу. */
+    /** Единые настройки (#241): четыре раздела, подпись «Приложения» с версией; каждый ведёт на свою страницу. */
     @Test
     fun settingsHomeLeadsToThreeSections() {
         val clicks = mutableListOf<String>()
         composeRule.setContent {
-            AppTheme { AppSettingsScreen(AppVersion("0.66.0", 320), onBack = { clicks += "back" }, onTasks = { clicks += "tasks" }, onFinance = { clicks += "finance" }, onApp = { clicks += "app" }) }
+            AppTheme { AppSettingsScreen(AppVersion("0.66.0", 320), onBack = { clicks += "back" }, onTasks = { clicks += "tasks" }, onFinance = { clicks += "finance" }, onHealth = { clicks += "health" }, onApp = { clicks += "app" }) }
         }
         composeRule.onNodeWithText("Настройки").assertExists()
         composeRule.onNodeWithText("Версия 0.66.0 · обновление").assertExists()
         composeRule.onRoot().captureRoboImage("screenshots/settings_home_light.png")
         composeRule.onNodeWithTag(TAG_SETTINGS_TASKS).performClick()
         composeRule.onNodeWithTag(TAG_SETTINGS_FINANCE).performClick()
+        composeRule.onNodeWithTag(TAG_SETTINGS_HEALTH).performClick()
         composeRule.onNodeWithTag(TAG_SETTINGS_APP).performClick()
         composeRule.onNodeWithContentDescription("Назад").performClick()
-        assertEquals(listOf("tasks", "finance", "app", "back"), clicks)
+        assertEquals(listOf("tasks", "finance", "health", "app", "back"), clicks)
     }
 
     @Test

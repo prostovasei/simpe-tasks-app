@@ -48,6 +48,9 @@ object ColorTokens {
     /** Доходы в списке операций (#245): сумма со знаком «+». */
     val income = ThemedColor(light = 0xFF1F8F4E, dark = 0xFF4CC38A)
 
+    /** Линия цели и её подпись на графике веса (#257): фиолетовый, как у высокого приоритета. */
+    val goal = ThemedColor(light = 0xFF8E4EC6, dark = 0xFFB48AE8)
+
     /** Затемнение под всплывающим окном (выбор списка виджета). */
     val scrim = ThemedColor(light = 0x66000000, dark = 0x99000000)
 }

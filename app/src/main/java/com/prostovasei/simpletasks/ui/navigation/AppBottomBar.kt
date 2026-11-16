@@ -49,6 +49,7 @@ import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 enum class AppModule(@param:StringRes val label: Int, @param:DrawableRes val icon: Int) {
     TASKS(R.string.module_tasks, R.drawable.ic_module_tasks),
     FINANCE(R.string.module_finance, R.drawable.ic_module_finance),
+    HEALTH(R.string.module_health, R.drawable.ic_module_health),
 }
 
 /** Страница модуля в нижней панели: [key] — для выбора, [tag] — для тестов. */
@@ -57,7 +58,7 @@ data class BarPage(val key: String, @param:DrawableRes val icon: Int, @param:Str
 /**
  * Единая нижняя панель приложения (#241, макеты design/approved/241, решение PM 13.11.2026): слева чёрная «+» ([onAdd]), посередине
  * страницы модуля [pages] (выбранная чёрная, остальные серые, без плашек), справа кнопка модуля — той же ширины и со скруглениями, как у «+»,
- * но с обводкой. Нажатие на кнопку модуля открывает меню: «Задачи», «Финансы» ([onModule]) и «Настройки» ([onSettings]).
+ * но с обводкой. Нажатие на кнопку модуля открывает меню: «Задачи», «Финансы», «Здоровье» ([onModule]) и «Настройки» ([onSettings]).
  * Верхнего бара нет. Панель низкая (44): нажимается всей высотой, видна только кнопка 34.
  */
 @Composable

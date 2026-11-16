@@ -155,6 +155,35 @@ class MigrationTest {
         }
     }
 
+    /** Миграция 10 → 11 (раздел «Здоровье», #257): появляется пустая таблица веса, а задачи и финансы PM остаются как были. */
+    @Test
+    fun weightTableIsAddedAndExistingDataIsKept() {
+        val file = context.getDatabasePath(AppDatabase.NAME).apply { parentFile?.mkdirs(); delete() }
+        createVersion(file, 10) { sql ->
+            sql.execSQL("INSERT INTO projects (id, name, sort_order, is_inbox, is_deleted, created_at, updated_at) VALUES ('p1', 'Ремонт', 0, 0, 0, 1, 1)")
+            sql.execSQL("INSERT INTO tasks (id, project_id, title, status, priority, is_all_day, sort_order, is_deleted, created_at, updated_at) VALUES ('t1', 'p1', 'Купить краску', 0, 0, 1, 0, 0, 1, 1)")
+            sql.execSQL("INSERT INTO finance_accounts (id, name, type, emoji, initial_balance, sort_order, created_at, updated_at) VALUES ('a1', 'Карта', 'card', NULL, 4230000, 0, 1, 1)")
+            sql.execSQL("INSERT INTO finance_places (id, name, is_archived, created_at, updated_at) VALUES ('pl1', 'Пятёрочка', 0, 1, 1)")
+        }
+
+        val db = AppDatabase.build(context, FakeTimeProvider())
+        try {
+            assertEquals(emptyList<Any>(), runBlocking { db.weightEntryDao().getAll() })
+            // Новая таблица работает: запись, и вторая на ту же дату заменяет первую.
+            runBlocking {
+                db.weightEntryDao().upsert(com.prostovasei.simpletasks.data.local.entity.WeightEntryEntity("w1", 20_000, 824, null, 1, 1))
+                db.weightEntryDao().upsert(com.prostovasei.simpletasks.data.local.entity.WeightEntryEntity("w2", 20_000, 826, "утро", 2, 2))
+            }
+            assertEquals(listOf(826), runBlocking { db.weightEntryDao().getAll() }.map { it.tenths })
+            val title = db.openHelper.readableDatabase.query("SELECT title FROM tasks WHERE id = 't1'").use { it.moveToFirst(); it.getString(0) }
+            assertEquals("Купить краску", title)
+            assertEquals("Карта", runBlocking { db.financeAccountDao().observeAll().first() }.single().account.name)
+            assertEquals("Пятёрочка", runBlocking { db.financePlaceDao().getById("pl1") }!!.name)
+        } finally {
+            db.close()
+        }
+    }
+
     private fun createVersion4(file: File) = createVersion(file, 4) { sql ->
         sql.execSQL("INSERT INTO project_groups (id, name, sort_order, is_deleted, created_at, updated_at) VALUES ('g1', '🏠Дом', 0, 0, 1, 1)")
         sql.execSQL("INSERT INTO project_groups (id, name, sort_order, is_deleted, created_at, updated_at) VALUES ('g2', 'Работа', 1, 0, 1, 1)")

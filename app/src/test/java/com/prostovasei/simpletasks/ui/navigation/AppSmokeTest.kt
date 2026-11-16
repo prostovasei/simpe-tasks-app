@@ -23,6 +23,7 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performTextReplacement
 import com.prostovasei.simpletasks.MainActivity
 import com.prostovasei.simpletasks.designsystem.components.TAG_NAME_FIELD
@@ -214,6 +215,52 @@ class AppSmokeTest {
         composeRule.onNodeWithTag(TAG_MODULE_SETTINGS).performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists(TAG_APP_SETTINGS) }
         composeRule.onNodeWithTag(TAG_APP_BAR).assertDoesNotExist()
+    }
+
+    /** Здоровье (#257): третий модуль — первая запись веса, вторая заменяет на ту же дату, настройки, возврат в задачи. */
+    @Test
+    fun switchToHealthRecordWeightAndComeBack() {
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Всё сделано") }
+        switchModule("HEALTH")
+
+        // Записей нет: нижняя панель — «Здоровья» (одна страница «Вес»), «+» открывает окно ввода с 70,0.
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists("health_empty") }
+        composeRule.onNodeWithTag("tab:LISTS").assertDoesNotExist()
+        composeRule.onNodeWithTag("health_tab:WEIGHT").assertExists()
+        composeRule.onNodeWithTag("health_add").performClick()
+        composeRule.onNodeWithTag("weight_window:confirm").performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists("health_hero") }
+        composeRule.onNodeWithTag("health_weight").assertTextEquals("70,0")
+
+        // Вторая запись на сегодня заменяет первую: в истории одна строка.
+        composeRule.onNodeWithTag("health_add").performClick()
+        composeRule.onNodeWithTag("weight_comment").performTextReplacement("утром")
+        composeRule.onNodeWithTag("weight_window:confirm").performClick()
+        // Тестовый экран крошечный: история ниже края, лента её не компонует — прокручиваем к записи.
+        composeRule.waitUntil(5_000) { runCatching { composeRule.onNodeWithTag("health_list").performScrollToNode(hasText("утром")) }.isSuccess }
+        composeRule.onNodeWithTag("health_goal").assertExists()
+
+        // Настройки → «Здоровье» → напоминание включается и показывает время.
+        composeRule.onNodeWithTag(TAG_MODULE_BUTTON).performClick()
+        composeRule.onNodeWithTag(TAG_MODULE_SETTINGS).performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists(TAG_APP_SETTINGS) }
+        composeRule.onNodeWithTag("settings_health").performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists("health_settings") }
+        composeRule.onNodeWithTag("health_reminder_switch").performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists("health_reminder_time") }
+        composeRule.onNodeWithContentDescription("Назад").performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists(TAG_APP_SETTINGS) }
+        composeRule.onNodeWithContentDescription("Назад").performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists("health_list") }
+
+        // Возврат в задачи и снова в «Здоровье»: запись на месте (лента — с начала, на крошечном экране её верх мог уйти за край).
+        switchModule("TASKS")
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists("tab:UPCOMING") }
+        composeRule.onNodeWithTag("health_list").assertDoesNotExist()
+        switchModule("HEALTH")
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists("health_list") }
+        composeRule.onNodeWithTag("health_list").performScrollToIndex(0)
+        composeRule.onNodeWithTag("health_weight").assertTextEquals("70,0")
     }
 
     /** Меню кнопки модуля: выбрать модуль. */
