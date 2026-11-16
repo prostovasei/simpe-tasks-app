@@ -13,7 +13,7 @@ PR [#256](https://github.com/prostovasei/simpe-tasks-app/pull/256); после �
 ## #257 — раздел «Здоровье» (вес), в работе
 
 Исполнитель Claude Code, ветка `ccr-f693eba9-s35zxw` от main 3037589. ТЗ по 12 ответам PM — в [Issue #257](https://github.com/prostovasei/simpe-tasks-app/issues/257).
-Статус: макеты [design/approved/257](../design/approved/257/README.md) на согласовании PM; кода нет, начинать только после «Делай код».
+Статус: макеты [design/approved/257](../design/approved/257/README.md) согласованы PM 16.11.2026 («Ок»); кода нет, начинать только после отдельной команды «Делай код».
 
 ## Телефон
 
