@@ -144,6 +144,13 @@ import com.prostovasei.simpletasks.ui.feature.finance.FinanceSettingsRoute
 import com.prostovasei.simpletasks.ui.feature.finance.PlacesRoute
 import com.prostovasei.simpletasks.ui.feature.finance.FinanceTrashRoute
 import com.prostovasei.simpletasks.ui.feature.finance.FinanceViewModel
+import com.prostovasei.simpletasks.ui.feature.health.HealthBackupRoute
+import com.prostovasei.simpletasks.ui.feature.health.HealthIntent
+import com.prostovasei.simpletasks.ui.feature.health.HealthRoute
+import com.prostovasei.simpletasks.ui.feature.health.HealthSettingsRoute
+import com.prostovasei.simpletasks.ui.feature.health.HealthViewModel
+import com.prostovasei.simpletasks.ui.feature.health.TAG_HEALTH_ADD
+import com.prostovasei.simpletasks.ui.feature.health.TAG_HEALTH_TAB
 import androidx.compose.runtime.saveable.rememberSaveable
 import kotlin.reflect.KClass
 
@@ -187,6 +194,16 @@ internal fun FinanceBottomBar(
     onSettings: () -> Unit,
 ) = AppBottomBar(FINANCE_PAGES, selected.name, { onSelect(FinanceTab.valueOf(it)) }, onAdd, TAG_FINANCE_ADD, R.string.finance_add, AppModule.FINANCE, onModule, onSettings)
 
+/** Нижняя панель модуля «Здоровье» (#257): одна страница «Вес», «+» — новое взвешивание. */
+@Composable
+internal fun HealthBottomBar(onAdd: () -> Unit, onModule: (AppModule) -> Unit, onSettings: () -> Unit) =
+    AppBottomBar(HEALTH_PAGES, HEALTH_WEIGHT_PAGE, {}, onAdd, TAG_HEALTH_ADD, R.string.health_add, AppModule.HEALTH, onModule, onSettings)
+
+private const val HEALTH_WEIGHT_PAGE = "WEIGHT"
+
+/** Страницы модуля «Здоровье» (#257): пока одна — «Вес»; позже рядом появятся другие показатели. */
+internal val HEALTH_PAGES: List<BarPage> = listOf(BarPage(HEALTH_WEIGHT_PAGE, R.drawable.ic_health_weight, R.string.health_page_weight, "$TAG_HEALTH_TAB:$HEALTH_WEIGHT_PAGE"))
+
 /** Страницы модуля «Финансы» в нижней панели (#241): «Аналитика» и «Операции». */
 internal val FINANCE_PAGES: List<BarPage> = listOf(
     BarPage(FinanceTab.ANALYTICS.name, R.drawable.ic_finance_tab_analytics, R.string.finance_tab_analytics, "$TAG_FINANCE_TAB:${FinanceTab.ANALYTICS.name}"),
@@ -215,7 +232,7 @@ fun AppNavHost(
     LaunchedEffect(openRoute) {
         openRoute ?: return@LaunchedEffect
         // Покупка из уведомления банка (#233) открывается ниже, когда готова модель финансов.
-        if (openRoute is OpenBankPurchase) return@LaunchedEffect
+        if (openRoute is OpenBankPurchase || openRoute is OpenHealthWeight) return@LaunchedEffect
         navController.currentBackStackEntryFlow.first()
         navController.navigate(openRoute) { launchSingleTop = true }
         onRouteOpened()
@@ -234,7 +251,9 @@ fun AppNavHost(
     // Финансы (#217, этап 1 — #221): отдельный модуль. Нижняя панель общая (#241): модуль меняется кнопкой справа;
     // при возврате в модуль открывается то же место (сохранённое состояние страницы).
     val inFinance = destination?.hasRoute(FinanceDestination::class) == true
-    val taskCanvas = currentTab == Tab.UPCOMING || currentTab == Tab.WEEK || destination?.hasRoute(ProjectDestination::class) == true
+    // «Здоровье» (#257) — отдельный модуль со своей панелью; экран белый плоский, как «Неделя» (макеты design/approved/257).
+    val inHealth = destination?.hasRoute(HealthDestination::class) == true
+    val taskCanvas = currentTab == Tab.UPCOMING || currentTab == Tab.WEEK || destination?.hasRoute(ProjectDestination::class) == true || inHealth
     val lightBars = taskCanvas || !isSystemInDarkTheme()
     SideEffect {
         (context as? Activity)?.window?.let { window ->
@@ -254,6 +273,16 @@ fun AppNavHost(
         val inStack = runCatching { navController.getBackStackEntry<FinanceDestination>() }.isSuccess
         if (inStack) navController.popBackStack<FinanceDestination>(inclusive = false) else navController.openRoot(FinanceDestination, restore = true)
         finance.onIntent(FinanceIntent.EditPurchase(purchase.purchaseId))
+        onRouteOpened()
+    }
+    val health = hiltViewModel<HealthViewModel>()
+    // #257: нажатие на «Пора взвеситься» — раздел «Здоровье» с окном ввода веса.
+    LaunchedEffect(openRoute) {
+        if (openRoute !is OpenHealthWeight) return@LaunchedEffect
+        navController.currentBackStackEntryFlow.first()
+        val inStack = runCatching { navController.getBackStackEntry<HealthDestination>() }.isSuccess
+        if (inStack) navController.popBackStack<HealthDestination>(inclusive = false) else navController.openRoot(HealthDestination, restore = true)
+        health.onIntent(HealthIntent.Add)
         onRouteOpened()
     }
     var lastTaskTab by rememberSaveable { mutableStateOf(left.name) }
@@ -327,11 +356,14 @@ fun AppNavHost(
             val switchModule: (AppModule) -> Unit = { target ->
                 when {
                     target == AppModule.FINANCE && !inFinance -> navController.openRoot(FinanceDestination, restore = true)
-                    target == AppModule.TASKS && inFinance -> navController.openTab(Tab.valueOf(lastTaskTab))
+                    target == AppModule.HEALTH && !inHealth -> navController.openRoot(HealthDestination, restore = true)
+                    target == AppModule.TASKS && (inFinance || inHealth) -> navController.openTab(Tab.valueOf(lastTaskTab))
                 }
             }
             val openSettings = { navController.navigate(AppSettingsDestination) { launchSingleTop = true } }
-            if (inFinance) {
+            if (inHealth) {
+                TaskCanvasTheme { HealthBottomBar(onAdd = { health.onIntent(HealthIntent.Add) }, onModule = switchModule, onSettings = openSettings) }
+            } else if (inFinance) {
                 FinanceBottomBar(
                     selected = financeState.tab,
                     onSelect = { finance.onIntent(FinanceIntent.SelectTab(it)) },
@@ -429,6 +461,7 @@ fun AppNavHost(
                     onBack = { navController.popBackStack() },
                     onTasks = { navController.navigate(SettingsDestination) { launchSingleTop = true } },
                     onFinance = { navController.navigate(FinanceSettingsDestination) { launchSingleTop = true } },
+                    onHealth = { navController.navigate(HealthSettingsDestination) { launchSingleTop = true } },
                     onApp = { navController.navigate(AppInfoDestination) { launchSingleTop = true } },
                 )
             }
@@ -437,6 +470,11 @@ fun AppNavHost(
             composable<FinanceDestination> {
                 FinanceRoute(finance, onOpenUnsorted = { navController.navigate(FinanceUnsortedDestination) { launchSingleTop = true } })
             }
+            composable<HealthDestination> { HealthRoute(health, snackbar) }
+            composable<HealthSettingsDestination> {
+                HealthSettingsRoute(health, onBack = { navController.popBackStack() }, onBackup = { navController.navigate(HealthBackupDestination) { launchSingleTop = true } })
+            }
+            composable<HealthBackupDestination> { HealthBackupRoute(health, onBack = { navController.popBackStack() }) }
             composable<FinanceSettingsDestination> {
                 FinanceSettingsRoute(
                     finance,
@@ -491,6 +529,7 @@ private fun NavDestination.order(): Int = when {
     isOn(Tab.LISTS) -> 2
     // Финансы — правее всего: модуль приходит справа и уходит вправо.
     hasRoute(FinanceDestination::class) -> 4
+    hasRoute(HealthDestination::class) -> 5
     else -> 3
 }
 

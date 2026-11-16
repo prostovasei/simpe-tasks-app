@@ -19,6 +19,8 @@ class ReminderReceiver : BroadcastReceiver() {
 
     @Inject lateinit var summary: DaySummary
 
+    @Inject lateinit var weighIn: AndroidWeighInReminder
+
     @Inject @ApplicationScope
     lateinit var appScope: CoroutineScope
 
@@ -34,9 +36,11 @@ class ReminderReceiver : BroadcastReceiver() {
                     ACTION_TOMORROW -> taskId?.let { reminders.moveToTomorrowFromNotification(it) }
                     ACTION_WONT_DO -> taskId?.let { reminders.wontDoFromNotification(it) }
                     ACTION_SUMMARY -> summary.fire()
+                    ACTION_WEIGH -> weighIn.fire()
                     else -> {
                         reminders.check()
                         summary.schedule()
+                        weighIn.schedule()
                     }
                 }
             } finally {
@@ -51,6 +55,7 @@ class ReminderReceiver : BroadcastReceiver() {
         const val ACTION_TOMORROW = "com.prostovasei.simpletasks.REMINDER_TOMORROW"
         const val ACTION_WONT_DO = "com.prostovasei.simpletasks.REMINDER_WONT_DO"
         const val ACTION_SUMMARY = "com.prostovasei.simpletasks.DAY_SUMMARY"
+        const val ACTION_WEIGH = "com.prostovasei.simpletasks.WEIGH_IN"
         const val EXTRA_TASK_ID = "task_id"
     }
 }

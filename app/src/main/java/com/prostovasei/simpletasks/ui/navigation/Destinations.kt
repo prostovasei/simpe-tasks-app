@@ -121,3 +121,18 @@ data object FinanceTrashDestination
 /** Категории финансов (этап 2, #225): из меню шестерёнки финансов. */
 @Serializable
 data object FinanceCategoriesDestination
+
+/** Раздел «Здоровье» (#257): вес. Открывается из меню кнопки модуля в нижней панели. */
+@Serializable
+data object HealthDestination
+
+/** Страница «Здоровье» единых настроек (#257): напоминание взвеситься и резервная копия. */
+@Serializable
+data object HealthSettingsDestination
+
+/** Резервная копия «Здоровья» (#257). */
+@Serializable
+data object HealthBackupDestination
+
+/** Не экран: нажатие на «Пора взвеситься» — раздел «Здоровье» с окном ввода веса (#257). */
+data object OpenHealthWeight

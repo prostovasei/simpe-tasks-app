@@ -616,3 +616,57 @@ class FakeBankPurchases : com.prostovasei.simpletasks.domain.repository.BankPurc
         pending.value = pending.value.filterNot { it.id == id }
     }
 }
+
+/** Записи веса в памяти (#257). */
+class FakeHealthRepository : com.prostovasei.simpletasks.domain.repository.HealthRepository {
+    val entries = MutableStateFlow<List<com.prostovasei.simpletasks.domain.model.health.WeightEntry>>(emptyList())
+    val calls = mutableListOf<String>()
+    var backupJson = "{}"
+    var restoredSettings = com.prostovasei.simpletasks.domain.model.health.HealthSettings()
+
+    override fun observeEntries(): Flow<List<com.prostovasei.simpletasks.domain.model.health.WeightEntry>> = entries
+
+    override suspend fun save(entry: com.prostovasei.simpletasks.domain.model.health.WeightEntry, replacing: LocalDate?) {
+        calls += "save:${entry.date}:${entry.tenths}:${entry.comment}:$replacing"
+        entries.value = (entries.value.filter { it.date != entry.date && it.date != replacing } + entry).sortedBy { it.date }
+    }
+
+    override suspend fun delete(date: LocalDate) {
+        calls += "delete:$date"
+        entries.value = entries.value.filter { it.date != date }
+    }
+
+    override suspend fun hasEntry(date: LocalDate) = entries.value.any { it.date == date }
+
+    override suspend fun exportBackup(settings: com.prostovasei.simpletasks.domain.model.health.HealthSettings): String {
+        calls += "export"
+        return backupJson
+    }
+
+    override fun inspectBackup(json: String): com.prostovasei.simpletasks.domain.model.health.HealthBackupInfo {
+        if (json == "bad") throw com.prostovasei.simpletasks.domain.model.health.InvalidHealthBackupException("bad")
+        return com.prostovasei.simpletasks.domain.model.health.HealthBackupInfo(3, LocalDate.of(2026, 1, 3), LocalDate.of(2026, 11, 2), restoredSettings)
+    }
+
+    override suspend fun restoreBackup(json: String): com.prostovasei.simpletasks.domain.model.health.HealthSettings {
+        calls += "restore"
+        return restoredSettings
+    }
+}
+
+class FakeHealthSettingsStore(initial: com.prostovasei.simpletasks.domain.model.health.HealthSettings = com.prostovasei.simpletasks.domain.model.health.HealthSettings()) :
+    com.prostovasei.simpletasks.domain.repository.HealthSettingsStore {
+    private val state = MutableStateFlow(initial)
+    override val settings: kotlinx.coroutines.flow.StateFlow<com.prostovasei.simpletasks.domain.model.health.HealthSettings> = state
+    override var lastBackupAt: Long? = null
+    override fun update(transform: (com.prostovasei.simpletasks.domain.model.health.HealthSettings) -> com.prostovasei.simpletasks.domain.model.health.HealthSettings) {
+        state.value = transform(state.value)
+    }
+}
+
+class FakeWeighInReminder : com.prostovasei.simpletasks.notifications.WeighInReminder {
+    var scheduled = 0
+    override fun schedule() {
+        scheduled++
+    }
+}

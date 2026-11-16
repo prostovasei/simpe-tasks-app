@@ -16,4 +16,7 @@ abstract class NotificationsModule {
 
     @Binds
     abstract fun bindStore(impl: PrefsReminderStore): ReminderStore
+
+    @Binds
+    abstract fun bindWeighIn(impl: AndroidWeighInReminder): WeighInReminder
 }

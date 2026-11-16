@@ -1191,7 +1191,7 @@ def finance_bar(sel='analytics'):
                           f'background:{"var(--selected)" if on else "transparent"};color:{"var(--accent)" if on else "var(--text-secondary)"}">{svg(ic, 24)}</span>')
     add = f'<span style="width:72px;height:44px;border-radius:var(--radius-xl);background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center">{mi("add", 24)}</span>'
     return (f'<div style="position:absolute;left:0;right:0;bottom:0;height:57px;background:var(--surface);border-top:1px solid var(--divider);display:flex;align-items:center;justify-content:space-around">'
-            f'{tab("ic_finance_analytics", sel == "analytics")}{add}{tab("ic_finance_operations", sel == "operations")}</div>')
+            f'{tab("ic_finance_tab_analytics", sel == "analytics")}{add}{tab("ic_finance_operations", sel == "operations")}</div>')
 
 
 def primary_action(label, plus=False):
@@ -1356,7 +1356,7 @@ def finance_bar(sel='analytics'):
     """Нижняя панель финансов (0.59.1): без плашки — выбранная вкладка чёрная, другая серая."""
     add = f'<span style="width:72px;height:44px;border-radius:var(--radius-xl);background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center">{mi("add", 24)}</span>'
     return (f'<div style="position:absolute;left:0;right:0;bottom:0;height:57px;background:var(--surface);border-top:1px solid var(--divider);display:flex;align-items:center;justify-content:space-around">'
-            f'{_bar_tab("ic_finance_analytics", sel == "analytics")}{add}{_bar_tab("ic_finance_operations", sel == "operations")}</div>')
+            f'{_bar_tab("ic_finance_tab_analytics", sel == "analytics")}{add}{_bar_tab("ic_finance_operations", sel == "operations")}</div>')
 
 
 def nav_bar(sel, inbox_count=None, left='upcoming'):
@@ -1467,3 +1467,64 @@ README_MORE['FinanceService'] = ('Служебные окна финансов: 
     'Этап 4 (#231; макеты design/approved/217, экраны 2.5–2.8, 3.1, 3.7–3.8). Все — окна `FinanceWindow`. Меню шестерёнки и выбор способа сверки — строки `size-operation-row`: значок 20, название `body-large` SemiBold, подпись `label-small` `text-secondary`, линия `divider` между строками. Окно счёта: название, тип, эмодзи; «Остаток сейчас» Bold и «Начальный остаток · дата» только показаны; серая кнопка «Остаток не сходится» над чёрной «Сохранить». Окна сверки: подпись-вопрос по центру, крупная сумма, строки «Было указано» / «Остаток сейчас станет» или «По приложению» / «Корректировка» (со знаком, Bold) / «Дата», пояснение `body-small`. Резервная копия: пояснение, строка «Последняя копия», чёрная «Сохранить в файл» и серая «Восстановить из файла». Подтверждение замены и удаления: две кнопки в ряд — серая «Отмена» слева, чёрная справа. Красного цвета в финансах нет.')
 README_MORE['ScreenFinanceTrash'] = ('Экран «Корзина» финансов (0.61).',
     'Вложенный экран без баров: стрелка назад, заголовок, справа текстовая кнопка «Очистить» (только если корзина не пуста). Карточка `surface` `radius-lg`: в строке название операции SemiBold, под ним «9 ноября · удалено сегодня» `label-small` `text-secondary`, сумма Bold и две кнопки 36×36 (`background`, `radius-md`, значок 18): «восстановить» `ic_snack_restore` и «удалить навсегда» `ic_tool_delete`. Под карточкой пояснение. Восстановление — сразу; удаление одной операции и очистка — через окно подтверждения. Пустая корзина — «Корзина пуста» по центру.')
+
+
+# ---------------------------------------------------------------- здоровье (0.71, #257): вес
+
+def health_bar():
+    """Нижняя панель «Здоровья» (0.71): «+» слева, одна страница «Вес», справа кнопка модуля с обводкой (сердце)."""
+    add = f'<span style="width:72px;height:34px;border-radius:var(--radius-xl);background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center">{mi("add", 22)}</span>'
+    page = f'<span style="width:64px;height:34px;display:flex;align-items:center;justify-content:center;color:var(--accent)">{svg("ic_health_weight", 22)}</span>'
+    mod = (f'<span style="width:72px;height:34px;border-radius:var(--radius-xl);box-shadow:inset 0 0 0 2px var(--accent);display:flex;align-items:center;justify-content:center;'
+           f'color:var(--accent)">{svg("ic_module_health", 20)}</span>')
+    return (f'<div style="position:absolute;left:0;right:0;bottom:0;height:44px;background:var(--surface);border-top:1px solid var(--divider);display:flex;align-items:center;'
+            f'justify-content:space-between;padding:0 12px">{add}{page}{mod}</div>')
+
+
+def health_chart():
+    pts = [83.2, 83.4, 83.1, 83.0, 83.3, 82.9, 82.9, 82.7, 82.8, 82.6, 82.9, 82.5, 82.6, 82.4, 82.6, 82.5, 82.7, 82.6, 82.4]
+    w, h, lo, hi = 330, 150, 77.6, 83.8
+    xy = [(8 + i * (w - 48) / (len(pts) - 1), 8 + (hi - v) / (hi - lo) * (h - 24)) for i, v in enumerate(pts)]
+    gy = 8 + (hi - 78.0) / (hi - lo) * (h - 24)
+    line = ' '.join(f'{"M" if i == 0 else "L"}{x:.1f},{y:.1f}' for i, (x, y) in enumerate(xy))
+    dots = ''.join(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{5 if i == len(xy) - 1 else 3}" fill="{"var(--text-primary)" if i == len(xy) - 1 else "var(--surface)"}" stroke="var(--text-primary)" stroke-width="1.6"/>' for i, (x, y) in enumerate(xy))
+    return (f'<svg width="{w}" height="{h}" viewBox="0 0 {w} {h}" style="display:block;margin:4px 16px 0"><line x1="8" x2="{w - 40}" y1="{gy:.1f}" y2="{gy:.1f}" stroke="var(--goal)" stroke-width="1.4" stroke-dasharray="4 4"/>'
+            f'<text x="{w - 34}" y="{gy + 4:.1f}" font-size="10" font-weight="700" fill="var(--goal)">78,0</text><path d="{line}" fill="none" stroke="var(--text-primary)" stroke-width="2" stroke-linejoin="round"/>{dots}</svg>')
+
+
+def health_screen():
+    seg = ''.join(f'<span style="flex:1;height:36px;border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:{700 if i == 0 else 500};'
+                  f'background:{"var(--selected)" if i == 0 else "transparent"};color:{"var(--text-primary)" if i == 0 else "var(--text-secondary)"}">{t}</span>' for i, t in enumerate(['Месяц', '3 мес', 'Год', 'Всё']))
+
+    def row(day, diff, w, comment=''):
+        sub = f'<div style="font-size:12px;line-height:16px;color:var(--text-secondary)">{comment}</div>' if comment else ''
+        return (f'<div style="display:flex;align-items:center;padding:6px 16px;min-height:52px;box-sizing:border-box;border-bottom:1px solid var(--divider)"><span style="flex:1;font-size:14px;line-height:20px">{day}{sub}</span>'
+                f'<span style="width:48px;text-align:right;padding-right:8px;font-size:12px;color:{"var(--income)" if diff.startswith("−") else "var(--text-secondary)"}">{diff}</span><b style="font-size:14px">{w}</b></div>')
+    body = (f'<div style="padding:14px 16px 6px"><span style="font-size:45px;line-height:52px;font-weight:700">82,4</span><span style="font-size:16px;color:var(--text-secondary);margin-left:4px">кг</span>'
+            f'<div style="font-size:12px;line-height:16px;color:var(--text-secondary)"><b style="color:var(--income)">−0,8 кг</b> за месяц · последняя запись сегодня</div></div>'
+            f'<div style="display:flex;align-items:center;margin:0 16px;padding:10px 0;border-bottom:1px solid var(--divider)"><span style="flex:1;font-size:14px;line-height:20px;font-weight:700">Цель 78,0 кг · осталось 4,4 кг'
+            f'<div style="font-size:12px;line-height:16px;font-weight:400;color:var(--text-secondary)">≈ к 12 марта по текущему темпу · ИМТ 25,4 — выше нормы</div></span>{mi("right", 20)}</div>'
+            f'<div style="display:flex;gap:4px;margin:12px 16px 4px">{seg}</div>{health_chart()}'
+            f'<div style="padding:10px 16px 2px;font-size:12px;font-weight:700;color:var(--text-secondary)">Записи</div>'
+            f'{row("16 ноября · сегодня", "−0,2", "82,4")}{row("15 ноября · вчера", "−0,1", "82,6")}{row("14 ноября", "+0,2", "82,7")}{row("9 ноября", "−0,2", "82,4", "после тренировки")}')
+    return frame(f'{body}{health_bar()}', 760)
+
+
+def health_weight_dialog():
+    drum = lambda vals, big: ''.join(f'<div style="height:40px;line-height:40px;text-align:center;font-size:{34 if i == 2 else 22 if i in (1, 3) else 17}px;font-weight:{700 if i == 2 else 400};'
+                                      f'color:{"var(--text-primary)" if i == 2 else "var(--text-secondary)" if i in (1, 3) else "var(--inactive)"};'
+                                      f'{"background:var(--selected);border-radius:var(--radius-lg)" if i == 2 else ""}">{v}</div>' for i, v in enumerate(vals))
+    drums = (f'<div style="display:flex;justify-content:center;align-items:center;gap:4px;margin:8px 0"><div style="width:84px">{drum([80, 81, 82, 83, 84], 1)}</div><b style="font-size:34px;margin-top:-6px">,</b>'
+             f'<div style="width:56px">{drum([2, 3, 4, 5, 6], 1)}</div><span style="margin-left:12px;font-size:16px;color:var(--text-secondary)">кг</span></div>')
+    field = lambda l, v: (f'<div style="display:flex;align-items:center;min-height:48px;border-bottom:1px solid var(--divider)"><span style="flex:1;font-size:14px;color:var(--text-secondary)">{l}</span>'
+                          f'<b style="font-size:14px">{v}</b></div>')
+    return (f'<div style="width:340px;border-radius:var(--radius-nav);background:var(--surface);padding:12px 16px 16px;box-sizing:border-box;{SHADOW}"><div style="display:flex;align-items:center;height:40px"><b style="flex:1;font-size:22px">Вес</b>'
+            f'<span style="color:var(--text-secondary)">{mi("close", 24)}</span></div>{drums}<div style="font-size:12px;color:var(--text-secondary);padding:2px 0 8px">Заранее стоит последний вес — 82,6 кг</div>'
+            f'{field("Дата", "Сегодня, 16 ноября")}{field("Комментарий", "необязательно")}<div style="display:flex;gap:8px;margin-top:14px"><span style="flex:1">{primary_action("Отмена").replace("var(--accent)", "var(--selected)").replace("var(--on-accent)", "var(--text-primary)")}</span>'
+            f'<span style="flex:1">{primary_action("Сохранить")}</span></div></div>')
+
+
+PREVIEWS['ScreenHealth'] = lambda: doc('Экраны', 800, 'Здоровье, вес (0.71): главный экран с графиком и окно ввода веса барабанами',
+                                       f'<div class="row" style="align-items:flex-start">{health_screen()}<div style="padding-top:140px">{health_weight_dialog()}</div></div>')
+README_MORE['ScreenHealth'] = ('Экран «Здоровье → Вес» (0.71).',
+    'Третий модуль (#257; макеты design/approved/257). Белый плоский экран, как «Неделя»: текущий вес `display-medium` Bold, под ним изменение за период (снижение — `income`), строка цели (название Bold, подпись `text-secondary`: остаток, прогноз даты, ИМТ), переключатель периода «Месяц / 3 мес / Год / Всё» (выбранный на `selected`), график `size-health-chart-height` (линия `size-health-line`, точки `size-health-point`, последняя закрашена `size-health-point-last`, цель — пунктир `goal` с подписью справа), записи: дата и комментарий, разница с прошлой записью, вес Bold; строка не ниже `size-operation-row`. Окно ввода веса — `FinanceWindow` с двумя барабанами: строка `size-health-drum-item`, видно пять строк, выбранная крупная на `selected`. Нижняя панель — общая (#241): «+», одна страница «Вес» (значок весов), кнопка модуля с сердцем.')

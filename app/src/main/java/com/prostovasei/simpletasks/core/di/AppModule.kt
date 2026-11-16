@@ -15,6 +15,10 @@ import com.prostovasei.simpletasks.data.local.db.AppDatabase
 import com.prostovasei.simpletasks.data.repository.RoomChecklistRepository
 import com.prostovasei.simpletasks.data.repository.RoomBackupRepository
 import com.prostovasei.simpletasks.data.repository.RoomFinanceRepository
+import com.prostovasei.simpletasks.data.repository.RoomHealthRepository
+import com.prostovasei.simpletasks.data.repository.PrefsHealthSettingsStore
+import com.prostovasei.simpletasks.domain.repository.HealthRepository
+import com.prostovasei.simpletasks.domain.repository.HealthSettingsStore
 import com.prostovasei.simpletasks.data.repository.RoomProjectRepository
 import com.prostovasei.simpletasks.data.repository.RoomTaskRepository
 import com.prostovasei.simpletasks.domain.repository.ChecklistRepository
@@ -77,6 +81,12 @@ abstract class RepositoryModule {
 
     @Binds
     abstract fun bindFinanceBackupStore(impl: com.prostovasei.simpletasks.ui.feature.finance.PrefsFinanceBackupStore): com.prostovasei.simpletasks.ui.feature.finance.FinanceBackupStore
+
+    @Binds
+    abstract fun bindHealthRepository(impl: RoomHealthRepository): HealthRepository
+
+    @Binds
+    abstract fun bindHealthSettingsStore(impl: PrefsHealthSettingsStore): HealthSettingsStore
 
     @Binds
     abstract fun bindBackupRepository(impl: RoomBackupRepository): BackupRepository

@@ -107,6 +107,23 @@ object SizeTokens {
     const val FINANCE_UNKNOWN_MARK = 26
     const val FINANCE_BAR_SIDE = 56
     const val OPERATION_ROW = 52
+
+    /**
+     * Раздел «Здоровье» (#257, макеты design/approved/257): высота строки барабана и ширина барабанов «кг» / «десятые» / «рост», высота графика,
+     * поле справа под подписи оси, радиусы точек, толщина линии, ячейка календаря, высота подсказки точки.
+     */
+    const val HEALTH_DRUM_ITEM = 40
+    const val HEALTH_DRUM_WHOLE = 84
+    const val HEALTH_DRUM_TENTH = 56
+    const val HEALTH_CHART_HEIGHT = 190
+    const val HEALTH_CHART_AXIS = 40
+    const val HEALTH_POINT = 3
+    const val HEALTH_POINT_LAST = 5
+    const val HEALTH_LINE = 2
+    const val HEALTH_CAL_CELL = 40
+    const val HEALTH_TIP_HEIGHT = 40
+    const val HEALTH_TIP_WIDTH = 104
+    const val HEALTH_DELTA_WIDTH = 48
     const val NAV_SHADOW = 10
     const val CHECKBOX = 18
     const val CHECKBOX_STROKE = 2

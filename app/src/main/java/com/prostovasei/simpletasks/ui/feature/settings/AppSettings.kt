@@ -52,12 +52,12 @@ import com.prostovasei.simpletasks.widget.WidgetLog
  * Открывается из меню кнопки модуля в нижней панели одинаково из любого модуля; стрелка назад возвращает туда, откуда пришли.
  */
 @Composable
-fun AppSettingsRoute(onBack: () -> Unit, onTasks: () -> Unit, onFinance: () -> Unit, onApp: () -> Unit) {
-    AppSettingsScreen(AppVersion.current, onBack, onTasks, onFinance, onApp)
+fun AppSettingsRoute(onBack: () -> Unit, onTasks: () -> Unit, onFinance: () -> Unit, onHealth: () -> Unit, onApp: () -> Unit) {
+    AppSettingsScreen(AppVersion.current, onBack, onTasks, onFinance, onHealth, onApp)
 }
 
 @Composable
-fun AppSettingsScreen(appVersion: AppVersion, onBack: () -> Unit, onTasks: () -> Unit, onFinance: () -> Unit, onApp: () -> Unit) {
+fun AppSettingsScreen(appVersion: AppVersion, onBack: () -> Unit, onTasks: () -> Unit, onFinance: () -> Unit, onHealth: () -> Unit, onApp: () -> Unit) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
     Column(Modifier.fillMaxSize().background(colors.background).testTag(TAG_APP_SETTINGS)) {
@@ -66,6 +66,7 @@ fun AppSettingsScreen(appVersion: AppVersion, onBack: () -> Unit, onTasks: () ->
             Column(Modifier.fillMaxWidth().clip(AppTheme.shapes.large).background(colors.surface)) {
                 SectionRow(R.drawable.ic_module_tasks, stringResource(R.string.settings_home_tasks), stringResource(R.string.settings_home_tasks_hint), TAG_SETTINGS_TASKS, onClick = onTasks)
                 SectionRow(R.drawable.ic_module_finance, stringResource(R.string.settings_home_finance), stringResource(R.string.settings_home_finance_hint), TAG_SETTINGS_FINANCE, onClick = onFinance)
+                SectionRow(R.drawable.ic_module_health, stringResource(R.string.settings_home_health), stringResource(R.string.settings_home_health_hint), TAG_SETTINGS_HEALTH, onClick = onHealth)
                 SectionRow(
                     R.drawable.ic_settings_app,
                     stringResource(R.string.settings_home_app),
@@ -186,4 +187,5 @@ const val TAG_APP_SETTINGS = "app_settings"
 const val TAG_APP_INFO = "app_info"
 const val TAG_SETTINGS_TASKS = "settings_tasks"
 const val TAG_SETTINGS_FINANCE = "settings_finance"
+const val TAG_SETTINGS_HEALTH = "settings_health"
 const val TAG_SETTINGS_APP = "settings_app"
