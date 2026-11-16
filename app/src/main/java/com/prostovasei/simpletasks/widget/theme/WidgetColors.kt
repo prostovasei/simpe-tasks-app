@@ -26,6 +26,10 @@ open class WidgetPalette(private val flat: Boolean = false) {
     val overdue = ColorTokens.overdue.toProvider()
     val divider = (if (flat) TaskCanvasTokens.divider else ColorTokens.divider).toProvider()
     val selected = ColorTokens.selected.toProvider()
+    val canvasPriority = TaskCanvasTokens.priority.toProvider()
+    val canvasPriorityDone = TaskCanvasTokens.priorityDone.toProvider()
+    val canvasDone = TaskCanvasTokens.done.toProvider()
+    val canvasEmojiDone = ColorTokens.textPrimary.toProvider(TaskCanvasTokens.DONE_EMOJI_ALPHA)
     val inactive = ColorTokens.inactive.toProvider()
     val onListSquare = ColorTokens.onListSquare.toProvider()
 

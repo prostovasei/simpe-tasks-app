@@ -48,6 +48,7 @@ import androidx.compose.ui.platform.LocalDensity
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.components.RepeatMark
 import com.prostovasei.simpletasks.designsystem.components.ListBadge
+import com.prostovasei.simpletasks.designsystem.theme.LocalCompactTimeline
 import com.prostovasei.simpletasks.designsystem.theme.LocalTaskCanvas
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
@@ -140,6 +141,10 @@ fun LazyItemScope.TimelineTaskRow(
     selected: Boolean? = null,
     onLongClick: (() -> Unit)? = null,
 ) {
+    if (LocalCompactTimeline.current) {
+        CompactTimelineTaskRow(row, top, bottom, onToggle, onClick, showList, selected, onLongClick)
+        return
+    }
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
     val item = row.item
@@ -317,6 +322,7 @@ private fun Segment(visible: Boolean, modifier: Modifier) {
 /** Отметка «сейчас»: зелёное время слева, точка на линии и линия до правого края. */
 @Composable
 fun LazyItemScope.TimelineNowRow(nowMinute: Int, top: Boolean, bottom: Boolean) {
+    if (LocalCompactTimeline.current) { CompactTimelineNowRow(nowMinute, top, bottom); return }
     val colors = AppTheme.colors
     Row(
         Modifier.animateItem().fillMaxWidth().height(SizeTokens.WIDGET_NOW_ROW.dp).padding(end = AppTheme.spacing.xs),

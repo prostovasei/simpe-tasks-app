@@ -325,8 +325,9 @@ object SizeTokens {
      */
     /** #253: минимальное поле и равные зазоры; ширина времени измеряется по HH:mm. */
     const val WEEK_EDGE = 2
-    const val WEEK_CONTENT_GAP = 1
+    const val WEEK_CONTENT_GAP = 2
     const val WIDGET_WEEK_TIME_TEXT = 10
+    const val CANVAS_TIME_TEXT = 13
     const val WEEKVIEW_TASK = 22
     const val WEEKVIEW_TASK_GAP = 3
     const val WEEKVIEW_CHECK = 14

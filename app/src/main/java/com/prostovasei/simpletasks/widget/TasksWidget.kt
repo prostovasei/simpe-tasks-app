@@ -58,6 +58,7 @@ import com.prostovasei.simpletasks.ui.common.DONE_ALPHA
 import com.prostovasei.simpletasks.ui.common.DayNames
 import com.prostovasei.simpletasks.ui.common.ReminderIconMasks
 import com.prostovasei.simpletasks.ui.common.TaskItem
+import com.prostovasei.simpletasks.ui.common.canvasNodeIcon
 import com.prostovasei.simpletasks.widget.theme.WidgetCheckColors
 import androidx.compose.runtime.CompositionLocalProvider
 import com.prostovasei.simpletasks.widget.theme.LocalWidgetColors
@@ -283,13 +284,16 @@ private fun TimelineRow(row: WidgetRow.Task, line: Line, overdue: Boolean, filte
     val done = item.showsDone
     // Итерация 47: будущий повтор не тусклый.
     val faded = row.past
+    val compact = LocalWidgetColors.current === TaskWidgetColors
     val textColor = when {
+        compact && item.priority == Priority.HIGH -> if (done) LocalWidgetColors.current.canvasPriorityDone else LocalWidgetColors.current.canvasPriority
+        compact && done -> LocalWidgetColors.current.canvasDone
         done -> LocalWidgetColors.current.textDone
         faded -> LocalWidgetColors.current.textSecondary
         else -> LocalWidgetColors.current.textPrimary
     }
     val height = if (row.isPeriod) SizeTokens.WIDGET_PERIOD_ROW else SizeTokens.WIDGET_ROW
-    Row(GlanceModifier.fillMaxWidth().height(height.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(GlanceModifier.fillMaxWidth().height(height.dp).then(if (compact) GlanceModifier.padding(start = SizeTokens.WIDGET_EDGE.dp) else GlanceModifier), verticalAlignment = Alignment.CenterVertically) {
         TimeColumn(row, overdue, textColor)
         Rail(row, line)
         Box(GlanceModifier.defaultWeight().fillMaxHeight().padding(vertical = SizeTokens.WIDGET_CARD_INSET.dp)) {
@@ -298,7 +302,7 @@ private fun TimelineRow(row: WidgetRow.Task, line: Line, overdue: Boolean, filte
                     .fillMaxSize()
                     .then(if (LocalWidgetColors.current === TaskWidgetColors) GlanceModifier else GlanceModifier.background(LocalWidgetColors.current.surface))
                     .cornerRadius(RadiusTokens.MD.dp)
-                    .padding(horizontal = SpacingTokens.SM.dp)
+                    .then(if (compact) GlanceModifier.padding(end = SpacingTokens.SM.dp) else GlanceModifier.padding(horizontal = SpacingTokens.SM.dp))
                     .then(GlanceModifier.clickable(actionStartActivity(openTaskIntent(context, item.taskId)))),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -308,14 +312,14 @@ private fun TimelineRow(row: WidgetRow.Task, line: Line, overdue: Boolean, filte
                         color = textColor,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
-                        textDecoration = if (done) TextDecoration.LineThrough else null,
+                        textDecoration = if (done && !compact) TextDecoration.LineThrough else null,
                     ),
                     maxLines = 1,
                     modifier = GlanceModifier.defaultWeight(),
                 )
                 item.reminder?.let { ReminderIcon(it, done) }
                 Spacer(GlanceModifier.width(SpacingTokens.XS.dp))
-                ListSquare(item)
+                ListSquare(item, compact && done)
             }
         }
     }
@@ -324,21 +328,24 @@ private fun TimelineRow(row: WidgetRow.Task, line: Line, overdue: Boolean, filte
 /** Колонка времени: по правому краю, одним размером; конец периода — серым под началом. */
 @Composable
 private fun TimeColumn(row: WidgetRow.Task, overdue: Boolean, textColor: ColorProvider) {
+    val compact = LocalWidgetColors.current === TaskWidgetColors
+    val context = LocalContext.current
+    val width = if (compact) (canvasTimeWidthPx(context) / context.resources.displayMetrics.density).dp else SizeTokens.WIDGET_TIME.dp
     val style = TextStyle(
-        color = if (overdue) LocalWidgetColors.current.overdue else textColor,
-        fontSize = if (overdue) 11.sp else 13.sp,
+        color = if (overdue && !compact) LocalWidgetColors.current.overdue else textColor,
+        fontSize = if (overdue && !compact) 11.sp else 13.sp,
         fontWeight = FontWeight.Bold,
         textAlign = TextAlign.End,
     )
     Column(
-        modifier = GlanceModifier.width(SizeTokens.WIDGET_TIME.dp).fillMaxHeight(),
+        modifier = GlanceModifier.width(width).fillMaxHeight(),
         horizontalAlignment = Alignment.End,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         row.start?.let { Text(it, style = style, maxLines = 1) }
         row.end?.let {
             if (row.isPeriod) Spacer(GlanceModifier.height(SizeTokens.HAIRLINE.dp))
-            Text(it, style = style.copy(color = if (overdue) LocalWidgetColors.current.overdue else LocalWidgetColors.current.textSecondary), maxLines = 1)
+            Text(it, style = style.copy(color = if (compact) textColor else if (overdue) LocalWidgetColors.current.overdue else LocalWidgetColors.current.textSecondary), maxLines = 1)
         }
     }
 }
@@ -350,11 +357,15 @@ private fun TimeColumn(row: WidgetRow.Task, overdue: Boolean, textColor: ColorPr
  */
 @Composable
 private fun Rail(row: WidgetRow.Task, line: Line) {
+    val compact = LocalWidgetColors.current === TaskWidgetColors
+    val nodeSize = if (compact) SizeTokens.WEEKVIEW_CHECK else SizeTokens.WIDGET_NODE
     val context = LocalContext.current
     val item = row.item
     val done = item.showsDone
     // Итерация 27.1 (вариант PM «А»): кружок всегда цвета приоритета, просрочка — красными подписью дня и временем.
     val color = when {
+        compact && item.priority == Priority.HIGH -> if (done) LocalWidgetColors.current.canvasPriorityDone else LocalWidgetColors.current.canvasPriority
+        compact && done -> LocalWidgetColors.current.canvasDone
         row.past && !done -> LocalWidgetColors.current.inactive
         done -> if (item.priority == Priority.HIGH) LocalWidgetColors.current.checkHigh.done else LocalWidgetColors.current.checkNone.done
         else -> if (item.priority == Priority.HIGH) LocalWidgetColors.current.checkHigh.ring else LocalWidgetColors.current.checkNone.ring
@@ -369,14 +380,15 @@ private fun Rail(row: WidgetRow.Task, line: Line) {
     }
     val label = if (item.isGhost) null else context.getString(if (done) R.string.task_uncomplete else R.string.widget_complete)
     Column(
-        modifier = GlanceModifier.width(SizeTokens.WIDGET_RAIL.dp).fillMaxHeight().then(action),
+        modifier = GlanceModifier.width((if (compact) SizeTokens.WEEKVIEW_CHECK + 2 * SizeTokens.WEEK_CONTENT_GAP else SizeTokens.WIDGET_RAIL).dp).fillMaxHeight()
+            .then(if (compact) GlanceModifier.padding(horizontal = SizeTokens.WEEK_CONTENT_GAP.dp) else GlanceModifier).then(action),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         if (row.isPeriod) {
             LineSegment(line.top, GlanceModifier.height(SizeTokens.WIDGET_PERIOD_STUB.dp))
-            Box(GlanceModifier.width(SizeTokens.WIDGET_NODE.dp).defaultWeight(), contentAlignment = Alignment.Center) {
+            Box(GlanceModifier.width(nodeSize.dp).defaultWeight(), contentAlignment = Alignment.Center) {
                 Image(
-                    ImageProvider(if (repeat) R.drawable.ic_widget_period_repeat else if (done) R.drawable.widget_period_fill else R.drawable.widget_period_ring),
+                    ImageProvider(if (compact) item.canvasNodeIcon(true) else if (repeat) R.drawable.ic_widget_period_repeat else if (done) R.drawable.widget_period_fill else R.drawable.widget_period_ring),
                     contentDescription = label,
                     colorFilter = ColorFilter.tint(color),
                     contentScale = ContentScale.FillBounds,
@@ -387,12 +399,12 @@ private fun Rail(row: WidgetRow.Task, line: Line) {
             LineSegment(line.bottom, GlanceModifier.height(SizeTokens.WIDGET_PERIOD_STUB.dp))
         } else {
             LineSegment(line.top, GlanceModifier.defaultWeight())
-            Box(GlanceModifier.size(SizeTokens.WIDGET_NODE.dp), contentAlignment = Alignment.Center) {
+            Box(GlanceModifier.size(nodeSize.dp), contentAlignment = Alignment.Center) {
                 Image(
-                    ImageProvider(if (repeat) R.drawable.ic_repeat_round else if (done) R.drawable.ic_widget_node_fill else R.drawable.ic_widget_node_ring),
+                    ImageProvider(if (compact) item.canvasNodeIcon(false) else if (repeat) R.drawable.ic_repeat_round else if (done) R.drawable.ic_widget_node_fill else R.drawable.ic_widget_node_ring),
                     contentDescription = label,
                     colorFilter = ColorFilter.tint(color),
-                    modifier = GlanceModifier.size(SizeTokens.WIDGET_NODE.dp),
+                    modifier = GlanceModifier.size(nodeSize.dp),
                 )
                 if (done && !repeat) NodeCheck()
             }
@@ -408,7 +420,7 @@ private fun NodeCheck() {
         ImageProvider(R.drawable.ic_node_check),
         contentDescription = null,
         colorFilter = ColorFilter.tint(LocalWidgetColors.current.onAccent),
-        modifier = GlanceModifier.size(SizeTokens.NODE_CHECK.dp),
+        modifier = GlanceModifier.size((if (LocalWidgetColors.current === TaskWidgetColors) SizeTokens.WEEKVIEW_CHECK_ICON else SizeTokens.NODE_CHECK).dp),
     )
 }
 
@@ -425,8 +437,10 @@ private fun LineSegment(visible: Boolean, modifier: GlanceModifier) {
 @Composable
 private fun NowRow(line: Line, nowMinute: Int?, liveClock: Boolean) {
     val context = LocalContext.current
-    Row(GlanceModifier.fillMaxWidth().height(SizeTokens.WIDGET_NOW_ROW.dp), verticalAlignment = Alignment.CenterVertically) {
-        Box(GlanceModifier.width(SizeTokens.WIDGET_TIME.dp), contentAlignment = Alignment.CenterEnd) {
+    val compact = LocalWidgetColors.current === TaskWidgetColors
+    val width = if (compact) (canvasTimeWidthPx(context) / context.resources.displayMetrics.density).dp else SizeTokens.WIDGET_TIME.dp
+    Row(GlanceModifier.fillMaxWidth().height(SizeTokens.WIDGET_NOW_ROW.dp).then(if (compact) GlanceModifier.padding(start = SizeTokens.WIDGET_EDGE.dp) else GlanceModifier), verticalAlignment = Alignment.CenterVertically) {
+        Box(GlanceModifier.width(width), contentAlignment = Alignment.CenterEnd) {
             if (liveClock) {
                 AndroidRemoteViews(RemoteViews(context.packageName, R.layout.widget_now_clock))
             } else if (nowMinute != null) {
@@ -437,7 +451,8 @@ private fun NowRow(line: Line, nowMinute: Int?, liveClock: Boolean) {
                 )
             }
         }
-        Box(GlanceModifier.width(SizeTokens.WIDGET_RAIL.dp).fillMaxHeight(), contentAlignment = Alignment.Center) {
+        Box(GlanceModifier.width((if (compact) SizeTokens.WEEKVIEW_CHECK + 2 * SizeTokens.WEEK_CONTENT_GAP else SizeTokens.WIDGET_RAIL).dp).fillMaxHeight()
+            .then(if (compact) GlanceModifier.padding(horizontal = SizeTokens.WEEK_CONTENT_GAP.dp) else GlanceModifier), contentAlignment = Alignment.Center) {
             Column(GlanceModifier.fillMaxHeight(), horizontalAlignment = Alignment.CenterHorizontally) {
                 LineSegment(line.top, GlanceModifier.defaultWeight())
                 LineSegment(line.bottom, GlanceModifier.defaultWeight())
@@ -487,8 +502,9 @@ private fun MaskImage(mask: Bitmap, color: ColorProvider, size: Int) {
 
 /** Эмодзи списка (итерация 47) вместо квадратика цвета со значком, как в приложении. */
 @Composable
-private fun ListSquare(item: TaskItem) {
-    Text(item.listEmoji, style = TextStyle(fontSize = 15.sp), maxLines = 1)
+private fun ListSquare(item: TaskItem, dim: Boolean = false) {
+    val style = TextStyle(fontSize = 15.sp)
+    Text(item.listEmoji, style = if (dim) style.copy(color = LocalWidgetColors.current.canvasEmojiDone) else style, maxLines = 1)
 }
 
 fun widgetCheckColors(priority: Priority): WidgetCheckColors = when (priority) {

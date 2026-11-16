@@ -119,8 +119,8 @@ class WidgetWeekTest {
         assertTrue("кружок ${friday.findViewById<View>(slot.check).width}", kotlin.math.abs(friday.findViewById<View>(slot.check).width - px(SizeTokens.WIDGET_WEEK_CHECK.toFloat())) <= 1)
         val node = friday.findViewById<View>(slot.check)
         val title = friday.findViewById<View>(slot.title)
-        assertTrue("зазор время/значок 1dp", kotlin.math.abs(node.left - time.right - px(1f)) <= 1)
-        assertTrue("зазор значок/название 1dp", kotlin.math.abs(title.left - node.right - px(1f)) <= 1)
+        assertTrue("зазор время/значок 2dp", kotlin.math.abs(node.left - time.right - px(2f)) <= 1)
+        assertTrue("зазор значок/название 2dp", kotlin.math.abs(title.left - node.right - px(2f)) <= 1)
         assertTrue("зона поверх начала названия", friday.findViewById<View>(slot.title).left < hit.right)
     }
 

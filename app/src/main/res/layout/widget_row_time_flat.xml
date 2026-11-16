@@ -2,7 +2,7 @@
 <!-- Колонка времени строки задачи (итерация 42): по правому краю; конец периода — серым под началом. Без времени — пусто. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/row_time"
-    android:layout_width="@dimen/widget_time"
+    android:layout_width="wrap_content"
     android:layout_height="match_parent"
     android:gravity="end|center_vertical"
     android:orientation="vertical">
@@ -14,7 +14,7 @@
         android:maxLines="1"
         android:textColor="@color/widget_flat_text_primary"
         android:textSize="13sp"
-        android:textStyle="bold"
+        android:fontFeatureSettings="tnum" android:textStyle="bold"
         android:visibility="gone" />
 
     <FrameLayout
@@ -30,6 +30,6 @@
         android:maxLines="1"
         android:textColor="@color/widget_flat_text_primary"
         android:textSize="13sp"
-        android:textStyle="bold"
+        android:fontFeatureSettings="tnum" android:textStyle="bold"
         android:visibility="gone" />
 </LinearLayout>

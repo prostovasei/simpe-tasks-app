@@ -5,7 +5,6 @@
     <color name="widget_flat_divider">#FFE8E8EA</color>
     <color name="widget_flat_icon_done">#B362656E</color>
     <color name="widget_flat_now">#16171D</color>
-    <color name="widget_flat_on_accent">#FFFFFFFF</color>
     <color name="widget_flat_overdue">#FFC62828</color>
     <color name="widget_flat_ring_none">#FF8B949E</color>
     <color name="widget_flat_text_done">#B316171D</color>

@@ -3,6 +3,9 @@ package com.prostovasei.simpletasks.widget
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import com.prostovasei.simpletasks.ui.common.canvasNodeIcon
+import com.prostovasei.simpletasks.ui.common.canvasTextColor
+import com.prostovasei.simpletasks.designsystem.tokens.TaskCanvasTokens
 import android.text.SpannableString
 import android.text.Spanned
 import android.text.style.StrikethroughSpan
@@ -100,13 +103,14 @@ object WidgetRows {
         }
         return RemoteViews(context.packageName, layout).apply {
             val (textColor, textAlpha) = when {
+                flat -> item.canvasTextColor(faded) to 1f
                 done -> ColorTokens.textPrimary to DONE_ALPHA
                 faded -> ColorTokens.textSecondary to 1f
                 else -> ColorTokens.textPrimary to 1f
             }
             // Время: красное и мельче у прошедшего дня; конец периода — серым.
-            time(R.id.row_start, row.start, if (line.overdue) ColorTokens.overdue else textColor, if (line.overdue) 1f else textAlpha, line.overdue, flat)
-            time(R.id.row_end, row.end, if (line.overdue) ColorTokens.overdue else ColorTokens.textSecondary, 1f, line.overdue, flat)
+            time(R.id.row_start, row.start, if (line.overdue && !flat) ColorTokens.overdue else textColor, if (line.overdue && !flat) 1f else textAlpha, line.overdue, flat)
+            time(R.id.row_end, row.end, if (flat) textColor else if (line.overdue) ColorTokens.overdue else ColorTokens.textSecondary, if (flat) textAlpha else 1f, line.overdue, flat)
             if (row.isPeriod) visible(R.id.row_time_gap, row.end != null)
 
             // Шкала: линия вверх и вниз, кружок цвета приоритета (у прошедшей — серый). Итерация 47: у повторяющейся — знак повтора
@@ -117,6 +121,8 @@ object WidgetRows {
                 R.id.row_node,
                 "setColorFilter",
                 when {
+                    flat && (done || item.priority == Priority.HIGH) -> item.canvasTextColor(faded)
+                    flat -> ColorTokens.inactive
                     faded && !done -> ColorTokens.inactive
                     done -> doneFill(item.priority)
                     else -> ring(item.priority)
@@ -127,6 +133,7 @@ object WidgetRows {
             setImageViewResource(
                 R.id.row_node,
                 when {
+                    flat -> item.canvasNodeIcon(row.isPeriod)
                     row.isPeriod && item.isRecurring -> R.drawable.ic_widget_period_repeat
                     row.isPeriod -> if (done) R.drawable.widget_period_fill else R.drawable.widget_period_ring
                     item.isRecurring -> R.drawable.ic_repeat_round
@@ -146,9 +153,9 @@ object WidgetRows {
             // Плашка: название (выполненная — зачёркнута), значки справа налево — список, колокольчик.
             setTextViewText(
                 R.id.row_title,
-                if (done) SpannableString(item.title).apply { setSpan(StrikethroughSpan(), 0, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE) } else item.title,
+                if (done && !flat) SpannableString(item.title).apply { setSpan(StrikethroughSpan(), 0, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE) } else item.title,
             )
-            if (!done) color(R.id.row_title, "setTextColor", textColor.forTaskCanvas(flat))
+            if (!done || flat) color(R.id.row_title, "setTextColor", textColor.forTaskCanvas(flat))
             setOnClickFillInIntent(R.id.row_plaque, fillIn(WidgetClicks.OPEN, item.taskId))
             val masks = item.reminder?.let { ReminderIconMasks.of(it, (SizeTokens.WIDGET_REMINDER_ICON * context.resources.displayMetrics.density).roundToInt()) }
             visible(R.id.row_bell, masks != null)
@@ -160,6 +167,10 @@ object WidgetRows {
             // Эмодзи списка (итерация 47) вместо цветного квадратика со значком.
             visible(R.id.row_emoji, true)
             setTextViewText(R.id.row_emoji, item.listEmoji)
+            if (flat) {
+                setViewLayoutWidth(R.id.row_time, canvasTimeWidthPx(context).toFloat(), TypedValue.COMPLEX_UNIT_PX)
+                if (done) taskCanvasColor(R.id.row_emoji, "setTextColor", ColorTokens.textPrimary, TaskCanvasTokens.DONE_EMOJI_ALPHA)
+            }
         }
     }
 
@@ -168,11 +179,12 @@ object WidgetRows {
         if (text == null) return
         setTextViewText(id, text)
         color(id, "setTextColor", color.forTaskCanvas(flat), alpha)
-        setTextViewTextSize(id, TypedValue.COMPLEX_UNIT_SP, if (small) OVERDUE_TIME_SP else TIME_SP)
+        setTextViewTextSize(id, TypedValue.COMPLEX_UNIT_SP, if (small && !flat) OVERDUE_TIME_SP else TIME_SP)
     }
 
     private fun now(context: Context, line: WidgetLine.Now, liveClock: Boolean, flat: Boolean): RemoteViews =
         RemoteViews(context.packageName, if (flat) R.layout.widget_row_now_flat else R.layout.widget_row_now).apply {
+            if (flat) setViewLayoutWidth(R.id.now_time, canvasTimeWidthPx(context).toFloat(), TypedValue.COMPLEX_UNIT_PX)
             setViewVisibility(R.id.now_line_top, if (line.line.top) View.VISIBLE else View.INVISIBLE)
             setViewVisibility(R.id.now_line_bottom, if (line.line.bottom) View.VISIBLE else View.INVISIBLE)
             // В снимках для тестов — неподвижное время из модели вместо часов системы.

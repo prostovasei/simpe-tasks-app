@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- #255: общий рисунок без скрытых полей, видимая ширина 14 dp. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="14dp" android:height="58dp" android:viewportWidth="14" android:viewportHeight="58">
+    <path android:strokeColor="@android:color/white" android:strokeWidth="1.5" android:strokeLineCap="round" android:fillColor="@android:color/transparent" android:pathData="M0.75,27V7A6.25,6.25 0,0 1,13.25 7V27M13.25,31V51A6.25,6.25 0,0 1,0.75 51V31" />
+    <path android:fillColor="@android:color/white" android:pathData="M10.1,26.6L13.25,27L13.3,23.6ZM3.9,31.4L0.75,31L0.7,34.4Z" />
+</vector>

@@ -52,7 +52,7 @@ fun AllScreen(
     onOpenTask: (String) -> Unit = {},
     nowMinute: Int? = null,
 ) {
-    TaskCanvasTheme {
+    TaskCanvasTheme(compactTimeline = true) {
 
         val colors = AppTheme.colors
         val days = DayNames(stringResource(R.string.day_today), stringResource(R.string.day_tomorrow), stringResource(R.string.day_yesterday))

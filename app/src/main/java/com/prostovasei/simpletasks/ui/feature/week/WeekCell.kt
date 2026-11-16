@@ -135,10 +135,10 @@ private fun WeekTaskRow(item: TaskItem, onToggle: () -> Unit, onOpen: () -> Unit
     val high = item.priority == Priority.HIGH
     val priorityColor = Color(if (done) TaskCanvasTokens.priorityDone.light else TaskCanvasTokens.priority.light)
     val titleColor = if (high) priorityColor else if (done) Color(TaskCanvasTokens.done.light) else colors.textPrimary
-    val timeColor = if (high) priorityColor else if (done) Color(TaskCanvasTokens.done.light) else colors.textSecondary
+    val timeColor = titleColor
     val ring = if (high) priorityColor else colors.inactive
     val doneFill = if (high) priorityColor else Color(TaskCanvasTokens.done.light)
-    val timeStyle = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold, fontFeatureSettings = "tnum")
+    val timeStyle = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontFeatureSettings = "tnum")
     val timeMeasurer = rememberTextMeasurer()
     val timeWidth = with(LocalDensity.current) { timeMeasurer.measure("00:00", timeStyle).size.width.toDp() }
     val label = stringResource(if (done) R.string.task_uncomplete else R.string.widget_complete)
