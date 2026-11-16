@@ -2,8 +2,6 @@ package com.prostovasei.simpletasks.widget
 
 import android.content.Context
 import android.graphics.Typeface
-import android.text.TextPaint
-import kotlin.math.ceil
 import com.prostovasei.simpletasks.ui.common.weekNodeIcon
 import android.os.Build
 import android.text.SpannableString
@@ -161,12 +159,7 @@ object WidgetWeekRows {
         setTextViewText(ids.emoji, item.listEmoji)
         taskCanvasColor(ids.emoji, "setTextColor", ColorTokens.textPrimary, if (done) TaskCanvasTokens.DONE_EMOJI_ALPHA else 1f)
         val time = item.startTime()
-        val paint = TextPaint().apply {
-            typeface = Typeface.DEFAULT
-            textSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, SizeTokens.WIDGET_WEEK_TIME_TEXT.toFloat(), context.resources.displayMetrics)
-            fontFeatureSettings = "tnum"
-        }
-        val timeWidth = ceil(paint.measureText("00:00")).toInt()
+        val timeWidth = canvasTimeWidthPx(context, SizeTokens.WIDGET_WEEK_TIME_TEXT)
         setViewLayoutWidth(ids.time, timeWidth.toFloat(), TypedValue.COMPLEX_UNIT_PX)
         setViewLayoutMargin(ids.hit, RemoteViews.MARGIN_START,
             (timeWidth + dp(context, SizeTokens.WEEK_CONTENT_GAP)).toFloat(), TypedValue.COMPLEX_UNIT_PX)
@@ -175,7 +168,7 @@ object WidgetWeekRows {
         taskCanvasColor(
             ids.time,
             "setTextColor",
-            when { high && done -> TaskCanvasTokens.priorityDone; high -> TaskCanvasTokens.priority; done -> TaskCanvasTokens.done; else -> ColorTokens.textSecondary },
+            when { high && done -> TaskCanvasTokens.priorityDone; high -> TaskCanvasTokens.priority; done -> TaskCanvasTokens.done; else -> ColorTokens.textPrimary },
         )
         // Пустая колонка времени держит кружки выровненными; эмодзи всегда у правого края.
         setViewPadding(ids.plaque, 0, 0, dp(context, SizeTokens.WIDGET_WEEK_INLINE_GAP), 0)

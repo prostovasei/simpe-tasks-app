@@ -36,6 +36,7 @@ def cell(p):
                 android:layout_width="wrap_content"
                 android:layout_marginEnd="@dimen/widget_week_content_gap"
                 android:fontFeatureSettings="tnum"
+                android:textStyle="bold"
                 android:layout_height="wrap_content"
                 android:gravity="start"
                 android:includeFontPadding="false"

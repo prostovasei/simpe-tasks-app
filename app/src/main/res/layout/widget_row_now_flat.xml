@@ -13,10 +13,10 @@
         android:baselineAligned="false"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingEnd="@dimen/widget_list_edge">
+        android:paddingStart="@dimen/widget_edge" android:paddingEnd="@dimen/widget_list_edge">
 
         <FrameLayout
-            android:layout_width="@dimen/widget_time"
+            android:id="@+id/now_time" android:layout_width="wrap_content"
             android:layout_height="match_parent">
 
             <TextClock
@@ -44,7 +44,7 @@
         </FrameLayout>
 
         <FrameLayout
-            android:layout_width="@dimen/widget_rail"
+            android:layout_marginStart="@dimen/widget_week_content_gap" android:layout_marginEnd="@dimen/widget_week_content_gap" android:layout_width="@dimen/widget_week_check"
             android:layout_height="match_parent">
 
             <LinearLayout

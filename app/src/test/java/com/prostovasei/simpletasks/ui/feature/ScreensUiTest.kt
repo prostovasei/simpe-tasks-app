@@ -1,5 +1,8 @@
 package com.prostovasei.simpletasks.ui.feature
 
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.unit.dp
+
 import com.prostovasei.simpletasks.ui.feature.project.TAG_EMOJI_FIELD
 import com.prostovasei.simpletasks.ui.feature.project.TAG_EMOJI_OPTION
 import androidx.compose.runtime.Composable
@@ -165,6 +168,21 @@ class ScreensUiTest {
         isLoading = false,
         today = LocalDate.of(2026, 10, 16),
     )
+
+    @Test
+    fun upcomingHasEqualTwoDpGapsAndSharedNodeDiameter() {
+        show { AllScreen(allState, { intents += it }) }
+        listOf("d1", "t1").forEach { id ->
+            fun bounds(part: String) = composeRule.onNodeWithTag("task:$id:$part", useUnmergedTree = true).getUnclippedBoundsInRoot()
+            val time = bounds("time")
+            val node = bounds("node")
+            val content = bounds("content")
+            assertEquals(2.dp, node.left - time.right)
+            assertEquals(2.dp, content.left - node.right)
+            assertEquals(14.dp, node.right - node.left)
+            assertEquals(if (id == "t1") 58.dp else 14.dp, node.bottom - node.top)
+        }
+    }
 
     @Test
     fun allScreenShowsDaysAndTimes() {

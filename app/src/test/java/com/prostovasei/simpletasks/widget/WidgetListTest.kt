@@ -113,11 +113,16 @@ class WidgetListTest {
     }
 
     @Test
-    fun doneTaskIsStruckThrough() {
-        val title = list().rows().map { it.findViewById<TextView?>(R.id.row_title) }.first { it?.text.toString() == "Зарядка" }!!
-        assertTrue(title.paint.isStrikeThruText || title.text is android.text.Spanned)
-        val open = list().rows().map { it.findViewById<TextView?>(R.id.row_title) }.first { it?.text.toString() == "Созвон" }!!
-        assertFalse(open.text is android.text.Spanned)
+    fun upcomingDoneTaskIsNotStruckThroughButInboxKeepsItsStyle() {
+        fun title(shown: WidgetModel, name: String) = list(shown).rows()
+            .mapNotNull { it.findViewById<TextView?>(R.id.row_title) }.first { it.text.toString() == name }
+        fun struck(view: TextView): Boolean = view.paint.isStrikeThruText ||
+            (view.text as? android.text.Spanned)?.let {
+                it.getSpans(0, it.length, android.text.style.StrikethroughSpan::class.java).isNotEmpty()
+            } == true
+        assertFalse(struck(title(model, "Зарядка")))
+        assertFalse(struck(title(model, "Созвон")))
+        assertTrue(struck(title(model.copy(filter = WidgetFilter.Inbox), "Зарядка")))
     }
 
     /**

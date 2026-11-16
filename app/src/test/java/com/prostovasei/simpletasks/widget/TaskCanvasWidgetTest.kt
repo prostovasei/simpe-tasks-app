@@ -28,6 +28,7 @@ import java.time.YearMonth
 
 /** Проверяет реальный RemoteViews/reapply: тема Android не должна вернуть карточки или белый текст. */
 @RunWith(RobolectricTestRunner::class)
+@org.robolectric.annotation.GraphicsMode(org.robolectric.annotation.GraphicsMode.Mode.NATIVE)
 @Config(qualifiers = "w400dp-h900dp-night-xhdpi")
 class TaskCanvasWidgetTest {
     private val context = ApplicationProvider.getApplicationContext<Application>()
@@ -37,6 +38,71 @@ class TaskCanvasWidgetTest {
     )
     private fun model(filter: WidgetFilter) = WidgetModel(filter, null, today,
         listOf(WidgetDayBlock(WidgetDay.On(today), listOf(item()))))
+
+    @Test
+    fun upcomingUsesTwoDpGapsForRegularRepeatAndPeriodWithMatchingTimeStyle() {
+        val variants = listOf(
+            item(), item().copy(isRecurring = true), item(Priority.HIGH),
+            item(Priority.HIGH).copy(isDone = true), item().copy(isDone = true),
+            item().copy(due = DueText(DayLabel.Today, "10:00–11:00")),
+            item().copy(due = DueText(DayLabel.Today, "10:00–11:00"), isRecurring = true),
+        )
+        variants.forEach { task ->
+            val all = model(WidgetFilter.All).copy(days = listOf(WidgetDayBlock(WidgetDay.On(today), listOf(task))))
+            val line = all.lines(dayNames(context), withTail = false).filterIsInstance<WidgetLine.Task>().single()
+            val views = WidgetRows.views(context, line, all)
+            val root = views.apply(context, FrameLayout(context))
+            root.measure(View.MeasureSpec.makeMeasureSpec(800, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(160, View.MeasureSpec.AT_MOST))
+            root.layout(0, 0, root.measuredWidth, root.measuredHeight)
+            fun x(view: View): Int {
+                var result = view.left
+                var parent = view.parent
+                while (parent is View) { result += parent.left; parent = parent.parent }
+                return result
+            }
+            val time = root.findViewById<View>(R.id.row_time)
+            val node = root.findViewById<View>(R.id.row_node)
+            val title = root.findViewById<TextView>(R.id.row_title)
+            val start = root.findViewById<TextView>(R.id.row_start)
+            val gap = context.resources.getDimensionPixelSize(R.dimen.widget_week_content_gap)
+            assertEquals(gap, x(node) - x(time) - time.width)
+            assertEquals(gap, x(title) - x(node) - node.width)
+            assertEquals(context.resources.getDimensionPixelSize(R.dimen.widget_week_check), node.width)
+            assertEquals(title.currentTextColor, start.currentTextColor)
+            assertTrue(start.typeface.isBold && title.typeface.isBold)
+            assertTrue(start.width >= kotlin.math.ceil(start.paint.measureText("10:00")).toInt())
+            if (line.row.isPeriod) {
+                assertEquals(title.currentTextColor, root.findViewById<TextView>(R.id.row_end).currentTextColor)
+                assertEquals(context.resources.getDimensionPixelSize(R.dimen.widget_period_row) - 2 * context.resources.getDimensionPixelSize(R.dimen.widget_period_stub), node.height)
+            }
+            assertTrue(title.text !is Spanned || (title.text as Spanned).getSpans(0, title.length(), StrikethroughSpan::class.java).isEmpty())
+            views.reapply(context, root)
+            assertEquals(title.currentTextColor, start.currentTextColor)
+        }
+    }
+
+    /** Видимые пиксели при размере 14 dp на xhdpi, а не только размеры ImageView. */
+    @Test
+    fun repeatAndCircleHaveMatchingVisibleBounds() {
+        fun bounds(resource: Int, height: Int): android.graphics.Rect {
+            val bitmap = android.graphics.Bitmap.createBitmap(28, height, android.graphics.Bitmap.Config.ARGB_8888)
+            requireNotNull(context.getDrawable(resource)).mutate().apply {
+                setBounds(0, 0, bitmap.width, bitmap.height)
+                draw(android.graphics.Canvas(bitmap))
+            }
+            val bounds = android.graphics.Rect()
+            for (y in 0 until bitmap.height) for (x in 0 until bitmap.width) {
+                if (android.graphics.Color.alpha(bitmap.getPixel(x, y)) >= 128) bounds.union(x, y, x + 1, y + 1)
+            }
+            bitmap.recycle()
+            return bounds
+        }
+        val circle = bounds(R.drawable.ic_week_node_ring, 28)
+        val repeat = bounds(R.drawable.ic_task_repeat_round, 28)
+        assertTrue("ширина: $circle / $repeat", kotlin.math.abs(circle.width() - repeat.width()) <= 1)
+        assertTrue("высота: $circle / $repeat", kotlin.math.abs(circle.height() - repeat.height()) <= 1)
+        assertEquals(bounds(R.drawable.ic_task_period_ring, 116), bounds(R.drawable.ic_task_period_repeat, 116))
+    }
 
     @Test
     fun upcomingAndInboxKeepDistinctLayoutsAndReapplyKeepsFlatStyle() {
@@ -56,7 +122,7 @@ class TaskCanvasWidgetTest {
     }
 
     @Test
-    fun enlargedFontKeepsMeasuredTimeColumnAndOneDpGaps() {
+    fun enlargedFontKeepsMeasuredTimeColumnAndTwoDpGaps() {
         val config = android.content.res.Configuration(context.resources.configuration).apply { fontScale = 1.5f }
         val scaled = context.createConfigurationContext(config)
         val start = today.minusDays(6)
