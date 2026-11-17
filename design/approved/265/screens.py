@@ -5,21 +5,20 @@ source=here.parent/'263'/'screens.py'
 s=source.read_text()
 P={'__file__':str(source)}
 exec(compile(s[:s.index('boards=[]')],str(source),'exec'),P)
-CSS=P['CSS']+'''
+CSS=P['CSS']+f':root{{--day-add-w:{P["dim"]("WIDGET_ADD_W")}px;--day-add-h:{P["dim"]("WIDGET_ADD_H")}px}}'+'''
 .compact-day .sheet-header{gap:8px;padding:8px 12px;min-height:56px}
 .compact-day .date-line{flex:1;min-width:0;font-size:14px;line-height:20px;font-weight:700}
-.compact-day .count{margin-left:0;font-size:14px;line-height:20px;min-width:12px;text-align:right}
-.compact-day .add-top{width:44px;height:44px;flex-shrink:0;display:grid;place-items:center;background:none;border-radius:12px}
-.compact-day .add-top i{font-style:normal;display:grid;place-items:center;width:36px;height:36px;border-radius:12px;background:#16171D;color:white;font-size:26px;line-height:1;font-weight:500}
+.compact-day .add-top{width:var(--day-add-w);height:44px;flex-shrink:0;display:grid;place-items:center;background:none;border-radius:12px}
+.compact-day .add-top i{font-style:normal;display:grid;place-items:center;width:var(--day-add-w);height:var(--day-add-h);border-radius:16px;background:#16171D;color:white;font-size:26px;line-height:1;font-weight:500}
 .compact-day .timeline{padding-bottom:12px}
 .compact-day .empty{padding:16px 12px 28px;color:var(--secondary);font-size:14px}
-.large-font .compact-day .date-line,.large-font .compact-day .count{font-size:18.2px;line-height:24px}
+.large-font .compact-day .date-line{font-size:18.2px;line-height:24px}
 '''
 ROWS=[('19:00','','Забрать заказ','🛍️',''),('23:00','','Сверить счета','💼','')]
 def sheet(rows=ROWS):
- return ('<div class="sheet compact-day"><header class="sheet-header"><div class="date-line">ВТ 17 ноя Сегодня</div>'
+ return ('<div class="sheet compact-day"><header class="sheet-header"><div class="date-line">ВТ 17 ноя</div>'
  '<button class="add-top" data-action="add" aria-label="Добавить задачу на ВТ 17 ноя"><i>+</i></button>'
- f'<span class="count">{len(rows)}</span></header>'
+ '</header>'
  +(P['timeline'](rows,False) if rows else '<div class="empty">Нет задач на этот день</div>')+'</div>')
 def home(width=390,large=False,rows=ROWS):
  P['WEEK'][1]=[(r[0],r[2],r[3],r[4]) for r in rows]
@@ -27,8 +26,8 @@ def home(width=390,large=False,rows=ROWS):
  +P['week_screen']('widget',width,large)+'<div class="scrim"></div>'+sheet(rows)+'</div>')
 def board(id,title,body):
  return f'<section class="sec" id="{id}"><div class="badge">#265 · НА СОГЛАСОВАНИИ</div><h2>{title}</h2>{body}</section>'
-main=board('day','Окно дня: дата меньше, «+» перед количеством',P['figure']('390 px · две задачи',home(),'Дата и «Сегодня» — 14 px, как счётчик. Справа кнопка «+», затем общее число 2. Нижней кнопки нет.'))
-extra=board('states','Узкий экран и пустой день','<div class="rowp">'+P['figure']('320 px · шрифт 130%',home(320,True),'Дата и количество растут одинаково. «+» остаётся перед счётчиком; перенос заголовка допустим.')+P['figure']('Пустой день',home(rows=[]),'Общее количество — 0. «+» доступен и создаёт задачу на выбранный день.')+'</div>')
+main=board('day','Окно дня: только дата и вытянутая кнопка «+»',P['figure']('390 px · две задачи',home(),'Дата — 14 px. Нет относительной подписи и количества задач. Справа вытянутая кнопка «+» 64×32, как на нижней панели виджета.'))
+extra=board('states','Узкий экран и пустой день','<div class="rowp">'+P['figure']('320 px · шрифт 130%',home(320,True),'Дата растёт с системным шрифтом. Кнопка «+» сохраняет вытянутую форму справа.')+P['figure']('Пустой день',home(rows=[]),'Количество не показывается даже в пустом дне. «+» доступен и создаёт задачу на выбранный день.')+'</div>')
 js='''
 window.layoutReady=document.fonts.ready.then(()=>{for(const d of document.querySelectorAll('.widget.revised-week'))d.style.setProperty('--cell-height',d.querySelector('.day').getBoundingClientRect().height+'px')});
 document.addEventListener('click',e=>{if(e.target.closest('[data-action="add"]')){const l=document.querySelector('.log');l.textContent='Создать задачу на ВТ 17 ноя · демонстрация';l.classList.add('on')}});
