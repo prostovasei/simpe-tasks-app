@@ -7,6 +7,7 @@ import android.os.Build
 import android.text.SpannableString
 import android.text.Spanned
 import android.text.style.StyleSpan
+import android.text.style.TypefaceSpan
 import android.util.TypedValue
 import android.view.View
 import android.widget.RemoteViews
@@ -103,12 +104,26 @@ object WidgetWeekRows {
         taskCanvasColor(ids.more, "setTextColor", ColorTokens.textPrimary)
         setInt(ids.more, "setBackgroundResource", 0)
         with(click) { set(ids.head, WidgetClicks.DAY, day.date.toString()) }
-        // Строк задач в ячейке — [capacity], они делят высоту под строкой даты поровну; пустые места невидимы, но держат размер,
+        // Строк задач в ячейке — [capacity]; пустые места держат размер и открывают день,
         // поэтому строки во всех ячейках одной высоты. Лишние места убраны совсем.
         ids.slots.forEachIndexed { index, slot ->
             val item = shown.getOrNull(index)
-            setViewVisibility(slot.plaque, if (item != null) View.VISIBLE else if (index < capacity) View.INVISIBLE else View.GONE)
-            if (item != null) slot(context, slot, item, click)
+            setViewVisibility(slot.plaque, if (index < capacity) View.VISIBLE else View.GONE)
+            if (item != null) {
+                setViewVisibility(slot.check, View.VISIBLE)
+                setViewVisibility(slot.title, View.VISIBLE)
+                setViewVisibility(slot.emoji, View.VISIBLE)
+                setViewVisibility(slot.hit, View.VISIBLE)
+                slot(context, slot, item, click)
+            } else if (index < capacity) {
+                setViewVisibility(slot.check, View.INVISIBLE)
+                setViewVisibility(slot.time, View.INVISIBLE)
+                setViewVisibility(slot.title, View.INVISIBLE)
+                setViewVisibility(slot.emoji, View.INVISIBLE)
+                setViewVisibility(slot.hit, View.INVISIBLE)
+                setInt(slot.plaque, "setBackgroundResource", 0)
+                with(click) { set(slot.plaque, WidgetClicks.DAY, day.date.toString()) }
+            }
         }
     }
 
@@ -123,7 +138,7 @@ object WidgetWeekRows {
         val nodeColor = when {
             done && high -> TaskCanvasTokens.priorityDone
             done -> TaskCanvasTokens.done
-            high -> TaskCanvasTokens.priority
+            high -> TaskCanvasTokens.weekPriority
             else -> ColorTokens.inactive
         }
         setInt(ids.plaque, "setBackgroundResource", 0)
@@ -138,7 +153,7 @@ object WidgetWeekRows {
                 else -> context.getString(R.string.widget_complete)
             },
         )
-        // Итерация 50: «выполнить» — зона ~40 dp поверх кружка и начала названия; у будущего повтора она открывает задачу, как вся плашка.
+        // #259: колонка времени и значок выполняют задачу; у будущего повтора они открывают исходную задачу.
         with(click) {
             when {
                 item.isGhost -> set(ids.hit, WidgetClicks.OPEN, item.taskId)
@@ -148,27 +163,27 @@ object WidgetWeekRows {
         }
         setTextViewText(
             ids.title,
-            item.title,
+            item.title.weekWeight(high && !done),
         )
         taskCanvasColor(
             ids.title,
             "setTextColor",
-            when { high && done -> TaskCanvasTokens.priorityDone; high -> TaskCanvasTokens.priority; done -> TaskCanvasTokens.done; else -> ColorTokens.textPrimary },
+            when { high && done -> TaskCanvasTokens.priorityDone; high -> TaskCanvasTokens.weekPriority; done -> TaskCanvasTokens.done; else -> ColorTokens.textPrimary },
         )
         // #249: время слева от кружка, эмодзи списка остаётся справа.
         setTextViewText(ids.emoji, item.listEmoji)
         taskCanvasColor(ids.emoji, "setTextColor", ColorTokens.textPrimary, if (done) TaskCanvasTokens.DONE_EMOJI_ALPHA else 1f)
         val time = item.startTime()
-        val timeWidth = canvasTimeWidthPx(context, SizeTokens.WIDGET_WEEK_TIME_TEXT)
+        val timeWidth = canvasTimeWidthPx(context, SizeTokens.WIDGET_WEEK_TIME_TEXT, extraBold = true)
         setViewLayoutWidth(ids.time, timeWidth.toFloat(), TypedValue.COMPLEX_UNIT_PX)
-        setViewLayoutMargin(ids.hit, RemoteViews.MARGIN_START,
-            (timeWidth + dp(context, SizeTokens.WEEK_CONTENT_GAP)).toFloat(), TypedValue.COMPLEX_UNIT_PX)
+        setViewLayoutMargin(ids.hit, RemoteViews.MARGIN_START, 0f, TypedValue.COMPLEX_UNIT_PX)
+        setViewLayoutWidth(ids.hit, (timeWidth + dp(context, SizeTokens.WEEK_CONTENT_GAP + SizeTokens.WEEKVIEW_CHECK)).toFloat(), TypedValue.COMPLEX_UNIT_PX)
         visible(ids.time, true)
-        setTextViewText(ids.time, time.orEmpty())
+        setTextViewText(ids.time, time.orEmpty().weekWeight(high && !done))
         taskCanvasColor(
             ids.time,
             "setTextColor",
-            when { high && done -> TaskCanvasTokens.priorityDone; high -> TaskCanvasTokens.priority; done -> TaskCanvasTokens.done; else -> ColorTokens.textPrimary },
+            when { high && done -> TaskCanvasTokens.priorityDone; high -> TaskCanvasTokens.weekPriority; done -> TaskCanvasTokens.done; else -> ColorTokens.textPrimary },
         )
         // Пустая колонка времени держит кружки выровненными; эмодзи всегда у правого края.
         setViewPadding(ids.plaque, 0, 0, dp(context, SizeTokens.WIDGET_WEEK_INLINE_GAP), 0)
@@ -208,6 +223,11 @@ object WidgetWeekRows {
     }
 
     /** Текст жирным начертанием ([bold] = true) или как есть. */
+    private fun String.weekWeight(high: Boolean): CharSequence =
+        if (high && isNotEmpty()) SpannableString(this).apply {
+            setSpan(TypefaceSpan(Typeface.create("sans-serif", 800, false)), 0, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        } else this
+
     private fun String.bold(bold: Boolean): CharSequence =
         if (bold) SpannableString(this).apply { setSpan(StyleSpan(Typeface.BOLD), 0, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE) } else this
 

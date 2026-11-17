@@ -199,6 +199,15 @@ class WeekScreenTest {
     }
 
     @Test
+    fun blankAreaOpensItsDay() {
+        show()
+        composeRule.onNodeWithTag("week-blank:${monday.plusDays(3)}").performClick()
+        composeRule.onNodeWithTag("week-blank:$monday").performClick()
+        assertEquals(listOf(monday.plusDays(3), monday), openedDays)
+        assertTrue(intents.isEmpty())
+    }
+
+    @Test
     fun timeColumnPrecedesToggleAndUntimedTasksStayAligned() {
         show()
         val time = composeRule.onNodeWithTag("week-time:a1", useUnmergedTree = true).getUnclippedBoundsInRoot()
@@ -211,8 +220,12 @@ class WeekScreenTest {
         assertEquals(2.dp, title.left - timed.right)
         assertEquals(timed.left, untimed.left)
         composeRule.onNodeWithTag("week-time:a1", useUnmergedTree = true).performTouchInput { click() }
-        assertEquals(listOf("a1"), opened)
-        assertTrue(intents.isEmpty())
+        assertEquals(TaskListIntent.ToggleComplete("a1", recurring = false, done = true), intents.last())
+        assertTrue(opened.isEmpty())
+        composeRule.onNodeWithTag("week-time:a2", useUnmergedTree = true).performClick()
+        assertEquals(TaskListIntent.ToggleComplete("a2", recurring = false, done = false), intents.last())
+        composeRule.onNodeWithTag("week-time:f2@0", useUnmergedTree = true).performClick()
+        assertEquals(listOf("f2"), opened)
     }
 
     @Test
