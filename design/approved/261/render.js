@@ -12,6 +12,7 @@ const assert = require('assert/strict');
   await p.evaluate(()=>window.layoutReady);
   assert.equal(await p.locator('[id^="variant-"]').count(),20);
   assert.equal(await p.locator('#baseline').count(),1);
+  assert.equal(await p.locator('#chosen-today .today-cell-demo .day[data-day="ВТ 17"]').count(),2);
   assert.equal(await p.locator('[id^="overview-"]').count(),4);
   const dims=await p.evaluate(()=>Array.from(document.querySelectorAll('[id^="variant-"] .device'),d=>{
    const row=d.querySelector('.task');const time=row.querySelector('.time');const node=row.querySelector('.node');const title=row.querySelector('.title');
@@ -21,7 +22,8 @@ const assert = require('assert/strict');
   for(const x of dims){assert.equal(x.node,14);assert.equal(x.gap1,2);assert.equal(x.gap2,2)}
   for(const group of ['app','widget']){const a=dims.filter(x=>x.device===group);for(const v of a) assert.deepEqual(v,a[0]);}
   await p.locator('.nav').evaluate(el=>el.style.position='static');
-  for(const s of await p.locator('.sec').all()) await s.screenshot({path:path.join(__dirname,(await s.getAttribute('id'))+'.png')});
-  assert.deepEqual(errors,[]);console.log('25 PNG: 20 вариантов, 4 сравнения и текущий вид; геометрия строк проверена.');
+  const sheets = process.argv.includes('--chosen-only') ? p.locator('#chosen-today') : process.argv.includes('--summary-only') ? p.locator('#chosen-today, [id^="overview-"]') : p.locator('.sec');
+  for(const s of await sheets.all()) await s.screenshot({path:path.join(__dirname,(await s.getAttribute('id'))+'.png')});
+  assert.deepEqual(errors,[]);console.log('Листы PNG сохранены; 20 вариантов и геометрия строк проверены.');
  } finally {await b.close()}
 })().catch(e=>{console.error(e);process.exitCode=1});

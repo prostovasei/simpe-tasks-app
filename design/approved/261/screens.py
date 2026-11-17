@@ -55,6 +55,7 @@ extra = '''
 + .high:not(.done){color:var(--deep)}
 + .high:not(.done) .time,.high:not(.done) .title{font-weight:800}
 + .vp01 .high:not(.done){color:#862CE0}
++ .today-cell-demo .day[data-day="ВТ 17"]{background:#F8F5FD}
 + .vp02 .high:not(.done){background:#F8F3FD}
 + .vp03 .high:not(.done){background:#EDE0FA}
 + .vp04 .high:not(.done)::before{content:'';position:absolute;left:-2px;top:2px;bottom:2px;width:2px;background:#9252CF}
@@ -90,13 +91,25 @@ for start in range(0,20,5):
   sample=''.join(f'<div class="sample"><div class="device {kind} vp{number}">{day(0)}</div></div>' for kind in ['app','widget'])
   body+=f'<div class="overview-row"><div><h3>{number} · {title}</h3><p>{desc}</p></div>{sample}</div>'
  boards.append(sec('overview-'+str(start//5+1),f'Варианты {start+1:02}–{start+5:02}',
-  'Одинаковые задачи: активный приоритет, обычная задача, приоритет без времени и выполненная приоритетная. Все варианты ещё не выбраны.',body))
+  'Одинаковые задачи: активный приоритет, обычная задача, приоритет без времени и выполненная приоритетная. PM выбрал вариант 01; подсветка дня на согласовании.',body))
 
 for number,title,desc in items:
  body='<div class="rowp">'+''.join(f'<figure><div class="label">{label}</div>{screen(kind,"p"+number)}<figcaption class="caption">{html.escape(desc)} Размеры и поведение строк как в build-350.</figcaption></figure>' for kind,label in [('app','Приложение · 390×844'),('widget','Виджет · 390×650')])+'</div>'
  boards.append(sec('variant-'+number,number+' · '+title,desc+' Это HTML-эскиз, не снимок Android.',body))
 
-links='<a href="#baseline">Как сейчас</a>'+''.join(f'<a href="#overview-{i}">{(i-1)*5+1}–{i*5}</a>' for i in range(1,5))+''.join(f'<a href="#variant-{n}">{n}</a>' for n,_,_ in items)
+# Отдельный эскиз по уточнению PM: выбранный вариант 01 и лёгкая подсветка
+# сегодняшнего дня. Демо-данные ставим на сегодня только для этого листа.
+saved_today = G['TASKS'][1]
+G['TASKS'][1] = list(G['TASKS'][0])
+chosen_body = '<div class="rowp">' + ''.join(
+    f'<figure><div class="label">{label}</div><div class="today-cell-demo">{screen(kind,"p01")}</div>'
+    '<figcaption class="caption">Текущий день — вторник 17, очень светлый фиолетовый фон #F8F5FD. Яркий фиолетовый приоритет — вариант 01.</figcaption></figure>'
+    for kind,label in [('app','Приложение · 390×844'),('widget','Виджет · 390×650')]) + '</div>'
+G['TASKS'][1] = saved_today
+boards.insert(0, sec('chosen-today', 'Вариант 01 + лёгкая подсветка сегодняшнего дня',
+    'Эскиз на согласование: текущий день выделен очень светлым фиолетовым; остальные ячейки белые.', chosen_body))
+
+links='<a href="#chosen-today">Выбор + сегодня</a><a href="#baseline">Как сейчас</a>'+''.join(f'<a href="#overview-{i}">{(i-1)*5+1}–{i*5}</a>' for i in range(1,5))+''.join(f'<a href="#variant-{n}">{n}</a>' for n,_,_ in items)
 # Конкретные цвета — предложения макета, не новые Kotlin-токены.
 js='''
 window.layoutReady=document.fonts.ready.then(()=>{
@@ -114,4 +127,4 @@ out=('<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport"
  '<p>Геометрия основана на 0.72.0 / build-350, Manrope встроен. Шрифт виджета приближён браузерным Arial. Это HTML-эскизы, не Android-снимки.</p></header>'
  f'<nav class="nav">{links}</nav><main class="board">{"".join(boards)}</main><script>{js}</script></html>')
 (here/'screens.html').write_text(out)
-print('20 вариантов, 4 сравнительных листа и 20 полных экранов')
+print('20 вариантов и отдельный эскиз варианта 01 с подсветкой сегодняшнего дня')
