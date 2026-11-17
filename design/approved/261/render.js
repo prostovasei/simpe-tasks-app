@@ -14,6 +14,13 @@ const assert = require('assert/strict');
   assert.equal(await p.locator('#baseline').count(),1);
   assert.equal(await p.locator('#chosen-today .today-cell-demo .day[data-day="ВТ 17"]').count(),2);
   assert.equal(await p.locator('[id^="overview-"]').count(),4);
+  const labels = p.locator('#chosen-label .day-head.today .today-word');
+  assert.equal(await labels.count(), 2);
+  for (const item of await labels.all()) {
+    assert.equal((await item.textContent()).trim(), 'сегодня');
+    assert.equal(await item.evaluate(el => getComputedStyle(el).color), 'rgb(22, 23, 29)');
+  }
+  for (const cell of await p.locator('#chosen-label .day').all()) assert.equal(await cell.evaluate(el => getComputedStyle(el).backgroundColor), 'rgba(0, 0, 0, 0)');
   const today = p.locator('#chosen-header .day-head.today > span:first-child');
   assert.equal(await today.count(), 2);
   for (const item of await today.all()) assert.equal(await item.evaluate(el => getComputedStyle(el).color), 'rgb(134, 44, 224)');
@@ -26,7 +33,7 @@ const assert = require('assert/strict');
   for(const x of dims){assert.equal(x.node,14);assert.equal(x.gap1,2);assert.equal(x.gap2,2)}
   for(const group of ['app','widget']){const a=dims.filter(x=>x.device===group);for(const v of a) assert.deepEqual(v,a[0]);}
   await p.locator('.nav').evaluate(el=>el.style.position='static');
-  const sheets = process.argv.includes('--chosen-only') ? p.locator('#chosen-header') : process.argv.includes('--summary-only') ? p.locator('#chosen-header, #chosen-today, [id^="overview-"]') : p.locator('.sec');
+  const sheets = process.argv.includes('--chosen-only') ? p.locator('#chosen-label, #chosen-label-detail') : process.argv.includes('--summary-only') ? p.locator('#chosen-label, #chosen-label-detail, #chosen-header, #chosen-today, [id^="overview-"]') : p.locator('.sec');
   for(const s of await sheets.all()) await s.screenshot({path:path.join(__dirname,(await s.getAttribute('id'))+'.png')});
   assert.deepEqual(errors,[]);console.log('Листы PNG сохранены; 20 вариантов и геометрия строк проверены.');
  } finally {await b.close()}

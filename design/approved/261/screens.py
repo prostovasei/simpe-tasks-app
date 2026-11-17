@@ -57,6 +57,8 @@ extra = '''
 + .vp01 .high:not(.done){color:#862CE0}
 + .today-cell-demo .day[data-day="ВТ 17"]{background:#F8F5FD}
 + .today-header-demo .day-head.today > span:first-child{color:#862CE0}
++ .today-label-demo .today-word{font-weight:500;letter-spacing:normal;text-transform:none}
++ .label-detail .sample{width:390px;height:260px}.label-detail .sample .day{height:130px;transform:scale(2)}.label-detail .sample .day-head{display:flex}.label-detail .sample .device{overflow:visible}
 + .vp02 .high:not(.done){background:#F8F3FD}
 + .vp03 .high:not(.done){background:#EDE0FA}
 + .vp04 .high:not(.done)::before{content:'';position:absolute;left:-2px;top:2px;bottom:2px;width:2px;background:#9252CF}
@@ -92,7 +94,7 @@ for start in range(0,20,5):
   sample=''.join(f'<div class="sample"><div class="device {kind} vp{number}">{day(0)}</div></div>' for kind in ['app','widget'])
   body+=f'<div class="overview-row"><div><h3>{number} · {title}</h3><p>{desc}</p></div>{sample}</div>'
  boards.append(sec('overview-'+str(start//5+1),f'Варианты {start+1:02}–{start+5:02}',
-  'Одинаковые задачи: активный приоритет, обычная задача, приоритет без времени и выполненная приоритетная. PM выбрал вариант 01; цвет заголовка текущего дня на согласовании.',body))
+  'Одинаковые задачи: активный приоритет, обычная задача, приоритет без времени и выполненная приоритетная. PM выбрал вариант 01 и попросил подпись «сегодня» рядом с датой.',body))
 
 for number,title,desc in items:
  body='<div class="rowp">'+''.join(f'<figure><div class="label">{label}</div>{screen(kind,"p"+number)}<figcaption class="caption">{html.escape(desc)} Размеры и поведение строк как в build-350.</figcaption></figure>' for kind,label in [('app','Приложение · 390×844'),('widget','Виджет · 390×650')])+'</div>'
@@ -119,10 +121,34 @@ header_body = '<div class="rowp">' + ''.join(
     '<figcaption class="caption">Сегодня — ВТ 17 фиолетовым; фон всех дней белый. Приоритет — выбранный вариант 01.</figcaption></figure>'
     for kind,label in [('app','Приложение · 390×844'),('widget','Виджет · 390×650')]) + '</div>'
 G['TASKS'][1] = saved_today
-boards.insert(0, sec('chosen-header', 'Вариант 01 + фиолетовый заголовок сегодня',
-    'Эскиз на согласование: ВТ 17 выделен фиолетовым, заливки ячеек нет.', header_body))
+boards.insert(0, sec('chosen-header', 'Отклонено: фиолетовый заголовок сегодня',
+    'Отклонено PM: текущий день цветом не выделять.', header_body).replace('НА СОГЛАСОВАНИИ', 'ОТКЛОНЕНО PM'))
 
-links='<a href="#chosen-header">Фиолетовый заголовок</a><a href="#chosen-today">Отклонённая заливка</a><a href="#baseline">Как сейчас</a>'+''.join(f'<a href="#overview-{i}">{(i-1)*5+1}–{i*5}</a>' for i in range(1,5))+''.join(f'<a href="#variant-{n}">{n}</a>' for n,_,_ in items)
+# Последнее уточнение PM: заголовок сегодня обычным цветом, рядом — слово
+# «сегодня». Прежние эскизы с цветным фоном и заголовком сохранены как отклонённые.
+saved_today = G['TASKS'][1]
+saved_day = G['day']
+G['TASKS'][1] = list(G['TASKS'][0])
+def day_with_today_label(index=0, compact=False):
+    markup = saved_day(index, compact)
+    return markup.replace('<span>ВТ 17</span>', '<span>ВТ 17 <span class="today-word">сегодня</span></span>') if index == 1 else markup
+G['day'] = day_with_today_label
+label_body = '<div class="rowp">' + ''.join(
+    f'<figure><div class="label">{label}</div><div class="today-label-demo">{screen(kind,"p01")}</div>'
+    '<figcaption class="caption">Текущий день — ВТ 17 сегодня, обычным цветом. Фон белый. Яркий приоритет — выбранный вариант 01.</figcaption></figure>'
+    for kind,label in [('app','Приложение · 390×844'),('widget','Виджет · 390×650')]) + '</div>'
+label_detail = '<div class="rowp label-detail">' + ''.join(
+    f'<figure><div class="label">{label} · увеличено ×2</div>'
+    f'<div class="sample"><div class="device {kind} vp01 today-label-demo">{G["day"](1)}</div></div></figure>'
+    for kind,label in [('app','Приложение'),('widget','Виджет')]) + '</div>'
+G['day'] = saved_day
+G['TASKS'][1] = saved_today
+boards.insert(0, sec('chosen-label-detail', 'Сегодня · увеличенный фрагмент',
+    'ВТ 17 сегодня — обычным цветом; яркий фиолетовый остаётся только у приоритетной задачи.', label_detail))
+boards.insert(0, sec('chosen-label', 'Вариант 01 + подпись «сегодня»',
+    'Эскиз на согласование: ВТ 17 сегодня обычным цветом, без заливки ячеек.', label_body))
+
+links='<a href="#chosen-label">Подпись сегодня</a><a href="#chosen-label-detail">Увеличенный фрагмент</a><a href="#chosen-header">Отклонённый цвет</a><a href="#chosen-today">Отклонённая заливка</a><a href="#baseline">Как сейчас</a>'+''.join(f'<a href="#overview-{i}">{(i-1)*5+1}–{i*5}</a>' for i in range(1,5))+''.join(f'<a href="#variant-{n}">{n}</a>' for n,_,_ in items)
 # Конкретные цвета — предложения макета, не новые Kotlin-токены.
 js='''
 window.layoutReady=document.fonts.ready.then(()=>{
@@ -140,4 +166,4 @@ out=('<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport"
  '<p>Геометрия основана на 0.72.0 / build-350, Manrope встроен. Шрифт виджета приближён браузерным Arial. Это HTML-эскизы, не Android-снимки.</p></header>'
  f'<nav class="nav">{links}</nav><main class="board">{"".join(boards)}</main><script>{js}</script></html>')
 (here/'screens.html').write_text(out)
-print('20 вариантов и эскиз с фиолетовым заголовком текущего дня')
+print('20 вариантов и эскиз с подписью сегодня')
