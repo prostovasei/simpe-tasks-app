@@ -225,7 +225,7 @@ object WidgetWeekRows {
     /** Текст жирным начертанием ([bold] = true) или как есть. */
     private fun String.weekWeight(high: Boolean): CharSequence =
         if (high && isNotEmpty()) SpannableString(this).apply {
-            setSpan(TypefaceSpan(Typeface.create("sans-serif", 800, false)), 0, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            setSpan(TypefaceSpan(Typeface.create(Typeface.DEFAULT, 800, false)), 0, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         } else this
 
     private fun String.bold(bold: Boolean): CharSequence =
