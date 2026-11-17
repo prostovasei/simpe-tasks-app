@@ -1007,24 +1007,21 @@ def wontdo_task():
 
 
 def day_sheet():
-    """Шторка дня поверх рабочего стола (итерация 51): дата, «Сегодня», «1 из 4», лента дня, «Задача на …»."""
+    """Шторка дня #265: компактная дата и вытянутый плюс сверху, без относительных подписей и количества."""
     rows = (frow('10:30', 'var(--inactive)', 'Telegram', done=True, rep=True, top=False, flat=True)
             + frow('19:30', 'var(--inactive)', 'Кальян', period=True, end='21:30', flat=True)
             + frow('21:30', 'var(--inactive)', 'Футбол', period=True, end='23:30', flat=True)
             + frow('23:00', 'var(--inactive)', 'Цветы', rep=True, bottom=False, rem='at', flat=True))
-    head = ('<div style="display:flex;align-items:center;gap:8px;padding:8px 16px">'
-            '<span style="font-size:22px;line-height:28px;font-weight:700">СБ 07 ноя</span>'
-            '<span style="font-size:22px;line-height:28px;font-weight:700">Сегодня</span>'
-            '<span style="flex:1"></span><span style="font-size:14px;color:var(--text-secondary);font-weight:700">1 из 4</span></div>')
-    add = (f'<div style="display:flex;justify-content:flex-end;padding:12px"><span style="height:48px;padding:0 18px;border-radius:var(--radius-xl);'
-           f'background:var(--accent);color:var(--on-accent);display:flex;align-items:center;gap:6px;font-weight:700;font-size:14px">{mi("add", 22)}Задача на сб, 07 ноя</span></div>')
+    head = (f'<div style="display:flex;align-items:center;gap:8px;padding:4px 12px;min-height:56px">'
+            f'<span style="flex:1;font-size:14px;line-height:20px;font-weight:700">СБ 07 ноя</span>'
+            f'<span style="width:64px;height:32px;border-radius:var(--radius-xl);background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center">{mi("add", 22)}</span></div>')
     sheet = (f'<div style="width:396px;border-radius:var(--radius-nav);background:var(--surface);overflow:hidden">'
-             f'{head}<div style="padding:8px 0 8px 4px;background:var(--surface)">{rows}</div>{add}</div>')
+             f'{head}<div style="padding:8px 0 8px 4px;background:var(--surface)">{rows}</div></div>')
     return (f'<div style="padding:24px;border-radius:var(--radius-xl);background:var(--scrim);display:inline-block">{sheet}</div>')
 
 
 PREVIEWS = {
-    'DaySheet': lambda: doc('Напоминания и виджет', 520, 'Шторка дня поверх рабочего стола: дата, «выполнено из всех», лента дня и «Задача на …»', day_sheet()),
+    'DaySheet': lambda: doc('Напоминания и виджет', 520, 'Шторка дня: компактная дата и плюс сверху, лента дня без нижней кнопки', day_sheet()),
     'WeekView': p_week_view,
     'ChoiceDialog': p_choice_dialog,
     'ScreenWontDo': lambda: screens(wontdo_screen, 730, 'Экран «Не буду делать»: по дням отметки, вместо галочки — ✕'),
@@ -1051,11 +1048,9 @@ README_MORE = {
     'SelectionMode': ('Режим выбора: верхняя строка «Выбрано: N», лента действий, выбранная плашка (0.40).', 'Включается долгим нажатием на плашку (будущий повтор выбрать нельзя), дальше нажатие на плашку или кружок отмечает и снимает. Сверху строка `surface` высотой `size-selection-bar` (56): «✕» (закрыть режим, как и «Назад»), «Выбрано: N» (`title-large` Bold), «Выбрать все» (`accent`). Внизу на месте панели вкладок лента: высота `size-nav-bar`, радиус `radius-nav`, тень; кнопки не уже `size-ribbon-button` (76) и высотой `size-ribbon-button-height` (56): значок 24 и подпись `label-small` Bold; ряд прокручивается пальцем, у правого края затухание. Действия: «Выполнить», «Не буду делать» (итерация 49), «На завтра», «На другой день» (календарь), «В список», «Приоритет», «Вернуть», «Удалить» (`danger`); неподходящие бледные (35%). В корзине: «Восстановить» и «Удалить навсегда» (с подтверждением `DangerDialog`). Выбранная плашка: фон `selected`, рамка `accent` 2, в кружке чёрная галочка. После действия режим закрывается, внизу `UndoSnackbar` («Выполнено: 3 · Отмена» и т. п.). Источник: `designsystem/components/Selection.kt`, `ui/feature/bulk/SelectionFrame.kt`, `BulkActions.kt`. «Удалить», когда среди выбранных есть повторяющиеся, сначала открывает `ChoiceDialog` «Удалить выбранные задачи?» («Удалить» / «Не буду делать» / «Отмена»).'),
     'ScreenSelection': ('Экран «Все» в режиме выбора (0.40).', 'Строка «Выбрано: N» поверх верха экрана, лента действий на месте нижней панели («+» и вкладки на это время скрыты). Список прокручивается выше ленты. То же во «Входящих», списках, «Поиске», «Выполненных» и «Корзине»; в виджете режима нет.'),
     'ScreenTrash': ('Экран «Корзина» (0.39).', 'Сверху «назад» и название `title-large` Bold; под ним «ЗАДАЧ: N» (`label-medium` Bold, `text-secondary`), справа «Восстановить все» (`accent`) и «Удалить все» (`danger`). Ниже плашки как в обычном списке (слева срок, справа список) с мелкой подписью «удалена 28 окт» (`body-small`, `text-secondary`); строка выше обычной на `size-trash-row-extra` (14). Новые удалённые сверху. Нажатие открывает задачу только для чтения (`TrashTask`); кружок ничего не отмечает. Пусто: «Корзина пуста» и подсказка по центру. Вход — строка «Корзина» на экране «Списки» под «Выполненными»: значок корзины, название, число задач (при нуле числа нет). Источник: `ui/feature/trash/TrashScreen.kt`.'),
-    'DaySheet': ('Шторка дня поверх рабочего стола (0.51): нажатие на дату дня в «Неделе» виджета.',
-                 '''Приложение не открывается: поверх затемнения `scrim` снизу шторка `surface`, радиус `radius-nav`, поля `space-xs` от краёв, без верхнего маркера. Сверху дата «СБ 07 ноя» (`title-large` Bold; прошедший день — `overdue`), метка «Сегодня» / «Завтра» / «Вчера» (`title-large` Bold без плашки), справа «1 из 4» — выполнено из всех (`body-medium` Bold `text-secondary`).
-Ниже на фоне `background` лента дня как в приложении (`TimelineRow`): «весь день», потом по времени, линия «сейчас» у сегодняшнего дня; кружок выполняет и возвращает, нажатие на плашку — окно задачи поверх. Будущие повторы — тоже.
-Снизу справа «Задача на сб, 07 ноя» — чёрная кнопка `accent`, радиус `radius-xl`: новая задача на этот день без времени. Шторка не выше 80% экрана, дальше лента прокручивается; кнопка всегда видна. «Назад», смахивание вниз за верх шторки и нажатие на затемнение закрывают. Пустой день — «На этот день задач нет» и та же кнопка.
-Источник: `ui/feature/week/DaySheet.kt`, окно — `TaskPopupActivity` (`DayDestination`).'''),
+    'DaySheet': ('Шторка дня поверх рабочего стола (#263, #265).',
+                 """Белая плоская шторка без верхнего маркера и указателя текущего времени. В заголовке только дата «СБ 07 ноя» body-medium 14 sp Bold, прошедший день — overdue. Относительных подписей Сегодня/Вчера/Завтра и количества задач нет. Справа вытянутый чёрный плюс WIDGET_ADD_W/H 64×32, область нажатия высотой toolButton 50 dp; подпись для чтения с экрана содержит выбранную дату. Нижней кнопки нет. Плюс доступен в пустом дне. Строки, выполнение/открытие задач, прокрутка и закрытие прежние. Полный DayScreen и недельная сетка не меняются.
+Источник: ui/feature/week/DaySheet.kt, TaskPopupActivity."""),
     'ChoiceDialog': ('Окно выбора: заголовок, пояснение и кнопки столбиком на всю ширину (0.49).',
                      '''По центру над затемнением, радиус `radius-nav`, ширина не больше `size-dialog-max-width`. Кнопки высотой не меньше `size-tool-button` (50), радиус `radius-lg`, промежуток `space-xs`: красная (`danger`), чёрная (`accent`), с рамкой `divider` и просто текст. Нажатие сразу выполняет действие, «Назад» и нажатие мимо — как «Отмена».
 Где: «Удалить» у повторяющейся задачи — «Удалить серию повторов?» («Удалить серию» / «Не буду делать» / «Отмена»); «Не буду делать» у будущего повтора с незакрытыми повторами перед ним — «Есть незакрытые повторы» («Пропустить все» / «Выполнить все» / «Отмена», как в TickTick); «Удалить» в режиме выбора с повторяющимися. Обычная задача удаляется без окна, с `UndoSnackbar`. Источник: `ui/feature/task/SheetDialog.kt` (`ChoiceDialog`).

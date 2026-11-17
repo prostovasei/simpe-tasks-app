@@ -25,12 +25,12 @@ def home(width=390,large=False,rows=ROWS):
  return (f'<div class="home-preview {"large-font" if large else ""}" style="width:{width}px;height:780px">'
  +P['week_screen']('widget',width,large)+'<div class="scrim"></div>'+sheet(rows)+'</div>')
 def board(id,title,body):
- return f'<section class="sec" id="{id}"><div class="badge">#265 · НА СОГЛАСОВАНИИ</div><h2>{title}</h2>{body}</section>'
+ return f'<section class="sec" id="{id}"><div class="badge">#265 · СОГЛАСОВАНО</div><h2>{title}</h2>{body}</section>'
 main=board('day','Окно дня: только дата и вытянутая кнопка «+»',P['figure']('390 px · две задачи',home(),'Дата — 14 px. Нет относительной подписи и количества задач. Справа вытянутая кнопка «+» 64×32, как на нижней панели виджета.'))
 extra=board('states','Узкий экран и пустой день','<div class="rowp">'+P['figure']('320 px · шрифт 130%',home(320,True),'Дата растёт с системным шрифтом. Кнопка «+» сохраняет вытянутую форму справа.')+P['figure']('Пустой день',home(rows=[]),'Количество не показывается даже в пустом дне. «+» доступен и создаёт задачу на выбранный день.')+'</div>')
 js='''
 window.layoutReady=document.fonts.ready.then(()=>{for(const d of document.querySelectorAll('.widget.revised-week'))d.style.setProperty('--cell-height',d.querySelector('.day').getBoundingClientRect().height+'px')});
 document.addEventListener('click',e=>{if(e.target.closest('[data-action="add"]')){const l=document.querySelector('.log');l.textContent='Создать задачу на ВТ 17 ноя · демонстрация';l.classList.add('on')}});
 '''
-(here/'screens.html').write_text('<!doctype html><html lang="ru"><meta charset="utf-8"><title>#265 · Заголовок дня</title><style>'+CSS+'</style><header class="intro"><h1>Компактное окно дня</h1><p>HTML-макет по уточнению PM. Код приложения не изменён. Данные вымышлены.</p></header><main class="board">'+main+extra+'</main><output class="log"></output><script>'+js+'</script></html>')
+(here/'screens.html').write_text('<!doctype html><html lang="ru"><meta charset="utf-8"><title>#265 · Заголовок дня</title><style>'+CSS+'</style><header class="intro"><h1>Компактное окно дня</h1><p>Макет согласован PM, отдельно дана команда «Делай код» 17.11.2026. Реализация 0.75.0. Данные вымышлены.</p></header><main class="board">'+main+extra+'</main><output class="log"></output><script>'+js+'</script></html>')
 print('Макеты: обычный день, 320 px / 130%, пустой день')
