@@ -39,6 +39,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
@@ -72,6 +73,7 @@ fun LazyListScope.timelineItems(
     keyPrefix: String,
     days: DayNames,
     nowMinute: Int?,
+    showNowMarker: Boolean = true,
     isOverdue: (TaskItem) -> Boolean,
     showList: Boolean,
     onToggle: (TaskItem) -> Unit,
@@ -82,7 +84,7 @@ fun LazyListScope.timelineItems(
     /** Нажатие в режиме выбора и долгое нажатие вне его; null — выбирать на этом экране нельзя. */
     onSelect: ((TaskItem) -> Unit)? = null,
 ) {
-    val rows = WidgetTimeline.rows(items, overdue = dayLabels, nowMinute = nowMinute.takeUnless { dayLabels }, days = days)
+    val rows = WidgetTimeline.rows(items, overdue = dayLabels, nowMinute = nowMinute.takeUnless { dayLabels }, days = days).filter { showNowMarker || it != WidgetRow.Now }
     // Ключ с днём: при переносе между днями Room обновляет списки не одновременно, и одна задача на миг бывает в двух днях сразу —
     // с одним лишь id это «Key was already used» и вылет.
     itemsIndexed(rows, key = { _, row -> if (row is WidgetRow.Task) "$keyPrefix:${row.item.id}" else "$keyPrefix-now" }) { index, row ->
@@ -123,7 +125,7 @@ fun rememberNowMinute(): Int {
 }
 
 /**
- * Строка задачи: время | линия с кружком | плашка. У периода — строка выше, капсула на шкале и плашка той же высоты.
+ * Строка задачи: время | линия с кружком | плашка. Период занимает обычную строку с кругом; оба времени остаются слева.
  * Выполненная (итерация 27) остаётся на месте до полуночи: кружок залит цветом приоритета с белой галочкой,
  * название зачёркнуто, плашка со значками бледнее; переход — [DONE_FADE_MS].
  */
@@ -152,7 +154,7 @@ fun LazyItemScope.TimelineTaskRow(
     val done by animateFloatAsState(if (item.showsDone) 1f else 0f, tween(DONE_FADE_MS), label = "done")
     // Итерация 47 (решение PM): будущий повтор не тусклый — тусклая только прошедшая задача.
     val faded = row.past
-    val baseHeight = if (row.isPeriod) SizeTokens.WIDGET_PERIOD_ROW else SizeTokens.WIDGET_ROW
+    val baseHeight = SizeTokens.WIDGET_ROW
     val height = (baseHeight + if (item.subtitle != null) SizeTokens.TRASH_ROW_EXTRA else 0).dp
     Row(
         Modifier
@@ -225,26 +227,28 @@ private fun TimeColumn(row: WidgetRow.Task, isOverdue: Boolean, faded: Boolean, 
         faded -> colors.textSecondary
         else -> colors.textPrimary
     }
+    val style = if (dayLabels) MaterialTheme.typography.labelSmall else MaterialTheme.typography.labelMedium
+    val measuredTime = rememberTextMeasurer().measure("00:00", style.copy(fontWeight = FontWeight.Bold))
+    val timeWidth = with(LocalDensity.current) { measuredTime.size.width.toDp() }
     Column(
         // С днём («Завтра», «16 окт») колонка шире и мельче — как у просроченных в виджете.
         // Итерация 41: колонка дня растёт вместе с системным шрифтом — «Сегодня» помещается и с крупным шрифтом.
         // Множитель шрифта, а не sp: Android 14 увеличивает крупные sp слабее мелкого текста, и колонка отставала бы от подписи.
-        Modifier.width(if (dayLabels) (SizeTokens.TIMELINE_DAY_COLUMN * LocalDensity.current.fontScale).dp else SizeTokens.WIDGET_TIME.dp).fillMaxHeight(),
+        Modifier.width(if (dayLabels) (SizeTokens.TIMELINE_DAY_COLUMN * LocalDensity.current.fontScale).dp else maxOf(SizeTokens.WIDGET_TIME.dp, timeWidth)).fillMaxHeight(),
         horizontalAlignment = Alignment.End,
         verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
     ) {
-        val style = if (dayLabels) MaterialTheme.typography.labelSmall else MaterialTheme.typography.labelMedium
-        row.start?.let { Text(it, style = style, fontWeight = FontWeight.Bold, color = color, maxLines = 1, textAlign = TextAlign.End) }
+        row.start?.let { Text(it, style = style, fontWeight = FontWeight.Bold, color = color, maxLines = 1, softWrap = false, textAlign = TextAlign.End, modifier = Modifier.fillMaxWidth()) }
         row.end?.let {
-            Text(it, style = style, fontWeight = FontWeight.Bold, color = if (isOverdue) colors.overdue else colors.textSecondary, maxLines = 1, textAlign = TextAlign.End)
+            Text(it, style = style, fontWeight = FontWeight.Bold, color = if (isOverdue) colors.overdue else colors.textSecondary, maxLines = 1, softWrap = false, textAlign = TextAlign.End, modifier = Modifier.fillMaxWidth())
         }
     }
 }
 
 /**
- * Линия шкалы с кружком приоритета (у периода — капсула во всю высоту плашки); нажатие — «выполнено» или, у выполненной,
+ * Линия шкалы с кружком приоритета (в том числе у периода); нажатие — «выполнено» или, у выполненной,
  * вернуть. [done] — доля перехода к выполненной: кольцо заливается цветом и появляется белая галочка. Итерация 47: у повторяющейся
- * задачи вместо кружка — знак повтора ([RepeatMark]: круглый, у периода — вытянутый), у выполненной он остаётся без галочки,
+ * задачи вместо кружка — знак повтора ([RepeatMark]: круглый, в том числе у периода), у выполненной он остаётся без галочки,
  * тусклым; выполненная задача высокого приоритета заливается тусклым фиолетовым.
  */
 @Composable
@@ -277,28 +281,19 @@ private fun Rail(row: WidgetRow.Task, top: Boolean, bottom: Boolean, faded: Bool
         Modifier.width(SizeTokens.WIDGET_RAIL.dp).fillMaxHeight().then(tap),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        if (row.isPeriod) {
-            Segment(top, Modifier.height(SizeTokens.WIDGET_PERIOD_STUB.dp))
-            val nodeModifier = Modifier.width(SizeTokens.WIDGET_NODE.dp).weight(1f)
-            if (repeat) {
-                RepeatMark(repeatColor, nodeModifier.testTag("$testTag:repeat"), tall = true)
-            } else {
-                Node(if (selected == true) colors.accent else ring, if (selected != null) (if (selected) 1f else 0f) else done, nodeModifier, fill)
-            }
-            Segment(bottom, Modifier.height(SizeTokens.WIDGET_PERIOD_STUB.dp))
+        Segment(top, Modifier.weight(1f))
+        if (repeat) {
+            RepeatMark(repeatColor, Modifier.size(SizeTokens.WIDGET_NODE.dp).testTag("$testTag:repeat"))
         } else {
-            Segment(top, Modifier.weight(1f))
-            if (repeat) {
-                RepeatMark(repeatColor, Modifier.size(SizeTokens.WIDGET_NODE.dp).testTag("$testTag:repeat"))
-            } else {
-                Node(if (selected == true) colors.accent else ring, if (selected != null) (if (selected) 1f else 0f) else done, Modifier.size(SizeTokens.WIDGET_NODE.dp), fill)
-            }
-            Segment(bottom, Modifier.weight(1f))
+            Node(if (selected == true) colors.accent else ring,
+                if (selected != null) (if (selected) 1f else 0f) else done,
+                Modifier.size(SizeTokens.WIDGET_NODE.dp).testTag("$testTag:node"), fill)
         }
+        Segment(bottom, Modifier.weight(1f))
     }
 }
 
-/** Кружок или капсула: кольцо цвета [ring]; при [done] → 1 заливается цветом [fill] (тусклый у высокого приоритета), по центру белая галочка. */
+/** Кружок: кольцо цвета [ring]; при [done] → 1 заливается цветом [fill] (тусклый у высокого приоритета), по центру белая галочка. */
 @Composable
 private fun Node(ring: Color, done: Float, modifier: Modifier, fill: Color = ring) {
     Box(modifier.border(SizeTokens.CHECKBOX_STROKE.dp, if (done >= 1f) fill else ring, CircleShape), contentAlignment = Alignment.Center) {

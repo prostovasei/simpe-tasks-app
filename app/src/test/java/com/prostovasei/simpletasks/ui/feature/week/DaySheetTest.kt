@@ -1,5 +1,13 @@
 package com.prostovasei.simpletasks.ui.feature.week
 
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -50,10 +58,12 @@ class DaySheetTest {
         isLoading = false,
     )
 
-    private fun show(value: DayState = state) {
+    private fun show(value: DayState = state, fontScale: Float = 1f) {
         composeRule.setContent {
             AppTheme {
-                DaySheet(value, { intents += it }, onClose = { closed++ }, onOpenTask = { opened += it }, onAdd = { added += it })
+                CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale)) {
+                DaySheet(value, { intents += it }, onClose = { closed++ }, onOpenTask = { opened += it }, onAdd = { added += it }, nowMinute = 23 * 60 + 38)
+                }
             }
         }
     }
@@ -61,7 +71,7 @@ class DaySheetTest {
     @Test
     fun showsDateProgressAndTasks() {
         show()
-        composeRule.onNodeWithTag(TAG_DAY_SHEET_TITLE).assertTextEquals("СБ, 07 ноя")
+        composeRule.onNodeWithTag(TAG_DAY_SHEET_TITLE).assertTextEquals("СБ 07 ноя Сегодня")
         composeRule.onNodeWithTag(TAG_DAY_SHEET_COUNT).assertTextEquals("1 из 4")
         listOf("tg", "hookah", "football", "flowers").forEach { composeRule.onNodeWithTag("task:$it").assertExists() }
     }
@@ -85,6 +95,36 @@ class DaySheetTest {
         show(state.copy(items = emptyList()))
         composeRule.onNodeWithTag(TAG_DAY_SHEET_COUNT).assertDoesNotExist()
         composeRule.onNodeWithTag(TAG_DAY_SHEET_ADD).assertExists()
+    }
+
+    @Test
+    fun periodMatchesOrdinaryHeightAndRoundNodeWhileKeepingBothTimesWithoutNow() {
+        show()
+        val regular = composeRule.onNodeWithTag("task:flowers").getUnclippedBoundsInRoot()
+        val period = composeRule.onNodeWithTag("task:hookah").getUnclippedBoundsInRoot()
+        assertEquals(regular.bottom - regular.top, period.bottom - period.top)
+        val node = composeRule.onNodeWithTag("task:hookah:node", useUnmergedTree = true).getUnclippedBoundsInRoot()
+        assertEquals(node.right - node.left, node.bottom - node.top)
+        composeRule.onNodeWithText("19:30", useUnmergedTree = true).assertExists()
+        composeRule.onNodeWithText("23:30", useUnmergedTree = true).assertExists()
+        composeRule.onNodeWithText("23:38", useUnmergedTree = true).assertDoesNotExist()
+    }
+
+    @Test
+    @Config(qualifiers = "w320dp-h800dp-xhdpi")
+    fun narrowDayKeepsCountAndTimesVisibleWithLargeFont() {
+        show(fontScale = 1.3f)
+        composeRule.onNodeWithTag(TAG_DAY_SHEET_TITLE).assertIsDisplayed()
+        composeRule.onNodeWithTag(TAG_DAY_SHEET_COUNT).assertIsDisplayed()
+        composeRule.onNodeWithText("19:30", useUnmergedTree = true).assertIsDisplayed()
+        listOf("19:30", "23:30").forEach { time ->
+            val results = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+            composeRule.onNodeWithText(time, useUnmergedTree = true).performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(results) }
+            org.junit.Assert.assertFalse("время $time: width=${results.single().didOverflowWidth}, height=${results.single().didOverflowHeight}, size=${results.single().size}, constraints=${results.single().layoutInput.constraints}", results.single().hasVisualOverflow)
+        }
+
+        composeRule.onNodeWithText("23:30", useUnmergedTree = true).assertIsDisplayed()
+        composeRule.onRoot().captureRoboImage("screenshots/day_sheet_small_large_font.png")
     }
 
     @Test

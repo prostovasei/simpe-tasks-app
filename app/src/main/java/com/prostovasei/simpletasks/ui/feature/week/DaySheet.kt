@@ -28,6 +28,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import com.prostovasei.simpletasks.designsystem.theme.TaskCanvasTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -80,130 +81,122 @@ fun DaySheet(
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     nowMinute: Int? = null,
 ) {
-    val colors = AppTheme.colors
-    val spacing = AppTheme.spacing
-    val sizes = AppTheme.sizes
-    val days = DayNames(stringResource(R.string.day_today), stringResource(R.string.day_tomorrow), stringResource(R.string.day_yesterday))
-    val date = state.date
-    val today = state.today
-    val closeDistance = with(LocalDensity.current) { sizes.toolButton.toPx() }
-    BackHandler(onBack = onClose)
-    BoxWithConstraints(Modifier.fillMaxSize()) {
-        Box(
-            Modifier
-                .fillMaxSize()
-                .background(colors.scrim)
-                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClose)
-                .testTag(TAG_DAY_SCRIM),
-        )
-        Column(
-            Modifier
-                .align(Alignment.BottomCenter)
-                .navigationBarsPadding()
-                .padding(start = spacing.xs, end = spacing.xs, bottom = spacing.xs)
-                .heightIn(max = maxHeight * SHEET_MAX_FRACTION)
-                .fillMaxWidth()
-                .clip(AppTheme.shapes.nav)
-                .background(colors.surface)
-                // Нажатия по шторке не доходят до затемнения (без clickable: он склеил бы строки в один элемент для чтения с экрана).
-                .pointerInput(Unit) { detectTapGestures { } }
-                .testTag(TAG_DAY_SHEET),
-        ) {
+    TaskCanvasTheme {
+        val colors = AppTheme.colors
+        val spacing = AppTheme.spacing
+        val sizes = AppTheme.sizes
+        val days = DayNames(stringResource(R.string.day_today), stringResource(R.string.day_tomorrow), stringResource(R.string.day_yesterday))
+        val date = state.date
+        val today = state.today
+        val closeDistance = with(LocalDensity.current) { sizes.toolButton.toPx() }
+        BackHandler(onBack = onClose)
+        BoxWithConstraints(Modifier.fillMaxSize()) {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(colors.scrim)
+                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClose)
+                    .testTag(TAG_DAY_SCRIM),
+            )
             Column(
                 Modifier
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+                    .padding(start = spacing.xs, end = spacing.xs, bottom = spacing.xs)
+                    .heightIn(max = maxHeight * SHEET_MAX_FRACTION)
                     .fillMaxWidth()
-                    .pointerInput(Unit) {
-                        var dragged = 0f
-                        detectVerticalDragGestures(
-                            onDragStart = { dragged = 0f },
-                            onDragEnd = { if (dragged > closeDistance) onClose() },
-                        ) { _, delta -> dragged += delta }
-                    },
+                    .clip(AppTheme.shapes.nav)
+                    .background(colors.surface)
+                    // Нажатия по шторке не доходят до затемнения (без clickable: он склеил бы строки в один элемент для чтения с экрана).
+                    .pointerInput(Unit) { detectTapGestures { } }
+                    .testTag(TAG_DAY_SHEET),
             ) {
-                Box(Modifier.fillMaxWidth().padding(top = spacing.xs, bottom = spacing.xxs), contentAlignment = Alignment.Center) {
-                    Box(Modifier.size(sizes.sheetHandleWidth, sizes.sheetHandleHeight).clip(AppTheme.shapes.small).background(colors.divider))
-                }
-                Row(
-                    Modifier.fillMaxWidth().padding(horizontal = spacing.md, vertical = spacing.xs),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(spacing.xs),
+                Column(
+                    Modifier
+                        .fillMaxWidth()
+                        .pointerInput(Unit) {
+                            var dragged = 0f
+                            detectVerticalDragGestures(
+                                onDragStart = { dragged = 0f },
+                                onDragEnd = { if (dragged > closeDistance) onClose() },
+                            ) { _, delta -> dragged += delta }
+                        },
                 ) {
-                    if (date != null && today != null) {
-                        Text(
-                            WidgetDates.header(date),
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = if (date < today) colors.overdue else colors.textPrimary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.testTag(TAG_DAY_SHEET_TITLE),
-                        )
-                        when (val label = DueFormatter.dayLabel(date, today)) {
-                            is DayLabel.Date -> null
-                            else -> days.day(label)
-                        }?.let {
+                    Row(
+                        Modifier.fillMaxWidth().padding(horizontal = spacing.md, vertical = spacing.sm),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(spacing.xs),
+                    ) {
+                        if (date != null && today != null) {
+                            val relative = when (val label = DueFormatter.dayLabel(date, today)) {
+                                is DayLabel.Date -> null
+                                else -> days.day(label)
+                            }
                             Text(
-                                it,
-                                style = MaterialTheme.typography.labelSmall,
+                                WidgetDates.dayHeader(date) + relative?.let { " $it" }.orEmpty(),
+                                style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
-                                color = colors.textPrimary,
-                                modifier = Modifier
-                                    .background(colors.background, AppTheme.shapes.small)
-                                    .padding(horizontal = spacing.xs, vertical = sizes.hairline),
+                                color = if (date < today) colors.overdue else colors.textPrimary,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f).testTag(TAG_DAY_SHEET_TITLE),
+                            )
+                        } else {
+                            Box(Modifier.weight(1f))
+                        }
+
+                        if (state.items.isNotEmpty()) {
+                            Text(
+                                stringResource(R.string.day_sheet_progress, state.items.count { it.showsDone }, state.items.size),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = colors.textSecondary,
+                                modifier = Modifier.testTag(TAG_DAY_SHEET_COUNT),
                             )
                         }
                     }
-                    Box(Modifier.weight(1f))
-                    if (state.items.isNotEmpty()) {
-                        Text(
-                            stringResource(R.string.day_sheet_progress, state.items.count { it.showsDone }, state.items.size),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = colors.textSecondary,
-                            modifier = Modifier.testTag(TAG_DAY_SHEET_COUNT),
+                }
+                if (!state.isLoading && state.items.isEmpty()) {
+                    Text(
+                        stringResource(R.string.day_empty),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = colors.textSecondary,
+                        modifier = Modifier.fillMaxWidth().background(colors.background).padding(spacing.lg),
+                    )
+                } else if (date != null && today != null) {
+                    LazyColumn(
+                        Modifier.weight(1f, fill = false).fillMaxWidth().background(colors.background).testTag(TAG_DAY_SHEET_LIST),
+                        contentPadding = PaddingValues(vertical = spacing.xs),
+                    ) {
+                        timelineItems(
+                            items = state.items,
+                            keyPrefix = "day-sheet-$date",
+                            days = days,
+                            nowMinute = nowMinute.takeIf { date == today },
+                            showNowMarker = false,
+                            isOverdue = { date < today && !it.showsDone },
+                            showList = true,
+                            onToggle = { onIntent(TaskListIntent.ToggleComplete(it.id, it.isRecurring, it.showsDone)) },
+                            onOpen = { onOpenTask(it.taskId) },
                         )
                     }
                 }
-            }
-            if (!state.isLoading && state.items.isEmpty()) {
-                Text(
-                    stringResource(R.string.day_empty),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = colors.textSecondary,
-                    modifier = Modifier.fillMaxWidth().background(colors.background).padding(spacing.lg),
-                )
-            } else if (date != null && today != null) {
-                LazyColumn(
-                    Modifier.weight(1f, fill = false).fillMaxWidth().background(colors.background).testTag(TAG_DAY_SHEET_LIST),
-                    contentPadding = PaddingValues(vertical = spacing.xs),
-                ) {
-                    timelineItems(
-                        items = state.items,
-                        keyPrefix = "day-sheet-$date",
-                        days = days,
-                        nowMinute = nowMinute.takeIf { date == today },
-                        isOverdue = { date < today && !it.showsDone },
-                        showList = true,
-                        onToggle = { onIntent(TaskListIntent.ToggleComplete(it.id, it.isRecurring, it.showsDone)) },
-                        onOpen = { onOpenTask(it.taskId) },
-                    )
-                }
-            }
-            if (date != null) {
-                Row(Modifier.fillMaxWidth().padding(spacing.sm), horizontalArrangement = Arrangement.End) {
-                    Button(
-                        onClick = { onAdd(date) },
-                        shape = AppTheme.shapes.extraLarge,
-                        colors = ButtonDefaults.buttonColors(containerColor = colors.accent, contentColor = colors.onAccent),
-                        modifier = Modifier.heightIn(min = sizes.navBar - spacing.xs).testTag(TAG_DAY_SHEET_ADD),
-                    ) {
-                        Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.padding(end = spacing.xxs))
-                        Text(stringResource(R.string.day_sheet_add, WidgetDates.withWeekday(date)), fontWeight = FontWeight.Bold)
+                if (date != null) {
+                    Row(Modifier.fillMaxWidth().padding(spacing.sm), horizontalArrangement = Arrangement.End) {
+                        Button(
+                            onClick = { onAdd(date) },
+                            shape = AppTheme.shapes.extraLarge,
+                            colors = ButtonDefaults.buttonColors(containerColor = colors.accent, contentColor = colors.onAccent),
+                            modifier = Modifier.heightIn(min = sizes.navBar - spacing.xs).testTag(TAG_DAY_SHEET_ADD),
+                        ) {
+                            Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.padding(end = spacing.xxs))
+                            Text(stringResource(R.string.day_sheet_add, WidgetDates.withWeekday(date)), fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
             }
+            UndoSnackbarHost(snackbarHostState, Modifier.align(Alignment.TopCenter).statusBarsPadding().padding(top = spacing.sm))
         }
-        UndoSnackbarHost(snackbarHostState, Modifier.align(Alignment.TopCenter).statusBarsPadding().padding(top = spacing.sm))
     }
 }
 

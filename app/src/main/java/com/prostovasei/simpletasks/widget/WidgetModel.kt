@@ -174,5 +174,7 @@ object WidgetDates {
         Triple(date.dayOfMonth.toString(), WEEKDAYS[date.dayOfWeek.value - 1].uppercase(), MONTHS[date.monthValue - 1])
 
     /** «ПТ, 16 окт» — подписи дней в ленте приложения (итерация 13). */
+    fun dayHeader(date: LocalDate): String = "${WEEKDAYS[date.dayOfWeek.value - 1].uppercase()} ${short(date)}"
+
     fun header(date: LocalDate): String = "${WEEKDAYS[date.dayOfWeek.value - 1].uppercase()}, ${short(date)}"
 }

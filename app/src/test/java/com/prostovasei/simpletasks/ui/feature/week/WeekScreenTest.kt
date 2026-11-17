@@ -88,42 +88,24 @@ class WeekScreenTest {
     @Test
     fun showsSevenDaysAndTheirTasks() {
         show()
-        (0L..6L).forEach { composeRule.onNodeWithTag("week-day:${monday.plusDays(it)}").assertExists() }
+        (0L..6L).forEach { composeRule.onNodeWithTag("week-day:${monday.plusDays(it)}", useUnmergedTree = true).assertExists() }
         listOf("Купить продукты", "Оплатить интернет", "Отчёт за неделю", "План на неделю").forEach {
-            composeRule.onNodeWithTag("week-task:" + weekState.days.flatMap { d -> d.items }.first { item -> item.title == it }.id).assertExists()
+            composeRule.onNodeWithTag("week-task:" + weekState.days.flatMap { d -> d.items }.first { item -> item.title == it }.id, useUnmergedTree = true).assertExists()
         }
     }
 
     @Test
-    fun tapOnCircleTogglesAndTapOnPlaqueOpens() {
+    fun everyPartOfTaskOpensDayWithoutTogglingOrOpeningTask() {
         show()
-        composeRule.onNodeWithTag("week-check:b1").performClick()
-        assertEquals(listOf<Any>(TaskListIntent.ToggleComplete("b1", recurring = false, done = false)), intents)
-        // Выполненная: нажатие возвращает её.
-        composeRule.onNodeWithTag("week-check:a1").performClick()
-        assertEquals(TaskListIntent.ToggleComplete("a1", recurring = false, done = true), intents.last())
-        composeRule.onNodeWithTag("week-task:c1").performClick()
-        assertEquals(listOf("c1"), opened)
-    }
-
-    @Test
-    fun futureRepeatHasNoCircleButOpensTheSeriesTask() {
-        show()
-        composeRule.onNodeWithTag("week-check:f2@0").assertDoesNotExist()
-        // Итерация 47: у повторяющейся — знак повтора вместо кружка.
-        composeRule.onNodeWithTag("week-repeat:f2@0", useUnmergedTree = true).assertExists()
-        composeRule.onNodeWithTag("week-task:f2@0").performClick()
-        assertEquals(listOf("f2"), opened)
-    }
-
-    /** Проверка PM (0.47.0): выполненная повторяющаяся — без галочки, знак повтора остаётся; нажатие возвращает её. */
-    @Test
-    fun doneRepeatKeepsTheRepeatMark() {
-        val state = weekState.copy(days = weekState.days.mapIndexed { i, d -> if (i == 0) d.copy(items = listOf(item("r1", "Бритьё", "09:00", done = true).copy(isRecurring = true))) else d })
-        show(state = state)
-        composeRule.onNodeWithTag("week-repeat:r1", useUnmergedTree = true).assertExists()
-        composeRule.onNodeWithTag("week-check:r1").performClick()
-        assertEquals(TaskListIntent.ToggleComplete("r1", recurring = true, done = true), intents.last())
+        listOf("week-task:a1", "week-time:a1", "week-title:a1", "week-emoji:a1").forEach { tag ->
+            composeRule.onNodeWithTag(tag, useUnmergedTree = true).performTouchInput { click() }
+        }
+        composeRule.onNodeWithTag("week-task:f2@0", useUnmergedTree = true).performTouchInput { click() }
+        assertEquals(listOf(monday, monday, monday, monday, monday.plusDays(5)), openedDays)
+        assertTrue(intents.isEmpty())
+        assertTrue(opened.isEmpty())
+        composeRule.onNodeWithTag("week-check:a1", useUnmergedTree = true).assertDoesNotExist()
+        composeRule.onNodeWithTag("week-repeat:f2@0", useUnmergedTree = true).assertDoesNotExist()
     }
 
     /** Итерация 55 (как в виджете): эмодзи списка слева от времени, дата капсом «ПН 2». */
@@ -131,17 +113,17 @@ class WeekScreenTest {
     fun rowsShowListEmojiAndCapsDate() {
         show()
         composeRule.onNodeWithTag("week-emoji:a1", useUnmergedTree = true).assertTextEquals("💼")
-        composeRule.onNodeWithText("ПН ${monday.dayOfMonth}").assertExists()
+        composeRule.onNodeWithText("ПН ${monday.dayOfMonth}", useUnmergedTree = true).assertExists()
     }
 
     @Test
     fun calendarSelectsWeekWithoutMonthArrows() {
         show()
         // 0.46.0: строки месяца со стрелками нет — месяц листается выбором недели (WeekViewModelTest).
-        composeRule.onNodeWithTag("week-cal-prev").assertDoesNotExist()
-        composeRule.onNodeWithTag("week-cal-next").assertDoesNotExist()
+        composeRule.onNodeWithTag("week-cal-prev", useUnmergedTree = true).assertDoesNotExist()
+        composeRule.onNodeWithTag("week-cal-next", useUnmergedTree = true).assertDoesNotExist()
         // Октябрь 2026: первая строка — с понедельника 28 сентября.
-        composeRule.onNodeWithTag("week-cal-row:2026-10-05").performClick()
+        composeRule.onNodeWithTag("week-cal-row:2026-10-05", useUnmergedTree = true).performTouchInput { click() }
         assertEquals(SelectWeek(LocalDate.of(2026, 10, 5)), intents.last())
     }
 
@@ -150,17 +132,17 @@ class WeekScreenTest {
         // Октябрь 2026 начинается с четверга: строки с 28 сентября по 2 ноября.
         show()
         listOf("2026-09-28", "2026-10-05", "2026-10-12", "2026-10-19", "2026-10-26", "2026-11-02").forEach {
-            composeRule.onNodeWithTag("week-cal-row:$it").assertExists()
+            composeRule.onNodeWithTag("week-cal-row:$it", useUnmergedTree = true).assertExists()
         }
-        composeRule.onNodeWithTag("week-cal-row:2026-11-09").assertDoesNotExist()
+        composeRule.onNodeWithTag("week-cal-row:2026-11-09", useUnmergedTree = true).assertDoesNotExist()
     }
 
     @Test
     fun calendarOfAMonthStartingOnSundayReachesSixRows() {
         // Ноябрь 2026 начинается с воскресенья: первая строка — с 26 октября, последняя — с 30 ноября.
         show(state = weekState.copy(month = YearMonth.of(2026, 11)))
-        composeRule.onNodeWithTag("week-cal-row:2026-10-26").assertExists()
-        composeRule.onNodeWithTag("week-cal-row:2026-11-30").assertExists()
+        composeRule.onNodeWithTag("week-cal-row:2026-10-26", useUnmergedTree = true).assertExists()
+        composeRule.onNodeWithTag("week-cal-row:2026-11-30", useUnmergedTree = true).assertExists()
     }
 
     /** Решение PM (0.44.0): все ячейки одинаковой высоты и ширины, неделя помещается на экран без прокрутки. */
@@ -168,13 +150,13 @@ class WeekScreenTest {
     fun allCellsHaveTheSameSizeAndFitTheScreen() {
         val crowded = weekState.copy(days = weekState.days.mapIndexed { i, d -> if (i == 4) d.copy(items = (1..12).map { item("x$it", "Задача $it") }) else d })
         show(state = crowded)
-        val cells = (0L..6L).map { composeRule.onNodeWithTag("week-day:${monday.plusDays(it)}").getUnclippedBoundsInRoot() }
+        val cells = (0L..6L).map { composeRule.onNodeWithTag("week-day:${monday.plusDays(it)}", useUnmergedTree = true).getUnclippedBoundsInRoot() }
         assertEquals("высота", 1, cells.map { it.bottom - it.top }.distinct().size)
         assertEquals("ширина", 1, cells.map { it.right - it.left }.distinct().size)
-        val screen = composeRule.onNodeWithTag("week-screen").getUnclippedBoundsInRoot()
+        val screen = composeRule.onNodeWithTag("week-screen", useUnmergedTree = true).getUnclippedBoundsInRoot()
         assertTrue("неделя помещается", cells.maxOf { it.bottom } <= screen.bottom)
         // Мини-календарь — в последней ячейке, того же размера.
-        val calendar = composeRule.onNodeWithTag("week-calendar").getUnclippedBoundsInRoot()
+        val calendar = composeRule.onNodeWithTag("week-calendar", useUnmergedTree = true).getUnclippedBoundsInRoot()
         assertTrue("календарь $calendar в ячейке ${cells[6]}", calendar.top >= cells[6].top - TOLERANCE && calendar.bottom <= cells[6].bottom + TOLERANCE)
     }
 
@@ -184,7 +166,7 @@ class WeekScreenTest {
         show(state = crowded)
         val friday = monday.plusDays(4)
         composeRule.onNodeWithTag("week-more:$friday", useUnmergedTree = true).assertExists()
-        val shown = (1..12).count { composeRule.onAllNodesWithTag("week-task:x$it").fetchSemanticsNodes().isNotEmpty() }
+        val shown = (1..12).count { composeRule.onAllNodesWithTag("week-task:x$it", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
         assertTrue("часть задач скрыта", shown in 1..11)
         composeRule.onNodeWithTag("week-more:$friday", useUnmergedTree = true).assertTextEquals("+${12 - shown}")
         // Там, где всё помещается, «+N» нет.
@@ -194,15 +176,15 @@ class WeekScreenTest {
     @Test
     fun tapOnDateRowOpensTheDay() {
         show()
-        composeRule.onNodeWithTag("week-day-open:${monday.plusDays(1)}").performClick()
+        composeRule.onNodeWithTag("week-day-open:${monday.plusDays(1)}", useUnmergedTree = true).performTouchInput { click() }
         assertEquals(listOf(monday.plusDays(1)), openedDays)
     }
 
     @Test
     fun blankAreaOpensItsDay() {
         show()
-        composeRule.onNodeWithTag("week-blank:${monday.plusDays(3)}").performClick()
-        composeRule.onNodeWithTag("week-blank:$monday").performClick()
+        composeRule.onNodeWithTag("week-blank:${monday.plusDays(3)}", useUnmergedTree = true).performTouchInput { click() }
+        composeRule.onNodeWithTag("week-blank:$monday", useUnmergedTree = true).performTouchInput { click() }
         assertEquals(listOf(monday.plusDays(3), monday), openedDays)
         assertTrue(intents.isEmpty())
     }
@@ -222,24 +204,14 @@ class WeekScreenTest {
     }
 
     @Test
-    fun timeColumnPrecedesToggleAndUntimedTasksStayAligned() {
+    fun emojiPrecedesTitleAndTimeIsRightAligned() {
         show()
-        val time = composeRule.onNodeWithTag("week-time:a1", useUnmergedTree = true).getUnclippedBoundsInRoot()
-        val timed = composeRule.onNodeWithTag("week-check:a1").getUnclippedBoundsInRoot()
-        val untimed = composeRule.onNodeWithTag("week-check:a2").getUnclippedBoundsInRoot()
-        val day = composeRule.onNodeWithTag("week-date:$monday", useUnmergedTree = true).getUnclippedBoundsInRoot()
-        assertEquals(day.left, time.left)
+        val emoji = composeRule.onNodeWithTag("week-emoji:a1", useUnmergedTree = true).getUnclippedBoundsInRoot()
         val title = composeRule.onNodeWithTag("week-title:a1", useUnmergedTree = true).getUnclippedBoundsInRoot()
-        assertEquals(2.dp, timed.left - time.right)
-        assertEquals(2.dp, title.left - timed.right)
-        assertEquals(timed.left, untimed.left)
-        composeRule.onNodeWithTag("week-time:a1", useUnmergedTree = true).performTouchInput { click() }
-        assertEquals(TaskListIntent.ToggleComplete("a1", recurring = false, done = true), intents.last())
-        assertTrue(opened.isEmpty())
-        composeRule.onNodeWithTag("week-time:a2", useUnmergedTree = true).performClick()
-        assertEquals(TaskListIntent.ToggleComplete("a2", recurring = false, done = false), intents.last())
-        composeRule.onNodeWithTag("week-time:f2@0", useUnmergedTree = true).performClick()
-        assertEquals(listOf("f2"), opened)
+        val time = composeRule.onNodeWithTag("week-time:a1", useUnmergedTree = true).getUnclippedBoundsInRoot()
+        assertTrue(emoji.right <= title.left)
+        assertTrue(title.right <= time.left)
+        composeRule.onNodeWithTag("week-time:a2", useUnmergedTree = true).assertDoesNotExist()
     }
 
     @Test
@@ -253,19 +225,19 @@ class WeekScreenTest {
             )) else day
         })
         show(state = state)
-        composeRule.onNodeWithTag("week-screen").captureRoboImage("screenshots/week_priority_states.png")
+        composeRule.onNodeWithTag("week-screen", useUnmergedTree = true).captureRoboImage("screenshots/week_priority_states.png")
     }
 
     @Test
     fun weekScreenLight() {
         show()
-        composeRule.onNodeWithTag("week-screen").captureRoboImage("screenshots/week_light.png")
+        composeRule.onNodeWithTag("week-screen", useUnmergedTree = true).captureRoboImage("screenshots/week_light.png")
     }
 
     @Test
     fun weekScreenDark() {
         show(dark = true)
-        composeRule.onNodeWithTag("week-screen").captureRoboImage("screenshots/week_dark.png")
+        composeRule.onNodeWithTag("week-screen", useUnmergedTree = true).captureRoboImage("screenshots/week_dark.png")
     }
 
     private companion object {

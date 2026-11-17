@@ -1,8 +1,7 @@
-"""Генератор разметки вида «Неделя» в виджете (итерация 45; 48 — мельче дата и название, время слева от кружка (#249), эмодзи справа, макет week_tune.py; 50 — зона нажатия кружка ~40 dp поверх начала строки, макет iteration50.py; 0.46.0 — компактные строки, календарь без месяца и стрелок, строки недели, строки задач
-и недели календаря делят высоту поровну — weight, а не размер от рабочего стола): ячейки дней, мини-календарь и строки ленты + таблица id для Kotlin.
-
-Ячейка и календарь состоят из десятков элементов с уникальными id (в RemoteViews id внутри одной разметки не должны повторяться, а левая и правая
-ячейка — разные поддеревья), поэтому XML и таблица id пишутся скриптом. Запуск из корня репозитория: python3 design/tools/gen_widget_week.py
+"""Генератор недельных ячеек, календаря и таблицы id RemoteViews.
+#263: эмодзи списка → название → начало справа, без узлов выполнения; вся ячейка открывает день.
+Строки недели и слоты задач делят высоту поровну, не более шести задач в ячейке.
+Запуск из корня: python3 design/tools/gen_widget_week.py
 """
 import os
 
@@ -32,41 +31,13 @@ def cell(p):
             android:orientation="horizontal">
 
             <TextView
-                android:id="@+id/{p}_s{i}_time"
+                android:id="@+id/{p}_s{i}_emoji"
                 android:layout_width="wrap_content"
-                android:layout_marginEnd="@dimen/widget_week_content_gap"
-                android:fontFeatureSettings="tnum"
-                android:textStyle="bold"
                 android:layout_height="wrap_content"
-                android:gravity="start"
+                android:layout_marginEnd="@dimen/widget_week_content_gap"
                 android:includeFontPadding="false"
                 android:maxLines="1"
-                android:textColor="@color/widget_text_secondary"
                 android:textSize="10sp" />
-            <FrameLayout
-                android:id="@+id/{p}_s{i}_check"
-                android:layout_width="@dimen/widget_week_check"
-                android:layout_marginEnd="@dimen/widget_week_content_gap"
-                android:layout_height="match_parent">
-
-                <ImageView
-                    android:id="@+id/{p}_s{i}_node"
-                    android:layout_width="@dimen/widget_week_check"
-                    android:layout_height="@dimen/widget_week_check"
-                    android:layout_gravity="center"
-                    android:contentDescription="@string/widget_complete"
-                    android:src="@drawable/ic_widget_node_ring" />
-
-                <ImageView
-                    android:id="@+id/{p}_s{i}_tick"
-                    android:layout_width="@dimen/widget_week_tick"
-                    android:layout_height="@dimen/widget_week_tick"
-                    android:layout_gravity="center"
-                    android:contentDescription="@null"
-                    android:src="@drawable/ic_node_check"
-                    android:tint="@color/widget_task_surface"
-                    android:visibility="gone" />
-            </FrameLayout>
 
             <TextView
                 android:id="@+id/{p}_s{i}_title"
@@ -80,25 +51,23 @@ def cell(p):
                 android:textStyle="bold" />
 
             <TextView
-                android:id="@+id/{p}_s{i}_emoji"
+                android:id="@+id/{p}_s{i}_time"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/widget_space_xxs"
+                android:layout_marginStart="@dimen/widget_week_content_gap"
+                android:fontFeatureSettings="tnum"
+                android:textStyle="bold"
+                android:gravity="end"
                 android:includeFontPadding="false"
                 android:maxLines="1"
+                android:textColor="@color/widget_text_primary"
                 android:textSize="10sp" />
-
         </LinearLayout>
 
-            <!-- Итерация 50: невидимая зона «выполнить» поверх кружка и начала названия — кружок и название на месте. -->
-            <FrameLayout
-                android:id="@+id/{p}_s{i}_hit"
-                android:layout_width="@dimen/widget_week_hit"
-                android:layout_height="match_parent" />
         </FrameLayout>
 '''
     return f'''<?xml version="1.0" encoding="utf-8"?>
-<!-- Сгенерировано design/tools/gen_widget_week.py (итерация 45; 48 — строка даты по высоте текста, время слева от кружка (#249), эмодзи справа): ячейка дня вида «Неделя» в виджете. Не править руками. -->
+<!-- Сгенерировано design/tools/gen_widget_week.py (#263 — эмодзи, название, время справа; вся ячейка открывает день): ячейка дня вида «Неделя» в виджете. Не править руками. -->
 <LinearLayout {NS}
     tools:ignore="UselessLeaf"
     android:id="@+id/{p}_root"
@@ -242,9 +211,9 @@ def row(name, comment, right):
 
 def ids_kt():
     def cell_ids(p, name):
-        slots = ',\n'.join(f'        SlotIds(R.id.{p}_s{i}, R.id.{p}_s{i}_check, R.id.{p}_s{i}_node, R.id.{p}_s{i}_tick, R.id.{p}_s{i}_title, R.id.{p}_s{i}_emoji, R.id.{p}_s{i}_time, R.id.{p}_s{i}_hit)' for i in range(1, SLOTS + 1))
+        slots = ',\n'.join(f'        SlotIds(R.id.{p}_s{i}, R.id.{p}_s{i}_title, R.id.{p}_s{i}_emoji, R.id.{p}_s{i}_time)' for i in range(1, SLOTS + 1))
         return f'''    val {name} = CellIds(
-        head = R.id.{p}_head, weekday = R.id.{p}_wd, number = R.id.{p}_num, more = R.id.{p}_more,
+        root = R.id.{p}_root, head = R.id.{p}_head, weekday = R.id.{p}_wd, number = R.id.{p}_num, more = R.id.{p}_more,
         slots = listOf(
 {slots},
         ),
@@ -257,14 +226,11 @@ import com.prostovasei.simpletasks.R
 
 // Сгенерировано design/tools/gen_widget_week.py (итерация 45): id элементов ячеек и мини-календаря вида «Неделя» в виджете. Не править руками.
 
-/**
- * Элементы одной плашки задачи в ячейке: сама плашка, место кружка, кружок, галочка, название, эмодзи списка (итерация 48), время
- * и зона нажатия «выполнить» ~40 dp поверх кружка и начала названия (итерация 50).
- */
-class SlotIds(val plaque: Int, val check: Int, val node: Int, val tick: Int, val title: Int, val emoji: Int, val time: Int, val hit: Int)
+/** Пассивная строка недели: контейнер, название, эмодзи списка и начало справа. */
+class SlotIds(val plaque: Int, val title: Int, val emoji: Int, val time: Int)
 
-/** Элементы ячейки дня: строка даты (день недели, число, «+N») и плашки задач. */
-class CellIds(val head: Int, val weekday: Int, val number: Int, val more: Int, val slots: List<SlotIds>)
+/** Элементы ячейки дня: общий корень, строка даты (день недели, число, «+N») и плашки задач. */
+class CellIds(val root: Int, val head: Int, val weekday: Int, val number: Int, val more: Int, val slots: List<SlotIds>)
 
 /** Строка недели мини-календаря и её семь дней. */
 class CalRow(val row: Int, val days: List<Int>)

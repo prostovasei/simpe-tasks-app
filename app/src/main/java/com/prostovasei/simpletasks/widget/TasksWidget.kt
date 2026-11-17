@@ -292,7 +292,7 @@ private fun TimelineRow(row: WidgetRow.Task, line: Line, overdue: Boolean, filte
         faded -> LocalWidgetColors.current.textSecondary
         else -> LocalWidgetColors.current.textPrimary
     }
-    val height = if (row.isPeriod) SizeTokens.WIDGET_PERIOD_ROW else SizeTokens.WIDGET_ROW
+    val height = SizeTokens.WIDGET_ROW
     Row(GlanceModifier.fillMaxWidth().height(height.dp).then(if (compact) GlanceModifier.padding(start = SizeTokens.WIDGET_EDGE.dp) else GlanceModifier), verticalAlignment = Alignment.CenterVertically) {
         TimeColumn(row, overdue, textColor)
         Rail(row, line)
@@ -330,7 +330,7 @@ private fun TimelineRow(row: WidgetRow.Task, line: Line, overdue: Boolean, filte
 private fun TimeColumn(row: WidgetRow.Task, overdue: Boolean, textColor: ColorProvider) {
     val compact = LocalWidgetColors.current === TaskWidgetColors
     val context = LocalContext.current
-    val width = if (compact) (canvasTimeWidthPx(context) / context.resources.displayMetrics.density).dp else SizeTokens.WIDGET_TIME.dp
+    val width = if (compact) (canvasTimeWidthPx(context) / context.resources.displayMetrics.density).dp else maxOf(SizeTokens.WIDGET_TIME.dp, (canvasTimeWidthPx(context) / context.resources.displayMetrics.density).dp)
     val style = TextStyle(
         color = if (overdue && !compact) LocalWidgetColors.current.overdue else textColor,
         fontSize = if (overdue && !compact) 11.sp else 13.sp,
@@ -351,7 +351,7 @@ private fun TimeColumn(row: WidgetRow.Task, overdue: Boolean, textColor: ColorPr
 }
 
 /**
- * Колонка шкалы: линия сверху и снизу, между ними кружок приоритета (у периода — капсула во всю высоту плашки).
+ * Колонка шкалы: линия сверху и снизу, между ними кружок приоритета (в том числе у периода).
  * У повторяющейся тоже кружок — значок повтора только в плашке (итерация 27). Выполненная — кружок или капсула залиты
  * с белой галочкой. Нажатие на колонку отмечает задачу или возвращает выполненную; у будущего повтора — ничего.
  */
@@ -370,7 +370,7 @@ private fun Rail(row: WidgetRow.Task, line: Line) {
         done -> if (item.priority == Priority.HIGH) LocalWidgetColors.current.checkHigh.done else LocalWidgetColors.current.checkNone.done
         else -> if (item.priority == Priority.HIGH) LocalWidgetColors.current.checkHigh.ring else LocalWidgetColors.current.checkNone.ring
     }
-    // Итерация 47: у повторяющейся задачи вместо кружка — знак повтора (у периода — вытянутый).
+    // Итерация 47: у повторяющейся задачи вместо кружка — знак повтора (у периода тоже круглый).
     // Проверка PM (0.47.0): у выполненной повторяющейся знак остаётся (тусклым), галочки нет.
     val repeat = item.isRecurring
     val action = when {
@@ -384,20 +384,6 @@ private fun Rail(row: WidgetRow.Task, line: Line) {
             .then(if (compact) GlanceModifier.padding(horizontal = SizeTokens.WEEK_CONTENT_GAP.dp) else GlanceModifier).then(action),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        if (row.isPeriod) {
-            LineSegment(line.top, GlanceModifier.height(SizeTokens.WIDGET_PERIOD_STUB.dp))
-            Box(GlanceModifier.width(nodeSize.dp).defaultWeight(), contentAlignment = Alignment.Center) {
-                Image(
-                    ImageProvider(if (compact) item.canvasNodeIcon(true) else if (repeat) R.drawable.ic_widget_period_repeat else if (done) R.drawable.widget_period_fill else R.drawable.widget_period_ring),
-                    contentDescription = label,
-                    colorFilter = ColorFilter.tint(color),
-                    contentScale = ContentScale.FillBounds,
-                    modifier = GlanceModifier.fillMaxSize(),
-                )
-                if (done && !repeat) NodeCheck()
-            }
-            LineSegment(line.bottom, GlanceModifier.height(SizeTokens.WIDGET_PERIOD_STUB.dp))
-        } else {
             LineSegment(line.top, GlanceModifier.defaultWeight())
             Box(GlanceModifier.size(nodeSize.dp), contentAlignment = Alignment.Center) {
                 Image(
@@ -409,11 +395,10 @@ private fun Rail(row: WidgetRow.Task, line: Line) {
                 if (done && !repeat) NodeCheck()
             }
             LineSegment(line.bottom, GlanceModifier.defaultWeight())
-        }
     }
 }
 
-/** Белая галочка в залитом кружке или капсуле. */
+/** Белая галочка в залитом кружке. */
 @Composable
 private fun NodeCheck() {
     Image(

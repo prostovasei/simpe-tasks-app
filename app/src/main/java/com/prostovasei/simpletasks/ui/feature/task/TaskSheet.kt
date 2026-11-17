@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
@@ -321,13 +322,7 @@ fun TaskSheet(
                     }
                     .testTag(TAG_QUICK_CARD),
             ) {
-                Box(
-                    Modifier
-                        .padding(top = spacing.xs, bottom = spacing.xxs)
-                        .align(Alignment.CenterHorizontally)
-                        .size(sizes.sheetHandleWidth, sizes.sheetHandleHeight)
-                        .background(colors.divider, AppTheme.shapes.small),
-                )
+                Spacer(Modifier.height(spacing.sm))
                 if (timelineOpen) {
                     Timeline(fields, onGrid, hideKeyboard, applyTimeline, cancelTimeline, Modifier.weight(1f).windowInsetsPadding(WindowInsets.navigationBars))
                 } else {

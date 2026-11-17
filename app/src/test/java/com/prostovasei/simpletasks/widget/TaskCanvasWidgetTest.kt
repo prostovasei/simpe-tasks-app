@@ -54,6 +54,7 @@ class TaskCanvasWidgetTest {
             val root = views.apply(context, FrameLayout(context))
             root.measure(View.MeasureSpec.makeMeasureSpec(800, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(160, View.MeasureSpec.AT_MOST))
             root.layout(0, 0, root.measuredWidth, root.measuredHeight)
+            assertEquals(context.resources.getDimensionPixelSize(R.dimen.widget_row), root.measuredHeight)
             fun x(view: View): Int {
                 var result = view.left
                 var parent = view.parent
@@ -73,11 +74,32 @@ class TaskCanvasWidgetTest {
             assertTrue(start.width >= kotlin.math.ceil(start.paint.measureText("10:00")).toInt())
             if (line.row.isPeriod) {
                 assertEquals(title.currentTextColor, root.findViewById<TextView>(R.id.row_end).currentTextColor)
-                assertEquals(context.resources.getDimensionPixelSize(R.dimen.widget_period_row) - 2 * context.resources.getDimensionPixelSize(R.dimen.widget_period_stub), node.height)
+                assertEquals(node.width, node.height)
             }
             assertTrue(title.text !is Spanned || (title.text as Spanned).getSpans(0, title.length(), StrikethroughSpan::class.java).isEmpty())
             views.reapply(context, root)
             assertEquals(title.currentTextColor, start.currentTextColor)
+        }
+    }
+
+    @Test
+    fun periodAndOrdinaryReuseRoundLayoutWithoutStaleEndTime() {
+        listOf(WidgetFilter.All, WidgetFilter.Inbox).forEach { filter ->
+            fun views(period: Boolean) = model(filter).let { model ->
+                val task = item().copy(due = DueText(DayLabel.Today, if (period) "10:00–11:00" else "10:00"))
+                val current = model.copy(days = listOf(WidgetDayBlock(WidgetDay.On(today), listOf(task))))
+                WidgetRows.views(context, current.lines(dayNames(context), withTail = false).filterIsInstance<WidgetLine.Task>().single(), current)
+            }
+            val period = views(true)
+            val root = period.apply(context, FrameLayout(context))
+            assertEquals(View.VISIBLE, root.findViewById<View>(R.id.row_end).visibility)
+            assertEquals("11:00", root.findViewById<TextView>(R.id.row_end).text.toString())
+            views(false).reapply(context, root)
+            assertEquals(View.GONE, root.findViewById<View>(R.id.row_end).visibility)
+            assertEquals(View.GONE, root.findViewById<View>(R.id.row_time_gap).visibility)
+            period.reapply(context, root)
+            assertEquals(View.VISIBLE, root.findViewById<View>(R.id.row_end).visibility)
+            assertEquals(View.VISIBLE, root.findViewById<View>(R.id.row_time_gap).visibility)
         }
     }
 
@@ -134,12 +156,12 @@ class TaskCanvasWidgetTest {
         root.layout(0, 0, 800, 360)
         val slot = WeekIds.LEFT.slots.first()
         val time = root.findViewById<TextView>(slot.time)
-        val node = root.findViewById<View>(slot.check)
+        val emoji = root.findViewById<View>(slot.emoji)
         val title = root.findViewById<View>(slot.title)
         val gap = scaled.resources.getDimensionPixelSize(R.dimen.widget_week_content_gap)
         assertTrue("время не обрезано", time.width >= kotlin.math.ceil(time.paint.measureText("10:00")).toInt())
-        assertEquals(gap, node.left - time.right)
-        assertEquals(gap, title.left - node.right)
+        assertEquals(gap, title.left - emoji.right)
+        assertEquals(gap, time.left - title.right)
     }
 
     @Test
@@ -156,7 +178,6 @@ class TaskCanvasWidgetTest {
         assertEquals(TaskCanvasTokens.weekPriority.light.toInt(), root.findViewById<TextView>(slot.time).currentTextColor)
         views(Priority.HIGH, done = true).reapply(context, root)
         val title = root.findViewById<TextView>(slot.title)
-        assertEquals("белая галочка и при тёмной системе", ColorTokens.onListSquare.light.toInt(), requireNotNull(root.findViewById<android.widget.ImageView>(slot.tick).imageTintList).defaultColor)
         assertEquals(TaskCanvasTokens.priorityDone.light.toInt(), title.currentTextColor)
         assertEquals(TaskCanvasTokens.priorityDone.light.toInt(), root.findViewById<TextView>(slot.time).currentTextColor)
         assertTrue(title.text !is Spanned || (title.text as Spanned).getSpans(0, title.length(), StrikethroughSpan::class.java).isEmpty())
@@ -166,7 +187,7 @@ class TaskCanvasWidgetTest {
         assertEquals(ColorTokens.textPrimary.light.toInt(), title.currentTextColor)
         assertEquals(255, android.graphics.Color.alpha(emoji.currentTextColor))
         assertEquals("", root.findViewById<TextView>(slot.time).text.toString())
-        assertEquals(View.VISIBLE, root.findViewById<View>(slot.time).visibility)
+        assertEquals(View.GONE, root.findViewById<View>(slot.time).visibility)
         assertTrue(title.text !is Spanned || (title.text as Spanned).getSpans(0, title.length(), StrikethroughSpan::class.java).isEmpty())
         assertNull(root.findViewById<View>(slot.plaque).background)
     }

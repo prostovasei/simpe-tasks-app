@@ -105,23 +105,13 @@ class WidgetWeekTest {
         assertTrue("строки задач внутри ячейки", slots.last().bottom <= friday.findViewById<View>(R.id.wl_root).height)
         // Зона выполнения покрывает время и значок, не захватывая название.
         val slot = WeekIds.LEFT.slots[0]
-        val hit = friday.findViewById<View>(slot.hit)
-        assertTrue("зона заканчивается у значка", kotlin.math.abs(hit.right - friday.findViewById<View>(slot.check).right) <= 1)
-        assertEquals(friday.findViewById<View>(slot.plaque).height, hit.height)
         val time = friday.findViewById<TextView>(slot.time)
-        val day = friday.findViewById<TextView>(WeekIds.LEFT.weekday)
-        val timeLocation = IntArray(2).also(time::getLocationOnScreen)
-        val dayLocation = IntArray(2).also(day::getLocationOnScreen)
-        assertEquals("день и время по одной левой линии", dayLocation[0], timeLocation[0])
-        assertEquals(android.view.Gravity.START, time.gravity and android.view.Gravity.RELATIVE_HORIZONTAL_GRAVITY_MASK)
-        assertTrue("минимальное поле", kotlin.math.abs(friday.findViewById<View>(R.id.wl_root).paddingLeft - px(SizeTokens.WEEK_EDGE.toFloat())) <= 1)
-
-        assertTrue("кружок ${friday.findViewById<View>(slot.check).width}", kotlin.math.abs(friday.findViewById<View>(slot.check).width - px(SizeTokens.WIDGET_WEEK_CHECK.toFloat())) <= 1)
-        val node = friday.findViewById<View>(slot.check)
         val title = friday.findViewById<View>(slot.title)
-        assertTrue("зазор время/значок 2dp", kotlin.math.abs(node.left - time.right - px(2f)) <= 1)
-        assertTrue("зазор значок/название 2dp", kotlin.math.abs(title.left - node.right - px(2f)) <= 1)
-        assertTrue("название вне зоны выполнения", hit.right <= friday.findViewById<View>(slot.title).left)
+        val emoji = friday.findViewById<View>(slot.emoji)
+        assertTrue("эмодзи перед названием", emoji.right <= title.left)
+        assertTrue("время справа", title.right <= time.left)
+        assertTrue("время помещается", time.width >= kotlin.math.ceil(time.paint.measureText(time.text.toString())).toInt())
+
     }
 
     @Test
@@ -141,19 +131,16 @@ class WidgetWeekTest {
     }
 
     @Test
-    fun dateRowAndBothZonesOfEveryTaskAreClickable() {
+    fun allWeekClicksOnlyOpenTheDayIncludingEmptyCellAndFutureRepeat() {
+        val calls = mutableListOf<Triple<Int, String, String?>>()
+        WidgetWeekRows.views(context, rich.week!!, size, WidgetWeekRows.Click { view, code, id -> calls += Triple(view, code, id) })
+        val dayCalls = calls.filter { it.first == WeekIds.LEFT.root || it.first == WeekIds.RIGHT.root || it.first == WeekIds.LEFT.head || it.first == WeekIds.RIGHT.head || it.first in (WeekIds.LEFT.slots + WeekIds.RIGHT.slots).map { s -> s.plaque } }
+        assertTrue(dayCalls.isNotEmpty())
+        assertTrue(dayCalls.all { it.second == WidgetClicks.DAY })
+        assertTrue(calls.none { it.second in listOf(WidgetClicks.COMPLETE, WidgetClicks.UNCOMPLETE, WidgetClicks.OPEN) })
         val first = list().rows()[0]
-        assertTrue("строка даты открывает день", first.findViewById<View>(WeekIds.LEFT.head).hasOnClickListeners())
-        val slot = WeekIds.LEFT.slots[0]
-        assertTrue("зона «выполнить»", first.findViewById<View>(slot.hit).hasOnClickListeners())
-        assertTrue("плашка", first.findViewById<View>(slot.plaque).hasOnClickListeners())
-
-        assertEquals("Снять отметку «выполнено»", first.findViewById<View>(slot.node).contentDescription.toString())
-        assertEquals(View.VISIBLE, first.findViewById<View>(slot.tick).visibility)
-        assertEquals("Выполнить", first.findViewById<View>(WeekIds.LEFT.slots[1].node).contentDescription.toString())
-        // Будущий повтор: кружок ничего не отмечает и без подписи.
-        val saturday = list().rows()[2]
-        assertNull(saturday.findViewById<View>(WeekIds.RIGHT.slots[1].node).contentDescription)
+        assertTrue(first.findViewById<View>(WeekIds.LEFT.root).hasOnClickListeners())
+        assertTrue(first.findViewById<View>(WeekIds.LEFT.slots[0].plaque).hasOnClickListeners())
     }
 
     /** Итерация 57: справа — плитка с датой «30 / ПТ / окт» на любой ширине виджета; нажатие — назад к сегодня. */
@@ -222,7 +209,7 @@ class WidgetWeekTest {
         val number = friday.findViewById<TextView>(WeekIds.LEFT.number)
         assertTrue(friday.findViewById<TextView>(WeekIds.LEFT.weekday).isBold())
         assertTrue(number.isBold())
-        assertEquals("30 сегодня", number.text.toString())
+        assertEquals("30 Сегодня", number.text.toString())
         assertNull("без кружка", number.background)
         val saturday = friday.findViewById<TextView>(WeekIds.RIGHT.weekday)
         assertFalse(saturday.isBold())
@@ -238,7 +225,7 @@ class WidgetWeekTest {
         val initial = root.findViewById<ViewGroup>(R.id.week_rows).getChildAt(2)
         val number = initial.findViewById<TextView>(WeekIds.LEFT.number)
         val more = initial.findViewById<TextView>(WeekIds.LEFT.more)
-        assertEquals("30 сегодня", number.text.toString())
+        assertEquals("30 Сегодня", number.text.toString())
         assertEquals(View.VISIBLE, more.visibility)
         assertTrue("сегодня и +N не накладываются", number.right <= more.left)
 
@@ -246,7 +233,7 @@ class WidgetWeekTest {
         renderWidget(context, next, size).reapply(context, root)
         val row = root.findViewById<ViewGroup>(R.id.week_rows).getChildAt(2)
         assertEquals("30", row.findViewById<TextView>(WeekIds.LEFT.number).text.toString())
-        assertEquals("31 сегодня", row.findViewById<TextView>(WeekIds.RIGHT.number).text.toString())
+        assertEquals("31 Сегодня", row.findViewById<TextView>(WeekIds.RIGHT.number).text.toString())
     }
 
     /**
@@ -265,9 +252,8 @@ class WidgetWeekTest {
         // Итерация 50: строка плашки — под зоной нажатия, первым слоем.
         val line = monday.findViewById<ViewGroup>(slots[0].plaque).getChildAt(0) as ViewGroup
         val order = (0 until line.childCount).map { line.getChildAt(it).id }
-        assertTrue(order.indexOf(slots[0].title) < order.indexOf(slots[0].emoji))
-        assertTrue(order.indexOf(slots[0].time) < order.indexOf(slots[0].check))
-        assertTrue(order.indexOf(slots[0].check) < order.indexOf(slots[0].title))
+        assertTrue(order.indexOf(slots[0].emoji) < order.indexOf(slots[0].title))
+        assertTrue(order.indexOf(slots[0].title) < order.indexOf(slots[0].time))
         assertEquals("ПН", monday.findViewById<TextView>(WeekIds.LEFT.weekday).text.toString())
         assertEquals("ВТ", monday.findViewById<TextView>(WeekIds.RIGHT.weekday).text.toString())
     }
