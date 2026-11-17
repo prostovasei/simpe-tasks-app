@@ -9,6 +9,12 @@ const fs=require('fs'),path=require('path'),assert=require('assert/strict');
  await p.evaluate(()=>window.layoutReady);
  assert.equal(await p.locator('.sec').count(),5);
  assert.equal(await p.locator('.now,.handle').count(),0);
+ for(const h of await p.locator('.day-toolbar,.sheet-header').all()){
+ assert.equal(await h.locator('strong').textContent(),'ВТ 17 ноя');
+ const styles=await h.evaluate(e=>{const a=getComputedStyle(e.querySelector('strong')),b=getComputedStyle(e.querySelector('.relative'));return [a.fontSize,b.fontSize,b.backgroundColor]});
+ assert.equal(styles[0],styles[1]);assert.equal(styles[2],'rgba(0, 0, 0, 0)');
+ }
+ for(const t of await p.locator('.widget .day-head.today').all())assert.match(await t.textContent(),/Сегодня/);
  for(const d of await p.locator('#week .device').all()){
  assert.equal(await d.locator('.week-cell').count(),7);
  assert.equal(await d.locator('.week-cell .toggle-node,.week-cell .node').count(),0);

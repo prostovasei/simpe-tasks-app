@@ -31,17 +31,17 @@ def week_row(data):
          f'<span class="title">{html.escape(title)}</span><span class="wtime">{time}</span></div>')
 
 
-def cell(i):
+def cell(i,widget=False):
  today=' today' if i==1 else ''
- label=DAYS[i]+(' сегодня' if i==1 else '')
+ label=DAYS[i]+((' Сегодня' if widget else ' сегодня') if i==1 else '')
  more='<span class="more">+3</span>' if i==4 else ''
  return (f'<button class="day week-cell" data-action="day" data-day="{DAYS[i]}" aria-label="Открыть день {label}">'
          f'<div class="day-head{today}"><span>{label}</span>{more}</div><div class="week-rows">'
          +''.join(week_row(t) for t in WEEK[i])+'<div class="cell-space"></div></div></button>')
 
 
-def week_content():
- return '<div class="week-grid">'+''.join(cell(i) for i in range(7))+G['mini_calendar']()+'</div>'
+def week_content(widget=False):
+ return '<div class="week-grid">'+''.join(cell(i,widget) for i in range(7))+G['mini_calendar']()+'</div>'
 
 
 def status():
@@ -54,7 +54,7 @@ def gesture():
 
 def week_screen(kind='app',width=390,large=False):
  return (f'<div class="device {kind} revised-week {"large-font" if large else ""}" style="--device-width:{width}px">'
-         +('' if kind=='widget' else status())+week_content()+G['nav'](kind=='widget')+('' if kind=='widget' else gesture())+'</div>')
+         +('' if kind=='widget' else status())+week_content(kind=='widget')+G['nav'](kind=='widget')+('' if kind=='widget' else gesture())+'</div>')
 
 # Начало/конец — вымышленные записи для сравнения обычной и интервальной строки.
 ROWS=[
@@ -85,13 +85,13 @@ def timeline(rows=ROWS,now=False):
 
 def day_screen(width=390,large=False):
  return (f'<div class="device app day-page {"large-font" if large else ""}" style="--device-width:{width}px">'+status()
-         +'<header class="day-toolbar"><span class="back">‹</span><strong>ВТ, 17 ноя</strong><span class="relative">Сегодня</span><span class="count">4</span></header>'
+         +'<header class="day-toolbar"><span class="back">‹</span><strong>ВТ 17 ноя</strong><span class="relative">Сегодня</span><span class="count">4</span></header>'
          +timeline()+'<div class="day-fill"></div>'+gesture()+'</div>')
 
 
 def sheet(width=390,large=False):
  return (f'<div class="sheet {"large-font" if large else ""}"><div class="sheet-top-space"></div>'
-         '<header class="sheet-header"><strong>ВТ, 17 ноя</strong><span class="relative">Сегодня</span><span class="count">2 из 4</span></header>'
+         '<header class="sheet-header"><strong>ВТ 17 ноя</strong><span class="relative">Сегодня</span><span class="count">2 из 4</span></header>'
          +timeline()+'<div class="sheet-footer"><button data-action="add">＋ Задача на ВТ, 17 ноя</button></div></div>')
 
 
@@ -141,7 +141,7 @@ CSS=G['CSS']+f'''
 .day-toolbar{display:flex;align-items:center;gap:8px;height:56px;padding-right:12px;flex-shrink:0}
 .back{width:44px;font-size:34px;text-align:center;flex-shrink:0;font-weight:400}
 .day-toolbar strong,.sheet-header strong{font-size:22px;line-height:28px;white-space:nowrap}
-.relative{font-size:11px;font-weight:700;white-space:nowrap}
+.relative{font-size:22px;line-height:28px;font-weight:700;white-space:nowrap;background:none;padding:0}
 .count{margin-left:auto;color:var(--secondary);font-size:14px;font-weight:700;white-space:nowrap}
 .day-fill{flex:1}
 .home-preview{position:relative;border-radius:16px;background:#D5E2F2;border:1px solid #CCD1DB;overflow:hidden;padding:30px 6px;font-family:Manrope,sans-serif}
@@ -172,7 +172,7 @@ CSS=G['CSS']+f'''
 .large-font.widget.revised-week .title,.large-font.widget.revised-week .wtime{font-size:13px}.large-font.widget.revised-week .day-head{font-size:11.7px}
 .large-font .tstack{font-size:16.9px;line-height:18px;width:48px}.large-font .day-task-title{font-size:18.2px;line-height:24px}
 .large-font .sheet-header strong{font-size:20px}.large-font .sheet-header{gap:6px;padding-left:10px;padding-right:10px}
-.large-font .sheet-footer button{font-size:13px}.large-font .relative{font-size:11px}
+.large-font .sheet-footer button{font-size:13px}.large-font .relative{font-size:20px}
 '''
 
 
