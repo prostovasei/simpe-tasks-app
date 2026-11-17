@@ -19,6 +19,8 @@ const assert = require('assert/strict');
   for (const item of await labels.all()) {
     assert.equal((await item.textContent()).trim(), 'сегодня');
     assert.equal(await item.evaluate(el => getComputedStyle(el).color), 'rgb(22, 23, 29)');
+    const styles = await item.evaluate(el => { const a=getComputedStyle(el), b=getComputedStyle(el.parentElement); return ['fontFamily','fontSize','fontWeight','fontStyle','letterSpacing'].map(k=>[a[k],b[k]]); });
+    for (const [label,date] of styles) assert.equal(label,date, 'Подпись и дата должны иметь одинаковое начертание');
   }
   for (const cell of await p.locator('#chosen-label .day').all()) assert.equal(await cell.evaluate(el => getComputedStyle(el).backgroundColor), 'rgba(0, 0, 0, 0)');
   const today = p.locator('#chosen-header .day-head.today > span:first-child');
