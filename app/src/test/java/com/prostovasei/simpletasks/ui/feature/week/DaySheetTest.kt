@@ -8,6 +8,8 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertContentDescriptionEquals
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -69,10 +71,11 @@ class DaySheetTest {
     }
 
     @Test
-    fun showsDateProgressAndTasks() {
+    fun showsCompactDateWithoutRelativeLabelOrCount() {
         show()
-        composeRule.onNodeWithTag(TAG_DAY_SHEET_TITLE).assertTextEquals("СБ 07 ноя Сегодня")
-        composeRule.onNodeWithTag(TAG_DAY_SHEET_COUNT).assertTextEquals("1 из 4")
+        composeRule.onNodeWithTag(TAG_DAY_SHEET_TITLE).assertTextEquals("СБ 07 ноя")
+        composeRule.onNodeWithTag(TAG_DAY_SHEET_COUNT).assertDoesNotExist()
+        composeRule.onNodeWithText("Сегодня").assertDoesNotExist()
         listOf("tg", "hookah", "football", "flowers").forEach { composeRule.onNodeWithTag("task:$it").assertExists() }
     }
 
@@ -83,7 +86,7 @@ class DaySheetTest {
         assertEquals(TaskListIntent.ToggleComplete("hookah", recurring = false, done = false), intents.last())
         composeRule.onNodeWithTag("task:football").performClick()
         assertEquals(listOf("football"), opened)
-        composeRule.onNodeWithTag(TAG_DAY_SHEET_ADD).assertTextEquals("Задача на сб, 07 ноя").performClick()
+        composeRule.onNodeWithTag(TAG_DAY_SHEET_ADD).assertContentDescriptionEquals("Задача на сб, 07 ноя").performClick()
         assertEquals(listOf(today), added)
         assertEquals("Нажатие по шторке не закрывает", 0, closed)
         composeRule.onNodeWithTag(TAG_DAY_SCRIM).performClick()
@@ -94,7 +97,8 @@ class DaySheetTest {
     fun emptyDayStillOffersNewTask() {
         show(state.copy(items = emptyList()))
         composeRule.onNodeWithTag(TAG_DAY_SHEET_COUNT).assertDoesNotExist()
-        composeRule.onNodeWithTag(TAG_DAY_SHEET_ADD).assertExists()
+        composeRule.onNodeWithTag(TAG_DAY_SHEET_ADD).assertExists().performClick()
+        assertEquals(listOf(today), added)
     }
 
     @Test
@@ -112,10 +116,11 @@ class DaySheetTest {
 
     @Test
     @Config(qualifiers = "w320dp-h800dp-xhdpi")
-    fun narrowDayKeepsCountAndTimesVisibleWithLargeFont() {
+    fun narrowDayKeepsDateAddAndTimesVisibleWithLargeFont() {
         show(fontScale = 1.3f)
         composeRule.onNodeWithTag(TAG_DAY_SHEET_TITLE).assertIsDisplayed()
-        composeRule.onNodeWithTag(TAG_DAY_SHEET_COUNT).assertIsDisplayed()
+        composeRule.onNodeWithTag(TAG_DAY_SHEET_COUNT).assertDoesNotExist()
+        composeRule.onNodeWithTag(TAG_DAY_SHEET_ADD).assertIsDisplayed()
         composeRule.onNodeWithText("19:30", useUnmergedTree = true).assertIsDisplayed()
         listOf("19:30", "23:30").forEach { time ->
             val results = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
@@ -125,6 +130,36 @@ class DaySheetTest {
 
         composeRule.onNodeWithText("23:30", useUnmergedTree = true).assertIsDisplayed()
         composeRule.onRoot().captureRoboImage("screenshots/day_sheet_small_large_font.png")
+    }
+
+    @Test
+    fun addIsInDateRowAndUsesExistingWideButtonGeometry() {
+        show()
+        val date = composeRule.onNodeWithTag(TAG_DAY_SHEET_TITLE).getUnclippedBoundsInRoot()
+        val add = composeRule.onNodeWithTag(TAG_DAY_SHEET_ADD).getUnclippedBoundsInRoot()
+        val visual = composeRule.onNodeWithTag(TAG_DAY_SHEET_ADD_VISUAL, useUnmergedTree = true).getUnclippedBoundsInRoot()
+        org.junit.Assert.assertTrue(date.right <= add.left)
+        org.junit.Assert.assertTrue(date.top >= add.top && date.bottom <= add.bottom)
+        assertEquals(64.dp, visual.right - visual.left)
+        assertEquals(32.dp, visual.bottom - visual.top)
+        org.junit.Assert.assertTrue("область нажатия не меньше 48 dp", add.bottom - add.top >= 48.dp)
+    }
+
+    @Test
+    fun tomorrowHeaderHasOnlyDateAndPlusAddsOnThatDate() {
+        val date = today.plusDays(1)
+        show(state.copy(date = date))
+        composeRule.onNodeWithTag(TAG_DAY_SHEET_TITLE).assertTextEquals("ВС 08 ноя")
+        composeRule.onNodeWithText("Завтра").assertDoesNotExist()
+        composeRule.onNodeWithTag(TAG_DAY_SHEET_ADD).performClick()
+        assertEquals(listOf(date), added)
+    }
+
+    @Test
+    fun yesterdayHeaderHasOnlyDate() {
+        show(state.copy(date = today.minusDays(1)))
+        composeRule.onNodeWithTag(TAG_DAY_SHEET_TITLE).assertTextEquals("ПТ 06 ноя")
+        composeRule.onNodeWithText("Вчера").assertDoesNotExist()
     }
 
     @Test

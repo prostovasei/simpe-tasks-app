@@ -22,8 +22,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
@@ -39,6 +37,11 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
+import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -46,9 +49,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.components.UndoSnackbarHost
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
-import com.prostovasei.simpletasks.ui.common.DayLabel
 import com.prostovasei.simpletasks.ui.common.DayNames
-import com.prostovasei.simpletasks.ui.common.DueFormatter
 import com.prostovasei.simpletasks.ui.common.TaskListEffects
 import com.prostovasei.simpletasks.ui.common.TaskListIntent
 import com.prostovasei.simpletasks.ui.common.rememberNowMinute
@@ -67,8 +68,8 @@ fun DaySheetRoute(onClose: () -> Unit, onOpenTask: (String) -> Unit, onAdd: (Loc
 
 /**
  * Шторка дня (итерация 51, макет iteration51.py, доска «Шторка дня»): нажатие на дату дня в «Неделе» виджета — приложение не
- * открывается. Сверху дата, «Сегодня» / «Завтра» и «выполнено из всех», ниже лента дня как в приложении (кружок отмечает, плашка
- * открывает задачу), снизу «Задача на …». Шторка не выше [SHEET_MAX_FRACTION] экрана, дальше лента прокручивается. «Назад»,
+ * открывается. Сверху компактная дата и вытянутый «+» без относительных подписей и счётчика (#265), ниже лента дня (кружок отмечает,
+ * название открывает задачу). Шторка не выше [SHEET_MAX_FRACTION] экрана, дальше лента прокручивается. «Назад»,
  * смахивание вниз за верх шторки и нажатие на затемнение закрывают.
  */
 @Composable
@@ -123,18 +124,14 @@ fun DaySheet(
                         },
                 ) {
                     Row(
-                        Modifier.fillMaxWidth().padding(horizontal = spacing.md, vertical = spacing.sm),
+                        Modifier.fillMaxWidth().padding(horizontal = spacing.sm, vertical = spacing.xxs),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(spacing.xs),
                     ) {
                         if (date != null && today != null) {
-                            val relative = when (val label = DueFormatter.dayLabel(date, today)) {
-                                is DayLabel.Date -> null
-                                else -> days.day(label)
-                            }
                             Text(
-                                WidgetDates.dayHeader(date) + relative?.let { " $it" }.orEmpty(),
-                                style = MaterialTheme.typography.titleLarge,
+                                WidgetDates.dayHeader(date),
+                                style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = if (date < today) colors.overdue else colors.textPrimary,
                                 maxLines = 2,
@@ -145,14 +142,26 @@ fun DaySheet(
                             Box(Modifier.weight(1f))
                         }
 
-                        if (state.items.isNotEmpty()) {
-                            Text(
-                                stringResource(R.string.day_sheet_progress, state.items.count { it.showsDone }, state.items.size),
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = colors.textSecondary,
-                                modifier = Modifier.testTag(TAG_DAY_SHEET_COUNT),
-                            )
+                        if (date != null) {
+                            val addLabel = stringResource(R.string.day_sheet_add, WidgetDates.withWeekday(date))
+                            Box(
+                                Modifier.size(width = SizeTokens.WIDGET_ADD_W.dp, height = sizes.toolButton)
+                                    .clip(AppTheme.shapes.extraLarge)
+                                    .clickable(role = Role.Button) { onAdd(date) }
+                                    .semantics { contentDescription = addLabel }
+                                    .testTag(TAG_DAY_SHEET_ADD),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Box(
+                                    Modifier.size(SizeTokens.WIDGET_ADD_W.dp, SizeTokens.WIDGET_ADD_H.dp)
+                                        .clip(AppTheme.shapes.extraLarge).background(colors.accent)
+                                        .testTag(TAG_DAY_SHEET_ADD_VISUAL),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Icon(Icons.Filled.Add, contentDescription = null, tint = colors.onAccent,
+                                        modifier = Modifier.size(SizeTokens.WIDGET_ADD_ICON.dp))
+                                }
+                            }
                         }
                     }
                 }
@@ -181,19 +190,7 @@ fun DaySheet(
                         )
                     }
                 }
-                if (date != null) {
-                    Row(Modifier.fillMaxWidth().padding(spacing.sm), horizontalArrangement = Arrangement.End) {
-                        Button(
-                            onClick = { onAdd(date) },
-                            shape = AppTheme.shapes.extraLarge,
-                            colors = ButtonDefaults.buttonColors(containerColor = colors.accent, contentColor = colors.onAccent),
-                            modifier = Modifier.heightIn(min = sizes.navBar - spacing.xs).testTag(TAG_DAY_SHEET_ADD),
-                        ) {
-                            Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.padding(end = spacing.xxs))
-                            Text(stringResource(R.string.day_sheet_add, WidgetDates.withWeekday(date)), fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
+
             }
             UndoSnackbarHost(snackbarHostState, Modifier.align(Alignment.TopCenter).statusBarsPadding().padding(top = spacing.sm))
         }
@@ -209,3 +206,5 @@ const val TAG_DAY_SHEET_TITLE = "day_sheet_title"
 const val TAG_DAY_SHEET_COUNT = "day_sheet_count"
 const val TAG_DAY_SHEET_LIST = "day_sheet_list"
 const val TAG_DAY_SHEET_ADD = "day_sheet_add"
+
+const val TAG_DAY_SHEET_ADD_VISUAL = "day_sheet_add_visual"
