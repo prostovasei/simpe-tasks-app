@@ -77,7 +77,7 @@ def task_row(data):
          +f'<span class="day-emoji">{emoji}</span></button></div>')
 
 
-def timeline(rows=ROWS,now=True):
+def timeline(rows=ROWS,now=False):
  content=''.join(task_row(row) for row in rows)
  if now:content+='<div class="now"><span>21:30</span><i></i><b></b></div>'
  return '<div class="timeline">'+content+'</div>'
@@ -90,7 +90,7 @@ def day_screen(width=390,large=False):
 
 
 def sheet(width=390,large=False):
- return (f'<div class="sheet {"large-font" if large else ""}"><div class="handle"><i></i></div>'
+ return (f'<div class="sheet {"large-font" if large else ""}"><div class="sheet-top-space"></div>'
          '<header class="sheet-header"><strong>ВТ, 17 ноя</strong><span class="relative">Сегодня</span><span class="count">2 из 4</span></header>'
          +timeline()+'<div class="sheet-footer"><button data-action="add">＋ Задача на ВТ, 17 ноя</button></div></div>')
 
@@ -148,7 +148,8 @@ CSS=G['CSS']+f'''
 .home-preview>.device{width:100%;height:710px;border-radius:16px;--cell-height:167px}
 .scrim{position:absolute;inset:0;background:#0006}
 .sheet{position:absolute;left:6px;right:6px;bottom:6px;border-radius:22px;overflow:hidden;color:var(--text);box-shadow:0 -2px 12px #00000008}
-.handle{height:22px;display:grid;place-items:center}.handle i{width:36px;height:4px;border-radius:4px;background:#D9D9DE}
+.sheet-top-space{height:18px}
+.task-edit{padding:20px 18px;font-family:Manrope,sans-serif}.task-edit h3{font-size:24px;margin:0 0 18px}.task-edit p{color:var(--secondary);font-size:16px;margin:0 0 24px}.edit-date{font-size:16px;margin-bottom:24px}.edit-actions{display:flex;align-items:center;justify-content:space-between;font-size:24px}.edit-actions span{border:1px solid #ddd;border-radius:12px;padding:8px 12px}.edit-actions .save{background:#16171D;color:white}
 .sheet-header{display:flex;align-items:center;gap:8px;padding:4px 14px 14px;min-height:48px}
 .sheet-footer{padding:16px 12px;display:flex;justify-content:flex-end;background:#fff}
 .sheet-footer button{padding:12px 16px;font-size:14px;font-weight:700;background:var(--text);color:#fff;border-radius:18px}
@@ -209,7 +210,12 @@ boards.append(section('narrow','4 · Узкий экран и крупный ш�
  '320 px и шрифт 130% в HTML-прототипе. Длинные названия обрезаются, времена остаются видимыми.',
  '<div class="rowp">'+figure('Неделя приложения',week_screen('app',320,True),'Эмодзи слева, время справа. Вся ячейка открывает день, включая пустой день.')
  +figure('Окно дня виджета',widget_day_screen(320,True),'Оба времени периода в обычной строке. Точное поведение Android и доступность проверяются после реализации.')+'</div>'))
-links=''.join(f'<a href="#{id}">{text}</a>' for id,text in [('week','Неделя'),('day','Окно дня'),('periods','Компактные периоды'),('narrow','320 px / 130%')])
+boards.append(section('task-window','5 · Окно задачи без верхней чёрточки',
+ 'В окне создания и редактирования задачи верхний маркер убран. Поля и действия сохраняются.',
+ '<div class="rowp">'+figure('Окно задачи · приложение и виджет',
+ '<div class="home-preview" style="width:390px;height:500px">'+week_screen('widget')+'<div class="scrim"></div><div class="sheet"><div class="task-edit"><h3>Подготовить отчёт</h3><p>Проверить данные перед встречей</p><div class="edit-date">▢ ВТ, 17 ноя · 17:00–18:00</div><div class="edit-actions"><span>💼</span><span>⚑</span><span>☷</span><span>↻</span><span><svg width="20" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 9a6 6 0 0 1 12 0c0 6 2 6 2 8H4c0-2 2-2 2-8Z"/><path d="M10 20h4"/></svg></span><span class="save">✓</span></div></div></div></div>',
+ 'Эскиз показывает удаление верхнего маркера. Клавиатура не показана; жест закрытия сохраняется.')+'</div>'))
+links=''.join(f'<a href="#{id}">{text}</a>' for id,text in [('week','Неделя'),('day','Окно дня'),('periods','Компактные периоды'),('narrow','320 px / 130%'),('task-window','Окно задачи')])
 JS='''
 const log=document.querySelector('.log');
 document.addEventListener('click',event=>{
@@ -227,4 +233,4 @@ out=('<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport"
  '<p>Данные вымышлены, шрифт Manrope встроен. Это HTML-макеты, не Android-снимки.</p></header>'
  f'<nav class="nav">{links}</nav><main class="board">{"".join(boards)}</main><output class="log" aria-live="polite"></output><script>{JS}</script></html>')
 (here/'screens.html').write_text(out)
-print('4 листа: неделя, день, интервалы, узкий экран')
+print('5 листов: неделя, день, интервалы, узкий экран, окно задачи')

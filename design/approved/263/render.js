@@ -7,7 +7,8 @@ const fs=require('fs'),path=require('path'),assert=require('assert/strict');
  const errors=[];p.on('pageerror',e=>errors.push(String(e)));
  await p.setContent(fs.readFileSync(path.join(__dirname,'screens.html'),'utf8'));
  await p.evaluate(()=>window.layoutReady);
- assert.equal(await p.locator('.sec').count(),4);
+ assert.equal(await p.locator('.sec').count(),5);
+ assert.equal(await p.locator('.now,.handle').count(),0);
  for(const d of await p.locator('#week .device').all()){
  assert.equal(await d.locator('.week-cell').count(),7);
  assert.equal(await d.locator('.week-cell .toggle-node,.week-cell .node').count(),0);
@@ -26,6 +27,6 @@ const fs=require('fs'),path=require('path'),assert=require('assert/strict');
  await p.locator('.log').evaluate(e=>e.style.display='none');
  await p.locator('.nav').evaluate(e=>e.style.position='static');
  for(const s of await p.locator('.sec').all())await s.screenshot({path:path.join(__dirname,(await s.getAttribute('id'))+'.png')});
- assert.deepEqual(errors,[]);console.log('4 PNG; зоны ячеек и равная геометрия периодов проверены.');
+ assert.deepEqual(errors,[]);console.log('5 PNG; зоны ячеек и равная геометрия периодов проверены.');
  }finally{await b.close()}
 })().catch(e=>{console.error(e);process.exitCode=1});
