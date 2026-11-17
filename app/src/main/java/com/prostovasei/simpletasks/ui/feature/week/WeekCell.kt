@@ -104,14 +104,15 @@ private fun WeekDayHeader(date: LocalDate, isToday: Boolean, hidden: Int, onClic
         val color = if (isToday) colors.textPrimary else colors.textSecondary
         // Итерация 55 (как в виджете): «ПН 9» капсом, мельче.
         Text(
-            "${weekday.uppercase()} ${date.dayOfMonth}",
+            "${weekday.uppercase()} ${date.dayOfMonth}" + if (isToday) " ${stringResource(R.string.week_today_suffix)}" else "",
             style = MaterialTheme.typography.labelSmall,
             fontWeight = weight,
             color = color,
-            modifier = if (isToday) Modifier.testTag("week-today:$date") else Modifier.testTag("week-date:$date"),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f).then(if (isToday) Modifier.testTag("week-today:$date") else Modifier.testTag("week-date:$date")),
         )
         if (hidden > 0) {
-            Spacer(Modifier.weight(1f))
             Text(
                 "+$hidden",
                 style = MaterialTheme.typography.labelMedium,

@@ -131,7 +131,9 @@ def cell(p):
 
         <TextView
             android:id="@+id/{p}_num"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:ellipsize="end"
             android:layout_height="wrap_content"
             android:layout_marginStart="@dimen/widget_space_xxs"
             android:includeFontPadding="false"
@@ -139,10 +141,6 @@ def cell(p):
             android:textColor="@color/widget_text_secondary"
             android:textSize="9sp" />
 
-        <FrameLayout
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1" />
 
         <TextView
             android:id="@+id/{p}_more"

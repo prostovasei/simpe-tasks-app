@@ -97,7 +97,8 @@ object WidgetWeekRows {
         // Итерация 48 (решение PM, макет `week_tune.py`): день недели капсом («ПТ 6»), остальные дни — обычным начертанием, мельче.
         setTextViewText(ids.weekday, day.date.dayOfWeek.getDisplayName(TextStyle.SHORT, RU).uppercase(RU).bold(isToday))
         taskCanvasColor(ids.weekday, "setTextColor", if (isToday) ColorTokens.textPrimary else ColorTokens.textSecondary)
-        setTextViewText(ids.number, day.date.dayOfMonth.toString().bold(isToday))
+        val number = day.date.dayOfMonth.toString() + if (isToday) " ${context.getString(R.string.week_today_suffix)}" else ""
+        setTextViewText(ids.number, number.bold(isToday))
         taskCanvasColor(ids.number, "setTextColor", if (isToday) ColorTokens.textPrimary else ColorTokens.textSecondary)
         visible(ids.more, hidden > 0)
         setTextViewText(ids.more, "+$hidden")

@@ -903,15 +903,16 @@ def week_task(title, time='', pri='none', done=False, ghost=False, over=False, h
 
 
 def week_cell(wd, num, tasks, today=False, hidden=0, h=190, widget=False):
+    day_label = f"{wd.upper()} {num}" + (" сегодня" if today else "")
     if widget:  # 0.46.0, проверка PM: строка даты виджета — 12 px, высота 18, сегодня жирным без кружка
         more = f'<span style="margin-left:auto;font-size:9px;font-weight:700;color:var(--text-primary);background:var(--accent-soft);border-radius:12px;padding:0 7px;line-height:11px">+{hidden}</span>' if hidden else ''
         # Итерация 47: день недели и число — одна подпись серым; сегодня — жирным чёрным, без кружка. Итерация 48: 9 sp, капсом,
         # остальные дни обычным начертанием, строка даты по высоте текста (не ниже 12), поле над ней 1.
-        w = f'<span style="font-size:9px;font-weight:{800 if today else 400};color:{"var(--text-primary)" if today else "var(--text-secondary)"}">{wd.upper()} {num}</span>'
+        w = f'<span style="font-size:9px;font-weight:{800 if today else 400};color:{"var(--text-primary)" if today else "var(--text-secondary)"}">{day_label}</span>'
         return (f'<div style="flex:1;min-width:0;height:{h}px;overflow:hidden;box-sizing:border-box;padding:1px 4px 2px;border-right:1px solid var(--divider);border-bottom:1px solid var(--divider)">'
                 f'<div style="display:flex;align-items:center;min-height:12px">{w}{more}</div>{"".join(tasks)}</div>')
     # Итерация 55: подпись как в виджете — «ПТ 30» капсом, сегодня жирным; строка даты 20.
-    label = f'<span style="font-size:11px;font-weight:{800 if today else 500};color:{"var(--text-primary)" if today else "var(--text-secondary)"}">{wd.upper()} {num}</span>'
+    label = f'<span style="font-size:11px;font-weight:{800 if today else 500};color:{"var(--text-primary)" if today else "var(--text-secondary)"}">{day_label}</span>'
     more = f'<span style="margin-left:auto;font-size:11.5px;font-weight:800;color:var(--text-primary);background:var(--accent-soft);border-radius:12px;padding:0 8px">+{hidden}</span>' if hidden else ''
     return (f'<div style="flex:1;min-width:0;height:{h}px;overflow:hidden;box-sizing:border-box;padding:8px 4px;border-right:1px solid var(--divider);border-bottom:1px solid var(--divider)">'
             f'<div style="display:flex;align-items:center;height:20px">{label}{more}</div>{"".join(tasks)}</div>')
@@ -1129,7 +1130,7 @@ README_MORE = {
     'SearchField': ('Поле поиска: подсказка «Поиск задач», запрос, очистка.',
                     '''Поле Material 3: фон `surface`, радиус `radius-lg`, высота 56, без линии снизу. Слева лупа `text-secondary`; справа крестик, когда есть запрос. Курсор `accent`. При открытии раздела курсор сразу в поле и поднята клавиатура. Найденное в плашках подсвечено `accent-soft`.'''),
     'WeekView': ('Вид «Неделя»: сетка 2×4, семь дней и мини-календарь.',
-                 '0.72 / #259: строка без плашки, время слева, два зазора по 2 dp, значок 14 dp, название и эмодзи. Активный высокий приоритет — week-row-week-priority и ExtraBold 800; выполненный бледный без зачёркивания. Пустая область под задачами открывает день, время и значок переключают выполнение, остальная строка открывает задачу; будущий повтор открывает исходную задачу.'),
+                 '0.73 / #261: текущая дата содержит «сегодня» тем же начертанием, без цветовой подсветки. Строка без плашки, время слева, два зазора по 2 dp, значок 14 dp, название и эмодзи. Активный высокий приоритет — week-row-week-priority и ExtraBold 800; выполненный бледный без зачёркивания. Пустая область под задачами открывает день, время и значок переключают выполнение, остальная строка открывает задачу; будущий повтор открывает исходную задачу.'),
     'BottomBar': ('Нижняя панель приложения (0.55): «Предстоящее» или «Неделя» · «+» · «Списки».',
                   '''Закреплённая панель (0.44): лежит внизу на всю ширину, без капсулы и тени, сверху линия `divider` `size-hairline`, фон `surface` доходит до низа экрана. Высота `size-nav-bar` (56).
 Итерация 55 (T-119, решение PM): три места. Слева — «Предстоящее» (`ic_widget_all`) или «Неделя» (`ic_tab_week`): удержание открывает меню из двух пунктов с галочкой у текущего, выбор запоминается (с ним и стартовый экран), значок меняется; под значком точка `size-nav-hint-dot` (`text-secondary`, 60 %) — подсказка про удержание. Посередине «+»: `size-nav-add-w` × `size-nav-add-h` (72×44), радиус `radius-xl`, `accent`, значок 24 `on-accent`. Справа — «Списки» (`ic_widget_list`): внутри «Входящие», «Поиск» и «Настройки»; нажатие из любого из них возвращает к самим «Спискам».
@@ -1146,7 +1147,7 @@ README_MORE = {
 Справа три круглые чёрные кнопки `size-popup-button` (48): фон `accent`, значок `on-accent` — «Не буду делать», «Отложить» (часы), «Выполнено». Нажатая «Отложить» (меню открыто) — с кольцом `size-popup-pressed-ring` через зазор `size-popup-pressed-gap`. В тёмной теме по токенам наоборот: полоска тёмная, кнопки светлые.
 «Отложить» (итерация 53, `Snooze`): меню над полоской, срок задачи переносится. Смахнуть вправо — закрыть. Видно до трёх полосок, остальные — метка «ещё N».
 Состояние «Отменить»: белая полоска «Выполнено» (галочка) или «Отложено на 18:00» (часы) с чёрной капсулой «Отменить» и чёрной линией внизу, которая тает за 1,5 секунды. Без вибрации. Источник: `notifications/ReminderPopup.kt`.'''),
-    'WidgetWeek': ('Виджет «Неделя», Android 12+.', '0.72 / #259: сетка дней и календарь; строки и действия соответствуют WeekView. Пустые слоты под задачами открывают день, время и значок переключают выполнение, название открывает задачу. Активный высокий приоритет — week-row-week-priority и начертание 800; выполненный бледный. Размер и число строк сохраняются.'),
+    'WidgetWeek': ('Виджет «Неделя», Android 12+.', '0.73 / #261: дата текущего дня содержит «сегодня» тем же начертанием, без цветовой подсветки; сетка дней и календарь; строки и действия соответствуют WeekView. Пустые слоты под задачами открывают день, время и значок переключают выполнение, название открывает задачу. Активный высокий приоритет — week-row-week-priority и начертание 800; выполненный бледный. Размер и число строк сохраняются.'),
     'Widget': ('Виджет «Задачи»: лента по дням со шкалой, «сейчас» и нижняя строка.',
                '''Фон `background`, радиус `radius-xl`. Список по дням: подпись дня (красная у прошедшего), строки шкалы как в `TimelineRow`, у «Сегодня» линия прогресса. Отметка «сейчас»: чёрное время слева, точка на линии и линия до края (`size-widget-now-row` 14).
 Внизу нижняя строка (`WidgetBar`; 0.57 — «+» слева, блок вкладок по центру, дата справа, без линии); справа у подписи каждого дня число задач (у «Сегодня» вместо него прогресс), `text-secondary` 12. В виджете нет градиентов и размытия: фон и скругления — готовыми картинками. Цвета те же, что в приложении: Glance сам выбирает светлую или тёмную тему.
