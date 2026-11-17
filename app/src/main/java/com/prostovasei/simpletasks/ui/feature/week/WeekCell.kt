@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -80,11 +81,12 @@ fun WeekCell(
         val room = maxHeight - SizeTokens.WEEKVIEW_HEADER.dp
         val capacity = if (maxHeight == Dp.Infinity) items.size else maxOf(0, (room / rowHeight).toInt())
         val shown = items.take(capacity)
-        Column {
+        Column(Modifier.fillMaxSize()) {
             WeekDayHeader(date, isToday, hidden = items.size - shown.size, onClick = onOpenDay)
             shown.forEach { item ->
                 WeekTaskRow(item, onToggle = { onToggle(item) }, onOpen = { onOpen(item) })
             }
+            Spacer(Modifier.weight(1f).fillMaxWidth().clickable(onClick = onOpenDay).testTag("week-blank:$date"))
         }
     }
 }
@@ -133,14 +135,14 @@ private fun WeekTaskRow(item: TaskItem, onToggle: () -> Unit, onOpen: () -> Unit
     val spacing = AppTheme.spacing
     val done = item.showsDone
     val high = item.priority == Priority.HIGH
-    val priorityColor = Color(if (done) TaskCanvasTokens.priorityDone.light else TaskCanvasTokens.priority.light)
+    val priorityColor = Color(if (done) TaskCanvasTokens.priorityDone.light else TaskCanvasTokens.weekPriority.light)
     val titleColor = if (high) priorityColor else if (done) Color(TaskCanvasTokens.done.light) else colors.textPrimary
     val timeColor = titleColor
     val ring = if (high) priorityColor else colors.inactive
     val doneFill = if (high) priorityColor else Color(TaskCanvasTokens.done.light)
-    val timeStyle = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontFeatureSettings = "tnum")
+    val timeStyle = MaterialTheme.typography.labelSmall.copy(fontWeight = if (high && !done) FontWeight.ExtraBold else FontWeight.Bold, fontFeatureSettings = "tnum")
     val timeMeasurer = rememberTextMeasurer()
-    val timeWidth = with(LocalDensity.current) { timeMeasurer.measure("00:00", timeStyle).size.width.toDp() }
+    val timeWidth = with(LocalDensity.current) { timeMeasurer.measure("00:00", timeStyle.copy(fontWeight = FontWeight.ExtraBold)).size.width.toDp() }
     val label = stringResource(if (done) R.string.task_uncomplete else R.string.widget_complete)
     Row(
         Modifier
@@ -158,7 +160,7 @@ private fun WeekTaskRow(item: TaskItem, onToggle: () -> Unit, onOpen: () -> Unit
             color = timeColor,
             textAlign = TextAlign.Start,
             maxLines = 1,
-            modifier = Modifier.width(timeWidth).clickable(onClick = onOpen)
+            modifier = Modifier.width(timeWidth).clickable(onClick = if (item.isGhost) onOpen else onToggle)
                 .testTag("week-time:${item.id}"),
         )
         Spacer(Modifier.width(SizeTokens.WEEK_CONTENT_GAP.dp))
@@ -185,7 +187,7 @@ private fun WeekTaskRow(item: TaskItem, onToggle: () -> Unit, onOpen: () -> Unit
         Text(
             item.title,
             style = MaterialTheme.typography.bodySmall,
-            fontWeight = FontWeight.Bold,
+            fontWeight = if (high && !done) FontWeight.ExtraBold else FontWeight.Bold,
             color = titleColor,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,

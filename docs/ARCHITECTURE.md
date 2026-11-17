@@ -1628,3 +1628,10 @@ PM поменял порядок: шторка для созданных зад�
 - Напоминание: `AndroidWeighInReminder` (интерфейс `WeighInReminder`) — будильник по образцу `DaySummary` (`ReminderReceiver.ACTION_WEIGH`, `setExactAndAllowWhileIdle`), показывает уведомление, только если `HealthRepository.hasEntry(today)` ложно; нажатие — `MainActivity.EXTRA_HEALTH_WEIGH` → `OpenHealthWeight` → окно ввода. Переустанавливается при запуске, перезагрузке, смене времени и при изменении настроек во ViewModel.
 - Токены: `ColorTokens.goal`; `SizeTokens.HEALTH_*` (барабан, график, точки, календарь, подсказка). Дизайн-система: компонент `ScreenHealth`; восстановлена сборка `design/system` (названия цветов `week-row-*` и значков финансов отстали от кода).
 - Тесты: `WeightMathTest`, `HealthRepositoryTest`, `HealthViewModelTest`, `HealthScreenTest` (снимки `health_*`), `MigrationTest` (10 → 11 сохраняет задачи и финансы), сквозной `AppSmokeTest.switchToHealthRecordWeightAndComeBack`.
+
+
+### 4.81. Неделя: нажатия и приоритет (0.72.0, #259)
+
+- `WeekCell`: пустой Spacer под задачами открывает день; время и значок переключают задачу, будущий повтор открывает исходную. Колонка времени измеряется единообразно по ExtraBold для сохранения выравнивания.
+- `WidgetWeekRows`: пустые слоты видимы как прозрачные кликабельные области дня, а их содержимое скрыто; при reapply свойства обновляются. Зона выполнения покрывает колонку времени и значок без наложения на название. Android 10–11 переключаются с Недели на список.
+- `TaskCanvasTokens.weekPriority`: цвет #4C167F только для активного высокого приоритета Недели, начертание 800. Выполненные и остальные экраны сохраняют прежние токены.

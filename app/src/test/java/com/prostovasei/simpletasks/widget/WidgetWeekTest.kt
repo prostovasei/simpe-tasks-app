@@ -103,10 +103,10 @@ class WidgetWeekTest {
         val slotHeights = slots.map { it.height }
         assertTrue("строки задач одной высоты (до пикселя округления): $slotHeights", slotHeights.max() - slotHeights.min() <= 1)
         assertTrue("строки задач внутри ячейки", slots.last().bottom <= friday.findViewById<View>(R.id.wl_root).height)
-        // Итерация 50: зона «выполнить» ~40 dp на всю высоту плашки поверх кружка и начала названия; кружок и название на месте.
+        // Зона выполнения покрывает время и значок, не захватывая название.
         val slot = WeekIds.LEFT.slots[0]
         val hit = friday.findViewById<View>(slot.hit)
-        assertTrue("зона ${hit.width}", kotlin.math.abs(hit.width - px(SizeTokens.WIDGET_WEEK_HIT.toFloat())) <= 1)
+        assertTrue("зона заканчивается у значка", kotlin.math.abs(hit.right - friday.findViewById<View>(slot.check).right) <= 1)
         assertEquals(friday.findViewById<View>(slot.plaque).height, hit.height)
         val time = friday.findViewById<TextView>(slot.time)
         val day = friday.findViewById<TextView>(WeekIds.LEFT.weekday)
@@ -121,7 +121,7 @@ class WidgetWeekTest {
         val title = friday.findViewById<View>(slot.title)
         assertTrue("зазор время/значок 2dp", kotlin.math.abs(node.left - time.right - px(2f)) <= 1)
         assertTrue("зазор значок/название 2dp", kotlin.math.abs(title.left - node.right - px(2f)) <= 1)
-        assertTrue("зона поверх начала названия", friday.findViewById<View>(slot.title).left < hit.right)
+        assertTrue("название вне зоны выполнения", hit.right <= friday.findViewById<View>(slot.title).left)
     }
 
     @Test
@@ -251,7 +251,7 @@ class WidgetWeekTest {
         assertEquals("ВТ", monday.findViewById<TextView>(WeekIds.RIGHT.weekday).text.toString())
     }
 
-    /** Пустые места под задачи невидимы, но держат размер (строки во всех ячейках одной высоты); лишние места убраны. */
+    /** Пустые места сохраняют высоту и открывают день; лишние места убраны. */
     @Test
     fun emptySlotsKeepTheirShareAndExtraSlotsAreGone() {
         val small = DpSize(360.dp, 500.dp)
@@ -261,10 +261,14 @@ class WidgetWeekTest {
         WeekIds.LEFT.slots.forEachIndexed { index, slot ->
             val expected = when {
                 index < 2 -> View.VISIBLE
-                index < capacity -> View.INVISIBLE
+                index < capacity -> View.VISIBLE
                 else -> View.GONE
             }
             assertEquals("место $index", expected, monday.findViewById<View>(slot.plaque).visibility)
+            if (index in 2 until capacity) {
+                assertTrue(monday.findViewById<View>(slot.plaque).hasOnClickListeners())
+                assertEquals(View.INVISIBLE, monday.findViewById<View>(slot.title).visibility)
+            }
         }
         // Календарь другого месяца: ноябрь 2026 начинается с недели 26 октября.
         val november = list(week(start = LocalDate.of(2026, 11, 2), month = YearMonth.of(2026, 11)) { emptyList() }).rows()[3]
