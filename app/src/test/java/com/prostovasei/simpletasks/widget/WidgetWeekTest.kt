@@ -222,10 +222,31 @@ class WidgetWeekTest {
         val number = friday.findViewById<TextView>(WeekIds.LEFT.number)
         assertTrue(friday.findViewById<TextView>(WeekIds.LEFT.weekday).isBold())
         assertTrue(number.isBold())
+        assertEquals("30 сегодня", number.text.toString())
         assertNull("без кружка", number.background)
         val saturday = friday.findViewById<TextView>(WeekIds.RIGHT.weekday)
         assertFalse(saturday.isBold())
         assertFalse(friday.findViewById<TextView>(WeekIds.RIGHT.number).isBold())
+        assertEquals("31", friday.findViewById<TextView>(WeekIds.RIGHT.number).text.toString())
+    }
+
+    @Test
+    fun todayLabelMovesAfterReapplyAndLeavesMoreVisible() {
+        val root = renderWidget(context, rich, size).applyLikeLauncher(context)
+        root.measure(View.MeasureSpec.makeMeasureSpec(px(320f), View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(px(640f), View.MeasureSpec.EXACTLY))
+        root.layout(0, 0, px(320f), px(640f))
+        val initial = root.findViewById<ViewGroup>(R.id.week_rows).getChildAt(2)
+        val number = initial.findViewById<TextView>(WeekIds.LEFT.number)
+        val more = initial.findViewById<TextView>(WeekIds.LEFT.more)
+        assertEquals("30 сегодня", number.text.toString())
+        assertEquals(View.VISIBLE, more.visibility)
+        assertTrue("сегодня и +N не накладываются", number.right <= more.left)
+
+        val next = rich.copy(week = rich.week!!.copy(today = today.plusDays(1)))
+        renderWidget(context, next, size).reapply(context, root)
+        val row = root.findViewById<ViewGroup>(R.id.week_rows).getChildAt(2)
+        assertEquals("30", row.findViewById<TextView>(WeekIds.LEFT.number).text.toString())
+        assertEquals("31 сегодня", row.findViewById<TextView>(WeekIds.RIGHT.number).text.toString())
     }
 
     /**

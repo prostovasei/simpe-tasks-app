@@ -208,6 +208,20 @@ class WeekScreenTest {
     }
 
     @Test
+    fun todayLabelSharesTheDateAndLeavesSpaceForMore() {
+        val crowded = weekState.copy(days = weekState.days.map { day ->
+            if (day.date == today) day.copy(items = (1..12).map { item("today$it", "Задача $it") }) else day
+        })
+        show(state = crowded)
+        val label = composeRule.onNodeWithTag("week-today:$today", useUnmergedTree = true)
+        label.assertTextEquals("ПТ 30 сегодня")
+        composeRule.onNodeWithTag("week-date:$monday", useUnmergedTree = true).assertTextEquals("ПН 26")
+        val labelBounds = label.getUnclippedBoundsInRoot()
+        val moreBounds = composeRule.onNodeWithTag("week-more:$today", useUnmergedTree = true).getUnclippedBoundsInRoot()
+        assertTrue("дата и +N не накладываются", labelBounds.right <= moreBounds.left)
+    }
+
+    @Test
     fun timeColumnPrecedesToggleAndUntimedTasksStayAligned() {
         show()
         val time = composeRule.onNodeWithTag("week-time:a1", useUnmergedTree = true).getUnclippedBoundsInRoot()

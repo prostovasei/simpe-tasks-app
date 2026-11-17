@@ -11,6 +11,7 @@
     <string name="day_sheet_add">Задача на %1$s</string>
     <string name="widget_today_date">Сегодня, %1$s: вернуться к сегодня</string>
     <string name="week_pick">Неделя %1$s</string>
+    <string name="week_today_suffix">сегодня</string>
     <string name="tab_search">Поиск</string>
     <string name="search_hint">Поиск задач</string>
     <string name="search_clear">Очистить</string>
