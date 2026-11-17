@@ -96,8 +96,6 @@ object WidgetRows {
         val faded = row.past
         val flat = filter == WidgetFilter.All
         val layout = when {
-            row.isPeriod && done -> if (flat) R.layout.widget_row_period_done_flat else R.layout.widget_row_period_done
-            row.isPeriod -> if (flat) R.layout.widget_row_period_flat else R.layout.widget_row_period
             done -> if (flat) R.layout.widget_row_task_done_flat else R.layout.widget_row_task_done
             else -> if (flat) R.layout.widget_row_task_flat else R.layout.widget_row_task
         }
@@ -111,7 +109,7 @@ object WidgetRows {
             // Время: красное и мельче у прошедшего дня; конец периода — серым.
             time(R.id.row_start, row.start, if (line.overdue && !flat) ColorTokens.overdue else textColor, if (line.overdue && !flat) 1f else textAlpha, line.overdue, flat)
             time(R.id.row_end, row.end, if (flat) textColor else if (line.overdue) ColorTokens.overdue else ColorTokens.textSecondary, if (flat) textAlpha else 1f, line.overdue, flat)
-            if (row.isPeriod) visible(R.id.row_time_gap, row.end != null)
+            visible(R.id.row_time_gap, row.end != null)
 
             // Шкала: линия вверх и вниз, кружок цвета приоритета (у прошедшей — серый). Итерация 47: у повторяющейся — знак повтора
             // вместо кружка (у периода — вытянутый), выполненная высокого приоритета — тусклый фиолетовый.
@@ -133,9 +131,7 @@ object WidgetRows {
             setImageViewResource(
                 R.id.row_node,
                 when {
-                    flat -> item.canvasNodeIcon(row.isPeriod)
-                    row.isPeriod && item.isRecurring -> R.drawable.ic_widget_period_repeat
-                    row.isPeriod -> if (done) R.drawable.widget_period_fill else R.drawable.widget_period_ring
+                    flat -> item.canvasNodeIcon(false)
                     item.isRecurring -> R.drawable.ic_repeat_round
                     else -> if (done) R.drawable.ic_widget_node_fill else R.drawable.ic_widget_node_ring
                 },
@@ -167,6 +163,7 @@ object WidgetRows {
             // Эмодзи списка (итерация 47) вместо цветного квадратика со значком.
             visible(R.id.row_emoji, true)
             setTextViewText(R.id.row_emoji, item.listEmoji)
+            if (!flat) setViewLayoutWidth(R.id.row_time, maxOf(context.resources.getDimensionPixelSize(R.dimen.widget_time), canvasTimeWidthPx(context)).toFloat(), TypedValue.COMPLEX_UNIT_PX)
             if (flat) {
                 setViewLayoutWidth(R.id.row_time, canvasTimeWidthPx(context).toFloat(), TypedValue.COMPLEX_UNIT_PX)
                 if (done) taskCanvasColor(R.id.row_emoji, "setTextColor", ColorTokens.textPrimary, TaskCanvasTokens.DONE_EMOJI_ALPHA)

@@ -181,7 +181,7 @@ def figure(label,view,caption):
 
 
 def section(id,title,desc,body):
- return f'<section class="sec" id="{id}"><div class="badge">#263 · НА СОГЛАСОВАНИИ · 17.11.2026</div><h2>{title}</h2><p>{desc}</p>{body}</section>'
+ return f'<section class="sec" id="{id}"><div class="badge">#263 · СОГЛАСОВАНО · 17.11.2026</div><h2>{title}</h2><p>{desc}</p>{body}</section>'
 
 boards=[]
 boards.append(section('week','1 · Неделя: эмодзи, название, время справа',
@@ -229,7 +229,7 @@ window.layoutReady=document.fonts.ready.then(()=>{
 '''
 out=('<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
  '<title>#263 · Компактные периоды и новая Неделя</title><style>'+CSS+'</style>'
- '<header class="intro"><h1>Компактные задачи и плоский день</h1><p>Эскизы по ответам PM. Код приложения не изменён; перед реализацией нужно согласование и отдельное «Делай код».</p>'
+ '<header class="intro"><h1>Компактные задачи и плоский день</h1><p>Эскизы согласованы PM 17.11.2026; отдельно дана команда «Делай код». Реализация 0.74.0.</p>'
  '<p>Данные вымышлены, шрифт Manrope встроен. Это HTML-макеты, не Android-снимки.</p></header>'
  f'<nav class="nav">{links}</nav><main class="board">{"".join(boards)}</main><output class="log" aria-live="polite"></output><script>{JS}</script></html>')
 (here/'screens.html').write_text(out)

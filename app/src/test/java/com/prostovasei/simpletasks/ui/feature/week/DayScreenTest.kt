@@ -58,7 +58,7 @@ class DayScreenTest {
     @Test
     fun showsTitleCountAndTasks() {
         show()
-        composeRule.onNodeWithTag("day-title").assertTextEquals("ПТ, 30 окт")
+        composeRule.onNodeWithTag("day-title").assertTextEquals("ПТ 30 окт Сегодня")
         composeRule.onNodeWithTag("day-count").assertTextEquals("4")
         listOf("a", "b", "c", "d").forEach { composeRule.onNodeWithTag("task:$it").assertExists() }
     }

@@ -13,7 +13,7 @@ import com.prostovasei.simpletasks.ui.common.TaskItem
 sealed interface WidgetRow {
     /**
      * [start] и [end] — подписи слева: время начала и конца периода (у просроченной — день и время);
-     * у задачи на весь день обе пустые. [isPeriod] — у задачи начало и конец (строка выше, капсула на шкале);
+     * у задачи на весь день обе пустые. [isPeriod] — у задачи начало и конец (оба времени в обычной строке);
      * [past] — время сегодняшней задачи уже прошло.
      */
     data class Task(val item: TaskItem, val start: String?, val end: String?, val isPeriod: Boolean = false, val past: Boolean = false) : WidgetRow

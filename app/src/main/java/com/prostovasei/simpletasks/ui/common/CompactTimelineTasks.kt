@@ -68,7 +68,7 @@ internal fun LazyItemScope.CompactTimelineTaskRow(
         item.showsDone -> R.string.task_uncomplete
         else -> R.string.widget_complete
     })
-    val height = ((if (row.isPeriod) SizeTokens.WIDGET_PERIOD_ROW else SizeTokens.WIDGET_ROW) +
+    val height = (SizeTokens.WIDGET_ROW +
         if (item.subtitle != null) SizeTokens.TRASH_ROW_EXTRA else 0).dp
     Row(Modifier.animateItem().fillMaxWidth().height(height)
         .padding(start = AppTheme.spacing.sm, end = AppTheme.spacing.xs).testTag(tag)) {
@@ -82,14 +82,13 @@ internal fun LazyItemScope.CompactTimelineTaskRow(
             .then(if (item.isGhost) Modifier else Modifier.clickable(onClick = onToggle)
                 .semantics { contentDescription = label }.testTag("$tag:check")),
             horizontalAlignment = Alignment.CenterHorizontally) {
-            CanvasSegment(top, if (row.isPeriod) Modifier.height(SizeTokens.WIDGET_PERIOD_STUB.dp) else Modifier.weight(1f))
+            CanvasSegment(top, Modifier.weight(1f))
             val filled = selected ?: item.showsDone
-            val resource = if (selected == null) item.canvasNodeIcon(row.isPeriod) else when {
-                row.isPeriod -> if (filled) R.drawable.ic_task_period_fill else R.drawable.ic_task_period_ring
+            val resource = if (selected == null) item.canvasNodeIcon(false) else when {
                 filled -> R.drawable.ic_week_node_fill
                 else -> R.drawable.ic_week_node_ring
             }
-            Box((if (row.isPeriod) Modifier.weight(1f).fillMaxWidth() else Modifier.size(SizeTokens.WEEKVIEW_CHECK.dp))
+            Box(Modifier.size(SizeTokens.WEEKVIEW_CHECK.dp)
                 .testTag("$tag:node"), contentAlignment = Alignment.Center) {
                 Image(painterResource(resource), null, colorFilter = ColorFilter.tint(node), contentScale = ContentScale.FillBounds,
                     modifier = Modifier.fillMaxSize().then(if (item.isRecurring && selected == null) Modifier.testTag("$tag:repeat") else Modifier))
@@ -98,7 +97,7 @@ internal fun LazyItemScope.CompactTimelineTaskRow(
                         modifier = Modifier.size(SizeTokens.WEEKVIEW_CHECK_ICON.dp))
                 }
             }
-            CanvasSegment(bottom, if (row.isPeriod) Modifier.height(SizeTokens.WIDGET_PERIOD_STUB.dp) else Modifier.weight(1f))
+            CanvasSegment(bottom, Modifier.weight(1f))
         }
         Spacer(Modifier.width(SizeTokens.WEEK_CONTENT_GAP.dp))
         Row(Modifier.weight(1f).fillMaxHeight().padding(vertical = SizeTokens.WIDGET_CARD_INSET.dp)

@@ -180,7 +180,7 @@ class ScreensUiTest {
             assertEquals(2.dp, node.left - time.right)
             assertEquals(2.dp, content.left - node.right)
             assertEquals(14.dp, node.right - node.left)
-            assertEquals(if (id == "t1") 58.dp else 14.dp, node.bottom - node.top)
+            assertEquals(14.dp, node.bottom - node.top)
         }
     }
 

@@ -57,14 +57,12 @@ fun WeekScreen(
             val today = state.today
             val month = state.month
             if (weekStart == null || today == null || month == null) return@Scaffold
-            val toggle: (TaskItem) -> Unit = { onIntent(TaskListIntent.ToggleComplete(it.id, it.isRecurring, it.showsDone)) }
-            val open: (TaskItem) -> Unit = { onOpenTask(it.taskId) }
             // Четыре строки одинаковой высоты делят весь экран: прокрутки нет.
             Column(Modifier.padding(padding).fillMaxSize().testTag("week-screen")) {
                 state.days.chunked(2).forEach { pair ->
                     Row(Modifier.weight(1f).fillMaxWidth()) {
                         pair.forEach { day ->
-                            WeekCell(day.date, day.items, day.date == today, toggle, open, { onOpenDay(day.date) }, Modifier.weight(1f).fillMaxHeight())
+                            WeekCell(day.date, day.items, day.date == today, { onOpenDay(day.date) }, Modifier.weight(1f).fillMaxHeight())
                         }
                         // Нечётный день (воскресенье) делит строку с мини-календарём.
                         if (pair.size == 1) {

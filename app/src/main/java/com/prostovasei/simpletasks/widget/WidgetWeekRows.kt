@@ -2,7 +2,6 @@ package com.prostovasei.simpletasks.widget
 
 import android.content.Context
 import android.graphics.Typeface
-import com.prostovasei.simpletasks.ui.common.weekNodeIcon
 import android.os.Build
 import android.text.SpannableString
 import android.text.Spanned
@@ -25,7 +24,6 @@ import com.prostovasei.simpletasks.ui.feature.week.WeekDay
 import com.prostovasei.simpletasks.ui.feature.week.startTime
 import com.prostovasei.simpletasks.ui.feature.week.weekStart
 import com.prostovasei.simpletasks.widget.WidgetRows.taskCanvasColor
-import com.prostovasei.simpletasks.widget.WidgetRows.ring
 import com.prostovasei.simpletasks.widget.WidgetRows.visible
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -38,7 +36,7 @@ import java.util.Locale
  * (0.46.0: не лента, а вертикальный LinearLayout с долями высоты — `widget_root_week`) —
  * Пн–Вт, Ср–Чт, Пт–Сб, Вс и мини-календарь. Каждая строка пишет свой вид целиком (Android перекрашивает показанные строки, см. WidgetRows).
  * Ячейка: строка даты («пн 26», у сегодня — метка, справа «+N» — не поместившиеся задачи; нажатие открывает день в приложении) и плашки
- * задач: кружок (нажатие — «выполнено»), название, время. Плашек в ячейке столько, сколько влезает по высоте. Разметка — `widget_week_*`,
+ * задач: эмодзи, название, начало справа. Любая область ячейки открывает день. Плашек в ячейке столько, сколько влезает по высоте. Разметка — `widget_week_*`,
  * `widget_row_week*` (генерирует design/tools/gen_widget_week.py), id — WidgetWeekIds.
  */
 @RequiresApi(Build.VERSION_CODES.S)
@@ -97,98 +95,39 @@ object WidgetWeekRows {
         // Итерация 48 (решение PM, макет `week_tune.py`): день недели капсом («ПТ 6»), остальные дни — обычным начертанием, мельче.
         setTextViewText(ids.weekday, day.date.dayOfWeek.getDisplayName(TextStyle.SHORT, RU).uppercase(RU).bold(isToday))
         taskCanvasColor(ids.weekday, "setTextColor", if (isToday) ColorTokens.textPrimary else ColorTokens.textSecondary)
-        val number = day.date.dayOfMonth.toString() + if (isToday) " ${context.getString(R.string.week_today_suffix)}" else ""
+        val number = day.date.dayOfMonth.toString() + if (isToday) " ${context.getString(R.string.day_today)}" else ""
         setTextViewText(ids.number, number.bold(isToday))
         taskCanvasColor(ids.number, "setTextColor", if (isToday) ColorTokens.textPrimary else ColorTokens.textSecondary)
         visible(ids.more, hidden > 0)
         setTextViewText(ids.more, "+$hidden")
         taskCanvasColor(ids.more, "setTextColor", ColorTokens.textPrimary)
         setInt(ids.more, "setBackgroundResource", 0)
-        with(click) { set(ids.head, WidgetClicks.DAY, day.date.toString()) }
-        // Строк задач в ячейке — [capacity]; пустые места держат размер и открывают день,
-        // поэтому строки во всех ячейках одной высоты. Лишние места убраны совсем.
+        with(click) {
+            set(ids.root, WidgetClicks.DAY, day.date.toString())
+            set(ids.head, WidgetClicks.DAY, day.date.toString())
+        }
         ids.slots.forEachIndexed { index, slot ->
             val item = shown.getOrNull(index)
-            setViewVisibility(slot.plaque, if (index < capacity) View.VISIBLE else View.GONE)
-            if (item != null) {
-                setViewVisibility(slot.check, View.VISIBLE)
-                setViewVisibility(slot.title, View.VISIBLE)
-                setViewVisibility(slot.emoji, View.VISIBLE)
-                setViewVisibility(slot.hit, View.VISIBLE)
-                slot(context, slot, item, click)
-            } else if (index < capacity) {
-                setViewVisibility(slot.check, View.INVISIBLE)
-                setViewVisibility(slot.time, View.INVISIBLE)
-                setViewVisibility(slot.title, View.INVISIBLE)
-                setViewVisibility(slot.emoji, View.INVISIBLE)
-                setViewVisibility(slot.hit, View.INVISIBLE)
-                setInt(slot.plaque, "setBackgroundResource", 0)
-                with(click) { set(slot.plaque, WidgetClicks.DAY, day.date.toString()) }
+            visible(slot.plaque, index < capacity)
+            // Every property is reset for launcher reapply, including empty slots.
+            setViewVisibility(slot.title, if (item != null) View.VISIBLE else View.INVISIBLE)
+            setViewVisibility(slot.emoji, if (item != null) View.VISIBLE else View.INVISIBLE)
+            setViewVisibility(slot.time, if (item?.startTime() != null) View.VISIBLE else View.GONE)
+            setInt(slot.plaque, "setBackgroundResource", 0)
+            setTextViewText(slot.title, item?.title.orEmpty().weekWeight(item?.priority == Priority.HIGH && !item.showsDone))
+            setTextViewText(slot.emoji, item?.listEmoji.orEmpty())
+            setTextViewText(slot.time, item?.startTime().orEmpty().weekWeight(item?.priority == Priority.HIGH && !item.showsDone))
+            val color = when {
+                item?.priority == Priority.HIGH && item.showsDone -> TaskCanvasTokens.priorityDone
+                item?.priority == Priority.HIGH -> TaskCanvasTokens.weekPriority
+                item?.showsDone == true -> TaskCanvasTokens.done
+                else -> ColorTokens.textPrimary
             }
+            taskCanvasColor(slot.title, "setTextColor", color)
+            taskCanvasColor(slot.time, "setTextColor", color)
+            taskCanvasColor(slot.emoji, "setTextColor", ColorTokens.textPrimary, if (item?.showsDone == true) TaskCanvasTokens.DONE_EMOJI_ALPHA else 1f)
+            with(click) { set(slot.plaque, WidgetClicks.DAY, day.date.toString()) }
         }
-    }
-
-    /**
-     * #249: время слева от выполнения, название и эмодзи справа, без фона строки.
-     * Высокий приоритет фиолетовый; выполненный — бледно-фиолетовый, без зачёркивания.
-     * Все зависимые от задачи свойства записываются заново для безопасного reapply.
-     */
-    private fun RemoteViews.slot(context: Context, ids: SlotIds, item: TaskItem, click: Click) {
-        val done = item.showsDone
-        val high = item.priority == Priority.HIGH
-        val nodeColor = when {
-            done && high -> TaskCanvasTokens.priorityDone
-            done -> TaskCanvasTokens.done
-            high -> TaskCanvasTokens.weekPriority
-            else -> ColorTokens.inactive
-        }
-        setInt(ids.plaque, "setBackgroundResource", 0)
-        setImageViewResource(ids.node, item.weekNodeIcon())
-        taskCanvasColor(ids.node, "setColorFilter", nodeColor)
-        visible(ids.tick, done && !item.isRecurring)
-        setContentDescription(
-            ids.node,
-            when {
-                item.isGhost -> null
-                done -> context.getString(R.string.task_uncomplete)
-                else -> context.getString(R.string.widget_complete)
-            },
-        )
-        // #259: колонка времени и значок выполняют задачу; у будущего повтора они открывают исходную задачу.
-        with(click) {
-            when {
-                item.isGhost -> set(ids.hit, WidgetClicks.OPEN, item.taskId)
-                done -> set(ids.hit, WidgetClicks.UNCOMPLETE, item.id)
-                else -> set(ids.hit, WidgetClicks.COMPLETE, item.id)
-            }
-        }
-        setTextViewText(
-            ids.title,
-            item.title.weekWeight(high && !done),
-        )
-        taskCanvasColor(
-            ids.title,
-            "setTextColor",
-            when { high && done -> TaskCanvasTokens.priorityDone; high -> TaskCanvasTokens.weekPriority; done -> TaskCanvasTokens.done; else -> ColorTokens.textPrimary },
-        )
-        // #249: время слева от кружка, эмодзи списка остаётся справа.
-        setTextViewText(ids.emoji, item.listEmoji)
-        taskCanvasColor(ids.emoji, "setTextColor", ColorTokens.textPrimary, if (done) TaskCanvasTokens.DONE_EMOJI_ALPHA else 1f)
-        val time = item.startTime()
-        val timeWidth = canvasTimeWidthPx(context, SizeTokens.WIDGET_WEEK_TIME_TEXT, extraBold = true)
-        setViewLayoutWidth(ids.time, timeWidth.toFloat(), TypedValue.COMPLEX_UNIT_PX)
-        setViewLayoutMargin(ids.hit, RemoteViews.MARGIN_START, 0f, TypedValue.COMPLEX_UNIT_PX)
-        setViewLayoutWidth(ids.hit, (timeWidth + dp(context, SizeTokens.WEEK_CONTENT_GAP + SizeTokens.WEEKVIEW_CHECK)).toFloat(), TypedValue.COMPLEX_UNIT_PX)
-        visible(ids.time, true)
-        setTextViewText(ids.time, time.orEmpty().weekWeight(high && !done))
-        taskCanvasColor(
-            ids.time,
-            "setTextColor",
-            when { high && done -> TaskCanvasTokens.priorityDone; high -> TaskCanvasTokens.weekPriority; done -> TaskCanvasTokens.done; else -> ColorTokens.textPrimary },
-        )
-        // Пустая колонка времени держит кружки выровненными; эмодзи всегда у правого края.
-        setViewPadding(ids.plaque, 0, 0, dp(context, SizeTokens.WIDGET_WEEK_INLINE_GAP), 0)
-        with(click) { set(ids.plaque, WidgetClicks.OPEN, item.taskId) }
     }
 
     /**

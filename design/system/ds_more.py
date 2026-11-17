@@ -126,21 +126,21 @@ def screen_title(text):
     return f'<div style="padding:12px 16px;font-size:28px;line-height:36px;font-weight:700">{text}</div>'
 
 
-def frow(left, color, title, done=False, over=False, period=False, rep=False, rem=None, lsq=True, end=None, top=True, bottom=True, list_color='var(--list-pin)', list_icon='ic_list_inbox'):
+def frow(left, color, title, done=False, over=False, period=False, rep=False, rem=None, lsq=True, end=None, top=True, bottom=True, list_color='var(--list-pin)', list_icon='ic_list_inbox', flat=False):
     """Строка шкалы (TimelineTaskRow). left — 1–2 строки слева: [«Сегодня», «10:00»] в плоских списках или «10:00»."""
     lines = left if isinstance(left, list) else [left]
     wide = len(lines) > 1 or (lines and len(lines[0]) > 5)
-    h = 64 if period else 46
+    h = 46
     tcol = 'var(--overdue)' if over else ('var(--text-secondary)' if done else 'var(--text-primary)')
     fs = 11 if wide else 12
     t = (f'<div style="width:{56 if wide else 38}px;text-align:right;font-size:{fs}px;line-height:{fs + 4}px;font-weight:700;color:{tcol};display:flex;flex-direction:column;justify-content:center;flex-shrink:0">'
          + ''.join(f'<span>{x}</span>' for x in lines) + (f'<span style="color:{"var(--overdue)" if over else "var(--text-secondary)"}">{end}</span>' if end else '') + '</div>')
-    nh = 58 if period else 20
+    nh = 20
     rail = (f'<div style="width:26px;display:flex;flex-direction:column;align-items:center;flex-shrink:0"><span style="width:1px;flex:1;background:{"var(--divider)" if top else "transparent"}"></span>'
             f'{B.node(color, done, nh, rep)}<span style="width:1px;flex:1;background:{"var(--divider)" if bottom else "transparent"}"></span></div>')
     icons = f'<span style="margin-left:4px;display:flex">{bell(18, rem)}</span>' if rem else ''
     lsqh = f'<span class="list-sq" style="background:{list_color};margin-left:8px">{svg(list_icon, 12)}</span>' if lsq else ''
-    plaque = (f'<div style="flex:1;min-width:0;margin:3px 0;border-radius:var(--radius-md);background:var(--surface);display:flex;align-items:center;padding:0 12px;opacity:{.7 if done else 1}">'
+    plaque = (f'<div style="flex:1;min-width:0;margin:3px 0;border-radius:var(--radius-md);background:{"transparent" if flat else "var(--surface)"};display:flex;align-items:center;padding:0 12px;opacity:{.7 if done else 1}">'
               f'<span style="flex:1;min-width:0;font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;{"text-decoration:line-through;color:var(--text-secondary)" if done else ""}">{title}</span>{icons}{lsqh}</div>')
     return f'<div style="display:flex;height:{h}px;padding-right:8px">{t}{rail}{plaque}</div>'
 
@@ -510,7 +510,7 @@ def p_widget_week():
           f'{week_cell("сб", 31, [t("Уборка", "11:00", e="🏠"), t("Созвон", "10:00", "medium", ghost=True)], h=h, widget=True)}</div>')
     r4 = f'<div style="display:flex">{week_cell("вс", 1, [t("План на неделю", e="📌")], h=h, widget=True)}{week_calendar(h, widget=True)}</div>'
     body = f'<div style="position:relative;width:360px;height:{2 + 4 * h + 41}px;border-radius:var(--radius-xl);background:var(--background);overflow:hidden;border:1px solid var(--divider);padding-top:2px;box-sizing:border-box">{r1}{r2}{r3}{r4}{bottom}</div>'
-    return doc('Напоминания и виджет', 720, 'Виджет, вкладка «Неделя»: компактные строки с фоном по приоритету, эмодзи списка слева от времени, «+N», календарь без месяца', body)
+    return doc('Напоминания и виджет', 720, 'Виджет, вкладка «Неделя»: эмодзи, название, начало справа; без значков выполнения, вся ячейка открывает день, «+N» и календарь сохранены', body)
 
 
 # --------------------------------------------------------------- экраны
@@ -888,22 +888,19 @@ def p_smart_date():
 # ---------------------------------------------------------------- итерация 44: вид «Неделя»
 
 def week_task(title, time='', pri='none', done=False, ghost=False, over=False, h=22, fs=12, gap=3, rep=False, emoji=None):
-    """Неделя #259: время слева, 2 dp, значок, 2 dp, название и эмодзи."""
+    """Неделя #263: эмодзи, название, начало справа; вся ячейка открывает день."""
     pri = {'medium': 'high', 'low': 'none'}.get(pri, pri)
     high = pri == 'high'
     color = ('var(--week-row-priority-done)' if high else 'var(--week-row-done)') if done else ('var(--week-row-week-priority)' if high else 'var(--text-primary)')
-    ring_c = color if high or done else 'var(--inactive)'
     weight = 800 if high and not done else 700
-    icon = (f'<span style="color:{ring_c};display:flex">{svg("ic_task_repeat_round", 14)}</span>' if ghost or rep
-            else f'<span style="width:14px;height:14px;border-radius:50%;border:1.5px solid {ring_c};background:{ring_c if done else "transparent"};box-sizing:border-box"></span>')
     em = f'<span style="font-size:{fs}px;opacity:{.35 if done else 1}">{emoji}</span>' if emoji else ''
-    return (f'<div style="height:{h}px;margin-top:{gap}px;display:flex;align-items:center;gap:2px;color:{color}">'
-            f'<span style="width:34px;flex-shrink:0;font-size:10.5px;font-weight:{weight}">{time}</span>{icon}'
-            f'<span style="flex:1;min-width:0;font-size:{fs}px;font-weight:{weight};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{title}</span>{em}</div>')
+    return (f'<div style="height:{h}px;margin-top:{gap}px;display:flex;align-items:center;gap:2px;color:{color}">{em}'
+            f'<span style="flex:1;min-width:0;font-size:{fs}px;font-weight:{weight};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{title}</span>'
+            f'<span style="flex-shrink:0;font-size:10.5px;font-weight:{weight}">{time}</span></div>')
 
 
 def week_cell(wd, num, tasks, today=False, hidden=0, h=190, widget=False):
-    day_label = f"{wd.upper()} {num}" + (" сегодня" if today else "")
+    day_label = f"{wd.upper()} {num}" + ((" Сегодня" if widget else " сегодня") if today else "")
     if widget:  # 0.46.0, проверка PM: строка даты виджета — 12 px, высота 18, сегодня жирным без кружка
         more = f'<span style="margin-left:auto;font-size:9px;font-weight:700;color:var(--text-primary);background:var(--accent-soft);border-radius:12px;padding:0 7px;line-height:11px">+{hidden}</span>' if hidden else ''
         # Итерация 47: день недели и число — одна подпись серым; сегодня — жирным чёрным, без кружка. Итерация 48: 9 sp, капсом,
@@ -1011,19 +1008,18 @@ def wontdo_task():
 
 def day_sheet():
     """Шторка дня поверх рабочего стола (итерация 51): дата, «Сегодня», «1 из 4», лента дня, «Задача на …»."""
-    rows = (frow('10:30', 'var(--inactive)', 'Telegram', done=True, rep=True, top=False)
-            + frow('19:30', 'var(--inactive)', 'Кальян', period=True, end='21:30')
-            + frow('21:30', 'var(--inactive)', 'Футбол', period=True, end='23:30')
-            + frow('23:00', 'var(--inactive)', 'Цветы', rep=True, bottom=False, rem='at'))
+    rows = (frow('10:30', 'var(--inactive)', 'Telegram', done=True, rep=True, top=False, flat=True)
+            + frow('19:30', 'var(--inactive)', 'Кальян', period=True, end='21:30', flat=True)
+            + frow('21:30', 'var(--inactive)', 'Футбол', period=True, end='23:30', flat=True)
+            + frow('23:00', 'var(--inactive)', 'Цветы', rep=True, bottom=False, rem='at', flat=True))
     head = ('<div style="display:flex;align-items:center;gap:8px;padding:8px 16px">'
-            '<span style="font-size:22px;line-height:28px;font-weight:700">СБ, 07 ноя</span>'
-            '<span style="font-size:11px;line-height:16px;font-weight:700;background:var(--background);border-radius:var(--radius-sm);padding:1px 8px">Сегодня</span>'
+            '<span style="font-size:22px;line-height:28px;font-weight:700">СБ 07 ноя</span>'
+            '<span style="font-size:22px;line-height:28px;font-weight:700">Сегодня</span>'
             '<span style="flex:1"></span><span style="font-size:14px;color:var(--text-secondary);font-weight:700">1 из 4</span></div>')
     add = (f'<div style="display:flex;justify-content:flex-end;padding:12px"><span style="height:48px;padding:0 18px;border-radius:var(--radius-xl);'
            f'background:var(--accent);color:var(--on-accent);display:flex;align-items:center;gap:6px;font-weight:700;font-size:14px">{mi("add", 22)}Задача на сб, 07 ноя</span></div>')
     sheet = (f'<div style="width:396px;border-radius:var(--radius-nav);background:var(--surface);overflow:hidden">'
-             f'<div style="display:flex;justify-content:center;padding:8px 0 4px"><span style="width:40px;height:4px;border-radius:var(--radius-sm);background:var(--divider)"></span></div>'
-             f'{head}<div style="padding:8px 0 8px 4px;background:var(--background)">{rows}</div>{add}</div>')
+             f'{head}<div style="padding:8px 0 8px 4px;background:var(--surface)">{rows}</div>{add}</div>')
     return (f'<div style="padding:24px;border-radius:var(--radius-xl);background:var(--scrim);display:inline-block">{sheet}</div>')
 
 
@@ -1056,7 +1052,7 @@ README_MORE = {
     'ScreenSelection': ('Экран «Все» в режиме выбора (0.40).', 'Строка «Выбрано: N» поверх верха экрана, лента действий на месте нижней панели («+» и вкладки на это время скрыты). Список прокручивается выше ленты. То же во «Входящих», списках, «Поиске», «Выполненных» и «Корзине»; в виджете режима нет.'),
     'ScreenTrash': ('Экран «Корзина» (0.39).', 'Сверху «назад» и название `title-large` Bold; под ним «ЗАДАЧ: N» (`label-medium` Bold, `text-secondary`), справа «Восстановить все» (`accent`) и «Удалить все» (`danger`). Ниже плашки как в обычном списке (слева срок, справа список) с мелкой подписью «удалена 28 окт» (`body-small`, `text-secondary`); строка выше обычной на `size-trash-row-extra` (14). Новые удалённые сверху. Нажатие открывает задачу только для чтения (`TrashTask`); кружок ничего не отмечает. Пусто: «Корзина пуста» и подсказка по центру. Вход — строка «Корзина» на экране «Списки» под «Выполненными»: значок корзины, название, число задач (при нуле числа нет). Источник: `ui/feature/trash/TrashScreen.kt`.'),
     'DaySheet': ('Шторка дня поверх рабочего стола (0.51): нажатие на дату дня в «Неделе» виджета.',
-                 '''Приложение не открывается: поверх затемнения `scrim` снизу шторка `surface`, радиус `radius-nav`, поля `space-xs` от краёв, ручка `size-sheet-handle-width` × `size-sheet-handle-height` (`divider`). Сверху дата «СБ, 07 ноя» (`title-large` Bold; прошедший день — `overdue`), метка «Сегодня» / «Завтра» / «Вчера» (`label-small` Bold на `background`), справа «1 из 4» — выполнено из всех (`body-medium` Bold `text-secondary`).
+                 '''Приложение не открывается: поверх затемнения `scrim` снизу шторка `surface`, радиус `radius-nav`, поля `space-xs` от краёв, без верхнего маркера. Сверху дата «СБ 07 ноя» (`title-large` Bold; прошедший день — `overdue`), метка «Сегодня» / «Завтра» / «Вчера» (`title-large` Bold без плашки), справа «1 из 4» — выполнено из всех (`body-medium` Bold `text-secondary`).
 Ниже на фоне `background` лента дня как в приложении (`TimelineRow`): «весь день», потом по времени, линия «сейчас» у сегодняшнего дня; кружок выполняет и возвращает, нажатие на плашку — окно задачи поверх. Будущие повторы — тоже.
 Снизу справа «Задача на сб, 07 ноя» — чёрная кнопка `accent`, радиус `radius-xl`: новая задача на этот день без времени. Шторка не выше 80% экрана, дальше лента прокручивается; кнопка всегда видна. «Назад», смахивание вниз за верх шторки и нажатие на затемнение закрывают. Пустой день — «На этот день задач нет» и та же кнопка.
 Источник: `ui/feature/week/DaySheet.kt`, окно — `TaskPopupActivity` (`DayDestination`).'''),

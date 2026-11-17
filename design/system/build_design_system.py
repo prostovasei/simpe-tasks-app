@@ -387,7 +387,7 @@ def preview_done_circle():
         cells += f'<div class="col">{circ(c)}<div class="cap">{label}</div></div><div class="col">{circ(done_c, True)}<div class="cap">выполнена: тусклый</div></div>'
     for label, c in [('повтор', 'var(--inactive)'), ('повтор, высокий', 'var(--ring-high)'), ('повтор выполнен: тусклый, без галочки', 'var(--ring-high-done)')]:
         cells += f'<div class="col"><span style="color:{c};display:flex">{svg("ic_repeat_round", 22)}</span><div class="cap">{label}</div></div>'
-    tall = svg('ic_widget_period_repeat', 20).replace('height="20"', 'height="58"', 1)
+    tall = svg('ic_repeat_round', 20)
     cells += f'<div class="col"><span style="color:var(--ring-high);display:flex">{tall}</span><div class="cap">повтор с длительностью</div></div>'
     return doc('Панель и поля', 150, 'Круг «выполнено» слева от названия: цвет приоритета; у повторяющейся — знак повтора', f'<div class="row">{cells}</div>')
 
@@ -418,7 +418,7 @@ def preview_icons():
 
 
 def repeat_mark(color, h=20):
-    """Итерация 47: знак повтора вместо кружка — круглый, у задачи с длительностью вытянут на высоту капсулы."""
+    """Итерация 47: знак повтора вместо кружка — круглый, у задачи с длительностью тоже круглый."""
     if h > 24:
         tall = svg('ic_widget_period_repeat', 20).replace('height="20"', f'height="{h}"', 1)
         return f'<span style="color:{color};display:flex">{tall}</span>'
@@ -436,11 +436,11 @@ def node(color, done=False, h=20, rep=False):
 
 
 def trow(time, color, title, done=False, over=False, period=None, rep=False, rem=None, lsq=True, end=None, top=True, bottom=True):
-    h = 64 if period else 46
+    h = 46
     tcol = 'var(--overdue)' if over else ('var(--text-secondary)' if done else 'var(--text-primary)')
     t = f'<div style="width:38px;text-align:right;font-size:12px;line-height:16px;font-weight:700;color:{tcol};display:flex;flex-direction:column;justify-content:center">{time}' + (f'<span style="color:{"var(--overdue)" if over else "var(--text-secondary)"}">{end}</span>' if end else '') + '</div>'
     rail = (f'<div style="width:26px;display:flex;flex-direction:column;align-items:center"><span style="width:1px;flex:1;background:{"var(--divider)" if top else "transparent"}"></span>'
-            f'{node(color, done, 58 if period else 20, rep)}<span style="width:1px;flex:1;background:{"var(--divider)" if bottom else "transparent"}"></span></div>')
+            f'{node(color, done, 20, rep)}<span style="width:1px;flex:1;background:{"var(--divider)" if bottom else "transparent"}"></span></div>')
     icons = f'<span style="margin-left:4px">{bell(22, rem)}</span>' if rem else ''
     lsqh = f'<span class="list-sq" style="background:var(--inbox-list);margin-left:8px">{svg("ic_list_inbox", 12)}</span>' if lsq else ''
     plaque = (f'<div style="flex:1;margin:3px 0;border-radius:var(--radius-md);background:var(--surface);display:flex;align-items:center;padding:0 12px;opacity:{.7 if done else 1}">'
@@ -460,7 +460,7 @@ def preview_timeline_row():
 
 
 def sheet_card(created, width=388, snooze=False):
-    handle = '<div style="display:flex;justify-content:center;padding:8px 0 4px"><span style="width:36px;height:4px;border-radius:var(--radius-sm);background:var(--divider)"></span></div>'
+    handle = ''  # #263: task windows have no drag marker
     dots = '<span style="color:var(--text-secondary);display:flex"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"><path d="M12 5h.01M12 12h.01M12 19h.01"/></svg></span>'
     circle = f'<span style="width:22px;height:22px;border-radius:50%;border:2px solid var(--ring-high);flex-shrink:0"></span>'
     # 0.54 (T-96): у созданной задачи с датой слева от «⋮» — часы «Отложить».
@@ -649,7 +649,7 @@ README = '''## Содержание и язык
 
 - Выбрано: `selected` + чёрный значок. Недоступно (нет даты): значок `inactive` с прозрачностью 60%, фон и рамка прежние; нажатие показывает подсказку.
 - Приоритет: кнопка и круг «выполнено» цвета приоритета; без приоритета — серый контур. У выполненной высокого — тусклая фиолетовая заливка `ring-high-done`.
-- Повтор: у повторяющейся задачи вместо кружка знак повтора цвета приоритета (круглый; у задачи с длительностью — на высоту капсулы), нажатие — «выполнено». Будущие повторы не бледные.
+- Повтор: у повторяющейся задачи вместо кружка знак повтора цвета приоритета (круглый; у задачи с длительностью — тоже круглый), нажатие — «выполнено». Будущие повторы не бледные.
 - Просрочено: время и день красные, кружок бледный (в «Неделе» просрочка не красная). Выполнено: плашка 70% непрозрачности, название зачёркнуто, кружок залит с белой галочкой.
 - Уведомления: колокольчик без знаков — в момент срока, со стрелкой — заранее, со стрелкой и чёрной точкой — несколько разных.
 
@@ -693,7 +693,7 @@ TickTick хранит эмодзи в начале названия: импор�
 Назначение: `tool_checklist` — чек-лист, `tool_priority` — флаг приоритета, `tool_reminder` — уведомления, `tool_repeat` — повтор, `tool_delete` — удалить, `no_date` — без даты,
 `time` — поле времени, `widget_all`/`widget_inbox`/`widget_list` — вкладки и календарь (0.55: в нижней панели приложения те же значки, что в виджете — `widget_all` «Предстоящее», `tab_week` «Неделя», `widget_list` «Списки»), `nav_search` — поле поиска на «Списках», `nav_settings` — «Настройки» (0.56: в строке значков внизу «Списков»), `folder_plus` / `list_plus` — новая папка / новый список, `widget_add` — «+», `widget_update` — обновление, `fold_open`/`fold_closed` — стрелка «свернуть» у «Просрочено», `move_today` — «перенести на сегодня», `history` — недавний запрос в поиске, `snack_restore` — «задача возвращена» в подсказке.'''),
     'SheetCard': ('Шторка задачи: название, описание, поля даты и времени, панель кнопок и галочка «Готово».',
-                  '''Карточка `surface`, радиус `radius-nav`, ручка `size-sheet-handle-width`×`size-sheet-handle-height` цвета `divider`, поля по бокам `space-md`. Над панелью клавиатуры карточка стоит прямо над ней.
+                  '''Карточка `surface`, радиус `radius-nav`, без верхнего маркера, поля по бокам `space-md`. Над панелью клавиатуры карточка стоит прямо над ней.
 Название — `headline-small`, описание — `body-large` (Medium, `text-secondary`), подсказки полей — `inactive`.
 Новая задача: круга «выполнено» нет, повтор и уведомления бледные, пока нет даты. Созданная задача: круг цвета приоритета слева, «⋮» справа от названия; с 0.54 (T-96) между ними часы «Отложить» (`text-secondary`, зона нажатия `size-checkbox-touch`) — у незакрытой задачи с датой, кроме будущего повтора; открывают окно `Snooze`.
 Меню «⋮» содержит «Удалить» (`danger`, без подтверждения: после нажатия окно закрывается, внизу `UndoSnackbar` «Задача удалена · Отмена») и под чертой «создано …»; корзины в панели нет.
@@ -714,9 +714,9 @@ TickTick хранит эмодзи в начале названия: импор�
                        '''Окно по центру (`SheetDialog` без «Готово»), единственная кнопка — «Закрыть». Два месяца: текущий и следующий, недели с понедельника.
 Прошедшие дни бледные и недоступны, сегодня в кольце, выбранный чёрный. Месяц нигде больше не открывается.'''),
     'TimelineRow': ('Строка шкалы дня: время слева, кружок приоритета на линии, белая плашка с названием.',
-                    '''Высота `size-widget-row` (46), у периода `size-widget-period-row` (64). Колонка времени `size-widget-time` (38) справа выровнена, колонка линии `size-widget-rail` (26), кружок `size-widget-node` (20), контур `size-stroke`.
+                    '''Высота `size-widget-row` (46), у периода та же высота (46). Колонка времени `size-widget-time` (38) справа выровнена, колонка линии `size-widget-rail` (26), кружок `size-widget-node` (20), контур `size-stroke`.
 Плашка — `surface`, радиус `radius-md`, щель сверху и снизу `size-widget-card-inset` (3), внутри `space-sm`. Название — `body-medium` Bold; справа колокольчик и эмодзи списка (знак повтора — вместо кружка слева).
-Период: кружок растягивается в капсулу на всю высоту плашки (у повторяющейся — вытянутый знак повтора), конец периода серым под началом. Просрочка: время и день красные (`overdue`), кружок `inactive`.
+Период (#263): обычная строка 46 dp и круглый значок выполнения/повтора; начало и конец слева друг под другом. Просрочка: время и день красные (`overdue`), кружок `inactive`.
 Выполнена: кружок залит (высокий — тусклым `ring-high-done`) с белой галочкой, плашка 70%, название зачёркнуто. Тот же вид в приложении и в виджете.'''),
 }
 
