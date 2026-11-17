@@ -14,6 +14,10 @@ const assert = require('assert/strict');
   assert.equal(await p.locator('#baseline').count(),1);
   assert.equal(await p.locator('#chosen-today .today-cell-demo .day[data-day="ВТ 17"]').count(),2);
   assert.equal(await p.locator('[id^="overview-"]').count(),4);
+  const today = p.locator('#chosen-header .day-head.today > span:first-child');
+  assert.equal(await today.count(), 2);
+  for (const item of await today.all()) assert.equal(await item.evaluate(el => getComputedStyle(el).color), 'rgb(134, 44, 224)');
+  for (const cell of await p.locator('#chosen-header .day').all()) assert.equal(await cell.evaluate(el => getComputedStyle(el).backgroundColor), 'rgba(0, 0, 0, 0)');
   const dims=await p.evaluate(()=>Array.from(document.querySelectorAll('[id^="variant-"] .device'),d=>{
    const row=d.querySelector('.task');const time=row.querySelector('.time');const node=row.querySelector('.node');const title=row.querySelector('.title');
    const a=time.getBoundingClientRect(), b=node.getBoundingClientRect(), c=title.getBoundingClientRect();
@@ -22,7 +26,7 @@ const assert = require('assert/strict');
   for(const x of dims){assert.equal(x.node,14);assert.equal(x.gap1,2);assert.equal(x.gap2,2)}
   for(const group of ['app','widget']){const a=dims.filter(x=>x.device===group);for(const v of a) assert.deepEqual(v,a[0]);}
   await p.locator('.nav').evaluate(el=>el.style.position='static');
-  const sheets = process.argv.includes('--chosen-only') ? p.locator('#chosen-today') : process.argv.includes('--summary-only') ? p.locator('#chosen-today, [id^="overview-"]') : p.locator('.sec');
+  const sheets = process.argv.includes('--chosen-only') ? p.locator('#chosen-header') : process.argv.includes('--summary-only') ? p.locator('#chosen-header, #chosen-today, [id^="overview-"]') : p.locator('.sec');
   for(const s of await sheets.all()) await s.screenshot({path:path.join(__dirname,(await s.getAttribute('id'))+'.png')});
   assert.deepEqual(errors,[]);console.log('Листы PNG сохранены; 20 вариантов и геометрия строк проверены.');
  } finally {await b.close()}
