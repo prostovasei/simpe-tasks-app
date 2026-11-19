@@ -162,17 +162,49 @@ def expenses_heading():
     average = compact_money(total / len(daily), tenths=True)
     return f'''<div class="expenses-heading">
       <div class="daily-average">
-        <span class="pace-icon" role="img" aria-label="Средние расходы">
-          <svg viewBox="0 0 24 24" aria-hidden="true" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
-            <path d="M5 19v-5m7 5V6m7 13v-9M3 19h18"/>
-            <path d="M3 11h18" stroke-dasharray="2 2"/>
-          </svg></span>
         <b>{average}</b><span>/день</span>
       </div>
       <div class="month-selector" role="group" aria-label="Выбор месяца">
         <button aria-label="Предыдущий месяц">{prev}</button><span>{month_label}</span>
         <button aria-label="Следующий месяц" disabled>{prev}</button>
       </div></div>'''
+
+
+def operations_feed():
+    # Дневные расходы совпадают с точками графика. Раскладка строк по OperationLine.
+    days = [
+        ('19 ноября · сегодня', [
+            ('🛒', 'Продукты', '📍 Пятёрочка · 💳 Карта', 620, 'expense'),
+            ('☕', 'Кафе', '📍 Додо Пицца · 💳 Карта', 430, 'expense'),
+        ]),
+        ('18 ноября · вчера', [
+            ('☕', 'Кафе', '📍 Додо Пицца · 💳 Карта', 1340, 'expense'),
+            ('🚕', 'Транспорт', '💳 Карта', 260, 'expense'),
+            ('💵', 'Зарплата', '💳 Карта', 65000, 'income'),
+        ]),
+        ('17 ноября', [
+            ('🏠', 'Дом', '💳 Карта', 2000, 'expense'),
+            ('⇄', '💳 Карта → 🏦 Накопления', 'Перевод', 5000, 'transfer'),
+        ]),
+        ('16 ноября', [
+            ('☕', 'Кафе', '👛 Наличные', 800, 'expense'),
+        ]),
+    ]
+    signs = {'expense': '−\u00a0', 'income': '+\u00a0', 'transfer': ''}
+    groups = []
+    for date, entries in days:
+        expenses = sum(amount for _, _, _, amount, kind in entries if kind == 'expense')
+        rows = ''.join(
+            f'<li class="operation {kind}"><span aria-hidden="true" class="operation-icon">{icon}</span>'
+            f'<div class="operation-text"><b>{escape(title)}</b><p>{escape(details)}</p></div>'
+            f'<strong class="operation-value">{signs[kind]}{money(amount)}</strong></li>'
+            for icon, title, details, amount, kind in entries
+        )
+        groups.append(f'''<div class="operation-day">
+          <div class="operation-date"><b>{date}</b><span>−\u00a0{money(expenses)}</span></div>
+          <ul>{rows}</ul></div>''')
+    return f'''<section class="operations" aria-labelledby="operations-title">
+       <h2 id="operations-title">Операции</h2>{''.join(groups)}</section>'''
 
 
 def finance_home():
@@ -187,18 +219,18 @@ def finance_home():
         <div class="accounts">{balances}</div>
         {expenses_heading()}
         {month_content()}
+        {operations_feed()}
       </div>
       <nav class="finance-bar" aria-label="Финансы">
         <button class="add-operation" aria-label="Добавить операцию">{plus}</button>
-        <div class="finance-tabs"><button aria-current="page" aria-label="Аналитика">{vector('ic_finance_tab_analytics')}</button>
-          <button aria-label="Операции">{vector('ic_finance_tab_operations')}</button></div>
+        <div class="finance-tabs"><button aria-current="page" aria-label="Аналитика">{vector('ic_finance_tab_analytics')}</button></div>
         <button class="finance-module" aria-label="Открыть меню модулей">{vector('ic_module_finance')}</button>
       </nav>
     </div>'''
 
 
 CSS = design['fonts'] + f''':root{{--ink:{color('textPrimary')};--muted:{color('textSecondary')};--divider:{color('divider')};
-  --surface:{color('surface')};--inactive:{color('inactive')};
+  --surface:{color('surface')};--inactive:{color('inactive')};--income:{color('income')};
   --bar-height:{dim('APP_BAR')}px;--bar-button:{dim('APP_BAR_BUTTON')}px;--page-width:{dim('APP_BAR_PAGE_W')}px}}''' + '''
   *{box-sizing:border-box}body{margin:0;background:#eeeef1;color:var(--ink);font:14px/1.4 Manrope,sans-serif}
   main{max-width:960px;margin:auto;padding:24px 16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:20px;align-items:start}
@@ -210,12 +242,12 @@ CSS = design['fonts'] + f''':root{{--ink:{color('textPrimary')};--muted:{color('
   .month-selector button:last-child svg{transform:scaleX(-1)}.month-selector button:disabled{color:var(--inactive)}
   .index,.currency{color:var(--muted)}
   section{padding:16px 0}section:last-child{padding-bottom:0}
-  .pace{container-type:inline-size}
+  .pace{container-type:inline-size;padding:8px 0 4px}
   .pace > svg{display:block;width:100%;height:auto;fill:var(--ink)}.grid,.trend{fill:none;stroke:var(--divider)}
   .pace > svg text{fill:var(--muted);font-size:10px}.trend{stroke:var(--ink);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
   .pace .current-date{fill:var(--ink);font-weight:700}.value-tick{paint-order:stroke;stroke:var(--surface);stroke-width:2.5px}
   .pace-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:center;gap:4px;margin-bottom:12px}
-  .pace-amount{display:flex;align-items:center;gap:5px;white-space:nowrap;font-size:clamp(17px,7cqw,28px);line-height:1.2;font-variant-numeric:tabular-nums}
+  .pace-amount{display:flex;align-items:center;gap:5px;white-space:nowrap;font-size:clamp(16px,5.7cqw,22px);line-height:1.2;font-variant-numeric:tabular-nums}
   .amount-actual{grid-column:1;justify-self:start}.amount-remaining{grid-column:2;justify-self:center}.amount-estimate{grid-column:3;justify-self:end}
   .pace-icon{display:grid;place-items:center;color:var(--muted)}
   .pace-icon svg{width:20px;height:20px}.pace-icon path{fill:none;stroke-linejoin:round}
@@ -223,6 +255,7 @@ CSS = design['fonts'] + f''':root{{--ink:{color('textPrimary')};--muted:{color('
   .daily-average span:last-child{color:var(--muted);font-size:12px}
   .forecast{fill:none;stroke:var(--muted);stroke-width:2;stroke-dasharray:4 4;stroke-linecap:round}
   .cutoff{stroke:var(--divider);stroke-dasharray:2 3}.estimate-dot{fill:var(--surface);stroke:var(--muted);stroke-width:1.6}
+  .pace + .rankings{padding:6px 0 0}
   .tables{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
   table{width:100%;border-collapse:collapse;font-size:12px;line-height:1.25}
   thead th{font-size:15px;font-weight:700;height:auto;padding:0 0 10px}.currency{text-align:right}
@@ -233,8 +266,8 @@ CSS = design['fonts'] + f''':root{{--ink:{color('textPrimary')};--muted:{color('
   .stat-icon:not(:empty){margin-inline-end:4px}
   @media(max-width:360px){main{padding-inline:0}.screen{padding-inline:12px}.tables{gap:12px}table{font-size:11px}}
   .small{max-width:320px;margin-top:0}
-  .finance{width:100%;max-width:400px;min-height:900px;margin:auto;display:flex;flex-direction:column;background:var(--surface)}
-  .finance-body{padding:0 16px 16px}
+  .finance{width:100%;max-width:400px;height:900px;margin:auto;display:flex;flex-direction:column;background:var(--surface)}
+  .finance-body{flex:1;overflow:auto;scrollbar-width:none;padding:0 16px 16px}
   .finance button{display:grid;place-items:center;color:var(--ink);background:transparent;border:0;padding:0}
   .finance button svg{width:24px;height:24px}
   .month-selector button svg{width:20px;height:20px}
@@ -244,8 +277,20 @@ CSS = design['fonts'] + f''':root{{--ink:{color('textPrimary')};--muted:{color('
   .accounts>div{min-width:0}
   .accounts p{color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px}
   .accounts b{white-space:nowrap}
-  .finance .expenses-heading{margin:6px 0 18px}
-  .finance-bar{margin-top:auto;min-height:var(--bar-height);border-top:1px solid var(--divider);padding:0 12px;display:flex;align-items:center}
+  .finance .expenses-heading{margin:6px 0 4px}
+  .operations{padding-top:20px}
+  .operations h2{margin:0 0 12px;font-size:15px}
+  .operation-day + .operation-day{margin-top:12px}
+  .operation-date{display:flex;align-items:baseline;justify-content:space-between;gap:6px;padding:4px 0;font-size:13px}
+  .operation-date span,.operation-text p{color:var(--muted);font-size:11px}
+  .operation-day ul{padding:0;margin:0;list-style:none}
+  .operation{min-height:48px;display:grid;grid-template-columns:24px minmax(0,1fr) auto;align-items:center;gap:8px}
+  .operation-icon{text-align:center;font-size:17px}
+  .operation-text b{font-weight:600}
+  .operation-text p{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .operation-value{white-space:nowrap}
+  .operation.income .operation-value{color:var(--income)}.operation.transfer{color:var(--muted)}
+  .finance-bar{flex:none;min-height:var(--bar-height);border-top:1px solid var(--divider);padding:0 12px;display:flex;align-items:center}
   .finance-bar svg path{fill:none;stroke-linejoin:round}
   .finance-bar .add-operation,.finance-bar .finance-module{width:72px;height:var(--bar-button);border-radius:16px}
   .finance-bar .add-operation{background:var(--ink);color:var(--surface)}.finance-bar .finance-module{border:2px solid var(--ink)}
