@@ -11,38 +11,37 @@
   section{padding:16px 0;border-bottom:1px solid var(--divider)}section:last-child{border-bottom:none;padding-bottom:0}
   .pace svg{display:block;width:100%;height:auto;fill:var(--ink)}.grid,.trend{fill:none;stroke:var(--divider)}
   .pace svg text{fill:var(--muted);font-size:10px}.trend{stroke:var(--ink);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
-  .shares{display:flex}.share{display:flex;flex-direction:column;align-items:center;min-width:0;gap:5px}
-  .share b{font-size:clamp(8px,2.45vw,10px)}.icon{font-size:16px}
+  .estimate{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 0 8px;color:var(--muted);font-size:12px}
+  .estimate b{color:var(--ink);white-space:nowrap;font-size:15px}
+  .forecast{fill:none;stroke:var(--muted);stroke-width:2;stroke-dasharray:4 4;stroke-linecap:round}
+  .cutoff{stroke:var(--divider);stroke-dasharray:2 3}.estimate-dot{fill:var(--surface);stroke:var(--muted);stroke-width:1.6}
+  .shares{display:flex;margin-bottom:10px}.share{display:flex;flex-direction:column;align-items:center;min-width:0;gap:5px}
+  .share b{font-size:clamp(8px,2.45vw,10px);white-space:nowrap}.mark{font-size:14px;font-weight:700;min-height:22px}
   .segment{display:block;width:calc(100% - 3px);height:4px;background:var(--ink);border-radius:2px}
-  .ranking{padding:0;margin:0;list-style:none}.place{padding:7px 0 6px}
-  .place-text{display:grid;grid-template-columns:17px minmax(0,1fr) auto;gap:7px;align-items:baseline}
-  .place-text b,.unassigned b{font-variant-numeric:tabular-nums;white-space:nowrap}.store{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .index{font-size:12px}.bar{background:var(--divider);height:3px;margin:5px 0 0 24px;border-radius:2px;overflow:hidden}
-  .bar span{height:100%;display:block;background:var(--ink)}
-  details{margin-top:5px}summary{padding:6px 0;cursor:pointer;font-weight:700;font-size:12px}
+  .bin-unassigned .segment{background:var(--muted)}
+  .stats{padding:0;margin:0;list-style:none}.stat{padding:6px 0;display:grid;grid-template-columns:17px minmax(0,1fr) auto;gap:7px;align-items:baseline}
+  .stat b,.unassigned b{font-variant-numeric:tabular-nums;white-space:nowrap}.stat-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .index{font-size:12px}details{margin-top:5px}summary{padding:6px 0;cursor:pointer;font-weight:700;font-size:12px}
+  summary b{float:right}
   .unassigned{display:flex;justify-content:space-between;gap:8px;margin-top:6px;padding-top:9px;border-top:1px solid var(--divider);font-size:12px}
   .empty{margin-bottom:13px;font-size:13px}.small{max-width:320px;margin-top:0}
 </style><main>
 <div class="screen" id="overview"><div class="month"><span aria-hidden="true">‹</span><h1>Ноябрь 2026</h1><span aria-hidden="true">›</span></div>
-<div class="total"><p>Расходы · 1–19 ноября</p><h2>28 400 ₽</h2></div><section class="pace"><h3>Темп расходов</h3>
-    <svg viewBox="0 0 356 132" role="img" aria-label="Расходы с 1 по 19 ноября выросли до 28 400 рублей">
-      <path d="M46 17H336 M46 61.5H336 M46 106H336" class="grid"/>
-      <text x="0" y="20">30 тыс.</text><text x="0" y="64.5">15 тыс.</text><text x="0" y="109">0 ₽</text>
-      <polyline points="46.00,103.33 62.10,100.07 78.20,99.18 94.30,96.80 110.40,89.39 126.50,87.31 142.60,83.75 158.70,83.75 174.80,80.04 190.90,74.70 207.00,73.22 223.10,48.30 239.20,47.11 255.30,44.15 271.40,37.92 287.50,35.54 303.60,29.61 319.70,24.86 335.80,21.75" class="trend"/>
-      <circle cx="335.80" cy="21.75" r="3.25"/><text x="46.00" y="127" text-anchor="start">1 ноя</text><text x="142.60" y="127" text-anchor="middle">7</text><text x="239.20" y="127" text-anchor="middle">13</text><text x="335.80" y="127" text-anchor="end">19 ноя</text>
-    </svg></section><section><h3>По категориям</h3><div class="shares"><div class="share" style="flex:12400" aria-label="Продукты, 43,7%"><span class="icon">🛒</span><span class="segment"></span><b>43,7%</b></div><div class="share" style="flex:6400" aria-label="Транспорт, 22,5%"><span class="icon">🚕</span><span class="segment"></span><b>22,5%</b></div><div class="share" style="flex:4200" aria-label="Кафе, 14,8%"><span class="icon">☕</span><span class="segment"></span><b>14,8%</b></div><div class="share" style="flex:3500" aria-label="Дом, 12,3%"><span class="icon">🏠</span><span class="segment"></span><b>12,3%</b></div><div class="share" style="flex:1900" aria-label="Прочее, 6,7%"><span class="icon">…</span><span class="segment"></span><b>6,7%</b></div></div></section><section class="places"><h3>Где тратили</h3><ol class="ranking"><li class="place">
-      <div class="place-text"><span class="index">1</span><span class="store">Пятёрочка</span><b>6 860 ₽</b></div>
-      <div class="bar" aria-hidden="true"><span style="width:100.000%"></span></div></li><li class="place">
-      <div class="place-text"><span class="index">2</span><span class="store">Лента</span><b>5 270 ₽</b></div>
-      <div class="bar" aria-hidden="true"><span style="width:76.822%"></span></div></li><li class="place">
-      <div class="place-text"><span class="index">3</span><span class="store">ВкусВилл</span><b>4 220 ₽</b></div>
-      <div class="bar" aria-hidden="true"><span style="width:61.516%"></span></div></li><li class="place">
-      <div class="place-text"><span class="index">4</span><span class="store">Додо Пицца</span><b>3 150 ₽</b></div>
-      <div class="bar" aria-hidden="true"><span style="width:45.918%"></span></div></li><li class="place">
-      <div class="place-text"><span class="index">5</span><span class="store">Аптека</span><b>2 100 ₽</b></div>
-      <div class="bar" aria-hidden="true"><span style="width:30.612%"></span></div></li></ol><details><summary>Все места</summary><ol class="ranking" start="6"><li class="place">
-      <div class="place-text"><span class="index">6</span><span class="store">Кофейня</span><b>900 ₽</b></div>
-      <div class="bar" aria-hidden="true"><span style="width:13.120%"></span></div></li></ol></details>
+<div class="total"><p>Расходы · 1–19 ноября</p><h2>28 400 ₽</h2></div><section class="pace" data-days="30" data-actual-days="19"><h3>Темп расходов</h3><div class="estimate"><span>К 30 ноя при текущем темпе</span><b>≈ 44 800 ₽</b></div>
+    <svg viewBox="0 0 356 141" role="img" aria-label="С 1 по 19 число потрачено 28 400 ₽. Прогноз на 30 число — около 44 800 ₽.">
+      <path d="M46 114H334 M46 67H334 M46 20H334" class="grid"/><text x="0" y="117">0 ₽</text><text x="0" y="70">25 тыс.</text><text x="0" y="23">50 тыс.</text><line x1="224.76" y1="60.61" x2="224.76" y2="114" class="cutoff"/>
+        <line x1="224.76" y1="60.61" x2="334.00" y2="29.70" class="forecast"/>
+        <circle cx="334.00" cy="29.70" r="3" class="estimate-dot"/>
+      <polyline points="46.00,112.31 55.93,110.24 65.86,109.68 75.79,108.17 85.72,103.47 95.66,102.16 105.59,99.90 115.52,99.90 125.45,97.55 135.38,94.17 145.31,93.23 155.24,77.43 165.17,76.68 175.10,74.80 185.03,70.85 194.97,69.35 204.90,65.59 214.83,62.58 224.76,60.61" class="trend"/>
+      <circle cx="224.76" cy="60.61" r="3.25" class="actual-dot"/><text x="46.00" y="134" text-anchor="start">1 ноя</text><text x="135.38" y="134" text-anchor="middle">10</text><text x="224.76" y="134" text-anchor="middle">19</text><text x="334.00" y="134" text-anchor="end">30 ноя</text>
+    </svg></section><section class="categories"><h3>По категориям</h3><div class="shares" aria-label="Доли расходов по категориям"><div class="share" style="flex:12400" aria-label="Продукты, 43,7%"><span class="mark">🛒</span><span class="segment"></span><b>43,7%</b></div><div class="share" style="flex:6400" aria-label="Транспорт, 22,5%"><span class="mark">🚕</span><span class="segment"></span><b>22,5%</b></div><div class="share" style="flex:4200" aria-label="Кафе, 14,8%"><span class="mark">☕</span><span class="segment"></span><b>14,8%</b></div><div class="share" style="flex:3500" aria-label="Дом, 12,3%"><span class="mark">🏠</span><span class="segment"></span><b>12,3%</b></div><div class="share" style="flex:1900" aria-label="Прочее, 6,7%"><span class="mark">…</span><span class="segment"></span><b>6,7%</b></div></div>
+      <details><summary>Все категории</summary><ul class="stats"><li class="stat"><span class="index">🛒</span><span class="stat-title">Продукты</span><b>12 400 ₽</b></li><li class="stat"><span class="index">🚕</span><span class="stat-title">Транспорт</span><b>6 400 ₽</b></li><li class="stat"><span class="index">☕</span><span class="stat-title">Кафе</span><b>4 200 ₽</b></li><li class="stat"><span class="index">🏠</span><span class="stat-title">Дом</span><b>3 500 ₽</b></li><li class="stat"><span class="index">…</span><span class="stat-title">Прочее</span><b>1 900 ₽</b></li></ul></details></section><section class="places"><h3>Где тратили</h3><div class="shares" aria-label="Доли расходов по местам"><div class="share" style="flex:6860" aria-label="Пятёрочка, 24,2%"><span class="mark">1</span><span class="segment"></span><b>24,2%</b></div><div class="share" style="flex:5270" aria-label="Лента, 18,6%"><span class="mark">2</span><span class="segment"></span><b>18,6%</b></div><div class="share" style="flex:4220" aria-label="ВкусВилл, 14,9%"><span class="mark">3</span><span class="segment"></span><b>14,9%</b></div><div class="share" style="flex:3150" aria-label="Додо Пицца, 11,1%"><span class="mark">4</span><span class="segment"></span><b>11,1%</b></div><div class="share" style="flex:3000" aria-label="Другие места, 10,6%"><span class="mark">…</span><span class="segment"></span><b>10,6%</b></div><div class="share bin-unassigned" style="flex:5900" aria-label="Без места, 20,8%"><span class="mark">—</span><span class="segment"></span><b>20,8%</b></div></div><ol class="stats ranking"><li class="stat"><span class="index">1</span><span class="stat-title">Пятёрочка</span><b>6 860 ₽</b></li><li class="stat"><span class="index">2</span><span class="stat-title">Лента</span><b>5 270 ₽</b></li><li class="stat"><span class="index">3</span><span class="stat-title">ВкусВилл</span><b>4 220 ₽</b></li><li class="stat"><span class="index">4</span><span class="stat-title">Додо Пицца</span><b>3 150 ₽</b></li></ol><details><summary><span>Другие места</span><b>3 000 ₽</b></summary><ol class="stats ranking" start="5"><li class="stat"><span class="index">5</span><span class="stat-title">Аптека</span><b>2 100 ₽</b></li><li class="stat"><span class="index">6</span><span class="stat-title">Кофейня</span><b>900 ₽</b></li></ol></details>
       <div class="unassigned"><span>Без места</span><b>5 900 ₽</b></div></section></div>
-<div class="screen small" id="missing"><section class="places"><h3>Где тратили</h3><p class="empty">Укажи место в расходе, чтобы увидеть его здесь.</p>
-      <div class="unassigned"><span>Без места</span><b>28 400 ₽</b></div></section></div></main></html>
+<div class="screen small" id="missing"><section class="places"><h3>Где тратили</h3><div class="shares" aria-label="Доли расходов по местам"><div class="share bin-unassigned" style="flex:28400" aria-label="Без места, 100,0%"><span class="mark">—</span><span class="segment"></span><b>100,0%</b></div></div><p class="empty">Укажи место в расходе, чтобы увидеть его здесь.</p>
+      <div class="unassigned"><span>Без места</span><b>28 400 ₽</b></div></section></div>
+<div class="screen small" id="completed"><section class="pace" data-days="31" data-actual-days="31"><h3>Темп расходов</h3>
+    <svg viewBox="0 0 356 141" role="img" aria-label="С 1 по 31 число потрачено 36 200 ₽.">
+      <path d="M46 114H334 M46 67H334 M46 20H334" class="grid"/><text x="0" y="117">0 ₽</text><text x="0" y="70">20 тыс.</text><text x="0" y="23">40 тыс.</text>
+      <polyline points="46.00,111.89 55.60,109.30 65.20,108.59 74.80,106.72 84.40,100.84 94.00,99.19 103.60,96.38 113.20,96.38 122.80,93.44 132.40,89.21 142.00,88.03 151.60,68.29 161.20,67.35 170.80,65.00 180.40,60.07 190.00,58.19 199.60,53.49 209.20,49.73 218.80,47.26 228.40,45.73 238.00,44.20 247.60,42.68 257.20,41.15 266.80,39.62 276.40,38.09 286.00,36.57 295.60,35.04 305.20,33.51 314.80,31.98 324.40,30.46 334.00,28.93" class="trend"/>
+      <circle cx="334.00" cy="28.93" r="3.25" class="actual-dot"/><text x="46.00" y="134" text-anchor="start">1 окт</text><text x="132.40" y="134" text-anchor="middle">10</text><text x="334.00" y="134" text-anchor="end">31 окт</text>
+    </svg></section></div></main></html>

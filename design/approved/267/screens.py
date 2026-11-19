@@ -1,6 +1,8 @@
 """Макет #267. Запуск из корня: python3 design/approved/267/screens.py."""
+from calendar import monthrange
 from html import escape
 from itertools import accumulate
+from math import ceil
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -21,43 +23,80 @@ def money(amount):
     return f'{amount:,}'.replace(',', '\u00a0') + '\u00a0₽'
 
 
-def pace():
-    x = lambda day: 46 + (day - 1) * 16.1
-    y = lambda value: 106 - 89 * value / 30000
-    coords = ' '.join(f'{x(day):.2f},{y(value):.2f}' for day, value in enumerate(accumulate(daily), start=1))
-    ticks = ''.join(f'<text x="{x(day):.2f}" y="127" text-anchor="{align}">{label}</text>'
-                    for day, label, align in [(1, '1 ноя', 'start'), (7, '7', 'middle'), (13, '13', 'middle'), (19, '19 ноя', 'end')])
-    return f'''<section class="pace"><h3>Темп расходов</h3>
-    <svg viewBox="0 0 356 132" role="img" aria-label="Расходы с 1 по 19 ноября выросли до 28 400 рублей">
-      <path d="M46 17H336 M46 61.5H336 M46 106H336" class="grid"/>
-      <text x="0" y="20">30 тыс.</text><text x="0" y="64.5">15 тыс.</text><text x="0" y="109">0 ₽</text>
+def pace(amounts, year, month, month_short):
+    last_day = monthrange(year, month)[1]
+    as_of = len(amounts)
+    assert 1 <= as_of <= last_day
+    actual = sum(amounts)
+    estimate = actual * last_day / as_of if actual and as_of < last_day else None
+    ceiling = max(1000, ceil((estimate if estimate is not None else actual) / 10000) * 10000)
+
+    def x(day):
+        return 46 + (day - 1) * 288 / (last_day - 1)
+
+    def y(value):
+        return 114 - 94 * value / ceiling
+
+    coords = ' '.join(f'{x(day):.2f},{y(value):.2f}' for day, value in enumerate(accumulate(amounts), start=1))
+    axis = [0, ceiling // 2, ceiling]
+    grid = ' '.join(f'M46 {y(value):g}H334' for value in axis)
+    value_ticks = ''.join(f'<text x="0" y="{y(value)+3:g}">{value/1000:g} тыс.</text>' if value else
+                          '<text x="0" y="117">0 ₽</text>' for value in axis)
+    day_ticks = {1: ('1 ' + month_short, 'start'), 10: ('10', 'middle'), last_day: (str(last_day) + ' ' + month_short, 'end')}
+    if estimate is not None and 4 <= as_of <= last_day - 3:
+        day_ticks = {d: tick for d, tick in day_ticks.items() if d in (1, last_day) or abs(d - as_of) >= 4}
+        day_ticks[as_of] = (str(as_of), 'middle')
+    ticks = ''.join(f'<text x="{x(day):.2f}" y="134" text-anchor="{align}">{label}</text>'
+                    for day, (label, align) in sorted(day_ticks.items()))
+    forecast = ''
+    headline = ''
+    description = f'С 1 по {as_of} число потрачено {money(actual)}.'
+    if estimate is not None:
+        projected = money(round(estimate / 100) * 100)
+        description += f' Прогноз на {last_day} число — около {projected}.'
+        headline = f'<div class="estimate"><span>К {last_day} {month_short} при текущем темпе</span><b>≈ {projected}</b></div>'
+        forecast = f'''<line x1="{x(as_of):.2f}" y1="{y(actual):.2f}" x2="{x(as_of):.2f}" y2="114" class="cutoff"/>
+        <line x1="{x(as_of):.2f}" y1="{y(actual):.2f}" x2="{x(last_day):.2f}" y2="{y(estimate):.2f}" class="forecast"/>
+        <circle cx="{x(last_day):.2f}" cy="{y(estimate):.2f}" r="3" class="estimate-dot"/>'''
+    return f'''<section class="pace" data-days="{last_day}" data-actual-days="{as_of}"><h3>Темп расходов</h3>{headline}
+    <svg viewBox="0 0 356 141" role="img" aria-label="{description}">
+      <path d="{grid}" class="grid"/>{value_ticks}{forecast}
       <polyline points="{coords}" class="trend"/>
-      <circle cx="{x(19):.2f}" cy="{y(total):.2f}" r="3.25"/>{ticks}
+      <circle cx="{x(as_of):.2f}" cy="{y(actual):.2f}" r="3.25" class="actual-dot"/>{ticks}
     </svg></section>'''
 
 
+def share_line(items, label):
+    assert sum(amount for _, _, amount in items) == total
+    segments = []
+    for title, mark, amount in items:
+        pct = f'{100*amount/total:.1f}'.replace('.', ',') + '%'
+        cls = ' bin-unassigned' if title == 'Без места' else ''
+        segments.append(f'<div class="share{cls}" style="flex:{amount}" aria-label="{escape(title)}, {pct}"><span class="mark">{mark}</span><span class="segment"></span><b>{pct}</b></div>')
+    return f'<div class="shares" aria-label="{label}">' + ''.join(segments) + '</div>'
+
+
+def stat_row(mark, title, amount):
+    return f'<li class="stat"><span class="index">{mark}</span><span class="stat-title">{escape(title)}</span><b>{money(amount)}</b></li>'
+
+
 def shares():
-    items = []
-    for title, icon, amount in categories:
-        fraction = amount / total
-        label = f'{100*fraction:.1f}'.replace('.', ',') + '%'
-        items.append(f'<div class="share" style="flex:{amount}" aria-label="{escape(title)}, {label}"><span class="icon">{icon}</span><span class="segment"></span><b>{label}</b></div>')
-    return '<section><h3>По категориям</h3><div class="shares">' + ''.join(items) + '</div></section>'
-
-
-def place_row(position, name, amount):
-    return f'''<li class="place">
-      <div class="place-text"><span class="index">{position}</span><span class="store">{escape(name)}</span><b>{money(amount)}</b></div>
-      <div class="bar" aria-hidden="true"><span style="width:{100*amount/places[0][1]:.3f}%"></span></div></li>'''
+    rows = ''.join(stat_row(mark, title, amount) for title, mark, amount in categories)
+    return f'''<section class="categories"><h3>По категориям</h3>{share_line(categories, 'Доли расходов по категориям')}
+      <details><summary>Все категории</summary><ul class="stats">{rows}</ul></details></section>'''
 
 
 def ranking(has_places=True):
     if has_places:
-        top = ''.join(place_row(i, *p) for i, p in enumerate(places[:5], start=1))
-        extra = ''.join(place_row(i, *p) for i, p in enumerate(places[5:], start=6))
-        content = f'<ol class="ranking">{top}</ol><details><summary>Все места</summary><ol class="ranking" start="6">{extra}</ol></details>'
+        first = [(name, str(i), amount) for i, (name, amount) in enumerate(places[:4], start=1)]
+        other = sum(amount for _, amount in places[4:])
+        line = share_line([*first, ('Другие места', '…', other), ('Без места', '—', unassigned)], 'Доли расходов по местам')
+        top = ''.join(stat_row(mark, name, amount) for name, mark, amount in first)
+        extra = ''.join(stat_row(i, *p) for i, p in enumerate(places[4:], start=5))
+        content = f'{line}<ol class="stats ranking">{top}</ol><details><summary><span>Другие места</span><b>{money(other)}</b></summary><ol class="stats ranking" start="5">{extra}</ol></details>'
     else:
-        content = '<p class="empty">Укажи место в расходе, чтобы увидеть его здесь.</p>'
+        line = share_line([('Без места', '—', total)], 'Доли расходов по местам')
+        content = line + '<p class="empty">Укажи место в расходе, чтобы увидеть его здесь.</p>'
     return f'''<section class="places"><h3>Где тратили</h3>{content}
       <div class="unassigned"><span>Без места</span><b>{money(unassigned if has_places else total)}</b></div></section>'''
 
@@ -74,21 +113,25 @@ CSS = design['fonts'] + f":root{{--ink:{color('textPrimary')};--muted:{color('te
   section{padding:16px 0;border-bottom:1px solid var(--divider)}section:last-child{border-bottom:none;padding-bottom:0}
   .pace svg{display:block;width:100%;height:auto;fill:var(--ink)}.grid,.trend{fill:none;stroke:var(--divider)}
   .pace svg text{fill:var(--muted);font-size:10px}.trend{stroke:var(--ink);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
-  .shares{display:flex}.share{display:flex;flex-direction:column;align-items:center;min-width:0;gap:5px}
-  .share b{font-size:clamp(8px,2.45vw,10px)}.icon{font-size:16px}
+  .estimate{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 0 8px;color:var(--muted);font-size:12px}
+  .estimate b{color:var(--ink);white-space:nowrap;font-size:15px}
+  .forecast{fill:none;stroke:var(--muted);stroke-width:2;stroke-dasharray:4 4;stroke-linecap:round}
+  .cutoff{stroke:var(--divider);stroke-dasharray:2 3}.estimate-dot{fill:var(--surface);stroke:var(--muted);stroke-width:1.6}
+  .shares{display:flex;margin-bottom:10px}.share{display:flex;flex-direction:column;align-items:center;min-width:0;gap:5px}
+  .share b{font-size:clamp(8px,2.45vw,10px);white-space:nowrap}.mark{font-size:14px;font-weight:700;min-height:22px}
   .segment{display:block;width:calc(100% - 3px);height:4px;background:var(--ink);border-radius:2px}
-  .ranking{padding:0;margin:0;list-style:none}.place{padding:7px 0 6px}
-  .place-text{display:grid;grid-template-columns:17px minmax(0,1fr) auto;gap:7px;align-items:baseline}
-  .place-text b,.unassigned b{font-variant-numeric:tabular-nums;white-space:nowrap}.store{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .index{font-size:12px}.bar{background:var(--divider);height:3px;margin:5px 0 0 24px;border-radius:2px;overflow:hidden}
-  .bar span{height:100%;display:block;background:var(--ink)}
-  details{margin-top:5px}summary{padding:6px 0;cursor:pointer;font-weight:700;font-size:12px}
+  .bin-unassigned .segment{background:var(--muted)}
+  .stats{padding:0;margin:0;list-style:none}.stat{padding:6px 0;display:grid;grid-template-columns:17px minmax(0,1fr) auto;gap:7px;align-items:baseline}
+  .stat b,.unassigned b{font-variant-numeric:tabular-nums;white-space:nowrap}.stat-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .index{font-size:12px}details{margin-top:5px}summary{padding:6px 0;cursor:pointer;font-weight:700;font-size:12px}
+  summary b{float:right}
   .unassigned{display:flex;justify-content:space-between;gap:8px;margin-top:6px;padding-top:9px;border-top:1px solid var(--divider);font-size:12px}
   .empty{margin-bottom:13px;font-size:13px}.small{max-width:320px;margin-top:0}
 '''
 document = f'''<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Аналитика месяца · #267</title>
 <style>{CSS}</style><main>
 <div class="screen" id="overview"><div class="month"><span aria-hidden="true">‹</span><h1>Ноябрь 2026</h1><span aria-hidden="true">›</span></div>
-<div class="total"><p>Расходы · 1–19 ноября</p><h2>{money(total)}</h2></div>{pace()}{shares()}{ranking()}</div>
-<div class="screen small" id="missing">{ranking(False)}</div></main></html>'''
+<div class="total"><p>Расходы · 1–19 ноября</p><h2>{money(total)}</h2></div>{pace(daily, 2026, 11, 'ноя')}{shares()}{ranking()}</div>
+<div class="screen small" id="missing">{ranking(False)}</div>
+<div class="screen small" id="completed">{pace([*daily, *([650] * 12)], 2026, 10, 'окт')}</div></main></html>'''
 (HERE / 'screens.html').write_text(document)
