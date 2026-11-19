@@ -74,14 +74,15 @@ def pace(amounts, year, month, month_short):
 
 def ranking_table(title, items, kind, without_place=0):
     leaders = sorted(items, key=lambda item: -item[2])
-    rows = leaders[:4]
+    rows = [(str(rank), *item) for rank, item in enumerate(leaders[:4], start=1)]
     rest = sum(amount for _, _, amount in leaders[4:]) + without_place
     if rest:
-        rows = [*rows, ('Остальное', '…', rest)]
+        rows.append(('…', 'Остальное', '', rest))
     body = ''.join(
-        f'<tr><th scope="row"><span class="row-label"><span class="index" aria-hidden="true">{mark}</span>'
-        f'<span class="stat-title">{escape(name)}</span></span></th><td>{digits(amount)}</td></tr>'
-        for name, mark, amount in rows
+        f'<tr><th scope="row"><span class="row-label"><span class="index" aria-hidden="true">{rank}</span>'
+        f'<span class="stat-title"><span class="stat-icon" aria-hidden="true">{escape(icon)}</span>{escape(name)}</span>'
+        f'</span></th><td>{digits(amount)}</td></tr>'
+        for rank, name, icon, amount in rows
     )
     return f'''<table class="{kind}">
         <thead><tr><th scope="col">{title}</th><th scope="col" class="currency" aria-label="Сумма в рублях">₽</th></tr></thead>
@@ -90,7 +91,7 @@ def ranking_table(title, items, kind, without_place=0):
 
 
 def rankings(named_places=places):
-    by_place = [(name, str(rank), amount) for rank, (name, amount) in enumerate(named_places, start=1)]
+    by_place = [(name, '', amount) for name, amount in named_places]
     without_place = total - sum(amount for _, amount in named_places)
     return f'''<section class="rankings" aria-label="Распределение расходов за месяц">
       <div class="tables">
@@ -136,11 +137,11 @@ CSS = design['fonts'] + f''':root{{--ink:{color('textPrimary')};--muted:{color('
   main{max-width:960px;margin:auto;padding:24px 16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:20px;align-items:start}
   .screen{width:100%;max-width:390px;margin:auto;background:var(--surface);padding:16px 18px 14px;border-radius:16px}
   h1,h2,h3,p{margin:0}h1{font-size:16px}h2{font-size:31px;line-height:1.15}h3{font-size:15px;margin-bottom:10px}
-  .month{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--divider);padding-bottom:9px}
+  .month{display:flex;align-items:center;justify-content:space-between;padding-bottom:10px}
   .month span{font-size:23px;color:var(--muted);line-height:1}
   .total{padding-top:18px}.total p,.index,.currency{color:var(--muted)}
   .total p{font-size:12px;margin-bottom:4px}
-  section{padding:16px 0;border-bottom:1px solid var(--divider)}section:last-child{border-bottom:none;padding-bottom:0}
+  section{padding:16px 0}section:last-child{padding-bottom:0}
   .pace svg{display:block;width:100%;height:auto;fill:var(--ink)}.grid,.trend{fill:none;stroke:var(--divider)}
   .pace svg text{fill:var(--muted);font-size:10px}.trend{stroke:var(--ink);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
   .estimate{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 0 8px;color:var(--muted);font-size:12px}
@@ -154,6 +155,7 @@ CSS = design['fonts'] + f''':root{{--ink:{color('textPrimary')};--muted:{color('
   td{text-align:right;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
   .row-label{display:grid;grid-template-columns:14px minmax(0,1fr);gap:4px;align-items:center}
   .index{font-size:11px;text-align:center}.stat-title{overflow-wrap:anywhere}
+  .stat-icon:not(:empty){margin-inline-end:4px}
   @media(max-width:360px){main{padding-inline:0}.screen{padding-inline:12px}.tables{gap:12px}table{font-size:11px}}
   .small{max-width:320px;margin-top:0}
   .finance{width:100%;max-width:400px;min-height:900px;margin:auto;display:flex;flex-direction:column;background:var(--surface)}
@@ -163,7 +165,7 @@ CSS = design['fonts'] + f''':root{{--ink:{color('textPrimary')};--muted:{color('
   .accounts-heading,.finance-month{display:flex;align-items:center;justify-content:space-between}
   .accounts-heading{height:48px;color:var(--muted)}.accounts-heading b{color:var(--ink)}
   .finance .account-add{width:32px;height:32px}.finance .account-add svg{width:18px;height:18px}
-  .accounts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:2px 0 16px;border-bottom:1px solid var(--divider)}
+  .accounts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:2px 0 16px}
   .accounts>div{min-width:0}
   .accounts p{color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px}
   .accounts b{white-space:nowrap}

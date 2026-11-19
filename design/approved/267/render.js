@@ -18,6 +18,7 @@ const path = require('node:path');
     for (const kind of ['categories', 'places']) {
       const table = overview.locator('table.' + kind);
       assert.equal(await table.locator('tbody tr').count(), 5);
+      assert.deepEqual(await table.locator('tbody .index').allInnerTexts(), ['1', '2', '3', '4', '…']);
       assert.match(await table.locator('tbody tr').last().innerText(), /Остальное/);
       assert.match(await table.locator('tbody tr').last().innerText(), kind === 'categories' ? /1\s*900/ : /8\s*900/);
       assert.equal(await table.locator('thead .currency').innerText(), '₽');
