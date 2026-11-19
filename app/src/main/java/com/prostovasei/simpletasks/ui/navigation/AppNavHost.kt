@@ -184,15 +184,17 @@ internal fun TasksBottomBar(
     onPageLongClick = { if (it == Tab.WEEK.name) onWeekFilter() },
 )
 
-/** Нижняя панель модуля «Финансы» (#241): «Аналитика» и «Операции», «+» — новая операция. */
+/** Нижняя панель модуля «Финансы» (#241): единый экран и «+» для новой операции. */
 @Composable
 internal fun FinanceBottomBar(
-    selected: FinanceTab,
     onSelect: (FinanceTab) -> Unit,
     onAdd: () -> Unit,
     onModule: (AppModule) -> Unit,
     onSettings: () -> Unit,
-) = AppBottomBar(FINANCE_PAGES, selected.name, { onSelect(FinanceTab.valueOf(it)) }, onAdd, TAG_FINANCE_ADD, R.string.finance_add, AppModule.FINANCE, onModule, onSettings)
+) = TaskCanvasTheme {
+    AppBottomBar(FINANCE_PAGES, FinanceTab.ANALYTICS.name, { onSelect(FinanceTab.valueOf(it)) },
+        onAdd, TAG_FINANCE_ADD, R.string.finance_add, AppModule.FINANCE, onModule, onSettings)
+}
 
 /** Нижняя панель модуля «Здоровье» (#257): одна страница «Вес», «+» — новое взвешивание. */
 @Composable
@@ -204,10 +206,9 @@ private const val HEALTH_WEIGHT_PAGE = "WEIGHT"
 /** Страницы модуля «Здоровье» (#257): пока одна — «Вес»; позже рядом появятся другие показатели. */
 internal val HEALTH_PAGES: List<BarPage> = listOf(BarPage(HEALTH_WEIGHT_PAGE, R.drawable.ic_health_weight, R.string.health_page_weight, "$TAG_HEALTH_TAB:$HEALTH_WEIGHT_PAGE"))
 
-/** Страницы модуля «Финансы» в нижней панели (#241): «Аналитика» и «Операции». */
+/** Страницы модуля «Финансы» в нижней панели (#241): «Аналитика». */
 internal val FINANCE_PAGES: List<BarPage> = listOf(
     BarPage(FinanceTab.ANALYTICS.name, R.drawable.ic_finance_tab_analytics, R.string.finance_tab_analytics, "$TAG_FINANCE_TAB:${FinanceTab.ANALYTICS.name}"),
-    BarPage(FinanceTab.OPERATIONS.name, R.drawable.ic_finance_tab_operations, R.string.finance_tab_operations, "$TAG_FINANCE_TAB:${FinanceTab.OPERATIONS.name}"),
 )
 
 /** С какой страницы открывается приложение: «Предстоящее» или «Неделя» — та, что была выбрана последней (#241; раньше — выбор удержанием). */
@@ -265,7 +266,6 @@ fun AppNavHost(
     }
 
     val finance = hiltViewModel<FinanceViewModel>()
-    val financeState by finance.state.collectAsStateWithLifecycle()
     // #233: «Изменить» в уведомлении о покупке — раздел финансов с окном нового расхода.
     LaunchedEffect(openRoute) {
         val purchase = openRoute as? OpenBankPurchase ?: return@LaunchedEffect
@@ -365,7 +365,6 @@ fun AppNavHost(
                 TaskCanvasTheme { HealthBottomBar(onAdd = { health.onIntent(HealthIntent.Add) }, onModule = switchModule, onSettings = openSettings) }
             } else if (inFinance) {
                 FinanceBottomBar(
-                    selected = financeState.tab,
                     onSelect = { finance.onIntent(FinanceIntent.SelectTab(it)) },
                     onAdd = { finance.onIntent(FinanceIntent.Add) },
                     onModule = switchModule,

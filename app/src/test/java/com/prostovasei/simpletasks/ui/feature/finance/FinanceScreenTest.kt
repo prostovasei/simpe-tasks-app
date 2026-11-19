@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -72,8 +73,8 @@ class FinanceScreenTest {
         composeRule.setContent {
             AppTheme(darkTheme = dark) {
                 Column(Modifier.fillMaxSize()) {
-                    Box(Modifier.weight(1f)) { FinanceScreen(state) { intents += it } }
-                    FinanceBottomBar(state.tab, onSelect = { intents += FinanceIntent.SelectTab(it) }, onAdd = { intents += FinanceIntent.Add }, onModule = {}, onSettings = { onSettings?.invoke() })
+                    Box(Modifier.weight(1f)) { FinanceScreen(state) { if (it != FinanceIntent.SelectTab(FinanceTab.ANALYTICS)) intents += it } }
+                    FinanceBottomBar(onSelect = { intents += FinanceIntent.SelectTab(it) }, onAdd = { intents += FinanceIntent.Add }, onModule = {}, onSettings = { onSettings?.invoke() })
                 }
                 extra()
             }
@@ -109,8 +110,8 @@ class FinanceScreenTest {
         composeRule.onNodeWithText("Накопления").assertExists()
         composeRule.onNodeWithTag("$TAG_ACCOUNT:a2").performClick()
         composeRule.onNodeWithTag(TAG_ACCOUNT_ADD).performClick()
-        composeRule.onNodeWithTag("$TAG_FINANCE_TAB:OPERATIONS").performClick()
-        assertEquals(listOf(FinanceIntent.OpenAccount("a2"), FinanceIntent.NewAccount, FinanceIntent.SelectTab(FinanceTab.OPERATIONS)), intents)
+        composeRule.onNodeWithTag("$TAG_FINANCE_TAB:OPERATIONS").assertDoesNotExist()
+        assertEquals(listOf(FinanceIntent.OpenAccount("a2"), FinanceIntent.NewAccount), intents)
         composeRule.onRoot().captureRoboImage("screenshots/finance_accounts_light.png")
     }
 
@@ -173,7 +174,7 @@ class FinanceScreenTest {
         composeRule.onNodeWithText("+ 65${s}000${s}₽").assertExists()
         composeRule.onNodeWithText("💳 Карта → 👛 Наличные").assertExists()
         composeRule.onNodeWithText("5${s}000${s}₽").assertExists()
-        composeRule.onNodeWithText("Без категории").assertExists()
+        composeRule.onNodeWithTag("$TAG_OPERATION:o5").assertExists()
         composeRule.onNodeWithTag("$TAG_OPERATION:o4").performClick()
         assertEquals(listOf<FinanceIntent>(FinanceIntent.OpenOperation("o4")), intents)
         composeRule.onRoot().captureRoboImage("screenshots/finance_operations_light.png")
@@ -183,7 +184,7 @@ class FinanceScreenTest {
     fun emptyOperationsInviteToAdd() {
         show(FinanceState(accounts = three, tab = FinanceTab.OPERATIONS, operations = emptyList(), today = today))
         composeRule.onNodeWithText("Операций пока нет").assertExists()
-        composeRule.onNodeWithTag(TAG_ACCOUNTS).assertDoesNotExist()
+        composeRule.onNodeWithTag("$TAG_FINANCE_TAB:OPERATIONS").assertDoesNotExist()
     }
 
     /** #241: нижняя панель задач — «+», три страницы без плашек и кнопка модуля с обводкой; верхнего бара нет, значка со счётчиком нет. */
@@ -410,21 +411,14 @@ class FinanceScreenTest {
 
     /** Аналитика текущего месяца: итог, разница к тем же дням октября, категории с долями; «в октябре не было» вместо процента. */
     @Test
-    fun analyticsShowsMonthTotalDeltaAndCategories() {
+    fun analyticsShowsMonthTotalForecastAndRankings() {
         show(FinanceState(accounts = three, operations = spend, today = today))
 
-        composeRule.onNodeWithTag(TAG_MONTH_TITLE).assertTextEquals("Ноябрь 2026")
-        composeRule.onNodeWithText("Расходы · 1–10 ноября").assertExists()
-        composeRule.onNodeWithTag(TAG_ANALYTICS_TOTAL).assertTextEquals("42${s}800${s}₽")
-        composeRule.onNodeWithTag(TAG_ANALYTICS_DELTA).assertTextEquals("+3${s}600${s}₽ · +9,2%")
-        composeRule.onNodeWithTag(TAG_ANALYTICS_COMPARE).assertTextEquals("К 1–10 октября · было 39${s}200${s}₽")
-        composeRule.onNodeWithText("+3${s}000${s}₽ · +16,7%").assertExists()
-        composeRule.onNodeWithText("−1${s}000${s}₽ · −9,1%").assertExists()
-        composeRule.onNodeWithText("+6${s}800${s}₽ · в октябре не было").assertExists()
-        composeRule.onNodeWithText("49%").assertExists()
-        composeRule.onNodeWithTag("$TAG_ANALYTICS_CATEGORY:none").assertExists()
-        composeRule.onNodeWithText("Транспорт").assertDoesNotExist()
-        composeRule.onNodeWithText("Зарплата").assertDoesNotExist()
+        composeRule.onNodeWithTag(TAG_MONTH_TITLE).assertTextEquals("ноя 26")
+        composeRule.onNodeWithTag(TAG_ANALYTICS_TOTAL).assertTextEquals("43k ₽")
+        composeRule.onNodeWithContentDescription("Прогноз").assertExists()
+        composeRule.onNodeWithText("Категории").assertExists()
+        composeRule.onNodeWithText("Места").assertExists()
 
         composeRule.onNodeWithTag(TAG_MONTH_NEXT).performClick()
         composeRule.onNodeWithTag(TAG_MONTH_PREV).performClick()
@@ -434,14 +428,11 @@ class FinanceScreenTest {
 
     /** Завершённый месяц — «за месяц» и сравнение с целым прошлым месяцем, где расходов не было. */
     @Test
-    fun finishedMonthComparesWithWholePreviousMonth() {
+    fun finishedMonthHidesForecast() {
         show(FinanceState(accounts = three, operations = spend, today = today, month = java.time.YearMonth.of(2026, 10)), dark = true)
 
-        composeRule.onNodeWithTag(TAG_MONTH_TITLE).assertTextEquals("Октябрь 2026")
-        composeRule.onNodeWithText("Расходы · за месяц").assertExists()
-        composeRule.onNodeWithTag(TAG_ANALYTICS_DELTA).assertTextEquals("+39${s}200${s}₽")
-        composeRule.onNodeWithTag(TAG_ANALYTICS_COMPARE).assertTextEquals("К сентябрю · расходов не было")
-        composeRule.onNodeWithText("+18${s}000${s}₽ · в сентябре не было").assertExists()
+        composeRule.onNodeWithTag(TAG_MONTH_TITLE).assertTextEquals("окт 26")
+        composeRule.onNodeWithContentDescription("Прогноз").assertDoesNotExist()
         composeRule.onNodeWithTag(TAG_MONTH_NEXT).performClick()
         assertEquals(listOf<FinanceIntent>(FinanceIntent.ShiftMonth(1)), intents)
         composeRule.onRoot().captureRoboImage("screenshots/finance_analytics_month_dark.png")
@@ -453,7 +444,6 @@ class FinanceScreenTest {
         show(FinanceState(accounts = three, operations = spend.filter { it.date.monthValue == 10 }, today = today))
 
         composeRule.onNodeWithTag(TAG_ANALYTICS_TOTAL).assertTextEquals("0${s}₽")
-        composeRule.onNodeWithTag(TAG_ANALYTICS_DELTA).assertTextEquals("−39${s}200${s}₽ · −100,0%")
         composeRule.onNodeWithText("В этом месяце расходов пока нет.").assertExists()
         composeRule.onNodeWithText("По категориям").assertDoesNotExist()
         composeRule.onRoot().captureRoboImage("screenshots/finance_analytics_empty_light.png")
@@ -784,12 +774,12 @@ class FinanceScreenTest {
             AppTheme {
                 Column(Modifier.fillMaxSize()) {
                     Box(Modifier.weight(1f)) { FinanceScreen(full().copy(pending = purchases), onOpenUnsorted = { opened = true }) { intents += it } }
-                    FinanceBottomBar(FinanceTab.OPERATIONS, onSelect = {}, onAdd = {}, onModule = {}, onSettings = {})
+                    FinanceBottomBar(onSelect = {}, onAdd = {}, onModule = {}, onSettings = {})
                 }
             }
         }
         composeRule.onNodeWithTag(TAG_UNSORTED_ROW).assertExists()
-        composeRule.onNodeWithText("3").assertExists()
+        composeRule.onNodeWithTag(TAG_UNSORTED_ROW).assertTextContains("3")
         composeRule.onRoot().captureRoboImage("screenshots/finance_operations_unsorted_light.png")
         composeRule.onNodeWithTag(TAG_UNSORTED_ROW).performClick()
         assertTrue(opened)

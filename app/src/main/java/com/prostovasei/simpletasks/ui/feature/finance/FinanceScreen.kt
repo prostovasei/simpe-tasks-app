@@ -1,8 +1,11 @@
 package com.prostovasei.simpletasks.ui.feature.finance
 
 import android.widget.Toast
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,8 +17,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Icon
@@ -39,6 +40,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.prostovasei.simpletasks.R
+import com.prostovasei.simpletasks.designsystem.theme.TaskCanvasTheme
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.domain.model.finance.Account
 import com.prostovasei.simpletasks.domain.model.finance.Money
@@ -75,23 +77,32 @@ fun FinanceEffects(viewModel: FinanceViewModel) {
     }
 }
 
-/**
- * Экран финансов (этап 1 — #221, этап 2 — #225; макеты design/approved/217/service-screens.html): без заголовка модуля.
- * Счетов нет — «Начнём со счёта»; есть — карточки счетов сверху, под ними аналитика расходов за месяц (этап 3 — #229), и вкладка «Операции».
- */
+/** Счета, аналитика и операции в одном прокручиваемом списке (#267). */
 @Composable
-fun FinanceScreen(state: FinanceState, onOpenUnsorted: () -> Unit = {}, onIntent: (FinanceIntent) -> Unit) {
+fun FinanceScreen(state: FinanceState, onOpenUnsorted: () -> Unit = {}, onIntent: (FinanceIntent) -> Unit) = TaskCanvasTheme {
     val colors = AppTheme.colors
     val accounts = state.accounts
-    Box(Modifier.fillMaxSize().background(colors.background).testTag(TAG_FINANCE)) {
+    Box(Modifier.fillMaxSize().background(colors.surface).testTag(TAG_FINANCE)) {
         when {
             accounts == null -> Unit
             accounts.isEmpty() -> FinanceEmpty { onIntent(FinanceIntent.NewAccount) }
-            state.tab == FinanceTab.OPERATIONS -> state.operations?.let { OperationsList(it, state.today, unsorted = state.pending.size, onUnsorted = onOpenUnsorted) { id -> onIntent(FinanceIntent.OpenOperation(id)) } }
-            else -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-                AccountsBlock(accounts, state.total, onIntent)
-                AnalyticsBlock(state, onIntent)
-                Box(Modifier.padding(bottom = AppTheme.spacing.lg))
+            else -> {
+                val list = rememberLazyListState()
+                LaunchedEffect(state.tab, state.operations != null) {
+                    if (state.tab == FinanceTab.OPERATIONS && state.operations != null) {
+                        list.scrollToItem(2)
+                        onIntent(FinanceIntent.SelectTab(FinanceTab.ANALYTICS))
+                    }
+                }
+                LazyColumn(state = list, modifier = Modifier.fillMaxSize().testTag(TAG_OPERATIONS)) {
+                    item("accounts") { AccountsBlock(accounts, state.total, onIntent) }
+                    item("analytics") { if (state.operations != null) AnalyticsBlock(state, onIntent) }
+                    state.operations?.let {
+                        operationsFeed(it, state.today, state.pending.size, onOpenUnsorted) { id ->
+                            onIntent(FinanceIntent.OpenOperation(id))
+                        }
+                    }
+                }
             }
         }
     }

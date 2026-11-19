@@ -1,25 +1,20 @@
 package com.prostovasei.simpletasks.ui.feature.finance
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -69,28 +64,25 @@ fun Operation.amountText(): String = when (kind) {
     OperationKind.CORRECTION -> Money.format(amount, sign = true)
 }
 
-/**
- * Вкладка «Операции» (этап 2, #225; экран 1.1): компактный список по датам — категория и сумма; перевод («Карта → Наличные»)
- * серым с подписью, в расходы и доходы он не входит. Нажатие открывает правку. Поиска и фильтров нет (решение PM).
- */
-@Composable
-fun OperationsList(operations: List<Operation>, today: LocalDate, unsorted: Int = 0, onUnsorted: () -> Unit = {}, onOpen: (String) -> Unit) {
-    val colors = AppTheme.colors
-    val spacing = AppTheme.spacing
-    // #233: «Не разобрано» над списком — только когда есть покупки без ответа (макет 2.2).
-    val unsortedRow: @Composable () -> Unit = { if (unsorted > 0) UnsortedRow(unsorted, onUnsorted, Modifier.padding(top = spacing.sm)) }
-    if (operations.isEmpty()) {
-        if (unsorted > 0) Box(Modifier.padding(horizontal = spacing.md)) { unsortedRow() }
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center, modifier = Modifier.fillMaxSize().padding(horizontal = spacing.xl).testTag(TAG_OPERATIONS_EMPTY)) {
-            Text(stringResource(R.string.operations_empty_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = colors.textPrimary)
-            Text(stringResource(R.string.operations_empty_text), style = MaterialTheme.typography.bodySmall, color = colors.textSecondary, textAlign = TextAlign.Center, modifier = Modifier.padding(top = spacing.xs))
-        }
-        return
+/** Группы операций для общего списка финансов. */
+internal fun LazyListScope.operationsFeed(
+    operations: List<Operation>, today: LocalDate, unsorted: Int,
+    onUnsorted: () -> Unit, onOpen: (String) -> Unit,
+) {
+    item("operations-heading") {
+        Text("Операции", Modifier.padding(AppTheme.spacing.md), style = MaterialTheme.typography.titleSmall)
     }
-    val days = operations.groupBy { it.date }.toList()
-    LazyColumn(Modifier.fillMaxSize().testTag(TAG_OPERATIONS), contentPadding = PaddingValues(start = spacing.md, end = spacing.md, bottom = spacing.lg)) {
-        if (unsorted > 0) item(key = "unsorted") { unsortedRow() }
-        items(days, key = { it.first.toEpochDay() }) { (date, list) ->
+    if (unsorted > 0) item("unsorted") {
+        UnsortedRow(unsorted, onUnsorted, Modifier.padding(horizontal = AppTheme.spacing.md))
+    }
+    if (operations.isEmpty()) item("operations-empty") {
+        Text(stringResource(R.string.operations_empty_title), Modifier.padding(AppTheme.spacing.md).testTag(TAG_OPERATIONS_EMPTY))
+    }
+    operations.groupBy { it.date }.toSortedMap(reverseOrder()).forEach { (date, list) ->
+        item("day:${date.toEpochDay()}") {
+            val colors = AppTheme.colors
+            val spacing = AppTheme.spacing
+            Box(Modifier.padding(horizontal = spacing.md)) {
             // Итог дня (#245): расходы за день; переводы и корректировки в него не входят.
             val expenses = list.filter { it.kind == OperationKind.EXPENSE }.sumOf { it.amount }
             Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxWidth().padding(start = spacing.xxs, end = spacing.xxs, top = spacing.sm, bottom = spacing.xs)) {
@@ -104,12 +96,10 @@ fun OperationsList(operations: List<Operation>, today: LocalDate, unsorted: Int 
                     )
                 }
             }
-            Column(Modifier.fillMaxWidth().clip(AppTheme.shapes.large).background(colors.surface)) {
-                list.forEachIndexed { i, operation ->
-                    OperationRow(operation) { onOpen(operation.id) }
-                    if (i != list.lastIndex) HorizontalDivider(color = colors.divider, thickness = AppTheme.sizes.hairline, modifier = Modifier.padding(start = spacing.md))
-                }
             }
+        }
+        items(list, key = { "operation:${it.id}" }) { operation ->
+            OperationRow(operation) { onOpen(operation.id) }
         }
     }
 }
