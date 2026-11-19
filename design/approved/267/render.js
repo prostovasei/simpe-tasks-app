@@ -19,10 +19,13 @@ const path = require('node:path');
       const table = overview.locator('table.' + kind);
       assert.equal(await table.locator('tbody tr').count(), 5);
       assert.match(await table.locator('tbody tr').last().innerText(), /Остальное/);
-      assert.match(await table.locator('tbody tr').last().innerText(), kind === 'categories' ? /1\s*900/ : /3\s*000/);
+      assert.match(await table.locator('tbody tr').last().innerText(), kind === 'categories' ? /1\s*900/ : /8\s*900/);
+      assert.equal(await table.locator('thead .currency').innerText(), '₽');
+      const figures = await table.locator('tbody td').allInnerTexts();
+      assert(figures.every(value => /^[\d\s]+$/.test(value)));
+      assert.equal(figures.reduce((sum, value) => sum + Number(value.replace(/\s/g, '')), 0), 28400);
     }
-    assert.equal(await overview.locator('.shares,.segment').count(), 0);
-    assert.match(await overview.locator('.unassigned').innerText(), /5\s*900\s*₽/);
+    assert.equal(await overview.locator('.shares,.segment,.unassigned').count(), 0);
     const pace = overview.locator('.pace');
     assert.equal(await pace.getAttribute('data-days'), '30');
     assert.equal(await pace.getAttribute('data-actual-days'), '19');
@@ -58,7 +61,9 @@ const path = require('node:path');
       assert(rowsFit, 'Текст и суммы помещаются при ширине 320 px');
     }
     await overview.locator('.rankings').screenshot({ path: path.join(__dirname, 'rankings-narrow.png') });
-    assert.match(await page.locator('#missing .unassigned').innerText(), /28\s*400\s*₽/);
+    const missing = page.locator('#missing .places tbody');
+    assert.equal(await missing.locator('tr').count(), 1);
+    assert.match(await missing.innerText(), /Остальное\s+28\s*400/);
     await page.locator('#missing').screenshot({ path: path.join(__dirname, 'without-places.png') });
     assert.deepEqual(errors, []);
   } finally {

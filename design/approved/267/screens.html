@@ -6,7 +6,7 @@
   h1,h2,h3,p{margin:0}h1{font-size:16px}h2{font-size:31px;line-height:1.15}h3{font-size:15px;margin-bottom:10px}
   .month{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--divider);padding-bottom:9px}
   .month span{font-size:23px;color:var(--muted);line-height:1}
-  .total{padding-top:18px}.total p,.index,.unassigned,.empty{color:var(--muted)}
+  .total{padding-top:18px}.total p,.index,.currency{color:var(--muted)}
   .total p{font-size:12px;margin-bottom:4px}
   section{padding:16px 0;border-bottom:1px solid var(--divider)}section:last-child{border-bottom:none;padding-bottom:0}
   .pace svg{display:block;width:100%;height:auto;fill:var(--ink)}.grid,.trend{fill:none;stroke:var(--divider)}
@@ -17,14 +17,13 @@
   .cutoff{stroke:var(--divider);stroke-dasharray:2 3}.estimate-dot{fill:var(--surface);stroke:var(--muted);stroke-width:1.6}
   .tables{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
   table{width:100%;border-collapse:collapse;font-size:12px;line-height:1.25}
-  caption{text-align:left;font-size:15px;font-weight:700;padding-bottom:10px}
-  th,td{height:37px;padding:0;vertical-align:middle}th{text-align:left;font-weight:500;padding-right:4px}
+  thead th{font-size:15px;font-weight:700;height:auto;padding:0 0 10px}.currency{text-align:right}
+  tbody th,td{height:37px;padding:0;vertical-align:middle}th{text-align:left}tbody th{font-weight:500;padding-right:4px}
   td{text-align:right;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
   .row-label{display:grid;grid-template-columns:14px minmax(0,1fr);gap:4px;align-items:center}
   .index{font-size:11px;text-align:center}.stat-title{overflow-wrap:anywhere}
   @media(max-width:360px){main{padding-inline:0}.screen{padding-inline:12px}.tables{gap:12px}table{font-size:11px}}
-  .unassigned{display:flex;justify-content:space-between;gap:8px;margin-top:8px;padding-top:5px;font-size:11px}
-  .empty{margin-bottom:13px;font-size:13px}.small{max-width:320px;margin-top:0}
+  .small{max-width:320px;margin-top:0}
 </style><main>
 <div class="screen" id="overview"><div class="month"><span aria-hidden="true">‹</span><h1>Ноябрь 2026</h1><span aria-hidden="true">›</span></div>
 <div class="total"><p>Расходы · 1–19 ноября</p><h2>28 400 ₽</h2></div><section class="pace" data-days="30" data-actual-days="19"><h3>Темп расходов</h3><div class="estimate"><span>К 30 ноя при текущем темпе</span><b>≈ 44 800 ₽</b></div>
@@ -36,14 +35,28 @@
       <circle cx="224.76" cy="60.61" r="3.25" class="actual-dot"/><text x="46.00" y="134" text-anchor="start">1 ноя</text><text x="135.38" y="134" text-anchor="middle">10</text><text x="224.76" y="134" text-anchor="middle">19</text><text x="334.00" y="134" text-anchor="end">30 ноя</text>
     </svg></section><section class="rankings" aria-label="Распределение расходов за месяц">
       <div class="tables">
-        <table class="categories"><caption>Категории</caption><tbody><tr><th scope="row"><span class="row-label"><span class="index" aria-hidden="true">🛒</span><span class="stat-title">Продукты</span></span></th><td>12 400 ₽</td></tr><tr><th scope="row"><span class="row-label"><span class="index" aria-hidden="true">🚕</span><span class="stat-title">Транспорт</span></span></th><td>6 400 ₽</td></tr><tr><th scope="row"><span class="row-label"><span class="index" aria-hidden="true">☕</span><span class="stat-title">Кафе</span></span></th><td>4 200 ₽</td></tr><tr><th scope="row"><span class="row-label"><span class="index" aria-hidden="true">🏠</span><span class="stat-title">Дом</span></span></th><td>3 500 ₽</td></tr><tr><th scope="row"><span class="row-label"><span class="index" aria-hidden="true">…</span><span class="stat-title">Остальное</span></span></th><td>1 900 ₽</td></tr></tbody></table>
-        <table class="places"><caption>Места</caption><tbody><tr><th scope="row"><span class="row-label"><span class="index" aria-hidden="true">1</span><span class="stat-title">Пятёрочка</span></span></th><td>6 860 ₽</td></tr><tr><th scope="row"><span class="row-label"><span class="index" aria-hidden="true">2</span><span class="stat-title">Лента</span></span></th><td>5 270 ₽</td></tr><tr><th scope="row"><span class="row-label"><span class="index" aria-hidden="true">3</span><span class="stat-title">ВкусВилл</span></span></th><td>4 220 ₽</td></tr><tr><th scope="row"><span class="row-label"><span class="index" aria-hidden="true">4</span><span class="stat-title">Додо Пицца</span></span></th><td>3 150 ₽</td></tr><tr><th scope="row"><span class="row-label"><span class="index" aria-hidden="true">…</span><span class="stat-title">Остальное</span></span></th><td>3 000 ₽</td></tr></tbody></table>
+        <table class="categories">
+        <thead><tr><th scope="col">Категории</th><th scope="col" class="currency" aria-label="Сумма в рублях">₽</th></tr></thead>
+        <tbody><tr><th scope="row"><span class="row-label"><span class="index" aria-hidden="true">🛒</span><span class="stat-title">Продукты</span></span></th><td>12 400</td></tr><tr><th scope="row"><span class="row-label"><span class="index" aria-hidden="true">🚕</span><span class="stat-title">Транспорт</span></span></th><td>6 400</td></tr><tr><th scope="row"><span class="row-label"><span class="index" aria-hidden="true">☕</span><span class="stat-title">Кафе</span></span></th><td>4 200</td></tr><tr><th scope="row"><span class="row-label"><span class="index" aria-hidden="true">🏠</span><span class="stat-title">Дом</span></span></th><td>3 500</td></tr><tr><th scope="row"><span class="row-label"><span class="index" aria-hidden="true">…</span><span class="stat-title">Остальное</span></span></th><td>1 900</td></tr></tbody>
+    </table>
+        <table class="places">
+        <thead><tr><th scope="col">Места</th><th scope="col" class="currency" aria-label="Сумма в рублях">₽</th></tr></thead>
+        <tbody><tr><th scope="row"><span class="row-label"><span class="index" aria-hidden="true">1</span><span class="stat-title">Пятёрочка</span></span></th><td>6 860</td></tr><tr><th scope="row"><span class="row-label"><span class="index" aria-hidden="true">2</span><span class="stat-title">Лента</span></span></th><td>5 270</td></tr><tr><th scope="row"><span class="row-label"><span class="index" aria-hidden="true">3</span><span class="stat-title">ВкусВилл</span></span></th><td>4 220</td></tr><tr><th scope="row"><span class="row-label"><span class="index" aria-hidden="true">4</span><span class="stat-title">Додо Пицца</span></span></th><td>3 150</td></tr><tr><th scope="row"><span class="row-label"><span class="index" aria-hidden="true">…</span><span class="stat-title">Остальное</span></span></th><td>8 900</td></tr></tbody>
+    </table>
       </div>
-      <div class="unassigned"><span>Расходы без места</span><b>5 900 ₽</b></div>
     </section></div>
-<div class="screen small" id="missing"><section class="no-places"><h3>Места</h3>
-      <p class="empty">Укажи место в расходе, чтобы увидеть его здесь.</p>
-      <div class="unassigned"><span>Расходы без места</span><b>28 400 ₽</b></div></section></div>
+<div class="screen small" id="missing"><section class="rankings" aria-label="Распределение расходов за месяц">
+      <div class="tables">
+        <table class="categories">
+        <thead><tr><th scope="col">Категории</th><th scope="col" class="currency" aria-label="Сумма в рублях">₽</th></tr></thead>
+        <tbody><tr><th scope="row"><span class="row-label"><span class="index" aria-hidden="true">🛒</span><span class="stat-title">Продукты</span></span></th><td>12 400</td></tr><tr><th scope="row"><span class="row-label"><span class="index" aria-hidden="true">🚕</span><span class="stat-title">Транспорт</span></span></th><td>6 400</td></tr><tr><th scope="row"><span class="row-label"><span class="index" aria-hidden="true">☕</span><span class="stat-title">Кафе</span></span></th><td>4 200</td></tr><tr><th scope="row"><span class="row-label"><span class="index" aria-hidden="true">🏠</span><span class="stat-title">Дом</span></span></th><td>3 500</td></tr><tr><th scope="row"><span class="row-label"><span class="index" aria-hidden="true">…</span><span class="stat-title">Остальное</span></span></th><td>1 900</td></tr></tbody>
+    </table>
+        <table class="places">
+        <thead><tr><th scope="col">Места</th><th scope="col" class="currency" aria-label="Сумма в рублях">₽</th></tr></thead>
+        <tbody><tr><th scope="row"><span class="row-label"><span class="index" aria-hidden="true">…</span><span class="stat-title">Остальное</span></span></th><td>28 400</td></tr></tbody>
+    </table>
+      </div>
+    </section></div>
 <div class="screen small" id="completed"><section class="pace" data-days="31" data-actual-days="31"><h3>Темп расходов</h3>
     <svg viewBox="0 0 356 141" role="img" aria-label="С 1 по 31 число потрачено 36 200 ₽.">
       <path d="M46 114H334 M46 67H334 M46 20H334" class="grid"/><text x="0" y="117">0 ₽</text><text x="0" y="70">20 тыс.</text><text x="0" y="23">40 тыс.</text>

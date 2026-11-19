@@ -19,8 +19,12 @@ assert sum(amount for _, _, amount in categories) == total
 assert unassigned == 5900 and places == sorted(places, key=lambda item: -item[1])
 
 
+def digits(amount):
+    return f'{amount:,}'.replace(',', '\u00a0')
+
+
 def money(amount):
-    return f'{amount:,}'.replace(',', '\u00a0') + '\u00a0₽'
+    return digits(amount) + '\u00a0₽'
 
 
 def pace(amounts, year, month, month_short):
@@ -66,35 +70,32 @@ def pace(amounts, year, month, month_short):
     </svg></section>'''
 
 
-def ranking_table(title, items, kind):
+def ranking_table(title, items, kind, without_place=0):
     leaders = sorted(items, key=lambda item: -item[2])
     rows = leaders[:4]
-    rest = sum(amount for _, _, amount in leaders[4:])
+    rest = sum(amount for _, _, amount in leaders[4:]) + without_place
     if rest:
         rows = [*rows, ('Остальное', '…', rest)]
     body = ''.join(
         f'<tr><th scope="row"><span class="row-label"><span class="index" aria-hidden="true">{mark}</span>'
-        f'<span class="stat-title">{escape(name)}</span></span></th><td>{money(amount)}</td></tr>'
+        f'<span class="stat-title">{escape(name)}</span></span></th><td>{digits(amount)}</td></tr>'
         for name, mark, amount in rows
     )
-    return f'<table class="{kind}"><caption>{title}</caption><tbody>{body}</tbody></table>'
+    return f'''<table class="{kind}">
+        <thead><tr><th scope="col">{title}</th><th scope="col" class="currency" aria-label="Сумма в рублях">₽</th></tr></thead>
+        <tbody>{body}</tbody>
+    </table>'''
 
 
-def rankings():
-    by_place = [(name, str(rank), amount) for rank, (name, amount) in enumerate(places, start=1)]
+def rankings(named_places=places):
+    by_place = [(name, str(rank), amount) for rank, (name, amount) in enumerate(named_places, start=1)]
+    without_place = total - sum(amount for _, amount in named_places)
     return f'''<section class="rankings" aria-label="Распределение расходов за месяц">
       <div class="tables">
         {ranking_table('Категории', categories, 'categories')}
-        {ranking_table('Места', by_place, 'places')}
+        {ranking_table('Места', by_place, 'places', without_place=without_place)}
       </div>
-      <div class="unassigned"><span>Расходы без места</span><b>{money(unassigned)}</b></div>
     </section>'''
-
-
-def without_places():
-    return f'''<section class="no-places"><h3>Места</h3>
-      <p class="empty">Укажи место в расходе, чтобы увидеть его здесь.</p>
-      <div class="unassigned"><span>Расходы без места</span><b>{money(total)}</b></div></section>'''
 
 
 CSS = design['fonts'] + f":root{{--ink:{color('textPrimary')};--muted:{color('textSecondary')};--divider:{color('divider')};--surface:{color('surface')}}}" + '''
@@ -104,7 +105,7 @@ CSS = design['fonts'] + f":root{{--ink:{color('textPrimary')};--muted:{color('te
   h1,h2,h3,p{margin:0}h1{font-size:16px}h2{font-size:31px;line-height:1.15}h3{font-size:15px;margin-bottom:10px}
   .month{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--divider);padding-bottom:9px}
   .month span{font-size:23px;color:var(--muted);line-height:1}
-  .total{padding-top:18px}.total p,.index,.unassigned,.empty{color:var(--muted)}
+  .total{padding-top:18px}.total p,.index,.currency{color:var(--muted)}
   .total p{font-size:12px;margin-bottom:4px}
   section{padding:16px 0;border-bottom:1px solid var(--divider)}section:last-child{border-bottom:none;padding-bottom:0}
   .pace svg{display:block;width:100%;height:auto;fill:var(--ink)}.grid,.trend{fill:none;stroke:var(--divider)}
@@ -115,19 +116,18 @@ CSS = design['fonts'] + f":root{{--ink:{color('textPrimary')};--muted:{color('te
   .cutoff{stroke:var(--divider);stroke-dasharray:2 3}.estimate-dot{fill:var(--surface);stroke:var(--muted);stroke-width:1.6}
   .tables{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
   table{width:100%;border-collapse:collapse;font-size:12px;line-height:1.25}
-  caption{text-align:left;font-size:15px;font-weight:700;padding-bottom:10px}
-  th,td{height:37px;padding:0;vertical-align:middle}th{text-align:left;font-weight:500;padding-right:4px}
+  thead th{font-size:15px;font-weight:700;height:auto;padding:0 0 10px}.currency{text-align:right}
+  tbody th,td{height:37px;padding:0;vertical-align:middle}th{text-align:left}tbody th{font-weight:500;padding-right:4px}
   td{text-align:right;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
   .row-label{display:grid;grid-template-columns:14px minmax(0,1fr);gap:4px;align-items:center}
   .index{font-size:11px;text-align:center}.stat-title{overflow-wrap:anywhere}
   @media(max-width:360px){main{padding-inline:0}.screen{padding-inline:12px}.tables{gap:12px}table{font-size:11px}}
-  .unassigned{display:flex;justify-content:space-between;gap:8px;margin-top:8px;padding-top:5px;font-size:11px}
-  .empty{margin-bottom:13px;font-size:13px}.small{max-width:320px;margin-top:0}
+  .small{max-width:320px;margin-top:0}
 '''
 document = f'''<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Аналитика месяца · #267</title>
 <style>{CSS}</style><main>
 <div class="screen" id="overview"><div class="month"><span aria-hidden="true">‹</span><h1>Ноябрь 2026</h1><span aria-hidden="true">›</span></div>
 <div class="total"><p>Расходы · 1–19 ноября</p><h2>{money(total)}</h2></div>{pace(daily, 2026, 11, 'ноя')}{rankings()}</div>
-<div class="screen small" id="missing">{without_places()}</div>
+<div class="screen small" id="missing">{rankings(named_places=[])}</div>
 <div class="screen small" id="completed">{pace([*daily, *([650] * 12)], 2026, 10, 'окт')}</div></main></html>'''
 (HERE / 'screens.html').write_text(document)
