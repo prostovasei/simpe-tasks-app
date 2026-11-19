@@ -2,7 +2,7 @@
 from calendar import monthrange
 from html import escape
 from itertools import accumulate
-from math import ceil
+from math import floor, log10
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -29,31 +29,48 @@ def money(amount):
     return digits(amount) + '\u00a0₽'
 
 
+def scale_ceiling(amount):
+    amount = max(1000, amount)
+    magnitude = 10 ** floor(log10(amount))
+    steps = (1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10)
+    return next(int(step * magnitude) for step in steps if step * magnitude >= amount)
+
+
 def pace(amounts, year, month, month_short):
     last_day = monthrange(year, month)[1]
     as_of = len(amounts)
     assert 1 <= as_of <= last_day
     actual = sum(amounts)
-    estimate = actual * last_day / as_of if actual and as_of < last_day else None
-    ceiling = max(1000, ceil((estimate if estimate is not None else actual) / 10000) * 10000)
+    partial = as_of < last_day
+    estimate = actual * last_day / as_of if actual and partial else None
+    ceiling = scale_ceiling(estimate if estimate is not None else actual)
+    left, right = 4, 352
+    top, bottom = 30, 168
 
     def x(day):
-        return 46 + (day - 1) * 288 / (last_day - 1)
+        return left + (day - 1) * (right - left) / (last_day - 1)
 
     def y(value):
-        return 114 - 94 * value / ceiling
+        return bottom - (bottom - top) * value / ceiling
 
     coords = ' '.join(f'{x(day):.2f},{y(value):.2f}' for day, value in enumerate(accumulate(amounts), start=1))
-    axis = [0, ceiling // 2, ceiling]
-    grid = ' '.join(f'M46 {y(value):g}H334' for value in axis)
-    value_ticks = ''.join(f'<text x="0" y="{y(value)+3:g}">{value/1000:g} тыс.</text>' if value else
-                          '<text x="0" y="117">0 ₽</text>' for value in axis)
-    day_ticks = {1: ('1 ' + month_short, 'start'), 10: ('10', 'middle'), last_day: (str(last_day) + ' ' + month_short, 'end')}
-    if estimate is not None and 4 <= as_of <= last_day - 3:
-        day_ticks = {d: tick for d, tick in day_ticks.items() if d in (1, last_day) or abs(d - as_of) >= 4}
-        day_ticks[as_of] = (str(as_of), 'middle')
-    ticks = ''.join(f'<text x="{x(day):.2f}" y="134" text-anchor="{align}">{label}</text>'
-                    for day, (label, align) in sorted(day_ticks.items()))
+    axis = [ceiling, ceiling // 2, 0]
+    grid = ' '.join(f'M{left} {y(value):g}H{right}' for value in axis)
+    value_ticks = ''.join(f'<text class="value-tick" x="{left + 4}" y="{y(value) + offset:g}">{digits(value)}</text>'
+                          for value, offset in zip(axis, [12, -5, -5]))
+    date_ticks = {1: ('start', 12), last_day: ('end', 12)}
+    if partial and as_of != 1:
+        # У краёв дата факта переносится ниже, чтобы подписи не пересекались.
+        align = 'start' if as_of <= 4 else 'end' if as_of >= last_day - 3 else 'middle'
+        date_ticks[as_of] = (align, 12 if align == 'middle' else 24)
+    dates = ''.join(
+        f'<text class="{"current-date" if partial and day == as_of else "date-tick"}" '
+        f'x="{x(day):.2f}" y="{row}" text-anchor="{align}">{day} {month_short}</text>'
+        for day, (align, row) in sorted(date_ticks.items())
+    )
+    cutoff = ''
+    if partial:
+        cutoff = f'<line x1="{x(as_of):.2f}" y1="{top}" x2="{x(as_of):.2f}" y2="{bottom}" class="cutoff"/>'
     forecast = ''
     headline = ''
     description = f'С 1 по {as_of} число потрачено {money(actual)}.'
@@ -61,14 +78,13 @@ def pace(amounts, year, month, month_short):
         projected = money(round(estimate / 100) * 100)
         description += f' Прогноз на {last_day} число — около {projected}.'
         headline = f'<div class="estimate"><span>К {last_day} {month_short} при текущем темпе</span><b>≈ {projected}</b></div>'
-        forecast = f'''<line x1="{x(as_of):.2f}" y1="{y(actual):.2f}" x2="{x(as_of):.2f}" y2="114" class="cutoff"/>
-        <line x1="{x(as_of):.2f}" y1="{y(actual):.2f}" x2="{x(last_day):.2f}" y2="{y(estimate):.2f}" class="forecast"/>
+        forecast = f'''<line x1="{x(as_of):.2f}" y1="{y(actual):.2f}" x2="{x(last_day):.2f}" y2="{y(estimate):.2f}" class="forecast"/>
         <circle cx="{x(last_day):.2f}" cy="{y(estimate):.2f}" r="3" class="estimate-dot"/>'''
     return f'''<section class="pace" data-days="{last_day}" data-actual-days="{as_of}"><h3>Темп расходов</h3>{headline}
-    <svg viewBox="0 0 356 141" role="img" aria-label="{description}">
-      <path d="{grid}" class="grid"/>{value_ticks}{forecast}
+    <svg viewBox="0 0 356 176" role="img" aria-label="{description}">
+      <path d="{grid}" class="grid"/>{cutoff}{forecast}
       <polyline points="{coords}" class="trend"/>
-      <circle cx="{x(as_of):.2f}" cy="{y(actual):.2f}" r="3.25" class="actual-dot"/>{ticks}
+      <circle cx="{x(as_of):.2f}" cy="{y(actual):.2f}" r="3.25" class="actual-dot"/>{value_ticks}{dates}
     </svg></section>'''
 
 
@@ -144,6 +160,7 @@ CSS = design['fonts'] + f''':root{{--ink:{color('textPrimary')};--muted:{color('
   section{padding:16px 0}section:last-child{padding-bottom:0}
   .pace svg{display:block;width:100%;height:auto;fill:var(--ink)}.grid,.trend{fill:none;stroke:var(--divider)}
   .pace svg text{fill:var(--muted);font-size:10px}.trend{stroke:var(--ink);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+  .pace .current-date{fill:var(--ink);font-weight:700}.value-tick{paint-order:stroke;stroke:var(--surface);stroke-width:2.5px}
   .estimate{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 0 8px;color:var(--muted);font-size:12px}
   .estimate b{color:var(--ink);white-space:nowrap;font-size:15px}
   .forecast{fill:none;stroke:var(--muted);stroke-width:2;stroke-dasharray:4 4;stroke-linecap:round}
@@ -189,5 +206,6 @@ document = f'''<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="
 {month_content()}</div>
 <div class="screen small" id="missing">{rankings(named_places=[])}</div>
 <div class="screen small" id="completed">{pace([*daily, *([650] * 12)], 2026, 10, 'окт')}</div>
+<div class="screen" id="scale-examples">{''.join(pace([amount * factor for amount in daily], 2026, 11, 'ноя') for factor in (2, 3))}</div>
 {finance_home()}</main></html>'''
 (HERE / 'screens.html').write_text(document)

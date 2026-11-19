@@ -31,21 +31,42 @@ const path = require('node:path');
     assert.equal(await pace.getAttribute('data-days'), '30');
     assert.equal(await pace.getAttribute('data-actual-days'), '19');
     assert.match(await pace.locator('.estimate').innerText(), /44\s*800\s*₽/);
+    assert.equal(await pace.locator('.current-date').textContent(), '19 ноя');
     const coordinates = await pace.evaluate(panel => {
       const line = panel.querySelector('.trend');
       const end = line.points.getItem(line.points.numberOfItems - 1);
       const forecast = panel.querySelector('.forecast');
+      const lastDate = panel.querySelector('.date-tick:last-child');
+      const cutoff = panel.querySelector('.cutoff');
+      const currentDate = panel.querySelector('.current-date');
       return { from: Number(forecast.getAttribute('x1')), to: Number(forecast.getAttribute('x2')),
-        actualX: end.x, actualDays: line.points.numberOfItems, dash: getComputedStyle(forecast).strokeDasharray };
+        actualX: end.x, actualDays: line.points.numberOfItems, dash: getComputedStyle(forecast).strokeDasharray,
+        lastDateX: Number(lastDate.getAttribute('x')), todayX: Number(currentDate.getAttribute('x')),
+        cutoffX: Number(cutoff.getAttribute('x1')) };
     });
     assert.equal(coordinates.actualDays, 19);
     assert(Math.abs(coordinates.from - coordinates.actualX) < 0.01);
-    assert.equal(coordinates.to, 334);
+    assert.equal(coordinates.to, coordinates.lastDateX);
+    assert.equal(coordinates.from, coordinates.todayX);
+    assert.equal(coordinates.cutoffX, coordinates.todayX);
     assert.notEqual(coordinates.dash, 'none');
     const completed = page.locator('#completed .pace');
     assert.equal(await completed.getAttribute('data-days'), '31');
     assert.equal(await completed.getAttribute('data-actual-days'), '31');
     assert.equal(await completed.locator('.forecast').count(), 0);
+    const scales = page.locator('#scale-examples');
+    const charts = [pace, ...await scales.locator('.pace').all()];
+    const limits = [50000, 100000, 150000];
+    assert.equal(charts.length, limits.length);
+    for (const [index, chart] of charts.entries()) {
+      const limit = limits[index];
+      const labels = await chart.locator('.value-tick').allTextContents();
+      assert.deepEqual(labels.map(label => Number(label.replace(/\s/g, ''))), [limit, limit / 2, 0]);
+      const pathData = await chart.locator('.grid').getAttribute('d');
+      const guides = [...pathData.matchAll(/M\d+ (\d+)H\d+/g)].map(match => Number(match[1]));
+      assert.deepEqual(guides, [30, 99, 168]);
+    }
+    await scales.screenshot({ path: path.join(__dirname, 'chart-scales.png') });
     await overview.screenshot({ path: path.join(__dirname, 'month.png') });
     await overview.locator('.rankings').screenshot({ path: path.join(__dirname, 'rankings.png') });
     await page.setViewportSize({ width: 320, height: 1050 });

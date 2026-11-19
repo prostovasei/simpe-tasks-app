@@ -13,6 +13,7 @@
   section{padding:16px 0}section:last-child{padding-bottom:0}
   .pace svg{display:block;width:100%;height:auto;fill:var(--ink)}.grid,.trend{fill:none;stroke:var(--divider)}
   .pace svg text{fill:var(--muted);font-size:10px}.trend{stroke:var(--ink);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+  .pace .current-date{fill:var(--ink);font-weight:700}.value-tick{paint-order:stroke;stroke:var(--surface);stroke-width:2.5px}
   .estimate{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 0 8px;color:var(--muted);font-size:12px}
   .estimate b{color:var(--ink);white-space:nowrap;font-size:15px}
   .forecast{fill:none;stroke:var(--muted);stroke-width:2;stroke-dasharray:4 4;stroke-linecap:round}
@@ -55,12 +56,11 @@
 <div class="screen" id="overview"><div class="month"><span aria-hidden="true">‹</span><h1>Ноябрь 2026</h1><span aria-hidden="true">›</span></div>
 <div class="total"><p>Расходы · 1–19 ноября</p><h2>28 400 ₽</h2></div>
     <section class="pace" data-days="30" data-actual-days="19"><h3>Темп расходов</h3><div class="estimate"><span>К 30 ноя при текущем темпе</span><b>≈ 44 800 ₽</b></div>
-    <svg viewBox="0 0 356 141" role="img" aria-label="С 1 по 19 число потрачено 28 400 ₽. Прогноз на 30 число — около 44 800 ₽.">
-      <path d="M46 114H334 M46 67H334 M46 20H334" class="grid"/><text x="0" y="117">0 ₽</text><text x="0" y="70">25 тыс.</text><text x="0" y="23">50 тыс.</text><line x1="224.76" y1="60.61" x2="224.76" y2="114" class="cutoff"/>
-        <line x1="224.76" y1="60.61" x2="334.00" y2="29.70" class="forecast"/>
-        <circle cx="334.00" cy="29.70" r="3" class="estimate-dot"/>
-      <polyline points="46.00,112.31 55.93,110.24 65.86,109.68 75.79,108.17 85.72,103.47 95.66,102.16 105.59,99.90 115.52,99.90 125.45,97.55 135.38,94.17 145.31,93.23 155.24,77.43 165.17,76.68 175.10,74.80 185.03,70.85 194.97,69.35 204.90,65.59 214.83,62.58 224.76,60.61" class="trend"/>
-      <circle cx="224.76" cy="60.61" r="3.25" class="actual-dot"/><text x="46.00" y="134" text-anchor="start">1 ноя</text><text x="135.38" y="134" text-anchor="middle">10</text><text x="224.76" y="134" text-anchor="middle">19</text><text x="334.00" y="134" text-anchor="end">30 ноя</text>
+    <svg viewBox="0 0 356 176" role="img" aria-label="С 1 по 19 число потрачено 28 400 ₽. Прогноз на 30 число — около 44 800 ₽.">
+      <path d="M4 30H352 M4 99H352 M4 168H352" class="grid"/><line x1="220.00" y1="30" x2="220.00" y2="168" class="cutoff"/><line x1="220.00" y1="89.62" x2="352.00" y2="44.24" class="forecast"/>
+        <circle cx="352.00" cy="44.24" r="3" class="estimate-dot"/>
+      <polyline points="4.00,165.52 16.00,162.48 28.00,161.65 40.00,159.44 52.00,152.54 64.00,150.61 76.00,147.30 88.00,147.30 100.00,143.85 112.00,138.88 124.00,137.50 136.00,114.32 148.00,113.21 160.00,110.45 172.00,104.66 184.00,102.45 196.00,96.93 208.00,92.51 220.00,89.62" class="trend"/>
+      <circle cx="220.00" cy="89.62" r="3.25" class="actual-dot"/><text class="value-tick" x="8" y="42">50 000</text><text class="value-tick" x="8" y="94">25 000</text><text class="value-tick" x="8" y="163">0</text><text class="date-tick" x="4.00" y="12" text-anchor="start">1 ноя</text><text class="current-date" x="220.00" y="12" text-anchor="middle">19 ноя</text><text class="date-tick" x="352.00" y="12" text-anchor="end">30 ноя</text>
     </svg></section><section class="rankings" aria-label="Распределение расходов за месяц">
       <div class="tables">
         <table class="categories">
@@ -86,10 +86,23 @@
       </div>
     </section></div>
 <div class="screen small" id="completed"><section class="pace" data-days="31" data-actual-days="31"><h3>Темп расходов</h3>
-    <svg viewBox="0 0 356 141" role="img" aria-label="С 1 по 31 число потрачено 36 200 ₽.">
-      <path d="M46 114H334 M46 67H334 M46 20H334" class="grid"/><text x="0" y="117">0 ₽</text><text x="0" y="70">20 тыс.</text><text x="0" y="23">40 тыс.</text>
-      <polyline points="46.00,111.89 55.60,109.30 65.20,108.59 74.80,106.72 84.40,100.84 94.00,99.19 103.60,96.38 113.20,96.38 122.80,93.44 132.40,89.21 142.00,88.03 151.60,68.29 161.20,67.35 170.80,65.00 180.40,60.07 190.00,58.19 199.60,53.49 209.20,49.73 218.80,47.26 228.40,45.73 238.00,44.20 247.60,42.68 257.20,41.15 266.80,39.62 276.40,38.09 286.00,36.57 295.60,35.04 305.20,33.51 314.80,31.98 324.40,30.46 334.00,28.93" class="trend"/>
-      <circle cx="334.00" cy="28.93" r="3.25" class="actual-dot"/><text x="46.00" y="134" text-anchor="start">1 окт</text><text x="132.40" y="134" text-anchor="middle">10</text><text x="334.00" y="134" text-anchor="end">31 окт</text>
+    <svg viewBox="0 0 356 176" role="img" aria-label="С 1 по 31 число потрачено 36 200 ₽.">
+      <path d="M4 30H352 M4 99H352 M4 168H352" class="grid"/>
+      <polyline points="4.00,164.90 15.60,161.10 27.20,160.06 38.80,157.31 50.40,148.68 62.00,146.26 73.60,142.12 85.20,142.12 96.80,137.81 108.40,131.60 120.00,129.88 131.60,100.90 143.20,99.52 154.80,96.07 166.40,88.82 178.00,86.06 189.60,79.16 201.20,73.64 212.80,70.02 224.40,67.78 236.00,65.53 247.60,63.29 259.20,61.05 270.80,58.81 282.40,56.56 294.00,54.32 305.60,52.08 317.20,49.84 328.80,47.59 340.40,45.35 352.00,43.11" class="trend"/>
+      <circle cx="352.00" cy="43.11" r="3.25" class="actual-dot"/><text class="value-tick" x="8" y="42">40 000</text><text class="value-tick" x="8" y="94">20 000</text><text class="value-tick" x="8" y="163">0</text><text class="date-tick" x="4.00" y="12" text-anchor="start">1 окт</text><text class="date-tick" x="352.00" y="12" text-anchor="end">31 окт</text>
+    </svg></section></div>
+<div class="screen" id="scale-examples"><section class="pace" data-days="30" data-actual-days="19"><h3>Темп расходов</h3><div class="estimate"><span>К 30 ноя при текущем темпе</span><b>≈ 89 700 ₽</b></div>
+    <svg viewBox="0 0 356 176" role="img" aria-label="С 1 по 19 число потрачено 56 800 ₽. Прогноз на 30 число — около 89 700 ₽.">
+      <path d="M4 30H352 M4 99H352 M4 168H352" class="grid"/><line x1="220.00" y1="30" x2="220.00" y2="168" class="cutoff"/><line x1="220.00" y1="89.62" x2="352.00" y2="44.24" class="forecast"/>
+        <circle cx="352.00" cy="44.24" r="3" class="estimate-dot"/>
+      <polyline points="4.00,165.52 16.00,162.48 28.00,161.65 40.00,159.44 52.00,152.54 64.00,150.61 76.00,147.30 88.00,147.30 100.00,143.85 112.00,138.88 124.00,137.50 136.00,114.32 148.00,113.21 160.00,110.45 172.00,104.66 184.00,102.45 196.00,96.93 208.00,92.51 220.00,89.62" class="trend"/>
+      <circle cx="220.00" cy="89.62" r="3.25" class="actual-dot"/><text class="value-tick" x="8" y="42">100 000</text><text class="value-tick" x="8" y="94">50 000</text><text class="value-tick" x="8" y="163">0</text><text class="date-tick" x="4.00" y="12" text-anchor="start">1 ноя</text><text class="current-date" x="220.00" y="12" text-anchor="middle">19 ноя</text><text class="date-tick" x="352.00" y="12" text-anchor="end">30 ноя</text>
+    </svg></section><section class="pace" data-days="30" data-actual-days="19"><h3>Темп расходов</h3><div class="estimate"><span>К 30 ноя при текущем темпе</span><b>≈ 134 500 ₽</b></div>
+    <svg viewBox="0 0 356 176" role="img" aria-label="С 1 по 19 число потрачено 85 200 ₽. Прогноз на 30 число — около 134 500 ₽.">
+      <path d="M4 30H352 M4 99H352 M4 168H352" class="grid"/><line x1="220.00" y1="30" x2="220.00" y2="168" class="cutoff"/><line x1="220.00" y1="89.62" x2="352.00" y2="44.24" class="forecast"/>
+        <circle cx="352.00" cy="44.24" r="3" class="estimate-dot"/>
+      <polyline points="4.00,165.52 16.00,162.48 28.00,161.65 40.00,159.44 52.00,152.54 64.00,150.61 76.00,147.30 88.00,147.30 100.00,143.85 112.00,138.88 124.00,137.50 136.00,114.32 148.00,113.21 160.00,110.45 172.00,104.66 184.00,102.45 196.00,96.93 208.00,92.51 220.00,89.62" class="trend"/>
+      <circle cx="220.00" cy="89.62" r="3.25" class="actual-dot"/><text class="value-tick" x="8" y="42">150 000</text><text class="value-tick" x="8" y="94">75 000</text><text class="value-tick" x="8" y="163">0</text><text class="date-tick" x="4.00" y="12" text-anchor="start">1 ноя</text><text class="current-date" x="220.00" y="12" text-anchor="middle">19 ноя</text><text class="date-tick" x="352.00" y="12" text-anchor="end">30 ноя</text>
     </svg></section></div>
 <div class="finance" id="finance">
       <div class="finance-body">
@@ -100,12 +113,11 @@
           <h1>Ноябрь 2026</h1><button aria-label="Следующий месяц" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 7-5 5 5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
         <div class="total"><p>Расходы · 1–19 ноября</p><h2>28 400 ₽</h2></div>
     <section class="pace" data-days="30" data-actual-days="19"><h3>Темп расходов</h3><div class="estimate"><span>К 30 ноя при текущем темпе</span><b>≈ 44 800 ₽</b></div>
-    <svg viewBox="0 0 356 141" role="img" aria-label="С 1 по 19 число потрачено 28 400 ₽. Прогноз на 30 число — около 44 800 ₽.">
-      <path d="M46 114H334 M46 67H334 M46 20H334" class="grid"/><text x="0" y="117">0 ₽</text><text x="0" y="70">25 тыс.</text><text x="0" y="23">50 тыс.</text><line x1="224.76" y1="60.61" x2="224.76" y2="114" class="cutoff"/>
-        <line x1="224.76" y1="60.61" x2="334.00" y2="29.70" class="forecast"/>
-        <circle cx="334.00" cy="29.70" r="3" class="estimate-dot"/>
-      <polyline points="46.00,112.31 55.93,110.24 65.86,109.68 75.79,108.17 85.72,103.47 95.66,102.16 105.59,99.90 115.52,99.90 125.45,97.55 135.38,94.17 145.31,93.23 155.24,77.43 165.17,76.68 175.10,74.80 185.03,70.85 194.97,69.35 204.90,65.59 214.83,62.58 224.76,60.61" class="trend"/>
-      <circle cx="224.76" cy="60.61" r="3.25" class="actual-dot"/><text x="46.00" y="134" text-anchor="start">1 ноя</text><text x="135.38" y="134" text-anchor="middle">10</text><text x="224.76" y="134" text-anchor="middle">19</text><text x="334.00" y="134" text-anchor="end">30 ноя</text>
+    <svg viewBox="0 0 356 176" role="img" aria-label="С 1 по 19 число потрачено 28 400 ₽. Прогноз на 30 число — около 44 800 ₽.">
+      <path d="M4 30H352 M4 99H352 M4 168H352" class="grid"/><line x1="220.00" y1="30" x2="220.00" y2="168" class="cutoff"/><line x1="220.00" y1="89.62" x2="352.00" y2="44.24" class="forecast"/>
+        <circle cx="352.00" cy="44.24" r="3" class="estimate-dot"/>
+      <polyline points="4.00,165.52 16.00,162.48 28.00,161.65 40.00,159.44 52.00,152.54 64.00,150.61 76.00,147.30 88.00,147.30 100.00,143.85 112.00,138.88 124.00,137.50 136.00,114.32 148.00,113.21 160.00,110.45 172.00,104.66 184.00,102.45 196.00,96.93 208.00,92.51 220.00,89.62" class="trend"/>
+      <circle cx="220.00" cy="89.62" r="3.25" class="actual-dot"/><text class="value-tick" x="8" y="42">50 000</text><text class="value-tick" x="8" y="94">25 000</text><text class="value-tick" x="8" y="163">0</text><text class="date-tick" x="4.00" y="12" text-anchor="start">1 ноя</text><text class="current-date" x="220.00" y="12" text-anchor="middle">19 ноя</text><text class="date-tick" x="352.00" y="12" text-anchor="end">30 ноя</text>
     </svg></section><section class="rankings" aria-label="Распределение расходов за месяц">
       <div class="tables">
         <table class="categories">
