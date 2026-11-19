@@ -65,6 +65,20 @@ const path = require('node:path');
     assert.equal(await missing.locator('tr').count(), 1);
     assert.match(await missing.innerText(), /Остальное\s+28\s*400/);
     await page.locator('#missing').screenshot({ path: path.join(__dirname, 'without-places.png') });
+
+    const finance = page.locator('#finance');
+    assert(await finance.evaluate(screen => screen.scrollWidth <= screen.clientWidth));
+    await page.setViewportSize({ width: 432, height: 948 });
+    const accountsBox = await finance.locator('.account-tiles').boundingBox();
+    const monthBox = await finance.locator('.finance-month').boundingBox();
+    const chartBox = await finance.locator('.pace').boundingBox();
+    const rankingsBox = await finance.locator('.rankings').boundingBox();
+    const barBox = await finance.locator('.finance-bar').boundingBox();
+    assert(accountsBox.y + accountsBox.height <= monthBox.y && monthBox.y + monthBox.height <= chartBox.y);
+    assert(chartBox.y + chartBox.height <= rankingsBox.y && rankingsBox.y + rankingsBox.height <= barBox.y);
+    assert.equal(await finance.locator('.finance-tabs [aria-current="page"]').getAttribute('aria-label'), 'Аналитика');
+    assert.equal((await finance.boundingBox()).height, 900);
+    await finance.screenshot({ path: path.join(__dirname, 'finance-home.png') });
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();

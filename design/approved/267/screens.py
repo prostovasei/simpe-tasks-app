@@ -10,6 +10,8 @@ source = HERE.parent / '259' / 'screens.py'
 design = {'__file__': str(source)}
 exec(compile(source.read_text().split('\npriority = re.search', 1)[0], str(source), 'exec'), design)
 color = design['color']
+dim = design['dim']
+vector = design['vector']
 daily = [900, 1100, 300, 800, 2500, 700, 1200, 0, 1250, 1800, 500, 8400, 400, 1000, 2100, 800, 2000, 1600, 1050]
 categories = [('Продукты', '🛒', 12400), ('Транспорт', '🚕', 6400), ('Кафе', '☕', 4200), ('Дом', '🏠', 3500), ('Здоровье', '💊', 1100), ('Связь', '📱', 800)]
 places = [('Пятёрочка', 6860), ('Лента', 5270), ('ВкусВилл', 4220), ('Додо Пицца', 3150), ('Аптека', 2100), ('Кофейня', 900)]
@@ -98,7 +100,38 @@ def rankings(named_places=places):
     </section>'''
 
 
-CSS = design['fonts'] + f":root{{--ink:{color('textPrimary')};--muted:{color('textSecondary')};--divider:{color('divider')};--surface:{color('surface')}}}" + '''
+def month_content():
+    return f'''<div class="total"><p>Расходы · 1–19 ноября</p><h2>{money(total)}</h2></div>
+    {pace(daily, 2026, 11, 'ноя')}{rankings()}'''
+
+
+def finance_home():
+    # Счета и панель по снимку finance_analytics_light.png. Иконки вкладок из приложения.
+    accounts = [('💳', 'Карта', 42300), ('👛', 'Наличные', 6150), ('🏦', 'Накопления', 80000)]
+    tiles = ''.join(f'<div><p>{icon} {name}</p><b>{money(balance)}</b></div>' for icon, name, balance in accounts)
+    plus = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'
+    prev = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 7-5 5 5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+    return f'''<div class="finance" id="finance">
+      <div class="finance-body">
+        <div class="accounts-heading"><span><b>Счета</b> · {money(sum(balance for _, _, balance in accounts))}</span>
+          <button class="account-add" aria-label="Создать счёт">{plus}</button></div>
+        <div class="account-tiles">{tiles}</div>
+        <div class="finance-month"><button aria-label="Предыдущий месяц">{prev}</button>
+          <h1>Ноябрь 2026</h1><button aria-label="Следующий месяц" disabled>{prev}</button></div>
+        <div class="analytics-card">{month_content()}</div>
+      </div>
+      <nav class="finance-bar" aria-label="Финансы">
+        <button class="add-operation" aria-label="Добавить операцию">{plus}</button>
+        <div class="finance-tabs"><button aria-current="page" aria-label="Аналитика">{vector('ic_finance_tab_analytics')}</button>
+          <button aria-label="Операции">{vector('ic_finance_tab_operations')}</button></div>
+        <button class="finance-module" aria-label="Открыть меню модулей">{vector('ic_module_finance')}</button>
+      </nav>
+    </div>'''
+
+
+CSS = design['fonts'] + f''':root{{--ink:{color('textPrimary')};--muted:{color('textSecondary')};--divider:{color('divider')};
+  --surface:{color('surface')};--app-bg:{color('background')};--inactive:{color('inactive')};
+  --bar-height:{dim('APP_BAR')}px;--bar-button:{dim('APP_BAR_BUTTON')}px;--page-width:{dim('APP_BAR_PAGE_W')}px}}''' + '''
   *{box-sizing:border-box}body{margin:0;background:#eeeef1;color:var(--ink);font:14px/1.4 Manrope,sans-serif}
   main{max-width:960px;margin:auto;padding:24px 16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:20px;align-items:start}
   .screen{width:100%;max-width:390px;margin:auto;background:var(--surface);padding:16px 18px 14px;border-radius:16px}
@@ -123,11 +156,36 @@ CSS = design['fonts'] + f":root{{--ink:{color('textPrimary')};--muted:{color('te
   .index{font-size:11px;text-align:center}.stat-title{overflow-wrap:anywhere}
   @media(max-width:360px){main{padding-inline:0}.screen{padding-inline:12px}.tables{gap:12px}table{font-size:11px}}
   .small{max-width:320px;margin-top:0}
+  .finance{width:100%;max-width:400px;min-height:900px;margin:auto;display:flex;flex-direction:column;background:var(--app-bg)}
+  .finance-body{padding:0 16px 16px}
+  .finance button{display:grid;place-items:center;color:var(--ink);background:var(--surface);border:0;padding:0}
+  .finance button svg{width:24px;height:24px}
+  .accounts-heading,.finance-month{display:flex;align-items:center;justify-content:space-between}
+  .accounts-heading{height:48px;padding-left:4px;color:var(--muted)}.accounts-heading b{color:var(--ink)}
+  .finance .account-add{width:32px;height:32px;border-radius:8px}.finance .account-add svg{width:18px;height:18px}
+  .account-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .account-tiles>div{min-width:0;border-radius:12px;background:var(--surface);padding:12px}
+  .account-tiles p{color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:8px}
+  .account-tiles b{white-space:nowrap}
+  .finance-month{margin:16px 0 12px}
+  .finance-month button{width:40px;height:40px;border-radius:12px}
+  .finance-month button:last-child svg{transform:scaleX(-1)}.finance-month button:disabled{color:var(--inactive)}
+  .analytics-card{padding:16px;border-radius:16px;background:var(--surface)}.finance .total{padding-top:0}
+  .finance-bar{margin-top:auto;min-height:var(--bar-height);border-top:1px solid var(--divider);padding:0 12px;display:flex;align-items:center}
+  .finance-bar button{background:transparent}.finance-bar svg path{fill:none;stroke-linejoin:round}
+  .finance-bar .add-operation,.finance-bar .finance-module{width:72px;height:var(--bar-button);border-radius:16px}
+  .finance-bar .add-operation{background:var(--ink);color:var(--surface)}.finance-bar .finance-module{border:2px solid var(--ink)}
+  .finance-bar .finance-module svg{width:20px;height:20px}
+  .finance-tabs{display:flex;flex:1;justify-content:center}
+  .finance-tabs button{width:var(--page-width);height:var(--bar-height);color:var(--inactive)}
+  .finance-tabs button[aria-current]{color:var(--ink)}
+  @media(max-width:360px){.finance-body,.analytics-card{padding-inline:12px}.account-tiles>div{padding-inline:8px}}
 '''
 document = f'''<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Аналитика месяца · #267</title>
 <style>{CSS}</style><main>
 <div class="screen" id="overview"><div class="month"><span aria-hidden="true">‹</span><h1>Ноябрь 2026</h1><span aria-hidden="true">›</span></div>
-<div class="total"><p>Расходы · 1–19 ноября</p><h2>{money(total)}</h2></div>{pace(daily, 2026, 11, 'ноя')}{rankings()}</div>
+{month_content()}</div>
 <div class="screen small" id="missing">{rankings(named_places=[])}</div>
-<div class="screen small" id="completed">{pace([*daily, *([650] * 12)], 2026, 10, 'окт')}</div></main></html>'''
+<div class="screen small" id="completed">{pace([*daily, *([650] * 12)], 2026, 10, 'окт')}</div>
+{finance_home()}</main></html>'''
 (HERE / 'screens.html').write_text(document)
