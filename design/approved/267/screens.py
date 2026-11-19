@@ -13,6 +13,7 @@ color = design['color']
 dim = design['dim']
 vector = design['vector']
 month_label = 'ноя 26'
+monthly_limit = 40_000
 daily = [900, 1100, 300, 800, 2500, 700, 1200, 0, 1250, 1800, 500, 8400, 400, 1000, 2100, 800, 2000, 1600, 1050]
 categories = [('Продукты', '🛒', 12400), ('Транспорт', '🚕', 6400), ('Кафе', '☕', 4200), ('Дом', '🏠', 3500), ('Здоровье', '💊', 1100), ('Связь', '📱', 800)]
 places = [('Пятёрочка', 6860), ('Лента', 5270), ('ВкусВилл', 4220), ('Додо Пицца', 3150), ('Аптека', 2100), ('Кофейня', 900)]
@@ -30,11 +31,14 @@ def money(amount):
     return digits(amount) + '\u00a0₽'
 
 
-def compact_money(amount):
+def compact_money(amount, *, tenths=False):
     if amount < 1000:
         return money(round(amount))
-    thousands = int((amount + 500) // 1000)
-    return f'{digits(thousands)}k\u00a0₽'
+    if tenths:
+        thousands = f'{amount / 1000:,.1f}'.removesuffix('.0').replace(',', '\u00a0').replace('.', ',')
+    else:
+        thousands = digits(int((amount + 500) // 1000))
+    return f'{thousands}k\u00a0₽'
 
 
 def scale_ceiling(amount):
@@ -44,7 +48,7 @@ def scale_ceiling(amount):
     return next(int(step * magnitude) for step in steps if step * magnitude >= amount)
 
 
-def pace(amounts, year, month):
+def pace(amounts, year, month, limit=None):
     last_day = monthrange(year, month)[1]
     as_of = len(amounts)
     assert 1 <= as_of <= last_day
@@ -84,7 +88,16 @@ def pace(amounts, year, month):
         cutoff = f'<line x1="{x(as_of):.2f}" y1="{top}" x2="{x(as_of):.2f}" y2="{bottom}" class="cutoff"/>'
     forecast = ''
     estimate_amount = ''
+    remaining_amount = ''
     description = f'С 1 по {as_of} число потрачено {money(actual)}.'
+    if limit is not None:
+        remaining = max(0, limit - actual)
+        remaining_amount = f'''<div class="pace-amount amount-remaining">
+          <span class="pace-icon" role="img" aria-label="Осталось до лимита">
+            <svg viewBox="0 0 24 24" aria-hidden="true" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <path d="M3.5 17a8.5 8.5 0 0 1 17 0h-17ZM12 15.5l3.5-4M6.7 12.7l1 1"/>
+            </svg></span>
+          <b>{compact_money(remaining)}</b></div>'''
     if estimate is not None:
         description += f' Прогноз на {last_day} число — около {money(round(estimate))}.'
         estimate_amount = f'''<div class="pace-amount amount-estimate">
@@ -103,7 +116,7 @@ def pace(amounts, year, month):
         <svg viewBox="0 0 24 24" aria-hidden="true" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
           <path d="M5 3h14v17l-2.3-1.5-2.4 1.5-2.3-1.5L9.7 20l-2.4-1.5L5 20V3ZM8 8h8m-8 4h5"/>
         </svg></span>
-      <b>{compact_money(actual)}</b></div>{estimate_amount}</div>
+      <b>{compact_money(actual)}</b></div>{remaining_amount}{estimate_amount}</div>
     <svg viewBox="0 0 356 178" role="img" aria-label="{description}">
       <path d="{grid}" class="grid"/>{cutoff}{forecast}
       <polyline points="{coords}" class="trend"/>
@@ -141,12 +154,21 @@ def rankings(named_places=places):
 
 
 def month_content():
-    return pace(daily, 2026, 11) + rankings()
+    return pace(daily, 2026, 11, monthly_limit) + rankings()
 
 
 def expenses_heading():
     prev = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 7-5 5 5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
-    return f'''<div class="expenses-heading"><h1>Расходы</h1>
+    average = compact_money(total / len(daily), tenths=True)
+    return f'''<div class="expenses-heading">
+      <div class="daily-average">
+        <span class="pace-icon" role="img" aria-label="Средние расходы">
+          <svg viewBox="0 0 24 24" aria-hidden="true" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <path d="M5 19v-5m7 5V6m7 13v-9M3 19h18"/>
+            <path d="M3 11h18" stroke-dasharray="2 2"/>
+          </svg></span>
+        <b>{average}</b><span>/день</span>
+      </div>
       <div class="month-selector" role="group" aria-label="Выбор месяца">
         <button aria-label="Предыдущий месяц">{prev}</button><span>{month_label}</span>
         <button aria-label="Следующий месяц" disabled>{prev}</button>
@@ -181,7 +203,7 @@ CSS = design['fonts'] + f''':root{{--ink:{color('textPrimary')};--muted:{color('
   *{box-sizing:border-box}body{margin:0;background:#eeeef1;color:var(--ink);font:14px/1.4 Manrope,sans-serif}
   main{max-width:960px;margin:auto;padding:24px 16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:20px;align-items:start}
   .screen{width:100%;max-width:390px;margin:auto;background:var(--surface);padding:16px 18px 14px;border-radius:16px}
-  h1,p{margin:0}h1{font-size:16px}
+  p{margin:0}
   .expenses-heading,.accounts-heading{display:flex;align-items:center;justify-content:space-between}
   .month-selector{display:flex;align-items:center;white-space:nowrap;font-weight:700}
   .month-selector button{display:grid;place-items:center;width:32px;height:40px;color:var(--ink);background:transparent;border:0;padding:0}
@@ -192,10 +214,13 @@ CSS = design['fonts'] + f''':root{{--ink:{color('textPrimary')};--muted:{color('
   .pace > svg{display:block;width:100%;height:auto;fill:var(--ink)}.grid,.trend{fill:none;stroke:var(--divider)}
   .pace > svg text{fill:var(--muted);font-size:10px}.trend{stroke:var(--ink);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
   .pace .current-date{fill:var(--ink);font-weight:700}.value-tick{paint-order:stroke;stroke:var(--surface);stroke-width:2.5px}
-  .pace-summary{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
-  .pace-amount{display:flex;align-items:center;gap:5px;white-space:nowrap;font-size:clamp(20px,7.6cqw,28px);line-height:1.2;font-variant-numeric:tabular-nums}
+  .pace-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:center;gap:4px;margin-bottom:12px}
+  .pace-amount{display:flex;align-items:center;gap:5px;white-space:nowrap;font-size:clamp(17px,7cqw,28px);line-height:1.2;font-variant-numeric:tabular-nums}
+  .amount-actual{grid-column:1;justify-self:start}.amount-remaining{grid-column:2;justify-self:center}.amount-estimate{grid-column:3;justify-self:end}
   .pace-icon{display:grid;place-items:center;color:var(--muted)}
   .pace-icon svg{width:20px;height:20px}.pace-icon path{fill:none;stroke-linejoin:round}
+  .daily-average{display:flex;align-items:center;gap:4px;white-space:nowrap;font-size:16px}
+  .daily-average span:last-child{color:var(--muted);font-size:12px}
   .forecast{fill:none;stroke:var(--muted);stroke-width:2;stroke-dasharray:4 4;stroke-linecap:round}
   .cutoff{stroke:var(--divider);stroke-dasharray:2 3}.estimate-dot{fill:var(--surface);stroke:var(--muted);stroke-width:1.6}
   .tables{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
@@ -236,6 +261,6 @@ document = f'''<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="
 {month_content()}</div>
 <div class="screen small" id="missing">{rankings(named_places=[])}</div>
 <div class="screen small" id="completed">{pace([*daily, *([650] * 12)], 2026, 10)}</div>
-<div class="screen" id="scale-examples">{''.join(pace([amount * factor for amount in daily], 2026, 11) for factor in (2, 3))}</div>
+<div class="screen" id="scale-examples">{''.join(pace([amount * factor for amount in daily], 2026, 11, monthly_limit * factor) for factor in (2, 3))}</div>
 {finance_home()}</main></html>'''
 (HERE / 'screens.html').write_text(document)

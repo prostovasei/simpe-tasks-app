@@ -5,7 +5,7 @@
   *{box-sizing:border-box}body{margin:0;background:#eeeef1;color:var(--ink);font:14px/1.4 Manrope,sans-serif}
   main{max-width:960px;margin:auto;padding:24px 16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:20px;align-items:start}
   .screen{width:100%;max-width:390px;margin:auto;background:var(--surface);padding:16px 18px 14px;border-radius:16px}
-  h1,p{margin:0}h1{font-size:16px}
+  p{margin:0}
   .expenses-heading,.accounts-heading{display:flex;align-items:center;justify-content:space-between}
   .month-selector{display:flex;align-items:center;white-space:nowrap;font-weight:700}
   .month-selector button{display:grid;place-items:center;width:32px;height:40px;color:var(--ink);background:transparent;border:0;padding:0}
@@ -16,10 +16,13 @@
   .pace > svg{display:block;width:100%;height:auto;fill:var(--ink)}.grid,.trend{fill:none;stroke:var(--divider)}
   .pace > svg text{fill:var(--muted);font-size:10px}.trend{stroke:var(--ink);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
   .pace .current-date{fill:var(--ink);font-weight:700}.value-tick{paint-order:stroke;stroke:var(--surface);stroke-width:2.5px}
-  .pace-summary{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
-  .pace-amount{display:flex;align-items:center;gap:5px;white-space:nowrap;font-size:clamp(20px,7.6cqw,28px);line-height:1.2;font-variant-numeric:tabular-nums}
+  .pace-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:center;gap:4px;margin-bottom:12px}
+  .pace-amount{display:flex;align-items:center;gap:5px;white-space:nowrap;font-size:clamp(17px,7cqw,28px);line-height:1.2;font-variant-numeric:tabular-nums}
+  .amount-actual{grid-column:1;justify-self:start}.amount-remaining{grid-column:2;justify-self:center}.amount-estimate{grid-column:3;justify-self:end}
   .pace-icon{display:grid;place-items:center;color:var(--muted)}
   .pace-icon svg{width:20px;height:20px}.pace-icon path{fill:none;stroke-linejoin:round}
+  .daily-average{display:flex;align-items:center;gap:4px;white-space:nowrap;font-size:16px}
+  .daily-average span:last-child{color:var(--muted);font-size:12px}
   .forecast{fill:none;stroke:var(--muted);stroke-width:2;stroke-dasharray:4 4;stroke-linecap:round}
   .cutoff{stroke:var(--divider);stroke-dasharray:2 3}.estimate-dot{fill:var(--surface);stroke:var(--muted);stroke-width:1.6}
   .tables{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
@@ -54,7 +57,15 @@
   .finance-tabs button[aria-current]{color:var(--ink)}
   @media(max-width:360px){.finance-body{padding-inline:12px}}
 </style><main>
-<div class="screen" id="overview"><div class="expenses-heading"><h1>Расходы</h1>
+<div class="screen" id="overview"><div class="expenses-heading">
+      <div class="daily-average">
+        <span class="pace-icon" role="img" aria-label="Средние расходы">
+          <svg viewBox="0 0 24 24" aria-hidden="true" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <path d="M5 19v-5m7 5V6m7 13v-9M3 19h18"/>
+            <path d="M3 11h18" stroke-dasharray="2 2"/>
+          </svg></span>
+        <b>1,5k ₽</b><span>/день</span>
+      </div>
       <div class="month-selector" role="group" aria-label="Выбор месяца">
         <button aria-label="Предыдущий месяц"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 7-5 5 5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span>ноя 26</span>
         <button aria-label="Следующий месяц" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 7-5 5 5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
@@ -65,7 +76,12 @@
         <svg viewBox="0 0 24 24" aria-hidden="true" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
           <path d="M5 3h14v17l-2.3-1.5-2.4 1.5-2.3-1.5L9.7 20l-2.4-1.5L5 20V3ZM8 8h8m-8 4h5"/>
         </svg></span>
-      <b>28k ₽</b></div><div class="pace-amount amount-estimate">
+      <b>28k ₽</b></div><div class="pace-amount amount-remaining">
+          <span class="pace-icon" role="img" aria-label="Осталось до лимита">
+            <svg viewBox="0 0 24 24" aria-hidden="true" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <path d="M3.5 17a8.5 8.5 0 0 1 17 0h-17ZM12 15.5l3.5-4M6.7 12.7l1 1"/>
+            </svg></span>
+          <b>12k ₽</b></div><div class="pace-amount amount-estimate">
           <span class="pace-icon" role="img" aria-label="Прогноз на конец месяца">
             <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
               <rect x="3" y="5" width="18" height="16" rx="2"/>
@@ -120,7 +136,12 @@
         <svg viewBox="0 0 24 24" aria-hidden="true" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
           <path d="M5 3h14v17l-2.3-1.5-2.4 1.5-2.3-1.5L9.7 20l-2.4-1.5L5 20V3ZM8 8h8m-8 4h5"/>
         </svg></span>
-      <b>57k ₽</b></div><div class="pace-amount amount-estimate">
+      <b>57k ₽</b></div><div class="pace-amount amount-remaining">
+          <span class="pace-icon" role="img" aria-label="Осталось до лимита">
+            <svg viewBox="0 0 24 24" aria-hidden="true" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <path d="M3.5 17a8.5 8.5 0 0 1 17 0h-17ZM12 15.5l3.5-4M6.7 12.7l1 1"/>
+            </svg></span>
+          <b>23k ₽</b></div><div class="pace-amount amount-estimate">
           <span class="pace-icon" role="img" aria-label="Прогноз на конец месяца">
             <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
               <rect x="3" y="5" width="18" height="16" rx="2"/>
@@ -139,7 +160,12 @@
         <svg viewBox="0 0 24 24" aria-hidden="true" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
           <path d="M5 3h14v17l-2.3-1.5-2.4 1.5-2.3-1.5L9.7 20l-2.4-1.5L5 20V3ZM8 8h8m-8 4h5"/>
         </svg></span>
-      <b>85k ₽</b></div><div class="pace-amount amount-estimate">
+      <b>85k ₽</b></div><div class="pace-amount amount-remaining">
+          <span class="pace-icon" role="img" aria-label="Осталось до лимита">
+            <svg viewBox="0 0 24 24" aria-hidden="true" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <path d="M3.5 17a8.5 8.5 0 0 1 17 0h-17ZM12 15.5l3.5-4M6.7 12.7l1 1"/>
+            </svg></span>
+          <b>35k ₽</b></div><div class="pace-amount amount-estimate">
           <span class="pace-icon" role="img" aria-label="Прогноз на конец месяца">
             <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
               <rect x="3" y="5" width="18" height="16" rx="2"/>
@@ -158,7 +184,15 @@
         <div class="accounts-heading"><span><b>Счета</b> · 128 450 ₽</span>
           <button class="account-add" aria-label="Создать счёт"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></div>
         <div class="accounts"><div><p>💳 Карта</p><b>42 300 ₽</b></div><div><p>👛 Наличные</p><b>6 150 ₽</b></div><div><p>🏦 Накопления</p><b>80 000 ₽</b></div></div>
-        <div class="expenses-heading"><h1>Расходы</h1>
+        <div class="expenses-heading">
+      <div class="daily-average">
+        <span class="pace-icon" role="img" aria-label="Средние расходы">
+          <svg viewBox="0 0 24 24" aria-hidden="true" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <path d="M5 19v-5m7 5V6m7 13v-9M3 19h18"/>
+            <path d="M3 11h18" stroke-dasharray="2 2"/>
+          </svg></span>
+        <b>1,5k ₽</b><span>/день</span>
+      </div>
       <div class="month-selector" role="group" aria-label="Выбор месяца">
         <button aria-label="Предыдущий месяц"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 7-5 5 5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span>ноя 26</span>
         <button aria-label="Следующий месяц" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 7-5 5 5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
@@ -169,7 +203,12 @@
         <svg viewBox="0 0 24 24" aria-hidden="true" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
           <path d="M5 3h14v17l-2.3-1.5-2.4 1.5-2.3-1.5L9.7 20l-2.4-1.5L5 20V3ZM8 8h8m-8 4h5"/>
         </svg></span>
-      <b>28k ₽</b></div><div class="pace-amount amount-estimate">
+      <b>28k ₽</b></div><div class="pace-amount amount-remaining">
+          <span class="pace-icon" role="img" aria-label="Осталось до лимита">
+            <svg viewBox="0 0 24 24" aria-hidden="true" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <path d="M3.5 17a8.5 8.5 0 0 1 17 0h-17ZM12 15.5l3.5-4M6.7 12.7l1 1"/>
+            </svg></span>
+          <b>12k ₽</b></div><div class="pace-amount amount-estimate">
           <span class="pace-icon" role="img" aria-label="Прогноз на конец месяца">
             <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
               <rect x="3" y="5" width="18" height="16" rx="2"/>

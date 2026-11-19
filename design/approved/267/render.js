@@ -31,8 +31,9 @@ const path = require('node:path');
     assert.equal(await pace.getAttribute('data-days'), '30');
     assert.equal(await pace.getAttribute('data-actual-days'), '19');
     assert.match(await pace.locator('.amount-actual').innerText(), /^28k\s₽$/);
+    assert.match(await pace.locator('.amount-remaining').innerText(), /^12k\s₽$/);
     assert.match(await pace.locator('.amount-estimate').innerText(), /^45k\s₽$/);
-    assert.equal(await pace.locator('.pace-summary svg').count(), 2);
+    assert.equal(await pace.locator('.pace-summary svg').count(), 3);
     assert.deepEqual(await pace.locator('.date-tick, .current-date').allTextContents(), ['01', '19', '30']);
     assert.equal(await pace.locator('.current-date').textContent(), '19');
     const coordinates = await pace.evaluate(panel => {
@@ -82,10 +83,11 @@ const path = require('node:path');
     assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
     const largestSummary = charts.at(-1).locator('.pace-summary');
     const amountsFit = await largestSummary.evaluate(summary => {
-      const [actual, forecast] = Array.from(summary.children, child => child.getBoundingClientRect());
-      return summary.scrollWidth <= summary.clientWidth && actual.y === forecast.y && actual.right < forecast.left;
+      const [actual, remaining, forecast] = Array.from(summary.children, child => child.getBoundingClientRect());
+      return summary.scrollWidth <= summary.clientWidth && actual.y === remaining.y && remaining.y === forecast.y &&
+        actual.right < remaining.left && remaining.right < forecast.left;
     });
-    assert(amountsFit, 'Две суммы с иконками помещаются в одну строку при ширине 320 px');
+    assert(amountsFit, 'Три суммы с иконками помещаются в одну строку при ширине 320 px');
     const categoryBox = await overview.locator('table.categories').boundingBox();
     const placeBox = await overview.locator('table.places').boundingBox();
     assert(categoryBox.x + categoryBox.width <= placeBox.x, 'Категории слева от мест');
@@ -105,7 +107,7 @@ const path = require('node:path');
     await page.locator('#missing').screenshot({ path: path.join(__dirname, 'without-places.png') });
 
     const finance = page.locator('#finance');
-    assert.equal(await finance.locator('.expenses-heading h1').innerText(), 'Расходы');
+    assert.match(await finance.locator('.daily-average').innerText(), /^1,5k\s+₽\s*\/день$/);
     assert.equal(await finance.locator('.month-selector span').innerText(), 'ноя 26');
     assert(await finance.evaluate(screen => screen.scrollWidth <= screen.clientWidth));
     await page.setViewportSize({ width: 400, height: 900 });
