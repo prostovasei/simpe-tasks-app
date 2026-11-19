@@ -68,7 +68,10 @@ const path = require('node:path');
       assert.deepEqual(labels, [`${limit / 1000}k`, `${limit / 2000}k`]);
       const pathData = await chart.locator('.grid').getAttribute('d');
       const guides = [...pathData.matchAll(/M\d+ (\d+)H\d+/g)].map(match => Number(match[1]));
-      assert.deepEqual(guides, [30, 99, 168]);
+      assert.deepEqual(guides, [8, 77, 146]);
+      const datePositions = await chart.locator('.date-tick, .current-date').evaluateAll(labels =>
+        labels.map(label => Number(label.getAttribute('y'))));
+      assert(datePositions.every(position => position > guides.at(-1)), 'Даты находятся под графиком');
     }
     await scales.screenshot({ path: path.join(__dirname, 'chart-scales.png') });
     await overview.screenshot({ path: path.join(__dirname, 'month.png') });

@@ -45,7 +45,7 @@ def pace(amounts, year, month):
     estimate = actual * last_day / as_of if actual and partial else None
     ceiling = scale_ceiling(estimate if estimate is not None else actual)
     left, right = 4, 352
-    top, bottom = 30, 168
+    top, bottom = 8, 146
 
     def x(day):
         return left + (day - 1) * (right - left) / (last_day - 1)
@@ -60,11 +60,12 @@ def pace(amounts, year, month):
     for value, offset in zip(axis[:2], [12, -5]):
         label = f'{value / 1000:.3f}'.rstrip('0').rstrip('.') + 'k'
         value_ticks.append(f'<text class="value-tick" x="{left + 4}" y="{y(value) + offset:g}">{label}</text>')
-    date_ticks = {1: ('start', 12), last_day: ('end', 12)}
+    date_baseline = bottom + 15
+    date_ticks = {1: ('start', date_baseline), last_day: ('end', date_baseline)}
     if partial and as_of != 1:
-        # У краёв дата факта переносится ниже, чтобы подписи не пересекались.
-        align = 'start' if as_of <= 4 else 'end' if as_of >= last_day - 3 else 'middle'
-        date_ticks[as_of] = (align, 12 if align == 'middle' else 24)
+        # На соседних с краем днях подписи стоят на двух строках.
+        align = 'start' if as_of == 2 else 'end' if as_of == last_day - 1 else 'middle'
+        date_ticks[as_of] = (align, date_baseline if align == 'middle' else date_baseline + 12)
     dates = ''.join(
         f'<text class="{"current-date" if partial and day == as_of else "date-tick"}" '
         f'x="{x(day):.2f}" y="{row}" text-anchor="{align}">{day:02d}</text>'
@@ -81,15 +82,23 @@ def pace(amounts, year, month):
         projected = money(round(estimate / 100) * 100)
         description += f' Прогноз на {last_day} число — около {projected}.'
         estimate_amount = f'''<div class="pace-amount amount-estimate">
-          <span class="pace-icon" role="img" aria-label="Прогноз на конец месяца">{vector('ic_finance_tab_analytics')}</span>
+          <span class="pace-icon" role="img" aria-label="Прогноз на конец месяца">
+            <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <rect x="3" y="5" width="18" height="16" rx="2"/>
+              <path d="M7 3v4m10-4v4M3 10h18"/>
+              <circle cx="16.5" cy="16.5" r="2" fill="currentColor" stroke="none"/>
+            </svg></span>
           <b>≈ {projected}</b></div>'''
         forecast = f'''<line x1="{x(as_of):.2f}" y1="{y(actual):.2f}" x2="{x(last_day):.2f}" y2="{y(estimate):.2f}" class="forecast"/>
         <circle cx="{x(last_day):.2f}" cy="{y(estimate):.2f}" r="3" class="estimate-dot"/>'''
-    return f'''<section class="pace" data-days="{last_day}" data-actual-days="{as_of}"><h2>Темп расходов</h2>
+    return f'''<section class="pace" data-days="{last_day}" data-actual-days="{as_of}">
     <div class="pace-summary"><div class="pace-amount amount-actual">
-      <span class="pace-icon" role="img" aria-label="Потрачено с начала месяца">{vector('ic_finance_wallet')}</span>
+      <span class="pace-icon" role="img" aria-label="Потрачено с начала месяца">
+        <svg viewBox="0 0 24 24" aria-hidden="true" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+          <path d="M5 3h14v17l-2.3-1.5-2.4 1.5-2.3-1.5L9.7 20l-2.4-1.5L5 20V3ZM8 8h8m-8 4h5"/>
+        </svg></span>
       <b>{actual_text}</b></div>{estimate_amount}</div>
-    <svg viewBox="0 0 356 176" role="img" aria-label="{description}">
+    <svg viewBox="0 0 356 178" role="img" aria-label="{description}">
       <path d="{grid}" class="grid"/>{cutoff}{forecast}
       <polyline points="{coords}" class="trend"/>
       <circle cx="{x(as_of):.2f}" cy="{y(actual):.2f}" r="3.25" class="actual-dot"/>{''.join(value_ticks)}{dates}
@@ -159,7 +168,7 @@ CSS = design['fonts'] + f''':root{{--ink:{color('textPrimary')};--muted:{color('
   *{box-sizing:border-box}body{margin:0;background:#eeeef1;color:var(--ink);font:14px/1.4 Manrope,sans-serif}
   main{max-width:960px;margin:auto;padding:24px 16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:20px;align-items:start}
   .screen{width:100%;max-width:390px;margin:auto;background:var(--surface);padding:16px 18px 14px;border-radius:16px}
-  h1,h2,p{margin:0}h1{font-size:16px}h2{font-size:15px;margin-bottom:10px}
+  h1,p{margin:0}h1{font-size:16px}
   .month{display:flex;align-items:center;justify-content:space-between;padding-bottom:10px}
   .month span{font-size:23px;color:var(--muted);line-height:1}
   .index,.currency{color:var(--muted)}
