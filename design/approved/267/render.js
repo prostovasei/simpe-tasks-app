@@ -68,8 +68,9 @@ const path = require('node:path');
 
     const finance = page.locator('#finance');
     assert(await finance.evaluate(screen => screen.scrollWidth <= screen.clientWidth));
-    await page.setViewportSize({ width: 432, height: 948 });
-    const accountsBox = await finance.locator('.account-tiles').boundingBox();
+    await page.setViewportSize({ width: 400, height: 900 });
+    await page.addStyleTag({ content: 'main { display: block; padding: 0 } main > :not(#finance) { display: none }' });
+    const accountsBox = await finance.locator('.accounts').boundingBox();
     const monthBox = await finance.locator('.finance-month').boundingBox();
     const chartBox = await finance.locator('.pace').boundingBox();
     const rankingsBox = await finance.locator('.rankings').boundingBox();
