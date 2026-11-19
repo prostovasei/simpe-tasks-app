@@ -36,7 +36,7 @@ def scale_ceiling(amount):
     return next(int(step * magnitude) for step in steps if step * magnitude >= amount)
 
 
-def pace(amounts, year, month, month_short):
+def pace(amounts, year, month):
     last_day = monthrange(year, month)[1]
     as_of = len(amounts)
     assert 1 <= as_of <= last_day
@@ -56,8 +56,10 @@ def pace(amounts, year, month, month_short):
     coords = ' '.join(f'{x(day):.2f},{y(value):.2f}' for day, value in enumerate(accumulate(amounts), start=1))
     axis = [ceiling, ceiling // 2, 0]
     grid = ' '.join(f'M{left} {y(value):g}H{right}' for value in axis)
-    value_ticks = ''.join(f'<text class="value-tick" x="{left + 4}" y="{y(value) + offset:g}">{digits(value)}</text>'
-                          for value, offset in zip(axis, [12, -5, -5]))
+    value_ticks = []
+    for value, offset in zip(axis[:2], [12, -5]):
+        label = f'{value / 1000:.3f}'.rstrip('0').rstrip('.') + 'k'
+        value_ticks.append(f'<text class="value-tick" x="{left + 4}" y="{y(value) + offset:g}">{label}</text>')
     date_ticks = {1: ('start', 12), last_day: ('end', 12)}
     if partial and as_of != 1:
         # У краёв дата факта переносится ниже, чтобы подписи не пересекались.
@@ -65,26 +67,32 @@ def pace(amounts, year, month, month_short):
         date_ticks[as_of] = (align, 12 if align == 'middle' else 24)
     dates = ''.join(
         f'<text class="{"current-date" if partial and day == as_of else "date-tick"}" '
-        f'x="{x(day):.2f}" y="{row}" text-anchor="{align}">{day} {month_short}</text>'
+        f'x="{x(day):.2f}" y="{row}" text-anchor="{align}">{day:02d}</text>'
         for day, (align, row) in sorted(date_ticks.items())
     )
     cutoff = ''
     if partial:
         cutoff = f'<line x1="{x(as_of):.2f}" y1="{top}" x2="{x(as_of):.2f}" y2="{bottom}" class="cutoff"/>'
     forecast = ''
-    headline = ''
-    description = f'С 1 по {as_of} число потрачено {money(actual)}.'
+    actual_text = money(actual)
+    estimate_amount = ''
+    description = f'С 1 по {as_of} число потрачено {actual_text}.'
     if estimate is not None:
         projected = money(round(estimate / 100) * 100)
         description += f' Прогноз на {last_day} число — около {projected}.'
-        headline = f'<div class="estimate"><span>К {last_day} {month_short} при текущем темпе</span><b>≈ {projected}</b></div>'
+        estimate_amount = f'''<div class="pace-amount amount-estimate">
+          <span class="pace-icon" role="img" aria-label="Прогноз на конец месяца">{vector('ic_finance_tab_analytics')}</span>
+          <b>≈ {projected}</b></div>'''
         forecast = f'''<line x1="{x(as_of):.2f}" y1="{y(actual):.2f}" x2="{x(last_day):.2f}" y2="{y(estimate):.2f}" class="forecast"/>
         <circle cx="{x(last_day):.2f}" cy="{y(estimate):.2f}" r="3" class="estimate-dot"/>'''
-    return f'''<section class="pace" data-days="{last_day}" data-actual-days="{as_of}"><h3>Темп расходов</h3>{headline}
+    return f'''<section class="pace" data-days="{last_day}" data-actual-days="{as_of}"><h2>Темп расходов</h2>
+    <div class="pace-summary"><div class="pace-amount amount-actual">
+      <span class="pace-icon" role="img" aria-label="Потрачено с начала месяца">{vector('ic_finance_wallet')}</span>
+      <b>{actual_text}</b></div>{estimate_amount}</div>
     <svg viewBox="0 0 356 176" role="img" aria-label="{description}">
       <path d="{grid}" class="grid"/>{cutoff}{forecast}
       <polyline points="{coords}" class="trend"/>
-      <circle cx="{x(as_of):.2f}" cy="{y(actual):.2f}" r="3.25" class="actual-dot"/>{value_ticks}{dates}
+      <circle cx="{x(as_of):.2f}" cy="{y(actual):.2f}" r="3.25" class="actual-dot"/>{''.join(value_ticks)}{dates}
     </svg></section>'''
 
 
@@ -118,8 +126,7 @@ def rankings(named_places=places):
 
 
 def month_content():
-    return f'''<div class="total"><p>Расходы · 1–19 ноября</p><h2>{money(total)}</h2></div>
-    {pace(daily, 2026, 11, 'ноя')}{rankings()}'''
+    return pace(daily, 2026, 11) + rankings()
 
 
 def finance_home():
@@ -152,17 +159,19 @@ CSS = design['fonts'] + f''':root{{--ink:{color('textPrimary')};--muted:{color('
   *{box-sizing:border-box}body{margin:0;background:#eeeef1;color:var(--ink);font:14px/1.4 Manrope,sans-serif}
   main{max-width:960px;margin:auto;padding:24px 16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:20px;align-items:start}
   .screen{width:100%;max-width:390px;margin:auto;background:var(--surface);padding:16px 18px 14px;border-radius:16px}
-  h1,h2,h3,p{margin:0}h1{font-size:16px}h2{font-size:31px;line-height:1.15}h3{font-size:15px;margin-bottom:10px}
+  h1,h2,p{margin:0}h1{font-size:16px}h2{font-size:15px;margin-bottom:10px}
   .month{display:flex;align-items:center;justify-content:space-between;padding-bottom:10px}
   .month span{font-size:23px;color:var(--muted);line-height:1}
-  .total{padding-top:18px}.total p,.index,.currency{color:var(--muted)}
-  .total p{font-size:12px;margin-bottom:4px}
+  .index,.currency{color:var(--muted)}
   section{padding:16px 0}section:last-child{padding-bottom:0}
-  .pace svg{display:block;width:100%;height:auto;fill:var(--ink)}.grid,.trend{fill:none;stroke:var(--divider)}
-  .pace svg text{fill:var(--muted);font-size:10px}.trend{stroke:var(--ink);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+  .pace{container-type:inline-size}
+  .pace > svg{display:block;width:100%;height:auto;fill:var(--ink)}.grid,.trend{fill:none;stroke:var(--divider)}
+  .pace > svg text{fill:var(--muted);font-size:10px}.trend{stroke:var(--ink);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
   .pace .current-date{fill:var(--ink);font-weight:700}.value-tick{paint-order:stroke;stroke:var(--surface);stroke-width:2.5px}
-  .estimate{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 0 8px;color:var(--muted);font-size:12px}
-  .estimate b{color:var(--ink);white-space:nowrap;font-size:15px}
+  .pace-summary{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+  .pace-amount{display:flex;align-items:center;gap:5px;white-space:nowrap;font-size:clamp(20px,7.6cqw,28px);line-height:1.2;font-variant-numeric:tabular-nums}
+  .pace-icon{display:grid;place-items:center;color:var(--muted)}
+  .pace-icon svg{width:20px;height:20px}.pace-icon path{fill:none;stroke-linejoin:round}
   .forecast{fill:none;stroke:var(--muted);stroke-width:2;stroke-dasharray:4 4;stroke-linecap:round}
   .cutoff{stroke:var(--divider);stroke-dasharray:2 3}.estimate-dot{fill:var(--surface);stroke:var(--muted);stroke-width:1.6}
   .tables{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
@@ -189,7 +198,6 @@ CSS = design['fonts'] + f''':root{{--ink:{color('textPrimary')};--muted:{color('
   .finance-month{margin:6px 0 18px}
   .finance-month button{width:40px;height:40px}
   .finance-month button:last-child svg{transform:scaleX(-1)}.finance-month button:disabled{color:var(--inactive)}
-  .finance .total{padding-top:0}
   .finance-bar{margin-top:auto;min-height:var(--bar-height);border-top:1px solid var(--divider);padding:0 12px;display:flex;align-items:center}
   .finance-bar svg path{fill:none;stroke-linejoin:round}
   .finance-bar .add-operation,.finance-bar .finance-module{width:72px;height:var(--bar-button);border-radius:16px}
@@ -205,7 +213,7 @@ document = f'''<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="
 <div class="screen" id="overview"><div class="month"><span aria-hidden="true">‹</span><h1>Ноябрь 2026</h1><span aria-hidden="true">›</span></div>
 {month_content()}</div>
 <div class="screen small" id="missing">{rankings(named_places=[])}</div>
-<div class="screen small" id="completed">{pace([*daily, *([650] * 12)], 2026, 10, 'окт')}</div>
-<div class="screen" id="scale-examples">{''.join(pace([amount * factor for amount in daily], 2026, 11, 'ноя') for factor in (2, 3))}</div>
+<div class="screen small" id="completed">{pace([*daily, *([650] * 12)], 2026, 10)}</div>
+<div class="screen" id="scale-examples">{''.join(pace([amount * factor for amount in daily], 2026, 11) for factor in (2, 3))}</div>
 {finance_home()}</main></html>'''
 (HERE / 'screens.html').write_text(document)
