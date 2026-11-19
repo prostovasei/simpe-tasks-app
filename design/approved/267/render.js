@@ -30,8 +30,8 @@ const path = require('node:path');
     const pace = overview.locator('.pace');
     assert.equal(await pace.getAttribute('data-days'), '30');
     assert.equal(await pace.getAttribute('data-actual-days'), '19');
-    assert.match(await pace.locator('.amount-actual').innerText(), /^28\s*400\s*₽$/);
-    assert.match(await pace.locator('.amount-estimate').innerText(), /^≈\s*44\s*800\s*₽$/);
+    assert.match(await pace.locator('.amount-actual').innerText(), /^28,4K\sR$/);
+    assert.match(await pace.locator('.amount-estimate').innerText(), /^≈\s44,8K\sR$/);
     assert.equal(await pace.locator('.pace-summary svg').count(), 2);
     assert.deepEqual(await pace.locator('.date-tick, .current-date').allTextContents(), ['01', '19', '30']);
     assert.equal(await pace.locator('.current-date').textContent(), '19');
@@ -69,6 +69,8 @@ const path = require('node:path');
       const pathData = await chart.locator('.grid').getAttribute('d');
       const guides = [...pathData.matchAll(/M\d+ (\d+)H\d+/g)].map(match => Number(match[1]));
       assert.deepEqual(guides, [8, 77, 146]);
+      const middleLabelY = Number(await chart.locator('.value-tick').nth(1).getAttribute('y'));
+      assert(middleLabelY > guides[1] && middleLabelY < guides[2]);
       const datePositions = await chart.locator('.date-tick, .current-date').evaluateAll(labels =>
         labels.map(label => Number(label.getAttribute('y'))));
       assert(datePositions.every(position => position > guides.at(-1)), 'Даты находятся под графиком');
@@ -102,6 +104,7 @@ const path = require('node:path');
     await page.locator('#missing').screenshot({ path: path.join(__dirname, 'without-places.png') });
 
     const finance = page.locator('#finance');
+    assert.equal(await finance.locator('.finance-month h1').innerText(), 'ноя 26');
     assert(await finance.evaluate(screen => screen.scrollWidth <= screen.clientWidth));
     await page.setViewportSize({ width: 400, height: 900 });
     await page.addStyleTag({ content: 'main { display: block; padding: 0 } main > :not(#finance) { display: none }' });

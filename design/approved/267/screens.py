@@ -12,6 +12,7 @@ exec(compile(source.read_text().split('\npriority = re.search', 1)[0], str(sourc
 color = design['color']
 dim = design['dim']
 vector = design['vector']
+month_label = 'ноя 26'
 daily = [900, 1100, 300, 800, 2500, 700, 1200, 0, 1250, 1800, 500, 8400, 400, 1000, 2100, 800, 2000, 1600, 1050]
 categories = [('Продукты', '🛒', 12400), ('Транспорт', '🚕', 6400), ('Кафе', '☕', 4200), ('Дом', '🏠', 3500), ('Здоровье', '💊', 1100), ('Связь', '📱', 800)]
 places = [('Пятёрочка', 6860), ('Лента', 5270), ('ВкусВилл', 4220), ('Додо Пицца', 3150), ('Аптека', 2100), ('Кофейня', 900)]
@@ -27,6 +28,13 @@ def digits(amount):
 
 def money(amount):
     return digits(amount) + '\u00a0₽'
+
+
+def compact_money(amount):
+    if amount < 1000:
+        return f'{amount}\u00a0R'
+    thousands = f'{amount / 1000:,.1f}'.removesuffix('.0').replace(',', '\u00a0').replace('.', ',')
+    return f'{thousands}K\u00a0R'
 
 
 def scale_ceiling(amount):
@@ -57,9 +65,9 @@ def pace(amounts, year, month):
     axis = [ceiling, ceiling // 2, 0]
     grid = ' '.join(f'M{left} {y(value):g}H{right}' for value in axis)
     value_ticks = []
-    for value, offset in zip(axis[:2], [12, -5]):
+    for value in axis[:2]:
         label = f'{value / 1000:.3f}'.rstrip('0').rstrip('.') + 'k'
-        value_ticks.append(f'<text class="value-tick" x="{left + 4}" y="{y(value) + offset:g}">{label}</text>')
+        value_ticks.append(f'<text class="value-tick" x="{left + 4}" y="{y(value) + 12:g}">{label}</text>')
     date_baseline = bottom + 15
     date_ticks = {1: ('start', date_baseline), last_day: ('end', date_baseline)}
     if partial and as_of != 1:
@@ -75,12 +83,11 @@ def pace(amounts, year, month):
     if partial:
         cutoff = f'<line x1="{x(as_of):.2f}" y1="{top}" x2="{x(as_of):.2f}" y2="{bottom}" class="cutoff"/>'
     forecast = ''
-    actual_text = money(actual)
     estimate_amount = ''
-    description = f'С 1 по {as_of} число потрачено {actual_text}.'
+    description = f'С 1 по {as_of} число потрачено {money(actual)}.'
     if estimate is not None:
-        projected = money(round(estimate / 100) * 100)
-        description += f' Прогноз на {last_day} число — около {projected}.'
+        projected = round(estimate / 100) * 100
+        description += f' Прогноз на {last_day} число — около {money(projected)}.'
         estimate_amount = f'''<div class="pace-amount amount-estimate">
           <span class="pace-icon" role="img" aria-label="Прогноз на конец месяца">
             <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
@@ -88,7 +95,7 @@ def pace(amounts, year, month):
               <path d="M7 3v4m10-4v4M3 10h18"/>
               <circle cx="16.5" cy="16.5" r="2" fill="currentColor" stroke="none"/>
             </svg></span>
-          <b>≈ {projected}</b></div>'''
+          <b>≈ {compact_money(projected)}</b></div>'''
         forecast = f'''<line x1="{x(as_of):.2f}" y1="{y(actual):.2f}" x2="{x(last_day):.2f}" y2="{y(estimate):.2f}" class="forecast"/>
         <circle cx="{x(last_day):.2f}" cy="{y(estimate):.2f}" r="3" class="estimate-dot"/>'''
     return f'''<section class="pace" data-days="{last_day}" data-actual-days="{as_of}">
@@ -97,7 +104,7 @@ def pace(amounts, year, month):
         <svg viewBox="0 0 24 24" aria-hidden="true" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
           <path d="M5 3h14v17l-2.3-1.5-2.4 1.5-2.3-1.5L9.7 20l-2.4-1.5L5 20V3ZM8 8h8m-8 4h5"/>
         </svg></span>
-      <b>{actual_text}</b></div>{estimate_amount}</div>
+      <b>{compact_money(actual)}</b></div>{estimate_amount}</div>
     <svg viewBox="0 0 356 178" role="img" aria-label="{description}">
       <path d="{grid}" class="grid"/>{cutoff}{forecast}
       <polyline points="{coords}" class="trend"/>
@@ -150,7 +157,7 @@ def finance_home():
           <button class="account-add" aria-label="Создать счёт">{plus}</button></div>
         <div class="accounts">{balances}</div>
         <div class="finance-month"><button aria-label="Предыдущий месяц">{prev}</button>
-          <h1>Ноябрь 2026</h1><button aria-label="Следующий месяц" disabled>{prev}</button></div>
+          <h1>{month_label}</h1><button aria-label="Следующий месяц" disabled>{prev}</button></div>
         {month_content()}
       </div>
       <nav class="finance-bar" aria-label="Финансы">
@@ -219,7 +226,7 @@ CSS = design['fonts'] + f''':root{{--ink:{color('textPrimary')};--muted:{color('
 '''
 document = f'''<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Аналитика месяца · #267</title>
 <style>{CSS}</style><main>
-<div class="screen" id="overview"><div class="month"><span aria-hidden="true">‹</span><h1>Ноябрь 2026</h1><span aria-hidden="true">›</span></div>
+<div class="screen" id="overview"><div class="month"><span aria-hidden="true">‹</span><h1>{month_label}</h1><span aria-hidden="true">›</span></div>
 {month_content()}</div>
 <div class="screen small" id="missing">{rankings(named_places=[])}</div>
 <div class="screen small" id="completed">{pace([*daily, *([650] * 12)], 2026, 10)}</div>
