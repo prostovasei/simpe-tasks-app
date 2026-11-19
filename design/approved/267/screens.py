@@ -11,7 +11,7 @@ design = {'__file__': str(source)}
 exec(compile(source.read_text().split('\npriority = re.search', 1)[0], str(source), 'exec'), design)
 color = design['color']
 daily = [900, 1100, 300, 800, 2500, 700, 1200, 0, 1250, 1800, 500, 8400, 400, 1000, 2100, 800, 2000, 1600, 1050]
-categories = [('Продукты', '🛒', 12400), ('Транспорт', '🚕', 6400), ('Кафе', '☕', 4200), ('Дом', '🏠', 3500), ('Прочее', '…', 1900)]
+categories = [('Продукты', '🛒', 12400), ('Транспорт', '🚕', 6400), ('Кафе', '☕', 4200), ('Дом', '🏠', 3500), ('Здоровье', '💊', 1100), ('Связь', '📱', 800)]
 places = [('Пятёрочка', 6860), ('Лента', 5270), ('ВкусВилл', 4220), ('Додо Пицца', 3150), ('Аптека', 2100), ('Кофейня', 900)]
 total = sum(daily)
 unassigned = total - sum(amount for _, amount in places)
@@ -66,39 +66,35 @@ def pace(amounts, year, month, month_short):
     </svg></section>'''
 
 
-def share_line(items, label):
-    assert sum(amount for _, _, amount in items) == total
-    segments = []
-    for title, mark, amount in items:
-        pct = f'{100*amount/total:.1f}'.replace('.', ',') + '%'
-        cls = ' bin-unassigned' if title == 'Без места' else ''
-        segments.append(f'<div class="share{cls}" style="flex:{amount}" aria-label="{escape(title)}, {pct}"><span class="mark">{mark}</span><span class="segment"></span><b>{pct}</b></div>')
-    return f'<div class="shares" aria-label="{label}">' + ''.join(segments) + '</div>'
+def ranking_table(title, items, kind):
+    leaders = sorted(items, key=lambda item: -item[2])
+    rows = leaders[:4]
+    rest = sum(amount for _, _, amount in leaders[4:])
+    if rest:
+        rows = [*rows, ('Остальное', '…', rest)]
+    body = ''.join(
+        f'<tr><th scope="row"><span class="row-label"><span class="index" aria-hidden="true">{mark}</span>'
+        f'<span class="stat-title">{escape(name)}</span></span></th><td>{money(amount)}</td></tr>'
+        for name, mark, amount in rows
+    )
+    return f'<table class="{kind}"><caption>{title}</caption><tbody>{body}</tbody></table>'
 
 
-def stat_row(mark, title, amount):
-    return f'<li class="stat"><span class="index">{mark}</span><span class="stat-title">{escape(title)}</span><b>{money(amount)}</b></li>'
+def rankings():
+    by_place = [(name, str(rank), amount) for rank, (name, amount) in enumerate(places, start=1)]
+    return f'''<section class="rankings" aria-label="Распределение расходов за месяц">
+      <div class="tables">
+        {ranking_table('Категории', categories, 'categories')}
+        {ranking_table('Места', by_place, 'places')}
+      </div>
+      <div class="unassigned"><span>Расходы без места</span><b>{money(unassigned)}</b></div>
+    </section>'''
 
 
-def shares():
-    rows = ''.join(stat_row(mark, title, amount) for title, mark, amount in categories)
-    return f'''<section class="categories"><h3>По категориям</h3>{share_line(categories, 'Доли расходов по категориям')}
-      <details><summary>Все категории</summary><ul class="stats">{rows}</ul></details></section>'''
-
-
-def ranking(has_places=True):
-    if has_places:
-        first = [(name, str(i), amount) for i, (name, amount) in enumerate(places[:4], start=1)]
-        other = sum(amount for _, amount in places[4:])
-        line = share_line([*first, ('Другие места', '…', other), ('Без места', '—', unassigned)], 'Доли расходов по местам')
-        top = ''.join(stat_row(mark, name, amount) for name, mark, amount in first)
-        extra = ''.join(stat_row(i, *p) for i, p in enumerate(places[4:], start=5))
-        content = f'{line}<ol class="stats ranking">{top}</ol><details><summary><span>Другие места</span><b>{money(other)}</b></summary><ol class="stats ranking" start="5">{extra}</ol></details>'
-    else:
-        line = share_line([('Без места', '—', total)], 'Доли расходов по местам')
-        content = line + '<p class="empty">Укажи место в расходе, чтобы увидеть его здесь.</p>'
-    return f'''<section class="places"><h3>Где тратили</h3>{content}
-      <div class="unassigned"><span>Без места</span><b>{money(unassigned if has_places else total)}</b></div></section>'''
+def without_places():
+    return f'''<section class="no-places"><h3>Места</h3>
+      <p class="empty">Укажи место в расходе, чтобы увидеть его здесь.</p>
+      <div class="unassigned"><span>Расходы без места</span><b>{money(total)}</b></div></section>'''
 
 
 CSS = design['fonts'] + f":root{{--ink:{color('textPrimary')};--muted:{color('textSecondary')};--divider:{color('divider')};--surface:{color('surface')}}}" + '''
@@ -117,21 +113,21 @@ CSS = design['fonts'] + f":root{{--ink:{color('textPrimary')};--muted:{color('te
   .estimate b{color:var(--ink);white-space:nowrap;font-size:15px}
   .forecast{fill:none;stroke:var(--muted);stroke-width:2;stroke-dasharray:4 4;stroke-linecap:round}
   .cutoff{stroke:var(--divider);stroke-dasharray:2 3}.estimate-dot{fill:var(--surface);stroke:var(--muted);stroke-width:1.6}
-  .shares{display:flex;margin-bottom:10px}.share{display:flex;flex-direction:column;align-items:center;min-width:0;gap:5px}
-  .share b{font-size:clamp(8px,2.45vw,10px);white-space:nowrap}.mark{font-size:14px;font-weight:700;min-height:22px}
-  .segment{display:block;width:calc(100% - 3px);height:4px;background:var(--ink);border-radius:2px}
-  .bin-unassigned .segment{background:var(--muted)}
-  .stats{padding:0;margin:0;list-style:none}.stat{padding:6px 0;display:grid;grid-template-columns:17px minmax(0,1fr) auto;gap:7px;align-items:baseline}
-  .stat b,.unassigned b{font-variant-numeric:tabular-nums;white-space:nowrap}.stat-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .index{font-size:12px}details{margin-top:5px}summary{padding:6px 0;cursor:pointer;font-weight:700;font-size:12px}
-  summary b{float:right}
-  .unassigned{display:flex;justify-content:space-between;gap:8px;margin-top:6px;padding-top:9px;border-top:1px solid var(--divider);font-size:12px}
+  .tables{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
+  table{width:100%;border-collapse:collapse;font-size:12px;line-height:1.25}
+  caption{text-align:left;font-size:15px;font-weight:700;padding-bottom:10px}
+  th,td{height:37px;padding:0;vertical-align:middle}th{text-align:left;font-weight:500;padding-right:4px}
+  td{text-align:right;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .row-label{display:grid;grid-template-columns:14px minmax(0,1fr);gap:4px;align-items:center}
+  .index{font-size:11px;text-align:center}.stat-title{overflow-wrap:anywhere}
+  @media(max-width:360px){main{padding-inline:0}.screen{padding-inline:12px}.tables{gap:12px}table{font-size:11px}}
+  .unassigned{display:flex;justify-content:space-between;gap:8px;margin-top:8px;padding-top:5px;font-size:11px}
   .empty{margin-bottom:13px;font-size:13px}.small{max-width:320px;margin-top:0}
 '''
 document = f'''<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Аналитика месяца · #267</title>
 <style>{CSS}</style><main>
 <div class="screen" id="overview"><div class="month"><span aria-hidden="true">‹</span><h1>Ноябрь 2026</h1><span aria-hidden="true">›</span></div>
-<div class="total"><p>Расходы · 1–19 ноября</p><h2>{money(total)}</h2></div>{pace(daily, 2026, 11, 'ноя')}{shares()}{ranking()}</div>
-<div class="screen small" id="missing">{ranking(False)}</div>
+<div class="total"><p>Расходы · 1–19 ноября</p><h2>{money(total)}</h2></div>{pace(daily, 2026, 11, 'ноя')}{rankings()}</div>
+<div class="screen small" id="missing">{without_places()}</div>
 <div class="screen small" id="completed">{pace([*daily, *([650] * 12)], 2026, 10, 'окт')}</div></main></html>'''
 (HERE / 'screens.html').write_text(document)
