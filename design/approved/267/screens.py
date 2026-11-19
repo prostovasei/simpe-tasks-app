@@ -32,9 +32,9 @@ def money(amount):
 
 def compact_money(amount):
     if amount < 1000:
-        return f'{amount}\u00a0R'
-    thousands = f'{amount / 1000:,.1f}'.removesuffix('.0').replace(',', '\u00a0').replace('.', ',')
-    return f'{thousands}K\u00a0R'
+        return money(round(amount))
+    thousands = int((amount + 500) // 1000)
+    return f'{digits(thousands)}k\u00a0₽'
 
 
 def scale_ceiling(amount):
@@ -86,8 +86,7 @@ def pace(amounts, year, month):
     estimate_amount = ''
     description = f'С 1 по {as_of} число потрачено {money(actual)}.'
     if estimate is not None:
-        projected = round(estimate / 100) * 100
-        description += f' Прогноз на {last_day} число — около {money(projected)}.'
+        description += f' Прогноз на {last_day} число — около {money(round(estimate))}.'
         estimate_amount = f'''<div class="pace-amount amount-estimate">
           <span class="pace-icon" role="img" aria-label="Прогноз на конец месяца">
             <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
@@ -95,7 +94,7 @@ def pace(amounts, year, month):
               <path d="M7 3v4m10-4v4M3 10h18"/>
               <circle cx="16.5" cy="16.5" r="2" fill="currentColor" stroke="none"/>
             </svg></span>
-          <b>≈ {compact_money(projected)}</b></div>'''
+          <b>{compact_money(estimate)}</b></div>'''
         forecast = f'''<line x1="{x(as_of):.2f}" y1="{y(actual):.2f}" x2="{x(last_day):.2f}" y2="{y(estimate):.2f}" class="forecast"/>
         <circle cx="{x(last_day):.2f}" cy="{y(estimate):.2f}" r="3" class="estimate-dot"/>'''
     return f'''<section class="pace" data-days="{last_day}" data-actual-days="{as_of}">
@@ -117,7 +116,7 @@ def ranking_table(title, items, kind, without_place=0):
     rows = [(str(rank), *item) for rank, item in enumerate(leaders[:4], start=1)]
     rest = sum(amount for _, _, amount in leaders[4:]) + without_place
     if rest:
-        rows.append(('…', 'Остальное', '', rest))
+        rows.append((str(len(rows) + 1), 'Остальное', '', rest))
     body = ''.join(
         f'<tr><th scope="row"><span class="row-label"><span class="index" aria-hidden="true">{rank}</span>'
         f'<span class="stat-title"><span class="stat-icon" aria-hidden="true">{escape(icon)}</span>{escape(name)}</span>'
@@ -145,19 +144,26 @@ def month_content():
     return pace(daily, 2026, 11) + rankings()
 
 
+def expenses_heading():
+    prev = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 7-5 5 5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+    return f'''<div class="expenses-heading"><h1>Расходы</h1>
+      <div class="month-selector" role="group" aria-label="Выбор месяца">
+        <button aria-label="Предыдущий месяц">{prev}</button><span>{month_label}</span>
+        <button aria-label="Следующий месяц" disabled>{prev}</button>
+      </div></div>'''
+
+
 def finance_home():
     # Компоновка финансов по снимку finance_analytics_light.png, фон как в «Неделе».
     accounts = [('💳', 'Карта', 42300), ('👛', 'Наличные', 6150), ('🏦', 'Накопления', 80000)]
     balances = ''.join(f'<div><p>{icon} {name}</p><b>{money(balance)}</b></div>' for icon, name, balance in accounts)
     plus = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'
-    prev = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 7-5 5 5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
     return f'''<div class="finance" id="finance">
       <div class="finance-body">
         <div class="accounts-heading"><span><b>Счета</b> · {money(sum(balance for _, _, balance in accounts))}</span>
           <button class="account-add" aria-label="Создать счёт">{plus}</button></div>
         <div class="accounts">{balances}</div>
-        <div class="finance-month"><button aria-label="Предыдущий месяц">{prev}</button>
-          <h1>{month_label}</h1><button aria-label="Следующий месяц" disabled>{prev}</button></div>
+        {expenses_heading()}
         {month_content()}
       </div>
       <nav class="finance-bar" aria-label="Финансы">
@@ -176,8 +182,10 @@ CSS = design['fonts'] + f''':root{{--ink:{color('textPrimary')};--muted:{color('
   main{max-width:960px;margin:auto;padding:24px 16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:20px;align-items:start}
   .screen{width:100%;max-width:390px;margin:auto;background:var(--surface);padding:16px 18px 14px;border-radius:16px}
   h1,p{margin:0}h1{font-size:16px}
-  .month{display:flex;align-items:center;justify-content:space-between;padding-bottom:10px}
-  .month span{font-size:23px;color:var(--muted);line-height:1}
+  .expenses-heading,.accounts-heading{display:flex;align-items:center;justify-content:space-between}
+  .month-selector{display:flex;align-items:center;white-space:nowrap;font-weight:700}
+  .month-selector button{display:grid;place-items:center;width:32px;height:40px;color:var(--ink);background:transparent;border:0;padding:0}
+  .month-selector button:last-child svg{transform:scaleX(-1)}.month-selector button:disabled{color:var(--inactive)}
   .index,.currency{color:var(--muted)}
   section{padding:16px 0}section:last-child{padding-bottom:0}
   .pace{container-type:inline-size}
@@ -204,16 +212,14 @@ CSS = design['fonts'] + f''':root{{--ink:{color('textPrimary')};--muted:{color('
   .finance-body{padding:0 16px 16px}
   .finance button{display:grid;place-items:center;color:var(--ink);background:transparent;border:0;padding:0}
   .finance button svg{width:24px;height:24px}
-  .accounts-heading,.finance-month{display:flex;align-items:center;justify-content:space-between}
+  .month-selector button svg{width:20px;height:20px}
   .accounts-heading{height:48px;color:var(--muted)}.accounts-heading b{color:var(--ink)}
   .finance .account-add{width:32px;height:32px}.finance .account-add svg{width:18px;height:18px}
   .accounts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:2px 0 16px}
   .accounts>div{min-width:0}
   .accounts p{color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px}
   .accounts b{white-space:nowrap}
-  .finance-month{margin:6px 0 18px}
-  .finance-month button{width:40px;height:40px}
-  .finance-month button:last-child svg{transform:scaleX(-1)}.finance-month button:disabled{color:var(--inactive)}
+  .finance .expenses-heading{margin:6px 0 18px}
   .finance-bar{margin-top:auto;min-height:var(--bar-height);border-top:1px solid var(--divider);padding:0 12px;display:flex;align-items:center}
   .finance-bar svg path{fill:none;stroke-linejoin:round}
   .finance-bar .add-operation,.finance-bar .finance-module{width:72px;height:var(--bar-button);border-radius:16px}
@@ -226,7 +232,7 @@ CSS = design['fonts'] + f''':root{{--ink:{color('textPrimary')};--muted:{color('
 '''
 document = f'''<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Аналитика месяца · #267</title>
 <style>{CSS}</style><main>
-<div class="screen" id="overview"><div class="month"><span aria-hidden="true">‹</span><h1>{month_label}</h1><span aria-hidden="true">›</span></div>
+<div class="screen" id="overview">{expenses_heading()}
 {month_content()}</div>
 <div class="screen small" id="missing">{rankings(named_places=[])}</div>
 <div class="screen small" id="completed">{pace([*daily, *([650] * 12)], 2026, 10)}</div>
