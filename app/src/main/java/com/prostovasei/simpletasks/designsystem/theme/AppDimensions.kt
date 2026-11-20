@@ -121,6 +121,7 @@ data class AppSizes(
     val healthDrumItem: Dp = SizeTokens.HEALTH_DRUM_ITEM.dp,
     val healthDrumWhole: Dp = SizeTokens.HEALTH_DRUM_WHOLE.dp,
     val healthDrumTenth: Dp = SizeTokens.HEALTH_DRUM_TENTH.dp,
+    val financeChartHeight: Dp = SizeTokens.FINANCE_CHART_HEIGHT.dp,
     val healthChartHeight: Dp = SizeTokens.HEALTH_CHART_HEIGHT.dp,
     val healthChartAxis: Dp = SizeTokens.HEALTH_CHART_AXIS.dp,
     val healthPoint: Dp = SizeTokens.HEALTH_POINT.dp,

@@ -115,6 +115,7 @@ object SizeTokens {
     const val HEALTH_DRUM_ITEM = 40
     const val HEALTH_DRUM_WHOLE = 84
     const val HEALTH_DRUM_TENTH = 56
+    const val FINANCE_CHART_HEIGHT = 138
     const val HEALTH_CHART_HEIGHT = 190
     const val HEALTH_CHART_AXIS = 40
     const val HEALTH_POINT = 3

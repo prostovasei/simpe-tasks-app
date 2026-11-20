@@ -12,6 +12,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.performClick
 import com.prostovasei.simpletasks.ui.feature.task.TAG_QUICK_SCRIM
 import androidx.compose.ui.test.performTouchInput
@@ -182,8 +183,8 @@ class AppSmokeTest {
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("41\u00A0450\u00A0₽") }
         composeRule.onNodeWithTag("operation_back").performClick()
 
-        // Вкладка «Операции» запоминается при уходе в задачи; задачи возвращаются на «Списки».
-        composeRule.onNodeWithTag("finance_tab:OPERATIONS").performClick()
+        composeRule.onNodeWithTag("finance_tab:OPERATIONS").assertDoesNotExist()
+        composeRule.onNodeWithTag("finance_operations").performScrollToIndex(4)
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("− 850\u00A0₽") }
         switchModule("TASKS")
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists(TAG_LISTS_SCROLL) }
@@ -192,7 +193,8 @@ class AppSmokeTest {
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("− 850\u00A0₽") }
 
         // Этап 4 (#231): операция в корзину из окна правки — остаток вернулся; из корзины (меню шестерёнки) — обратно.
-        composeRule.onNodeWithText("Продукты").performClick()
+        composeRule.onNodeWithTag("finance_operations").performScrollToIndex(4)
+        composeRule.onNode(hasText("Продукты") and hasClickAction()).performClick()
         composeRule.onNodeWithTag("operation_trash").performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Операций пока нет") }
         openFinanceSettings()
@@ -206,6 +208,8 @@ class AppSmokeTest {
         composeRule.onNodeWithContentDescription("Назад").performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists(TAG_APP_SETTINGS) }
         composeRule.onNodeWithContentDescription("Назад").performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists("finance_operations") }
+        composeRule.onNodeWithTag("finance_operations").performScrollToNode(hasText("− 850\u00A0₽") and hasClickAction())
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("− 850\u00A0₽") }
 
         // На вложенных экранах (настройки) нижней панели нет.
@@ -391,7 +395,10 @@ class AppSmokeTest {
         composeRule.onNodeWithTag(TAG_ADD_TASK).performClick()
         composeRule.onNodeWithTag(TAG_QUICK_TITLE).performTextReplacement("В корзину")
         composeRule.onNodeWithTag(TAG_QUICK_SAVE).performClick()
-        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("В корзину") }
+        composeRule.waitUntil(5_000) {
+            !composeRule.onAllNodesWithTagExists(TAG_QUICK_SCRIM) &&
+                composeRule.onAllNodesWithTextExists("В корзину")
+        }
         composeRule.onNodeWithText("В корзину").performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_DETAIL_TITLE).fetchSemanticsNodes().isNotEmpty() }
         composeRule.onNodeWithTag(TAG_DETAIL_MENU).performClick()
@@ -408,7 +415,10 @@ class AppSmokeTest {
         composeRule.waitForIdle()
         composeRule.onNodeWithTag(TAG_LISTS_SCROLL).performScrollToKey("trash")
         composeRule.onNodeWithTag(TAG_TRASH).performClick()
-        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("В корзину") }
+        composeRule.waitUntil(5_000) {
+            !composeRule.onAllNodesWithTagExists(TAG_QUICK_SCRIM) &&
+                composeRule.onAllNodesWithTextExists("В корзину")
+        }
 
         composeRule.onNodeWithText("В корзину").performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_TRASH_TASK_BANNER).fetchSemanticsNodes().isNotEmpty() }
@@ -420,7 +430,10 @@ class AppSmokeTest {
 
         composeRule.onNodeWithContentDescription("Назад").performClick()
         composeRule.onNodeWithTag("tab:UPCOMING").performClick()
-        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("В корзину") }
+        composeRule.waitUntil(5_000) {
+            !composeRule.onAllNodesWithTagExists(TAG_QUICK_SCRIM) &&
+                composeRule.onAllNodesWithTextExists("В корзину")
+        }
     }
 
     /** Итерация 38: закрыли карточку новой задачи, не сохранив, — следующее «+» открывается с тем же названием. */
