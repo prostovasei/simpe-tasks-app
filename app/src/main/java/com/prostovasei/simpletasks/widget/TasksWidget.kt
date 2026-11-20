@@ -54,6 +54,7 @@ import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
 import com.prostovasei.simpletasks.designsystem.tokens.SpacingTokens
 import com.prostovasei.simpletasks.domain.model.Priority
 import com.prostovasei.simpletasks.domain.model.ReminderMark
+import com.prostovasei.simpletasks.ui.feature.finance.financeMonthLabel
 import com.prostovasei.simpletasks.ui.common.DONE_ALPHA
 import com.prostovasei.simpletasks.ui.common.DayNames
 import com.prostovasei.simpletasks.ui.common.ReminderIconMasks
@@ -100,7 +101,9 @@ fun WidgetContent(model: WidgetModel, appWidgetId: Int, scrollable: Boolean = tr
                     Column(GlanceModifier.fillMaxSize()) { ManyRows(lines) { WidgetLineContent(it, model, liveClock) } }
                 }
             }
-            BottomBar(model, appWidgetId, imageButtons = scrollable)
+            CompositionLocalProvider(LocalWidgetColors provides TaskWidgetColors) {
+                BottomBar(model, appWidgetId, imageButtons = scrollable)
+            }
         }
     }
 }
@@ -504,9 +507,11 @@ fun widgetCheckColors(priority: Priority): WidgetCheckColors = when (priority) {
  * Фоны плиток — картинками со скруглением (0.42.2: скругление Glance при первом показе не применялось).
  */
 @Composable
-private fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boolean) {
+internal fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boolean, finance: Boolean = false) {
     val context = LocalContext.current
     val openApp = context.getString(R.string.widget_open_app)
+    val compact = LocalSize.current.width < SizeTokens.WIDGET_COMPACT_BAR_THRESHOLD.dp
+    val side = if (compact) SizeTokens.WIDGET_BAR else SizeTokens.WIDGET_ADD_W
     Row(
         modifier = GlanceModifier
             .fillMaxWidth()
@@ -519,14 +524,14 @@ private fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boolea
     ) {
         Box(
             modifier = GlanceModifier
-                .size(width = SizeTokens.WIDGET_ADD_W.dp, height = SizeTokens.WIDGET_ADD_H.dp)
-                .button(if (model.filter == WidgetFilter.Inbox) R.drawable.widget_bar_add else R.drawable.widget_task_bar_add, LocalWidgetColors.current.accent, RadiusTokens.LG, imageButtons)
-                .clickable(actionStartActivity(quickAddIntent(context, model.filter))),
+                .size(width = side.dp, height = SizeTokens.WIDGET_ADD_H.dp)
+                .button(R.drawable.widget_task_bar_add, LocalWidgetColors.current.accent, RadiusTokens.LG, imageButtons)
+                .clickable(actionStartActivity(if (finance) widgetPopupIntent(context, appWidgetId, true) else quickAddIntent(context, model.filter))),
             contentAlignment = Alignment.Center,
         ) {
             Image(
                 ImageProvider(R.drawable.ic_widget_add),
-                contentDescription = context.getString(R.string.add_task),
+                contentDescription = context.getString(if (finance) R.string.finance_add else R.string.add_task),
                 colorFilter = ColorFilter.tint(LocalWidgetColors.current.onAccent),
                 modifier = GlanceModifier.size(SizeTokens.WIDGET_ADD_ICON.dp),
             )
@@ -534,39 +539,30 @@ private fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boolea
         Spacer(GlanceModifier.defaultWeight())
         Row(
             modifier = GlanceModifier
-                .height(SizeTokens.WIDGET_ADD_H.dp)
-                .button(if (model.filter == WidgetFilter.Inbox) R.drawable.widget_bar_tile else R.drawable.widget_task_bar_tile, LocalWidgetColors.current.surface, RadiusTokens.LG, imageButtons)
-                .padding(horizontal = SizeTokens.WIDGET_TAB_BLOCK_PAD.dp),
+                .height(SizeTokens.WIDGET_ADD_H.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Итерация 45: третья вкладка — «Неделя» (только на Android 12+: ленту недели рисуют элементы Android).
-            listOf(WidgetFilter.All, WidgetFilter.Inbox, WidgetFilter.Week).filter { it != WidgetFilter.Week || imageButtons }.forEach { filter ->
-                SwitchTab(
-                    icon = when (filter) {
-                        WidgetFilter.All -> R.drawable.ic_widget_all
-                        WidgetFilter.Week -> R.drawable.ic_tab_week
-                        else -> R.drawable.ic_widget_inbox
-                    },
-                    label = context.getString(
-                        when (filter) {
-                            WidgetFilter.Inbox -> R.string.inbox_list_name
-                            WidgetFilter.Week -> R.string.tab_week
-                            else -> R.string.widget_all
-                        },
-                    ),
-                    selected = filter == model.filter,
-                    action = actionSendBroadcast(WidgetActions.switch(context, appWidgetId, filter)),
-                )
-            }
+            SwitchTab(R.drawable.ic_module_tasks, context.getString(R.string.module_tasks), !finance,
+                if (finance) actionSendBroadcast(WidgetActions.module(context, appWidgetId, false))
+                else actionStartActivity(widgetPopupIntent(context, appWidgetId, false)))
+            SwitchTab(R.drawable.ic_module_finance, context.getString(R.string.module_finance), finance,
+                actionSendBroadcast(WidgetActions.module(context, appWidgetId, true)))
         }
         Spacer(GlanceModifier.defaultWeight())
         // Итерация 51 → 57: сегодняшняя дата — плитка шириной с «+»; нажатие возвращает к сегодня (неделя, «Сегодня» в ленте, начало «Входящих»).
+        if (finance) {
+            Box(GlanceModifier.width(side.dp), contentAlignment = Alignment.Center) {
+                Text(financeMonthLabel(java.time.YearMonth.from(model.today)),
+                    style = TextStyle(color = LocalWidgetColors.current.textSecondary, fontSize = 11.sp))
+            }
+            return@Row
+        }
         val (day, weekday, month) = WidgetDates.tile(model.today)
         val description = context.getString(R.string.widget_today_date, WidgetDates.bar(model.today, withWeekday = true))
         Row(
             modifier = GlanceModifier
-                .size(width = SizeTokens.WIDGET_ADD_W.dp, height = SizeTokens.WIDGET_ADD_H.dp)
-                .button(if (model.filter == WidgetFilter.Inbox) R.drawable.widget_bar_tile else R.drawable.widget_task_bar_tile, LocalWidgetColors.current.surface, RadiusTokens.LG, imageButtons)
+                .size(width = side.dp, height = SizeTokens.WIDGET_ADD_H.dp)
+                .button(R.drawable.widget_task_bar_tile, LocalWidgetColors.current.surface, RadiusTokens.LG, imageButtons)
                 .clickable(actionSendBroadcast(WidgetActions.today(context, appWidgetId)))
                 .semantics { contentDescription = description },
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -601,7 +597,7 @@ private fun SwitchTab(icon: Int, label: String, selected: Boolean, action: Actio
     ) {
         Image(
             ImageProvider(icon),
-            contentDescription = label,
+            contentDescription = if (selected) LocalContext.current.getString(R.string.widget_tab_selected, label) else label,
             colorFilter = ColorFilter.tint(if (selected) LocalWidgetColors.current.accent else LocalWidgetColors.current.inactive),
             modifier = GlanceModifier.size(SizeTokens.WIDGET_TAB_ICON.dp),
         )

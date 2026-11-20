@@ -177,13 +177,13 @@ class WidgetScreenshotTest {
         if (this@descendants is android.view.ViewGroup) for (i in 0 until childCount) yieldAll(getChildAt(i).descendants())
     }
 
-    /** Настоящая картинка: в нижней строке (итерация 25) только «Все», «Входящие», «открыть приложение» и «+». */
+    /** Нижняя строка содержит «Задачи», «Финансы», «Открыть приложение» и «+». */
     @Test
     fun bottomBarKeepsAllButtons() {
         val views = runBlocking { Preview(model).compose(context, size = DpSize(320.dp, 420.dp)) }
         val root = views.apply(context, FrameLayout(context))
         // Итерация 57: галочки нет — приложение открывает свободное место строки (одна зона на всю строку).
-        mapOf("Все" to 1, "Входящие" to 1, "Открыть приложение" to 1, "Новая задача" to 1).forEach { (label, count) ->
+        mapOf("Задачи, выбрано" to 1, "Финансы" to 1, "Открыть приложение" to 1, "Новая задача" to 1).forEach { (label, count) ->
             val found = ArrayList<View>()
             root.findViewsWithText(found, label, View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
             assertEquals(label, count, found.size)

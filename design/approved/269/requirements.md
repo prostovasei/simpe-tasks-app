@@ -1,6 +1,6 @@
 # ТЗ #269 — виджет «Задачи» и «Финансы»
 
-Исполнитель Codex. ТЗ на согласовании, 20.11.2026. Ветка `codex/widget-tasks-finance` от `main` `37b0d7a`. [Issue #269](https://github.com/prostovasei/simpe-tasks-app/issues/269) · [Основные состояния](widget-tabs.png) · [Виджет 180×110 dp](widget-compact.png).
+Исполнитель Codex. ТЗ согласовано, PM дал «Делай код», 20.11.2026. Ветка `codex/widget-tasks-finance` от `main` `37b0d7a`. [Issue #269](https://github.com/prostovasei/simpe-tasks-app/issues/269) · [Основные состояния](widget-tabs.png) · [Виджет 180×110 dp](widget-compact.png).
 
 ## Вкладки и виды задач
 

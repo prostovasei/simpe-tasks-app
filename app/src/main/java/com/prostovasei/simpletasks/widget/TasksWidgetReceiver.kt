@@ -89,6 +89,7 @@ private const val MIDNIGHT_DELAY_SECONDS = 30L
 class WidgetUpdater @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val tasks: TaskRepository,
+    private val finance: com.prostovasei.simpletasks.domain.repository.FinanceRepository,
     private val dayTicker: DayTicker,
     private val overdueFold: OverdueFold,
     @param:ApplicationScope private val appScope: CoroutineScope,
@@ -96,10 +97,27 @@ class WidgetUpdater @Inject constructor(
     @OptIn(FlowPreview::class)
     fun start() {
         appScope.launch {
+            combine(finance.observeAccounts(), finance.observeOperations()) { _, _ -> }
+                .debounce(DEBOUNCE_MS).collect { refreshFinance() }
+        }
+        val prefs = com.prostovasei.simpletasks.ui.feature.finance.financeLimitPreferences(context)
+        prefs.registerOnSharedPreferenceChangeListener(limitListener)
+
+        appScope.launch {
             combine(tasks.observeDataChanges(), dayTicker.today(), overdueFold.collapsed) { _, _, _ -> }.debounce(DEBOUNCE_MS).collect {
                 if (WidgetRenderer.widgetIds(context).isEmpty()) return@collect
                 WidgetRenderer.renderAll(context, "изменились задачи")
             }
+        }
+    }
+
+    private val limitListener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, _ ->
+        appScope.launch { refreshFinance() }
+    }
+
+    private suspend fun refreshFinance() {
+        WidgetRenderer.widgetIds(context).filter { WidgetSelection.finance(context, it) }.forEach {
+            WidgetRenderer.render(context, it, "изменились финансы")
         }
     }
 

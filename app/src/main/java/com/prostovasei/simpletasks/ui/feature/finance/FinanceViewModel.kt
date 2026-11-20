@@ -250,8 +250,9 @@ class FinanceViewModel @Inject constructor(
             when (window) {
                 AccountWindow.Create -> finance.createAccount(intent.draft)
                 is AccountWindow.Edit -> finance.updateAccount(window.account.id, intent.draft)
-                AccountWindow.None -> Unit
+                AccountWindow.None -> return@launch
             }
+            sendEffect(FinanceEffect.AccountSaved)
         }
     }
 

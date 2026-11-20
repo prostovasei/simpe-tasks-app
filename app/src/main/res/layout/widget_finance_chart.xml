@@ -1,0 +1,4 @@
+<ImageView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_finance_graph" android:layout_width="match_parent"
+    android:layout_height="wrap_content" android:adjustViewBounds="true"
+    android:scaleType="fitCenter" android:contentDescription="@null" />

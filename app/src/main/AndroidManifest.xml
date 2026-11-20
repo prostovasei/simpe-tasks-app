@@ -139,6 +139,12 @@
                 <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
             </intent-filter>
         </activity>
+        <activity android:name=".widget.WidgetPopupActivity"
+            android:exported="false" android:excludeFromRecents="true"
+            android:taskAffinity="com.prostovasei.simpletasks.popup"
+            android:theme="@style/Theme.SimpleTasks.Overlay" android:windowSoftInputMode="adjustResize" />
+        <service android:name=".widget.WidgetFinanceService"
+            android:exported="false" android:permission="android.permission.BIND_REMOTEVIEWS" />
     </application>
 
 </manifest>
