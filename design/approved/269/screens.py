@@ -138,10 +138,10 @@ def widget(name, *, module='tasks', mode='week', compact=False):
           </button>
           <div class="widget-tabs" role="tablist">
             <button type="button" role="tab" class="widget-tab" data-tab="tasks" aria-label="Задачи" aria-selected="{str(tasks_active).lower()}">
-              {vector('ic_module_tasks')}<span class="tab-title">Задачи</span><span class="caret" aria-hidden="true"></span>
+              {vector('ic_module_tasks')}
             </button>
             <button type="button" role="tab" class="widget-tab" data-tab="finance" aria-label="Финансы" aria-selected="{str(not tasks_active).lower()}">
-              {vector('ic_module_finance')}<span class="tab-title">Финансы</span>
+              {vector('ic_module_finance')}
             </button>
           </div>
           <button type="button" class="widget-date" aria-label="Вернуться к сегодня"{" hidden" if not tasks_active else ""}>
@@ -187,14 +187,10 @@ figcaption{font:700 14px/20px Manrope,sans-serif;color:var(--ink);margin-bottom:
 .widget-bar .widget-add{display:grid;place-items:center;width:100%;height:var(--add-height);border-radius:12px;background:var(--ink);color:var(--surface)}
 .widget-add svg{width:var(--tab-icon);height:var(--tab-icon)}
 .widget-tabs{display:flex;justify-content:center;min-width:0}
-.widget-bar .widget-tab{height:calc(var(--bar-height) - 1px);position:relative;display:flex;align-items:center;justify-content:center;
-  gap:4px;padding:0 6px;color:var(--muted);font-size:11px;font-weight:700;white-space:nowrap}
-.widget-tab svg{width:18px;height:18px;flex:none}
+.widget-bar .widget-tab{width:44px;height:calc(var(--bar-height) - 1px);display:grid;place-items:center;color:var(--muted)}
+.widget-tab svg{width:var(--tab-icon);height:var(--tab-icon)}
 .widget-tab svg path[stroke],.view-picker svg path[stroke]{fill:none;stroke-linejoin:round}
-.widget-bar .widget-tab[aria-selected="true"]{color:var(--ink);font-weight:800}
-.widget-tab[aria-selected="true"]::after{content:"";position:absolute;bottom:2px;left:calc(50% - 7px);height:2px;width:14px;border-radius:1px;background:currentColor}
-.caret{width:5px;height:5px;border-right:1px solid currentColor;border-bottom:1px solid currentColor;transform:translateY(-2px) rotate(45deg)}
-.widget-tab[aria-selected="false"] .caret{display:none}
+.widget-bar .widget-tab[aria-selected="true"]{color:var(--ink)}
 .widget-bar .widget-date,.widget-month{display:flex;align-items:center;justify-content:center;gap:3px;height:100%;white-space:nowrap}
 .widget-date b{font-size:18px;line-height:18px}
 .widget-date strong,.widget-date small{display:block;font-size:9px;line-height:10px;text-align:left}
@@ -256,8 +252,6 @@ figcaption{font:700 14px/20px Manrope,sans-serif;color:var(--ink);margin-bottom:
 .widget-stage.compact{width:180px}
 .compact .widget-frame{height:110px;border-radius:14px}
 .compact .widget-bar{grid-template-columns:44px minmax(0,1fr) 40px;padding:0 3px}
-.compact .widget-bar .widget-tab{width:44px;gap:3px;padding:0}
-.compact .tab-title{display:none}
 .compact .widget-month{font-size:10px}
 .compact .widget-add svg{width:19px;height:19px}
 .compact .widget-date b{font-size:15px}
