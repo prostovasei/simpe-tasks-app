@@ -113,3 +113,10 @@ object TaskCanvasTokens {
     val background = ThemedColor(light = 0xFFFFFFFF, dark = 0xFFFFFFFF)
     val divider = ThemedColor(light = 0xFFE8E8EA, dark = 0xFFE8E8EA)
 }
+
+internal object FinanceShareColors {
+    val ranks = listOf(0xFF8858D6, 0xFF438BC9, 0xFF359E8A, 0xFFCC883D, 0xFF8590A7)
+    const val account = 0xFFF3F3F4
+    val accountSurface = androidx.compose.ui.graphics.Color(account)
+    const val tintFraction = 0.10f
+}

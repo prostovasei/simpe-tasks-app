@@ -9,6 +9,19 @@ import java.time.YearMonth
 
 class MonthSpendingTest {
     @Test
+    fun roundsSharesToExactlyOneHundredInRankOrder() {
+        val rows = listOf(8900L, 6860L, 5270L, 4220L, 3150L).mapIndexed { index, amount ->
+            MonthSpending.Rank(index.toString(), amount)
+        }
+        assertEquals(listOf(31, 24, 19, 15, 11), sharePercentages(rows, 28_400))
+        assertEquals(listOf(34, 33, 33), sharePercentages(rows.take(3).map { it.copy(amount = 1) }, 3))
+        assertEquals(listOf(100, 0), sharePercentages(
+            listOf(MonthSpending.Rank("a", Long.MAX_VALUE - 1), MonthSpending.Rank("b", 1)), Long.MAX_VALUE))
+        assertEquals("−4k", financeThousands(-350_000))
+        assertEquals("0k", financeThousands(-49_999))
+    }
+
+    @Test
     fun projectsFromCalendarDaysAndGroupsUnassignedSpending() {
         val today = LocalDate.of(2026, 11, 19)
         val expenses = listOf(
@@ -23,7 +36,7 @@ class MonthSpendingTest {
         assertEquals(2_840_000L, result.total)
         assertEquals(4_484_211L, result.forecast)
         assertEquals(5_000_000L, result.ceiling)
-        assertEquals(listOf("Магазин", "Остальное"), result.places.map { it.name })
+        assertEquals(listOf("Остальное", "Магазин"), result.places.map { it.name })
         assertEquals(result.total, result.places.sumOf { it.amount })
         assertEquals(result.total, result.categories.sumOf { it.amount })
         assertNull(MonthSpending.of(expenses, YearMonth.from(today), today.withDayOfMonth(30)).forecast)

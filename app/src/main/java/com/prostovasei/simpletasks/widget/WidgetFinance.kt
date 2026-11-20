@@ -12,6 +12,11 @@ import androidx.compose.ui.unit.DpSize
 import androidx.core.net.toUri
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
+import com.prostovasei.simpletasks.designsystem.tokens.FinanceShareSizes
+import com.prostovasei.simpletasks.domain.model.finance.Account
+import com.prostovasei.simpletasks.domain.model.finance.financeThousands
+import com.prostovasei.simpletasks.ui.feature.finance.sharesBitmap
+import com.prostovasei.simpletasks.ui.feature.finance.sharesDescription
 import com.prostovasei.simpletasks.domain.model.finance.Money
 import com.prostovasei.simpletasks.domain.model.finance.MonthSpending
 import com.prostovasei.simpletasks.ui.feature.finance.axisAmount
@@ -49,7 +54,7 @@ private class FinanceRows(private val context: Context, private val width: Int, 
     override fun getCount() = rows.size
     override fun getViewAt(position: Int): RemoteViews? = rows.getOrNull(position)
     override fun getLoadingView(): RemoteViews? = null
-    override fun getViewTypeCount() = 3
+    override fun getViewTypeCount() = 4
     override fun getItemId(position: Int) = position.toLong()
     override fun hasStableIds() = false
 
@@ -79,39 +84,51 @@ private class FinanceRows(private val context: Context, private val width: Int, 
                 })
                 if (compact) add(amounts)
                 if (model.total == 0L) add(row(context.getString(R.string.analytics_empty)))
-                else if (width >= SizeTokens.WIDGET_COMPACT_BAR_THRESHOLD) {
-                    add(row("Категории", "Места", leftAmount = "₽", rightAmount = "₽"))
-                    repeat(maxOf(model.categories.size, model.places.size)) { idx ->
-                        val category = model.categories.getOrNull(idx)
-                        val place = model.places.getOrNull(idx)
-                        add(row(rankLabel(idx, category), rankLabel(idx, place),
-                            leftAmount = category?.let { Money.amount(it.amount) }.orEmpty(),
-                            rightAmount = place?.let { Money.amount(it.amount) }.orEmpty(), paired = true))
-                    }
-                } else {
-                    addAll(ranking("Категории", model.categories))
-                    addAll(ranking("Места", model.places))
+                else {
+                    add(shares("Категории", model.categories, model.total))
+                    add(shares("Места", model.places, model.total))
                 }
-                add(row("Счета", leftAmount = Money.format(accounts.sumOf { it.balance })))
-                accounts.forEach { add(row("${it.emojiShown} ${it.name}", leftAmount = Money.format(it.balance))) }
+                val balance = accounts.sumOf { it.balance }
+                add(row("${financeThousands(balance)} ₽", Money.format(balance)))
+                val fontScale = context.resources.configuration.fontScale.coerceAtLeast(1f)
+                val available = width - 2 * SizeTokens.WIDGET_EDGE
+                val columns = (available / (FinanceShareSizes.accountMin * fontScale)).toInt().coerceIn(1, 4)
+                accounts.chunked(columns).forEach { add(accountRow(it, columns)) }
             }
         }
     }
 
-    private fun rankLabel(index: Int, rank: MonthSpending.Rank?) =
-        rank?.let { "${index + 1} ${listOfNotNull(it.icon, it.name).joinToString(" ")}" }.orEmpty()
+    private fun shares(title: String, entries: List<MonthSpending.Rank>, total: Long): RemoteViews {
+        val density = 2f
+        val widthPx = ((width.coerceIn(180, 440) - 2 * SizeTokens.WIDGET_EDGE) * density).toInt()
+        val image = sharesBitmap(entries, total, widthPx, density, context.resources.configuration.fontScale,
+            context.getColor(R.color.widget_flat_text_primary))
+        image.density = android.util.DisplayMetrics.DENSITY_XHIGH
+        return RemoteViews(context.packageName, R.layout.widget_finance_chart).apply {
+            setImageViewBitmap(R.id.widget_finance_graph, image)
+            setContentDescription(R.id.widget_finance_graph, sharesDescription(title, entries, total))
+        }
+    }
 
-    private fun ranking(title: String, ranks: List<MonthSpending.Rank>) =
-        listOf(row(title, leftAmount = "₽")) +
-            ranks.mapIndexed { idx, rank -> row(rankLabel(idx, rank), leftAmount = Money.amount(rank.amount)) }
+    private fun accountRow(accounts: List<Account>, columns: Int) =
+        RemoteViews(context.packageName, R.layout.widget_finance_accounts).apply {
+            repeat(columns) { index ->
+                val account = accounts.getOrNull(index)
+                addView(R.id.widget_finance_accounts, RemoteViews(context.packageName, R.layout.widget_finance_account).apply {
+                    if (account == null) setViewVisibility(R.id.widget_finance_account, android.view.View.INVISIBLE)
+                    else {
+                        setTextViewText(R.id.widget_finance_account, "${account.emojiShown}  ${financeThousands(account.balance)}")
+                        setContentDescription(R.id.widget_finance_account, "${account.name}, ${Money.format(account.balance)}")
+                    }
+                })
+            }
+        }
 
-    private fun row(left: String, right: String = "", leftAmount: String = "", rightAmount: String = "", paired: Boolean = right.isNotEmpty()) =
+    private fun row(text: String, description: String = text) =
         RemoteViews(context.packageName, R.layout.widget_finance_row).apply {
-            setTextViewText(R.id.widget_finance_left, left)
-            setTextViewText(R.id.widget_finance_left_amount, leftAmount)
-            setTextViewText(R.id.widget_finance_right, right)
-            setTextViewText(R.id.widget_finance_right_amount, rightAmount)
-            setViewVisibility(R.id.widget_finance_right_column, if (paired) android.view.View.VISIBLE else android.view.View.GONE)
+            setTextViewText(R.id.widget_finance_left, text)
+            setContentDescription(R.id.widget_finance_left, description)
+            setViewVisibility(R.id.widget_finance_right_column, android.view.View.GONE)
         }
 
     private fun chart(model: MonthSpending, compact: Boolean): Bitmap {

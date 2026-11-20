@@ -373,3 +373,12 @@ object SizeTokens {
     /** Стрелка «свернуть» и значок «перенести на сегодня» у подписи «Просрочено» в виджете (итерация 37). */
     const val WIDGET_FOLD_ICON = 20
 }
+
+internal object FinanceShareSizes {
+    const val accountMin = 68
+    const val strip = 7
+    const val gap = 4
+    const val inset = 5
+    const val label = 10
+    const val percent = 11
+}
