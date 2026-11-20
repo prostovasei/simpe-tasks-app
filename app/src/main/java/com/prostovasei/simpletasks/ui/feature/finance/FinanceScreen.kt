@@ -5,18 +5,17 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Icon
@@ -25,6 +24,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,12 +38,14 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.theme.TaskCanvasTheme
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.domain.model.finance.Account
+import com.prostovasei.simpletasks.designsystem.tokens.FinanceShareSizes
+import com.prostovasei.simpletasks.designsystem.tokens.FinanceShareColors
+import com.prostovasei.simpletasks.domain.model.finance.financeThousands
 import com.prostovasei.simpletasks.domain.model.finance.Money
 
 @Composable
@@ -122,7 +125,6 @@ internal fun FinanceDialogs(state: FinanceState, onIntent: (FinanceIntent) -> Un
     state.correction?.let { CorrectionDialog(it, state.today, onTrash = { onIntent(FinanceIntent.TrashOperation) }, onDismiss = { onIntent(FinanceIntent.CloseCorrection) }) }
 }
 
-/** Блок «Счета · сумма» с маленьким «+»: до трёх счетов — карточки во всю ширину, больше — листаются вбок, следующая выглядывает. */
 @Composable
 private fun AccountsBlock(accounts: List<Account>, total: Long, onIntent: (FinanceIntent) -> Unit) {
     val colors = AppTheme.colors
@@ -130,13 +132,13 @@ private fun AccountsBlock(accounts: List<Account>, total: Long, onIntent: (Finan
     val sizes = AppTheme.sizes
     val add = stringResource(R.string.finance_add_account)
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(start = spacing.md + spacing.xxs, end = spacing.md, top = spacing.xs, bottom = spacing.xs)) {
-        Text(stringResource(R.string.finance_accounts), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = colors.textPrimary)
         Text(
-            " · ${Money.format(total)}",
+            "${financeThousands(total)} ₽",
             style = MaterialTheme.typography.labelLarge,
-            color = colors.textSecondary,
+            color = colors.textPrimary,
+            fontWeight = FontWeight.Bold,
             maxLines = 1,
-            modifier = Modifier.weight(1f).testTag(TAG_ACCOUNTS_TOTAL),
+            modifier = Modifier.weight(1f).testTag(TAG_ACCOUNTS_TOTAL).semantics { contentDescription = Money.format(total) },
         )
         Box(
             contentAlignment = Alignment.Center,
@@ -149,57 +151,40 @@ private fun AccountsBlock(accounts: List<Account>, total: Long, onIntent: (Finan
                 .testTag(TAG_ACCOUNT_ADD),
         ) { Icon(Icons.Default.Add, contentDescription = null, tint = colors.textPrimary, modifier = Modifier.size(sizes.accountAddIcon)) }
     }
-    val open: (Account) -> Unit = { onIntent(FinanceIntent.OpenAccount(it.id)) }
-    if (accounts.size <= WIDE_TILES) {
-        Row(horizontalArrangement = Arrangement.spacedBy(spacing.xs), modifier = Modifier.fillMaxWidth().padding(horizontal = spacing.md).testTag(TAG_ACCOUNTS)) {
-            accounts.forEach { AccountTile(it, Modifier.weight(1f), open) }
-        }
-    } else {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(spacing.xs),
-            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = spacing.md).testTag(TAG_ACCOUNTS),
-        ) {
-            accounts.forEach { AccountTile(it, Modifier.widthIn(min = sizes.accountTile), open) }
+    val fontScale = LocalDensity.current.fontScale
+    BoxWithConstraints(Modifier.fillMaxWidth().padding(horizontal = spacing.md).testTag(TAG_ACCOUNTS)) {
+        val columns = (maxWidth.value / (FinanceShareSizes.accountMin * fontScale)).toInt().coerceIn(1, 4)
+        val tileWidth = (maxWidth - spacing.xs * (columns - 1)) / columns
+        Column(verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
+            accounts.chunked(columns).forEach { group ->
+                Row(horizontalArrangement = Arrangement.spacedBy(spacing.xs)) {
+                    group.forEach { account ->
+                        AccountTile(account, Modifier.width(tileWidth)) { onIntent(FinanceIntent.OpenAccount(account.id)) }
+                    }
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun AccountTile(account: Account, modifier: Modifier, onClick: (Account) -> Unit) {
-    val colors = AppTheme.colors
+private fun AccountTile(account: Account, modifier: Modifier, onClick: () -> Unit) {
     val spacing = AppTheme.spacing
-    Column(
-        modifier
-            .clip(AppTheme.shapes.large)
-            .background(colors.surface)
-            .clickable(role = Role.Button) { onClick(account) }
-            .padding(start = spacing.sm, end = spacing.xs, top = spacing.sm, bottom = spacing.sm)
+    Row(
+        modifier.clip(CircleShape).background(FinanceShareColors.accountSurface)
+            .clickable(role = Role.Button, onClick = onClick)
+            .semantics { contentDescription = "${account.name}, ${Money.format(account.balance)}" }
+            .padding(horizontal = spacing.xs, vertical = spacing.xs)
             .testTag("$TAG_ACCOUNT:${account.id}"),
+        horizontalArrangement = Arrangement.spacedBy(spacing.xxs),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(account.emojiShown, style = MaterialTheme.typography.labelMedium)
-            Text(
-                account.name,
-                style = MaterialTheme.typography.labelSmall,
-                color = colors.textSecondary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(start = spacing.xxs),
-            )
-        }
-        Text(
-            Money.format(account.balance),
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
-            color = colors.textPrimary,
-            maxLines = 1,
-            softWrap = false,
-            modifier = Modifier.padding(top = spacing.xs),
-        )
+        Text(account.emojiShown, style = MaterialTheme.typography.labelSmall)
+        Text(financeThousands(account.balance), style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false, color = AppTheme.colors.textPrimary)
     }
 }
 
-/** Первый запуск (экран 2.1): счетов нет — значок, пояснение и чёрная кнопка «Создать счёт». Готовых счетов и категорий нет. */
 @Composable
 private fun FinanceEmpty(onCreate: () -> Unit) {
     val colors = AppTheme.colors
@@ -246,7 +231,6 @@ private fun RowScope.ActionLabel(label: String, color: androidx.compose.ui.graph
 }
 
 /** До скольких счетов карточки делят ширину экрана поровну. */
-private const val WIDE_TILES = 3
 
 const val TAG_FINANCE = "finance"
 const val TAG_FINANCE_EMPTY = "finance_empty"

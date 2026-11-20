@@ -105,9 +105,9 @@ class FinanceScreenTest {
     fun accountsShowBalancesTotalAndOpen() {
         show(FinanceState(accounts = three, operations = emptyList(), today = today))
 
-        composeRule.onNodeWithTag(TAG_ACCOUNTS_TOTAL).assertTextEquals(" · 128${s}450${s}₽")
-        composeRule.onNodeWithText("42${s}300${s}₽").assertExists()
-        composeRule.onNodeWithText("Накопления").assertExists()
+        composeRule.onNodeWithTag(TAG_ACCOUNTS_TOTAL).assertTextEquals("128k ₽")
+        composeRule.onNodeWithText("42k").assertExists()
+        composeRule.onNodeWithContentDescription("Накопления, 80${s}000${s}₽").assertExists()
         composeRule.onNodeWithTag("$TAG_ACCOUNT:a2").performClick()
         composeRule.onNodeWithTag(TAG_ACCOUNT_ADD).performClick()
         composeRule.onNodeWithTag("$TAG_FINANCE_TAB:OPERATIONS").assertDoesNotExist()
@@ -116,11 +116,11 @@ class FinanceScreenTest {
     }
 
     @Test
-    fun manyAccountsScrollSideways() {
+    fun manyAccountsWrapOntoAnotherRow() {
         val many = three + listOf(account("a4", "Т-Банк", 1_248_000), account("a5", "Вклад", 25_000_000, AccountType.SAVINGS), account("a6", "Конверт", 1_500_000, AccountType.CASH))
         show(FinanceState(accounts = many, operations = emptyList(), today = today), dark = true)
 
-        composeRule.onNodeWithTag(TAG_ACCOUNTS_TOTAL).assertTextEquals(" · 405${s}930${s}₽")
+        composeRule.onNodeWithTag(TAG_ACCOUNTS_TOTAL).assertTextEquals("406k ₽")
         composeRule.onNodeWithTag("$TAG_ACCOUNT:a6").assertExists()
         composeRule.onRoot().captureRoboImage("screenshots/finance_accounts_many_dark.png")
     }
@@ -417,8 +417,8 @@ class FinanceScreenTest {
         composeRule.onNodeWithTag(TAG_MONTH_TITLE).assertTextEquals("ноя 26")
         composeRule.onNodeWithTag(TAG_ANALYTICS_TOTAL).assertTextEquals("43k ₽")
         composeRule.onNodeWithContentDescription("Прогноз").assertExists()
-        composeRule.onNodeWithText("Категории").assertExists()
-        composeRule.onNodeWithText("Места").assertExists()
+        composeRule.onNodeWithContentDescription("Категории.", substring = true).assertExists()
+        composeRule.onNodeWithContentDescription("Места.", substring = true).assertExists()
 
         composeRule.onNodeWithTag(TAG_MONTH_NEXT).performClick()
         composeRule.onNodeWithTag(TAG_MONTH_PREV).performClick()

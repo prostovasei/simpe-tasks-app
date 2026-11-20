@@ -1,6 +1,7 @@
 package com.prostovasei.simpletasks.ui.feature.finance
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
@@ -12,12 +13,14 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -91,10 +94,8 @@ fun AnalyticsBlock(state: FinanceState, onIntent: (FinanceIntent) -> Unit) {
         if (model.total == 0L) {
             Text(stringResource(R.string.analytics_empty), Modifier.padding(vertical = spacing.sm).testTag(TAG_ANALYTICS_EMPTY))
         } else {
-            Row(Modifier.fillMaxWidth().padding(top = spacing.xs), horizontalArrangement = Arrangement.spacedBy(spacing.sm)) {
-                SpendingTable("Категории", model.categories, Modifier.weight(1f))
-                SpendingTable("Места", model.places, Modifier.weight(1f))
-            }
+            SpendingStrip("Категории", model.categories, model.total)
+            SpendingStrip("Места", model.places, model.total)
         }
     }
 }
@@ -108,20 +109,16 @@ private fun Amount(icon: Int, label: String, amount: String, modifier: Modifier 
 }
 
 @Composable
-private fun SpendingTable(title: String, rows: List<MonthSpending.Rank>, modifier: Modifier) {
-    Column(modifier) {
-        Row(Modifier.fillMaxWidth()) {
-            Text(title, Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
-            Text("₽", color = AppTheme.colors.textSecondary)
+private fun SpendingStrip(title: String, rows: List<MonthSpending.Rank>, total: Long) {
+    val density = LocalDensity.current
+    val ink = AppTheme.colors.textPrimary.toArgb()
+    BoxWithConstraints(Modifier.fillMaxWidth().padding(top = AppTheme.spacing.md)) {
+        val width = with(density) { maxWidth.roundToPx() }.coerceAtLeast(1)
+        val bitmap = remember(rows, total, width, density, ink) {
+            sharesBitmap(rows, total, width, density.density, density.fontScale, ink).asImageBitmap()
         }
-        rows.forEachIndexed { index, row ->
-            Row(Modifier.fillMaxWidth().padding(vertical = AppTheme.spacing.xs), verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.xxs)) {
-                Text("${index + 1}", style = MaterialTheme.typography.labelSmall, color = AppTheme.colors.textSecondary)
-                Text(listOfNotNull(row.icon, row.name).joinToString(" "), Modifier.weight(1f), style = MaterialTheme.typography.labelMedium)
-                Text(Money.amount(row.amount), style = MaterialTheme.typography.labelMedium)
-            }
-        }
+        Image(bitmap, sharesDescription(title, rows, total),
+            Modifier.fillMaxWidth().aspectRatio(bitmap.width.toFloat() / bitmap.height))
     }
 }
 
@@ -190,14 +187,11 @@ private fun MonthArrow(icon: ImageVector, label: String, tag: String, enabled: B
         modifier = Modifier
             .size(AppTheme.sizes.checkboxTouch)
             .clip(AppTheme.shapes.large)
-            .alpha(if (enabled) 1f else DISABLED_ALPHA)
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
             .semantics { contentDescription = label }
             .testTag(tag),
-    ) { Icon(icon, contentDescription = null, tint = colors.textPrimary) }
+    ) { Icon(icon, contentDescription = null, tint = colors.textSecondary) }
 }
-
-private const val DISABLED_ALPHA = 0.35f
 
 const val TAG_ANALYTICS = "finance_analytics"
 const val TAG_MONTH_PREV = "analytics_month_prev"

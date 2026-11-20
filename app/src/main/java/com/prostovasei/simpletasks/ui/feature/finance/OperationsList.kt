@@ -69,9 +69,6 @@ internal fun LazyListScope.operationsFeed(
     operations: List<Operation>, today: LocalDate, unsorted: Int,
     onUnsorted: () -> Unit, onOpen: (String) -> Unit,
 ) {
-    item("operations-heading") {
-        Text("Операции", Modifier.padding(AppTheme.spacing.md), style = MaterialTheme.typography.titleSmall)
-    }
     if (unsorted > 0) item("unsorted") {
         UnsortedRow(unsorted, onUnsorted, Modifier.padding(horizontal = AppTheme.spacing.md))
     }

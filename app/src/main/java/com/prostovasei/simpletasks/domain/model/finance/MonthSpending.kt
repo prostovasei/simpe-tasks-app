@@ -50,7 +50,8 @@ internal data class MonthSpending(
         private fun rank(rows: List<Rank>, unassigned: Long = 0): List<Rank> {
             val ordered = rows.sortedWith(compareByDescending<Rank> { it.amount }.thenBy { it.name })
             val others = ordered.drop(4).sumOf { it.amount } + unassigned
-            return ordered.take(4) + if (others > 0) listOf(Rank("Остальное", others)) else emptyList()
+            return (ordered.take(4) + if (others > 0) listOf(Rank("Остальное", others)) else emptyList())
+                .sortedWith(compareByDescending<Rank> { it.amount }.thenBy { it.name })
         }
     }
 }

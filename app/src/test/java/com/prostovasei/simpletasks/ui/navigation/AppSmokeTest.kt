@@ -12,6 +12,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.performClick
 import com.prostovasei.simpletasks.ui.feature.task.TAG_QUICK_SCRIM
@@ -156,8 +157,8 @@ class AppSmokeTest {
         composeRule.onNodeWithTag("finance_add").performClick()
         composeRule.onNodeWithTag("account_amount").performTextReplacement("42300")
         composeRule.onNodeWithTag("account_save").performClick()
-        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("42\u00A0300\u00A0₽") }
-        composeRule.onNodeWithText("Карта").assertExists()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodes(hasContentDescription("Карта, 42\u00A0300\u00A0₽")).fetchSemanticsNodes().isNotEmpty() }
+        composeRule.onNodeWithText("42k").assertExists()
 
         // Этап 2 (#225): категория из настроек, расход через «+» — остаток счёта уменьшается, операция в списке.
         openFinanceSettings()
@@ -180,11 +181,11 @@ class AppSmokeTest {
         composeRule.onNodeWithContentDescription("Продукты").performClick()
         composeRule.onNodeWithTag("operation_save").performClick()
         // Окно остаётся для следующей операции; закрываем его.
-        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("41\u00A0450\u00A0₽") }
+        composeRule.waitUntil(5_000) { composeRule.onAllNodes(hasContentDescription("Карта, 41\u00A0450\u00A0₽")).fetchSemanticsNodes().isNotEmpty() }
         composeRule.onNodeWithTag("operation_back").performClick()
 
         composeRule.onNodeWithTag("finance_tab:OPERATIONS").assertDoesNotExist()
-        composeRule.onNodeWithTag("finance_operations").performScrollToIndex(4)
+        composeRule.onNodeWithTag("finance_operations").performScrollToNode(hasText("− 850\u00A0₽") and hasClickAction())
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("− 850\u00A0₽") }
         switchModule("TASKS")
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists(TAG_LISTS_SCROLL) }
@@ -193,7 +194,7 @@ class AppSmokeTest {
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("− 850\u00A0₽") }
 
         // Этап 4 (#231): операция в корзину из окна правки — остаток вернулся; из корзины (меню шестерёнки) — обратно.
-        composeRule.onNodeWithTag("finance_operations").performScrollToIndex(4)
+        composeRule.onNodeWithTag("finance_operations").performScrollToNode(hasText("− 850\u00A0₽") and hasClickAction())
         composeRule.onNode(hasText("Продукты") and hasClickAction()).performClick()
         composeRule.onNodeWithTag("operation_trash").performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Операций пока нет") }
