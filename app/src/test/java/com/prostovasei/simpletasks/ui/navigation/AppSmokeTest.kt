@@ -264,6 +264,25 @@ class AppSmokeTest {
         composeRule.onNodeWithTag("health_weight").assertTextEquals("70,0")
     }
 
+    @Test
+    fun tappingAnotherTabFromSettingsOpensThatModule() {
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Всё сделано") }
+        val tabs = listOf(
+            "TASKS" to TAG_ADD_TASK,
+            "FINANCE" to "finance_empty",
+            "HEALTH" to "health_empty",
+            "TASKS" to TAG_ADD_TASK,
+        )
+        for ((module, screen) in tabs) {
+            composeRule.onNodeWithTag(TAG_MODULE_SETTINGS).performClick()
+            composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists(TAG_APP_SETTINGS) }
+            switchModule(module)
+            composeRule.waitUntil(5_000) {
+                composeRule.onAllNodesWithTagExists(screen) && !composeRule.onAllNodesWithTagExists(TAG_APP_SETTINGS)
+            }
+        }
+    }
+
     /** Меню кнопки модуля: выбрать модуль. */
     private fun switchModule(name: String) {
         if (name == "TASKS") taskTab().performClick()
@@ -324,6 +343,7 @@ class AppSmokeTest {
         composeRule.onNodeWithTag(TAG_ADD_TASK).performClick()
         composeRule.onNodeWithTag(TAG_QUICK_TITLE).performTextReplacement("Лишняя задача")
         composeRule.onNodeWithTag(TAG_QUICK_SAVE).performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_QUICK_TITLE).fetchSemanticsNodes().isEmpty() }
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Лишняя задача") }
 
         composeRule.onNodeWithText("Лишняя задача").performClick()

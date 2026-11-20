@@ -513,6 +513,7 @@ internal fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boole
     val compact = LocalSize.current.width < SizeTokens.WIDGET_MODULE_BAR_THRESHOLD.dp
     val side = if (compact) SizeTokens.WIDGET_MODULE_COMPACT_CELL else SizeTokens.WIDGET_ADD_W
     val finance = module == WidgetModule.FINANCE
+    val spread = compact || module == WidgetModule.HEALTH
     Row(
         modifier = GlanceModifier
             .fillMaxWidth()
@@ -545,13 +546,13 @@ internal fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boole
                 modifier = GlanceModifier.size(SizeTokens.WIDGET_ADD_ICON.dp),
             )
         }
-        Spacer(GlanceModifier.defaultWeight())
+        if (!spread) Spacer(GlanceModifier.defaultWeight())
         Row(
-            modifier = GlanceModifier
+            modifier = (if (spread) GlanceModifier.defaultWeight() else GlanceModifier)
                 .height(SizeTokens.WIDGET_ADD_H.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            val cell = if (compact) SizeTokens.WIDGET_MODULE_COMPACT_CELL else SizeTokens.WIDGET_TAB_CELL
+            val cell = if (spread) GlanceModifier.defaultWeight() else GlanceModifier.width(SizeTokens.WIDGET_TAB_CELL.dp)
             val taskIcon = when (model.filter) {
                 WidgetFilter.Week -> R.drawable.ic_tab_week
                 WidgetFilter.Inbox -> R.drawable.ic_widget_inbox
@@ -613,10 +614,9 @@ private fun GlanceModifier.button(image: Int, color: ColorProvider, radius: Int,
 
 /** Вкладка в белом блоке (итерация 57): только значок — выбранный вид чёрный (`accent`), остальные серые (`inactive`), без подложек. */
 @Composable
-private fun SwitchTab(icon: Int, label: String, selected: Boolean, action: Action, cell: Int, utility: Boolean = false) {
+private fun SwitchTab(icon: Int, label: String, selected: Boolean, action: Action, cell: GlanceModifier, utility: Boolean = false) {
     Box(
-        modifier = GlanceModifier
-            .width(cell.dp)
+        modifier = cell
             .height(SizeTokens.WIDGET_ADD_H.dp)
             .clickable(action),
         contentAlignment = Alignment.Center,

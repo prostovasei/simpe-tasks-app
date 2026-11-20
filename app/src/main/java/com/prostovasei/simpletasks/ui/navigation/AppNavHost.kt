@@ -604,11 +604,21 @@ private fun NavHostController.openTab(tab: Tab) = openRoot(tab.route, restore = 
 
 /** Главный экран вкладки или модуля: прежний уходит с сохранением состояния, [restore] — вернуть сохранённое состояние нового. */
 private fun NavHostController.openRoot(route: Any, restore: Boolean) {
-    navigate(route) {
+    closeSettings()
+    if (currentDestination?.hasRoute(route::class) == true) return
+    fun open(restoreModule: Boolean) = navigate(route) {
         popUpTo(graph.findStartDestination().id) { saveState = true }
         launchSingleTop = true
-        restoreState = restore
+        restoreState = restoreModule
     }
+    open(restore)
+    // После обновления в сохранённом стеке 0.79.0 ещё могут находиться настройки.
+    if (closeSettings() && currentDestination?.hasRoute(route::class) != true) open(false)
+}
+
+private fun NavHostController.closeSettings(): Boolean {
+    if (runCatching { getBackStackEntry<AppSettingsDestination>() }.isFailure) return false
+    return popBackStack<AppSettingsDestination>(inclusive = true)
 }
 
 private fun NavDestination?.isOn(tab: Tab): Boolean = this?.hasRoute(tab.routeClass) == true
