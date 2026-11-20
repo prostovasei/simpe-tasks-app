@@ -71,6 +71,7 @@ sealed interface HealthIntent {
 }
 
 sealed interface HealthEffect {
+    data object EntrySaved : HealthEffect
     /** Запись удалена — на экране «Отменить». */
     data class EntryDeleted(val entry: WeightEntry) : HealthEffect
     data object BackupSaved : HealthEffect

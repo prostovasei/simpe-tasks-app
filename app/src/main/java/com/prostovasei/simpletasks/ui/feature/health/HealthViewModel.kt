@@ -74,12 +74,24 @@ class HealthViewModel @Inject constructor(
         setState { copy(form = WeightForm.of(entry.tenths, entry.date, entry.comment.orEmpty(), editingDate = entry.date), today = time.today(), tip = null) }
     }
 
+    private var saving = false
+    internal val isSaving: Boolean get() = saving
+
     private fun saveForm() {
+        if (saving) return
         val form = currentState.form ?: return
         // Будущие даты запрещены: вес ещё не измерен.
         if (form.date.isAfter(time.today())) return
-        setState { copy(form = null, tip = null) }
-        viewModelScope.launch { health.save(WeightEntry(form.date, form.tenths, form.comment), replacing = form.editingDate) }
+        saving = true
+        viewModelScope.launch {
+            try {
+                health.save(WeightEntry(form.date, form.tenths, form.comment), replacing = form.editingDate)
+                setState { copy(form = null, tip = null) }
+                sendEffect(HealthEffect.EntrySaved)
+            } finally {
+                saving = false
+            }
+        }
     }
 
     private fun deleteForm() {

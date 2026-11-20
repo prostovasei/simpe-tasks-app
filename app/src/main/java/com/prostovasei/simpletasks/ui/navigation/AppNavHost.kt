@@ -218,6 +218,12 @@ object NavPrefs {
 
     fun left(context: Context): Tab = if (context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY, null) == Tab.WEEK.name) Tab.WEEK else Tab.UPCOMING
 
+    fun lastTask(context: Context): Tab =
+        Tab.entries.firstOrNull { it.name == context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString("last_task", null) } ?: left(context)
+
+    fun setLastTask(context: Context, tab: Tab) =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit { putString("last_task", tab.name) }
+
     fun setLeft(context: Context, tab: Tab) = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit { putString(KEY, tab.name) }
 }
 
@@ -247,10 +253,11 @@ fun AppNavHost(
     val context = LocalContext.current
     // Страница, с которой открывается приложение: «Предстоящее» или «Неделя» — выбранная последней.
     var left by remember { mutableStateOf(NavPrefs.left(context)) }
-    val startDestination = remember { left.route }
+    val startDestination = remember { NavPrefs.lastTask(context).route }
 
     // Финансы (#217, этап 1 — #221): отдельный модуль. Нижняя панель общая (#241): модуль меняется кнопкой справа;
     // при возврате в модуль открывается то же место (сохранённое состояние страницы).
+    val inSettings = destination?.hasRoute(AppSettingsDestination::class) == true
     val inFinance = destination?.hasRoute(FinanceDestination::class) == true
     // «Здоровье» (#257) — отдельный модуль со своей панелью; экран белый плоский, как «Неделя» (макеты design/approved/257).
     val inHealth = destination?.hasRoute(HealthDestination::class) == true
@@ -285,8 +292,9 @@ fun AppNavHost(
         health.onIntent(HealthIntent.Add)
         onRouteOpened()
     }
-    var lastTaskTab by rememberSaveable { mutableStateOf(left.name) }
-    LaunchedEffect(currentTab) { currentTab?.let { lastTaskTab = it.name } }
+    var lastTaskTab by rememberSaveable { mutableStateOf(NavPrefs.lastTask(context).name) }
+    var taskPickerOpen by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(currentTab) { currentTab?.let { lastTaskTab = it.name; NavPrefs.setLastTask(context, it) } }
 
     // Задачу удалили в шторке — под ней «Задача удалена · Отмена» (итерация 36); пока приложение не на экране, событие не доходит.
     val deletions = hiltViewModel<TaskDeletionsHost>().deletions
@@ -353,48 +361,80 @@ fun AppNavHost(
         containerColor = if (taskCanvas) Color(TaskCanvasTokens.background.light) else AppTheme.colors.background,
         snackbarHost = { UndoSnackbarHost(snackbar) },
         bottomBar = {
-            val switchModule: (AppModule) -> Unit = { target ->
-                when {
-                    target == AppModule.FINANCE && !inFinance -> navController.openRoot(FinanceDestination, restore = true)
-                    target == AppModule.HEALTH && !inHealth -> navController.openRoot(HealthDestination, restore = true)
-                    target == AppModule.TASKS && (inFinance || inHealth) -> navController.openTab(Tab.valueOf(lastTaskTab))
+            if (inFinance || inHealth || inSettings || (!selectionMode.value && (destination == null || currentTab != null))) {
+                val task = currentTab ?: Tab.valueOf(lastTaskTab)
+                val active = when {
+                    inFinance -> "finance"
+                    inHealth -> "health"
+                    inSettings -> "settings"
+                    else -> "tasks"
                 }
-            }
-            val openSettings = { navController.navigate(AppSettingsDestination) { launchSingleTop = true } }
-            if (inHealth) {
-                TaskCanvasTheme { HealthBottomBar(onAdd = { health.onIntent(HealthIntent.Add) }, onModule = switchModule, onSettings = openSettings) }
-            } else if (inFinance) {
-                FinanceBottomBar(
-                    onSelect = { finance.onIntent(FinanceIntent.SelectTab(it)) },
-                    onAdd = { finance.onIntent(FinanceIntent.Add) },
-                    onModule = switchModule,
-                    onSettings = openSettings,
+                val pick: (Tab) -> Unit = { tab ->
+                    taskPickerOpen = false
+                    if (tab != Tab.LISTS) {
+                        left = tab
+                        NavPrefs.setLeft(context, tab)
+                    }
+                    if (tab == Tab.LISTS && currentTab == Tab.LISTS && destination?.hasRoute(ListsDestination::class) != true) {
+                        navController.popBackStack(ListsDestination, inclusive = false)
+                    } else if (currentTab != tab) navController.openTab(tab)
+                }
+                val pages = listOf(
+                    BarPage("tasks", task.icon, task.label, "tab:${task.name}"),
+                    BarPage("finance", R.drawable.ic_module_finance, R.string.module_finance, "module:FINANCE"),
+                    BarPage("health", R.drawable.ic_module_health, R.string.module_health, "module:HEALTH"),
+                    BarPage("settings", R.drawable.ic_nav_settings, R.string.tab_settings, TAG_MODULE_SETTINGS),
                 )
-            } else
-            // На вложенных экранах (список, настройки) панели нет. В режиме выбора — тоже: там лента действий.
-            if (!selectionMode.value && (destination == null || currentTab != null)) {
-                val selected = currentTab ?: left
-                TaskCanvasTheme(enabled = selected != Tab.LISTS) {
-                TasksBottomBar(
-                    selected = selected,
-                    onSelect = { tab ->
-                        if (tab != Tab.LISTS) {
-                            left = tab
-                            NavPrefs.setLeft(context, tab)
+                TaskCanvasTheme(enabled = inFinance || inHealth || active == "tasks" && task != Tab.LISTS) {
+                    androidx.compose.foundation.layout.Box {
+                        AppBottomBar(pages, active, { key ->
+                            when {
+                                key == "tasks" && active == "tasks" -> taskPickerOpen = true
+                                key == "tasks" -> navController.openTab(task)
+                                key == active -> Unit
+                                key == "finance" -> navController.openRoot(FinanceDestination, restore = true)
+                                key == "health" -> navController.openRoot(HealthDestination, restore = true)
+                                key == "settings" -> navController.navigate(AppSettingsDestination) { launchSingleTop = true }
+                            }
+                        }, onAdd = {
+                            when (active) {
+                                "finance" -> finance.onIntent(FinanceIntent.Add)
+                                "health" -> health.onIntent(HealthIntent.Add)
+                                "tasks" -> navController.navigate(QuickAddDestination(today = task != Tab.LISTS))
+                            }
+                        }, addTag = when (active) {
+                            "finance" -> TAG_FINANCE_ADD
+                            "health" -> TAG_HEALTH_ADD
+                            else -> TAG_ADD_TASK
+                        }, addLabel = when (active) {
+                            "finance" -> R.string.finance_add
+                            "health" -> R.string.health_add
+                            else -> R.string.add_task
+                        }, module = AppModule.TASKS, onModule = {}, onSettings = {},
+                            inlineModules = true, showAdd = !inSettings,
+                            longClickPage = "tasks".takeIf { active == "tasks" && task == Tab.WEEK },
+                            onPageLongClick = { weekFilterOpen = true })
+                        if (active == "tasks" && taskPickerOpen) {
+                            androidx.compose.material3.AlertDialog(
+                                onDismissRequest = { taskPickerOpen = false },
+                                title = { Text(stringResource(R.string.widget_task_view)) },
+                                confirmButton = {},
+                                text = {
+                                    androidx.compose.foundation.layout.Column {
+                                        Tab.entries.forEach { tab ->
+                                            DropdownMenuItem(
+                                                text = { Text(stringResource(tab.label)) },
+                                                leadingIcon = { androidx.compose.material3.Icon(androidx.compose.ui.res.painterResource(tab.icon), null) },
+                                                trailingIcon = { if (tab == task) Text("✓") },
+                                                onClick = { pick(tab) },
+                                                modifier = Modifier.testTag("task_view:${tab.name}"),
+                                            )
+                                        }
+                                    }
+                                },
+                            )
                         }
-                        // «Списки» из «Входящих» или «Поиска» — назад к самим «Спискам».
-                        if (tab == Tab.LISTS && currentTab == Tab.LISTS && destination?.hasRoute(ListsDestination::class) != true) {
-                            navController.popBackStack(ListsDestination, inclusive = false)
-                        } else {
-                            navController.openTab(tab)
-                        }
-                    },
-                    // На «Предстоящем» и «Неделе» новая задача — на сегодня, в «Списках» — во «Входящие».
-                    onAdd = { navController.navigate(QuickAddDestination(today = selected != Tab.LISTS)) },
-                    onModule = switchModule,
-                    onSettings = openSettings,
-                    onWeekFilter = { weekFilterOpen = true },
-                )
+                    }
                 }
             }
         },

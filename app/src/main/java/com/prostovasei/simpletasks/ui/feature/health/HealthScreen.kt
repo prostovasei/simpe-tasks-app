@@ -76,6 +76,7 @@ fun HealthEffects(viewModel: HealthViewModel, snackbar: SnackbarHostState? = nul
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
             when (effect) {
+                HealthEffect.EntrySaved -> Unit
                 is HealthEffect.EntryDeleted -> snackbar?.let { host ->
                     scope.launch { host.showUndo(deleted.format(dayMonth(effect.entry.date)), undo, UndoKind.Deleted) { viewModel.onIntent(HealthIntent.UndoDelete(effect.entry)) } }
                 }

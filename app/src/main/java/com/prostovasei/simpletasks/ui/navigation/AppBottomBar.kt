@@ -74,6 +74,9 @@ fun AppBottomBar(
     onSettings: () -> Unit,
     modifier: Modifier = Modifier,
     onPageLongClick: (String) -> Unit = {},
+    inlineModules: Boolean = false,
+    showAdd: Boolean = true,
+    longClickPage: String? = null,
 ) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
@@ -90,7 +93,7 @@ fun AppBottomBar(
                 .padding(horizontal = spacing.sm),
         ) {
             val add = stringResource(addLabel)
-            Box(
+            if (showAdd) Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .size(width = sizes.navAddWidth, height = sizes.appBar)
@@ -104,6 +107,7 @@ fun AppBottomBar(
                     modifier = Modifier.size(width = sizes.navAddWidth, height = sizes.appBarButton).clip(AppTheme.shapes.extraLarge).background(colors.accent),
                 ) { Icon(Icons.Default.Add, contentDescription = null, tint = colors.onAccent) }
             }
+            if (!showAdd) Box(Modifier.size(width = sizes.navAddWidth, height = sizes.appBar))
             Row(Modifier.weight(1f), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
                 pages.forEach { page ->
                     val active = page.key == selected
@@ -111,14 +115,15 @@ fun AppBottomBar(
                     Box(
                         contentAlignment = Alignment.Center,
                         modifier = Modifier
-                            .size(width = sizes.appBarPageWidth, height = sizes.appBar)
+                            .then(if (inlineModules) Modifier.weight(1f).height(sizes.appBar) else Modifier.size(width = sizes.appBarPageWidth, height = sizes.appBar))
                             .clip(AppTheme.shapes.large)
-                            .combinedClickable(role = Role.Tab, onClick = { onSelect(page.key) }, onLongClick = { onPageLongClick(page.key) })
+                            .combinedClickable(role = Role.Tab, onClick = { onSelect(page.key) }, onLongClick = if (!inlineModules || longClickPage == page.key) ({ onPageLongClick(page.key) }) else null)
                             .semantics { contentDescription = label; semanticsSelected = active }
                             .testTag(page.tag),
                     ) { Icon(painterResource(page.icon), contentDescription = null, tint = if (active) colors.accent else colors.inactive, modifier = Modifier.size(sizes.icon)) }
                 }
             }
+            if (!inlineModules) {
             val moduleLabel = stringResource(R.string.bar_module, stringResource(module.label))
             Box {
                 Box(
@@ -168,6 +173,7 @@ fun AppBottomBar(
                         modifier = Modifier.testTag(TAG_MODULE_SETTINGS),
                     )
                 }
+            }
             }
         }
     }

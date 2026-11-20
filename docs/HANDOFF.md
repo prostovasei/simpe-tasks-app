@@ -4,7 +4,7 @@
 
 ## Завершённая база
 
-0.77.0, [PR #270](https://github.com/prostovasei/simpe-tasks-app/pull/270), merge efdb19a5cbf82412e64cf55ff2b6f7bb9ea4bee1, [APK build-390](https://github.com/prostovasei/simple-tasks-releases/releases/tag/build-390). CI PR/main зелёный. Пакет com.prostovasei.simpletasks, версия 0.77.0 / код 390, прежняя подпись и SHA-256 APK проверены Codex. Результат в закрытой [#269](https://github.com/prostovasei/simpe-tasks-app/issues/269). WF269-1–5 и предыдущие телефонные проверки ждут результата PM. #247 открыт. При повторении AppSmokeTest.walkThroughTabsAndCreateList на пустых «Входящих» исправить ожидание загрузки, а не просто перезапускать.
+0.78.0, [PR #272](https://github.com/prostovasei/simpe-tasks-app/pull/272), merge bf26e9e19b8e5685596b5a895976f68b428bb1b7, [APK build-394](https://github.com/prostovasei/simple-tasks-releases/releases/tag/build-394). CI PR/main зелёный. Пакет com.prostovasei.simpletasks, версия 0.78.0 / код 394, прежняя подпись и SHA-256 проверены Codex. Результат в закрытой [#271](https://github.com/prostovasei/simpe-tasks-app/issues/271). FS271-1–4, WF269-1–5 и предыдущие телефонные проверки ждут результата PM. #247 открыт. При повторении AppSmokeTest.walkThroughTabsAndCreateList на пустых «Входящих» исправить ожидание загрузки, а не просто перезапускать.
 
 ## #255 — 0.70.3, PR #256
 
@@ -70,3 +70,8 @@ PM согласовал ТЗ #267 и дал команду «Делай код»
 ## #271 — доли расходов и компактные счета
 
 Исполнитель Codex. Ветка `codex/finance-spending-shares` от `main` efdb19a. [Issue #271](https://github.com/prostovasei/simpe-tasks-app/issues/271) · [PR #272](https://github.com/prostovasei/simpe-tasks-app/pull/272) · [ТЗ и макеты](../design/approved/271/README.md). На экране приложения и во вкладке «Финансы» виджета таблицы заменяются двумя полосами и чипами. Цвет зависит от ранга, целые проценты дают 100% в каждой полосе. Счета идут рядами до четырёх, общий баланс — в целых тысячах с ₽. PM согласовал ТЗ и дал «Делай код». Реализация 0.78.0. Локально assembleDebug, check и recordRoborazziDebug прошли, 867 тестов, 0 ошибок, 3 пропуска. Снимок финансов просмотрен. Результаты CI и APK фиксируются в Issue. Телефонная приёмка ожидает результата PM.
+
+
+## #273 — вкладки приложения и виджета
+
+Исполнитель Codex. Ветка `codex/module-tabs-health-widget` от `main` bf26e9e. [Issue #273](https://github.com/prostovasei/simpe-tasks-app/issues/273) · [PR #274](https://github.com/prostovasei/simpe-tasks-app/pull/274) · [ТЗ и согласованные макеты](../design/approved/273/README.md). Приложение получает четыре вкладки, виджет три. Повторный тап по «Задачам» открывает выбор раздела, его иконка и выбор сохраняются независимо. Фильтр недели виджета остаётся в системном «Настроить». Виджет здоровья показывает вес и график, «+» открывает ввод. На широком виджете обновление открывается поверх рабочего стола, на узком дата и обновление скрыты. PM согласовал макеты и дал «Делай код». Реализация 0.79.0. Локально assembleDebug, check и recordRoborazziDebug прошли, 867 тестов, 0 ошибок, 3 пропуска. Снимок широкой панели просмотрен. Результаты CI и проверки APK фиксируются в Issue. Телефонные проверки MV273-1–5 ожидают результата PM.

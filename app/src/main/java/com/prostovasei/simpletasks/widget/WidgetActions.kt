@@ -63,9 +63,10 @@ class WidgetActionReceiver : BroadcastReceiver() {
                 WidgetActions.MODULE -> {
                     val id = intent.getIntExtra(WidgetActions.EXTRA_WIDGET_ID, -1)
                     if (id !in WidgetRenderer.widgetIds(context)) return
-                    val finance = intent.getBooleanExtra("finance", false)
-                    if (finance != WidgetSelection.finance(context, id)) {
-                        WidgetSelection.setFinance(context, id, finance)
+                    val module = WidgetModule.entries.firstOrNull { it.name == intent.getStringExtra("module") }
+                        ?: if (intent.getBooleanExtra("finance", false)) WidgetModule.FINANCE else WidgetModule.TASKS
+                    if (module != WidgetSelection.module(context, id)) {
+                        WidgetSelection.setModule(context, id, module)
                         WidgetRenderer.render(context, id, "переключили модуль")
                     }
                 }
@@ -136,11 +137,14 @@ object WidgetActions {
     const val EXTRA_TASK_ID = "task_id"
 
     /** У каждого нажатия свой адрес — иначе Android подменит одно нажатие другим. */
-    fun module(context: Context, id: Int, finance: Boolean): Intent = Intent(context, WidgetActionReceiver::class.java)
+    fun module(context: Context, id: Int, finance: Boolean): Intent =
+        module(context, id, if (finance) WidgetModule.FINANCE else WidgetModule.TASKS)
+
+    internal fun module(context: Context, id: Int, module: WidgetModule): Intent = Intent(context, WidgetActionReceiver::class.java)
         .setAction(MODULE)
-        .setData("simpletasks://widget/$id/module/$finance".toUri())
+        .setData("simpletasks://widget/$id/module/${module.name}".toUri())
         .putExtra(EXTRA_WIDGET_ID, id)
-        .putExtra("finance", finance)
+        .putExtra("module", module.name)
 
     fun switch(context: Context, appWidgetId: Int, filter: WidgetFilter): Intent = Intent(context, WidgetActionReceiver::class.java)
         .setAction(SWITCH)
