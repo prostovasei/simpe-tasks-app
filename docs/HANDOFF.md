@@ -4,7 +4,7 @@
 
 ## Завершённая база
 
-0.78.0, [PR #272](https://github.com/prostovasei/simpe-tasks-app/pull/272), merge bf26e9e19b8e5685596b5a895976f68b428bb1b7, [APK build-394](https://github.com/prostovasei/simple-tasks-releases/releases/tag/build-394). CI PR/main зелёный. Пакет com.prostovasei.simpletasks, версия 0.78.0 / код 394, прежняя подпись и SHA-256 проверены Codex. Результат в закрытой [#271](https://github.com/prostovasei/simpe-tasks-app/issues/271). FS271-1–4, WF269-1–5 и предыдущие телефонные проверки ждут результата PM. #247 открыт. При повторении AppSmokeTest.walkThroughTabsAndCreateList на пустых «Входящих» исправить ожидание загрузки, а не просто перезапускать.
+0.79.0, [PR #274](https://github.com/prostovasei/simpe-tasks-app/pull/274), merge 9b3907ca69972d0f9530e15523aa9ac25bd30d84, [APK build-398](https://github.com/prostovasei/simple-tasks-releases/releases/tag/build-398). CI PR/main зелёный. Версия, пакет com.prostovasei.simpletasks, прежняя подпись и SHA-256 APK проверены Codex. Результат в закрытой [#273](https://github.com/prostovasei/simpe-tasks-app/issues/273). MV273-1–5 и предыдущие телефонные проверки ждут результата PM. #247 открыт. При повторении AppSmokeTest.walkThroughTabsAndCreateList на пустых «Входящих» исправить ожидание загрузки, а не просто перезапускать.
 
 ## #255 — 0.70.3, PR #256
 
@@ -75,3 +75,10 @@ PM согласовал ТЗ #267 и дал команду «Делай код»
 ## #273 — вкладки приложения и виджета
 
 Исполнитель Codex. Ветка `codex/module-tabs-health-widget` от `main` bf26e9e. [Issue #273](https://github.com/prostovasei/simpe-tasks-app/issues/273) · [PR #274](https://github.com/prostovasei/simpe-tasks-app/pull/274) · [ТЗ и согласованные макеты](../design/approved/273/README.md). Приложение получает четыре вкладки, виджет три. Повторный тап по «Задачам» открывает выбор раздела, его иконка и выбор сохраняются независимо. Фильтр недели виджета остаётся в системном «Настроить». Виджет здоровья показывает вес и график, «+» открывает ввод. На широком виджете обновление открывается поверх рабочего стола, на узком дата и обновление скрыты. PM согласовал макеты и дал «Делай код». Реализация 0.79.0. Локально assembleDebug, check и recordRoborazziDebug прошли, 867 тестов, 0 ошибок, 3 пропуска. Снимок широкой панели просмотрен. Результаты CI и проверки APK фиксируются в Issue. Телефонные проверки MV273-1–5 ожидают результата PM.
+
+
+## #275 — исправления настроек и виджета здоровья
+
+[PR #276](https://github.com/prostovasei/simpe-tasks-app/pull/276). После выпуска точка передачи — merge-коммит PR.
+
+Исполнитель Codex. Ветка `codex/settings-widget-health-fix` от `main` 9b3907c. [Issue #275](https://github.com/prostovasei/simpe-tasks-app/issues/275). В build-398 при переключении вкладок сохранялись и восстанавливались «Настройки» поверх выбранного экрана. Виджет «Здоровье» растягивал график на всю высоту. В 0.79.1 переключение закрывает настройки без сохранения их стека и очищает восстановленные настройки из старого состояния. График ограничен по высоте, сохраняет пропорции, даты расположены под ним. Кнопки «Здоровья» распределены по ширине. Локально прошли `assembleDebug check recordRoborazziDebug`, 869 тестов, 0 ошибок, 3 пропуска. Результаты CI и проверки APK фиксируются в Issue. MV275-1–2 ждут результата PM.

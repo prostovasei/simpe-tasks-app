@@ -64,4 +64,5 @@
     <color name="widget_week_high">#FFF1E8FA</color>
     <color name="widget_week_done">#FFBDBDBD</color>
     <color name="widget_accent_soft">#FFEAEAEA</color>
+    <dimen name="widget_health_chart_max">160dp</dimen>
 </resources>

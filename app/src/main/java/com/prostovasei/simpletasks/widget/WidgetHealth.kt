@@ -34,10 +34,11 @@ internal suspend fun healthWidgetViews(context: Context, today: LocalDate, bar: 
             if (latest != null) setTextViewText(R.id.widget_health_weight, "${Weight.format(latest.tenths)} кг · за месяц записей нет")
         } else {
             val from = today.minusDays(requireNotNull(period.days).toLong())
-            val width = ((size.width.value.takeIf { it.isFinite() } ?: 320f).coerceIn(180f, 440f) * 2).toInt()
+            val width = (((size.width.value.takeIf { it.isFinite() } ?: 320f).coerceIn(180f, 440f) - 2 * SizeTokens.WIDGET_EDGE) * 2).toInt()
             val available = (size.height.value.takeIf { it.isFinite() } ?: 280f) - SizeTokens.WIDGET_BAR
             val height = ((available - 44f).coerceIn(18f, 160f) * 2).toInt()
             val chart = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+            chart.density = android.util.DisplayMetrics.DENSITY_XHIGH
             val canvas = Canvas(chart)
             val paint = Paint(Paint.ANTI_ALIAS_FLAG)
             paint.color = context.getColor(R.color.widget_flat_divider)

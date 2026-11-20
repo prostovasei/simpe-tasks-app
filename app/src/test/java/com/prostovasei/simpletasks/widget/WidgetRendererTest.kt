@@ -67,6 +67,26 @@ class WidgetRendererTest {
     }
 
     @Test
+    fun healthChartKeepsItsHeightWhenWidgetIsTall() = runBlocking {
+        val today = java.time.LocalDate.of(2026, 11, 21)
+        context.widgetEntryPoint().health().save(
+            com.prostovasei.simpletasks.domain.model.health.WeightEntry(today, 820)
+        )
+        val size = androidx.compose.ui.unit.DpSize(androidx.compose.ui.unit.Dp(320f), androidx.compose.ui.unit.Dp(600f))
+        val placeholder = android.widget.RemoteViews(context.packageName, androidx.glance.appwidget.R.layout.glance_default_loading_layout)
+        val root = healthWidgetViews(context, today, placeholder, size).apply(context, android.widget.FrameLayout(context))
+        val density = context.resources.displayMetrics.density
+        root.measure(
+            View.MeasureSpec.makeMeasureSpec((320 * density).toInt(), View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec((600 * density).toInt(), View.MeasureSpec.EXACTLY),
+        )
+        root.layout(0, 0, root.measuredWidth, root.measuredHeight)
+        val chart = root.findViewById<android.widget.ImageView>(com.prostovasei.simpletasks.R.id.widget_health_chart)
+        assertEquals(android.widget.ImageView.ScaleType.FIT_CENTER, chart.scaleType)
+        assertTrue(chart.height in 1..(160 * density).toInt())
+    }
+
+    @Test
     fun eachTapHasItsOwnAddress() {
         assertEquals("Разные вкладки — разные нажатия", false, WidgetActions.switch(context, 1, WidgetFilter.All).filterEquals(WidgetActions.switch(context, 1, WidgetFilter.Inbox)))
         assertEquals(false, WidgetActions.complete(context, "a").filterEquals(WidgetActions.complete(context, "b")))
