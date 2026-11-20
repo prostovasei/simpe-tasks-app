@@ -33,7 +33,7 @@ class WidgetRendererTest {
         val id = manager.createWidget(TasksWidgetReceiver::class.java, androidx.glance.appwidget.R.layout.glance_default_loading_layout)
         WidgetRenderer.render(context, id, "тест")
         val view = manager.getViewFor(id)
-        listOf("Задачи, выбрано", "Финансы", "Открыть приложение", "Новая задача").forEach {
+        listOf("Задачи · Все, выбрано", "Финансы", "Открыть приложение", "Новая задача").forEach {
             assertTrue(it, view.hasDescription(it))
         }
         assertTrue(WidgetLog.read(context).contains("отрисовка $id: all"))
@@ -57,9 +57,13 @@ class WidgetRendererTest {
         assertTrue(WidgetSelection.finance(context, one))
         assertTrue(!WidgetSelection.finance(context, two))
         assertTrue(manager.getViewFor(one).hasDescription("Финансы, выбрано"))
+        WidgetActionReceiver.handle(context, WidgetActions.module(context, one, WidgetModule.HEALTH))
+        assertEquals(WidgetModule.HEALTH, WidgetSelection.module(context, one))
+        assertEquals(WidgetModule.TASKS, WidgetSelection.module(context, two))
+        assertTrue(manager.getViewFor(one).hasDescription("Здоровье, выбрано"))
         WidgetActionReceiver.handle(context, WidgetActions.module(context, one, false))
         assertEquals(WidgetFilter.Inbox, WidgetSelection.get(context, one))
-        assertTrue(manager.getViewFor(one).hasDescription("Задачи, выбрано"))
+        assertTrue(manager.getViewFor(one).hasDescription("Задачи · Входящие, выбрано"))
     }
 
     @Test

@@ -507,11 +507,12 @@ fun widgetCheckColors(priority: Priority): WidgetCheckColors = when (priority) {
  * Фоны плиток — картинками со скруглением (0.42.2: скругление Glance при первом показе не применялось).
  */
 @Composable
-internal fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boolean, finance: Boolean = false) {
+internal fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boolean, module: WidgetModule = WidgetModule.TASKS) {
     val context = LocalContext.current
     val openApp = context.getString(R.string.widget_open_app)
-    val compact = LocalSize.current.width < SizeTokens.WIDGET_COMPACT_BAR_THRESHOLD.dp
-    val side = if (compact) SizeTokens.WIDGET_BAR else SizeTokens.WIDGET_ADD_W
+    val compact = LocalSize.current.width < SizeTokens.WIDGET_MODULE_BAR_THRESHOLD.dp
+    val side = if (compact) SizeTokens.WIDGET_MODULE_COMPACT_CELL else SizeTokens.WIDGET_ADD_W
+    val finance = module == WidgetModule.FINANCE
     Row(
         modifier = GlanceModifier
             .fillMaxWidth()
@@ -526,12 +527,20 @@ internal fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boole
             modifier = GlanceModifier
                 .size(width = side.dp, height = SizeTokens.WIDGET_ADD_H.dp)
                 .button(R.drawable.widget_task_bar_add, LocalWidgetColors.current.accent, RadiusTokens.LG, imageButtons)
-                .clickable(actionStartActivity(if (finance) widgetPopupIntent(context, appWidgetId, true) else quickAddIntent(context, model.filter))),
+                .clickable(actionStartActivity(when (module) {
+                    WidgetModule.FINANCE -> widgetPopupIntent(context, appWidgetId, true)
+                    WidgetModule.HEALTH -> widgetPopupIntent(context, appWidgetId, false, health = true)
+                    WidgetModule.TASKS -> quickAddIntent(context, model.filter)
+                })),
             contentAlignment = Alignment.Center,
         ) {
             Image(
                 ImageProvider(R.drawable.ic_widget_add),
-                contentDescription = context.getString(if (finance) R.string.finance_add else R.string.add_task),
+                contentDescription = context.getString(when (module) {
+                    WidgetModule.FINANCE -> R.string.finance_add
+                    WidgetModule.HEALTH -> R.string.health_add
+                    WidgetModule.TASKS -> R.string.add_task
+                }),
                 colorFilter = ColorFilter.tint(LocalWidgetColors.current.onAccent),
                 modifier = GlanceModifier.size(SizeTokens.WIDGET_ADD_ICON.dp),
             )
@@ -542,12 +551,29 @@ internal fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boole
                 .height(SizeTokens.WIDGET_ADD_H.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            SwitchTab(R.drawable.ic_module_tasks, context.getString(R.string.module_tasks), !finance,
-                if (finance) actionSendBroadcast(WidgetActions.module(context, appWidgetId, false))
-                else actionStartActivity(widgetPopupIntent(context, appWidgetId, false)))
+            val cell = if (compact) SizeTokens.WIDGET_MODULE_COMPACT_CELL else SizeTokens.WIDGET_TAB_CELL
+            val taskIcon = when (model.filter) {
+                WidgetFilter.Week -> R.drawable.ic_tab_week
+                WidgetFilter.Inbox -> R.drawable.ic_widget_inbox
+                else -> R.drawable.ic_widget_all
+            }
+            val taskLabel = when (model.filter) {
+                WidgetFilter.Week -> R.string.tab_week
+                WidgetFilter.Inbox -> R.string.inbox_list_name
+                else -> R.string.widget_all
+            }
+            val tasksActive = module == WidgetModule.TASKS
+            SwitchTab(taskIcon, "${context.getString(R.string.module_tasks)} · ${context.getString(taskLabel)}", tasksActive,
+                if (tasksActive) actionStartActivity(widgetPopupIntent(context, appWidgetId, false))
+                else actionSendBroadcast(WidgetActions.module(context, appWidgetId, WidgetModule.TASKS)), cell)
             SwitchTab(R.drawable.ic_module_finance, context.getString(R.string.module_finance), finance,
-                actionSendBroadcast(WidgetActions.module(context, appWidgetId, true)))
+                actionSendBroadcast(WidgetActions.module(context, appWidgetId, WidgetModule.FINANCE)), cell)
+            SwitchTab(R.drawable.ic_module_health, context.getString(R.string.module_health), module == WidgetModule.HEALTH,
+                actionSendBroadcast(WidgetActions.module(context, appWidgetId, WidgetModule.HEALTH)), cell)
+            if (!compact) SwitchTab(R.drawable.ic_widget_update, context.getString(R.string.update_title), false,
+                actionStartActivity(Intent(context, com.prostovasei.simpletasks.UpdateActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)), cell, utility = true)
         }
+        if (compact || module == WidgetModule.HEALTH) return@Row
         Spacer(GlanceModifier.defaultWeight())
         // Итерация 51 → 57: сегодняшняя дата — плитка шириной с «+»; нажатие возвращает к сегодня (неделя, «Сегодня» в ленте, начало «Входящих»).
         if (finance) {
@@ -587,10 +613,10 @@ private fun GlanceModifier.button(image: Int, color: ColorProvider, radius: Int,
 
 /** Вкладка в белом блоке (итерация 57): только значок — выбранный вид чёрный (`accent`), остальные серые (`inactive`), без подложек. */
 @Composable
-private fun SwitchTab(icon: Int, label: String, selected: Boolean, action: Action) {
+private fun SwitchTab(icon: Int, label: String, selected: Boolean, action: Action, cell: Int, utility: Boolean = false) {
     Box(
         modifier = GlanceModifier
-            .width(SizeTokens.WIDGET_TAB_CELL.dp)
+            .width(cell.dp)
             .height(SizeTokens.WIDGET_ADD_H.dp)
             .clickable(action),
         contentAlignment = Alignment.Center,
@@ -598,7 +624,7 @@ private fun SwitchTab(icon: Int, label: String, selected: Boolean, action: Actio
         Image(
             ImageProvider(icon),
             contentDescription = if (selected) LocalContext.current.getString(R.string.widget_tab_selected, label) else label,
-            colorFilter = ColorFilter.tint(if (selected) LocalWidgetColors.current.accent else LocalWidgetColors.current.inactive),
+            colorFilter = ColorFilter.tint(if (selected || utility) LocalWidgetColors.current.accent else LocalWidgetColors.current.inactive),
             modifier = GlanceModifier.size(SizeTokens.WIDGET_TAB_ICON.dp),
         )
     }

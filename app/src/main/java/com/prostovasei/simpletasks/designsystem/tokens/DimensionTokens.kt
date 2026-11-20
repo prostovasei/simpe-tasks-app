@@ -156,6 +156,8 @@ object SizeTokens {
 
     /** Итерация 57: место значка в белом блоке вкладок нижней строки виджета (ширина; высота — [WIDGET_ADD_H]). */
     const val WIDGET_TAB_CELL = 44
+    const val WIDGET_MODULE_COMPACT_CELL = 42
+    const val WIDGET_MODULE_BAR_THRESHOLD = 320
 
     /** Итерация 57: поля по бокам внутри блока вкладок. */
 

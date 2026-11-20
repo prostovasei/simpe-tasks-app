@@ -54,6 +54,7 @@ class UpdateDialogViewModel @Inject constructor(private val updater: AppUpdater)
     MviViewModel<UpdateDialogState, UpdateDialogIntent, UpdateDialogEffect>(UpdateDialogState.Checking) {
 
     private var job: Job? = null
+    private var installing: UpdateDialogState.Ready? = null
 
     init {
         check()
@@ -69,11 +70,14 @@ class UpdateDialogViewModel @Inject constructor(private val updater: AppUpdater)
             }
             UpdateDialogIntent.Install -> (currentState as? UpdateDialogState.Ready)?.let(::install)
             UpdateDialogIntent.GrantPermission -> updater.openInstallPermissionSettings()
-            UpdateDialogIntent.Resume -> (currentState as? UpdateDialogState.NeedsPermission)?.let {
-                if (updater.canInstall()) setState { UpdateDialogState.Available(it.update) }
+            UpdateDialogIntent.Resume -> when (val state = currentState) {
+                is UpdateDialogState.NeedsPermission -> if (updater.canInstall()) setState { UpdateDialogState.Available(state.update) } else Unit
+                is UpdateDialogState.Installing -> installing?.let { ready -> setState { ready } } ?: Unit
+                else -> Unit
             }
             UpdateDialogIntent.Close -> {
                 job?.cancel()
+                discardDownloadedFile()
                 sendEffect(UpdateDialogEffect.Close)
             }
         }
@@ -109,6 +113,7 @@ class UpdateDialogViewModel @Inject constructor(private val updater: AppUpdater)
     }
 
     private fun install(ready: UpdateDialogState.Ready) {
+        installing = ready
         setState { UpdateDialogState.Installing(ready.update) }
         job = viewModelScope.launch {
             try {
@@ -116,8 +121,18 @@ class UpdateDialogViewModel @Inject constructor(private val updater: AppUpdater)
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
+                discardDownloadedFile()
                 setState { UpdateDialogState.DownloadFailed(ready.update) }
             }
         }
+    }
+    override fun onCleared() {
+        discardDownloadedFile()
+        super.onCleared()
+    }
+
+    private fun discardDownloadedFile() {
+        ((currentState as? UpdateDialogState.Ready) ?: installing)?.apk?.delete()
+        installing = null
     }
 }

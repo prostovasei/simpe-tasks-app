@@ -90,12 +90,20 @@ class WidgetUpdater @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val tasks: TaskRepository,
     private val finance: com.prostovasei.simpletasks.domain.repository.FinanceRepository,
+    private val health: com.prostovasei.simpletasks.domain.repository.HealthRepository,
     private val dayTicker: DayTicker,
     private val overdueFold: OverdueFold,
     @param:ApplicationScope private val appScope: CoroutineScope,
 ) {
     @OptIn(FlowPreview::class)
     fun start() {
+        appScope.launch {
+            health.observeEntries().debounce(DEBOUNCE_MS).collect {
+                WidgetRenderer.widgetIds(context).filter { WidgetSelection.module(context, it) == WidgetModule.HEALTH }.forEach {
+                    WidgetRenderer.render(context, it, "изменился вес")
+                }
+            }
+        }
         appScope.launch {
             combine(finance.observeAccounts(), finance.observeOperations()) { _, _ -> }
                 .debounce(DEBOUNCE_MS).collect { refreshFinance() }

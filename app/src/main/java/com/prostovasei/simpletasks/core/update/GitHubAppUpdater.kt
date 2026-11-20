@@ -52,7 +52,7 @@ class GitHubAppUpdater(private val context: Context, private val io: CoroutineDi
 
     /** Скачивание в `cacheDir`; отмена корутины ([ensureActive] на каждом куске) обрывает его и удаляет недокачанный файл. */
     private fun CoroutineScope.download(url: String, onProgress: (Int) -> Unit): File {
-        val file = File(context.cacheDir, "update.apk")
+        val file = File.createTempFile("update-", ".apk", context.cacheDir)
         val connection = open(url)
         try {
             if (connection.responseCode != HttpURLConnection.HTTP_OK) throw IOException("Скачивание: ${connection.responseCode}")

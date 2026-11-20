@@ -58,8 +58,9 @@ object WidgetRenderer {
             // Вид «Неделя» — на Android 12+ (лента на элементах Android); на 10–11 вместо него «Все».
             val chosen = selection(context, appWidgetId)
             val filter = if (chosen == WidgetFilter.Week && Build.VERSION.SDK_INT < Build.VERSION_CODES.S) WidgetFilter.All else chosen
-            val finance = WidgetSelection.finance(context, appWidgetId)
-            val model = if (finance) WidgetModel(filter, null, context.widgetEntryPoint().time().today(), emptyList()) else context.widgetEntryPoint().observeModel(filter, WidgetSelection.weekPick(context, appWidgetId), WidgetSelection.weekFilter(context, appWidgetId)).first()
+            val module = WidgetSelection.module(context, appWidgetId)
+            val finance = module == WidgetModule.FINANCE
+            val model = if (module != WidgetModule.TASKS) WidgetModel(filter, null, context.widgetEntryPoint().time().today(), emptyList()) else context.widgetEntryPoint().observeModel(filter, WidgetSelection.weekPick(context, appWidgetId), WidgetSelection.weekFilter(context, appWidgetId)).first()
             val manager = AppWidgetManager.getInstance(context)
             val options = manager.getAppWidgetOptions(appWidgetId)
             // Прокручиваемая лента — только Android 12+: корень и строки — обычные элементы, Glance — нижняя панель поверх.
@@ -67,13 +68,14 @@ object WidgetRenderer {
             val size = sizeOf(options)
             val glance = composers.getOrPut(appWidgetId) { GlanceRemoteViews() }
                 .compose(context, size, appWidgetOptions = options) {
-                    if (finance) CompositionLocalProvider(LocalWidgetColors provides TaskWidgetColors) {
-                        BottomBar(model, appWidgetId, scrollable, finance = true)
+                    if (module != WidgetModule.TASKS) CompositionLocalProvider(LocalWidgetColors provides TaskWidgetColors) {
+                        BottomBar(model, appWidgetId, scrollable, module)
                     }
                     else WidgetContent(model, appWidgetId, scrollable)
                 }
                 .remoteViews
             val views = when {
+                module == WidgetModule.HEALTH -> healthWidgetViews(context, model.today, glance, size)
                 finance -> financeWidgetViews(context, appWidgetId, glance, size)
                 scrollable -> widgetRootViews(context, appWidgetId, model, glance, size, scrollToToday = scrollToToday)
                 else -> glance
@@ -133,6 +135,8 @@ fun android.widget.RemoteViews.parcelBytes(): Int {
 }
 
 /** Выбранный в виджете список — свой у каждого виджета на рабочем столе. */
+internal enum class WidgetModule { TASKS, FINANCE, HEALTH }
+
 object WidgetSelection {
     private const val PREFS = "widget_selection"
 
@@ -144,14 +148,21 @@ object WidgetSelection {
         prefs(context).edit().putString(key(appWidgetId), filter.encode()).commit()
     }
 
-    fun finance(context: Context, id: Int) = prefs(context).getBoolean("finance_$id", false)
+    internal fun module(context: Context, id: Int): WidgetModule =
+        WidgetModule.entries.firstOrNull { it.name == prefs(context).getString("module_$id", null) }
+            ?: if (prefs(context).getBoolean("finance_$id", false)) WidgetModule.FINANCE else WidgetModule.TASKS
 
-    fun setFinance(context: Context, id: Int, finance: Boolean) {
-        prefs(context).edit().putBoolean("finance_$id", finance).commit()
+    internal fun setModule(context: Context, id: Int, module: WidgetModule) {
+        prefs(context).edit().putString("module_$id", module.name).commit()
     }
 
+    fun finance(context: Context, id: Int) = module(context, id) == WidgetModule.FINANCE
+
+    fun setFinance(context: Context, id: Int, finance: Boolean) =
+        setModule(context, id, if (finance) WidgetModule.FINANCE else WidgetModule.TASKS)
+
     fun remove(context: Context, appWidgetId: Int) {
-        prefs(context).edit().remove("finance_$appWidgetId").remove(key(appWidgetId)).remove(weekFilterKey(appWidgetId)).remove(weekKey(appWidgetId)).remove(monthKey(appWidgetId)).commit()
+        prefs(context).edit().remove("finance_$appWidgetId").remove("module_$appWidgetId").remove(key(appWidgetId)).remove(weekFilterKey(appWidgetId)).remove(weekKey(appWidgetId)).remove(monthKey(appWidgetId)).commit()
     }
 
     /** Выбор в виде «Неделя» (итерация 45): выбранная неделя и месяц мини-календаря этого виджета. */

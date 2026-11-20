@@ -295,7 +295,7 @@ class WidgetWeekTest {
     fun taskAndFinanceTabsAreClickable() {
         val root = renderWidget(context, rich, size).applyLikeLauncher(context)
         val found = ArrayList<View>()
-        root.findViewsWithText(found, "Задачи, выбрано", View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
+        root.findViewsWithText(found, "Задачи · Неделя, выбрано", View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
         assertEquals(1, found.size)
         assertTrue(generateSequence(found.single()) { it.parent as? View }.take(3).any { it.hasOnClickListeners() })
         val finance = ArrayList<View>()
