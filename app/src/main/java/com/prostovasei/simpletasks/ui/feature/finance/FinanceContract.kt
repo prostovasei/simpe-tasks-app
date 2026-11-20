@@ -197,6 +197,7 @@ sealed interface FinanceIntent {
 }
 
 sealed interface FinanceEffect {
+    data object AccountSaved : FinanceEffect
     data object OperationSaved : FinanceEffect
     data object OperationTrashed : FinanceEffect
     data object OperationRestored : FinanceEffect

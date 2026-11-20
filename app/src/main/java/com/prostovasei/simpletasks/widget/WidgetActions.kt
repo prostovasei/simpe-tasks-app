@@ -60,6 +60,15 @@ class WidgetActionReceiver : BroadcastReceiver() {
 
         suspend fun handle(context: Context, intent: Intent) {
             when (intent.action) {
+                WidgetActions.MODULE -> {
+                    val id = intent.getIntExtra(WidgetActions.EXTRA_WIDGET_ID, -1)
+                    if (id !in WidgetRenderer.widgetIds(context)) return
+                    val finance = intent.getBooleanExtra("finance", false)
+                    if (finance != WidgetSelection.finance(context, id)) {
+                        WidgetSelection.setFinance(context, id, finance)
+                        WidgetRenderer.render(context, id, "переключили модуль")
+                    }
+                }
                 WidgetActions.SWITCH -> {
                     val id = intent.getIntExtra(WidgetActions.EXTRA_WIDGET_ID, -1)
                     val filter = WidgetFilter.decode(intent.getStringExtra(WidgetActions.EXTRA_FILTER))
@@ -113,6 +122,7 @@ class WidgetActionReceiver : BroadcastReceiver() {
 }
 
 object WidgetActions {
+    const val MODULE = "com.prostovasei.simpletasks.widget.MODULE"
     const val SWITCH = "com.prostovasei.simpletasks.widget.SWITCH"
     const val COMPLETE = "com.prostovasei.simpletasks.widget.COMPLETE"
     const val UNCOMPLETE = "com.prostovasei.simpletasks.widget.UNCOMPLETE"
@@ -126,6 +136,12 @@ object WidgetActions {
     const val EXTRA_TASK_ID = "task_id"
 
     /** У каждого нажатия свой адрес — иначе Android подменит одно нажатие другим. */
+    fun module(context: Context, id: Int, finance: Boolean): Intent = Intent(context, WidgetActionReceiver::class.java)
+        .setAction(MODULE)
+        .setData("simpletasks://widget/$id/module/$finance".toUri())
+        .putExtra(EXTRA_WIDGET_ID, id)
+        .putExtra("finance", finance)
+
     fun switch(context: Context, appWidgetId: Int, filter: WidgetFilter): Intent = Intent(context, WidgetActionReceiver::class.java)
         .setAction(SWITCH)
         .setData("simpletasks://widget/$appWidgetId/switch/${filter.encode()}".toUri())

@@ -27,6 +27,7 @@ import java.time.YearMonth
 @EntryPoint
 @InstallIn(SingletonComponent::class)
 interface WidgetEntryPoint {
+    fun finance(): com.prostovasei.simpletasks.domain.repository.FinanceRepository
     fun tasks(): TaskRepository
     fun projects(): ProjectRepository
     fun time(): TimeProvider

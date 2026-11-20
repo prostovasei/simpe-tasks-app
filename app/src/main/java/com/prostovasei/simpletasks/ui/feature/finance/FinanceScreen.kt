@@ -59,11 +59,12 @@ fun FinanceRoute(viewModel: FinanceViewModel, onOpenUnsorted: () -> Unit = {}) {
 
 /** Подсказки финансов (сохранено, корзина, копия): на главном экране и на странице настроек, где открывается резервная копия. */
 @Composable
-fun FinanceEffects(viewModel: FinanceViewModel) {
+fun FinanceEffects(viewModel: FinanceViewModel, onAccountSaved: () -> Unit = {}) {
     val context = LocalContext.current
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
             when (effect) {
+                FinanceEffect.AccountSaved -> onAccountSaved()
                 FinanceEffect.OperationSaved -> Toast.makeText(context, R.string.operation_saved, Toast.LENGTH_SHORT).show()
                 FinanceEffect.OperationTrashed -> Toast.makeText(context, R.string.operation_trashed, Toast.LENGTH_SHORT).show()
                 FinanceEffect.OperationRestored -> Toast.makeText(context, R.string.operation_restored, Toast.LENGTH_SHORT).show()
@@ -106,6 +107,11 @@ fun FinanceScreen(state: FinanceState, onOpenUnsorted: () -> Unit = {}, onIntent
             }
         }
     }
+    FinanceDialogs(state, onIntent)
+}
+
+@Composable
+internal fun FinanceDialogs(state: FinanceState, onIntent: (FinanceIntent) -> Unit) {
     state.form?.let { OperationDialog(state, it, onIntent) }
     when (val window = state.window) {
         AccountWindow.None -> Unit

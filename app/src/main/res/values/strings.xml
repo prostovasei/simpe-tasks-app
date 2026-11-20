@@ -436,7 +436,9 @@
     <string name="settings_notifications_off">Уведомления выключены — напоминания не придут.</string>
     <string name="settings_notifications_enable">Включить уведомления</string>
     <string name="widget_name">Задачи</string>
-    <string name="widget_description">Задачи на сегодня и ближайшие дни, с галочками</string>
+    <string name="widget_description">Задачи и финансовая аналитика за текущий месяц</string>
+    <string name="widget_task_view">Вид задач</string>
+    <string name="widget_tab_selected">%1$s, выбрано</string>
     <string name="widget_all">Все</string>
     <string name="widget_empty">Задач нет</string>
     <string name="widget_complete">Выполнить</string>

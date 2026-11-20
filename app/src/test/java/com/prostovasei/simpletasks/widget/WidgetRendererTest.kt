@@ -33,7 +33,7 @@ class WidgetRendererTest {
         val id = manager.createWidget(TasksWidgetReceiver::class.java, androidx.glance.appwidget.R.layout.glance_default_loading_layout)
         WidgetRenderer.render(context, id, "тест")
         val view = manager.getViewFor(id)
-        listOf("Все", "Входящие", "Открыть приложение", "Новая задача").forEach {
+        listOf("Задачи, выбрано", "Финансы", "Открыть приложение", "Новая задача").forEach {
             assertTrue(it, view.hasDescription(it))
         }
         assertTrue(WidgetLog.read(context).contains("отрисовка $id: all"))
@@ -49,6 +49,20 @@ class WidgetRendererTest {
     }
 
     @Test
+    fun financeModuleIsIndependentAndReturningKeepsTaskView() = runBlocking {
+        val one = manager.createWidget(TasksWidgetReceiver::class.java, androidx.glance.appwidget.R.layout.glance_default_loading_layout)
+        val two = manager.createWidget(TasksWidgetReceiver::class.java, androidx.glance.appwidget.R.layout.glance_default_loading_layout)
+        WidgetSelection.set(context, one, WidgetFilter.Inbox)
+        WidgetActionReceiver.handle(context, WidgetActions.module(context, one, true))
+        assertTrue(WidgetSelection.finance(context, one))
+        assertTrue(!WidgetSelection.finance(context, two))
+        assertTrue(manager.getViewFor(one).hasDescription("Финансы, выбрано"))
+        WidgetActionReceiver.handle(context, WidgetActions.module(context, one, false))
+        assertEquals(WidgetFilter.Inbox, WidgetSelection.get(context, one))
+        assertTrue(manager.getViewFor(one).hasDescription("Задачи, выбрано"))
+    }
+
+    @Test
     fun eachTapHasItsOwnAddress() {
         assertEquals("Разные вкладки — разные нажатия", false, WidgetActions.switch(context, 1, WidgetFilter.All).filterEquals(WidgetActions.switch(context, 1, WidgetFilter.Inbox)))
         assertEquals(false, WidgetActions.complete(context, "a").filterEquals(WidgetActions.complete(context, "b")))
@@ -57,7 +71,9 @@ class WidgetRendererTest {
     @Test
     fun deletedWidgetForgetsSelection() {
         WidgetSelection.set(context, 42, WidgetFilter.Inbox)
+        WidgetSelection.setFinance(context, 42, true)
         TasksWidgetReceiver().onDeleted(context, intArrayOf(42))
+        assertTrue(!WidgetSelection.finance(context, 42))
         assertEquals(null, WidgetSelection.get(context, 42))
     }
 }

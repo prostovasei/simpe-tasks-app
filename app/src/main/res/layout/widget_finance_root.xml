@@ -1,0 +1,9 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@drawable/widget_task_root_bg" android:clipToOutline="true">
+    <ListView android:id="@+id/widget_finance_list" android:layout_width="match_parent"
+        android:layout_height="match_parent" android:layout_marginBottom="@dimen/widget_bar"
+        android:divider="@null" android:listSelector="@android:color/transparent" />
+    <FrameLayout android:id="@+id/widget_finance_bar" android:layout_width="match_parent"
+        android:layout_height="@dimen/widget_bar" android:layout_gravity="bottom" />
+</FrameLayout>

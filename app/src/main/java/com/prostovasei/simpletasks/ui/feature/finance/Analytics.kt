@@ -37,13 +37,19 @@ import kotlin.math.roundToLong
 
 private val monthFormat = DateTimeFormatter.ofPattern("MMM", Locale.forLanguageTag("ru"))
 
+internal fun financeLimitPreferences(context: android.content.Context) =
+    context.getSharedPreferences("finance_monthly_limits", android.content.Context.MODE_PRIVATE)
+
+internal fun financeMonthLabel(month: YearMonth) =
+    "${month.format(monthFormat).take(3)} ${(month.year % 100).toString().padStart(2, '0')}"
+
 @Composable
 fun AnalyticsBlock(state: FinanceState, onIntent: (FinanceIntent) -> Unit) {
     val spacing = AppTheme.spacing
     val model = remember(state.operations, state.month, state.today) {
         MonthSpending.of(state.operations.orEmpty(), state.month, state.today)
     }
-    val prefs = LocalContext.current.getSharedPreferences("finance_monthly_limits", 0)
+    val prefs = financeLimitPreferences(LocalContext.current)
     val monthKey = state.month.toString()
     var limit by remember(monthKey) { mutableStateOf(prefs.getLong(monthKey, 0L).takeIf { it > 0 }) }
     var editing by rememberSaveable(monthKey) { mutableStateOf(false) }
@@ -70,7 +76,7 @@ fun AnalyticsBlock(state: FinanceState, onIntent: (FinanceIntent) -> Unit) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text("${compactAmount(model.average, 1)}/день", Modifier.weight(1f), style = MaterialTheme.typography.labelLarge)
             MonthArrow(Icons.AutoMirrored.Filled.KeyboardArrowLeft, stringResource(R.string.analytics_prev_month), TAG_MONTH_PREV, true) { onIntent(FinanceIntent.ShiftMonth(-1)) }
-            Text("${state.month.format(monthFormat).take(3)} ${(state.month.year % 100).toString().padStart(2, '0')}", Modifier.testTag(TAG_MONTH_TITLE), style = MaterialTheme.typography.labelLarge)
+            Text(financeMonthLabel(state.month), Modifier.testTag(TAG_MONTH_TITLE), style = MaterialTheme.typography.labelLarge)
             MonthArrow(Icons.AutoMirrored.Filled.KeyboardArrowRight, stringResource(R.string.analytics_next_month), TAG_MONTH_NEXT, state.canGoNextMonth) { onIntent(FinanceIntent.ShiftMonth(1)) }
         }
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -119,7 +125,7 @@ private fun SpendingTable(title: String, rows: List<MonthSpending.Rank>, modifie
     }
 }
 
-private fun compactAmount(amount: Long, precision: Int = 0): String {
+internal fun compactAmount(amount: Long, precision: Int = 0): String {
     if (amount < 100_000L) return Money.format(amount)
     val scaled = if (precision == 0) "${(amount / 100_000.0).roundToLong()}" else
         String.format(Locale.forLanguageTag("ru"), "%.1f", amount / 100_000.0).removeSuffix(",0")
@@ -173,7 +179,7 @@ private fun SpendingChart(model: MonthSpending, current: Boolean) {
     }
 }
 
-private fun axisAmount(amount: Long): String =
+internal fun axisAmount(amount: Long): String =
     String.format(Locale.ROOT, "%.3f", amount / 100_000.0).trimEnd('0').trimEnd('.') + "k"
 
 @Composable

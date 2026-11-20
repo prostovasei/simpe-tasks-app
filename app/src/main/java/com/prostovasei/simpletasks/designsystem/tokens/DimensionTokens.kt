@@ -143,6 +143,8 @@ object SizeTokens {
      */
     const val WIDGET_TAIL = 60
     // 0.46.0 (проверка PM): нижняя строка ниже — 40 вместо 48, кнопки 30–32 вместо 36–40.
+    const val WIDGET_COMPACT_BAR_THRESHOLD = 232
+    const val WIDGET_FINANCE_CHART_COMPACT = 60
     const val WIDGET_BAR = 40
 
     /** Кнопка «+» в нижней строке виджета (итерация 43: 64×40; 0.46.0 — 64×32; 0.57 — плитка, той же ширины плитка даты, высота — у всех плиток строки). */
@@ -156,7 +158,6 @@ object SizeTokens {
     const val WIDGET_TAB_CELL = 44
 
     /** Итерация 57: поля по бокам внутри блока вкладок. */
-    const val WIDGET_TAB_BLOCK_PAD = 4
 
     /** Итерация 57: дата в плитке — число и столбик «ВТ» / «ноя» (размеры шрифта, sp), промежуток между ними. */
     const val WIDGET_DATE_DAY_SP = 18
