@@ -43,7 +43,6 @@
     <dimen name="widget_week_top">2dp</dimen>
     <dimen name="widget_week_inline_gap">2dp</dimen>
     <dimen name="widget_week_task_gap">2dp</dimen>
-    <dimen name="widget_week_cal_weekdays">12dp</dimen>
     <dimen name="widget_week_cal_day">18dp</dimen>
     <dimen name="widget_radius_xl">16dp</dimen>
 

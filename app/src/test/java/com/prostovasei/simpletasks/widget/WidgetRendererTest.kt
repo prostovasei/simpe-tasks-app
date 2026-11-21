@@ -70,7 +70,9 @@ class WidgetRendererTest {
     fun financeModuleIsIndependentAndReturningKeepsTaskView() = runBlocking {
         val one = manager.createWidget(TasksWidgetReceiver::class.java, androidx.glance.appwidget.R.layout.glance_default_loading_layout)
         val two = manager.createWidget(TasksWidgetReceiver::class.java, androidx.glance.appwidget.R.layout.glance_default_loading_layout)
-        WidgetSelection.set(context, one, WidgetFilter.Inbox)
+        // Дождаться первой отрисовки, которая сохраняет исходный раздел нового виджета.
+        WidgetRenderer.render(context, one, "тест")
+        WidgetActionReceiver.handle(context, WidgetActions.switch(context, one, WidgetFilter.Inbox))
         WidgetActionReceiver.handle(context, WidgetActions.module(context, one, true))
         assertTrue(WidgetSelection.finance(context, one))
         assertTrue(!WidgetSelection.finance(context, two))

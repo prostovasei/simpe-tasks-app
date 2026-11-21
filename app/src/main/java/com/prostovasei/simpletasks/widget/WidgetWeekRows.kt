@@ -25,7 +25,6 @@ import com.prostovasei.simpletasks.ui.feature.week.startTime
 import com.prostovasei.simpletasks.ui.feature.week.weekStart
 import com.prostovasei.simpletasks.widget.WidgetRows.taskCanvasColor
 import com.prostovasei.simpletasks.widget.WidgetRows.visible
-import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.TextStyle
@@ -131,16 +130,11 @@ object WidgetWeekRows {
     }
 
     /**
-     * Мини-календарь в последней ячейке (0.46.0: без строки месяца и стрелок): «пн…вс» и шесть строк недель; нажатие на строку выбирает
-     * неделю, а неделя с днями соседнего месяца перелистывает календарь на него (см. WidgetActionReceiver, monthAfterPick).
+     * Мини-календарь в последней ячейке (#284): шесть равных строк дат.
+     * Строка выбирает неделю, а переход на соседний месяц рассчитывается при выборе.
      */
     private fun RemoteViews.calendar(week: WidgetWeek, click: Click) {
         val month: YearMonth = week.month
-        DayOfWeek.entries.forEachIndexed { index, day ->
-            setTextViewText(WeekIds.CAL_WEEKDAYS[index], day.getDisplayName(TextStyle.SHORT, RU))
-            taskCanvasColor(WeekIds.CAL_WEEKDAYS[index], "setTextColor", ColorTokens.textSecondary)
-        }
-        // Шесть строк недель делят высоту под «пн…вс» поровну (weight в разметке).
         val first = month.atDay(1).weekStart()
         WeekIds.CAL_ROWS.forEachIndexed { index, row ->
             val start = first.plusDays(index * WEEK_LENGTH.toLong())
@@ -149,18 +143,14 @@ object WidgetWeekRows {
             row.days.forEachIndexed { offset, id ->
                 val date = start.plusDays(offset.toLong())
                 val isToday = date == week.today
-                setTextViewText(id, date.dayOfMonth.toString())
+                setTextViewText(id, date.dayOfMonth.toString().bold(isToday))
                 taskCanvasColor(id, "setTextColor", calendarDayColor(isToday, inMonth = YearMonth.from(date) == month))
-                setInt(id, "setBackgroundResource", if (isToday) R.drawable.widget_task_week_today else 0)
             }
         }
     }
 
-    private fun calendarDayColor(isToday: Boolean, inMonth: Boolean): ThemedColor = when {
-        isToday -> ColorTokens.onAccent
-        inMonth -> ColorTokens.textPrimary
-        else -> ColorTokens.inactive
-    }
+    private fun calendarDayColor(isToday: Boolean, inMonth: Boolean): ThemedColor =
+        if (isToday || inMonth) ColorTokens.textPrimary else ColorTokens.inactive
 
     /** Текст жирным начертанием ([bold] = true) или как есть. */
     private fun String.weekWeight(high: Boolean): CharSequence =

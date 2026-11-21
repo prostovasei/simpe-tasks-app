@@ -4,7 +4,7 @@
 
 ## Завершённая база
 
-0.79.4, [PR #281](https://github.com/prostovasei/simpe-tasks-app/pull/281), merge 50e5c4c51f3e5566f760b6ef081f1bef10de83f7, [APK build-411](https://github.com/prostovasei/simple-tasks-releases/releases/tag/build-411). CI PR/main зелёный. Пакет, версия, подпись и SHA-256 сверены. Итоги в закрытой [#280](https://github.com/prostovasei/simpe-tasks-app/issues/280). На телефоне PM отметил разную видимую высоту значков и проблему с зонами открытия приложения. Продолжение в #282. BT280-1–3 и предыдущие проверки ждут полного результата PM. #247 открыт. При повторении AppSmokeTest.walkThroughTabsAndCreateList на пустых «Входящих» исправить ожидание загрузки, а не просто перезапускать.
+0.79.5, [PR #283](https://github.com/prostovasei/simpe-tasks-app/pull/283), merge a7536a6bce4a85f086a71e024e5d9509b1e5480a, [APK build-415](https://github.com/prostovasei/simple-tasks-releases/releases/tag/build-415). CI PR/main зелёный. Пакет, версия, подпись и SHA-256 сверены. Итоги в закрытой [#282](https://github.com/prostovasei/simpe-tasks-app/issues/282). WB282-1–3, BT280-1–3 и предыдущие проверки ждут полного результата PM. #247 открыт. При повторении AppSmokeTest.walkThroughTabsAndCreateList на пустых «Входящих» исправить ожидание загрузки, а не просто перезапускать.
 
 ## #255 — 0.70.3, PR #256
 
@@ -96,3 +96,7 @@ Codex, ветка `codex/compact-tabs-widget-date-settings` от `main` cf7a3e8.
 ## #282 — согласованность значков и зоны открытия приложения
 
 Codex, ветка `codex/widget-bar-consistency` от `main` 50e5c4c. [Issue #282](https://github.com/prostovasei/simpe-tasks-app/issues/282) · [Диагностика и варианты](../design/drafts/widget-bar-consistency/README.md). На широком виджете оба свободных промежутка должны открывать приложение. Ориентир по видимой высоте значков — 16 dp, независимо от зоны нажатия. PM выбрал вариант 1 «Сплошная панель» 21.11.2026. [Утверждённый макет и ТЗ](../design/approved/282/requirements.md). PM дал команду «Делай код». Реализация 0.79.5, локально прошли `assembleDebug check recordRoborazziDebug`, 872 теста, 0 ошибок, 3 пропуска.
+
+## #284 — мини-календарь выбора недели в виджете
+
+Codex, ветка `codex/widget-week-picker-prototypes` от `main` a7536a6. [Issue #284](https://github.com/prostovasei/simpe-tasks-app/issues/284) · [Три прототипа](../design/drafts/widget-week-picker/variants.png). В мини-календаре обычные даты обычным шрифтом, сегодня жирным. Убраны круг и строка дней недели. Варианты выделения выбранной строки — заливка, рамка и метка слева. PM выбрал вариант 1 «Светлая полоса». [Утверждённый макет и ТЗ](../design/approved/284/requirements.md). Этап «Код» завершён в ветке, версия 0.79.6. Этап «Проверка» завершён. Локально 874 теста, 0 ошибок, 3 пропуска, снимок Android сверен с макетом. Этап «Выпуск» ожидает команды PM.

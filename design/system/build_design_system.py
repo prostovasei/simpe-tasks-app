@@ -48,7 +48,8 @@ LIST_NAMES = ['red', 'orange', 'yellow', 'green', 'teal', 'blue', 'purple', 'pin
 
 def consts(obj):
     body = dim_src.split(f'object {obj} {{')[1].split('\n}\n')[0]
-    return {m[1]: int(m[2]) for m in re.finditer(r'const val (\w+) = (\d+)', body)}
+    return {m[1]: float(m[2]) if '.' in m[2] else int(m[2])
+            for m in re.finditer(r'const val (\w+) = (\d+(?:\.\d+)?)', body)}
 
 
 SPACING, RADIUS, SIZE = consts('SpacingTokens'), consts('RadiusTokens'), consts('SizeTokens')
@@ -126,8 +127,7 @@ SIZE_PICK = {
     'EMOJI_BUTTON_MARK': ('emoji-button-mark', 'Стрелка на плашке эмодзи (0.56).'),
     'WIDGET_WEEK_TASK': ('widget-week-task', 'Вид «Неделя» в виджете: наименьшая строка задачи; настоящая делит высоту ячейки поровну (обычно ~20).'), 'WIDGET_WEEK_HIT': ('widget-week-hit', 'Вид «Неделя» в виджете (итерация 50): невидимая зона «выполнить» поверх кружка и начала названия на всю высоту плашки.'), 'WIDGET_WEEK_TASK_GAP': ('widget-week-task-gap', 'Вид «Неделя» в виджете: промежуток над строкой задачи.'), 'WIDGET_WEEK_CHECK': ('widget-week-check', 'Вид «Неделя» в виджете: кружок.'),
     'WIDGET_WEEK_TICK': ('widget-week-tick', 'Вид «Неделя» в виджете: галочка в кружке.'), 'WIDGET_WEEK_HEADER': ('widget-week-header', 'Вид «Неделя» в виджете: наименьшая высота строки даты (итерация 48: строка по высоте текста).'), 'WIDGET_WEEK_CELL_TOP': ('widget-week-cell-top', 'Вид «Неделя» в виджете: поле над строкой даты.'), 'WIDGET_WEEK_TOP': ('widget-week-top', 'Вид «Неделя» в виджете: поле над верхним рядом ячеек.'), 'WIDGET_WEEK_INLINE_GAP': ('widget-week-inline-gap', 'Вид «Неделя» в виджете: между эмодзи списка и временем и от времени до края плашки.'),
-    'WIDGET_WEEK_CAL_WEEKDAYS': ('widget-week-cal-weekdays', 'Мини-календарь в виджете: «пн…вс».'),
-    'WIDGET_WEEK_CAL_DAY': ('widget-week-cal-day', 'Мини-календарь в виджете: день (кружок «сегодня»); меньше нельзя.'),
+    'WIDGET_WEEK_CAL_DAY': ('widget-week-cal-day', 'Мини-календарь в виджете: ширина числа дня.'),
     'WIDGET_WEEK_ROW_DEFAULT': ('widget-week-row-default', 'Строка недели в виджете, пока размер виджета неизвестен: по ней считается число строк задач (сами строки делят высоту поровну).'), 'WIDGET_WEEK_ROW_MIN': ('widget-week-row-min', 'Строка недели в виджете: наименьшая высота.'),
     'WEEKVIEW_CELL_MIN': ('weekview-cell-min', 'Вид «Неделя»: наименьшая высота ячейки дня.'), 'WEEKVIEW_TASK': ('weekview-task', 'Вид «Неделя»: высота строки задачи; она же зона нажатия кружка.'), 'WEEKVIEW_TASK_GAP': ('weekview-task-gap', 'Вид «Неделя»: промежуток над строкой задачи.'),
     'WEEKVIEW_CHECK': ('weekview-check', 'Вид «Неделя»: кружок приоритета.'), 'WEEKVIEW_CHECK_ICON': ('weekview-check-icon', 'Вид «Неделя»: галочка в кружке.'),
@@ -153,8 +153,8 @@ SIZE_PICK = {
     'WIDGET_TIME': ('widget-time', 'Колонка времени слева.'), 'WIDGET_RAIL': ('widget-rail', 'Колонка линии шкалы с кружком.'), 'WIDGET_NODE': ('widget-node', 'Кружок приоритета на шкале.'),
     'WIDGET_BAR': ('widget-bar', 'Нижняя строка виджета.'), 'WIDGET_TAIL': ('widget-tail', 'Место под нижней строкой в конце ленты виджета.'),
     'WIDGET_ADD_W': ('widget-add-w', 'Плитки «+» и даты в нижней строке виджета: ширина (0.57: одинаковая).'), 'WIDGET_ADD_H': ('widget-add-h', 'Плитки нижней строки виджета («+», блок вкладок, дата): высота.'),
-    'WIDGET_TAB_CELL': ('widget-tab-cell', 'Место значка в белом блоке вкладок виджета (0.57).'), 'WIDGET_TAB_BLOCK_PAD': ('widget-tab-block-pad', 'Поля по бокам внутри блока вкладок (0.57).'),
-    'WIDGET_DATE_DAY_SP': ('widget-date-day-sp', 'Число в плитке даты виджета, sp (0.57).'), 'WIDGET_DATE_SMALL_SP': ('widget-date-small-sp', '«ВТ» и «ноя» в плитке даты, sp (0.57).'),
+    'WIDGET_TAB_CELL': ('widget-tab-cell', 'Место значка в белом блоке вкладок виджета (0.57).'),
+    'WIDGET_DATE_SMALL_SP': ('widget-date-small-sp', 'День недели и месяц в нижней панели виджета, sp.'),
     'WIDGET_DATE_GAP': ('widget-date-gap', 'Между числом и столбиком «ВТ / ноя» (0.57).'),
     'SNACKBAR_MIN_HEIGHT': ('snackbar-min-height', 'Подсказка «Отмена»: наименьшая высота.'), 'SNACKBAR_ICON': ('snackbar-icon', 'Значок слева в подсказке «Отмена».'),
     'RIBBON_BUTTON': ('ribbon-button', 'Режим выбора: наименьшая ширина кнопки ленты действий.'), 'RIBBON_BUTTON_HEIGHT': ('ribbon-button-height', 'Режим выбора: высота кнопки ленты действий.'),
@@ -739,10 +739,13 @@ def main():
     import ds_more
     previews.update(ds_more.PREVIEWS)
     COMP_README.update(ds_more.README_MORE)
-    COMP_README['WidgetBar'] = ('Нижняя строка виджета (0.57): «+» слева, блок вкладок по центру, дата справа.',
-                                '''Итерация 57 (T-128, решение PM 10.11.2026, макет iteration57.py, доска «Итог 2»): строка высотой `size-widget-bar` (40), фон `background`, без линии сверху, поля по бокам 6. Три плитки высотой `size-widget-add-h` (32), радиус `radius-lg`:
-слева «+» — `accent`, значок 22 `on-accent`, ширина `size-widget-add-w` (64); по центру один белый блок (`surface`, поля `size-widget-tab-block-pad`) со значками «Все» (`ic_widget_all`), «Входящие» (`ic_widget_inbox`), «Неделя» (`ic_tab_week`) — место `size-widget-tab-cell` (44), значок 22: выбранный вид `accent`, остальные `inactive`, без подложек; справа белая плитка даты той же ширины, что «+»: число `size-widget-date-day-sp` (18 sp Bold), рядом столбиком «ВТ» (9 sp Bold) и «ноя» (9 sp `text-secondary`). Блок вкладок ровно по центру: по бокам от него — пустое место поровну.
-Нажатия: «+» — новая задача; значок — вид; дата — назад к сегодня («Неделя» — текущая неделя и месяц календарика, «Все» — лента к «Сегодня», «Входящие» — в начало); всё свободное место строки — открыть приложение (галочки больше нет). Фоны плиток — картинки со скруглением (`widget_bar_add`, `widget_bar_tile`).''')
+    COMP_README['WidgetBar'] = (
+        'Нижняя панель виджета: «+» слева, вкладки по центру, дата и обновление справа.',
+        'Сплошная панель (#282): вкладки с шагом `size-widget-tab-cell` по центру, '
+        'ряд высотой `size-widget-bar`. Оба свободных промежутка открывают приложение. '
+        'Высота числа даты совпадает с двумя строками подписи. '
+        'На компактном размере видны «+» и три вкладки.',
+    )
     groups = {}
     for name, fn in previews.items():
         html = fn()

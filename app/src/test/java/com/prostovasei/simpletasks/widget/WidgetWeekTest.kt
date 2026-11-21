@@ -1,6 +1,9 @@
 package com.prostovasei.simpletasks.widget
 
 import android.appwidget.AppWidgetManager
+import android.graphics.Typeface
+import android.text.Spanned
+import android.text.style.StyleSpan
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
@@ -166,7 +169,53 @@ class WidgetWeekTest {
         assertEquals("28", last.findViewById<TextView>(WeekIds.CAL_ROWS.first().days.first()).text.toString())
         assertEquals("8", last.findViewById<TextView>(WeekIds.CAL_ROWS.last().days.last()).text.toString())
         // Воскресенье 1 ноября — в левой ячейке последней строки.
-        assertTrue(last.visibleTexts().contains("вс"))
+        assertEquals("ВС", last.findViewById<TextView>(WeekIds.LEFT.weekday).text.toString())
+    }
+
+    private fun TextView.isBold() = (text as? Spanned)?.getSpans(0, text.length, StyleSpan::class.java)
+        ?.any { it.style == Typeface.BOLD } == true
+
+    @Test
+    fun calendarBandAndBoldDateMoveIndependentlyOnReapply() {
+        val root = renderWidget(context, rich, size).applyLikeLauncher(context)
+        fun verify(selected: Int, bold: String) {
+            val calendar = root.findViewById<ViewGroup>(R.id.wc_root)
+            assertEquals(6, calendar.childCount)
+            val dates = calendar.descendants().filterIsInstance<TextView>().toList()
+            assertEquals(42, dates.size)
+            assertTrue(dates.all { it.text.toString().toIntOrNull() != null })
+            assertEquals(listOf(bold), dates.filter { it.isBold() }.map { it.text.toString() })
+            assertTrue(dates.all { it.background == null && it.typeface?.isBold != true })
+            assertTrue(dates.first().currentTextColor != dates.first { it.text.toString() == bold && it.isBold() }.currentTextColor)
+            val rows = WeekIds.CAL_ROWS.map { calendar.findViewById<View>(it.row) }
+            assertTrue(rows.all { it.hasOnClickListeners() })
+            assertEquals(listOf(rows[selected]), rows.filter { it.background != null })
+        }
+        verify(selected = 4, bold = "30")
+        val previousWeek = week(start = monday.minusWeeks(1)) { emptyList() }
+        renderWidget(context, previousWeek, size).reapply(context, root)
+        verify(selected = 3, bold = "30")
+        val nextDay = today.plusDays(1)
+        val movedToday = previousWeek.copy(today = nextDay, week = previousWeek.week!!.copy(today = nextDay))
+        renderWidget(context, movedToday, size).reapply(context, root)
+        verify(selected = 3, bold = "31")
+    }
+
+    @Test
+    @Config(fontScale = 1.3f)
+    fun calendarDatesFitAtLargerFont() {
+        for (width in listOf(320f, 392f)) {
+            val root = renderWidget(context, rich, DpSize(width.dp, 640.dp)).applyLikeLauncher(context)
+            root.measure(View.MeasureSpec.makeMeasureSpec(px(width), View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(px(640f), View.MeasureSpec.EXACTLY))
+            root.layout(0, 0, px(width), px(640f))
+            val calendar = root.findViewById<ViewGroup>(R.id.wc_root)
+            val dates = calendar.descendants().filterIsInstance<TextView>().toList()
+            assertEquals(42, dates.size)
+            assertTrue("Даты помещаются при ширине $width dp", dates.all { date ->
+                date.lineCount == 1 && date.layout.getLineEnd(0) == date.text.length && date.layout.height <= date.height
+            })
+        }
     }
 
     /**
@@ -202,8 +251,6 @@ class WidgetWeekTest {
     /** Проверка PM (0.46.0): сегодня — без кружка, день недели и число жирные; у остальных дней жирного нет. */
     @Test
     fun todayIsBoldWithoutACircle() {
-        fun TextView.isBold() = (text as? android.text.Spanned)?.getSpans(0, text.length, android.text.style.StyleSpan::class.java)
-            ?.any { it.style == android.graphics.Typeface.BOLD } == true
         val friday = list().rows()[2] // пятница 30 октября — сегодня
         val number = friday.findViewById<TextView>(WeekIds.LEFT.number)
         assertTrue(friday.findViewById<TextView>(WeekIds.LEFT.weekday).isBold())
