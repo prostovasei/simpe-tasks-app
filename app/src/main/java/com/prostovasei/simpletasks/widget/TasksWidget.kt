@@ -513,11 +513,11 @@ internal fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boole
     val fontScale = context.resources.configuration.fontScale.coerceAtLeast(1f)
     val dateWidth = (SizeTokens.WIDGET_MODULE_DATE_W * fontScale).roundToInt()
     val dateAndUpdate = dateWidth + SizeTokens.WIDGET_TAB_CELL
-    val tabsWidth = 3 * SizeTokens.WIDGET_TAB_CELL
+    val tabsWidth = WidgetModule.entries.size * SizeTokens.WIDGET_TAB_CELL
     val fullBarWidth = 2 * (dateAndUpdate + SizeTokens.WIDGET_EDGE + SizeTokens.WIDGET_OPEN_GAP_MIN) + tabsWidth
     val compact = LocalSize.current.width < maxOf(SizeTokens.WIDGET_MODULE_BAR_THRESHOLD, fullBarWidth).dp
     val side = if (compact) SizeTokens.WIDGET_MODULE_COMPACT_ADD else SizeTokens.WIDGET_ADD_W
-    val compactTabsWidth = 3 * SizeTokens.WIDGET_MODULE_COMPACT_CELL
+    val compactTabsWidth = WidgetModule.entries.size * SizeTokens.WIDGET_MODULE_COMPACT_CELL
     val hasCompactGap = LocalSize.current.width > (side + compactTabsWidth + 2 * SizeTokens.WIDGET_EDGE).dp
     val finance = module == WidgetModule.FINANCE
     Row(
@@ -539,12 +539,13 @@ internal fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boole
                     .semantics { contentDescription = context.getString(when (module) {
                         WidgetModule.FINANCE -> R.string.finance_add
                         WidgetModule.HEALTH -> R.string.health_add
+                        WidgetModule.NEWS -> R.string.news_refresh
                         WidgetModule.TASKS -> R.string.add_task
                     }) }
-                    .clickable(actionStartActivity(when (module) {
+                    .clickable(if (module == WidgetModule.NEWS) actionSendBroadcast(WidgetActions.refreshNews(context, appWidgetId)) else actionStartActivity(when (module) {
                         WidgetModule.FINANCE -> widgetPopupIntent(context, appWidgetId, true)
                         WidgetModule.HEALTH -> widgetPopupIntent(context, appWidgetId, false, health = true)
-                        WidgetModule.TASKS -> quickAddIntent(context, model.filter)
+                        WidgetModule.TASKS, WidgetModule.NEWS -> quickAddIntent(context, model.filter)
                     })),
                 contentAlignment = Alignment.Center,
             ) {
@@ -554,7 +555,7 @@ internal fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boole
                     contentAlignment = Alignment.Center,
                 ) {
                     Image(
-                        ImageProvider(R.drawable.ic_widget_bar_add),
+                        ImageProvider(if (module == WidgetModule.NEWS) R.drawable.ic_news_refresh else R.drawable.ic_widget_bar_add),
                         contentDescription = null,
                         colorFilter = ColorFilter.tint(LocalWidgetColors.current.onAccent),
                         modifier = GlanceModifier.size(SizeTokens.WIDGET_TAB_ICON.dp),
@@ -585,6 +586,8 @@ internal fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boole
                 actionSendBroadcast(WidgetActions.module(context, appWidgetId, WidgetModule.FINANCE)))
             SwitchTab(R.drawable.ic_widget_bar_health, context.getString(R.string.module_health), module == WidgetModule.HEALTH,
                 actionSendBroadcast(WidgetActions.module(context, appWidgetId, WidgetModule.HEALTH)))
+            SwitchTab(R.drawable.ic_module_news, context.getString(R.string.module_news), module == WidgetModule.NEWS,
+                actionSendBroadcast(WidgetActions.module(context, appWidgetId, WidgetModule.NEWS)))
         }
         if (compact) return@Row
         Row(GlanceModifier.defaultWeight().height(SizeTokens.WIDGET_BAR.dp), verticalAlignment = Alignment.CenterVertically) {

@@ -17,6 +17,7 @@ import com.prostovasei.simpletasks.ui.feature.week.monthAfterPick
 import com.prostovasei.simpletasks.ui.feature.week.weekStart
 import java.time.LocalDate
 import java.time.YearMonth
+import com.prostovasei.simpletasks.data.news.SportsNews
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -60,6 +61,12 @@ class WidgetActionReceiver : BroadcastReceiver() {
 
         suspend fun handle(context: Context, intent: Intent) {
             when (intent.action) {
+                WidgetActions.REFRESH_NEWS -> {
+                    val id = intent.getIntExtra(WidgetActions.EXTRA_WIDGET_ID, -1)
+                    if (id in WidgetRenderer.widgetIds(context) && WidgetSelection.module(context, id) == WidgetModule.NEWS) {
+                        SportsNews.refresh(context) { WidgetRenderer.renderNews(context) }
+                    }
+                }
                 WidgetActions.MODULE -> {
                     val id = intent.getIntExtra(WidgetActions.EXTRA_WIDGET_ID, -1)
                     if (id !in WidgetRenderer.widgetIds(context)) return
@@ -123,6 +130,7 @@ class WidgetActionReceiver : BroadcastReceiver() {
 }
 
 object WidgetActions {
+    const val REFRESH_NEWS = "com.prostovasei.simpletasks.widget.REFRESH_NEWS"
     const val MODULE = "com.prostovasei.simpletasks.widget.MODULE"
     const val SWITCH = "com.prostovasei.simpletasks.widget.SWITCH"
     const val COMPLETE = "com.prostovasei.simpletasks.widget.COMPLETE"
@@ -145,6 +153,11 @@ object WidgetActions {
         .setData("simpletasks://widget/$id/module/${module.name}".toUri())
         .putExtra(EXTRA_WIDGET_ID, id)
         .putExtra("module", module.name)
+
+    internal fun refreshNews(context: Context, id: Int) = Intent(context, WidgetActionReceiver::class.java)
+        .setAction(REFRESH_NEWS)
+        .setData("simpletasks://widget/$id/refresh-news".toUri())
+        .putExtra(EXTRA_WIDGET_ID, id)
 
     fun switch(context: Context, appWidgetId: Int, filter: WidgetFilter): Intent = Intent(context, WidgetActionReceiver::class.java)
         .setAction(SWITCH)

@@ -64,4 +64,6 @@
     <color name="widget_week_done">#FFBDBDBD</color>
     <color name="widget_accent_soft">#FFEAEAEA</color>
     <dimen name="widget_health_date_text">10sp</dimen>
+    <dimen name="widget_news_meta">11sp</dimen>
+    <dimen name="widget_news_title">13sp</dimen>
 </resources>

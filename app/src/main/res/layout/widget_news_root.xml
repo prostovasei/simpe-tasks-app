@@ -1,0 +1,23 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@drawable/widget_task_root_bg" android:clipToOutline="true">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent"
+        android:layout_marginBottom="@dimen/widget_bar" android:orientation="vertical">
+        <LinearLayout android:id="@+id/widget_news_header" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:orientation="horizontal"
+            android:gravity="center_vertical" android:padding="@dimen/widget_edge">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="@string/module_news" android:textColor="@color/widget_flat_text_primary"
+                android:textSize="@dimen/widget_news_title" android:textStyle="bold" />
+            <TextView android:id="@+id/widget_news_updated" android:layout_width="0dp"
+                android:layout_height="wrap_content" android:layout_weight="1" android:gravity="end"
+                android:textColor="@color/widget_flat_text_secondary" android:textSize="@dimen/widget_news_meta" />
+        </LinearLayout>
+        <ListView android:id="@+id/widget_news_list" android:layout_width="match_parent"
+            android:layout_height="match_parent" android:divider="@color/widget_flat_divider"
+            android:dividerHeight="@dimen/widget_hairline"
+            android:listSelector="@android:color/transparent" />
+    </LinearLayout>
+    <FrameLayout android:id="@+id/widget_news_bar" android:layout_width="match_parent"
+        android:layout_height="@dimen/widget_bar" android:layout_gravity="bottom" />
+</FrameLayout>

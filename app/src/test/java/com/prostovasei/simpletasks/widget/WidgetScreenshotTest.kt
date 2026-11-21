@@ -177,16 +177,15 @@ class WidgetScreenshotTest {
         if (this@descendants is android.view.ViewGroup) for (i in 0 until childCount) yieldAll(getChildAt(i).descendants())
     }
 
-    /** Нижняя строка содержит «Задачи», «Финансы», «Открыть приложение» и «+». */
+    /** В компактной панели доступны все модули и одна свободная зона. */
     @Test
     fun bottomBarKeepsAllButtons() {
         val views = runBlocking { Preview(model).compose(context, size = DpSize(320.dp, 420.dp)) }
         val root = views.apply(context, FrameLayout(context))
-        // Итерация 57: галочки нет — приложение открывает свободное место строки (две свободные полосы).
-        mapOf("Задачи · Все, выбрано" to 1, "Финансы" to 1, "Открыть приложение" to 2, "Новая задача" to 1).forEach { (label, count) ->
+        listOf("Задачи · Все, выбрано", "Финансы", "Здоровье", "Новости", "Открыть приложение", "Новая задача").forEach { label ->
             val found = ArrayList<View>()
             root.findViewsWithText(found, label, View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
-            assertEquals(label, count, found.size)
+            assertEquals(label, 1, found.size)
         }
         // Вкладок своих списков и «Другие списки» больше нет.
         listOf("Работа", "Другие списки").forEach { label ->

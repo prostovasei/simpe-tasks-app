@@ -84,9 +84,9 @@ class WidgetUiTest {
 
         // Нижняя строка (итерация 25): «Все», «Входящие», открыть приложение и «+»; даты и «⋯» нет.
         // Итерация 43: слева от «+» — капсула с галочкой значка приложения (открыть приложение), вместо кнопки обновления.
-        listOf("Задачи · Все, выбрано", "Финансы", "Новая задача").forEach { onNode(hasContentDescription(it)).assertExists() }
-        // Итерация 57: галочки нет — «открыть приложение» две свободные полосы.
-        onAllNodes(hasContentDescription("Открыть приложение")).assertCountEquals(2)
+        listOf("Задачи · Все, выбрано", "Финансы", "Здоровье", "Новости", "Новая задача").forEach { onNode(hasContentDescription(it)).assertExists() }
+        // На ширине 320 dp четыре вкладки в компактной панели, свободная полоса слева.
+        onAllNodes(hasContentDescription("Открыть приложение")).assertCountEquals(1)
         onAllNodes(hasContentDescription("Обновление приложения")).assertCountEquals(0)
         onNode(hasTextEqualTo("пт, 16 окт")).assertDoesNotExist()
         // Итерация 43: у каждого дня справа число задач (у «Сегодня» вместо него прогресс «0 из 1»).

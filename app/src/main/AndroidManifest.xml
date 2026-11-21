@@ -143,6 +143,10 @@
             android:exported="false" android:excludeFromRecents="true"
             android:taskAffinity="com.prostovasei.simpletasks.popup"
             android:theme="@style/Theme.SimpleTasks.Overlay" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".widget.WidgetNewsLinkActivity" android:exported="false"
+            android:noHistory="true" android:theme="@android:style/Theme.NoDisplay" />
+        <service android:name=".widget.WidgetNewsService"
+            android:exported="false" android:permission="android.permission.BIND_REMOTEVIEWS" />
         <service android:name=".widget.WidgetFinanceService"
             android:exported="false" android:permission="android.permission.BIND_REMOTEVIEWS" />
     </application>

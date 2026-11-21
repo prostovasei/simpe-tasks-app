@@ -21,7 +21,7 @@ android {
         versionCode = providers.exec { commandLine("git", "rev-list", "--count", "HEAD"); isIgnoreExitValue = true }
             .standardOutput.asText.get().trim().toIntOrNull() ?: 1
         // 0.<итерация>.<доработка>: 0.5.0 — Итерация 05.
-        versionName = "0.79.6"
+        versionName = "0.80.0"
     }
 
     signingConfigs {
@@ -87,6 +87,7 @@ roborazzi {
 }
 
 dependencies {
+    implementation("org.jsoup:jsoup:1.19.1")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
