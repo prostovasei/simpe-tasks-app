@@ -545,6 +545,7 @@ internal fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boole
                 modifier = GlanceModifier.size(SizeTokens.WIDGET_ADD_ICON.dp),
             )
         }
+        if (!compact) Spacer(GlanceModifier.width(side.dp))
         Row(
             modifier = GlanceModifier.defaultWeight().height(SizeTokens.WIDGET_ADD_H.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -567,10 +568,18 @@ internal fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boole
                 actionSendBroadcast(WidgetActions.module(context, appWidgetId, WidgetModule.FINANCE)))
             SwitchTab(R.drawable.ic_module_health, context.getString(R.string.module_health), module == WidgetModule.HEALTH,
                 actionSendBroadcast(WidgetActions.module(context, appWidgetId, WidgetModule.HEALTH)))
-            if (!compact) BarIcon(R.drawable.ic_widget_update, context.getString(R.string.update_title), LocalWidgetColors.current.accent,
-                actionStartActivity(Intent(context, com.prostovasei.simpletasks.UpdateActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)))
         }
-        if (compact || module == WidgetModule.HEALTH) return@Row
+        if (compact) return@Row
+        Box(GlanceModifier.width(side.dp), contentAlignment = Alignment.Center) {
+            Row {
+                BarIcon(R.drawable.ic_widget_update, context.getString(R.string.update_title), LocalWidgetColors.current.accent,
+                    actionStartActivity(Intent(context, com.prostovasei.simpletasks.UpdateActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)))
+            }
+        }
+        if (module == WidgetModule.HEALTH) {
+            Spacer(GlanceModifier.width(side.dp))
+            return@Row
+        }
         // Итерация 51 → 57: сегодняшняя дата — плитка шириной с «+»; нажатие возвращает к сегодня (неделя, «Сегодня» в ленте, начало «Входящих»).
         if (finance) {
             Box(GlanceModifier.width(side.dp), contentAlignment = Alignment.Center) {

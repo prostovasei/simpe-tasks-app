@@ -6,6 +6,12 @@
         <TextView android:id="@+id/widget_health_weight" android:layout_width="match_parent"
             android:layout_height="wrap_content" android:textSize="17sp" android:textStyle="bold"
             android:textColor="@color/widget_flat_text_primary" />
+        <TextView android:id="@+id/widget_health_goal" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:textSize="@dimen/widget_health_date_text"
+            android:maxLines="1" android:ellipsize="end" android:textStyle="bold" android:textColor="@color/widget_flat_text_primary" />
+        <TextView android:id="@+id/widget_health_details" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:textSize="@dimen/widget_health_date_text"
+            android:maxLines="2" android:ellipsize="end" android:textColor="@color/widget_flat_text_secondary" />
         <ImageView android:id="@+id/widget_health_chart" android:layout_width="match_parent"
             android:layout_height="0dp" android:layout_weight="1" android:scaleType="fitCenter" android:contentDescription="@null" />
         <LinearLayout android:id="@+id/widget_health_dates" android:layout_width="match_parent"
