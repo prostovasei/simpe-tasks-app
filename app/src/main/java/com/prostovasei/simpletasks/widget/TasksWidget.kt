@@ -511,9 +511,8 @@ internal fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boole
     val context = LocalContext.current
     val openApp = context.getString(R.string.widget_open_app)
     val compact = LocalSize.current.width < SizeTokens.WIDGET_MODULE_BAR_THRESHOLD.dp
-    val side = if (compact) SizeTokens.WIDGET_MODULE_COMPACT_CELL else SizeTokens.WIDGET_ADD_W
+    val side = if (compact) SizeTokens.WIDGET_MODULE_COMPACT_CELL else SizeTokens.WIDGET_TAB_CELL
     val finance = module == WidgetModule.FINANCE
-    val spread = compact || module == WidgetModule.HEALTH
     Row(
         modifier = GlanceModifier
             .fillMaxWidth()
@@ -546,13 +545,10 @@ internal fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boole
                 modifier = GlanceModifier.size(SizeTokens.WIDGET_ADD_ICON.dp),
             )
         }
-        if (!spread) Spacer(GlanceModifier.defaultWeight())
         Row(
-            modifier = (if (spread) GlanceModifier.defaultWeight() else GlanceModifier)
-                .height(SizeTokens.WIDGET_ADD_H.dp),
+            modifier = GlanceModifier.defaultWeight().height(SizeTokens.WIDGET_ADD_H.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            val cell = if (spread) GlanceModifier.defaultWeight() else GlanceModifier.width(SizeTokens.WIDGET_TAB_CELL.dp)
             val taskIcon = when (model.filter) {
                 WidgetFilter.Week -> R.drawable.ic_tab_week
                 WidgetFilter.Inbox -> R.drawable.ic_widget_inbox
@@ -566,16 +562,15 @@ internal fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boole
             val tasksActive = module == WidgetModule.TASKS
             SwitchTab(taskIcon, "${context.getString(R.string.module_tasks)} · ${context.getString(taskLabel)}", tasksActive,
                 if (tasksActive) actionStartActivity(widgetPopupIntent(context, appWidgetId, false))
-                else actionSendBroadcast(WidgetActions.module(context, appWidgetId, WidgetModule.TASKS)), cell)
+                else actionSendBroadcast(WidgetActions.module(context, appWidgetId, WidgetModule.TASKS)))
             SwitchTab(R.drawable.ic_module_finance, context.getString(R.string.module_finance), finance,
-                actionSendBroadcast(WidgetActions.module(context, appWidgetId, WidgetModule.FINANCE)), cell)
+                actionSendBroadcast(WidgetActions.module(context, appWidgetId, WidgetModule.FINANCE)))
             SwitchTab(R.drawable.ic_module_health, context.getString(R.string.module_health), module == WidgetModule.HEALTH,
-                actionSendBroadcast(WidgetActions.module(context, appWidgetId, WidgetModule.HEALTH)), cell)
-            if (!compact) SwitchTab(R.drawable.ic_widget_update, context.getString(R.string.update_title), false,
-                actionStartActivity(Intent(context, com.prostovasei.simpletasks.UpdateActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)), cell, utility = true)
+                actionSendBroadcast(WidgetActions.module(context, appWidgetId, WidgetModule.HEALTH)))
+            if (!compact) BarIcon(R.drawable.ic_widget_update, context.getString(R.string.update_title), LocalWidgetColors.current.accent,
+                actionStartActivity(Intent(context, com.prostovasei.simpletasks.UpdateActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)))
         }
         if (compact || module == WidgetModule.HEALTH) return@Row
-        Spacer(GlanceModifier.defaultWeight())
         // Итерация 51 → 57: сегодняшняя дата — плитка шириной с «+»; нажатие возвращает к сегодня (неделя, «Сегодня» в ленте, начало «Входящих»).
         if (finance) {
             Box(GlanceModifier.width(side.dp), contentAlignment = Alignment.Center) {
@@ -614,17 +609,24 @@ private fun GlanceModifier.button(image: Int, color: ColorProvider, radius: Int,
 
 /** Вкладка в белом блоке (итерация 57): только значок — выбранный вид чёрный (`accent`), остальные серые (`inactive`), без подложек. */
 @Composable
-private fun SwitchTab(icon: Int, label: String, selected: Boolean, action: Action, cell: GlanceModifier, utility: Boolean = false) {
+private fun RowScope.SwitchTab(icon: Int, label: String, selected: Boolean, action: Action) {
+    val description = if (selected) LocalContext.current.getString(R.string.widget_tab_selected, label) else label
+    val color = if (selected) LocalWidgetColors.current.accent else LocalWidgetColors.current.inactive
+    BarIcon(icon, description, color, action)
+}
+
+@Composable
+private fun RowScope.BarIcon(icon: Int, description: String, color: ColorProvider, action: Action) {
     Box(
-        modifier = cell
+        modifier = GlanceModifier.defaultWeight()
             .height(SizeTokens.WIDGET_ADD_H.dp)
             .clickable(action),
         contentAlignment = Alignment.Center,
     ) {
         Image(
             ImageProvider(icon),
-            contentDescription = if (selected) LocalContext.current.getString(R.string.widget_tab_selected, label) else label,
-            colorFilter = ColorFilter.tint(if (selected || utility) LocalWidgetColors.current.accent else LocalWidgetColors.current.inactive),
+            contentDescription = description,
+            colorFilter = ColorFilter.tint(color),
             modifier = GlanceModifier.size(SizeTokens.WIDGET_TAB_ICON.dp),
         )
     }

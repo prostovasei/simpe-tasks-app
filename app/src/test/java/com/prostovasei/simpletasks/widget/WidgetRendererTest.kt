@@ -1,8 +1,25 @@
 package com.prostovasei.simpletasks.widget
 
 import android.appwidget.AppWidgetManager
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.RectF
 import android.view.View
+import android.widget.FrameLayout
+import android.widget.ImageView
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
+import androidx.glance.appwidget.ExperimentalGlanceRemoteViewsApi
+import androidx.glance.appwidget.GlanceRemoteViews
 import androidx.test.core.app.ApplicationProvider
+import com.github.takahirom.roborazzi.captureRoboImage
+import com.prostovasei.simpletasks.R
+import com.prostovasei.simpletasks.domain.model.health.WeightEntry
+import com.prostovasei.simpletasks.widget.theme.LocalWidgetColors
+import com.prostovasei.simpletasks.widget.theme.TaskWidgetColors
+import java.time.LocalDate
+import kotlin.math.abs
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -11,6 +28,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 
 /**
  * Отрисовка без сеанса Glance (0.9.2): виджет на «рабочем столе» Robolectric получает картинку сразу,
@@ -67,23 +85,69 @@ class WidgetRendererTest {
     }
 
     @Test
-    fun healthChartKeepsItsHeightWhenWidgetIsTall() = runBlocking {
-        val today = java.time.LocalDate.of(2026, 11, 21)
-        context.widgetEntryPoint().health().save(
-            com.prostovasei.simpletasks.domain.model.health.WeightEntry(today, 820)
-        )
-        val size = androidx.compose.ui.unit.DpSize(androidx.compose.ui.unit.Dp(320f), androidx.compose.ui.unit.Dp(600f))
-        val placeholder = android.widget.RemoteViews(context.packageName, androidx.glance.appwidget.R.layout.glance_default_loading_layout)
-        val root = healthWidgetViews(context, today, placeholder, size).apply(context, android.widget.FrameLayout(context))
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun healthChartFillsTallWidgetWithOneEntry() = runBlocking {
+        checkHealthLayout(320, 600, listOf(820), "widget_health_tall_light")
+    }
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun compactHealthWidgetFitsChartAndThreeTabs() = runBlocking {
+        checkHealthLayout(180, 110, listOf(831, 826, 820), "widget_health_compact_light")
+    }
+
+    @OptIn(ExperimentalGlanceRemoteViewsApi::class)
+    private suspend fun checkHealthLayout(width: Int, height: Int, weights: List<Int>, screenshot: String) {
+        val today = LocalDate.of(2026, 11, 21)
+        val health = context.widgetEntryPoint().health()
+        val size = DpSize(width.dp, height.dp)
+        val model = WidgetModel(WidgetFilter.Week, null, today, emptyList())
+        val bar = GlanceRemoteViews().compose(context, size) {
+            CompositionLocalProvider(LocalWidgetColors provides TaskWidgetColors) {
+                BottomBar(model, 1, imageButtons = true, module = WidgetModule.HEALTH)
+            }
+        }.remoteViews
+        val root = healthWidgetViews(context, today, bar, size).apply(context, FrameLayout(context))
+        assertEquals(View.GONE, root.findViewById<View>(R.id.widget_health_chart).visibility)
+        weights.forEachIndexed { index, weight ->
+            health.save(WeightEntry(today.minusDays(4L * (weights.lastIndex - index + 1)), weight))
+        }
+        // На рабочем столе Android применяет обновление поверх уже показанного пустого состояния.
+        healthWidgetViews(context, today, bar, size).reapply(context, root)
         val density = context.resources.displayMetrics.density
         root.measure(
-            View.MeasureSpec.makeMeasureSpec((320 * density).toInt(), View.MeasureSpec.EXACTLY),
-            View.MeasureSpec.makeMeasureSpec((600 * density).toInt(), View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec((width * density).toInt(), View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec((height * density).toInt(), View.MeasureSpec.EXACTLY),
         )
         root.layout(0, 0, root.measuredWidth, root.measuredHeight)
-        val chart = root.findViewById<android.widget.ImageView>(com.prostovasei.simpletasks.R.id.widget_health_chart)
-        assertEquals(android.widget.ImageView.ScaleType.FIT_CENTER, chart.scaleType)
-        assertTrue(chart.height in 1..(160 * density).toInt())
+        val chart = root.findViewById<ImageView>(R.id.widget_health_chart)
+        val dates = root.findViewById<View>(R.id.widget_health_dates)
+        val panel = root.findViewById<View>(R.id.widget_health_bar)
+        assertEquals(View.VISIBLE, chart.visibility)
+        assertEquals(View.VISIBLE, dates.visibility)
+        assertEquals(chart.bottom, dates.top)
+        assertEquals(panel.top, dates.bottom)
+        val plot = RectF(0f, 0f, chart.drawable.intrinsicWidth.toFloat(), chart.drawable.intrinsicHeight.toFloat())
+        chart.imageMatrix.mapRect(plot)
+        assertTrue("График заполняет высоту: ${plot.height()} из ${chart.height}", abs(plot.height() - chart.height) <= 3 * density)
+        assertEquals(ImageView.ScaleType.FIT_CENTER, chart.scaleType)
+
+        val tabs = listOf("Задачи · Неделя", "Финансы", "Здоровье, выбрано")
+        val labels = if (width == 320) tabs + "Обновление" else tabs
+        val centers = labels.map { label ->
+            val matches = ArrayList<View>()
+            panel.findViewsWithText(matches, label, View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
+            val icon = matches.single { it.contentDescription == label }
+            assertTrue(icon.width > 0)
+            generateSequence(icon) { it.parent as? View }.sumOf { it.left } + icon.width / 2
+        }
+        val gaps = centers.zipWithNext { left, right -> right - left }
+        assertTrue(gaps.all { it > 0 })
+        assertTrue(gaps.max() - gaps.min() <= 2)
+        if (width == 180) assertTrue(!panel.hasDescription("Обновление"))
+        val bitmap = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)
+        root.draw(Canvas(bitmap))
+        bitmap.captureRoboImage("screenshots/$screenshot.png")
     }
 
     @Test
