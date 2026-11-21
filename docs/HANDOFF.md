@@ -99,4 +99,4 @@ Codex, ветка `codex/widget-bar-consistency` от `main` 50e5c4c. [Issue #28
 
 ## #284 — мини-календарь выбора недели в виджете
 
-Codex, ветка `codex/widget-week-picker-prototypes` от `main` a7536a6. [Issue #284](https://github.com/prostovasei/simpe-tasks-app/issues/284) · [Три прототипа](../design/drafts/widget-week-picker/variants.png). В мини-календаре обычные даты обычным шрифтом, сегодня жирным. Убраны круг и строка дней недели. Варианты выделения выбранной строки — заливка, рамка и метка слева. Макеты ждут выбора PM.
+Codex, ветка `codex/widget-week-picker-prototypes` от `main` a7536a6. [Issue #284](https://github.com/prostovasei/simpe-tasks-app/issues/284) · [Три прототипа](../design/drafts/widget-week-picker/variants.png). В мини-календаре обычные даты обычным шрифтом, сегодня жирным. Убраны круг и строка дней недели. Варианты выделения выбранной строки — заливка, рамка и метка слева. PM выбрал вариант 1 «Светлая полоса». [Утверждённый макет и ТЗ](../design/approved/284/requirements.md). Команда «Делай код» ожидается.

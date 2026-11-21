@@ -15,4 +15,4 @@ python3 design/drafts/widget-week-picker/screens.py
 node design/drafts/widget-week-picker/render.js
 ```
 
-Для рендера нужны Playwright и Chromium. Макеты ожидают выбора PM.
+Для рендера нужны Playwright и Chromium. PM выбрал вариант 1. [Утверждённый макет и ТЗ](../../approved/284/requirements.md).

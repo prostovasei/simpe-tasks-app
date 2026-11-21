@@ -28,6 +28,9 @@ async function render() {
       })));
     }
     await page.locator(".board").screenshot({ path: local("variants.png") });
+    if (process.argv.includes("--approved")) {
+      await page.locator(".variant.band .widget").screenshot({ path: local("../../approved/284/calendar.png") });
+    }
     await page.setViewportSize({ width: 364, height: 750 });
     for (const option of await page.locator(".variant").all()) {
       assert.ok(await option.locator(".week").evaluateAll(rows => rows.every(row =>
