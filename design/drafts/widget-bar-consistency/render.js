@@ -59,8 +59,14 @@ async function render() {
       return Math.abs(number.actualBoundingBoxAscent + number.actualBoundingBoxDescent - captionHeight) <= 1.5;
     }));
     await page.locator(".board").screenshot({ path: path.join(__dirname, "variants.png") });
+    if (process.argv.includes("--approved")) {
+      await page.locator(".choice").first().screenshot({ path: path.join(__dirname, "../../approved/282/bar.png") });
+    }
     await page.locator("#zones").check();
     await page.locator(".board").screenshot({ path: path.join(__dirname, "hitboxes.png") });
+    if (process.argv.includes("--approved")) {
+      await page.locator(".choice").first().screenshot({ path: path.join(__dirname, "../../approved/282/hitboxes.png") });
+    }
 
     for (const choice of await page.locator(".choice").all()) {
       const status = choice.locator("output");

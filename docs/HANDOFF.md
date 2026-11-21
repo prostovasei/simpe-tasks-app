@@ -95,4 +95,4 @@ Codex, ветка `codex/compact-tabs-widget-date-settings` от `main` cf7a3e8.
 
 ## #282 — согласованность значков и зоны открытия приложения
 
-Codex, ветка `codex/widget-bar-consistency` от `main` 50e5c4c. [Issue #282](https://github.com/prostovasei/simpe-tasks-app/issues/282) · [Диагностика и варианты](../design/drafts/widget-bar-consistency/README.md). На широком виджете оба свободных промежутка должны открывать приложение. Ориентир по видимой высоте значков — 16 dp, независимо от зоны нажатия. Три прототипа готовы и ждут выбора PM.
+Codex, ветка `codex/widget-bar-consistency` от `main` 50e5c4c. [Issue #282](https://github.com/prostovasei/simpe-tasks-app/issues/282) · [Диагностика и варианты](../design/drafts/widget-bar-consistency/README.md). На широком виджете оба свободных промежутка должны открывать приложение. Ориентир по видимой высоте значков — 16 dp, независимо от зоны нажатия. PM выбрал вариант 1 «Сплошная панель» 21.11.2026. [Утверждённый макет и ТЗ](../design/approved/282/requirements.md). Команда «Делай код» ожидается.
