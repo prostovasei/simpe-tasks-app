@@ -63,7 +63,17 @@ async function render() {
     assert.equal(await page.locator(".settings-screen .bar").count(), 0);
     assert.deepEqual(await page.locator(".app-tasks .tabs button").evaluateAll(
       buttons => buttons.map(button => button.getBoundingClientRect().width),
-    ), [48, 48, 48, 48]);
+    ), [48, 48, 48]);
+    assert.equal(await page.locator(".app-tasks .tabs .settings").count(), 0);
+    assert.ok(await page.locator(".app-tasks .bar").evaluate(bar => {
+      const tabs = bar.querySelector(".tabs").getBoundingClientRect();
+      const settings = bar.querySelector(".settings");
+      const action = settings.getBoundingClientRect();
+      const row = bar.getBoundingClientRect();
+      return !settings.hasAttribute("aria-selected") &&
+        tabs.left + tabs.width / 2 === row.left + row.width / 2 &&
+        action.left > tabs.right && row.right - action.right === 8;
+    }));
 
     for (const section of ["app", "widget"]) {
       await page.locator("#" + section).screenshot({ path: path.join(__dirname, section + ".png") });

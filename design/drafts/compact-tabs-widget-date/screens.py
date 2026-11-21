@@ -64,9 +64,12 @@ def date(active):
 
 
 def bar(active, *, app=False, compact=False):
-    keys = ("tasks", "finance", "health", "settings") if app else ("tasks", "finance", "health")
+    keys = ("tasks", "finance", "health")
     tabs = "".join(button(key, key == active, tab=True) for key in keys)
-    tools = "" if app or compact else f'<div class="end">{date(active)}{button("update")}</div>'
+    if app:
+        tools = button("settings")
+    else:
+        tools = "" if compact else f'<div class="end">{date(active)}{button("update")}</div>'
     return f'<nav class="bar" aria-label="Нижняя панель">{button("add")}<div class="tabs" role="tablist">{tabs}</div>{tools}</nav>'
 
 
