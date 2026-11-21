@@ -78,6 +78,10 @@ import androidx.lifecycle.Lifecycle
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
+import com.prostovasei.simpletasks.data.news.SportsNews
+import com.prostovasei.simpletasks.ui.feature.news.NewsScreen
+import com.prostovasei.simpletasks.widget.WidgetRenderer
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -260,7 +264,13 @@ fun AppNavHost(
     val inFinance = destination?.hasRoute(FinanceDestination::class) == true
     // «Здоровье» (#257) — отдельный модуль со своей панелью; экран белый плоский, как «Неделя» (макеты design/approved/257).
     val inHealth = destination?.hasRoute(HealthDestination::class) == true
-    val taskCanvas = currentTab == Tab.UPCOMING || currentTab == Tab.WEEK || destination?.hasRoute(ProjectDestination::class) == true || inHealth
+    val inNews = destination?.hasRoute(NewsDestination::class) == true
+    val newsScope = rememberCoroutineScope()
+    val refreshNews: suspend () -> Unit = {
+        SportsNews.refresh(context.applicationContext) { WidgetRenderer.renderNews(context.applicationContext) }
+    }
+    LaunchedEffect(inNews) { if (inNews) newsScope.launch { refreshNews() } }
+    val taskCanvas = currentTab == Tab.UPCOMING || currentTab == Tab.WEEK || destination?.hasRoute(ProjectDestination::class) == true || inHealth || inNews
     val lightBars = taskCanvas || !isSystemInDarkTheme()
     SideEffect {
         (context as? Activity)?.window?.let { window ->
@@ -360,11 +370,12 @@ fun AppNavHost(
         containerColor = if (taskCanvas) Color(TaskCanvasTokens.background.light) else AppTheme.colors.background,
         snackbarHost = { UndoSnackbarHost(snackbar) },
         bottomBar = {
-            if (inFinance || inHealth || (!selectionMode.value && (destination == null || currentTab != null))) {
+            if (inFinance || inHealth || inNews || (!selectionMode.value && (destination == null || currentTab != null))) {
                 val task = currentTab ?: Tab.valueOf(lastTaskTab)
                 val active = when {
                     inFinance -> "finance"
                     inHealth -> "health"
+                    inNews -> "news"
                     else -> "tasks"
                 }
                 val pick: (Tab) -> Unit = { tab ->
@@ -381,8 +392,9 @@ fun AppNavHost(
                     BarPage("tasks", task.icon, task.label, "tab:${task.name}"),
                     BarPage("finance", R.drawable.ic_module_finance, R.string.module_finance, "module:FINANCE"),
                     BarPage("health", R.drawable.ic_module_health, R.string.module_health, "module:HEALTH"),
+                    BarPage("news", R.drawable.ic_module_news, R.string.module_news, "module:NEWS"),
                 )
-                TaskCanvasTheme(enabled = inFinance || inHealth || active == "tasks" && task != Tab.LISTS) {
+                TaskCanvasTheme(enabled = inFinance || inHealth || inNews || active == "tasks" && task != Tab.LISTS) {
                     androidx.compose.foundation.layout.Box {
                         AppBottomBar(pages, active, { key ->
                             when {
@@ -391,24 +403,29 @@ fun AppNavHost(
                                 key == active -> Unit
                                 key == "finance" -> navController.openRoot(FinanceDestination, restore = true)
                                 key == "health" -> navController.openRoot(HealthDestination, restore = true)
+                                key == "news" -> navController.openRoot(NewsDestination, restore = true)
                             }
                         }, onAdd = {
                             when (active) {
                                 "finance" -> finance.onIntent(FinanceIntent.Add)
                                 "health" -> health.onIntent(HealthIntent.Add)
+                                "news" -> { newsScope.launch { refreshNews() } }
                                 "tasks" -> navController.navigate(QuickAddDestination(today = task != Tab.LISTS))
                             }
                         }, addTag = when (active) {
                             "finance" -> TAG_FINANCE_ADD
                             "health" -> TAG_HEALTH_ADD
+                            "news" -> "news:refresh"
                             else -> TAG_ADD_TASK
                         }, addLabel = when (active) {
                             "finance" -> R.string.finance_add
                             "health" -> R.string.health_add
+                            "news" -> R.string.news_refresh
                             else -> R.string.add_task
                         }, module = AppModule.TASKS, onModule = {},
                             onSettings = { navController.navigate(AppSettingsDestination) { launchSingleTop = true } },
                             inlineModules = true,
+                            refreshAction = inNews,
                             longClickPage = "tasks".takeIf { active == "tasks" && task == Tab.WEEK },
                             onPageLongClick = { weekFilterOpen = true })
                         if (active == "tasks" && taskPickerOpen) {
@@ -507,6 +524,7 @@ fun AppNavHost(
                 FinanceRoute(finance, onOpenUnsorted = { navController.navigate(FinanceUnsortedDestination) { launchSingleTop = true } })
             }
             composable<HealthDestination> { HealthRoute(health, snackbar) }
+            composable<NewsDestination> { TaskCanvasTheme { NewsScreen() } }
             composable<HealthSettingsDestination> {
                 HealthSettingsRoute(health, onBack = { navController.popBackStack() }, onBackup = { navController.navigate(HealthBackupDestination) { launchSingleTop = true } })
             }
@@ -566,6 +584,7 @@ private fun NavDestination.order(): Int = when {
     // Финансы — правее всего: модуль приходит справа и уходит вправо.
     hasRoute(FinanceDestination::class) -> 4
     hasRoute(HealthDestination::class) -> 5
+    hasRoute(NewsDestination::class) -> 6
     else -> 3
 }
 

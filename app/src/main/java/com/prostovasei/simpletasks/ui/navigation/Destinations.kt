@@ -136,3 +136,6 @@ data object HealthBackupDestination
 
 /** Не экран: нажатие на «Пора взвеситься» — раздел «Здоровье» с окном ввода веса (#257). */
 data object OpenHealthWeight
+
+@Serializable
+data object NewsDestination

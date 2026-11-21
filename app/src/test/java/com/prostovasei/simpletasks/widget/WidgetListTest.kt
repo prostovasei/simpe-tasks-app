@@ -183,11 +183,11 @@ class WidgetListTest {
     @Test
     fun bottomBarOverList() {
         val root = renderWidget(context, model).applyLikeLauncher(context)
-        // Итерация 57: галочки нет — приложение открывает вся строка (её свободное место); дата — назад к сегодня.
-        mapOf("Задачи · Все, выбрано" to 1, "Финансы" to 1, "Открыть приложение" to 2, "Новая задача" to 1).forEach { (label, count) ->
+        // На ширине 320 dp свободная зона находится слева от четырёх вкладок.
+        listOf("Задачи · Все, выбрано", "Финансы", "Здоровье", "Новости", "Открыть приложение", "Новая задача").forEach { label ->
             val found = ArrayList<View>()
             root.findViewsWithText(found, label, View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
-            assertEquals(label, count, found.size)
+            assertEquals(label, 1, found.size)
             // Подпись бывает у значка, нажатие — у кнопки вокруг него.
             found.forEach { view ->
                 val clickable = generateSequence(view) { it.parent as? View }.take(3).any { it.hasOnClickListeners() }

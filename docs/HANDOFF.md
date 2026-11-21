@@ -4,6 +4,10 @@
 
 ## Завершённая база
 
+0.79.6, [PR #285](https://github.com/prostovasei/simpe-tasks-app/pull/285), merge 373bbe1790f82316ff3a6dc81b8269098fb21681, [APK build-420](https://github.com/prostovasei/simple-tasks-releases/releases/tag/build-420). CI PR и main успешны. Проверка APK и ожидаемые результаты телефона описаны в [#284](https://github.com/prostovasei/simpe-tasks-app/issues/284).
+
+### Предыдущий выпуск
+
 0.79.5, [PR #283](https://github.com/prostovasei/simpe-tasks-app/pull/283), merge a7536a6bce4a85f086a71e024e5d9509b1e5480a, [APK build-415](https://github.com/prostovasei/simple-tasks-releases/releases/tag/build-415). CI PR/main зелёный. Пакет, версия, подпись и SHA-256 сверены. Итоги в закрытой [#282](https://github.com/prostovasei/simpe-tasks-app/issues/282). WB282-1–3, BT280-1–3 и предыдущие проверки ждут полного результата PM. #247 открыт. При повторении AppSmokeTest.walkThroughTabsAndCreateList на пустых «Входящих» исправить ожидание загрузки, а не просто перезапускать.
 
 ## #255 — 0.70.3, PR #256
@@ -99,4 +103,8 @@ Codex, ветка `codex/widget-bar-consistency` от `main` 50e5c4c. [Issue #28
 
 ## #284 — мини-календарь выбора недели в виджете
 
-Codex, ветка `codex/widget-week-picker-prototypes` от `main` a7536a6. [Issue #284](https://github.com/prostovasei/simpe-tasks-app/issues/284) · [Три прототипа](../design/drafts/widget-week-picker/variants.png). В мини-календаре обычные даты обычным шрифтом, сегодня жирным. Убраны круг и строка дней недели. Варианты выделения выбранной строки — заливка, рамка и метка слева. PM выбрал вариант 1 «Светлая полоса». [Утверждённый макет и ТЗ](../design/approved/284/requirements.md). Этап «Код» завершён в ветке, версия 0.79.6. Этап «Проверка» завершён. Локально 874 теста, 0 ошибок, 3 пропуска, снимок Android сверен с макетом. Этап «Выпуск» ожидает команды PM.
+Codex, ветка `codex/widget-week-picker-prototypes` от `main` a7536a6. [Issue #284](https://github.com/prostovasei/simpe-tasks-app/issues/284) · [Три прототипа](../design/drafts/widget-week-picker/variants.png). В мини-календаре обычные даты обычным шрифтом, сегодня жирным. Убраны круг и строка дней недели. Варианты выделения выбранной строки — заливка, рамка и метка слева. PM выбрал вариант 1 «Светлая полоса». [Утверждённый макет и ТЗ](../design/approved/284/requirements.md). Этап «Код» завершён в ветке, версия 0.79.6. Этап «Проверка» завершён. Локально 874 теста, 0 ошибок, 3 пропуска, снимок Android сверен с макетом. Выпущено в 0.79.6, build-420, PR #285. Проверки на телефоне ожидают результата PM.
+
+## #286 — спортивные новости
+
+Codex, ветка `codex/sports-news` от `main` 373bbe1. [Issue #286](https://github.com/prostovasei/simpe-tasks-app/issues/286) · [Утверждённые макеты](../design/approved/286/README.md). PM согласовал ТЗ и макеты и дал команду «Код». Добавлена общая лента Sports.ru за 24 часа в приложении и виджете, ручное обновление виджета, исключение «Тестов и игр». Версия 0.80.0. Этап «Проверка» завершён. Локально 879 тестов, 0 ошибок, 3 пропуска. [Отчёт и снимки](testing-runs/0.80.0-local.md). Проверенный коммит ветки указан в #286. Этап «Выпуск» ожидает отдельной команды. Выпуск 0.79.6 подтверждён [build-420](https://github.com/prostovasei/simple-tasks-releases/releases/tag/build-420), ручные проверки #284 ожидают результата PM.

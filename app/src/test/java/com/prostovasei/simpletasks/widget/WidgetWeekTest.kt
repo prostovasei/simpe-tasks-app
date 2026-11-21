@@ -146,15 +146,17 @@ class WidgetWeekTest {
         assertTrue(first.findViewById<View>(WeekIds.LEFT.slots[0].plaque).hasOnClickListeners())
     }
 
-    /** Итерация 57: справа — плитка с датой «30 / ПТ / окт» на любой ширине виджета; нажатие — назад к сегодня. */
+    /** На широкой панели дата возвращает к сегодня, на компактной остаётся место для вкладок. */
     @Test
     fun barShowsTodayDate() {
         listOf(400, 320).forEach { width ->
             val root = renderWidget(context, rich, DpSize(width.dp, 700.dp)).applyLikeLauncher(context)
             val found = ArrayList<View>()
             root.findViewsWithText(found, context.getString(R.string.widget_today_date, "пт, 30 окт"), View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
-            assertEquals(1, found.size)
-            assertTrue("дата нажимается", generateSequence(found.single()) { it.parent as? View }.take(3).any { it.hasOnClickListeners() })
+            assertEquals(if (width == 400) 1 else 0, found.size)
+            found.singleOrNull()?.let { date ->
+                assertTrue("дата нажимается", generateSequence(date) { it.parent as? View }.take(3).any { it.hasOnClickListeners() })
+            }
         }
         assertEquals(Triple("7", "СБ", "ноя"), WidgetDates.tile(LocalDate.of(2026, 11, 7)))
     }

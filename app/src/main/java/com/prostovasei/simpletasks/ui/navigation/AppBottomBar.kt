@@ -80,6 +80,7 @@ fun AppBottomBar(
     inlineModules: Boolean = false,
     showAdd: Boolean = true,
     longClickPage: String? = null,
+    refreshAction: Boolean = false,
 ) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
@@ -108,7 +109,10 @@ fun AppBottomBar(
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier.size(width = sizes.navAddWidth, height = sizes.appBarButton).clip(AppTheme.shapes.extraLarge).background(colors.accent),
-                ) { Icon(Icons.Default.Add, contentDescription = null, tint = colors.onAccent) }
+                ) {
+                    if (refreshAction) Icon(painterResource(R.drawable.ic_news_refresh), null, tint = colors.onAccent)
+                    else Icon(Icons.Default.Add, contentDescription = null, tint = colors.onAccent)
+                }
             }
             if (!showAdd) Box(Modifier.size(width = sizes.navAddWidth, height = sizes.appBar))
             Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {

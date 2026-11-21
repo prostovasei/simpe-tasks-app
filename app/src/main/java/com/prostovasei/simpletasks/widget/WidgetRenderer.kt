@@ -51,6 +51,11 @@ object WidgetRenderer {
         widgetIds(context).forEach { render(context, it, reason) }
     }
 
+    internal suspend fun renderNews(context: Context) {
+        widgetIds(context).filter { WidgetSelection.module(context, it) == WidgetModule.NEWS }
+            .forEach { render(context, it, "новости") }
+    }
+
     /** [scrollToToday] — лента прокручивается к «Сегодня» (во «Входящих» — в начало): нажатие на дату в нижней строке (итерация 51). */
     suspend fun render(context: Context, appWidgetId: Int, reason: String, scrollToToday: Boolean = false) = mutex.withLock {
         val started = SystemClock.elapsedRealtime()
@@ -76,12 +81,14 @@ object WidgetRenderer {
                 .remoteViews
             val views = when {
                 module == WidgetModule.HEALTH -> healthWidgetViews(context, model.today, glance, size)
+                module == WidgetModule.NEWS -> newsWidgetViews(context, appWidgetId, glance, size)
                 finance -> financeWidgetViews(context, appWidgetId, glance, size)
                 scrollable -> widgetRootViews(context, appWidgetId, model, glance, size, scrollToToday = scrollToToday)
                 else -> glance
             }
             manager.updateAppWidget(appWidgetId, views)
             if (finance) manager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.widget_finance_list)
+            if (module == WidgetModule.NEWS) manager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.widget_news_list)
             val time = context.widgetEntryPoint().time()
             nextChanges[appWidgetId] = nextChange(model, time.zone())
             scheduleRefresh(context, time, nextChanges.filterKeys { it in widgetIds(context) }.values.filterNotNull().minOrNull())
@@ -135,7 +142,7 @@ fun android.widget.RemoteViews.parcelBytes(): Int {
 }
 
 /** Выбранный в виджете список — свой у каждого виджета на рабочем столе. */
-internal enum class WidgetModule { TASKS, FINANCE, HEALTH }
+internal enum class WidgetModule { TASKS, FINANCE, HEALTH, NEWS }
 
 object WidgetSelection {
     private const val PREFS = "widget_selection"

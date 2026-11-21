@@ -1,0 +1,11 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/news_row"
+    android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:orientation="vertical" android:padding="@dimen/widget_edge">
+    <TextView android:id="@+id/news_row_meta" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:textColor="@color/widget_flat_text_secondary"
+        android:textSize="@dimen/widget_news_meta" />
+    <TextView android:id="@+id/news_row_title" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:textColor="@color/widget_flat_text_primary"
+        android:textSize="@dimen/widget_news_title" android:textStyle="bold" android:ellipsize="end" />
+</LinearLayout>

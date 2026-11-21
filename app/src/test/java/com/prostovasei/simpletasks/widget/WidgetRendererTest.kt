@@ -94,7 +94,7 @@ class WidgetRendererTest {
 
     @Test
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
-    fun compactHealthWidgetFitsChartAndThreeTabs() = runBlocking {
+    fun compactHealthWidgetFitsChartAndFourTabs() = runBlocking {
         checkHealthLayout(180, 110, listOf(831, 826, 820), "widget_health_compact_light")
     }
 
@@ -140,7 +140,7 @@ class WidgetRendererTest {
         assertTrue("График заполняет высоту: ${plot.height()} из ${chart.height}", abs(plot.height() - chart.height) <= 3 * density)
         assertEquals(ImageView.ScaleType.FIT_CENTER, chart.scaleType)
 
-        val tabs = listOf("Задачи · Неделя", "Финансы", "Здоровье, выбрано")
+        val tabs = listOf("Задачи · Неделя", "Финансы", "Здоровье, выбрано", "Новости")
         val centers = tabs.map { label ->
             val matches = ArrayList<View>()
             panel.findViewsWithText(matches, label, View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
@@ -151,8 +151,7 @@ class WidgetRendererTest {
         val gaps = centers.zipWithNext { left, right -> right - left }
         assertTrue(gaps.all { it > 0 })
         assertTrue(gaps.max() - gaps.min() <= 2)
-        assertEquals(width == 320, panel.hasDescription("Обновление"))
-        if (width == 320) assertTrue(abs(centers[1] - root.width / 2) <= 2)
+        assertEquals(width >= 356, panel.hasDescription("Обновление"))
         val goalLabel = root.findViewById<android.widget.TextView>(R.id.widget_health_goal)
         assertEquals("Цель 80,0 кг · осталось 2,0 кг", goalLabel.text.toString())
         val details = root.findViewById<android.widget.TextView>(R.id.widget_health_details)
@@ -168,11 +167,11 @@ class WidgetRendererTest {
         val today = LocalDate.of(2026, 11, 21)
         val model = WidgetModel(WidgetFilter.Week, null, today, emptyList())
         val density = context.resources.displayMetrics.density
-        val width = (320 * density).toInt()
+        val width = (392 * density).toInt()
         val height = (40 * density).toInt()
         val description = context.getString(R.string.widget_today_date, WidgetDates.bar(today, withWeekday = true))
         for (module in WidgetModule.entries) {
-            val bar = GlanceRemoteViews().compose(context, DpSize(320.dp, 110.dp)) {
+            val bar = GlanceRemoteViews().compose(context, DpSize(392.dp, 110.dp)) {
                 CompositionLocalProvider(LocalWidgetColors provides TaskWidgetColors) {
                     BottomBar(model, 1, imageButtons = true, module = module)
                 }
@@ -190,12 +189,12 @@ class WidgetRendererTest {
             val finance = find(if (module == WidgetModule.FINANCE) "Финансы, выбрано" else "Финансы")
             val date = find(if (module == WidgetModule.TASKS) description else WidgetDates.bar(today, withWeekday = true))
             val update = find("Обновление")
-            assertTrue(abs(center(finance) - width / 2) <= 1)
-            assertTrue(abs(center(date) - 254 * density) <= 1)
-            assertTrue(abs(center(update) - 296 * density) <= 1)
+            assertTrue(abs(center(finance) - 178 * density) <= 1)
+            assertTrue(abs(center(date) - 326 * density) <= 1)
+            assertTrue(abs(center(update) - 368 * density) <= 1)
             val gaps = ArrayList<View>()
             bar.findViewsWithText(gaps, "Открыть приложение", View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
-            assertEquals(listOf((36 * density).toInt(), (16 * density).toInt()), gaps.map { it.width })
+            assertEquals(listOf((54 * density).toInt(), (34 * density).toInt()), gaps.map { it.width })
             assertTrue(gaps.all { gap ->
                 gap.height == height && generateSequence(gap) { it.parent as? View }.take(3).any { it.hasOnClickListeners() }
             })
