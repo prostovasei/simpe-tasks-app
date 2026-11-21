@@ -189,10 +189,38 @@ class WidgetRendererTest {
             val date = find(if (module == WidgetModule.TASKS) description else WidgetDates.bar(today, withWeekday = true))
             val update = find("Обновление")
             assertTrue(abs(center(finance) - width / 2) <= 1)
-            assertTrue(abs(center(date) - 245 * density) <= 1)
-            assertTrue(abs(center(update) - 292 * density) <= 1)
+            assertTrue(abs(center(date) - 254 * density) <= 1)
+            assertTrue(abs(center(update) - 296 * density) <= 1)
+            val gaps = ArrayList<View>()
+            bar.findViewsWithText(gaps, "Открыть приложение", View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
+            assertEquals(listOf((36 * density).toInt(), (16 * density).toInt()), gaps.map { it.width })
+            assertTrue(gaps.all { gap ->
+                gap.height == height && generateSequence(gap) { it.parent as? View }.take(3).any { it.hasOnClickListeners() }
+            })
             val dateAction = generateSequence(date) { it.parent as? View }.take(3).any { it.hasOnClickListeners() }
             assertEquals(module == WidgetModule.TASKS, dateAction)
+        }
+    }
+
+    @Test
+    @OptIn(ExperimentalGlanceRemoteViewsApi::class)
+    fun compactWidgetOnlyOpensAppFromAnAvailableGap() = runBlocking {
+        val model = WidgetModel(WidgetFilter.All, null, LocalDate.of(2026, 11, 21), emptyList())
+        val density = context.resources.displayMetrics.density
+        for (width in listOf(180, 240)) {
+            val bar = GlanceRemoteViews().compose(context, DpSize(width.dp, 110.dp)) {
+                CompositionLocalProvider(LocalWidgetColors provides TaskWidgetColors) {
+                    BottomBar(model, 1, imageButtons = true)
+                }
+            }.remoteViews.apply(context, FrameLayout(context))
+            val w = (width * density).toInt()
+            val h = (40 * density).toInt()
+            bar.measure(View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(h, View.MeasureSpec.EXACTLY))
+            bar.layout(0, 0, w, h)
+            val gaps = ArrayList<View>()
+            bar.findViewsWithText(gaps, "Открыть приложение", View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
+            assertEquals(if (width == 180) emptyList<Int>() else listOf((60 * density).toInt()), gaps.map { it.width })
+            assertTrue(!bar.hasOnClickListeners())
         }
     }
 

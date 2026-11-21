@@ -153,20 +153,20 @@ object SizeTokens {
     const val WIDGET_ADD_H = 32
     const val WIDGET_ADD_ICON = 22
     /** Иконки «Все» и «Входящие» в переключателе. */
-    const val WIDGET_TAB_ICON = 22
+    const val WIDGET_TAB_ICON = 24
 
     /** Итерация 57: место значка в белом блоке вкладок нижней строки виджета (ширина; высота — [WIDGET_ADD_H]). */
-    const val WIDGET_TAB_CELL = 44
+    const val WIDGET_TAB_CELL = 36
     const val WIDGET_MODULE_COMPACT_CELL = 40
     const val WIDGET_MODULE_COMPACT_ADD = 48
-    const val WIDGET_MODULE_DATE_W = 50
+    const val WIDGET_MODULE_DATE_W = 48
+    const val WIDGET_OPEN_GAP_MIN = 16
     const val WIDGET_MODULE_BAR_THRESHOLD = 320
 
     /** Итерация 57: поля по бокам внутри блока вкладок. */
 
     /** Итерация 57: дата в плитке — число и столбик «ВТ» / «ноя» (размеры шрифта, sp), промежуток между ними. */
-    const val WIDGET_DATE_DAY_SP = 26
-    const val WIDGET_DATE_SMALL_SP = 9
+    const val WIDGET_DATE_SMALL_SP = 8.5f
     const val WIDGET_DATE_GAP = 3
 
     /** Поля строки задачи внутри её плашки в виджете. */
