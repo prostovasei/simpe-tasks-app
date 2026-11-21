@@ -101,6 +101,7 @@ object SizeTokens {
     const val APP_BAR = 44
     const val APP_BAR_BUTTON = 34
     const val APP_BAR_PAGE_W = 64
+    const val APP_MODULE_TAB_W = 48
     const val APP_BAR_OUTLINE = 2
     const val FINANCE_MARK = 28
     /** Серый кружок «?» у операции без категории (#245). */
@@ -156,13 +157,15 @@ object SizeTokens {
 
     /** Итерация 57: место значка в белом блоке вкладок нижней строки виджета (ширина; высота — [WIDGET_ADD_H]). */
     const val WIDGET_TAB_CELL = 44
-    const val WIDGET_MODULE_COMPACT_CELL = 42
+    const val WIDGET_MODULE_COMPACT_CELL = 40
+    const val WIDGET_MODULE_COMPACT_ADD = 48
+    const val WIDGET_MODULE_DATE_W = 50
     const val WIDGET_MODULE_BAR_THRESHOLD = 320
 
     /** Итерация 57: поля по бокам внутри блока вкладок. */
 
     /** Итерация 57: дата в плитке — число и столбик «ВТ» / «ноя» (размеры шрифта, sp), промежуток между ними. */
-    const val WIDGET_DATE_DAY_SP = 18
+    const val WIDGET_DATE_DAY_SP = 26
     const val WIDGET_DATE_SMALL_SP = 9
     const val WIDGET_DATE_GAP = 3
 

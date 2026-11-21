@@ -161,6 +161,42 @@ class WidgetRendererTest {
     }
 
     @Test
+    @OptIn(ExperimentalGlanceRemoteViewsApi::class)
+    fun wideWidgetKeepsTabsAndDateInTheSamePlaceAcrossModules() = runBlocking {
+        val today = LocalDate.of(2026, 11, 21)
+        val model = WidgetModel(WidgetFilter.Week, null, today, emptyList())
+        val density = context.resources.displayMetrics.density
+        val width = (320 * density).toInt()
+        val height = (40 * density).toInt()
+        val description = context.getString(R.string.widget_today_date, WidgetDates.bar(today, withWeekday = true))
+        for (module in WidgetModule.entries) {
+            val bar = GlanceRemoteViews().compose(context, DpSize(320.dp, 110.dp)) {
+                CompositionLocalProvider(LocalWidgetColors provides TaskWidgetColors) {
+                    BottomBar(model, 1, imageButtons = true, module = module)
+                }
+            }.remoteViews.apply(context, FrameLayout(context))
+            bar.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY))
+            bar.layout(0, 0, width, height)
+            fun find(label: String): View {
+                val nodes = ArrayList<View>()
+                bar.findViewsWithText(nodes, label, View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
+                return nodes.single { it.contentDescription == label }
+            }
+            fun center(view: View): Int =
+                generateSequence(view) { it.parent as? View }.sumOf { it.left } + view.width / 2
+            val finance = find(if (module == WidgetModule.FINANCE) "Финансы, выбрано" else "Финансы")
+            val date = find(if (module == WidgetModule.TASKS) description else WidgetDates.bar(today, withWeekday = true))
+            val update = find("Обновление")
+            assertTrue(abs(center(finance) - width / 2) <= 1)
+            assertTrue(abs(center(date) - 245 * density) <= 1)
+            assertTrue(abs(center(update) - 292 * density) <= 1)
+            val dateAction = generateSequence(date) { it.parent as? View }.take(3).any { it.hasOnClickListeners() }
+            assertEquals(module == WidgetModule.TASKS, dateAction)
+        }
+    }
+
+    @Test
     fun eachTapHasItsOwnAddress() {
         assertEquals("Разные вкладки — разные нажатия", false, WidgetActions.switch(context, 1, WidgetFilter.All).filterEquals(WidgetActions.switch(context, 1, WidgetFilter.Inbox)))
         assertEquals(false, WidgetActions.complete(context, "a").filterEquals(WidgetActions.complete(context, "b")))

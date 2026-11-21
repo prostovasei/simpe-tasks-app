@@ -4,7 +4,7 @@
 
 ## Завершённая база
 
-0.79.2, [PR #277](https://github.com/prostovasei/simpe-tasks-app/pull/277), merge 2de98ce0c8408326f0a89f71bc993dd8b9b36a6f, [APK build-404](https://github.com/prostovasei/simple-tasks-releases/releases/tag/build-404). CI PR/main зелёный. Пакет, версия, прежняя подпись и SHA-256 APK проверены Codex. Итоги выпуска в закрытой [#275](https://github.com/prostovasei/simpe-tasks-app/issues/275). На снимках высокого виджета видны круглая точка, даты у панели и цвет активных вкладок «Неделя» и «Здоровье». MV275-2 подтверждён частично; компактный размер и сценарии нажатий ждут проверки. MV275-1, MV273-1–5 и предыдущие телефонные проверки ждут результата PM. #247 открыт. При повторении AppSmokeTest.walkThroughTabsAndCreateList на пустых «Входящих» исправить ожидание загрузки, а не просто перезапускать.
+0.79.3, [PR #279](https://github.com/prostovasei/simpe-tasks-app/pull/279), merge cf7a3e84af2096c43bcef67b111537ff7051c8b5, [APK build-406](https://github.com/prostovasei/simple-tasks-releases/releases/tag/build-406). CI PR/main зелёный. Пакет, версия, подпись и SHA-256 сверены. Итоги в закрытой [#278](https://github.com/prostovasei/simpe-tasks-app/issues/278). Телефонные проверки положения вкладок и обновления цели в 0.79.3 ждут результата. MV275-2 подтверждён частично по снимкам высокого виджета в 0.79.2. MV275-1, MV273-1–5 и предыдущие телефонные проверки ждут результата PM. #247 открыт. При повторении AppSmokeTest.walkThroughTabsAndCreateList на пустых «Входящих» исправить ожидание загрузки.
 
 ## #255 — 0.70.3, PR #256
 
@@ -88,3 +88,7 @@ PM согласовал ТЗ #267 и дал команду «Делай код»
 ## #278 — неподвижные вкладки и цель на графике веса в виджете
 
 Codex, ветка `codex/widget-centered-tabs-health-goal` от `main` 2de98ce. [Issue #278](https://github.com/prostovasei/simpe-tasks-app/issues/278) · [ТЗ](../design/drafts/widget-health-goal/requirements.md). PM подтвердил компактную панель с «+» слева, блок цели как в приложении и сокращение блока на минимальной высоте. PM дал команду «Делай код». Реализация 0.79.3, локально прошли `assembleDebug check recordRoborazziDebug`.
+
+## #280 — компактные вкладки, дата виджета и полноэкранные настройки
+
+Codex, ветка `codex/compact-tabs-widget-date-settings` от `main` cf7a3e8. [Issue #280](https://github.com/prostovasei/simpe-tasks-app/issues/280) · [ТЗ](../design/approved/280/requirements.md). PM подтвердил компактный ряд с широким «+» и тремя вкладками. На широком виджете дата во всех модулях, обновление крайнее справа. Нажатие по дате ведёт к сегодня в «Задачах». В приложении три вкладки по центру и отдельная кнопка «Настройки» справа. Нижняя панель скрывается на экранах настроек. [Согласованные макеты](../design/approved/280/README.md). Реализовано в 0.79.4. Локально прошли `assembleDebug check recordRoborazziDebug`, 871 тест, 0 ошибок, 3 пропуска. CI и проверка APK фиксируются в Issue. BT280-1–3 ждут результата PM.
