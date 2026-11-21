@@ -112,6 +112,7 @@ class WidgetRendererTest {
         weights.forEachIndexed { index, weight ->
             health.save(WeightEntry(today.minusDays(4L * (weights.lastIndex - index + 1)), weight))
         }
+        context.widgetEntryPoint().healthSettings().update { it.copy(goalTenths = 800, heightCm = 180) }
         // На рабочем столе Android применяет обновление поверх уже показанного пустого состояния.
         healthWidgetViews(context, today, bar, size).reapply(context, root)
         val density = context.resources.displayMetrics.density
@@ -124,17 +125,21 @@ class WidgetRendererTest {
         val dates = root.findViewById<View>(R.id.widget_health_dates)
         val panel = root.findViewById<View>(R.id.widget_health_bar)
         assertEquals(View.VISIBLE, chart.visibility)
-        assertEquals(View.VISIBLE, dates.visibility)
-        assertEquals(chart.bottom, dates.top)
-        assertEquals(panel.top, dates.bottom)
+        if (height == 110) {
+            assertEquals(View.GONE, dates.visibility)
+            assertEquals(panel.top, chart.bottom)
+        } else {
+            assertEquals(View.VISIBLE, dates.visibility)
+            assertEquals(chart.bottom, dates.top)
+            assertEquals(panel.top, dates.bottom)
+        }
         val plot = RectF(0f, 0f, chart.drawable.intrinsicWidth.toFloat(), chart.drawable.intrinsicHeight.toFloat())
         chart.imageMatrix.mapRect(plot)
         assertTrue("График заполняет высоту: ${plot.height()} из ${chart.height}", abs(plot.height() - chart.height) <= 3 * density)
         assertEquals(ImageView.ScaleType.FIT_CENTER, chart.scaleType)
 
         val tabs = listOf("Задачи · Неделя", "Финансы", "Здоровье, выбрано")
-        val labels = if (width == 320) tabs + "Обновление" else tabs
-        val centers = labels.map { label ->
+        val centers = tabs.map { label ->
             val matches = ArrayList<View>()
             panel.findViewsWithText(matches, label, View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
             val icon = matches.single { it.contentDescription == label }
@@ -144,7 +149,12 @@ class WidgetRendererTest {
         val gaps = centers.zipWithNext { left, right -> right - left }
         assertTrue(gaps.all { it > 0 })
         assertTrue(gaps.max() - gaps.min() <= 2)
-        if (width == 180) assertTrue(!panel.hasDescription("Обновление"))
+        assertEquals(width == 320, panel.hasDescription("Обновление"))
+        if (width == 320) assertTrue(abs(centers[1] - root.width / 2) <= 2)
+        val goalLabel = root.findViewById<android.widget.TextView>(R.id.widget_health_goal)
+        assertEquals("Цель 80,0 кг · осталось 2,0 кг", goalLabel.text.toString())
+        val details = root.findViewById<android.widget.TextView>(R.id.widget_health_details)
+        assertEquals(if (height == 110) View.GONE else View.VISIBLE, details.visibility)
         val bitmap = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)
         root.draw(Canvas(bitmap))
         bitmap.captureRoboImage("screenshots/$screenshot.png")

@@ -3,6 +3,9 @@ package com.prostovasei.simpletasks.ui.feature.health
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.prostovasei.simpletasks.R
+import com.prostovasei.simpletasks.domain.model.health.Weight
+import com.prostovasei.simpletasks.domain.model.health.WeightMath
+import com.prostovasei.simpletasks.domain.model.health.Forecast
 import com.prostovasei.simpletasks.domain.model.health.BmiClass
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
@@ -52,11 +55,53 @@ fun sinceLabel(date: LocalDate, today: LocalDate): String {
 private const val SINCE_DAYS = 14
 
 @Composable
-fun bmiName(kind: BmiClass): String = stringResource(
-    when (kind) {
+fun bmiName(kind: BmiClass): String = stringResource(bmiNameResource(kind))
+
+internal fun bmiNameResource(kind: BmiClass): Int = when (kind) {
         BmiClass.UNDER -> R.string.health_bmi_under
         BmiClass.NORMAL -> R.string.health_bmi_normal
         BmiClass.OVER -> R.string.health_bmi_over
         BmiClass.OBESE -> R.string.health_bmi_obese
-    },
-)
+    }
+
+
+internal fun healthGoalText(
+    context: android.content.Context,
+    entries: List<com.prostovasei.simpletasks.domain.model.health.WeightEntry>,
+    settings: com.prostovasei.simpletasks.domain.model.health.HealthSettings,
+    today: LocalDate,
+    formatDate: (LocalDate) -> String,
+): Pair<String, String?> {
+    val latest = entries.last().tenths
+    val bmi = WeightMath.bmi(latest, settings.heightCm)
+    val bmiText = bmi?.let { context.getString(R.string.health_bmi, it.text, context.getString(bmiNameResource(it.kind))) }
+    val goal = settings.goalTenths
+    val title: String
+    val sub: String?
+    if (goal == null) {
+        title = bmiText ?: context.getString(R.string.health_goal_set)
+        sub = context.getString(if (bmiText != null) R.string.health_goal_set_only else R.string.health_goal_set_hint)
+    } else {
+        val forecast = WeightMath.forecast(entries, goal, today)
+        if (forecast == Forecast.Reached) {
+            title = context.getString(R.string.health_goal_reached, Weight.format(goal))
+            sub = listOfNotNull(context.getString(R.string.health_goal_now, Weight.format(latest)), bmiText).joinToString(" · ")
+        } else {
+            title = context.getString(R.string.health_goal_line, Weight.format(goal), Weight.format(kotlin.math.abs(latest - goal)))
+            val forecastText = when (forecast) {
+                is Forecast.At -> context.getString(R.string.health_forecast_at, formatDate(forecast.date))
+                Forecast.NotEnoughData -> context.getString(R.string.health_forecast_wait)
+                is Forecast.WrongWay -> context.getString(
+                    when (forecast.rising) {
+                        true -> R.string.health_forecast_rising
+                        false -> R.string.health_forecast_falling
+                        null -> R.string.health_forecast_flat
+                    },
+                )
+                else -> null
+            }
+            sub = listOfNotNull(forecastText, bmiText).joinToString(" · ").ifEmpty { null }
+        }
+    }
+    return title to sub
+}

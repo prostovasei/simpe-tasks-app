@@ -91,6 +91,7 @@ class WidgetUpdater @Inject constructor(
     private val tasks: TaskRepository,
     private val finance: com.prostovasei.simpletasks.domain.repository.FinanceRepository,
     private val health: com.prostovasei.simpletasks.domain.repository.HealthRepository,
+    private val healthSettings: com.prostovasei.simpletasks.domain.repository.HealthSettingsStore,
     private val dayTicker: DayTicker,
     private val overdueFold: OverdueFold,
     @param:ApplicationScope private val appScope: CoroutineScope,
@@ -98,7 +99,7 @@ class WidgetUpdater @Inject constructor(
     @OptIn(FlowPreview::class)
     fun start() {
         appScope.launch {
-            health.observeEntries().debounce(DEBOUNCE_MS).collect {
+            combine(health.observeEntries(), healthSettings.settings) { _, _ -> Unit }.debounce(DEBOUNCE_MS).collect {
                 WidgetRenderer.widgetIds(context).filter { WidgetSelection.module(context, it) == WidgetModule.HEALTH }.forEach {
                     WidgetRenderer.render(context, it, "изменился вес")
                 }
