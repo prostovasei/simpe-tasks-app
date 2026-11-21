@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Сгенерировано design/tools/gen_widget_week.py (итерация 45; 48 — даты 11): мини-календарь вида «Неделя» в виджете. Не править руками. -->
+<!-- Сгенерировано design/tools/gen_widget_week.py (#284 — светлая полоса): мини-календарь вида «Неделя» в виджете. Не править руками. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     tools:ignore="DisableBaselineAlignment,TooManyViews,SmallSp"
@@ -14,81 +14,6 @@
     android:paddingEnd="@dimen/widget_space_xxs"
     android:paddingBottom="@dimen/widget_space_xxs">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/widget_week_cal_weekdays"
-        android:orientation="horizontal">
-
-            <TextView
-                android:id="@+id/wc_wd1"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:maxLines="1"
-                android:textColor="@color/widget_inactive"
-                android:textSize="9sp" />
-
-            <TextView
-                android:id="@+id/wc_wd2"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:maxLines="1"
-                android:textColor="@color/widget_inactive"
-                android:textSize="9sp" />
-
-            <TextView
-                android:id="@+id/wc_wd3"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:maxLines="1"
-                android:textColor="@color/widget_inactive"
-                android:textSize="9sp" />
-
-            <TextView
-                android:id="@+id/wc_wd4"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:maxLines="1"
-                android:textColor="@color/widget_inactive"
-                android:textSize="9sp" />
-
-            <TextView
-                android:id="@+id/wc_wd5"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:maxLines="1"
-                android:textColor="@color/widget_inactive"
-                android:textSize="9sp" />
-
-            <TextView
-                android:id="@+id/wc_wd6"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:maxLines="1"
-                android:textColor="@color/widget_inactive"
-                android:textSize="9sp" />
-
-            <TextView
-                android:id="@+id/wc_wd7"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:maxLines="1"
-                android:textColor="@color/widget_inactive"
-                android:textSize="9sp" />
-    </LinearLayout>
 
         <LinearLayout
             android:id="@+id/wc_r1"
@@ -106,12 +31,12 @@
                 <TextView
                     android:id="@+id/wc_r1_d1"
                     android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="@dimen/widget_week_cal_day"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:maxLines="1"
+                    android:textSize="11sp" />
             </FrameLayout>
 
             <FrameLayout
@@ -122,12 +47,12 @@
                 <TextView
                     android:id="@+id/wc_r1_d2"
                     android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="@dimen/widget_week_cal_day"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:maxLines="1"
+                    android:textSize="11sp" />
             </FrameLayout>
 
             <FrameLayout
@@ -138,12 +63,12 @@
                 <TextView
                     android:id="@+id/wc_r1_d3"
                     android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="@dimen/widget_week_cal_day"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:maxLines="1"
+                    android:textSize="11sp" />
             </FrameLayout>
 
             <FrameLayout
@@ -154,12 +79,12 @@
                 <TextView
                     android:id="@+id/wc_r1_d4"
                     android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="@dimen/widget_week_cal_day"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:maxLines="1"
+                    android:textSize="11sp" />
             </FrameLayout>
 
             <FrameLayout
@@ -170,12 +95,12 @@
                 <TextView
                     android:id="@+id/wc_r1_d5"
                     android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="@dimen/widget_week_cal_day"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:maxLines="1"
+                    android:textSize="11sp" />
             </FrameLayout>
 
             <FrameLayout
@@ -186,12 +111,12 @@
                 <TextView
                     android:id="@+id/wc_r1_d6"
                     android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="@dimen/widget_week_cal_day"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:maxLines="1"
+                    android:textSize="11sp" />
             </FrameLayout>
 
             <FrameLayout
@@ -202,12 +127,12 @@
                 <TextView
                     android:id="@+id/wc_r1_d7"
                     android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="@dimen/widget_week_cal_day"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:maxLines="1"
+                    android:textSize="11sp" />
             </FrameLayout>
         </LinearLayout>
 
@@ -227,12 +152,12 @@
                 <TextView
                     android:id="@+id/wc_r2_d1"
                     android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="@dimen/widget_week_cal_day"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:maxLines="1"
+                    android:textSize="11sp" />
             </FrameLayout>
 
             <FrameLayout
@@ -243,12 +168,12 @@
                 <TextView
                     android:id="@+id/wc_r2_d2"
                     android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="@dimen/widget_week_cal_day"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:maxLines="1"
+                    android:textSize="11sp" />
             </FrameLayout>
 
             <FrameLayout
@@ -259,12 +184,12 @@
                 <TextView
                     android:id="@+id/wc_r2_d3"
                     android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="@dimen/widget_week_cal_day"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:maxLines="1"
+                    android:textSize="11sp" />
             </FrameLayout>
 
             <FrameLayout
@@ -275,12 +200,12 @@
                 <TextView
                     android:id="@+id/wc_r2_d4"
                     android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="@dimen/widget_week_cal_day"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:maxLines="1"
+                    android:textSize="11sp" />
             </FrameLayout>
 
             <FrameLayout
@@ -291,12 +216,12 @@
                 <TextView
                     android:id="@+id/wc_r2_d5"
                     android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="@dimen/widget_week_cal_day"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:maxLines="1"
+                    android:textSize="11sp" />
             </FrameLayout>
 
             <FrameLayout
@@ -307,12 +232,12 @@
                 <TextView
                     android:id="@+id/wc_r2_d6"
                     android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="@dimen/widget_week_cal_day"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:maxLines="1"
+                    android:textSize="11sp" />
             </FrameLayout>
 
             <FrameLayout
@@ -323,12 +248,12 @@
                 <TextView
                     android:id="@+id/wc_r2_d7"
                     android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="@dimen/widget_week_cal_day"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:maxLines="1"
+                    android:textSize="11sp" />
             </FrameLayout>
         </LinearLayout>
 
@@ -348,12 +273,12 @@
                 <TextView
                     android:id="@+id/wc_r3_d1"
                     android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="@dimen/widget_week_cal_day"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:maxLines="1"
+                    android:textSize="11sp" />
             </FrameLayout>
 
             <FrameLayout
@@ -364,12 +289,12 @@
                 <TextView
                     android:id="@+id/wc_r3_d2"
                     android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="@dimen/widget_week_cal_day"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:maxLines="1"
+                    android:textSize="11sp" />
             </FrameLayout>
 
             <FrameLayout
@@ -380,12 +305,12 @@
                 <TextView
                     android:id="@+id/wc_r3_d3"
                     android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="@dimen/widget_week_cal_day"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:maxLines="1"
+                    android:textSize="11sp" />
             </FrameLayout>
 
             <FrameLayout
@@ -396,12 +321,12 @@
                 <TextView
                     android:id="@+id/wc_r3_d4"
                     android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="@dimen/widget_week_cal_day"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:maxLines="1"
+                    android:textSize="11sp" />
             </FrameLayout>
 
             <FrameLayout
@@ -412,12 +337,12 @@
                 <TextView
                     android:id="@+id/wc_r3_d5"
                     android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="@dimen/widget_week_cal_day"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:maxLines="1"
+                    android:textSize="11sp" />
             </FrameLayout>
 
             <FrameLayout
@@ -428,12 +353,12 @@
                 <TextView
                     android:id="@+id/wc_r3_d6"
                     android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="@dimen/widget_week_cal_day"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:maxLines="1"
+                    android:textSize="11sp" />
             </FrameLayout>
 
             <FrameLayout
@@ -444,12 +369,12 @@
                 <TextView
                     android:id="@+id/wc_r3_d7"
                     android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="@dimen/widget_week_cal_day"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:maxLines="1"
+                    android:textSize="11sp" />
             </FrameLayout>
         </LinearLayout>
 
@@ -469,12 +394,12 @@
                 <TextView
                     android:id="@+id/wc_r4_d1"
                     android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="@dimen/widget_week_cal_day"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:maxLines="1"
+                    android:textSize="11sp" />
             </FrameLayout>
 
             <FrameLayout
@@ -485,12 +410,12 @@
                 <TextView
                     android:id="@+id/wc_r4_d2"
                     android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="@dimen/widget_week_cal_day"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:maxLines="1"
+                    android:textSize="11sp" />
             </FrameLayout>
 
             <FrameLayout
@@ -501,12 +426,12 @@
                 <TextView
                     android:id="@+id/wc_r4_d3"
                     android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="@dimen/widget_week_cal_day"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:maxLines="1"
+                    android:textSize="11sp" />
             </FrameLayout>
 
             <FrameLayout
@@ -517,12 +442,12 @@
                 <TextView
                     android:id="@+id/wc_r4_d4"
                     android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="@dimen/widget_week_cal_day"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:maxLines="1"
+                    android:textSize="11sp" />
             </FrameLayout>
 
             <FrameLayout
@@ -533,12 +458,12 @@
                 <TextView
                     android:id="@+id/wc_r4_d5"
                     android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="@dimen/widget_week_cal_day"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:maxLines="1"
+                    android:textSize="11sp" />
             </FrameLayout>
 
             <FrameLayout
@@ -549,12 +474,12 @@
                 <TextView
                     android:id="@+id/wc_r4_d6"
                     android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="@dimen/widget_week_cal_day"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:maxLines="1"
+                    android:textSize="11sp" />
             </FrameLayout>
 
             <FrameLayout
@@ -565,12 +490,12 @@
                 <TextView
                     android:id="@+id/wc_r4_d7"
                     android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="@dimen/widget_week_cal_day"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:maxLines="1"
+                    android:textSize="11sp" />
             </FrameLayout>
         </LinearLayout>
 
@@ -590,12 +515,12 @@
                 <TextView
                     android:id="@+id/wc_r5_d1"
                     android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="@dimen/widget_week_cal_day"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:maxLines="1"
+                    android:textSize="11sp" />
             </FrameLayout>
 
             <FrameLayout
@@ -606,12 +531,12 @@
                 <TextView
                     android:id="@+id/wc_r5_d2"
                     android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="@dimen/widget_week_cal_day"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:maxLines="1"
+                    android:textSize="11sp" />
             </FrameLayout>
 
             <FrameLayout
@@ -622,12 +547,12 @@
                 <TextView
                     android:id="@+id/wc_r5_d3"
                     android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="@dimen/widget_week_cal_day"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:maxLines="1"
+                    android:textSize="11sp" />
             </FrameLayout>
 
             <FrameLayout
@@ -638,12 +563,12 @@
                 <TextView
                     android:id="@+id/wc_r5_d4"
                     android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="@dimen/widget_week_cal_day"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:maxLines="1"
+                    android:textSize="11sp" />
             </FrameLayout>
 
             <FrameLayout
@@ -654,12 +579,12 @@
                 <TextView
                     android:id="@+id/wc_r5_d5"
                     android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="@dimen/widget_week_cal_day"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:maxLines="1"
+                    android:textSize="11sp" />
             </FrameLayout>
 
             <FrameLayout
@@ -670,12 +595,12 @@
                 <TextView
                     android:id="@+id/wc_r5_d6"
                     android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="@dimen/widget_week_cal_day"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:maxLines="1"
+                    android:textSize="11sp" />
             </FrameLayout>
 
             <FrameLayout
@@ -686,12 +611,12 @@
                 <TextView
                     android:id="@+id/wc_r5_d7"
                     android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="@dimen/widget_week_cal_day"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:maxLines="1"
+                    android:textSize="11sp" />
             </FrameLayout>
         </LinearLayout>
 
@@ -711,12 +636,12 @@
                 <TextView
                     android:id="@+id/wc_r6_d1"
                     android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="@dimen/widget_week_cal_day"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:maxLines="1"
+                    android:textSize="11sp" />
             </FrameLayout>
 
             <FrameLayout
@@ -727,12 +652,12 @@
                 <TextView
                     android:id="@+id/wc_r6_d2"
                     android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="@dimen/widget_week_cal_day"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:maxLines="1"
+                    android:textSize="11sp" />
             </FrameLayout>
 
             <FrameLayout
@@ -743,12 +668,12 @@
                 <TextView
                     android:id="@+id/wc_r6_d3"
                     android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="@dimen/widget_week_cal_day"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:maxLines="1"
+                    android:textSize="11sp" />
             </FrameLayout>
 
             <FrameLayout
@@ -759,12 +684,12 @@
                 <TextView
                     android:id="@+id/wc_r6_d4"
                     android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="@dimen/widget_week_cal_day"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:maxLines="1"
+                    android:textSize="11sp" />
             </FrameLayout>
 
             <FrameLayout
@@ -775,12 +700,12 @@
                 <TextView
                     android:id="@+id/wc_r6_d5"
                     android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="@dimen/widget_week_cal_day"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:maxLines="1"
+                    android:textSize="11sp" />
             </FrameLayout>
 
             <FrameLayout
@@ -791,12 +716,12 @@
                 <TextView
                     android:id="@+id/wc_r6_d6"
                     android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="@dimen/widget_week_cal_day"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:maxLines="1"
+                    android:textSize="11sp" />
             </FrameLayout>
 
             <FrameLayout
@@ -807,12 +732,12 @@
                 <TextView
                     android:id="@+id/wc_r6_d7"
                     android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="@dimen/widget_week_cal_day"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:maxLines="1"
+                    android:textSize="11sp" />
             </FrameLayout>
         </LinearLayout>
 </LinearLayout>

@@ -41,7 +41,6 @@ object WeekIds {
         ),
     )
 
-    val CAL_WEEKDAYS = listOf(R.id.wc_wd1, R.id.wc_wd2, R.id.wc_wd3, R.id.wc_wd4, R.id.wc_wd5, R.id.wc_wd6, R.id.wc_wd7)
     val CAL_ROWS = listOf(
         CalRow(R.id.wc_r1, listOf(R.id.wc_r1_d1, R.id.wc_r1_d2, R.id.wc_r1_d3, R.id.wc_r1_d4, R.id.wc_r1_d5, R.id.wc_r1_d6, R.id.wc_r1_d7)),
         CalRow(R.id.wc_r2, listOf(R.id.wc_r2_d1, R.id.wc_r2_d2, R.id.wc_r2_d3, R.id.wc_r2_d4, R.id.wc_r2_d5, R.id.wc_r2_d6, R.id.wc_r2_d7)),

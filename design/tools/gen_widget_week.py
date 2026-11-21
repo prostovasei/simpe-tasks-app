@@ -138,12 +138,12 @@ def calendar():
                 <TextView
                     android:id="@+id/wc_r{r}_d{d}"
                     android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="@dimen/widget_week_cal_day"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:maxLines="1"
+                    android:textSize="11sp" />
             </FrameLayout>
 ''' for d in range(1, 8))
         rows += f'''
@@ -156,19 +156,8 @@ def calendar():
             android:orientation="horizontal">
 {days}        </LinearLayout>
 '''
-    weekdays = ''.join(f'''
-            <TextView
-                android:id="@+id/wc_wd{d}"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:maxLines="1"
-                android:textColor="@color/widget_inactive"
-                android:textSize="9sp" />
-''' for d in range(1, 8))
     return f'''<?xml version="1.0" encoding="utf-8"?>
-<!-- Сгенерировано design/tools/gen_widget_week.py (итерация 45; 48 — даты 11): мини-календарь вида «Неделя» в виджете. Не править руками. -->
+<!-- Сгенерировано design/tools/gen_widget_week.py (#284 — светлая полоса): мини-календарь вида «Неделя» в виджете. Не править руками. -->
 <LinearLayout {NS}
     tools:ignore="DisableBaselineAlignment,TooManyViews,SmallSp"
     android:id="@+id/wc_root"
@@ -182,11 +171,6 @@ def calendar():
     android:paddingEnd="@dimen/widget_space_xxs"
     android:paddingBottom="@dimen/widget_space_xxs">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/widget_week_cal_weekdays"
-        android:orientation="horizontal">
-{weekdays}    </LinearLayout>
 {rows}</LinearLayout>
 '''
 
@@ -241,7 +225,6 @@ object WeekIds {{
 
 {cell_ids('wl', 'LEFT')}
 {cell_ids('wr', 'RIGHT')}
-    val CAL_WEEKDAYS = listOf({", ".join(f"R.id.wc_wd{d}" for d in range(1, 8))})
     val CAL_ROWS = listOf(
 {cal_rows},
     )
