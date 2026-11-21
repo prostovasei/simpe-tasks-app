@@ -7,13 +7,13 @@
             android:layout_height="wrap_content" android:textSize="17sp" android:textStyle="bold"
             android:textColor="@color/widget_flat_text_primary" />
         <ImageView android:id="@+id/widget_health_chart" android:layout_width="match_parent"
-            android:layout_height="wrap_content" android:adjustViewBounds="true" android:maxHeight="@dimen/widget_health_chart_max" android:scaleType="fitCenter" android:contentDescription="@null" />
+            android:layout_height="0dp" android:layout_weight="1" android:scaleType="fitCenter" android:contentDescription="@null" />
         <LinearLayout android:id="@+id/widget_health_dates" android:layout_width="match_parent"
             android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal">
             <TextView android:id="@+id/widget_health_from" android:layout_width="0dp" android:layout_weight="1"
-                android:layout_height="wrap_content" android:textSize="10sp" android:textColor="@color/widget_flat_text_secondary" />
+                android:layout_height="wrap_content" android:textSize="@dimen/widget_health_date_text" android:textColor="@color/widget_flat_text_secondary" />
             <TextView android:id="@+id/widget_health_to" android:layout_width="wrap_content"
-                android:layout_height="wrap_content" android:textSize="10sp" android:textColor="@color/widget_flat_text_secondary" />
+                android:layout_height="wrap_content" android:textSize="@dimen/widget_health_date_text" android:textColor="@color/widget_flat_text_secondary" />
         </LinearLayout>
     </LinearLayout>
     <FrameLayout android:id="@+id/widget_health_bar" android:layout_width="match_parent" android:layout_height="@dimen/widget_bar" />
