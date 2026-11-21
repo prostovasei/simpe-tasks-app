@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -42,6 +43,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected as semanticsSelected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 
@@ -108,22 +111,38 @@ fun AppBottomBar(
                 ) { Icon(Icons.Default.Add, contentDescription = null, tint = colors.onAccent) }
             }
             if (!showAdd) Box(Modifier.size(width = sizes.navAddWidth, height = sizes.appBar))
-            Row(Modifier.weight(1f), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-                pages.forEach { page ->
-                    val active = page.key == selected
-                    val label = stringResource(page.label)
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier
-                            .then(if (inlineModules) Modifier.weight(1f).height(sizes.appBar) else Modifier.size(width = sizes.appBarPageWidth, height = sizes.appBar))
-                            .clip(AppTheme.shapes.large)
-                            .combinedClickable(role = Role.Tab, onClick = { onSelect(page.key) }, onLongClick = if (!inlineModules || longClickPage == page.key) ({ onPageLongClick(page.key) }) else null)
-                            .semantics { contentDescription = label; semanticsSelected = active }
-                            .testTag(page.tag),
-                    ) { Icon(painterResource(page.icon), contentDescription = null, tint = if (active) colors.accent else colors.inactive, modifier = Modifier.size(sizes.icon)) }
+            Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                val tabsWidth = if (inlineModules) Modifier.widthIn(max = (SizeTokens.APP_MODULE_TAB_W * pages.size).dp).fillMaxWidth() else Modifier.fillMaxWidth()
+                Row(tabsWidth, horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                    pages.forEach { page ->
+                        val active = page.key == selected
+                        val label = stringResource(page.label)
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .then(if (inlineModules) Modifier.weight(1f).height(sizes.appBar) else Modifier.size(width = sizes.appBarPageWidth, height = sizes.appBar))
+                                .clip(AppTheme.shapes.large)
+                                .combinedClickable(role = Role.Tab, onClick = { onSelect(page.key) }, onLongClick = if (!inlineModules || longClickPage == page.key) ({ onPageLongClick(page.key) }) else null)
+                                .semantics { contentDescription = label; semanticsSelected = active }
+                                .testTag(page.tag),
+                        ) { Icon(painterResource(page.icon), contentDescription = null, tint = if (active) colors.accent else colors.inactive, modifier = Modifier.size(sizes.icon)) }
+                    }
                 }
             }
-            if (!inlineModules) {
+            if (inlineModules) {
+                Box(Modifier.size(width = sizes.navAddWidth, height = sizes.appBar), contentAlignment = Alignment.CenterEnd) {
+                    Box(
+                        modifier = Modifier.size(width = SizeTokens.APP_MODULE_TAB_W.dp, height = sizes.appBar)
+                            .clip(AppTheme.shapes.large)
+                            .clickable(role = Role.Button, onClick = onSettings)
+                            .testTag(TAG_MODULE_SETTINGS),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(painterResource(R.drawable.ic_nav_settings), stringResource(R.string.tab_settings),
+                            tint = colors.accent, modifier = Modifier.size(sizes.icon))
+                    }
+                }
+            } else {
             val moduleLabel = stringResource(R.string.bar_module, stringResource(module.label))
             Box {
                 Box(

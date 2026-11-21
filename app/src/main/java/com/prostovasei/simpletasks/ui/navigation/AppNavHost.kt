@@ -257,7 +257,6 @@ fun AppNavHost(
 
     // Финансы (#217, этап 1 — #221): отдельный модуль. Нижняя панель общая (#241): модуль меняется кнопкой справа;
     // при возврате в модуль открывается то же место (сохранённое состояние страницы).
-    val inSettings = destination?.hasRoute(AppSettingsDestination::class) == true
     val inFinance = destination?.hasRoute(FinanceDestination::class) == true
     // «Здоровье» (#257) — отдельный модуль со своей панелью; экран белый плоский, как «Неделя» (макеты design/approved/257).
     val inHealth = destination?.hasRoute(HealthDestination::class) == true
@@ -361,12 +360,11 @@ fun AppNavHost(
         containerColor = if (taskCanvas) Color(TaskCanvasTokens.background.light) else AppTheme.colors.background,
         snackbarHost = { UndoSnackbarHost(snackbar) },
         bottomBar = {
-            if (inFinance || inHealth || inSettings || (!selectionMode.value && (destination == null || currentTab != null))) {
+            if (inFinance || inHealth || (!selectionMode.value && (destination == null || currentTab != null))) {
                 val task = currentTab ?: Tab.valueOf(lastTaskTab)
                 val active = when {
                     inFinance -> "finance"
                     inHealth -> "health"
-                    inSettings -> "settings"
                     else -> "tasks"
                 }
                 val pick: (Tab) -> Unit = { tab ->
@@ -383,7 +381,6 @@ fun AppNavHost(
                     BarPage("tasks", task.icon, task.label, "tab:${task.name}"),
                     BarPage("finance", R.drawable.ic_module_finance, R.string.module_finance, "module:FINANCE"),
                     BarPage("health", R.drawable.ic_module_health, R.string.module_health, "module:HEALTH"),
-                    BarPage("settings", R.drawable.ic_nav_settings, R.string.tab_settings, TAG_MODULE_SETTINGS),
                 )
                 TaskCanvasTheme(enabled = inFinance || inHealth || active == "tasks" && task != Tab.LISTS) {
                     androidx.compose.foundation.layout.Box {
@@ -394,7 +391,6 @@ fun AppNavHost(
                                 key == active -> Unit
                                 key == "finance" -> navController.openRoot(FinanceDestination, restore = true)
                                 key == "health" -> navController.openRoot(HealthDestination, restore = true)
-                                key == "settings" -> navController.navigate(AppSettingsDestination) { launchSingleTop = true }
                             }
                         }, onAdd = {
                             when (active) {
@@ -410,8 +406,9 @@ fun AppNavHost(
                             "finance" -> R.string.finance_add
                             "health" -> R.string.health_add
                             else -> R.string.add_task
-                        }, module = AppModule.TASKS, onModule = {}, onSettings = {},
-                            inlineModules = true, showAdd = !inSettings,
+                        }, module = AppModule.TASKS, onModule = {},
+                            onSettings = { navController.navigate(AppSettingsDestination) { launchSingleTop = true } },
+                            inlineModules = true,
                             longClickPage = "tasks".takeIf { active == "tasks" && task == Tab.WEEK },
                             onPageLongClick = { weekFilterOpen = true })
                         if (active == "tasks" && taskPickerOpen) {

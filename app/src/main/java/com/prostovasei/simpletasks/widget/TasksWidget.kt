@@ -54,7 +54,6 @@ import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
 import com.prostovasei.simpletasks.designsystem.tokens.SpacingTokens
 import com.prostovasei.simpletasks.domain.model.Priority
 import com.prostovasei.simpletasks.domain.model.ReminderMark
-import com.prostovasei.simpletasks.ui.feature.finance.financeMonthLabel
 import com.prostovasei.simpletasks.ui.common.DONE_ALPHA
 import com.prostovasei.simpletasks.ui.common.DayNames
 import com.prostovasei.simpletasks.ui.common.ReminderIconMasks
@@ -510,8 +509,12 @@ fun widgetCheckColors(priority: Priority): WidgetCheckColors = when (priority) {
 internal fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boolean, module: WidgetModule = WidgetModule.TASKS) {
     val context = LocalContext.current
     val openApp = context.getString(R.string.widget_open_app)
-    val compact = LocalSize.current.width < SizeTokens.WIDGET_MODULE_BAR_THRESHOLD.dp
-    val side = if (compact) SizeTokens.WIDGET_MODULE_COMPACT_CELL else SizeTokens.WIDGET_TAB_CELL
+    val dateWidth = (SizeTokens.WIDGET_MODULE_DATE_W * context.resources.configuration.fontScale.coerceAtLeast(1f)).roundToInt()
+    val dateAndUpdate = dateWidth + SizeTokens.WIDGET_TAB_CELL
+    val tabsWidth = 3 * SizeTokens.WIDGET_MODULE_COMPACT_CELL
+    val fullBarWidth = 2 * (dateAndUpdate + SizeTokens.WIDGET_EDGE) + tabsWidth
+    val compact = LocalSize.current.width < maxOf(SizeTokens.WIDGET_MODULE_BAR_THRESHOLD, fullBarWidth).dp
+    val side = if (compact) SizeTokens.WIDGET_MODULE_COMPACT_ADD else SizeTokens.WIDGET_ADD_W
     val finance = module == WidgetModule.FINANCE
     Row(
         modifier = GlanceModifier
@@ -519,8 +522,8 @@ internal fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boole
             .height(SizeTokens.WIDGET_BAR.dp)
             .background(LocalWidgetColors.current.background)
             .padding(horizontal = SizeTokens.WIDGET_EDGE.dp)
-            .clickable(actionStartActivity(openAppIntent(context)))
-            .semantics { contentDescription = openApp },
+            .then(if (compact) GlanceModifier.clickable(actionStartActivity(openAppIntent(context)))
+                .semantics { contentDescription = openApp } else GlanceModifier),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
@@ -545,9 +548,15 @@ internal fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boole
                 modifier = GlanceModifier.size(SizeTokens.WIDGET_ADD_ICON.dp),
             )
         }
-        if (!compact) Spacer(GlanceModifier.width(side.dp))
+        if (!compact) {
+            Box(GlanceModifier.width((dateAndUpdate - side).dp).height(SizeTokens.WIDGET_ADD_H.dp)
+                .clickable(actionStartActivity(openAppIntent(context)))
+                .semantics { contentDescription = openApp }) {}
+            Spacer(GlanceModifier.defaultWeight())
+        }
         Row(
-            modifier = GlanceModifier.defaultWeight().height(SizeTokens.WIDGET_ADD_H.dp),
+            modifier = (if (compact) GlanceModifier.defaultWeight()
+                else GlanceModifier.width(tabsWidth.dp)).height(SizeTokens.WIDGET_ADD_H.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             val taskIcon = when (model.filter) {
@@ -570,31 +579,14 @@ internal fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boole
                 actionSendBroadcast(WidgetActions.module(context, appWidgetId, WidgetModule.HEALTH)))
         }
         if (compact) return@Row
-        Box(GlanceModifier.width(side.dp), contentAlignment = Alignment.Center) {
-            Row {
-                BarIcon(R.drawable.ic_widget_update, context.getString(R.string.update_title), LocalWidgetColors.current.accent,
-                    actionStartActivity(Intent(context, com.prostovasei.simpletasks.UpdateActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)))
-            }
-        }
-        if (module == WidgetModule.HEALTH) {
-            Spacer(GlanceModifier.width(side.dp))
-            return@Row
-        }
-        // Итерация 51 → 57: сегодняшняя дата — плитка шириной с «+»; нажатие возвращает к сегодня (неделя, «Сегодня» в ленте, начало «Входящих»).
-        if (finance) {
-            Box(GlanceModifier.width(side.dp), contentAlignment = Alignment.Center) {
-                Text(financeMonthLabel(java.time.YearMonth.from(model.today)),
-                    style = TextStyle(color = LocalWidgetColors.current.textSecondary, fontSize = 11.sp))
-            }
-            return@Row
-        }
+        Spacer(GlanceModifier.defaultWeight())
         val (day, weekday, month) = WidgetDates.tile(model.today)
-        val description = context.getString(R.string.widget_today_date, WidgetDates.bar(model.today, withWeekday = true))
+        val todayText = WidgetDates.bar(model.today, withWeekday = true)
+        val description = if (module == WidgetModule.TASKS) context.getString(R.string.widget_today_date, todayText) else todayText
         Row(
             modifier = GlanceModifier
-                .size(width = side.dp, height = SizeTokens.WIDGET_ADD_H.dp)
-                .button(R.drawable.widget_task_bar_tile, LocalWidgetColors.current.surface, RadiusTokens.LG, imageButtons)
-                .clickable(actionSendBroadcast(WidgetActions.today(context, appWidgetId)))
+                .size(width = dateWidth.dp, height = SizeTokens.WIDGET_ADD_H.dp)
+                .then(if (module == WidgetModule.TASKS) GlanceModifier.clickable(actionSendBroadcast(WidgetActions.today(context, appWidgetId))) else GlanceModifier)
                 .semantics { contentDescription = description },
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalAlignment = Alignment.CenterVertically,
@@ -605,6 +597,10 @@ internal fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boole
                 Text(weekday, style = TextStyle(color = LocalWidgetColors.current.textPrimary, fontSize = SizeTokens.WIDGET_DATE_SMALL_SP.sp, fontWeight = FontWeight.Bold), maxLines = 1)
                 Text(month, style = TextStyle(color = LocalWidgetColors.current.textSecondary, fontSize = SizeTokens.WIDGET_DATE_SMALL_SP.sp, fontWeight = FontWeight.Medium), maxLines = 1)
             }
+        }
+        Row(GlanceModifier.width(SizeTokens.WIDGET_TAB_CELL.dp)) {
+            BarIcon(R.drawable.ic_widget_update, context.getString(R.string.update_title), LocalWidgetColors.current.accent,
+                actionStartActivity(Intent(context, com.prostovasei.simpletasks.UpdateActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)))
         }
     }
 }

@@ -108,7 +108,7 @@ class AppSmokeTest {
         // Единые настройки (#241): меню кнопки модуля → «Настройки» → «Задачи» → «Импорт из TickTick»; «Назад» — на главную страницу настроек.
         composeRule.onNodeWithTag(TAG_MODULE_SETTINGS).performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists(TAG_APP_SETTINGS) }
-        composeRule.onNodeWithTag("tab:LISTS").assertExists()
+        composeRule.onNodeWithTag(TAG_APP_BAR).assertDoesNotExist()
         composeRule.onNodeWithTag(TAG_SETTINGS_TASKS).performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Импорт из TickTick") }
         composeRule.onNodeWithText("Обновление").assertDoesNotExist()
@@ -216,7 +216,7 @@ class AppSmokeTest {
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists(TAG_LISTS_SCROLL) }
         composeRule.onNodeWithTag(TAG_MODULE_SETTINGS).performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists(TAG_APP_SETTINGS) }
-        composeRule.onNodeWithTag(TAG_APP_BAR).assertExists()
+        composeRule.onNodeWithTag(TAG_APP_BAR).assertDoesNotExist()
     }
 
     /** Здоровье (#257): третий модуль — первая запись веса, вторая заменяет на ту же дату, настройки, возврат в задачи. */
@@ -265,7 +265,7 @@ class AppSmokeTest {
     }
 
     @Test
-    fun tappingAnotherTabFromSettingsOpensThatModule() {
+    fun settingsHidesBarAndBackReturnsToTheSameModule() {
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Всё сделано") }
         val tabs = listOf(
             "TASKS" to TAG_ADD_TASK,
@@ -274,9 +274,12 @@ class AppSmokeTest {
             "TASKS" to TAG_ADD_TASK,
         )
         for ((module, screen) in tabs) {
+            if (module != "TASKS" || !composeRule.onAllNodesWithTagExists(screen)) switchModule(module)
+            composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists(screen) }
             composeRule.onNodeWithTag(TAG_MODULE_SETTINGS).performClick()
             composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists(TAG_APP_SETTINGS) }
-            switchModule(module)
+            composeRule.onNodeWithTag(TAG_APP_BAR).assertDoesNotExist()
+            composeRule.onNodeWithContentDescription("Назад").performClick()
             composeRule.waitUntil(5_000) {
                 composeRule.onAllNodesWithTagExists(screen) && !composeRule.onAllNodesWithTagExists(TAG_APP_SETTINGS)
             }
