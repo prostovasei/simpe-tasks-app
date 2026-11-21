@@ -4,7 +4,7 @@
 
 ## Завершённая база
 
-0.79.3, [PR #279](https://github.com/prostovasei/simpe-tasks-app/pull/279), merge cf7a3e84af2096c43bcef67b111537ff7051c8b5, [APK build-406](https://github.com/prostovasei/simple-tasks-releases/releases/tag/build-406). CI PR/main зелёный. Пакет, версия, подпись и SHA-256 сверены. Итоги в закрытой [#278](https://github.com/prostovasei/simpe-tasks-app/issues/278). Телефонные проверки положения вкладок и обновления цели в 0.79.3 ждут результата. MV275-2 подтверждён частично по снимкам высокого виджета в 0.79.2. MV275-1, MV273-1–5 и предыдущие телефонные проверки ждут результата PM. #247 открыт. При повторении AppSmokeTest.walkThroughTabsAndCreateList на пустых «Входящих» исправить ожидание загрузки.
+0.79.4, [PR #281](https://github.com/prostovasei/simpe-tasks-app/pull/281), merge 50e5c4c51f3e5566f760b6ef081f1bef10de83f7, [APK build-411](https://github.com/prostovasei/simple-tasks-releases/releases/tag/build-411). CI PR/main зелёный. Пакет, версия, подпись и SHA-256 сверены. Итоги в закрытой [#280](https://github.com/prostovasei/simpe-tasks-app/issues/280). На телефоне PM отметил разную видимую высоту значков и проблему с зонами открытия приложения. Продолжение в #282. BT280-1–3 и предыдущие проверки ждут полного результата PM. #247 открыт. При повторении AppSmokeTest.walkThroughTabsAndCreateList на пустых «Входящих» исправить ожидание загрузки, а не просто перезапускать.
 
 ## #255 — 0.70.3, PR #256
 
@@ -92,3 +92,7 @@ Codex, ветка `codex/widget-centered-tabs-health-goal` от `main` 2de98ce. 
 ## #280 — компактные вкладки, дата виджета и полноэкранные настройки
 
 Codex, ветка `codex/compact-tabs-widget-date-settings` от `main` cf7a3e8. [Issue #280](https://github.com/prostovasei/simpe-tasks-app/issues/280) · [ТЗ](../design/approved/280/requirements.md). PM подтвердил компактный ряд с широким «+» и тремя вкладками. На широком виджете дата во всех модулях, обновление крайнее справа. Нажатие по дате ведёт к сегодня в «Задачах». В приложении три вкладки по центру и отдельная кнопка «Настройки» справа. Нижняя панель скрывается на экранах настроек. [Согласованные макеты](../design/approved/280/README.md). Реализовано в 0.79.4. Локально прошли `assembleDebug check recordRoborazziDebug`, 871 тест, 0 ошибок, 3 пропуска. CI и проверка APK фиксируются в Issue. BT280-1–3 ждут результата PM.
+
+## #282 — согласованность значков и зоны открытия приложения
+
+Codex, ветка `codex/widget-bar-consistency` от `main` 50e5c4c. [Issue #282](https://github.com/prostovasei/simpe-tasks-app/issues/282) · [Диагностика и варианты](../design/drafts/widget-bar-consistency/README.md). На широком виджете оба свободных промежутка должны открывать приложение. Ориентир по видимой высоте значков — 16 dp, независимо от зоны нажатия. PM выбрал вариант 1 «Сплошная панель» 21.11.2026. [Утверждённый макет и ТЗ](../design/approved/282/requirements.md). PM дал команду «Делай код». Реализация 0.79.5, локально прошли `assembleDebug check recordRoborazziDebug`, 872 теста, 0 ошибок, 3 пропуска.

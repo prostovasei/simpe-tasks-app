@@ -148,9 +148,8 @@ class WidgetWeekTest {
     fun barShowsTodayDate() {
         listOf(400, 320).forEach { width ->
             val root = renderWidget(context, rich, DpSize(width.dp, 700.dp)).applyLikeLauncher(context)
-            assertTrue(root.visibleTexts().containsAll(listOf("30", "ПТ", "окт")))
             val found = ArrayList<View>()
-            root.findViewsWithText(found, "Сегодня, пт, 30 окт", View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
+            root.findViewsWithText(found, context.getString(R.string.widget_today_date, "пт, 30 окт"), View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
             assertEquals(1, found.size)
             assertTrue("дата нажимается", generateSequence(found.single()) { it.parent as? View }.take(3).any { it.hasOnClickListeners() })
         }

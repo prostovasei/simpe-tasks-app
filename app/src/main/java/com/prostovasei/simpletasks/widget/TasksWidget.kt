@@ -6,6 +6,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.widget.RemoteViews
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
@@ -509,60 +510,67 @@ fun widgetCheckColors(priority: Priority): WidgetCheckColors = when (priority) {
 internal fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boolean, module: WidgetModule = WidgetModule.TASKS) {
     val context = LocalContext.current
     val openApp = context.getString(R.string.widget_open_app)
-    val dateWidth = (SizeTokens.WIDGET_MODULE_DATE_W * context.resources.configuration.fontScale.coerceAtLeast(1f)).roundToInt()
+    val fontScale = context.resources.configuration.fontScale.coerceAtLeast(1f)
+    val dateWidth = (SizeTokens.WIDGET_MODULE_DATE_W * fontScale).roundToInt()
     val dateAndUpdate = dateWidth + SizeTokens.WIDGET_TAB_CELL
-    val tabsWidth = 3 * SizeTokens.WIDGET_MODULE_COMPACT_CELL
-    val fullBarWidth = 2 * (dateAndUpdate + SizeTokens.WIDGET_EDGE) + tabsWidth
+    val tabsWidth = 3 * SizeTokens.WIDGET_TAB_CELL
+    val fullBarWidth = 2 * (dateAndUpdate + SizeTokens.WIDGET_EDGE + SizeTokens.WIDGET_OPEN_GAP_MIN) + tabsWidth
     val compact = LocalSize.current.width < maxOf(SizeTokens.WIDGET_MODULE_BAR_THRESHOLD, fullBarWidth).dp
     val side = if (compact) SizeTokens.WIDGET_MODULE_COMPACT_ADD else SizeTokens.WIDGET_ADD_W
+    val compactTabsWidth = 3 * SizeTokens.WIDGET_MODULE_COMPACT_CELL
+    val hasCompactGap = LocalSize.current.width > (side + compactTabsWidth + 2 * SizeTokens.WIDGET_EDGE).dp
     val finance = module == WidgetModule.FINANCE
     Row(
         modifier = GlanceModifier
             .fillMaxWidth()
             .height(SizeTokens.WIDGET_BAR.dp)
             .background(LocalWidgetColors.current.background)
-            .padding(horizontal = SizeTokens.WIDGET_EDGE.dp)
-            .then(if (compact) GlanceModifier.clickable(actionStartActivity(openAppIntent(context)))
-                .semantics { contentDescription = openApp } else GlanceModifier),
+            .padding(horizontal = SizeTokens.WIDGET_EDGE.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(
-            modifier = GlanceModifier
-                .size(width = side.dp, height = SizeTokens.WIDGET_ADD_H.dp)
-                .button(R.drawable.widget_task_bar_add, LocalWidgetColors.current.accent, RadiusTokens.LG, imageButtons)
-                .clickable(actionStartActivity(when (module) {
-                    WidgetModule.FINANCE -> widgetPopupIntent(context, appWidgetId, true)
-                    WidgetModule.HEALTH -> widgetPopupIntent(context, appWidgetId, false, health = true)
-                    WidgetModule.TASKS -> quickAddIntent(context, model.filter)
-                })),
-            contentAlignment = Alignment.Center,
+        Row(
+            modifier = (if (!compact || hasCompactGap) GlanceModifier.defaultWeight() else GlanceModifier.width(side.dp))
+                .height(SizeTokens.WIDGET_BAR.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Image(
-                ImageProvider(R.drawable.ic_widget_add),
-                contentDescription = context.getString(when (module) {
-                    WidgetModule.FINANCE -> R.string.finance_add
-                    WidgetModule.HEALTH -> R.string.health_add
-                    WidgetModule.TASKS -> R.string.add_task
-                }),
-                colorFilter = ColorFilter.tint(LocalWidgetColors.current.onAccent),
-                modifier = GlanceModifier.size(SizeTokens.WIDGET_ADD_ICON.dp),
-            )
-        }
-        if (!compact) {
-            Box(GlanceModifier.width((dateAndUpdate - side).dp).height(SizeTokens.WIDGET_ADD_H.dp)
-                .clickable(actionStartActivity(openAppIntent(context)))
-                .semantics { contentDescription = openApp }) {}
-            Spacer(GlanceModifier.defaultWeight())
+            Box(
+                modifier = GlanceModifier
+                    .size(width = side.dp, height = SizeTokens.WIDGET_BAR.dp)
+                    .semantics { contentDescription = context.getString(when (module) {
+                        WidgetModule.FINANCE -> R.string.finance_add
+                        WidgetModule.HEALTH -> R.string.health_add
+                        WidgetModule.TASKS -> R.string.add_task
+                    }) }
+                    .clickable(actionStartActivity(when (module) {
+                        WidgetModule.FINANCE -> widgetPopupIntent(context, appWidgetId, true)
+                        WidgetModule.HEALTH -> widgetPopupIntent(context, appWidgetId, false, health = true)
+                        WidgetModule.TASKS -> quickAddIntent(context, model.filter)
+                    })),
+                contentAlignment = Alignment.Center,
+            ) {
+                Box(
+                    GlanceModifier.size(width = side.dp, height = SizeTokens.WIDGET_ADD_H.dp)
+                        .button(R.drawable.widget_task_bar_add, LocalWidgetColors.current.accent, RadiusTokens.LG, imageButtons),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Image(
+                        ImageProvider(R.drawable.ic_widget_bar_add),
+                        contentDescription = null,
+                        colorFilter = ColorFilter.tint(LocalWidgetColors.current.onAccent),
+                        modifier = GlanceModifier.size(SizeTokens.WIDGET_TAB_ICON.dp),
+                    )
+                }
+            }
+            if (!compact || hasCompactGap) WidgetOpenGap(openApp)
         }
         Row(
-            modifier = (if (compact) GlanceModifier.defaultWeight()
-                else GlanceModifier.width(tabsWidth.dp)).height(SizeTokens.WIDGET_ADD_H.dp),
+            modifier = GlanceModifier.width((if (compact) compactTabsWidth else tabsWidth).dp).height(SizeTokens.WIDGET_BAR.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             val taskIcon = when (model.filter) {
-                WidgetFilter.Week -> R.drawable.ic_tab_week
-                WidgetFilter.Inbox -> R.drawable.ic_widget_inbox
-                else -> R.drawable.ic_widget_all
+                WidgetFilter.Week -> R.drawable.ic_widget_bar_week
+                WidgetFilter.Inbox -> R.drawable.ic_widget_bar_inbox
+                else -> R.drawable.ic_widget_bar_all
             }
             val taskLabel = when (model.filter) {
                 WidgetFilter.Week -> R.string.tab_week
@@ -573,36 +581,44 @@ internal fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boole
             SwitchTab(taskIcon, "${context.getString(R.string.module_tasks)} · ${context.getString(taskLabel)}", tasksActive,
                 if (tasksActive) actionStartActivity(widgetPopupIntent(context, appWidgetId, false))
                 else actionSendBroadcast(WidgetActions.module(context, appWidgetId, WidgetModule.TASKS)))
-            SwitchTab(R.drawable.ic_module_finance, context.getString(R.string.module_finance), finance,
+            SwitchTab(R.drawable.ic_widget_bar_finance, context.getString(R.string.module_finance), finance,
                 actionSendBroadcast(WidgetActions.module(context, appWidgetId, WidgetModule.FINANCE)))
-            SwitchTab(R.drawable.ic_module_health, context.getString(R.string.module_health), module == WidgetModule.HEALTH,
+            SwitchTab(R.drawable.ic_widget_bar_health, context.getString(R.string.module_health), module == WidgetModule.HEALTH,
                 actionSendBroadcast(WidgetActions.module(context, appWidgetId, WidgetModule.HEALTH)))
         }
         if (compact) return@Row
-        Spacer(GlanceModifier.defaultWeight())
-        val (day, weekday, month) = WidgetDates.tile(model.today)
-        val todayText = WidgetDates.bar(model.today, withWeekday = true)
-        val description = if (module == WidgetModule.TASKS) context.getString(R.string.widget_today_date, todayText) else todayText
-        Row(
-            modifier = GlanceModifier
-                .size(width = dateWidth.dp, height = SizeTokens.WIDGET_ADD_H.dp)
-                .then(if (module == WidgetModule.TASKS) GlanceModifier.clickable(actionSendBroadcast(WidgetActions.today(context, appWidgetId))) else GlanceModifier)
-                .semantics { contentDescription = description },
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(day, style = TextStyle(color = LocalWidgetColors.current.textPrimary, fontSize = SizeTokens.WIDGET_DATE_DAY_SP.sp, fontWeight = FontWeight.Bold), maxLines = 1)
-            Spacer(GlanceModifier.width(SizeTokens.WIDGET_DATE_GAP.dp))
-            Column {
-                Text(weekday, style = TextStyle(color = LocalWidgetColors.current.textPrimary, fontSize = SizeTokens.WIDGET_DATE_SMALL_SP.sp, fontWeight = FontWeight.Bold), maxLines = 1)
-                Text(month, style = TextStyle(color = LocalWidgetColors.current.textSecondary, fontSize = SizeTokens.WIDGET_DATE_SMALL_SP.sp, fontWeight = FontWeight.Medium), maxLines = 1)
+        Row(GlanceModifier.defaultWeight().height(SizeTokens.WIDGET_BAR.dp), verticalAlignment = Alignment.CenterVertically) {
+            WidgetOpenGap(openApp)
+            val todayText = WidgetDates.bar(model.today, withWeekday = true)
+            val description = if (module == WidgetModule.TASKS) context.getString(R.string.widget_today_date, todayText) else todayText
+            val colors = LocalWidgetColors.current
+            Box(
+                modifier = GlanceModifier.size(width = dateWidth.dp, height = SizeTokens.WIDGET_BAR.dp)
+                    .then(if (module == WidgetModule.TASKS) GlanceModifier.clickable(actionSendBroadcast(WidgetActions.today(context, appWidgetId))) else GlanceModifier),
+                contentAlignment = Alignment.Center,
+            ) {
+                val dateImage = widgetBarDate(model.today, dateWidth, fontScale,
+                    colors.textPrimary.getColor(context).toArgb(), colors.textSecondary.getColor(context).toArgb())
+                Image(
+                    provider = ImageProvider(dateImage),
+                    contentDescription = description,
+                    modifier = GlanceModifier.size(width = dateWidth.dp, height = (dateImage.height / 2f).dp),
+                )
+            }
+            Row(GlanceModifier.width(SizeTokens.WIDGET_TAB_CELL.dp)) {
+                BarIcon(R.drawable.ic_widget_bar_update, context.getString(R.string.update_title), colors.accent,
+                    actionStartActivity(Intent(context, com.prostovasei.simpletasks.UpdateActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)))
             }
         }
-        Row(GlanceModifier.width(SizeTokens.WIDGET_TAB_CELL.dp)) {
-            BarIcon(R.drawable.ic_widget_update, context.getString(R.string.update_title), LocalWidgetColors.current.accent,
-                actionStartActivity(Intent(context, com.prostovasei.simpletasks.UpdateActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)))
-        }
     }
+}
+
+@Composable
+private fun RowScope.WidgetOpenGap(label: String) {
+    val context = LocalContext.current
+    Box(GlanceModifier.defaultWeight().fillMaxHeight()
+        .clickable(actionStartActivity(openAppIntent(context)))
+        .semantics { contentDescription = label }) {}
 }
 
 /**
@@ -624,7 +640,7 @@ private fun RowScope.SwitchTab(icon: Int, label: String, selected: Boolean, acti
 private fun RowScope.BarIcon(icon: Int, description: String, color: ColorProvider, action: Action) {
     Box(
         modifier = GlanceModifier.defaultWeight()
-            .height(SizeTokens.WIDGET_ADD_H.dp)
+            .height(SizeTokens.WIDGET_BAR.dp)
             .clickable(action),
         contentAlignment = Alignment.Center,
     ) {
