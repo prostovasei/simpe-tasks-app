@@ -516,9 +516,16 @@ internal fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boole
     val tabsWidth = WidgetModule.entries.size * SizeTokens.WIDGET_TAB_CELL
     val fullBarWidth = 2 * (dateAndUpdate + SizeTokens.WIDGET_EDGE + SizeTokens.WIDGET_OPEN_GAP_MIN) + tabsWidth
     val compact = LocalSize.current.width < maxOf(SizeTokens.WIDGET_MODULE_BAR_THRESHOLD, fullBarWidth).dp
-    val side = if (compact) SizeTokens.WIDGET_MODULE_COMPACT_ADD else SizeTokens.WIDGET_ADD_W
     val compactTabsWidth = WidgetModule.entries.size * SizeTokens.WIDGET_MODULE_COMPACT_CELL
-    val hasCompactGap = LocalSize.current.width > (side + compactTabsWidth + 2 * SizeTokens.WIDGET_EDGE).dp
+    val baseSide = if (compact) SizeTokens.WIDGET_MODULE_COMPACT_ADD else SizeTokens.WIDGET_ADD_W
+    // #95: микрофон рядом с «+» только на вкладке «Задачи». Широкая панель — «+» сужается (М1); компактная — микрофон,
+    // только если он помещается рядом с «+» и вкладками, иначе панель прежняя (К2).
+    val voiceWidth = SizeTokens.WIDGET_VOICE_GAP + SizeTokens.WIDGET_VOICE_W
+    val voice = module == WidgetModule.TASKS &&
+        (!compact || LocalSize.current.width >= (baseSide + voiceWidth + compactTabsWidth + 2 * SizeTokens.WIDGET_EDGE).dp)
+    val side = if (voice && !compact) SizeTokens.WIDGET_VOICE_ADD_W else baseSide
+    val left = side + if (voice) voiceWidth else 0
+    val hasCompactGap = LocalSize.current.width > (left + compactTabsWidth + 2 * SizeTokens.WIDGET_EDGE).dp
     val finance = module == WidgetModule.FINANCE
     Row(
         modifier = GlanceModifier
@@ -529,7 +536,7 @@ internal fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boole
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(
-            modifier = (if (!compact || hasCompactGap) GlanceModifier.defaultWeight() else GlanceModifier.width(side.dp))
+            modifier = (if (!compact || hasCompactGap) GlanceModifier.defaultWeight() else GlanceModifier.width(left.dp))
                 .height(SizeTokens.WIDGET_BAR.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -560,6 +567,29 @@ internal fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boole
                         colorFilter = ColorFilter.tint(LocalWidgetColors.current.onAccent),
                         modifier = GlanceModifier.size(SizeTokens.WIDGET_TAB_ICON.dp),
                     )
+                }
+            }
+            if (voice) {
+                Spacer(GlanceModifier.width(SizeTokens.WIDGET_VOICE_GAP.dp))
+                Box(
+                    modifier = GlanceModifier
+                        .size(width = SizeTokens.WIDGET_VOICE_W.dp, height = SizeTokens.WIDGET_BAR.dp)
+                        .semantics { contentDescription = context.getString(R.string.widget_voice) }
+                        .clickable(actionStartActivity(voiceIntent(context, model.filter))),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Box(
+                        GlanceModifier.size(width = SizeTokens.WIDGET_VOICE_W.dp, height = SizeTokens.WIDGET_ADD_H.dp)
+                            .button(R.drawable.widget_task_bar_add, LocalWidgetColors.current.accent, RadiusTokens.LG, imageButtons),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Image(
+                            ImageProvider(R.drawable.ic_widget_bar_mic),
+                            contentDescription = null,
+                            colorFilter = ColorFilter.tint(LocalWidgetColors.current.onAccent),
+                            modifier = GlanceModifier.size(SizeTokens.WIDGET_TAB_ICON.dp),
+                        )
+                    }
                 }
             }
             if (!compact || hasCompactGap) WidgetOpenGap(openApp)
@@ -684,6 +714,13 @@ fun openDayIntent(context: Context, date: String): Intent = Intent(context, Task
 fun quickAddIntent(context: Context, filter: WidgetFilter): Intent = Intent(context, TaskPopupActivity::class.java)
     .setData("simpletasks://add/${filter.encode()}".toUri())
     .putExtra(MainActivity.EXTRA_QUICK_ADD, true)
+    .putExtra(MainActivity.EXTRA_QUICK_ADD_TODAY, filter == WidgetFilter.All)
+    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+
+/** #95: микрофон — окно голосового ввода поверх рабочего стола; задача попадает туда же, куда и по «+». У вида свой адрес. */
+fun voiceIntent(context: Context, filter: WidgetFilter): Intent = Intent(context, TaskPopupActivity::class.java)
+    .setData("simpletasks://voice/${filter.encode()}".toUri())
+    .putExtra(MainActivity.EXTRA_VOICE, true)
     .putExtra(MainActivity.EXTRA_QUICK_ADD_TODAY, filter == WidgetFilter.All)
     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
 

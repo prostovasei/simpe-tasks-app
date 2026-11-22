@@ -867,6 +867,24 @@
     <string name="news_first">Нажмите «Обновить новости»</string>
     <string name="news_loading">Загрузка новостей…</string>
     <string name="news_updated">Обновлено в %1$s</string>
+    <!-- #95: голосовой ввод из виджета -->
+    <string name="widget_voice">Создать задачу голосом</string>
+    <string name="voice_speak">Говорите</string>
+    <string name="voice_listening">Слушаю…</string>
+    <string name="voice_title">Голосовой ввод</string>
+    <string name="voice_example">Например, «Позвонить маме завтра в 10»</string>
+    <string name="voice_cancel">Отмена</string>
+    <string name="voice_close">Закрыть</string>
+    <string name="voice_done">Готово</string>
+    <string name="voice_retry">Повторить</string>
+    <string name="voice_settings">Открыть настройки</string>
+    <string name="voice_not_heard">Не расслышал</string>
+    <string name="voice_not_heard_hint">Попробуйте ещё раз, говорите ближе к телефону.</string>
+    <string name="voice_no_permission">Нужен доступ к микрофону</string>
+    <string name="voice_no_permission_hint">Разрешите его в настройках приложения: Разрешения → Микрофон.</string>
+    <string name="voice_unavailable">Распознавание недоступно</string>
+    <string name="voice_unavailable_hint">Нужно приложение Google. Без интернета — скачайте русский язык: Google → Голосовой ввод → Офлайн-распознавание.</string>
+    <string name="voice_busy_hint">Микрофон занят другим приложением. Попробуйте ещё раз.</string>
     <!-- #296: уведомления о новостях -->
     <string name="news_channel">Новости</string>
     <!-- Форма выбирается в коде по правилам русского языка (NewsAlerts.titleForm), не по языку телефона. -->

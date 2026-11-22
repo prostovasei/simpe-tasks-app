@@ -73,7 +73,7 @@ fun QuickAddScreen(
     val titleFocus = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
     val focus = LocalFocusManager.current
-    if (autoFocus) {
+    if (autoFocus && !state.fromVoice) {
         LaunchedEffect(Unit) {
             titleFocus.requestFocus()
             keyboard?.show()

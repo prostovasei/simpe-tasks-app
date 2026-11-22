@@ -37,7 +37,13 @@ data class QuickAddDestination(
     val date: String? = null,
     /** Из «Когда-нибудь» (итерация 52): сразу открыть выбор списка — задача без даты со списком. */
     val pickList: Boolean = false,
+    /** #95: текст из голосового ввода — подставляется в название, клавиатура не открывается. */
+    val voiceText: String? = null,
 )
+
+/** #95: окно голосового ввода поверх рабочего стола (микрофон в виджете); [today] — как у «+» вида «Все». */
+@Serializable
+data class VoiceDestination(val today: Boolean = false)
 
 /** Прозрачное окно «Перенести просроченные на сегодня» поверх рабочего стола (итерация 37, из виджета). */
 @Serializable

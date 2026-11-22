@@ -704,6 +704,32 @@ class TaskViewModelsTest {
 
     // ---------------------------------------------------------------- итерация 41: дата и время в названии
 
+    /** #95: продиктованный текст сразу в названии, срок из фразы разобран, черновик прежнего окна не подставляется. */
+    @Test
+    fun quickAddFromVoiceTakesTextAndDate() = runTest(dispatcher) {
+        draftStore.save("Старый черновик", "Описание черновика")
+        val vm = quickAdd("today" to true, "voiceText" to "Позвонить маме завтра в 10")
+        runCurrent()
+        val state = vm.state.value
+        assertEquals("Позвонить маме завтра в 10", state.title)
+        assertEquals("", state.content)
+        assertTrue(state.fromVoice)
+        assertFalse(state.draftRestored)
+        assertEquals("Срок из фразы важнее «на сегодня»", TaskDue.AtTime(Instant.parse("2026-10-15T10:00:00Z")), state.due)
+
+        vm.onIntent(QuickAddIntent.Save)
+        runCurrent()
+        assertEquals("Позвонить маме", tasks.created.single().title)
+    }
+
+    @Test
+    fun quickAddFromVoiceWithoutDateKeepsTarget() = runTest(dispatcher) {
+        val vm = quickAdd("today" to true, "voiceText" to "Купить молоко")
+        runCurrent()
+        assertEquals(TaskDue.AllDay(today), vm.state.value.due)
+        assertFalse(quickAdd().state.value.fromVoice)
+    }
+
     @Test
     fun quickAddTakesDateFromTitleAndCleansIt() = runTest(dispatcher) {
         val vm = quickAdd()

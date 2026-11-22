@@ -48,6 +48,8 @@ data class QuickAddState(
     val draftRestored: Boolean = false,
     /** Срок из названия (итерация 41): подсветка фразы и чип под названием. */
     val smart: SmartTitle = SmartTitle(),
+    /** #95: название пришло из голосового ввода — клавиатура сама не открывается, окно видно целиком. */
+    val fromVoice: Boolean = false,
 ) {
     val canSave: Boolean get() = title.isNotBlank() && projectId.isNotEmpty() && !isSaving
     val reminders: List<String> get() = customReminders ?: Reminders.default(due)
@@ -95,9 +97,11 @@ class QuickAddViewModel @Inject constructor(
             ?: if (savedStateHandle.get<Boolean>("today") == true) TaskDue.AllDay(time.today()) else null,
         nowMinute = time.now().atZone(time.zone()).let { it.hour * 60 + it.minute },
         pickList = savedStateHandle.get<Boolean>("pickList") == true,
-        title = drafts.get()?.title.orEmpty(),
-        content = drafts.get()?.content.orEmpty(),
-        draftRestored = drafts.get() != null,
+        // #95: продиктованный текст — новая задача, черновик прежнего окна не подставляем.
+        title = savedStateHandle.get<String>("voiceText") ?: drafts.get()?.title.orEmpty(),
+        content = if (savedStateHandle.get<String>("voiceText") != null) "" else drafts.get()?.content.orEmpty(),
+        draftRestored = savedStateHandle.get<String>("voiceText") == null && drafts.get() != null,
+        fromVoice = savedStateHandle.get<String>("voiceText") != null,
     ),
 ) {
     /** Задача сохранена или карточку закрыли — черновик уже решён, при уничтожении экрана его не трогаем. */
@@ -109,6 +113,8 @@ class QuickAddViewModel @Inject constructor(
     private val presetProjectId: String? = savedStateHandle["projectId"]
 
     init {
+        // Срок из продиктованной фразы разбирается так же, как при наборе: «завтра в 10:00» → чип «Завтра, 10:00».
+        if (currentState.fromVoice) onIntent(QuickAddIntent.Title(currentState.title))
         viewModelScope.launch {
             projects.observeProjectTree().collect { tree ->
                 val options = tree.options()

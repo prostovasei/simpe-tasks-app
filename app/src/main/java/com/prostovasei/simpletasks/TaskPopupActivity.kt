@@ -46,6 +46,8 @@ import com.prostovasei.simpletasks.ui.feature.task.LocalSheetOrigin
 import com.prostovasei.simpletasks.ui.feature.task.QuickAddRoute
 import com.prostovasei.simpletasks.ui.feature.task.TaskDetailRoute
 import com.prostovasei.simpletasks.ui.navigation.QuickAddDestination
+import com.prostovasei.simpletasks.ui.navigation.VoiceDestination
+import com.prostovasei.simpletasks.ui.feature.voice.VoiceRoute
 import com.prostovasei.simpletasks.ui.navigation.DayDestination
 import com.prostovasei.simpletasks.ui.feature.week.DaySheetRoute
 import com.prostovasei.simpletasks.ui.navigation.TaskDetailDestination
@@ -66,7 +68,12 @@ class TaskPopupActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        val start = if (intent.getBooleanExtra(MainActivity.EXTRA_MOVE_OVERDUE, false)) MoveOverdueDestination else MainActivity.routeFrom(intent)
+        val start = when {
+            intent.getBooleanExtra(MainActivity.EXTRA_MOVE_OVERDUE, false) -> MoveOverdueDestination
+            // #95: микрофон в виджете — окно голосового ввода, затем окно новой задачи с текстом.
+            intent.getBooleanExtra(MainActivity.EXTRA_VOICE, false) -> VoiceDestination(today = intent.getBooleanExtra(MainActivity.EXTRA_QUICK_ADD_TODAY, false))
+            else -> MainActivity.routeFrom(intent)
+        }
         if (start == null) {
             finish()
             return
@@ -159,6 +166,12 @@ fun TaskPopup(start: Any, onDismiss: () -> Unit, origin: android.graphics.Rect? 
                     onOpenTask = { navController.navigate(TaskDetailDestination(it)) },
                     onAdd = { navController.navigate(QuickAddDestination(date = it.toString())) },
                 )
+            }
+            composable<VoiceDestination> { entry ->
+                val today = entry.toRoute<VoiceDestination>().today
+                VoiceRoute(onClose = onDismiss, onResult = { text ->
+                    navController.navigate(QuickAddDestination(today = today, voiceText = text)) { popUpTo<VoiceDestination> { inclusive = true } }
+                })
             }
             composable<QuickAddDestination> {
                 CompositionLocalProvider(LocalSheetOrigin provides origin.takeIf { navController.previousBackStackEntry == null }) { QuickAddRoute(onClose = close) }
