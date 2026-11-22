@@ -47,12 +47,13 @@ class TasksWidgetReceiver : AppWidgetProvider() {
     }
 
     private fun inBackground(block: suspend () -> Unit) {
-        val pending = goAsync()
+        // В тестах Robolectric goAsync() возвращает null: падение фоновой задачи перетекало в соседние тесты (#95).
+        val pending: PendingResult? = goAsync()
         scope.launch {
             try {
                 block()
             } finally {
-                pending.finish()
+                pending?.finish()
             }
         }
     }
