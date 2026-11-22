@@ -4,6 +4,10 @@
 
 ## Завершённая база
 
+0.80.0, [PR #287](https://github.com/prostovasei/simpe-tasks-app/pull/287), merge 5907a8e38d3d0e30a66c1b6c1b20a20c45c7c6a9, [APK build-422](https://github.com/prostovasei/simple-tasks-releases/releases/tag/build-422). CI PR/main зелёный, APK проверен. Ручные проверки ожидают результата PM.
+
+### База предыдущих итераций
+
 0.79.6, [PR #285](https://github.com/prostovasei/simpe-tasks-app/pull/285), merge 373bbe1790f82316ff3a6dc81b8269098fb21681, [APK build-420](https://github.com/prostovasei/simple-tasks-releases/releases/tag/build-420). CI PR и main успешны. Проверка APK и ожидаемые результаты телефона описаны в [#284](https://github.com/prostovasei/simpe-tasks-app/issues/284).
 
 ### Предыдущий выпуск
@@ -107,4 +111,8 @@ Codex, ветка `codex/widget-week-picker-prototypes` от `main` a7536a6. [Is
 
 ## #286 — спортивные новости
 
-Codex, ветка `codex/sports-news` от `main` 373bbe1. [Issue #286](https://github.com/prostovasei/simpe-tasks-app/issues/286) · [Утверждённые макеты](../design/approved/286/README.md). PM согласовал ТЗ и макеты и дал команду «Код». Добавлена общая лента Sports.ru за 24 часа в приложении и виджете, ручное обновление виджета, исключение «Тестов и игр». Версия 0.80.0. Этап «Проверка» завершён. Локально 879 тестов, 0 ошибок, 3 пропуска. [Отчёт и снимки](testing-runs/0.80.0-local.md). Проверенный коммит ветки указан в #286. Этап «Выпуск» ожидает отдельной команды. Выпуск 0.79.6 подтверждён [build-420](https://github.com/prostovasei/simple-tasks-releases/releases/tag/build-420), ручные проверки #284 ожидают результата PM.
+Codex, ветка `codex/sports-news` от `main` 373bbe1. [Issue #286](https://github.com/prostovasei/simpe-tasks-app/issues/286) · [Утверждённые макеты](../design/approved/286/README.md). PM согласовал ТЗ и макеты и дал команду «Код». Добавлена общая лента Sports.ru за 24 часа в приложении и виджете, ручное обновление виджета, исключение «Тестов и игр». Версия 0.80.0. Этап «Проверка» завершён. Локально 879 тестов, 0 ошибок, 3 пропуска. [Отчёт и снимки](testing-runs/0.80.0-local.md). Проверенный коммит ветки указан в #286. Выпущено в PR #287, build-422. Выпуск 0.79.6 подтверждён [build-420](https://github.com/prostovasei/simple-tasks-releases/releases/tag/build-420), ручные проверки #284 ожидают результата PM.
+
+## #288 — оформление новостей
+
+Codex, ветка `codex/news-feed-layout` от main 5907a8e. [Issue #288](https://github.com/prostovasei/simpe-tasks-app/issues/288) · [Утверждённые макеты](../design/approved/288/README.md). PM выбрал 08 «Молния» и дал «Пиши код». Версия 0.80.1, лента унифицирована, время последнего обновления в строке «Сегодня» на всех размерах. Локальная проверка завершена. 879 тестов, 0 ошибок, 3 пропуска. [Отчёт и Android-снимки](testing-runs/0.80.1-local.md). Проверенный коммит ветки указан в #288. Этап «Выпуск» ожидает команды PM.

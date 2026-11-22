@@ -65,5 +65,9 @@
     <color name="widget_accent_soft">#FFEAEAEA</color>
     <dimen name="widget_health_date_text">10sp</dimen>
     <dimen name="widget_news_meta">11sp</dimen>
-    <dimen name="widget_news_title">13sp</dimen>
+    <dimen name="widget_news_title">14sp</dimen>
+    <dimen name="widget_news_day">12sp</dimen>
+    <dimen name="widget_news_inset">8dp</dimen>
+    <dimen name="widget_news_row_gap">8dp</dimen>
+    <dimen name="widget_news_day_inset">5dp</dimen>
 </resources>

@@ -81,7 +81,7 @@ object WidgetRenderer {
                 .remoteViews
             val views = when {
                 module == WidgetModule.HEALTH -> healthWidgetViews(context, model.today, glance, size)
-                module == WidgetModule.NEWS -> newsWidgetViews(context, appWidgetId, glance, size)
+                module == WidgetModule.NEWS -> newsWidgetViews(context, appWidgetId, glance)
                 finance -> financeWidgetViews(context, appWidgetId, glance, size)
                 scrollable -> widgetRootViews(context, appWidgetId, model, glance, size, scrollToToday = scrollToToday)
                 else -> glance

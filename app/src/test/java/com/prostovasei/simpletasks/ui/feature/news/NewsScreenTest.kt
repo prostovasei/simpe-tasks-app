@@ -110,8 +110,10 @@ class NewsScreenTest {
                 }
             }
 
-            composeRule.onNodeWithText("Новости").assertExists()
-            composeRule.onNodeWithText("Sports.ru · последние 24 часа").assertExists()
+            composeRule.onNodeWithText("Новости").assertDoesNotExist()
+            composeRule.onNodeWithText("Sports.ru · последние 24 часа").assertDoesNotExist()
+            val updated = now.atOffset(zone).format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))
+            composeRule.onNodeWithContentDescription("Обновлено в $updated").assertExists()
             composeRule.onNodeWithText("Сегодня").assertExists()
             composeRule.onNodeWithText("Вчера").assertExists()
             composeRule.onNodeWithText("00:50 · Футбол").assertExists()
