@@ -82,7 +82,6 @@ class VoiceInputTest {
         composeRule.onNodeWithText("Не расслышал").assertExists()
         composeRule.onNodeWithText("Повторить").assertExists()
         composeRule.onRoot().captureRoboImage("screenshots/voice_not_heard_light.png")
-        composeRule.onNodeWithTag(TAG_VOICE_ACTION).performClick()
 
         state = VoiceState(error = VoiceError.NO_PERMISSION)
         composeRule.onNodeWithText("Нужен доступ к микрофону").assertExists()
@@ -96,6 +95,8 @@ class VoiceInputTest {
 
         state = VoiceState(error = VoiceError.BUSY)
         composeRule.onNodeWithText("Микрофон занят другим приложением. Попробуйте ещё раз.").assertExists()
+        // Нажатие — после всех снимков: след нажатия на кнопке делал снимки нестабильными.
+        composeRule.onNodeWithTag(TAG_VOICE_ACTION).performClick()
         assertEquals(listOf("retry"), clicks)
     }
 
