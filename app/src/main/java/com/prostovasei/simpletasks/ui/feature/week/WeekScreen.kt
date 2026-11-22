@@ -1,6 +1,10 @@
 package com.prostovasei.simpletasks.ui.feature.week
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
+import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -58,21 +62,30 @@ fun WeekScreen(
             val month = state.month
             if (weekStart == null || today == null || month == null) return@Scaffold
             // Четыре строки одинаковой высоты делят весь экран: прокрутки нет.
-            Column(Modifier.padding(padding).fillMaxSize().testTag("week-screen")) {
-                state.days.chunked(2).forEach { pair ->
-                    Row(Modifier.weight(1f).fillMaxWidth()) {
-                        pair.forEach { day ->
-                            WeekCell(day.date, day.items, day.date == today, { onOpenDay(day.date) }, Modifier.weight(1f).fillMaxHeight())
-                        }
-                        // Нечётный день (воскресенье) делит строку с мини-календарём.
-                        if (pair.size == 1) {
-                            WeekCalendar(
-                                month = month,
-                                selectedWeek = weekStart,
-                                today = today,
-                                onSelectWeek = { onIntent(SelectWeek(it)) },
-                                modifier = Modifier.weight(1f).fillMaxHeight(),
-                            )
+            BoxWithConstraints(Modifier.padding(padding).fillMaxSize().testTag("week-screen")) {
+                val inlineMonth = maxWidth / 2 - AppTheme.spacing.xxs * 2 >=
+                    SizeTokens.WEEK_MONTH_INLINE_CELL.dp * (WEEK_LENGTH * LocalDensity.current.fontScale)
+                Column(Modifier.fillMaxSize()) {
+                    state.days.chunked(2).forEach { pair ->
+                        Row(Modifier.weight(1f).fillMaxWidth()) {
+                            pair.forEach { day ->
+                                WeekCell(day.date, day.items, day.date == today, { onOpenDay(day.date) },
+                                    Modifier.weight(1f).fillMaxHeight(),
+                                    calendarMonth = if (pair.size == 1 && !inlineMonth) month else null,
+                                )
+                            }
+                            // Нечётный день (воскресенье) делит строку с мини-календарём.
+                            if (pair.size == 1) {
+                                WeekCalendar(
+                                    month = month,
+                                    selectedWeek = weekStart,
+                                    today = today,
+                                    onSelectWeek = { onIntent(SelectWeek(it)) },
+                                    onOpenDay = onOpenDay,
+                                    inlineMonth = inlineMonth,
+                                    modifier = Modifier.weight(1f).fillMaxHeight(),
+                                )
+                            }
                         }
                     }
                 }

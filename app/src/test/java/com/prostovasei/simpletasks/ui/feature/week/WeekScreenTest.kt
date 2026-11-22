@@ -128,6 +128,16 @@ class WeekScreenTest {
     }
 
     @Test
+    fun selectedCalendarDatesOpenTheCorrectDayAcrossMonths() {
+        show()
+        for (date in listOf(monday, LocalDate.of(2026, 11, 1))) {
+            composeRule.onNodeWithTag("week-cal-day:$date", useUnmergedTree = true).performTouchInput { click() }
+        }
+        assertEquals(listOf(monday, LocalDate.of(2026, 11, 1)), openedDays)
+        assertTrue(intents.none { it is SelectWeek })
+    }
+
+    @Test
     fun calendarAlwaysHasSixWeekRows() {
         // Октябрь 2026 начинается с четверга: строки с 28 сентября по 2 ноября.
         show()

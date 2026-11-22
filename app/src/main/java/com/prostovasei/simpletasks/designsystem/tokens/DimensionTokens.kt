@@ -337,7 +337,9 @@ object SizeTokens {
     const val WIDGET_WEEK_CELL_TOP = 1
     const val WIDGET_WEEK_TOP = 2
     const val WIDGET_WEEK_INLINE_GAP = 2
-    const val WIDGET_WEEK_CAL_DAY = 18
+    const val WEEK_MONTH_INLINE_CELL = 26
+    const val WEEK_MONTH_INLINE_TEXT = 9
+    const val WIDGET_WEEK_CAL_TEXT = 11
     const val WIDGET_WEEK_ROW_DEFAULT = 140
     const val WIDGET_WEEK_ROW_MIN = 96
 

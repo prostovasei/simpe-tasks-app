@@ -43,6 +43,16 @@
             android:textColor="@color/widget_text_secondary"
             android:textSize="9sp" />
 
+        <TextView
+            android:id="@+id/wl_calendar_month"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="@dimen/widget_space_xxs"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:textColor="@color/widget_text_primary"
+            android:textSize="9sp"
+            android:visibility="gone" />
 
         <TextView
             android:id="@+id/wl_more"

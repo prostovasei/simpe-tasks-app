@@ -2,9 +2,13 @@
 
 Правила [../AGENTS.md](../AGENTS.md).
 
-## В работе — #292, 0.80.3
+## В работе — #294, 0.80.4
 
-Исполнитель Codex. Ветка `codex/292-news-finance` от свежего `origin/main` `da0b3616d941f3608ef6d8c3af6a43562ac28138`. [Issue #292](https://github.com/prostovasei/simpe-tasks-app/issues/292), [макеты](../design/approved/292/README.md). Этапы «Код» и «Проверка» выполнены. Сборка 427, 882 теста, 0 падений, 3 пропуска. [Отчёт](testing-runs/0.80.3-local.md). Проверенный коммит отправлен в ветку `origin/codex/292-news-finance`. Следующий этап — «Выпуск» по команде PM. NF292-1–4 ждут проверки на телефоне.
+Исполнитель Codex, ветка `codex/294-week-calendar` от `627ca99c924e84da6d0366eef079d4d14a2be790`. [Задача #294](https://github.com/prostovasei/simpe-tasks-app/issues/294) и [ТЗ с макетом](../design/approved/294/requirements.md). Этапы «Код» и «Проверка» выполнены. Сборка 429, 884 теста, 0 ошибок и падений, 3 пропуска. [Отчёт](testing-runs/0.80.4-local.md). Коммит отправлен в `origin/codex/294-week-calendar`. WC294-1–3 ждут проверки на телефоне. Следующий этап — «Выпуск» по команде PM.
+
+## Последний выпуск — 0.80.3
+
+[PR #293](https://github.com/prostovasei/simpe-tasks-app/pull/293), merge `627ca99c924e84da6d0366eef079d4d14a2be790`, [APK build-428](https://github.com/prostovasei/simple-tasks-releases/releases/tag/build-428). CI PR/main зелёный, APK проверен. NF292-1–4 ждут результата PM.
 
 ## Завершённая база
 

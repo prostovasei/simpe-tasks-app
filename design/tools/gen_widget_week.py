@@ -66,6 +66,18 @@ def cell(p):
 
         </FrameLayout>
 '''
+    calendar_month = """
+        <TextView
+            android:id="@+id/wl_calendar_month"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="@dimen/widget_space_xxs"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:textColor="@color/widget_text_primary"
+            android:textSize="9sp"
+            android:visibility="gone" />
+""" if p == 'wl' else ''
     return f'''<?xml version="1.0" encoding="utf-8"?>
 <!-- Сгенерировано design/tools/gen_widget_week.py (#263 — эмодзи, название, время справа; вся ячейка открывает день): ячейка дня вида «Неделя» в виджете. Не править руками. -->
 <LinearLayout {NS}
@@ -109,8 +121,7 @@ def cell(p):
             android:maxLines="1"
             android:textColor="@color/widget_text_secondary"
             android:textSize="9sp" />
-
-
+{calendar_month}
         <TextView
             android:id="@+id/{p}_more"
             android:layout_width="wrap_content"
@@ -137,8 +148,8 @@ def calendar():
 
                 <TextView
                     android:id="@+id/wc_r{r}_d{d}"
-                    android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"

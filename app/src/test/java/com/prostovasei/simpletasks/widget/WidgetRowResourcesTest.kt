@@ -65,7 +65,6 @@ class WidgetRowResourcesTest {
             R.dimen.widget_week_cell_top to SizeTokens.WIDGET_WEEK_CELL_TOP,
             R.dimen.widget_week_top to SizeTokens.WIDGET_WEEK_TOP,
             R.dimen.widget_week_inline_gap to SizeTokens.WIDGET_WEEK_INLINE_GAP,
-            R.dimen.widget_week_cal_day to SizeTokens.WIDGET_WEEK_CAL_DAY,
             R.dimen.widget_bar to SizeTokens.WIDGET_BAR,
         )
         dimens.forEach { (res, token) ->
