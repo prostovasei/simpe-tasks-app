@@ -126,6 +126,13 @@ object SizeTokens {
     const val HEALTH_TIP_HEIGHT = 40
     const val HEALTH_TIP_WIDTH = 104
     const val HEALTH_DELTA_WIDTH = 48
+
+    /** Окно голосового ввода (#95): микрофон, наибольший круг громкости, высота области микрофона, значок, высота текста. */
+    const val VOICE_MIC = 72
+    const val VOICE_RING_MAX = 136
+    const val VOICE_MIC_AREA = 150
+    const val VOICE_MIC_ICON = 32
+    const val VOICE_TEXT_MIN = 64
     const val NAV_SHADOW = 10
     const val CHECKBOX = 18
     const val CHECKBOX_STROKE = 2
@@ -162,6 +169,14 @@ object SizeTokens {
     const val WIDGET_MODULE_DATE_W = 48
     const val WIDGET_OPEN_GAP_MIN = 16
     const val WIDGET_MODULE_BAR_THRESHOLD = 320
+
+    /**
+     * Микрофон рядом с «+» на вкладке «Задачи» (#95, вариант М1): «+» сужается до 40, микрофон 40, зазор 4 — вместе 84,
+     * как дата с кнопкой обновления справа, вкладки остаются по центру. В компактной панели «+» прежний, микрофон — если влезает (К2).
+     */
+    const val WIDGET_VOICE_ADD_W = 40
+    const val WIDGET_VOICE_W = 40
+    const val WIDGET_VOICE_GAP = 4
 
     /** Итерация 57: поля по бокам внутри блока вкладок. */
 

@@ -33,6 +33,26 @@ class SmartDateParserTest {
         assertEquals("Отчёт", clean("Отчёт на завтра"))
     }
 
+    /** #95: так голосовой ввод Google обычно записывает фразы со сроком. */
+    @Test
+    fun voicePhrases() {
+        assertDate("Позвонить маме завтра в 10", today.plusDays(1), 10 * 60)
+        assertDate("Позвонить маме завтра в 10:00", today.plusDays(1), 10 * 60)
+        assertDate("Позвонить врачу завтра в 10 часов", today.plusDays(1), 10 * 60)
+        assertDate("Забрать посылку завтра в 7 вечера", today.plusDays(1), 19 * 60)
+        assertDate("Купить хлеб послезавтра в 9 утра", today.plusDays(2), 9 * 60)
+        assertDate("Встреча в пятницу в 18:30", today.plusDays(2), 18 * 60 + 30)
+        assertEquals("Позвонить маме", clean("Позвонить маме завтра в 10"))
+        assertEquals("Забрать посылку", clean("Забрать посылку завтра в 7 вечера"))
+        // Время сразу после даты, а дело после времени — «в N» здесь время, даже если дальше длинное слово.
+        assertDate("Завтра в 10 позвонить маме", today.plusDays(1), 10 * 60)
+        assertEquals("Заглавная буква названия сохраняется", "Позвонить маме", clean("Завтра в 10 позвонить маме"))
+        assertEquals("купить молоко", clean("завтра купить молоко"))
+        assertDate("В пятницу в 18 созвон", today.plusDays(2), 18 * 60)
+        // Без даты рядом «в N слово» по-прежнему не время.
+        assertDate("Завтра купить подарки в 5 магазинах", today.plusDays(1), null)
+    }
+
     @Test
     fun dateAndTimeTogether() {
         assertDate("Созвон завтра 10:00", today.plusDays(1), 10 * 60)

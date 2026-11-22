@@ -29,14 +29,15 @@ import kotlinx.coroutines.launch
 class WidgetActionReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val app = context.applicationContext
-        val pending = goAsync()
+        // В тестах Robolectric goAsync() возвращает null — см. TasksWidgetReceiver.inBackground.
+        val pending: PendingResult? = goAsync()
         scope.launch {
             try {
                 handle(app, intent)
             } catch (e: Exception) {
                 WidgetLog.error(app, "нажатие ${intent.action}", e)
             } finally {
-                pending.finish()
+                pending?.finish()
             }
         }
     }

@@ -5,6 +5,8 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Обновление по кнопке (итерация 10): проверить и скачать APK, передать установщику Android. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- #95: голосовой ввод задачи из виджета. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <!-- Полоска напоминания поверх других приложений (T-69); включается переключателем в «Настройках». -->
@@ -18,6 +20,13 @@
     <!-- Точное время: на Android 12 — без запроса у пользователя, с Android 13 — разрешение для приложений-напоминалок. -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+
+    <!-- #95: Android 11+ скрывает чужие сервисы — без этого SpeechRecognizer не находит распознаватель Google. -->
+    <queries>
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
+    </queries>
 
     <application
         android:name=".TasksApp"

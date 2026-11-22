@@ -1736,3 +1736,11 @@ Compose и RemoteViews используют общие сокращения ме
 Состояние `NewsAlertState` хранится в SharedPreferences `news_alerts` как JSON: известные ключи (хост без `www` + путь → время публикации, забываются через 48 часов), накопленные в тишине материалы и материалы последнего уведомления. Если уведомление ещё в шторке (`activeNotifications`), новое включает его материалы. `WidgetRenderer.refreshNews` после ручного обновления вызывает `NewsChecks.markSeen`; из приложения ещё и снимает уведомление. Room не меняется.
 
 Уведомление — канал `news`, постоянный id, `InboxStyle`, переход через `MainActivity.EXTRA_OPEN_NEWS` → `OpenNews` → вкладка «Новости». Иконки уведомлений — `ic_notification_tasks/finance/health/news` с формами `ic_module_*`; общий `ic_notification` удалён.
+
+### 4.100. Голосовой ввод из виджета (#95)
+
+`BottomBar` виджета на вкладке «Задачи» добавляет кнопку `voiceIntent` (`TaskPopupActivity`, `EXTRA_VOICE`, адрес `simpletasks://voice/<вид>`). Размеры — `SizeTokens.WIDGET_VOICE_*`: на широкой панели «+» и микрофон вместе 84 dp, как дата с обновлением, поэтому вкладки остаются по центру; в компактной микрофон показывается, только если помещается рядом с «+» и вкладками.
+
+`TaskPopupActivity` стартует с `VoiceDestination` → `VoiceRoute` (ui/feature/voice): разрешение `RECORD_AUDIO` через `RequestPermission`, распознавание через интерфейс `VoiceEngine`; рабочая реализация `AndroidVoiceEngine` — системный `SpeechRecognizer` (ru-RU, промежуточные результаты, пауза 2 с). Коды ошибок переводит `VoiceErrors.from`; если после промежуточного текста пришло «ничего не подошло», берётся промежуточный текст. Для Android 11+ в манифесте `<queries>` на `android.speech.RecognitionService`.
+
+`VoiceErrors.clean` убирает точку в конце. `SmartDateParser`: «в N» сразу после найденной даты считается временем без проверки следующего слова; `strip` сохраняет заглавную первую букву. Результат — `QuickAddDestination(voiceText = …)` с `popUpTo` окна голоса. `QuickAddViewModel` ставит текст в название, не подставляет черновик, отмечает `fromVoice` (клавиатура не открывается) и прогоняет название через разбор срока. Room не меняется.
