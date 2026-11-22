@@ -4,7 +4,7 @@
 
 ## В работе — #296, 0.81.0
 
-Исполнитель Claude Code, ветка `claude/news-notifications` от main `3fa64fe448c482e22831a4de109386f51d6f9c24`. [Задача #296](https://github.com/prostovasei/simpe-tasks-app/issues/296), [ТЗ](../design/approved/296/requirements.md), [макеты](../design/approved/296/README.md). Фоновая проверка новостей раз в ~2 часа с одним уведомлением, период тишины в настройках, четыре иконки уведомлений. Ответы PM 22.11.2026: 1А, тишина в настройках, 3А1, 4А. Этап — макеты на согласовании PM; код не начат. Последний отправленный коммит фиксируется в #296.
+Исполнитель Claude Code, ветка `claude/news-notifications` от main `3fa64fe448c482e22831a4de109386f51d6f9c24`. [Задача #296](https://github.com/prostovasei/simpe-tasks-app/issues/296), [ТЗ](../design/approved/296/requirements.md), [макеты](../design/approved/296/README.md). Фоновая проверка новостей раз в ~2 часа с одним уведомлением, период тишины в настройках, четыре иконки уведомлений. Ответы PM 22.11.2026: 1А, тишина в настройках, 3А1, 4А. PM согласовал макеты и дал «Код» 22.11.2026. Код готов: WorkManager `news_check`, `NewsAlerts`, страница «Новости» в настройках, `ic_notification_*`. Локально assembleDebug/check/recordRoborazziDebug успешны, 893 теста, 0 ошибок, 3 пропуска. [Отчёт](testing-runs/0.81.0-local.md). Следующий этап — «Проверка» по команде PM. Последний отправленный коммит фиксируется в #296.
 
 ## Последний выпуск — 0.80.4
 
