@@ -2,13 +2,17 @@
 
 Правила [../AGENTS.md](../AGENTS.md).
 
-## В работе — #296, 0.81.0
+## В работе — #95, 0.82.0
 
-Исполнитель Claude Code, ветка `claude/news-notifications` от main `3fa64fe448c482e22831a4de109386f51d6f9c24`. [Задача #296](https://github.com/prostovasei/simpe-tasks-app/issues/296), [ТЗ](../design/approved/296/requirements.md), [макеты](../design/approved/296/README.md). Фоновая проверка новостей раз в ~2 часа с одним уведомлением, период тишины в настройках, четыре иконки уведомлений. Ответы PM 22.11.2026: 1А, тишина в настройках, 3А1, 4А. PM согласовал макеты и дал «Код» 22.11.2026. Код готов: WorkManager `news_check`, `NewsAlerts`, страница «Новости» в настройках, `ic_notification_*`. Этап «Проверка» выполнен: исправлено склонение заголовка при нерусском языке системы, добавлены тесты расписания и уведомления, живая загрузка Sports.ru проверена. Финальный assembleDebug/check/recordRoborazziDebug: 897 тестов, 0 ошибок, 3 пропуска. [Отчёт](testing-runs/0.81.0-local.md). Следующий этап — «Выпуск» по команде PM; NN296-1–6 ждут телефона. Последний отправленный коммит фиксируется в #296.
+Исполнитель Claude Code, ветка `claude/widget-voice-input` от main `d18ea038732431bf6e9a015a602dec8f9af56e2a`. [Задача #95](https://github.com/prostovasei/simpe-tasks-app/issues/95), [ТЗ](../design/approved/95/requirements.md), [макеты](../design/approved/95/README.md). Кнопка микрофона рядом с «+» на вкладке «Задачи» виджета, своё окно распознавания поверх рабочего стола, затем окно новой задачи с текстом. Ответы PM 22.11.2026: 1А, своё окно, 2А (только виджет), 3Б (только «Задачи»). Этап — макеты на согласовании PM (выбор М1/М2 и К1/К2); код не начат. Последний отправленный коммит фиксируется в #95.
 
-## Последний выпуск — 0.80.4
+## Последний выпуск — 0.81.0
 
-[PR #295](https://github.com/prostovasei/simpe-tasks-app/pull/295), merge `3fa64fe448c482e22831a4de109386f51d6f9c24`, [APK build-430](https://github.com/prostovasei/simple-tasks-releases/releases/tag/build-430). #294 закрыта. CI PR зелёный, CI main зелёный после повтора (первый запуск не загрузил Robolectric), APK проверен. WC294-1–3 ждут результата PM.
+[PR #297](https://github.com/prostovasei/simpe-tasks-app/pull/297), merge `d18ea038732431bf6e9a015a602dec8f9af56e2a`. #296 закрыта: проверка новостей раз в 2 часа, тишина, четыре иконки уведомлений. CI PR и main зелёные с первой попытки. Ожидаемый APK build-436 не проверен: у сессии Claude не было доступа к `simple-tasks-releases`. NN296-1–6 ждут результата PM.
+
+### Выпуск 0.80.4
+
+[PR #295](https://github.com/prostovasei/simpe-tasks-app/pull/295), merge `3fa64fe448c482e22831a4de109386f51d6f9c24`, [APK build-430](https://github.com/prostovasei/simple-tasks-releases/releases/tag/build-430). CI PR/main зелёный, APK проверен. WC294-1–3 ждут результата PM.
 
 ### Предыдущий выпуск — 0.80.3
 
