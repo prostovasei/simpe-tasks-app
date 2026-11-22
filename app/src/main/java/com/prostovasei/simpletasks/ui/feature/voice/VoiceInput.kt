@@ -267,7 +267,7 @@ fun VoiceSheet(
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { MicButton(state, onMic) }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    stringResource(if (error == VoiceError.UNAVAILABLE || error == VoiceError.BUSY) R.string.voice_close else R.string.voice_cancel),
+                    stringResource(if (error?.blocking() == true) R.string.voice_close else R.string.voice_cancel),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = colors.textSecondary,
@@ -353,7 +353,7 @@ private fun MicButton(state: VoiceState, onClick: () -> Unit) {
                     .testTag(TAG_VOICE_MIC),
                 contentAlignment = Alignment.Center,
             ) {
-                val off = state.error == VoiceError.NO_PERMISSION || state.error == VoiceError.UNAVAILABLE || state.error == VoiceError.BUSY
+                val off = state.error == VoiceError.NO_PERMISSION || state.error?.blocking() == true
                 Icon(
                     painterResource(if (off) R.drawable.ic_voice_mic_off else R.drawable.ic_widget_bar_mic),
                     contentDescription = label,
@@ -388,6 +388,9 @@ private fun errorTitle(error: VoiceError) = when (error) {
     VoiceError.NO_PERMISSION -> R.string.voice_no_permission
     VoiceError.UNAVAILABLE -> R.string.voice_unavailable
     VoiceError.BUSY -> R.string.voice_unavailable
+    VoiceError.NO_NETWORK -> R.string.voice_no_network
+    VoiceError.NO_LANGUAGE -> R.string.voice_no_language
+    VoiceError.START_FAILED -> R.string.voice_start_failed
 }
 
 private fun errorHint(error: VoiceError) = when (error) {
@@ -395,7 +398,13 @@ private fun errorHint(error: VoiceError) = when (error) {
     VoiceError.NO_PERMISSION -> R.string.voice_no_permission_hint
     VoiceError.UNAVAILABLE -> R.string.voice_unavailable_hint
     VoiceError.BUSY -> R.string.voice_busy_hint
+    VoiceError.NO_NETWORK -> R.string.voice_no_network_hint
+    VoiceError.NO_LANGUAGE -> R.string.voice_no_language_hint
+    VoiceError.START_FAILED -> R.string.voice_start_failed_hint
 }
+
+/** Ошибки, после которых повтор вряд ли поможет сразу: кнопка слева — «Закрыть», микрофон перечёркнут. */
+private fun VoiceError.blocking() = this == VoiceError.UNAVAILABLE || this == VoiceError.BUSY || this == VoiceError.NO_NETWORK || this == VoiceError.NO_LANGUAGE
 
 private const val BREATH_MILLIS = 1200
 private const val BREATH_SCALE = 0.1f
