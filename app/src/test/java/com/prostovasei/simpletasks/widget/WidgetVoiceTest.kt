@@ -37,11 +37,11 @@ class WidgetVoiceTest {
 
     @Test fun micAppearsFrom224() = bar(224, WidgetModule.TASKS, present = true)
 
-    @Test fun otherTabsHaveNoMic() {
-        bar(392, WidgetModule.FINANCE, present = false)
-        bar(392, WidgetModule.HEALTH, present = false)
-        bar(392, WidgetModule.NEWS, present = false)
-    }
+    @Test fun financeHasNoMic() = bar(392, WidgetModule.FINANCE, present = false)
+
+    @Test fun healthHasNoMic() = bar(392, WidgetModule.HEALTH, present = false)
+
+    @Test fun newsHasNoMic() = bar(392, WidgetModule.NEWS, present = false)
 
     @Test
     fun voiceIntentOpensPopupLikePlus() {

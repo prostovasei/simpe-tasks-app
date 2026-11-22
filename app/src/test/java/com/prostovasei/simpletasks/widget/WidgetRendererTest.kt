@@ -194,7 +194,9 @@ class WidgetRendererTest {
             assertTrue(abs(center(update) - 368 * density) <= 1)
             val gaps = ArrayList<View>()
             bar.findViewsWithText(gaps, "Открыть приложение", View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
-            assertEquals(listOf((54 * density).toInt(), (34 * density).toInt()), gaps.map { it.width })
+            // #95: на «Задачах» слева «+» 40 и микрофон 40 — левая полоса равна правой, вкладки по центру.
+            val left = if (module == WidgetModule.TASKS) 34 else 54
+            assertEquals(listOf((left * density).toInt(), (34 * density).toInt()), gaps.map { it.width })
             assertTrue(gaps.all { gap ->
                 gap.height == height && generateSequence(gap) { it.parent as? View }.take(3).any { it.hasOnClickListeners() }
             })
@@ -220,7 +222,11 @@ class WidgetRendererTest {
             bar.layout(0, 0, w, h)
             val gaps = ArrayList<View>()
             bar.findViewsWithText(gaps, "Открыть приложение", View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
-            assertEquals(if (width == 180) emptyList<Int>() else listOf((60 * density).toInt()), gaps.map { it.width })
+            // #95: на 240 dp рядом с «+» помещается микрофон (44 + 4 + 40), свободная полоса 16 dp; на 180 dp микрофона и полосы нет.
+            assertEquals(if (width == 180) emptyList<Int>() else listOf((16 * density).toInt()), gaps.map { it.width })
+            val mic = ArrayList<View>()
+            bar.findViewsWithText(mic, "Создать задачу голосом", View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
+            assertEquals(width != 180, mic.isNotEmpty())
             assertTrue(!bar.hasOnClickListeners())
         }
     }
