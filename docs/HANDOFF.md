@@ -2,11 +2,15 @@
 
 Правила [../AGENTS.md](../AGENTS.md).
 
-## В работе — #294, 0.80.4
+## В работе — #296, 0.81.0
 
-Исполнитель Codex, ветка `codex/294-week-calendar` от `627ca99c924e84da6d0366eef079d4d14a2be790`. [Задача #294](https://github.com/prostovasei/simpe-tasks-app/issues/294) и [ТЗ с макетом](../design/approved/294/requirements.md). Этапы «Код» и «Проверка» выполнены. Сборка 429, 884 теста, 0 ошибок и падений, 3 пропуска. [Отчёт](testing-runs/0.80.4-local.md). Коммит отправлен в `origin/codex/294-week-calendar`. WC294-1–3 ждут проверки на телефоне. Следующий этап — «Выпуск» по команде PM.
+Исполнитель Claude Code, ветка `claude/news-notifications` от main `3fa64fe448c482e22831a4de109386f51d6f9c24`. [Задача #296](https://github.com/prostovasei/simpe-tasks-app/issues/296), [ТЗ](../design/approved/296/requirements.md), [макеты](../design/approved/296/README.md). Фоновая проверка новостей раз в ~2 часа с одним уведомлением, период тишины в настройках, четыре иконки уведомлений. Ответы PM 22.11.2026: 1А, тишина в настройках, 3А1, 4А. Этап — макеты на согласовании PM; код не начат. Последний отправленный коммит фиксируется в #296.
 
-## Последний выпуск — 0.80.3
+## Последний выпуск — 0.80.4
+
+[PR #295](https://github.com/prostovasei/simpe-tasks-app/pull/295), merge `3fa64fe448c482e22831a4de109386f51d6f9c24`, [APK build-430](https://github.com/prostovasei/simple-tasks-releases/releases/tag/build-430). #294 закрыта. CI PR зелёный, CI main зелёный после повтора (первый запуск не загрузил Robolectric), APK проверен. WC294-1–3 ждут результата PM.
+
+### Предыдущий выпуск — 0.80.3
 
 [PR #293](https://github.com/prostovasei/simpe-tasks-app/pull/293), merge `627ca99c924e84da6d0366eef079d4d14a2be790`, [APK build-428](https://github.com/prostovasei/simple-tasks-releases/releases/tag/build-428). CI PR/main зелёный, APK проверен. NF292-1–4 ждут результата PM.
 

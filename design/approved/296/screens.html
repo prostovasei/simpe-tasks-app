@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Уведомления новостей</title>
+<!-- #296. Макет на согласовании. Цвета — ColorTokens, шрифт Manrope из app/src/main/res/font. Заголовки новостей условные. -->
+<style>
+  @font-face { font-family: Manrope; font-weight: 400; src: url(../../../app/src/main/res/font/manrope_400.ttf); }
+  @font-face { font-family: Manrope; font-weight: 500; src: url(../../../app/src/main/res/font/manrope_500.ttf); }
+  @font-face { font-family: Manrope; font-weight: 600; src: url(../../../app/src/main/res/font/manrope_600.ttf); }
+  @font-face { font-family: Manrope; font-weight: 700; src: url(../../../app/src/main/res/font/manrope_700.ttf); }
+  :root {
+    --bg: #F5F5F5; --surface: #FFFFFF; --text: #16171D; --text2: #62656E;
+    --divider: #E2E2E2; --inactive: #A9A9A9; --accent: #16171D;
+    --shade: #DCE1E7; --card: #F8FAFC; --sys: #1B1C1F;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 24px; background: #E9E9EC; font-family: Manrope, system-ui, sans-serif; color: var(--text); }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .note { color: var(--text2); font-size: 13px; margin: 0 0 20px; max-width: 1180px; line-height: 1.45; }
+  .row { display: flex; gap: 28px; flex-wrap: wrap; align-items: flex-start; }
+  .frame { width: 360px; }
+  .cap { font-size: 13px; font-weight: 700; margin: 0 0 8px; }
+  .cap span { font-weight: 500; color: var(--text2); }
+  .phone { width: 360px; height: 720px; background: var(--bg); border-radius: 24px; overflow: hidden; position: relative; box-shadow: 0 1px 3px #0002; }
+  .status { height: 28px; display: flex; align-items: center; justify-content: space-between; padding: 0 18px; font-size: 13px; font-weight: 600; }
+  .status .icons { display: flex; gap: 6px; align-items: center; }
+  .header { display: flex; align-items: center; gap: 24px; padding: 8px 16px 16px 16px; }
+  .header svg { width: 24px; height: 24px; }
+  .header b { font-size: 26px; font-weight: 700; }
+  .section { color: var(--text2); font-size: 14px; font-weight: 600; margin: 8px 16px 10px; }
+  .card { background: var(--surface); border-radius: 12px; margin: 0 16px 16px; overflow: hidden; }
+  .item { display: flex; align-items: center; gap: 20px; padding: 14px 16px 14px 16px; min-height: 64px; position: relative; }
+  .item + .item::before { content: ""; position: absolute; top: 0; left: 16px; right: 0; height: 1px; background: var(--divider); }
+  .item.indent + .item.indent::before { left: 64px; }
+  .item .ic { width: 24px; height: 24px; flex: none; }
+  .item .t { flex: 1; }
+  .item .t div:first-child { font-size: 17px; font-weight: 500; }
+  .item .t div + div { font-size: 13px; color: var(--text2); margin-top: 3px; line-height: 1.35; }
+  .item .chev { color: var(--inactive); font-size: 22px; }
+  .item .val { font-size: 17px; font-weight: 700; letter-spacing: .5px; }
+  .item.off .t div:first-child, .item.off .val { color: var(--inactive); }
+  .sw { width: 52px; height: 32px; border-radius: 16px; background: var(--accent); position: relative; flex: none; }
+  .sw::after { content: ""; position: absolute; width: 24px; height: 24px; border-radius: 50%; background: #fff; top: 4px; right: 4px; }
+  .sw.off { background: #fff; border: 2px solid var(--inactive); }
+  .sw.off::after { background: var(--inactive); width: 16px; height: 16px; top: 6px; left: 6px; right: auto; }
+  .hint { color: var(--text2); font-size: 13px; margin: -6px 32px 16px; line-height: 1.4; }
+  /* Шторка */
+  .shade { background: var(--shade); }
+  .shade .status { color: var(--sys); }
+  .clock { font-size: 44px; font-weight: 400; padding: 8px 20px 0; color: var(--sys); }
+  .date { font-size: 14px; padding: 0 20px 16px; color: #44474E; }
+  .n { background: var(--card); border-radius: 20px; margin: 0 10px 6px; padding: 12px 16px 14px; }
+  .n .hd { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #44474E; }
+  .n .badge { width: 22px; height: 22px; border-radius: 50%; background: #3F4552; display: grid; place-items: center; }
+  .n .badge svg { width: 14px; height: 14px; }
+  .n .ti { font-size: 15px; font-weight: 700; margin: 8px 0 2px 28px; color: var(--sys); }
+  .n .tx { font-size: 14px; color: #44474E; margin-left: 28px; line-height: 1.4; }
+  .n .act { margin: 10px 0 0 28px; display: flex; gap: 22px; font-size: 14px; font-weight: 700; color: #3F4552; }
+  .ico-sheet { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 16px; }
+  .ico-sheet .c { background: var(--surface); border-radius: 12px; padding: 14px 8px 12px; text-align: center; font-size: 13px; font-weight: 600; }
+  .ico-sheet .tile { width: 48px; height: 48px; margin: 0 auto 8px; border-radius: 12px; background: #3F4552; display: grid; place-items: center; }
+  .ico-sheet .tile svg { width: 24px; height: 24px; }
+  .ico-sheet small { display: block; font-weight: 500; color: var(--text2); font-size: 11px; margin-top: 4px; line-height: 1.3; }
+  .bar16 { display: flex; gap: 14px; justify-content: center; align-items: center; background: #1B1C1F; border-radius: 10px; margin: 0 16px 16px; height: 36px; }
+  .bar16 svg { width: 16px; height: 16px; }
+  .before { margin: 0 16px; font-size: 12px; color: var(--text2); line-height: 1.4; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <!-- Пути совпадают с ic_module_* приложения: в шторке будут белые силуэты ic_notification_*. -->
+  <symbol id="i-tasks" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M4.5,12.5l5,5L19.5,7"/></symbol>
+  <symbol id="i-fin" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M9,20V4h4.5a4,4 0,0 1,0 8H6.5 M6.5,16H15"/></symbol>
+  <symbol id="i-health" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M12,20c0,0 -7,-4.4 -7,-10a4,4 0,0 1,7 -2.6A4,4 0,0 1,19 10c0,5.6 -7,10 -7,10z"/></symbol>
+  <symbol id="i-news" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12.6,4.6 L6.6,12.8 H11.6 L10.7,19.4 L17.6,10.9 H12.7 L14,4.6 H12.6"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path fill="currentColor" d="M12,22c1.1,0 2,-0.9 2,-2h-4c0,1.1 0.89,2 2,2zM18,16v-5c0,-3.07 -1.64,-5.64 -4.5,-6.32V4c0,-0.83 -0.67,-1.5 -1.5,-1.5s-1.5,0.67 -1.5,1.5v0.68C7.63,5.36 6,7.92 6,11v5l-2,2v1h16v-1l-2,-2z"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M20,12H5 M11,5l-7,7l7,7"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12,11v6 M12,7.5v.01" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+</svg>
+
+<h1>#296 · Уведомления новостей, тишина и иконки</h1>
+<p class="note">Макет на согласовании. 1 — новый пункт в общих настройках. 2–3 — страница «Новости» во включённом и выключенном виде, по образцу настроек «Здоровья». 4 — шторка Android с четырьмя видами уведомлений. 5 — комплект иконок: белый силуэт, цвет подложки задаёт система. Заголовки новостей условные.</p>
+
+<div class="row">
+  <div class="frame" id="s1">
+    <p class="cap">1. Настройки <span>· новый пункт «Новости»</span></p>
+    <div class="phone">
+      <div class="status"><span>9:41</span><span class="icons">▾ ▮</span></div>
+      <div class="header"><svg><use href="#i-back"/></svg><b>Настройки</b></div>
+      <div class="card">
+        <div class="item"><svg class="ic"><use href="#i-tasks"/></svg><div class="t"><div>Задачи</div><div>Ввод, напоминания, импорт и резервная копия</div></div><span class="chev">›</span></div>
+        <div class="item"><svg class="ic"><use href="#i-fin"/></svg><div class="t"><div>Финансы</div><div>Категории, места, корзина, копия, банк</div></div><span class="chev">›</span></div>
+        <div class="item"><svg class="ic"><use href="#i-health"/></svg><div class="t"><div>Здоровье</div><div>Напоминание, резервная копия</div></div><span class="chev">›</span></div>
+        <div class="item"><svg class="ic"><use href="#i-news"/></svg><div class="t"><div>Новости</div><div>Уведомления · тишина 23:00–08:00</div></div><span class="chev">›</span></div>
+        <div class="item"><svg class="ic"><use href="#i-info"/></svg><div class="t"><div>Приложение</div><div>Версия 0.81.0 · обновление</div></div><span class="chev">›</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="frame" id="s2">
+    <p class="cap">2. Настройки → Новости <span>· включено</span></p>
+    <div class="phone">
+      <div class="status"><span>9:41</span><span class="icons">▾ ▮</span></div>
+      <div class="header"><svg><use href="#i-back"/></svg><b>Новости</b></div>
+      <div class="section">Уведомления</div>
+      <div class="card">
+        <div class="item"><div class="t"><div>Уведомлять о новостях</div><div>Проверка примерно раз в 2 часа</div></div><span class="sw"></span></div>
+      </div>
+      <div class="section">Тишина</div>
+      <div class="card">
+        <div class="item"><div class="t"><div>Не беспокоить</div><div>Новости за это время придут одним уведомлением</div></div><span class="sw"></span></div>
+        <div class="item"><div class="t"><div>С</div></div><span class="val">23:00</span></div>
+        <div class="item"><div class="t"><div>До</div></div><span class="val">08:00</span></div>
+      </div>
+      <p class="hint">Android может сдвигать проверку, когда телефон спит или включена экономия заряда.</p>
+    </div>
+  </div>
+
+  <div class="frame" id="s3">
+    <p class="cap">3. Настройки → Новости <span>· уведомления выключены</span></p>
+    <div class="phone">
+      <div class="status"><span>9:41</span><span class="icons">▾ ▮</span></div>
+      <div class="header"><svg><use href="#i-back"/></svg><b>Новости</b></div>
+      <div class="section">Уведомления</div>
+      <div class="card">
+        <div class="item"><div class="t"><div>Уведомлять о новостях</div><div>Фоновая проверка остановлена</div></div><span class="sw off"></span></div>
+      </div>
+      <div class="section">Тишина</div>
+      <div class="card">
+        <div class="item off"><div class="t"><div>Не беспокоить</div><div>Доступно при включённых уведомлениях</div></div><span class="sw off"></span></div>
+        <div class="item off"><div class="t"><div>С</div></div><span class="val">23:00</span></div>
+        <div class="item off"><div class="t"><div>До</div></div><span class="val">08:00</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row" style="margin-top:28px">
+  <div class="frame" id="s4">
+    <p class="cap">4. Шторка Android <span>· четыре вида уведомлений</span></p>
+    <div class="phone shade">
+      <div class="status"><span>8:02</span>
+        <span class="icons">
+          <svg width="14" height="14"><use href="#i-news"/></svg>
+          <svg width="14" height="14"><use href="#i-tasks"/></svg>
+          <svg width="14" height="14"><use href="#i-fin"/></svg>
+          <svg width="14" height="14"><use href="#i-health"/></svg>
+          &nbsp;▾ ▮
+        </span>
+      </div>
+      <div class="clock">8:02</div>
+      <div class="date">Вт, 24 ноября</div>
+
+      <div class="n">
+        <div class="hd"><span class="badge" style="color:#fff"><svg><use href="#i-news"/></svg></span>Simple Tasks · Новости · сейчас</div>
+        <div class="ti">7 новых новостей</div>
+        <div class="tx">Дончич набрал трипл-дабл в победе над «Финиксом»<br>«Бавария» объявила состав на матч Лиги чемпионов<br>Вембаньяма — игрок недели на Западе<br><span style="color:#74777F">и ещё 4</span></div>
+      </div>
+
+      <div class="n">
+        <div class="hd"><span class="badge" style="color:#fff"><svg><use href="#i-tasks"/></svg></span>Simple Tasks · Напоминания · 8:00</div>
+        <div class="ti">Созвон с командой</div>
+        <div class="tx">Сегодня в 10:00</div>
+        <div class="act"><span>Готово</span><span>Отложить</span></div>
+      </div>
+
+      <div class="n">
+        <div class="hd"><span class="badge" style="color:#fff"><svg><use href="#i-fin"/></svg></span>Simple Tasks · Банк · 7:48</div>
+        <div class="ti">Покупка 450 ₽</div>
+        <div class="tx">Кофейня · записать в операции</div>
+      </div>
+
+      <div class="n">
+        <div class="hd"><span class="badge" style="color:#fff"><svg><use href="#i-health"/></svg></span>Simple Tasks · Здоровье · 8:00</div>
+        <div class="ti">Пора взвеситься</div>
+        <div class="tx">Сегодня записи веса ещё нет</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="frame" id="s5">
+    <p class="cap">5. Иконки уведомлений <span>· 24 dp, белый силуэт</span></p>
+    <div class="phone">
+      <div class="ico-sheet">
+        <div class="c"><div class="tile" style="color:#fff"><svg><use href="#i-tasks"/></svg></div>Задачи<small>напоминания, сводка дня, окно задачи, озвучка</small></div>
+        <div class="c"><div class="tile" style="color:#fff"><svg><use href="#i-fin"/></svg></div>Финансы<small>покупки из банковских пушей</small></div>
+        <div class="c"><div class="tile" style="color:#fff"><svg><use href="#i-health"/></svg></div>Здоровье<small>напоминание взвеситься</small></div>
+        <div class="c"><div class="tile" style="color:#fff"><svg><use href="#i-news"/></svg></div>Новости<small>новые материалы</small></div>
+      </div>
+      <div class="section">Строка состояния, 16 dp</div>
+      <div class="bar16" style="color:#fff">
+        <svg><use href="#i-news"/></svg><svg><use href="#i-tasks"/></svg><svg><use href="#i-fin"/></svg><svg><use href="#i-health"/></svg>
+      </div>
+      <div class="section">Сейчас — один колокольчик на всё</div>
+      <div class="bar16" style="color:#fff">
+        <svg><use href="#i-bell"/></svg><svg><use href="#i-bell"/></svg><svg><use href="#i-bell"/></svg><svg><use href="#i-bell"/></svg>
+      </div>
+      <p class="before">Формы взяты из иконок модулей нижней панели: галочка, рубль, сердце, молния. Так уведомление сразу связано с разделом приложения.</p>
+    </div>
+  </div>
+</div>
+</body>
+</html>
