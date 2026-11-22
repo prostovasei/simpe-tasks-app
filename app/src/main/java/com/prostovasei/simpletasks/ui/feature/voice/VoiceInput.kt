@@ -56,6 +56,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -166,6 +168,9 @@ fun VoiceSheet(
     val sizes = AppTheme.sizes
     val error = state.error
     val fatal = error != null && state.text.isBlank()
+    // Нажатие на текст во время записи: остановить запись и, как только появится поле, сразу открыть клавиатуру (#299).
+    var wantFocus by remember { mutableStateOf(false) }
+    LaunchedEffect(fatal) { if (fatal) wantFocus = false }
     Box(
         Modifier.fillMaxSize().background(colors.scrim)
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onCancel)
@@ -223,7 +228,10 @@ fun VoiceSheet(
                             tailText(state, colors.inactive),
                             style = big,
                             modifier = Modifier.verticalScroll(scroll)
-                                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onFocusText)
+                                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
+                                    wantFocus = true
+                                    onFocusText()
+                                }
                                 .testTag(TAG_VOICE_TEXT),
                         )
                     } else {
@@ -231,6 +239,15 @@ fun VoiceSheet(
                         var field by remember { mutableStateOf(TextFieldValue(state.text, TextRange(state.text.length))) }
                         LaunchedEffect(state.text) {
                             if (VoiceErrors.capitalize(field.text) != state.text) field = TextFieldValue(state.text, TextRange(state.text.length))
+                        }
+                        val requester = remember { FocusRequester() }
+                        val keyboard = LocalSoftwareKeyboardController.current
+                        LaunchedEffect(wantFocus) {
+                            if (wantFocus) {
+                                requester.requestFocus()
+                                keyboard?.show()
+                                wantFocus = false
+                            }
                         }
                         BasicTextField(
                             value = field,
@@ -242,7 +259,7 @@ fun VoiceSheet(
                             cursorBrush = SolidColor(colors.accent),
                             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Default),
                             keyboardActions = KeyboardActions(),
-                            modifier = Modifier.fillMaxSize().verticalScroll(scroll).testTag(TAG_VOICE_FIELD),
+                            modifier = Modifier.fillMaxSize().verticalScroll(scroll).focusRequester(requester).testTag(TAG_VOICE_FIELD),
                         )
                     }
                 }
@@ -310,15 +327,8 @@ private fun MicButton(state: VoiceState, onClick: () -> Unit) {
     val context = LocalContext.current
     val animated = remember { Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) > 0f }
     val recording = state.recording
-    val transition = rememberInfiniteTransition(label = "voiceBreath")
-    val breath by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(BREATH_MILLIS, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "breath",
-    )
     val level by animateFloatAsState(if (recording) state.level else 0f, label = "voiceLevel")
-    val phase = if (recording && animated) breath else 0f
+    val phase = breathPhase(recording && animated)
     val glow = (GLOW_MIN + (GLOW_MAX - GLOW_MIN) * phase) * (1f + GLOW_LEVEL * level)
     val label = stringResource(if (recording) R.string.voice_tap_stop else R.string.voice_tap_continue)
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -354,6 +364,23 @@ private fun MicButton(state: VoiceState, onClick: () -> Unit) {
         }
         if (state.error == null) Text(label, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = colors.textSecondary)
     }
+}
+
+/**
+ * Фаза «дыхания» 0..1. Бесконечная анимация создаётся только во время записи: на паузе, в ошибке и без анимаций системы
+ * кадры не перерисовываются (проверка #299 — раньше она крутилась всё время, пока открыто окно).
+ */
+@Composable
+private fun breathPhase(active: Boolean): Float {
+    if (!active) return 0f
+    val transition = rememberInfiniteTransition(label = "voiceBreath")
+    val breath by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(BREATH_MILLIS, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "breath",
+    )
+    return breath
 }
 
 private fun errorTitle(error: VoiceError) = when (error) {

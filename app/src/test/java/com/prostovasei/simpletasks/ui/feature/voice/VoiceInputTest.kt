@@ -7,6 +7,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -196,6 +197,21 @@ class VoiceInputTest {
         composeRule.onNodeWithTag(TAG_VOICE_ACTION).performClick()
         assertEquals(listOf("Позвонить маме завтра в 10 утра"), results)
         assertEquals(true, engine.destroyed)
+    }
+
+    /** Проверка #299: одно нажатие на текст во время записи — остановка и сразу клавиатура в поле, без второго нажатия. */
+    @Test
+    fun tapOnTextWhileRecordingStopsAndFocusesField() {
+        val engine = FakeEngine()
+        val results = mutableListOf<String>()
+        route(engine, results)
+        composeRule.runOnIdle { engine.listener!!.onPartial("купить молоко") }
+        composeRule.onNodeWithTag(TAG_VOICE_TEXT, useUnmergedTree = true).performClick()
+        assertEquals(1, engine.stops)
+        composeRule.runOnIdle { engine.listener!!.onResult("купить молоко") }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag(TAG_VOICE_FIELD).assertIsFocused().assertTextEquals("Купить молоко")
+        assertEquals(emptyList<String>(), results)
     }
 
     @Test
