@@ -859,7 +859,6 @@
     <string name="weigh_in_text_first">Сегодня записи веса ещё нет.</string>
     <string name="weigh_in_action">Записать</string>
     <string name="module_news">Новости</string>
-    <string name="news_source">Sports.ru · последние 24 часа</string>
     <string name="news_refresh">Обновить новости</string>
     <string name="news_failed">Не удалось обновить новости. Попробуйте ещё раз.</string>
     <string name="news_empty">Нет новостей за последние 24 часа</string>

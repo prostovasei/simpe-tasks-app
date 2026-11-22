@@ -80,16 +80,14 @@ class WidgetNewsTest {
                 BottomBar(model, 1, imageButtons = true, module = WidgetModule.NEWS)
             }
         }.remoteViews
-        val root = newsWidgetViews(context, 1, bar, size).apply(context, FrameLayout(context))
-        val header = root.findViewById<View>(R.id.widget_news_header)
-        assertEquals(if (compact) View.GONE else View.VISIBLE, header.visibility)
+        val root = newsWidgetViews(context, 1, bar).apply(context, FrameLayout(context))
 
         val refresh = root.viewsWithDescription(context.getString(R.string.news_refresh)).single()
         assertTrue(generateSequence(refresh) { it.parent as? View }.take(3).any(View::hasOnClickListeners))
         assertEquals(if (compact) 0 else 1, root.viewsWithDescription(context.getString(R.string.update_title)).size)
 
         val service = Robolectric.buildService(WidgetNewsService::class.java).create().get()
-        val rows = service.onGetViewFactory(Intent().putExtra("compact", compact))
+        val rows = service.onGetViewFactory(Intent())
         rows.onCreate()
         rows.onDataSetChanged()
         val list = root.findViewById<ListView>(R.id.widget_news_list)
@@ -105,6 +103,13 @@ class WidgetNewsTest {
             checkNotNull(rows.getViewAt(position)).apply(context, list)
                 .findViewById<TextView>(R.id.news_row_title).text.toString()
         }
+        assertEquals("Сегодня", titles.first())
+        val heading = checkNotNull(rows.getViewAt(0)).apply(context, list)
+        val update = heading.findViewById<TextView>(R.id.widget_news_updated)
+        val updated = java.time.format.DateTimeFormatter.ofPattern("HH:mm")
+            .withZone(java.time.ZoneId.systemDefault()).format(Instant.ofEpochSecond(edition.updated))
+        assertEquals(updated, update.text.toString())
+        assertEquals(context.getString(R.string.news_updated, updated), update.contentDescription)
         val storyTitles = edition.stories.map(SportsStory::title)
         assertEquals(storyTitles.dropLast(1), titles.filter(storyTitles::contains))
 
