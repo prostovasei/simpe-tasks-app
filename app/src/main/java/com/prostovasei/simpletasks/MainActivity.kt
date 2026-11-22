@@ -67,6 +67,7 @@ class MainActivity : ComponentActivity() {
     companion object {
         /** Экран из интента: задача ([EXTRA_TASK_ID]) или создание задачи ([EXTRA_QUICK_ADD]). */
         fun routeFrom(intent: Intent): Any? = when {
+            intent.getBooleanExtra(EXTRA_BANK_QUEUE, false) -> com.prostovasei.simpletasks.ui.navigation.OpenBankQueue(intent.getStringExtra(EXTRA_BANK_PURCHASE))
             // #233: «Изменить» или нажатие на уведомление о покупке.
             intent.getStringExtra(EXTRA_BANK_PURCHASE) != null -> com.prostovasei.simpletasks.ui.navigation.OpenBankPurchase(checkNotNull(intent.getStringExtra(EXTRA_BANK_PURCHASE)))
             // #257: нажатие на «Пора взвеситься» — раздел «Здоровье» с окном ввода веса.
@@ -83,6 +84,7 @@ class MainActivity : ComponentActivity() {
         }
 
         const val EXTRA_TASK_ID = "open_task_id"
+        const val EXTRA_BANK_QUEUE = "open_bank_queue"
         const val EXTRA_BANK_PURCHASE = "bank_purchase_id"
         const val EXTRA_HEALTH_WEIGH = "health_weigh"
         const val EXTRA_OPEN_DATE = "open_date"

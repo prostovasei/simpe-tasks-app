@@ -34,7 +34,7 @@ class FinanceViewModel @Inject constructor(
 ) {
     /** «Изменить» из уведомления при холодном запуске: покупка откроется, когда список прочитается из базы. */
     private var waitingPurchase: String? = null
-    private var pendingLoaded = false
+    private val pendingReady = kotlinx.coroutines.CompletableDeferred<Unit>()
 
     init {
         viewModelScope.launch { finance.observeAccounts().collect { accounts -> setState { copy(accounts = accounts) } } }
@@ -48,7 +48,7 @@ class FinanceViewModel @Inject constructor(
         viewModelScope.launch {
             purchases.observePending().collect { pending ->
                 setState { copy(pending = pending) }
-                pendingLoaded = true
+                pendingReady.complete(Unit)
                 waitingPurchase?.let { id ->
                     waitingPurchase = null
                     editPurchase(id)
@@ -141,10 +141,17 @@ class FinanceViewModel @Inject constructor(
     }
 
     /** «Изменить»: окно нового расхода — сумма, счёт и дата покупки подставлены, категории нет (§4.3, макет 2.4). */
+    suspend fun openPendingPurchase(id: String): Boolean {
+        pendingReady.await()
+        if (currentState.pending.none { it.id == id }) return false
+        editPurchase(id)
+        return true
+    }
+
     private fun editPurchase(id: String) {
         val purchase = currentState.pending.firstOrNull { it.id == id }
         if (purchase == null) {
-            if (!pendingLoaded) waitingPurchase = id
+            if (!pendingReady.isCompleted) waitingPurchase = id
             return
         }
         val accounts = currentState.accounts.orEmpty()

@@ -39,6 +39,7 @@ internal fun NewsScreen() {
     val state by SportsNews.state.collectAsStateWithLifecycle()
     val density = LocalDensity.current
     val inset = dimensionResource(R.dimen.widget_news_inset)
+    val metaGap = dimensionResource(R.dimen.widget_news_meta_gap)
     val rowGap = dimensionResource(R.dimen.widget_news_row_gap)
     val dayInset = dimensionResource(R.dimen.widget_news_day_inset)
     val primary = colorResource(R.color.widget_flat_text_primary)
@@ -72,7 +73,7 @@ internal fun NewsScreen() {
                     Modifier.fillMaxWidth().clickable { runCatching { uriHandler.openUri(row.url) } }
                         .padding(start = inset, end = inset, bottom = rowGap),
                 ) {
-                    Text(row.meta, style = meta)
+                    if (row.meta.isNotBlank()) Text(row.meta, style = meta, modifier = Modifier.padding(bottom = metaGap))
                     Text(row.title, style = title)
                 }
             }

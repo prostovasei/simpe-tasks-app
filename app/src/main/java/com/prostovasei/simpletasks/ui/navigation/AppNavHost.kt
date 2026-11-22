@@ -242,7 +242,7 @@ fun AppNavHost(
     LaunchedEffect(openRoute) {
         openRoute ?: return@LaunchedEffect
         // Покупка из уведомления банка (#233) открывается ниже, когда готова модель финансов.
-        if (openRoute is OpenBankPurchase || openRoute is OpenHealthWeight) return@LaunchedEffect
+        if (openRoute is OpenBankPurchase || openRoute is OpenBankQueue || openRoute is OpenHealthWeight) return@LaunchedEffect
         navController.currentBackStackEntryFlow.first()
         navController.navigate(openRoute) { launchSingleTop = true }
         onRouteOpened()
@@ -283,11 +283,17 @@ fun AppNavHost(
     val finance = hiltViewModel<FinanceViewModel>()
     // #233: «Изменить» в уведомлении о покупке — раздел финансов с окном нового расхода.
     LaunchedEffect(openRoute) {
-        val purchase = openRoute as? OpenBankPurchase ?: return@LaunchedEffect
+        if (openRoute !is OpenBankPurchase && openRoute !is OpenBankQueue) return@LaunchedEffect
         navController.currentBackStackEntryFlow.first()
         val inStack = runCatching { navController.getBackStackEntry<FinanceDestination>() }.isSuccess
         if (inStack) navController.popBackStack<FinanceDestination>(inclusive = false) else navController.openRoot(FinanceDestination, restore = true)
-        finance.onIntent(FinanceIntent.EditPurchase(purchase.purchaseId))
+        when (openRoute) {
+            is OpenBankPurchase -> finance.onIntent(FinanceIntent.EditPurchase(openRoute.purchaseId))
+            is OpenBankQueue -> {
+                val opened = openRoute.purchaseId?.let { finance.openPendingPurchase(it) } == true
+                if (!opened) navController.navigate(FinanceUnsortedDestination) { launchSingleTop = true }
+            }
+        }
         onRouteOpened()
     }
     val health = hiltViewModel<HealthViewModel>()

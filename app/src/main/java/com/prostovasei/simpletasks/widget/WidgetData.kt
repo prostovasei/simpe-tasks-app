@@ -29,6 +29,7 @@ import java.time.YearMonth
 interface WidgetEntryPoint {
     fun healthSettings(): com.prostovasei.simpletasks.domain.repository.HealthSettingsStore
     fun health(): com.prostovasei.simpletasks.domain.repository.HealthRepository
+    fun bankPurchases(): com.prostovasei.simpletasks.domain.repository.BankPurchases
     fun finance(): com.prostovasei.simpletasks.domain.repository.FinanceRepository
     fun tasks(): TaskRepository
     fun projects(): ProjectRepository

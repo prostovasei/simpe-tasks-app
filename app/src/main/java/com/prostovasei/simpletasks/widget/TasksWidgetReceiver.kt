@@ -89,6 +89,7 @@ private const val MIDNIGHT_DELAY_SECONDS = 30L
 class WidgetUpdater @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val tasks: TaskRepository,
+    private val bankPurchases: com.prostovasei.simpletasks.domain.repository.BankPurchases,
     private val finance: com.prostovasei.simpletasks.domain.repository.FinanceRepository,
     private val health: com.prostovasei.simpletasks.domain.repository.HealthRepository,
     private val healthSettings: com.prostovasei.simpletasks.domain.repository.HealthSettingsStore,
@@ -106,7 +107,7 @@ class WidgetUpdater @Inject constructor(
             }
         }
         appScope.launch {
-            combine(finance.observeAccounts(), finance.observeOperations()) { _, _ -> }
+            combine(finance.observeAccounts(), finance.observeOperations(), bankPurchases.observePending()) { _, _, _ -> }
                 .debounce(DEBOUNCE_MS).collect { refreshFinance() }
         }
         val prefs = com.prostovasei.simpletasks.ui.feature.finance.financeLimitPreferences(context)

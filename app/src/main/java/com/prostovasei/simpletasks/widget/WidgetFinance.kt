@@ -1,6 +1,12 @@
 package com.prostovasei.simpletasks.widget
 
+import android.app.PendingIntent
 import android.content.Context
+import android.os.Build
+import com.prostovasei.simpletasks.MainActivity
+import com.prostovasei.simpletasks.domain.model.finance.PendingPurchase
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -34,7 +40,13 @@ internal fun financeWidgetViews(context: Context, id: Int, bar: RemoteViews, siz
         .setData("simpletasks://widget/$id/finance/$width/$height".toUri())
         .putExtra("width", width)
         .putExtra("height", height)
+    val open = Intent(context, MainActivity::class.java)
+        .setData("simpletasks://widget/$id/open-finance-purchase".toUri())
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        .putExtra(MainActivity.EXTRA_BANK_QUEUE, true)
+    val mutable = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE else 0
     return RemoteViews(context.packageName, R.layout.widget_finance_root).apply {
+        setPendingIntentTemplate(R.id.widget_finance_list, PendingIntent.getActivity(context, id, open, mutable))
         setRemoteAdapter(R.id.widget_finance_list, adapter)
         removeAllViews(R.id.widget_finance_bar)
         addView(R.id.widget_finance_bar, bar)
@@ -54,7 +66,7 @@ private class FinanceRows(private val context: Context, private val width: Int, 
     override fun getCount() = rows.size
     override fun getViewAt(position: Int): RemoteViews? = rows.getOrNull(position)
     override fun getLoadingView(): RemoteViews? = null
-    override fun getViewTypeCount() = 4
+    override fun getViewTypeCount() = 5
     override fun getItemId(position: Int) = position.toLong()
     override fun hasStableIds() = false
 
@@ -63,7 +75,9 @@ private class FinanceRows(private val context: Context, private val width: Int, 
             val entry = context.widgetEntryPoint()
             val repository = entry.finance()
             val accounts = repository.observeAccounts().first()
-            if (accounts.isEmpty()) return@runBlocking listOf(row("Начнём со счёта"))
+            val pending = entry.bankPurchases().observePending().first()
+            val pendingRows = pendingRows(pending, entry.time().zone())
+            if (accounts.isEmpty()) return@runBlocking listOf(row("Начнём со счёта")) + pendingRows
             val today = entry.time().today()
             val month = YearMonth.from(today)
             val model = MonthSpending.of(repository.observeOperations().first(), month, today)
@@ -94,6 +108,29 @@ private class FinanceRows(private val context: Context, private val width: Int, 
                 val available = width - 2 * SizeTokens.WIDGET_EDGE
                 val columns = (available / (FinanceShareSizes.accountMin * fontScale)).toInt().coerceIn(1, 4)
                 accounts.chunked(columns).forEach { add(accountRow(it, columns)) }
+                addAll(pendingRows)
+            }
+        }
+    }
+
+    private fun pendingRows(purchases: List<PendingPurchase>, zone: ZoneId): List<RemoteViews> {
+        if (purchases.isEmpty()) return emptyList()
+        val heading = context.getString(R.string.widget_bank_pending_count, context.getString(R.string.bank_unsorted), purchases.size)
+        val timeFormat = DateTimeFormatter.ofPattern("dd.MM · HH:mm").withZone(zone)
+        return buildList {
+            add(RemoteViews(context.packageName, R.layout.widget_bank_purchase).apply {
+                setTextViewText(R.id.widget_bank_label, heading)
+                setViewVisibility(R.id.widget_bank_time, android.view.View.GONE)
+                setViewVisibility(R.id.widget_bank_amount, android.view.View.GONE)
+                setOnClickFillInIntent(R.id.widget_bank_row, Intent())
+            })
+            purchases.take(3).forEach { purchase ->
+                add(RemoteViews(context.packageName, R.layout.widget_bank_purchase).apply {
+                    setTextViewText(R.id.widget_bank_label, purchase.accountName)
+                    setTextViewText(R.id.widget_bank_time, timeFormat.format(purchase.postedAt))
+                    setTextViewText(R.id.widget_bank_amount, "−${Money.format(purchase.amount)}")
+                    setOnClickFillInIntent(R.id.widget_bank_row, Intent().putExtra(MainActivity.EXTRA_BANK_PURCHASE, purchase.id))
+                })
             }
         }
     }

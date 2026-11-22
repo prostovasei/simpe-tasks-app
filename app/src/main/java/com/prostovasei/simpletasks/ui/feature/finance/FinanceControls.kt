@@ -18,6 +18,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -71,12 +77,26 @@ private class RubleSuffix(private val placeholder: Color) : VisualTransformation
  * Ширину поля нельзя задавать через IntrinsicSize: Compose считает её для поля ввода неверно, и сумма пропадает (0.58.1, #223).
  */
 @Composable
-fun AmountField(value: String, onChange: (String) -> Unit, tag: String, modifier: Modifier = Modifier, align: TextAlign = TextAlign.Center) {
+fun AmountField(value: String, onChange: (String) -> Unit, tag: String, modifier: Modifier = Modifier, align: TextAlign = TextAlign.Center, purchaseId: String? = null) {
     val colors = AppTheme.colors
     val style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold, color = colors.textPrimary, textAlign = align)
+    var input by rememberSaveable(purchaseId, stateSaver = TextFieldValue.Saver) {
+        mutableStateOf(TextFieldValue(value, TextRange(if (purchaseId == null) 0 else value.length)))
+    }
     BasicTextField(
-        value = value,
-        onValueChange = { onChange(Money.filterInput(it)) },
+        value = if (value == input.text) input else input.copy(text = value, composition = null),
+        onValueChange = { next ->
+            val filtered = Money.filterInput(next.text)
+            input = if (filtered == next.text) next else next.copy(
+                text = filtered,
+                selection = TextRange(
+                    Money.filterInput(next.text.take(next.selection.start)).length.coerceAtMost(filtered.length),
+                    Money.filterInput(next.text.take(next.selection.end)).length.coerceAtMost(filtered.length),
+                ),
+                composition = null,
+            )
+            onChange(filtered)
+        },
         singleLine = true,
         textStyle = style,
         cursorBrush = SolidColor(colors.accent),

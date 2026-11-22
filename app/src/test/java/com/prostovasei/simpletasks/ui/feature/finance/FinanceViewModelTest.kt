@@ -489,6 +489,21 @@ class FinanceViewModelTest {
     }
 
     @Test
+    fun widgetOpensPendingPurchaseAndRejectsAnAlreadyProcessedOne() = runTest(dispatcher) {
+        twoAccounts()
+        bank.pending.value = listOf(purchase())
+        val vm = vm()
+
+        assertTrue(vm.openPendingPurchase("p1"))
+        assertEquals("p1", vm.state.value.form?.purchaseId)
+        vm.onIntent(FinanceIntent.CloseForm)
+        vm.onIntent(FinanceIntent.SkipPurchase("p1"))
+        runCurrent()
+        assertFalse(vm.openPendingPurchase("p1"))
+        assertNull(vm.state.value.form)
+    }
+
+    @Test
     fun recordAndSkipAnswerPurchase() = runTest(dispatcher) {
         bank.pending.value = listOf(purchase("p1"), purchase("p2"))
         val vm = vm()
