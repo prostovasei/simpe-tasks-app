@@ -580,13 +580,13 @@ internal fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boole
                 ) {
                     Box(
                         GlanceModifier.size(width = SizeTokens.WIDGET_VOICE_W.dp, height = SizeTokens.WIDGET_ADD_H.dp)
-                            .button(R.drawable.widget_task_bar_add, LocalWidgetColors.current.accent, RadiusTokens.LG, imageButtons),
+                            .button(R.drawable.widget_task_bar_mic, LocalWidgetColors.current.accentSoft, RadiusTokens.LG, imageButtons),
                         contentAlignment = Alignment.Center,
                     ) {
                         Image(
                             ImageProvider(R.drawable.ic_widget_bar_mic),
                             contentDescription = null,
-                            colorFilter = ColorFilter.tint(LocalWidgetColors.current.onAccent),
+                            colorFilter = ColorFilter.tint(LocalWidgetColors.current.textPrimary),
                             modifier = GlanceModifier.size(SizeTokens.WIDGET_TAB_ICON.dp),
                         )
                     }

@@ -6,6 +6,7 @@ import android.speech.SpeechRecognizer
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -13,6 +14,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ApplicationProvider
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
@@ -25,7 +27,7 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
-/** #95: окно голосового ввода — состояния, кнопки и работа с распознавателем (подменён). */
+/** #95, #299: окно голосового ввода — состояния, правка текста, продолжение диктовки и передача в задачу по «Готово». */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(qualifiers = "w400dp-h900dp-xhdpi")
@@ -35,8 +37,25 @@ class VoiceInputTest {
 
     private val clicks = mutableListOf<String>()
 
-    private fun show(state: VoiceState) = composeRule.setContent {
-        AppTheme { VoiceSheet(state, onCancel = { clicks += "cancel" }, onDone = { clicks += "done" }, onRetry = { clicks += "retry" }) }
+    /** Снимки делаются на нулевом кадре анимации «Дыхание» — иначе они были бы разными от запуска к запуску. */
+    private fun show(state: VoiceState) {
+        composeRule.mainClock.autoAdvance = false
+        composeRule.setContent {
+            AppTheme { VoiceSheet(state, onCancel = { clicks += "cancel" }, onDone = { clicks += "done" }, onMic = { clicks += "mic" }) }
+        }
+    }
+
+    @Test
+    fun capitalizationJoinAndResult() {
+        assertEquals("Позвонить маме", VoiceErrors.capitalize("позвонить маме"))
+        assertEquals("Позвонить маме", VoiceErrors.capitalize("  позвонить маме"))
+        assertEquals("Позвонить маме завтра в 10", VoiceErrors.join("Позвонить маме", "завтра в 10 "))
+        assertEquals("Купить хлеб", VoiceErrors.join("", " Купить хлеб"))
+        assertEquals("Купить хлеб", VoiceErrors.join("Купить хлеб", "  "))
+        assertEquals("Позвонить маме завтра в 10", VoiceErrors.result("позвонить маме завтра в 10."))
+        assertEquals("Первая буква заглавная и в предварительном тексте", "Позвонить маме завтра", VoiceState(partial = "позвонить маме завтра").display)
+        assertEquals("Позвонить маме завтра в 10", VoiceState(text = "Позвонить маме", partial = "завтра в 10").display)
+        assertEquals(false, VoiceState().canDone)
     }
 
     @Test
@@ -56,9 +75,10 @@ class VoiceInputTest {
 
     @Test
     fun listeningWaitsForSpeech() {
-        show(VoiceState())
+        show(VoiceState(recording = true))
         composeRule.onNodeWithText("Говорите").assertExists()
         composeRule.onNodeWithText("Например, «Позвонить маме завтра в 10»").assertExists()
+        composeRule.onNodeWithText("Нажмите, чтобы остановить").assertExists()
         composeRule.onNodeWithTag(TAG_VOICE_ACTION).assertIsNotEnabled()
         composeRule.onRoot().captureRoboImage("screenshots/voice_listening_light.png")
         composeRule.onNodeWithTag(TAG_VOICE_CANCEL).performClick()
@@ -66,19 +86,39 @@ class VoiceInputTest {
     }
 
     @Test
-    fun partialTextAndDone() {
-        show(VoiceState(heard = "Позвонить маме завтра", tail = "в 10", level = 0.6f))
+    fun recordingStreamsTextWithCapital() {
+        show(VoiceState(text = "", partial = "позвонить маме завтра в 10", recording = true, level = 0.6f))
         composeRule.onNodeWithText("Слушаю…").assertExists()
         composeRule.onNodeWithTag(TAG_VOICE_TEXT, useUnmergedTree = true).assertTextEquals("Позвонить маме завтра в 10")
+        composeRule.onNodeWithTag(TAG_VOICE_ACTION).assertIsEnabled()
         composeRule.onRoot().captureRoboImage("screenshots/voice_partial_light.png")
+        composeRule.onNodeWithTag(TAG_VOICE_MIC).performClick()
         composeRule.onNodeWithTag(TAG_VOICE_ACTION).performClick()
-        assertEquals(listOf("done"), clicks)
+        assertEquals(listOf("mic", "done"), clicks)
     }
 
     @Test
-    fun errorsOfferRetryOrSettings() {
+    fun pauseKeepsTextInEditableField() {
+        show(VoiceState(text = "Позвонить маме завтра в 10"))
+        composeRule.onNodeWithText("Проверьте текст").assertExists()
+        composeRule.onNodeWithText("Нажмите, чтобы продолжить").assertExists()
+        composeRule.onNodeWithTag(TAG_VOICE_FIELD).assertExists()
+        composeRule.onRoot().captureRoboImage("screenshots/voice_paused_light.png")
+    }
+
+    @Test
+    fun notHeardAgainKeepsText() {
+        show(VoiceState(text = "Позвонить маме завтра в 10 утра", error = VoiceError.NOT_HEARD))
+        composeRule.onNodeWithText("Не расслышал — нажмите 🎤 ещё раз").assertExists()
+        composeRule.onNodeWithTag(TAG_VOICE_FIELD).assertExists()
+        composeRule.onNodeWithTag(TAG_VOICE_ACTION).assertIsEnabled()
+        composeRule.onRoot().captureRoboImage("screenshots/voice_not_heard_again_light.png")
+    }
+
+    @Test
+    fun errorsWithoutTextOfferRetryOrSettings() {
         var state by mutableStateOf(VoiceState(error = VoiceError.NOT_HEARD))
-        composeRule.setContent { AppTheme { VoiceSheet(state, { clicks += "cancel" }, { clicks += "done" }, { clicks += "retry" }) } }
+        composeRule.setContent { AppTheme { VoiceSheet(state, { clicks += "cancel" }, { clicks += "done" }, { clicks += "mic" }) } }
         composeRule.onNodeWithText("Не расслышал").assertExists()
         composeRule.onNodeWithText("Повторить").assertExists()
         composeRule.onRoot().captureRoboImage("screenshots/voice_not_heard_light.png")
@@ -97,7 +137,7 @@ class VoiceInputTest {
         composeRule.onNodeWithText("Микрофон занят другим приложением. Попробуйте ещё раз.").assertExists()
         // Нажатие — после всех снимков: след нажатия на кнопке делал снимки нестабильными.
         composeRule.onNodeWithTag(TAG_VOICE_ACTION).performClick()
-        assertEquals(listOf("retry"), clicks)
+        assertEquals(listOf("mic"), clicks)
     }
 
     /** Распознаватель-заглушка: запоминает запуски, события передаёт тест. */
@@ -111,28 +151,87 @@ class VoiceInputTest {
         override fun destroy() { destroyed = true }
     }
 
-    @Test
-    fun routeStreamsTextAndReturnsResult() {
+    private fun route(engine: FakeEngine, results: MutableList<String>) {
         val app = ApplicationProvider.getApplicationContext<Application>()
         shadowOf(app).grantPermissions(Manifest.permission.RECORD_AUDIO)
-        val engine = FakeEngine()
-        val results = mutableListOf<String>()
         composeRule.setContent { AppTheme { VoiceRoute(onClose = { clicks += "close" }, onResult = { results += it }, engineFactory = { engine }) } }
         composeRule.waitForIdle()
+    }
+
+    @Test
+    fun pauseDoesNotSendTextToTask() {
+        val engine = FakeEngine()
+        val results = mutableListOf<String>()
+        route(engine, results)
         assertEquals(1, engine.starts)
 
-        composeRule.runOnIdle { engine.listener!!.onPartial("Купить молоко") }
-        composeRule.onNodeWithTag(TAG_VOICE_TEXT, useUnmergedTree = true).assertTextEquals("Купить молоко")
-        composeRule.onNodeWithTag(TAG_VOICE_ACTION).performClick()
-        assertEquals(1, engine.stops)
+        composeRule.runOnIdle { engine.listener!!.onPartial("позвонить маме") }
+        composeRule.onNodeWithTag(TAG_VOICE_TEXT, useUnmergedTree = true).assertTextEquals("Позвонить маме")
+        composeRule.runOnIdle { engine.listener!!.onResult("позвонить маме завтра в 10.") }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Проверьте текст").assertExists()
+        composeRule.onNodeWithTag(TAG_VOICE_FIELD).assertTextEquals("Позвонить маме завтра в 10")
+        assertEquals("После паузы в задачу ничего не уходит", emptyList<String>(), results)
+    }
 
+    @Test
+    fun editContinueAndDone() {
+        val engine = FakeEngine()
+        val results = mutableListOf<String>()
+        route(engine, results)
+        composeRule.runOnIdle { engine.listener!!.onResult("позвонить маме") }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag(TAG_VOICE_FIELD).performTextInput(" завтра")
+        composeRule.onNodeWithTag(TAG_VOICE_FIELD).assertTextEquals("Позвонить маме завтра")
+
+        composeRule.onNodeWithTag(TAG_VOICE_MIC).performClick()
+        composeRule.waitForIdle()
+        assertEquals("🎤 после паузы запускает запись заново", 2, engine.starts)
+        composeRule.onNodeWithText("Слушаю…").assertExists()
+        composeRule.runOnIdle { engine.listener!!.onResult("в 10 утра") }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag(TAG_VOICE_FIELD).assertTextEquals("Позвонить маме завтра в 10 утра")
+
+        composeRule.onNodeWithTag(TAG_VOICE_ACTION).performClick()
+        assertEquals(listOf("Позвонить маме завтра в 10 утра"), results)
+        assertEquals(true, engine.destroyed)
+    }
+
+    @Test
+    fun micStopsRecordingAndDoneWorksWhileRecording() {
+        val engine = FakeEngine()
+        val results = mutableListOf<String>()
+        route(engine, results)
+        composeRule.runOnIdle { engine.listener!!.onPartial("купить молоко") }
+        composeRule.onNodeWithTag(TAG_VOICE_MIC).performClick()
+        assertEquals("Во время записи 🎤 останавливает её", 1, engine.stops)
+
+        composeRule.onNodeWithTag(TAG_VOICE_ACTION).performClick()
+        assertEquals("«Готово» во время записи берёт текущий текст", listOf("Купить молоко"), results)
+    }
+
+    @Test
+    fun errorKeepsTypedTextAndWithoutTextShowsErrorWindow() {
+        val engine = FakeEngine()
+        val results = mutableListOf<String>()
+        route(engine, results)
         composeRule.runOnIdle { engine.listener!!.onError(VoiceError.NOT_HEARD) }
+        composeRule.waitForIdle()
         composeRule.onNodeWithText("Не расслышал").assertExists()
+        composeRule.onNodeWithText("Повторить").assertExists()
         composeRule.onNodeWithTag(TAG_VOICE_ACTION).performClick()
         composeRule.waitForIdle()
         assertEquals("«Повторить» запускает запись заново", 2, engine.starts)
 
-        composeRule.runOnIdle { engine.listener!!.onResult("  Купить молоко завтра. ") }
-        assertEquals(listOf("Купить молоко завтра"), results)
+        composeRule.runOnIdle { engine.listener!!.onResult("купить хлеб") }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag(TAG_VOICE_MIC).performClick()
+        composeRule.waitForIdle()
+        composeRule.runOnIdle { engine.listener!!.onError(VoiceError.NOT_HEARD) }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Не расслышал — нажмите 🎤 ещё раз").assertExists()
+        composeRule.onNodeWithTag(TAG_VOICE_FIELD).assertTextEquals("Купить хлеб")
+        assertEquals(emptyList<String>(), results)
     }
 }

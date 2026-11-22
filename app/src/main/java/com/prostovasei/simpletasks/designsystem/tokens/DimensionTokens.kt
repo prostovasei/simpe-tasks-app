@@ -129,10 +129,12 @@ object SizeTokens {
 
     /** Окно голосового ввода (#95): микрофон, наибольший круг громкости, высота области микрофона, значок, высота текста. */
     const val VOICE_MIC = 72
-    const val VOICE_RING_MAX = 136
-    const val VOICE_MIC_AREA = 150
+    const val VOICE_GLOW = 150
     const val VOICE_MIC_ICON = 32
     const val VOICE_TEXT_MIN = 64
+
+    /** #299: окно фиксированной высоты — не двигается и не растёт от клавиатуры и длины текста. */
+    const val VOICE_HEIGHT = 330
     const val NAV_SHADOW = 10
     const val CHECKBOX = 18
     const val CHECKBOX_STROKE = 2
