@@ -16,6 +16,7 @@ import androidx.glance.appwidget.GlanceRemoteViews
 import androidx.glance.appwidget.state.getAppWidgetState
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import com.prostovasei.simpletasks.R
+import com.prostovasei.simpletasks.data.news.SportsNews
 import com.prostovasei.simpletasks.domain.model.WeekFilter
 import com.prostovasei.simpletasks.widget.theme.LocalWidgetColors
 import com.prostovasei.simpletasks.widget.theme.TaskWidgetColors
@@ -51,7 +52,13 @@ object WidgetRenderer {
         widgetIds(context).forEach { render(context, it, reason) }
     }
 
-    internal suspend fun renderNews(context: Context) {
+    internal suspend fun refreshNews(context: Context) {
+        SportsNews.refresh(context, reportFailure = { WidgetLog.add(context, it) }) {
+            renderNews(context)
+        }
+    }
+
+    private suspend fun renderNews(context: Context) {
         widgetIds(context).filter { WidgetSelection.module(context, it) == WidgetModule.NEWS }
             .forEach { render(context, it, "новости") }
     }

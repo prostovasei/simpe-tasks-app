@@ -4,6 +4,10 @@
 
 ## Завершённая база
 
+0.80.1, [PR #289](https://github.com/prostovasei/simpe-tasks-app/pull/289), merge c32713ae0c62147145ba124d7de35bd55f439e83, [APK build-424](https://github.com/prostovasei/simple-tasks-releases/releases/tag/build-424). CI PR/main зелёный, APK проверен. PM сообщил об ошибке обновления новостей.
+
+### Выпуск новостей
+
 0.80.0, [PR #287](https://github.com/prostovasei/simpe-tasks-app/pull/287), merge 5907a8e38d3d0e30a66c1b6c1b20a20c45c7c6a9, [APK build-422](https://github.com/prostovasei/simple-tasks-releases/releases/tag/build-422). CI PR/main зелёный, APK проверен. Ручные проверки ожидают результата PM.
 
 ### База предыдущих итераций
@@ -115,4 +119,8 @@ Codex, ветка `codex/sports-news` от `main` 373bbe1. [Issue #286](https://
 
 ## #288 — оформление новостей
 
-Codex, ветка `codex/news-feed-layout` от main 5907a8e. [Issue #288](https://github.com/prostovasei/simpe-tasks-app/issues/288) · [Утверждённые макеты](../design/approved/288/README.md). PM выбрал 08 «Молния» и дал «Пиши код». Версия 0.80.1, лента унифицирована, время последнего обновления в строке «Сегодня» на всех размерах. Локальная проверка завершена. 879 тестов, 0 ошибок, 3 пропуска. [Отчёт и Android-снимки](testing-runs/0.80.1-local.md). Проверенный коммит ветки указан в #288. Этап «Выпуск» ожидает команды PM.
+Codex, ветка `codex/news-feed-layout` от main 5907a8e. [Issue #288](https://github.com/prostovasei/simpe-tasks-app/issues/288) · [Утверждённые макеты](../design/approved/288/README.md). PM выбрал 08 «Молния» и дал «Пиши код». Версия 0.80.1, лента унифицирована, время последнего обновления в строке «Сегодня» на всех размерах. Локальная проверка завершена. 879 тестов, 0 ошибок, 3 пропуска. [Отчёт и Android-снимки](testing-runs/0.80.1-local.md). Выпущено в PR #289, build-424. Ручные проверки ожидают результата PM.
+
+## #290 — битая ссылка Sports.ru
+
+Codex, ветка `codex/news-invalid-links` от main c32713a. [Issue #290](https://github.com/prostovasei/simpe-tasks-app/issues/290). Парсер пропускает записи с некорректным адресом, при сбое страницы оставляет кеш и пишет тип сбоя и номер страницы в журнал. Версия 0.80.2. Локальная проверка завершена. 880 тестов, 0 ошибок, 3 пропуска. Парсер прошёл на сохранённой странице с битой ссылкой и на живой ленте. [Отчёт](testing-runs/0.80.2-local.md). Проверенный коммит указан в #290. Этап «Выпуск» ожидает команды PM.
