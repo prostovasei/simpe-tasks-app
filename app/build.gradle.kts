@@ -126,6 +126,7 @@ dependencies {
     testImplementation(libs.turbine)
     testImplementation(libs.androidx.room.testing)
     testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.work.testing)
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.roborazzi)
     testImplementation(libs.roborazzi.compose)

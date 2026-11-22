@@ -55,6 +55,19 @@ internal object NewsAlerts {
     private fun remember(known: Map<String, Long>, edition: SportsEdition, now: Long): Map<String, Long> =
         (known + edition.stories.associate { key(it) to it.published }).filterValues { now - it <= keep }
 
+    enum class Form { ONE, FEW, MANY }
+
+    /** Склонение «новость» по правилам русского языка: 1, 21 — ONE; 2–4, 22–24 — FEW; остальное, включая 11–14, — MANY. */
+    fun titleForm(count: Int): Form {
+        val tens = count % 100
+        return when {
+            tens in 11..14 -> Form.MANY
+            count % 10 == 1 -> Form.ONE
+            count % 10 in 2..4 -> Form.FEW
+            else -> Form.MANY
+        }
+    }
+
     /** Минута суток [minute] внутри тишины [from]–[to]; период может переходить через полночь, from == to — тишины нет. */
     fun inQuiet(minute: Int, from: Int, to: Int): Boolean = when {
         from == to -> false

@@ -161,7 +161,12 @@ internal object NewsNotifier {
         context.getSystemService(NotificationManager::class.java).createNotificationChannel(
             NotificationChannel(CHANNEL_ID, context.getString(R.string.news_channel), NotificationManager.IMPORTANCE_DEFAULT),
         )
-        val title = context.resources.getQuantityString(R.plurals.news_alert_title, stories.size, stories.size)
+        val form = when (NewsAlerts.titleForm(stories.size)) {
+            NewsAlerts.Form.ONE -> R.string.news_alert_one
+            NewsAlerts.Form.FEW -> R.string.news_alert_few
+            NewsAlerts.Form.MANY -> R.string.news_alert_many
+        }
+        val title = context.getString(form, stories.size)
         val style = NotificationCompat.InboxStyle().setBigContentTitle(title)
         stories.take(LINES).forEach { style.addLine(it.title) }
         if (stories.size > LINES) style.setSummaryText(context.getString(R.string.news_alert_more, stories.size - LINES))

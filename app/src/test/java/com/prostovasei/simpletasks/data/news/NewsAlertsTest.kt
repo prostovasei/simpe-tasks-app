@@ -71,6 +71,15 @@ class NewsAlertsTest {
     }
 
     @Test
+    fun russianPluralForms() {
+        val one = NewsAlerts.Form.ONE
+        val few = NewsAlerts.Form.FEW
+        val many = NewsAlerts.Form.MANY
+        val expected = mapOf(1 to one, 2 to few, 4 to few, 5 to many, 11 to many, 12 to many, 14 to many, 21 to one, 22 to few, 25 to many, 101 to one, 111 to many)
+        expected.forEach { (count, form) -> assertEquals("$count", form, NewsAlerts.titleForm(count)) }
+    }
+
+    @Test
     fun quietPeriodAcrossMidnight() {
         assertTrue(NewsAlerts.inQuiet(23 * 60, 23 * 60, 8 * 60))
         assertTrue(NewsAlerts.inQuiet(3 * 60, 23 * 60, 8 * 60))
