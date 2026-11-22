@@ -22,6 +22,8 @@ open class WidgetPalette(private val flat: Boolean = false) {
     val textPrimary = ColorTokens.textPrimary.toProvider()
     val textSecondary = ColorTokens.textSecondary.toProvider()
     val accent = ColorTokens.accent.toProvider()
+    /** Светло-серая подложка кнопки микрофона (#299). */
+    val accentSoft = ColorTokens.accentSoft.toProvider()
     val onAccent = ColorTokens.onAccent.toProvider()
     val overdue = ColorTokens.overdue.toProvider()
     val divider = (if (flat) TaskCanvasTokens.divider else ColorTokens.divider).toProvider()

@@ -871,6 +871,10 @@
     <string name="widget_voice">Создать задачу голосом</string>
     <string name="voice_speak">Говорите</string>
     <string name="voice_listening">Слушаю…</string>
+    <string name="voice_check">Проверьте текст</string>
+    <string name="voice_not_heard_again">Не расслышал — нажмите 🎤 ещё раз</string>
+    <string name="voice_tap_stop">Нажмите, чтобы остановить</string>
+    <string name="voice_tap_continue">Нажмите, чтобы продолжить</string>
     <string name="voice_title">Голосовой ввод</string>
     <string name="voice_example">Например, «Позвонить маме завтра в 10»</string>
     <string name="voice_cancel">Отмена</string>

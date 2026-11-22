@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Голосовой ввод: правка</title>
+<!-- #299. Макет на согласовании (доработка #95). Цвета — ColorTokens, шрифт Manrope из app/src/main/res/font, размеры панели — SizeTokens виджета. -->
+<style>
+  @font-face { font-family: Manrope; font-weight: 400; src: url(../../../app/src/main/res/font/manrope_400.ttf); }
+  @font-face { font-family: Manrope; font-weight: 500; src: url(../../../app/src/main/res/font/manrope_500.ttf); }
+  @font-face { font-family: Manrope; font-weight: 600; src: url(../../../app/src/main/res/font/manrope_600.ttf); }
+  @font-face { font-family: Manrope; font-weight: 700; src: url(../../../app/src/main/res/font/manrope_700.ttf); }
+  :root { --bg: #F5F5F5; --surface: #FFFFFF; --text: #16171D; --text2: #62656E; --divider: #E2E2E2; --inactive: #A9A9A9; --accent: #16171D; --soft: #EAEAEA; --prio: #862CE0; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 24px; background: #E9E9EC; font-family: Manrope, system-ui, sans-serif; color: var(--text); }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  h2 { font-size: 16px; margin: 28px 0 12px; }
+  .note { color: var(--text2); font-size: 13px; margin: 0 0 16px; max-width: 1180px; line-height: 1.45; }
+  .row { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
+  .cap { font-size: 13px; font-weight: 700; margin: 0 0 8px; }
+  .cap span { font-weight: 500; color: var(--text2); }
+  svg.i { width: 24px; height: 24px; display: block; }
+
+  /* Панель виджета */
+  .bar { height: 40px; background: var(--bg); display: flex; align-items: center; padding: 0 6px; border-radius: 0 0 16px 16px; }
+  .widget { background: var(--bg); border-radius: 16px; overflow: hidden; box-shadow: 0 1px 3px #0002; }
+  .widget .list { padding: 10px 12px 4px; }
+  .task { display: flex; align-items: center; gap: 8px; height: 30px; font-size: 14px; font-weight: 600; }
+  .task .t { color: var(--inactive); width: 38px; font-size: 12px; font-weight: 700; }
+  .task .c { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--inactive); flex: none; }
+  .task.p .c { border-color: var(--prio); } .task.p { color: var(--prio); }
+  .day { font-size: 13px; font-weight: 800; padding: 4px 0 2px; }
+  .side { display: flex; align-items: center; gap: 4px; flex: 1; }
+  .btn { height: 32px; border-radius: 12px; background: var(--accent); color: #fff; display: grid; place-items: center; flex: none; }
+  .btn.soft { background: var(--soft); color: var(--text); }
+  .btn svg { width: 24px; height: 24px; }
+  .tabs { display: flex; flex: none; }
+  .tab { display: grid; place-items: center; height: 32px; color: var(--inactive); }
+  .tab.on { color: var(--text); }
+  .tab svg { width: 24px; height: 24px; }
+  .right { flex: 1; display: flex; justify-content: flex-end; align-items: center; }
+  .date { width: 48px; display: flex; align-items: center; gap: 2px; justify-content: center; }
+  .date b { font-size: 22px; font-weight: 800; }
+  .date span { font-size: 9px; font-weight: 700; line-height: 1.05; color: var(--text2); }
+  .upd { width: 36px; display: grid; place-items: center; }
+  .dim { font-size: 11px; color: var(--text2); margin-top: 6px; line-height: 1.4; }
+  .row > div { max-width: 392px; }
+  .bad { outline: 2px dashed #C62828; outline-offset: 2px; }
+
+  /* Телефон и окно распознавания */
+  .phone { width: 360px; height: 720px; border-radius: 24px; overflow: hidden; position: relative; box-shadow: 0 1px 3px #0003;
+    background: linear-gradient(160deg, #6E7FA8 0%, #A7B5CF 45%, #D8C9B8 100%); }
+  .phone .scrim { position: absolute; inset: 0; background: #00000066; }
+  .phone .home-widget { position: absolute; left: 12px; right: 12px; top: 64px; opacity: .9; }
+  .sheet { position: absolute; left: 16px; right: 16px; top: 84px; height: 330px; background: var(--surface); border-radius: 24px; padding: 20px 20px 16px; display: flex; flex-direction: column; box-shadow: 0 6px 24px #0004; }
+  .sheet .micwrap, .sheet .micwrap.n { flex: 1; height: auto; padding-bottom: 20px; }
+  .sheet.qa { top: auto; bottom: 8px; height: auto; display: block; }
+  .hint { font-size: 13px; font-weight: 600; color: var(--text2); }
+  .said { font-size: 24px; font-weight: 700; line-height: 1.3; margin: 8px 0 0; min-height: 62px; }
+  .said .tail { color: var(--inactive); }
+  .said.ph { color: var(--inactive); }
+  .micwrap { display: grid; place-items: center; height: 150px; position: relative; }
+  .ring { position: absolute; border-radius: 50%; background: var(--soft); }
+  .mic { width: 72px; height: 72px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; position: relative; }
+  .mic.off { background: var(--soft); color: var(--inactive); }
+  .mic svg { width: 32px; height: 32px; }
+  .actions { display: flex; justify-content: space-between; align-items: center; }
+  .tbtn { font-size: 16px; font-weight: 700; color: var(--text2); padding: 12px 8px; }
+  .pbtn { font-size: 16px; font-weight: 700; color: #fff; background: var(--accent); border-radius: 16px; padding: 14px 22px; }
+  .sub { font-size: 14px; color: var(--text2); margin-top: 6px; line-height: 1.4; }
+  /* Окно задачи (по снимку smart_date_light) */
+  .qa .title { font-size: 26px; font-weight: 700; line-height: 1.3; }
+  .qa .title mark { background: var(--soft); color: inherit; }
+  .chip { display: inline-flex; align-items: center; gap: 8px; background: var(--soft); border-radius: 18px; padding: 7px 14px; font-size: 15px; font-weight: 600; margin-top: 10px; }
+  .chip svg { width: 18px; height: 18px; }
+  .desc { color: #BDBDBD; font-size: 16px; margin: 14px 0; }
+  .dt { display: flex; gap: 26px; font-size: 17px; font-weight: 600; align-items: center; margin-bottom: 16px; }
+  .dt span { display: flex; align-items: center; gap: 8px; }
+  .tools { display: flex; gap: 8px; align-items: center; }
+  .tool { width: 46px; height: 46px; border: 1px solid var(--divider); border-radius: 14px; display: grid; place-items: center; color: var(--text2); }
+  .tool svg { width: 22px; height: 22px; }
+  .ok { margin-left: auto; width: 56px; height: 56px; border-radius: 16px; background: var(--accent); color: #fff; display: grid; place-items: center; }
+  /* Системное окно разрешения */
+  .sys { position: absolute; left: 24px; right: 24px; top: 210px; background: #F3EDF7; border-radius: 28px; padding: 24px; color: #1D1B20; }
+  .sys .ic { display: grid; place-items: center; color: #1D1B20; }
+  .sys p { text-align: center; font-size: 18px; margin: 14px 0 20px; line-height: 1.35; font-family: system-ui, sans-serif; }
+  .sys .o { background: #fff; border-radius: 20px; text-align: center; padding: 14px; margin-top: 4px; font-size: 14px; font-weight: 600; color: #4F378B; font-family: system-ui, sans-serif; }
+  .tag { position: absolute; left: 12px; top: 12px; background: #fff; border-radius: 8px; padding: 3px 8px; font-size: 11px; font-weight: 700; color: var(--text2); }
+</style>
+<style>
+  .field { background: var(--bg); border-radius: 12px; padding: 10px 12px; margin-top: 8px; min-height: 62px; }
+  .field .said { margin: 0; min-height: 0; font-size: 22px; }
+  .cursor { display: inline-block; width: 2px; height: 26px; background: var(--text); vertical-align: -5px; margin-left: 1px; }
+  .mic.soft { background: var(--soft); color: var(--text); }
+  .micwrap.n { height: 178px; padding-bottom: 22px; }
+  .micnote { position: absolute; bottom: 0; font-size: 12px; font-weight: 600; color: var(--text2); }
+  .kbd { position: absolute; left: 0; right: 0; bottom: 0; height: 250px; background: #E3E5EA; padding: 10px 4px; display: grid; grid-template-rows: repeat(4, 1fr); gap: 8px; }
+  .kbd div { display: flex; gap: 5px; justify-content: center; }
+  .kbd span { flex: 1; max-width: 31px; background: #fff; border-radius: 6px; box-shadow: 0 1px 0 #0002; }
+  .kbd .wide { max-width: 180px; }
+  .dimx { font-size: 11px; color: var(--text2); margin-top: 6px; line-height: 1.4; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12,5v14 M5,12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11.5" rx="3" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M5.5,11.5a6.5,6.5 0 0 0 13,0 M12,18v3" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+  <symbol id="i-micoff" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11.5" rx="3" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M5.5,11.5a6.5,6.5 0 0 0 13,0 M12,18v3 M4,4l16,16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3.5,10h17 M8,3v4 M16,3v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-fin" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M9,20V4h4.5a4,4 0,0 1,0 8H6.5 M6.5,16H15"/></symbol>
+  <symbol id="i-health" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M12,20c0,0 -7,-4.4 -7,-10a4,4 0,0 1,7 -2.6A4,4 0,0 1,19 10c0,5.6 -7,10 -7,10z"/></symbol>
+  <symbol id="i-news" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12.6,4.6 L6.6,12.8 H11.6 L10.7,19.4 L17.6,10.9 H12.7 L14,4.6 H12.6"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M12,4v11 M7,10.5l5,5l5,-5 M6,20h12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12,7.5V12l3,2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5,12.5l4.5,4.5L19,7.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-flag" viewBox="0 0 24 24"><path d="M6,21V4h11l-3,4l3,4H6" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M10,6h10 M10,12h10 M10,18h10 M4,6l1.5,1.5L8,5 M4,12l1.5,1.5L8,11 M4,18l1.5,1.5L8,17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-rep" viewBox="0 0 24 24"><path d="M4,10a5,5 0 0 1 5,-5h9l-3,-3 M20,14a5,5 0 0 1 -5,5H6l3,3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6,16V11a6,6 0 0 1 12,0v5l1.5,2h-15z M10,21h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+</svg>
+
+<h1>#299 · Голосовой ввод: правка текста и серый микрофон</h1>
+<p class="note">Макет на согласовании. Ответы PM 22.11.2026: при паузе запись останавливается, текст остаётся в окне и правится, 🎤 дописывает, «Готово» передаёт в задачу (1А); кнопка микрофона в виджете — светло-серая подложка, чёрный значок (2А, вариант М2 из #95). Первая буква всегда заглавная.</p>
+
+<h2>1. Кнопка в виджете — серая (М2)</h2>
+<div class="row">
+  <div id="w1"><p class="cap">392 dp <span>· вкладка «Задачи»</span></p><div class="widget" style="width:392px"><div class="list"><div class="day">ВС, 22 ноя · Сегодня</div><div class="task"><span class="t">10:00</span><span class="c"></span>Созвон с командой</div></div><div class="bar">
+      <div class="side"><span class="btn" style="width:40px"><svg><use href="#i-plus"/></svg></span><span class="btn soft" style="width:40px"><svg><use href="#i-mic"/></svg></span></div>
+      <div class="tabs"><span class="tab on" style="width:36px"><svg><use href="#i-cal"/></svg></span><span class="tab" style="width:36px"><svg><use href="#i-fin"/></svg></span><span class="tab" style="width:36px"><svg><use href="#i-health"/></svg></span><span class="tab" style="width:36px"><svg><use href="#i-news"/></svg></span></div><div class="right"><span class="date"><b>22</b><span>ВС<br>ноя</span></span><span class="upd"><svg class="i"><use href="#i-down"/></svg></span></div></div></div><p class="dim">«+» 40 × 32 чёрный, микрофон 40 × 32 на accentSoft, значок чёрный. Размеры и места прежние.</p></div>
+  <div id="w2"><p class="cap">320 dp <span>· компактная панель</span></p><div class="widget" style="width:320px"><div class="list"><div class="day">ВС, 22 ноя · Сегодня</div><div class="task"><span class="t">10:00</span><span class="c"></span>Созвон с командой</div></div><div class="bar">
+      <div class="side"><span class="btn" style="width:44px"><svg><use href="#i-plus"/></svg></span><span class="btn soft" style="width:40px"><svg><use href="#i-mic"/></svg></span></div>
+      <div class="tabs"><span class="tab on" style="width:31px"><svg><use href="#i-cal"/></svg></span><span class="tab" style="width:31px"><svg><use href="#i-fin"/></svg></span><span class="tab" style="width:31px"><svg><use href="#i-health"/></svg></span><span class="tab" style="width:31px"><svg><use href="#i-news"/></svg></span></div></div></div><p class="dim">Уже 224 dp микрофон по-прежнему скрыт (К2).</p></div>
+</div>
+
+<h2>2. Окно распознавания</h2>
+<div class="row">
+  <div id="v1"><p class="cap">1. Запись <span>· текст по ходу речи</span></p>
+    <div class="phone"><div class="scrim"></div><div class="sheet">
+      <div class="hint">Слушаю…</div>
+      <div class="field"><div class="said">Позвонить маме завтра <span class="tail">в 10</span></div></div>
+      <div class="micwrap n"><span class="ring" style="width:136px;height:136px;opacity:.6"></span><span class="ring" style="width:108px;height:108px"></span><span class="mic"><svg><use href="#i-mic"/></svg></span><span class="micnote">Нажмите, чтобы остановить</span></div><div class="actions"><span class="tbtn">Отмена</span><span class="pbtn">Готово</span></div></div></div>
+    <p class="dimx">Первая буква заглавная. Чёрный пульсирующий микрофон — идёт запись, нажатие останавливает.</p></div>
+  <div id="v2"><p class="cap">2. Пауза <span>· окно остаётся, текст можно править</span></p>
+    <div class="phone"><div class="scrim"></div><div class="sheet">
+      <div class="hint">Проверьте текст</div>
+      <div class="field"><div class="said">Позвонить маме завтра в 10</div></div>
+      <div class="micwrap n"><span class="mic soft"><svg><use href="#i-mic"/></svg></span><span class="micnote">Нажмите, чтобы продолжить</span></div><div class="actions"><span class="tbtn">Отмена</span><span class="pbtn">Готово</span></div></div></div>
+    <p class="dimx">Запись остановилась сама после паузы. В задачу ничего не ушло. Нажатие на текст — клавиатура, на 🎤 — продолжить диктовку.</p></div>
+  <div id="v3"><p class="cap">3. Правка с клавиатуры</p>
+    <div class="phone k"><div class="scrim"></div><div class="sheet">
+      <div class="hint">Проверьте текст</div>
+      <div class="field"><div class="said">Позвонить маме завтра в 10 утра<span class="cursor"></span></div></div>
+      <div class="micwrap"><span class="mic soft"><svg><use href="#i-mic"/></svg></span></div><div class="actions"><span class="tbtn">Отмена</span><span class="pbtn">Готово</span></div></div>
+      <div class="kbd"><div><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div><div><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div><div><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div><div><span></span><span class="wide"></span><span></span></div></div></div>
+    <p class="dimx">Окно стоит на том же месте, клавиатура открывается под ним и его не двигает: нижняя кромка окна выше клавиатуры. Нажатие на 🎤 скрывает клавиатуру и продолжает диктовку с конца текста.</p></div>
+  <div id="v4"><p class="cap">4. Продолжение диктовки</p>
+    <div class="phone"><div class="scrim"></div><div class="sheet">
+      <div class="hint">Слушаю…</div>
+      <div class="field"><div class="said">Позвонить маме завтра в 10 утра <span class="tail">и купить хлеб</span></div></div>
+      <div class="micwrap n"><span class="ring" style="width:136px;height:136px;opacity:.6"></span><span class="ring" style="width:108px;height:108px"></span><span class="mic"><svg><use href="#i-mic"/></svg></span><span class="micnote">Нажмите, чтобы остановить</span></div><div class="actions"><span class="tbtn">Отмена</span><span class="pbtn">Готово</span></div></div></div>
+    <p class="dimx">Новые слова дописываются через пробел в конец, со строчной буквы.</p></div>
+</div>
+<div class="row" style="margin-top:24px">
+  <div id="v5"><p class="cap">5. Не расслышал продолжение</p>
+    <div class="phone"><div class="scrim"></div><div class="sheet">
+      <div class="hint">Не расслышал — нажмите 🎤 ещё раз</div>
+      <div class="field"><div class="said">Позвонить маме завтра в 10 утра</div></div>
+      <div class="micwrap n"><span class="mic soft"><svg><use href="#i-mic"/></svg></span><span class="micnote">Нажмите, чтобы продолжить</span></div><div class="actions"><span class="tbtn">Отмена</span><span class="pbtn">Готово</span></div></div></div>
+    <p class="dimx">Уже набранный текст не стирается. Если текста ещё нет — прежнее окно «Не расслышал» с «Повторить».</p></div>
+  <div id="v6"><p class="cap">6. «Готово» <span>· окно задачи</span></p>
+    <div class="phone"><div class="scrim"></div><div class="sheet qa">
+      <div class="title">Позвонить маме <mark>завтра в 10 утра</mark></div>
+      <span class="chip"><svg><use href="#i-cal"/></svg>Завтра, 10:00 ✕</span>
+      <div class="desc">Описание</div>
+      <div class="dt"><span><svg class="i"><use href="#i-cal"/></svg>пн, 23 ноя</span><span><svg class="i"><use href="#i-clock"/></svg>10:00</span></div>
+      <div class="tools"><span class="tool">📌</span><span class="tool"><svg><use href="#i-flag"/></svg></span><span class="tool"><svg><use href="#i-list"/></svg></span><span class="tool"><svg><use href="#i-rep"/></svg></span><span class="tool"><svg><use href="#i-bell"/></svg></span><span class="ok"><svg class="i"><use href="#i-check"/></svg></span></div>
+    </div></div>
+    <p class="dimx">Только по кнопке «Готово». Окно задачи прежнее; сохраняется «Позвонить маме» на завтра 10:00.</p></div>
+</div>
+</body>
+</html>

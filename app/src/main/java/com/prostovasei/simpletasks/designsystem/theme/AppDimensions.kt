@@ -132,8 +132,8 @@ data class AppSizes(
     val healthTipWidth: Dp = SizeTokens.HEALTH_TIP_WIDTH.dp,
     val healthDeltaWidth: Dp = SizeTokens.HEALTH_DELTA_WIDTH.dp,
     val voiceMic: Dp = SizeTokens.VOICE_MIC.dp,
-    val voiceRingMax: Dp = SizeTokens.VOICE_RING_MAX.dp,
-    val voiceMicArea: Dp = SizeTokens.VOICE_MIC_AREA.dp,
+    val voiceGlow: Dp = SizeTokens.VOICE_GLOW.dp,
+    val voiceHeight: Dp = SizeTokens.VOICE_HEIGHT.dp,
     val voiceMicIcon: Dp = SizeTokens.VOICE_MIC_ICON.dp,
     val voiceTextMin: Dp = SizeTokens.VOICE_TEXT_MIN.dp,
 )
