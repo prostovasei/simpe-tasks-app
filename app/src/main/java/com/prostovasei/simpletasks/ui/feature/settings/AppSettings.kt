@@ -44,6 +44,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.components.UndoSnackbarHost
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
+import com.prostovasei.simpletasks.notifications.NewsAlertPrefs
+import com.prostovasei.simpletasks.notifications.NewsAlertSettings
 import com.prostovasei.simpletasks.ui.feature.finance.ServiceHeader
 import com.prostovasei.simpletasks.widget.WidgetLog
 
@@ -52,12 +54,24 @@ import com.prostovasei.simpletasks.widget.WidgetLog
  * Открывается из меню кнопки модуля в нижней панели одинаково из любого модуля; стрелка назад возвращает туда, откуда пришли.
  */
 @Composable
-fun AppSettingsRoute(onBack: () -> Unit, onTasks: () -> Unit, onFinance: () -> Unit, onHealth: () -> Unit, onApp: () -> Unit) {
-    AppSettingsScreen(AppVersion.current, onBack, onTasks, onFinance, onHealth, onApp)
+fun AppSettingsRoute(onBack: () -> Unit, onTasks: () -> Unit, onFinance: () -> Unit, onHealth: () -> Unit, onNews: () -> Unit, onApp: () -> Unit) {
+    val context = LocalContext.current
+    // Подпись пункта «Новости» перечитывается при каждом возврате на страницу: настройки могли измениться.
+    val news = remember(context) { NewsAlertPrefs.settings(context) }
+    AppSettingsScreen(AppVersion.current, onBack, onTasks, onFinance, onHealth, onApp, onNews, news)
 }
 
 @Composable
-fun AppSettingsScreen(appVersion: AppVersion, onBack: () -> Unit, onTasks: () -> Unit, onFinance: () -> Unit, onHealth: () -> Unit, onApp: () -> Unit) {
+fun AppSettingsScreen(
+    appVersion: AppVersion,
+    onBack: () -> Unit,
+    onTasks: () -> Unit,
+    onFinance: () -> Unit,
+    onHealth: () -> Unit,
+    onApp: () -> Unit,
+    onNews: () -> Unit = {},
+    news: NewsAlertSettings = NewsAlertSettings(),
+) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
     Column(Modifier.fillMaxSize().background(colors.background).testTag(TAG_APP_SETTINGS)) {
@@ -67,6 +81,7 @@ fun AppSettingsScreen(appVersion: AppVersion, onBack: () -> Unit, onTasks: () ->
                 SectionRow(R.drawable.ic_module_tasks, stringResource(R.string.settings_home_tasks), stringResource(R.string.settings_home_tasks_hint), TAG_SETTINGS_TASKS, onClick = onTasks)
                 SectionRow(R.drawable.ic_module_finance, stringResource(R.string.settings_home_finance), stringResource(R.string.settings_home_finance_hint), TAG_SETTINGS_FINANCE, onClick = onFinance)
                 SectionRow(R.drawable.ic_module_health, stringResource(R.string.settings_home_health), stringResource(R.string.settings_home_health_hint), TAG_SETTINGS_HEALTH, onClick = onHealth)
+                SectionRow(R.drawable.ic_module_news, stringResource(R.string.settings_home_news), newsHint(news), TAG_SETTINGS_NEWS, onClick = onNews)
                 SectionRow(
                     R.drawable.ic_settings_app,
                     stringResource(R.string.settings_home_app),
@@ -79,6 +94,18 @@ fun AppSettingsScreen(appVersion: AppVersion, onBack: () -> Unit, onTasks: () ->
         }
     }
 }
+
+@Composable
+private fun newsHint(news: NewsAlertSettings): String = when {
+    !news.enabled -> stringResource(R.string.settings_home_news_off)
+    !news.quietOn || news.quietFrom == news.quietTo -> stringResource(R.string.settings_home_news_no_quiet)
+    else -> stringResource(R.string.settings_home_news_quiet, clockText(news.quietFrom), clockText(news.quietTo))
+}
+
+/** «23:00» из минуты суток. */
+fun clockText(minute: Int): String = "%02d:%02d".format(minute / MINUTES_PER_HOUR, minute % MINUTES_PER_HOUR)
+
+private const val MINUTES_PER_HOUR = 60
 
 @Composable
 private fun SectionRow(@androidx.annotation.DrawableRes icon: Int, title: String, subtitle: String, tag: String, last: Boolean = false, onClick: () -> Unit) {
@@ -188,4 +215,5 @@ const val TAG_APP_INFO = "app_info"
 const val TAG_SETTINGS_TASKS = "settings_tasks"
 const val TAG_SETTINGS_FINANCE = "settings_finance"
 const val TAG_SETTINGS_HEALTH = "settings_health"
+const val TAG_SETTINGS_NEWS = "settings_news"
 const val TAG_SETTINGS_APP = "settings_app"

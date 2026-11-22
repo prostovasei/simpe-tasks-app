@@ -80,6 +80,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import com.prostovasei.simpletasks.ui.feature.news.NewsScreen
+import com.prostovasei.simpletasks.ui.feature.news.NewsSettingsRoute
 import com.prostovasei.simpletasks.widget.WidgetRenderer
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -242,7 +243,7 @@ fun AppNavHost(
     LaunchedEffect(openRoute) {
         openRoute ?: return@LaunchedEffect
         // Покупка из уведомления банка (#233) открывается ниже, когда готова модель финансов.
-        if (openRoute is OpenBankPurchase || openRoute is OpenBankQueue || openRoute is OpenHealthWeight) return@LaunchedEffect
+        if (openRoute is OpenBankPurchase || openRoute is OpenBankQueue || openRoute is OpenHealthWeight || openRoute is OpenNews) return@LaunchedEffect
         navController.currentBackStackEntryFlow.first()
         navController.navigate(openRoute) { launchSingleTop = true }
         onRouteOpened()
@@ -266,9 +267,16 @@ fun AppNavHost(
     val inNews = destination?.hasRoute(NewsDestination::class) == true
     val newsScope = rememberCoroutineScope()
     val refreshNews: suspend () -> Unit = {
-        WidgetRenderer.refreshNews(context.applicationContext)
+        WidgetRenderer.refreshNews(context.applicationContext, cancelNotification = true)
     }
     LaunchedEffect(inNews) { if (inNews) newsScope.launch { refreshNews() } }
+    // #296: нажатие на «N новых новостей» — вкладка «Новости»; вход во вкладку сам обновит ленту и снимет уведомление.
+    LaunchedEffect(openRoute) {
+        if (openRoute !is OpenNews) return@LaunchedEffect
+        navController.currentBackStackEntryFlow.first()
+        navController.openRoot(NewsDestination, restore = true)
+        onRouteOpened()
+    }
     val taskCanvas = currentTab == Tab.UPCOMING || currentTab == Tab.WEEK || destination?.hasRoute(ProjectDestination::class) == true || inHealth || inNews
     val lightBars = taskCanvas || !isSystemInDarkTheme()
     SideEffect {
@@ -520,6 +528,7 @@ fun AppNavHost(
                     onTasks = { navController.navigate(SettingsDestination) { launchSingleTop = true } },
                     onFinance = { navController.navigate(FinanceSettingsDestination) { launchSingleTop = true } },
                     onHealth = { navController.navigate(HealthSettingsDestination) { launchSingleTop = true } },
+                    onNews = { navController.navigate(NewsSettingsDestination) { launchSingleTop = true } },
                     onApp = { navController.navigate(AppInfoDestination) { launchSingleTop = true } },
                 )
             }
@@ -530,6 +539,7 @@ fun AppNavHost(
             }
             composable<HealthDestination> { HealthRoute(health, snackbar) }
             composable<NewsDestination> { TaskCanvasTheme { NewsScreen() } }
+            composable<NewsSettingsDestination> { NewsSettingsRoute(onBack = { navController.popBackStack() }) }
             composable<HealthSettingsDestination> {
                 HealthSettingsRoute(health, onBack = { navController.popBackStack() }, onBackup = { navController.navigate(HealthBackupDestination) { launchSingleTop = true } })
             }

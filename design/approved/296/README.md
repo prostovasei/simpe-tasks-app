@@ -1,6 +1,6 @@
 # #296. Уведомления новостей, тишина и иконки
 
-Статус — на согласовании PM. [ТЗ](requirements.md) · [Issue](https://github.com/prostovasei/simpe-tasks-app/issues/296) · [Исходник макетов](screens.html).
+Статус — согласовано PM 22.11.2026 («Код»). [ТЗ](requirements.md) · [Issue](https://github.com/prostovasei/simpe-tasks-app/issues/296) · [Исходник макетов](screens.html).
 
 - [Настройки](settings-home.png) — новый пункт «Новости» между «Здоровьем» и «Приложением».
 - [Настройки → Новости](news-settings.png) — переключатель уведомлений, тишина «С 23:00 до 08:00».

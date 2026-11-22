@@ -84,7 +84,7 @@ class AndroidWeighInReminder @Inject constructor(
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_notification)
+            .setSmallIcon(R.drawable.ic_notification_health)
             .setContentTitle(context.getString(R.string.weigh_in_title))
             .setContentText(text)
             .setContentIntent(open)

@@ -17,6 +17,7 @@ import androidx.glance.appwidget.state.getAppWidgetState
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.data.news.SportsNews
+import com.prostovasei.simpletasks.notifications.NewsChecks
 import com.prostovasei.simpletasks.domain.model.WeekFilter
 import com.prostovasei.simpletasks.widget.theme.LocalWidgetColors
 import com.prostovasei.simpletasks.widget.theme.TaskWidgetColors
@@ -52,13 +53,15 @@ object WidgetRenderer {
         widgetIds(context).forEach { render(context, it, reason) }
     }
 
-    internal suspend fun refreshNews(context: Context) {
+    /** Ручное обновление ленты: показанное считается увиденным (#296); [cancelNotification] — в приложении снимаем уведомление. */
+    internal suspend fun refreshNews(context: Context, cancelNotification: Boolean = false) {
         SportsNews.refresh(context, reportFailure = { WidgetLog.add(context, it) }) {
-            renderNews(context)
+            renderNewsWidgets(context)
         }
+        NewsChecks.markSeen(context, cancelNotification)
     }
 
-    private suspend fun renderNews(context: Context) {
+    internal suspend fun renderNewsWidgets(context: Context) {
         widgetIds(context).filter { WidgetSelection.module(context, it) == WidgetModule.NEWS }
             .forEach { render(context, it, "новости") }
     }

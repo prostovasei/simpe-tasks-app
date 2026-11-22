@@ -99,7 +99,7 @@ class AndroidBankNotifier @Inject constructor(
             context.getString(R.string.bank_duplicate, dup.categoryName ?: context.getString(R.string.category_none), Money.format(dup.amount), day)
         }
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_notification)
+            .setSmallIcon(R.drawable.ic_notification_finance)
             .setContentTitle("−${Money.format(purchase.amount)}")
             .setContentText(text)
             .setCategory(NotificationCompat.CATEGORY_STATUS)

@@ -1,6 +1,6 @@
 # #296. Новости — проверка раз в 2 часа, тишина и иконки уведомлений
 
-Статус — макеты на согласовании PM. Исполнитель — Claude Code, ветка `claude/news-notifications`.
+Статус — PM согласовал макеты и дал команду «Код» 22.11.2026. Исполнитель — Claude Code, ветка `claude/news-notifications`.
 База — 0.80.4, build-430, main `3fa64fe448c482e22831a4de109386f51d6f9c24`. Версия реализации — 0.81.0.
 [Issue #296](https://github.com/prostovasei/simpe-tasks-app/issues/296) · [Макеты](README.md).
 

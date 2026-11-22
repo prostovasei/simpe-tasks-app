@@ -26,7 +26,7 @@ class PopupService : Service() {
         val manager = getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(NotificationChannel(CHANNEL_ID, getString(R.string.popup_channel), NotificationManager.IMPORTANCE_MIN))
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_notification)
+            .setSmallIcon(R.drawable.ic_notification_tasks)
             .setContentTitle(getString(R.string.popup_service_title))
             .setContentText(intent?.getStringExtra(EXTRA_TITLE))
             .setPriority(NotificationCompat.PRIORITY_MIN)

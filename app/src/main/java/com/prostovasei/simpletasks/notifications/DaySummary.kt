@@ -131,7 +131,7 @@ class DaySummary @Inject constructor(
         )
         val open = PendingIntent.getActivity(context, REQUEST_CODE, Intent(context, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_notification)
+            .setSmallIcon(R.drawable.ic_notification_tasks)
             .setContentTitle(context.getString(R.string.summary_title, res.getQuantityString(R.plurals.summary_tasks, plan.total, plan.total)))
             .setContentText(listOfNotNull(first, overdue).joinToString(" · "))
             .setStyle(NotificationCompat.BigTextStyle().bigText(lines.joinToString("\n")))
