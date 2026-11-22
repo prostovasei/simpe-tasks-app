@@ -154,7 +154,7 @@ class SpeechService : Service(), TextToSpeech.OnInitListener {
             PendingIntent.FLAG_IMMUTABLE,
         )
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_notification)
+            .setSmallIcon(R.drawable.ic_notification_tasks)
             .setContentTitle(getString(R.string.speech_no_voice))
             .setContentText(getString(R.string.speech_no_voice_hint))
             .setContentIntent(install)
@@ -173,7 +173,7 @@ class SpeechService : Service(), TextToSpeech.OnInitListener {
             NotificationCompat.Action(0, getString(R.string.speech_resume), service(ACTION_RESUME))
         }
         val notification: Notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_notification)
+            .setSmallIcon(R.drawable.ic_notification_tasks)
             .setContentTitle(getString(R.string.speech_title))
             .setContentText(getString(status))
             .setOngoing(playing)

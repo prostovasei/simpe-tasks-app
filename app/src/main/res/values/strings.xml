@@ -867,6 +867,29 @@
     <string name="news_first">Нажмите «Обновить новости»</string>
     <string name="news_loading">Загрузка новостей…</string>
     <string name="news_updated">Обновлено в %1$s</string>
+    <!-- #296: уведомления о новостях -->
+    <string name="news_channel">Новости</string>
+    <!-- Форма выбирается в коде по правилам русского языка (NewsAlerts.titleForm), не по языку телефона. -->
+    <string name="news_alert_one">%d новая новость</string>
+    <string name="news_alert_few">%d новые новости</string>
+    <string name="news_alert_many">%d новых новостей</string>
+    <string name="news_alert_more">и ещё %d</string>
+    <string name="settings_home_news">Новости</string>
+    <string name="settings_home_news_quiet">Уведомления · тишина %1$s–%2$s</string>
+    <string name="settings_home_news_no_quiet">Уведомления · без тишины</string>
+    <string name="settings_home_news_off">Уведомления выключены</string>
+    <string name="news_settings_title">Новости</string>
+    <string name="news_settings_alerts_section">Уведомления</string>
+    <string name="news_settings_alerts">Уведомлять о новостях</string>
+    <string name="news_settings_alerts_hint">Проверка примерно раз в 2 часа</string>
+    <string name="news_settings_alerts_off_hint">Фоновая проверка остановлена</string>
+    <string name="news_settings_quiet_section">Тишина</string>
+    <string name="news_settings_quiet">Не беспокоить</string>
+    <string name="news_settings_quiet_hint">Новости за это время придут одним уведомлением</string>
+    <string name="news_settings_quiet_off_hint">Доступно при включённых уведомлениях</string>
+    <string name="news_settings_quiet_from">С</string>
+    <string name="news_settings_quiet_to">До</string>
+    <string name="news_settings_note">Android может сдвигать проверку, когда телефон спит или включена экономия заряда.</string>
     <string name="week_calendar_month">Месяц календаря: %1$s</string>
     <string name="week_select_calendar_week">Выбрать неделю</string>
     <string name="week_open_calendar_day">Открыть день</string>

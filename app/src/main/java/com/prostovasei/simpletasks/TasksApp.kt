@@ -2,6 +2,7 @@ package com.prostovasei.simpletasks
 
 import android.app.Application
 import com.prostovasei.simpletasks.notifications.DaySummary
+import com.prostovasei.simpletasks.notifications.NewsChecks
 import com.prostovasei.simpletasks.notifications.ReminderManager
 import com.prostovasei.simpletasks.notifications.WeighInReminder
 import com.prostovasei.simpletasks.widget.WidgetUpdater
@@ -24,5 +25,6 @@ class TasksApp : Application() {
         widgets.start()
         summary.schedule()
         weighIn.schedule()
+        NewsChecks.schedule(this)
     }
 }

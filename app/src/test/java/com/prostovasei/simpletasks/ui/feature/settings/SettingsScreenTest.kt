@@ -114,7 +114,7 @@ class SettingsScreenTest {
     fun settingsHomeLeadsToThreeSections() {
         val clicks = mutableListOf<String>()
         composeRule.setContent {
-            AppTheme { AppSettingsScreen(AppVersion("0.66.0", 320), onBack = { clicks += "back" }, onTasks = { clicks += "tasks" }, onFinance = { clicks += "finance" }, onHealth = { clicks += "health" }, onApp = { clicks += "app" }) }
+            AppTheme { AppSettingsScreen(AppVersion("0.66.0", 320), onBack = { clicks += "back" }, onTasks = { clicks += "tasks" }, onFinance = { clicks += "finance" }, onHealth = { clicks += "health" }, onApp = { clicks += "app" }, onNews = { clicks += "news" }) }
         }
         composeRule.onNodeWithText("Настройки").assertExists()
         composeRule.onNodeWithText("Версия 0.66.0 · обновление").assertExists()
@@ -122,9 +122,11 @@ class SettingsScreenTest {
         composeRule.onNodeWithTag(TAG_SETTINGS_TASKS).performClick()
         composeRule.onNodeWithTag(TAG_SETTINGS_FINANCE).performClick()
         composeRule.onNodeWithTag(TAG_SETTINGS_HEALTH).performClick()
+        composeRule.onNodeWithText("Уведомления · тишина 23:00–08:00").assertExists()
+        composeRule.onNodeWithTag(TAG_SETTINGS_NEWS).performClick()
         composeRule.onNodeWithTag(TAG_SETTINGS_APP).performClick()
         composeRule.onNodeWithContentDescription("Назад").performClick()
-        assertEquals(listOf("tasks", "finance", "health", "app", "back"), clicks)
+        assertEquals(listOf("tasks", "finance", "health", "news", "app", "back"), clicks)
     }
 
     @Test

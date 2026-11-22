@@ -72,6 +72,7 @@ class MainActivity : ComponentActivity() {
             intent.getStringExtra(EXTRA_BANK_PURCHASE) != null -> com.prostovasei.simpletasks.ui.navigation.OpenBankPurchase(checkNotNull(intent.getStringExtra(EXTRA_BANK_PURCHASE)))
             // #257: нажатие на «Пора взвеситься» — раздел «Здоровье» с окном ввода веса.
             intent.getBooleanExtra(EXTRA_HEALTH_WEIGH, false) -> com.prostovasei.simpletasks.ui.navigation.OpenHealthWeight
+            intent.getBooleanExtra(EXTRA_OPEN_NEWS, false) -> com.prostovasei.simpletasks.ui.navigation.OpenNews
             intent.getBooleanExtra(EXTRA_QUICK_ADD, false) -> QuickAddDestination(
                 projectId = intent.getStringExtra(EXTRA_QUICK_ADD_PROJECT),
                 today = intent.getBooleanExtra(EXTRA_QUICK_ADD_TODAY, false),
@@ -87,6 +88,7 @@ class MainActivity : ComponentActivity() {
         const val EXTRA_BANK_QUEUE = "open_bank_queue"
         const val EXTRA_BANK_PURCHASE = "bank_purchase_id"
         const val EXTRA_HEALTH_WEIGH = "health_weigh"
+        const val EXTRA_OPEN_NEWS = "open_news"
         const val EXTRA_OPEN_DATE = "open_date"
         const val EXTRA_SNOOZE_TASK = "snooze_task_id"
         const val EXTRA_OPEN_DAY = "open_day"

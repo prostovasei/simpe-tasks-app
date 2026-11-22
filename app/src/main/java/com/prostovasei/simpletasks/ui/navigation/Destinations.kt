@@ -138,5 +138,12 @@ data object HealthBackupDestination
 /** Не экран: нажатие на «Пора взвеситься» — раздел «Здоровье» с окном ввода веса (#257). */
 data object OpenHealthWeight
 
+/** Не экран: нажатие на уведомление «N новых новостей» — вкладка «Новости» (#296). */
+data object OpenNews
+
+/** Страница «Новости» единых настроек (#296): уведомления и тишина. */
+@Serializable
+data object NewsSettingsDestination
+
 @Serializable
 data object NewsDestination

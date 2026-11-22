@@ -21,7 +21,7 @@ android {
         versionCode = providers.exec { commandLine("git", "rev-list", "--count", "HEAD"); isIgnoreExitValue = true }
             .standardOutput.asText.get().trim().toIntOrNull() ?: 1
         // 0.<итерация>.<доработка>: 0.5.0 — Итерация 05.
-        versionName = "0.80.4"
+        versionName = "0.81.0"
     }
 
     signingConfigs {
@@ -126,6 +126,7 @@ dependencies {
     testImplementation(libs.turbine)
     testImplementation(libs.androidx.room.testing)
     testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.work.testing)
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.roborazzi)
     testImplementation(libs.roborazzi.compose)

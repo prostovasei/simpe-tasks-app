@@ -99,7 +99,7 @@ class AndroidReminderNotifications @Inject constructor(
         val id = notificationId(task.id)
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_notification)
+            .setSmallIcon(R.drawable.ic_notification_tasks)
             .setContentTitle(task.title)
             .setContentText(text)
             .setCategory(NotificationCompat.CATEGORY_REMINDER)

@@ -58,6 +58,7 @@ class AndroidRemindersTest {
         assertEquals("Итерация 27: только срок, без списка", "Сегодня, 18:30", shadow.contentText)
         assertEquals("Итерация 49: «Не буду делать» посередине", listOf("Выполнено", "Не буду делать", "Отложить"), posted.actions.map { it.title.toString() })
         assertEquals(AndroidReminderNotifications.CHANNEL_ID, posted.channelId)
+        assertEquals("#296: иконка задач", com.prostovasei.simpletasks.R.drawable.ic_notification_tasks, posted.smallIcon.resId)
         val channel = notificationManager.getNotificationChannel(AndroidReminderNotifications.CHANNEL_ID)
         assertTrue("Вибрация включена", channel.shouldVibrate())
         assertEquals(AndroidReminderNotifications.VIBRATION.toList(), channel.vibrationPattern.toList())
