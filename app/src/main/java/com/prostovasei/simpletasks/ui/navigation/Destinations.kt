@@ -53,6 +53,7 @@ data object FinanceUnsortedDestination
 
 /** Не экран: «Изменить» в уведомлении о покупке — финансы с окном нового расхода (#233). */
 data class OpenBankPurchase(val purchaseId: String)
+data class OpenBankQueue(val purchaseId: String?)
 
 /** Корзина (итерация 39). */
 @Serializable

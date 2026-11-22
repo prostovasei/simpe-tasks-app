@@ -7,6 +7,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextContains
@@ -213,6 +219,30 @@ class FinanceScreenTest {
         composeRule.setContent { AppTheme { OperationDialog(full(form).copy(categories = emptyList()), form) {} } }
         composeRule.onNodeWithTag(TAG_OPERATION_AMOUNT).assertTextEquals("0${s}₽")
         composeRule.onNode(isDialog()).captureRoboImage("screenshots/finance_operation_empty_light.png")
+    }
+
+    @Test
+    fun purchaseAmountStartsAtEndAndClearsWithoutLosingFocus() {
+        var form by mutableStateOf(OperationForm(OperationKind.EXPENSE, "a1", today,
+            amount = "1250,50", comment = "Обед", purchaseId = "p1"))
+        composeRule.setContent {
+            AppTheme {
+                OperationDialog(full(form), form) { intent ->
+                    if (intent is FinanceIntent.EditForm) form = intent.change(form)
+                }
+            }
+        }
+
+        val amount = composeRule.onNodeWithTag(TAG_OPERATION_AMOUNT)
+        amount.assertIsFocused().assert(SemanticsMatcher.expectValue(SemanticsProperties.TextSelectionRange, TextRange(7)))
+        val clear = composeRule.onNodeWithContentDescription("Очистить сумму")
+        clear.performClick()
+        amount.assertIsFocused().assertTextEquals("0${s}₽")
+        clear.assertIsNotEnabled()
+        composeRule.onNodeWithTag(TAG_OPERATION_SAVE).assertIsNotEnabled()
+        amount.performTextInput("36,4")
+        assertEquals("36,4", form.amount)
+        assertEquals("Обед", form.comment)
     }
 
     /** Окно расхода: тип, сумма, счёт, пять категорий (недавняя первой) и «Все категории», место, комментарий, дата. */

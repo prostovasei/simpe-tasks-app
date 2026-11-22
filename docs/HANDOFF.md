@@ -2,7 +2,15 @@
 
 Правила [../AGENTS.md](../AGENTS.md).
 
+## В работе — #292, 0.80.3
+
+Исполнитель Codex. Ветка `codex/292-news-finance` от свежего `origin/main` `da0b3616d941f3608ef6d8c3af6a43562ac28138`. [Issue #292](https://github.com/prostovasei/simpe-tasks-app/issues/292), [макеты](../design/approved/292/README.md). Этапы «Код» и «Проверка» выполнены. Сборка 427, 882 теста, 0 падений, 3 пропуска. [Отчёт](testing-runs/0.80.3-local.md). Проверенный коммит отправлен в ветку `origin/codex/292-news-finance`. Следующий этап — «Выпуск» по команде PM. NF292-1–4 ждут проверки на телефоне.
+
 ## Завершённая база
+
+0.80.2, [PR #291](https://github.com/prostovasei/simpe-tasks-app/pull/291), merge `da0b3616d941f3608ef6d8c3af6a43562ac28138`, [APK build-426](https://github.com/prostovasei/simple-tasks-releases/releases/tag/build-426). CI PR/main зелёный, APK проверен. Исправлено обновление ленты при битой ссылке Sports.ru.
+
+### Предыдущая база
 
 0.80.1, [PR #289](https://github.com/prostovasei/simpe-tasks-app/pull/289), merge c32713ae0c62147145ba124d7de35bd55f439e83, [APK build-424](https://github.com/prostovasei/simple-tasks-releases/releases/tag/build-424). CI PR/main зелёный, APK проверен. PM сообщил об ошибке обновления новостей.
 

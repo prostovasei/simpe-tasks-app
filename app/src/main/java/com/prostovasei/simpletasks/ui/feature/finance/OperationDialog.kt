@@ -3,6 +3,18 @@ package com.prostovasei.simpletasks.ui.feature.finance
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.IconButton
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import com.prostovasei.simpletasks.ui.feature.task.rememberKeyboardHeight
+import kotlin.math.roundToInt
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -75,6 +87,8 @@ fun OperationKind.label(): Int = when (this) {
     OperationKind.CORRECTION -> R.string.operation_correction
 }
 
+private const val OPERATION_KEYBOARD_FALLBACK = 0.4f
+
 private val FIELD_DATE: DateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy")
 
 /** «10.11.2026 · сегодня» / «09.11.2026 · вчера» / «01.11.2026». */
@@ -95,7 +109,7 @@ private val MONTHS = listOf("янв", "фев", "мар", "апр", "мая", "�
 fun shortDate(date: LocalDate): String = "${WEEKDAYS[date.dayOfWeek.value - 1]}. ${date.dayOfMonth} ${MONTHS[date.monthValue - 1]} ${date.year}"
 
 /**
- * Окно операции (этап 2, #225; редизайн #237, вариант «Плотный» — design/approved/237, решение PM 13.11.2026): без заголовка и «×».
+ * Окно операции без заголовка (#237, #292).
  * Сверху тип (при правке — нет), в строке сумма и счёт, категории иконками-эмодзи, в одной строке дата и место («Место платежа» серым,
  * по нажатию — выбор), комментарий. Внизу значки: корзина (только при правке), назад (закрыть, черновик остаётся) и «✓ сохранить».
  * У перевода — «Со счёта» и «На счёт», без категории и места. Поля живут в [FinanceState.form], не в окне: черновик не теряется.
@@ -113,10 +127,10 @@ fun OperationDialog(state: FinanceState, form: OperationForm, onIntent: (Finance
     var datePicker by rememberSaveable { mutableStateOf(false) }
     var placePicker by rememberSaveable { mutableStateOf(false) }
     val focus = remember { FocusRequester() }
-    if (!editing) LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
 
     OperationWindow(
         tag = TAG_OPERATION_WINDOW,
+        anchored = true,
         onDismiss = { onIntent(FinanceIntent.CloseForm) },
         bar = {
             IconBar(
@@ -129,6 +143,24 @@ fun OperationDialog(state: FinanceState, form: OperationForm, onIntent: (Finance
             )
         },
     ) {
+        val keyboard = LocalSoftwareKeyboardController.current
+        if (!editing) LaunchedEffect(form.purchaseId) { focus.requestFocus() }
+
+        val clearAmount: @Composable () -> Unit = {
+            if (form.purchaseId != null) {
+                IconButton(
+                    enabled = form.amount.isNotEmpty(),
+                    onClick = {
+                        edit { copy(amount = "") }
+                        focus.requestFocus()
+                        keyboard?.show()
+                    },
+                ) {
+                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.operation_clear_amount))
+                }
+            }
+        }
+
         if (!editing) {
             Segments(
                 options = OperationKind.MANUAL.map { it to stringResource(it.label()) },
@@ -139,12 +171,17 @@ fun OperationDialog(state: FinanceState, form: OperationForm, onIntent: (Finance
             )
         }
         if (transfer) {
-            AmountField(form.amount, onChange = { text -> edit { copy(amount = text) } }, tag = TAG_OPERATION_AMOUNT, modifier = Modifier.focusRequester(focus))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                AmountField(form.amount, onChange = { text -> edit { copy(amount = text) } }, tag = TAG_OPERATION_AMOUNT,
+                    modifier = Modifier.weight(1f).focusRequester(focus), purchaseId = form.purchaseId)
+                clearAmount()
+            }
             AccountField(stringResource(R.string.operation_from), accounts, form.accountId, TAG_OPERATION_ACCOUNT) { id -> edit { copy(accountId = id) } }
             AccountField(stringResource(R.string.operation_to), accounts.filter { it.id != form.accountId }, form.toAccountId, TAG_OPERATION_TO) { id -> edit { copy(toAccountId = id) } }
         } else {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                AmountField(form.amount, onChange = { text -> edit { copy(amount = text) } }, tag = TAG_OPERATION_AMOUNT, modifier = Modifier.weight(1f).focusRequester(focus), align = TextAlign.Start)
+                AmountField(form.amount, onChange = { text -> edit { copy(amount = text) } }, tag = TAG_OPERATION_AMOUNT, modifier = Modifier.weight(1f).focusRequester(focus), align = TextAlign.Start, purchaseId = form.purchaseId)
+                clearAmount()
                 AccountPill(accounts, form.accountId, TAG_OPERATION_ACCOUNT) { id -> edit { copy(accountId = id) } }
             }
             CategoryTiles(
@@ -232,13 +269,42 @@ fun OperationDialog(state: FinanceState, form: OperationForm, onIntent: (Finance
     }
 }
 
-/** Окно по центру без заголовка и «×» (#237): содержимое прокручивается, значки [bar] внизу всегда видны над клавиатурой. */
+/** Форма операции закреплена над клавиатурой (#292), окно выбора места центрируется. Действия [bar] вне прокрутки. */
 @Composable
-private fun OperationWindow(tag: String, onDismiss: () -> Unit, bar: @Composable () -> Unit, content: @Composable ColumnScope.() -> Unit) {
+private fun OperationWindow(tag: String, onDismiss: () -> Unit, bar: @Composable () -> Unit, anchored: Boolean = false, content: @Composable ColumnScope.() -> Unit) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
-    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        Column(
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = !anchored),
+    ) {
+        if (anchored) {
+            BoxWithConstraints(Modifier.fillMaxSize().statusBarsPadding()) {
+                val density = LocalDensity.current
+                val keyboard = with(density) { rememberKeyboardHeight((maxHeight * OPERATION_KEYBOARD_FALLBACK).roundToPx()).toDp() }
+                val ime = with(density) { WindowInsets.ime.getBottom(this).toDp() }
+                val navigation = with(density) { WindowInsets.navigationBars.getBottom(this).toDp() }
+                Box(
+                    Modifier.fillMaxSize().clickable(
+                        interactionSource = null,
+                        indication = null,
+                        onClick = onDismiss,
+                    ),
+                )
+                Column(
+                    Modifier.align(Alignment.BottomCenter)
+                        .padding(horizontal = spacing.xs, vertical = spacing.xs)
+                        .padding(bottom = maxOf(keyboard, ime, navigation))
+                        .fillMaxWidth()
+                        .clip(AppTheme.shapes.nav)
+                        .background(colors.surface)
+                        .testTag(tag),
+                ) {
+                    Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()).padding(horizontal = spacing.md), content = content)
+                    bar()
+                }
+            }
+        } else Column(
             Modifier
                 .padding(horizontal = spacing.md, vertical = spacing.sm)
                 .widthIn(max = AppTheme.sizes.dialogMaxWidth)

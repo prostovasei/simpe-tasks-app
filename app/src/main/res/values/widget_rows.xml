@@ -67,7 +67,8 @@
     <dimen name="widget_news_meta">11sp</dimen>
     <dimen name="widget_news_title">14sp</dimen>
     <dimen name="widget_news_day">12sp</dimen>
-    <dimen name="widget_news_inset">8dp</dimen>
-    <dimen name="widget_news_row_gap">8dp</dimen>
+    <dimen name="widget_news_inset">16dp</dimen>
+    <dimen name="widget_news_row_gap">18dp</dimen>
     <dimen name="widget_news_day_inset">5dp</dimen>
+    <dimen name="widget_news_meta_gap">4dp</dimen>
 </resources>
