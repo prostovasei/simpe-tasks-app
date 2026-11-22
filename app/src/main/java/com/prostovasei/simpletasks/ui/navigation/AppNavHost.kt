@@ -79,7 +79,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
-import com.prostovasei.simpletasks.data.news.SportsNews
 import com.prostovasei.simpletasks.ui.feature.news.NewsScreen
 import com.prostovasei.simpletasks.widget.WidgetRenderer
 import androidx.compose.runtime.getValue
@@ -267,7 +266,7 @@ fun AppNavHost(
     val inNews = destination?.hasRoute(NewsDestination::class) == true
     val newsScope = rememberCoroutineScope()
     val refreshNews: suspend () -> Unit = {
-        SportsNews.refresh(context.applicationContext) { WidgetRenderer.renderNews(context.applicationContext) }
+        WidgetRenderer.refreshNews(context.applicationContext)
     }
     LaunchedEffect(inNews) { if (inNews) newsScope.launch { refreshNews() } }
     val taskCanvas = currentTab == Tab.UPCOMING || currentTab == Tab.WEEK || destination?.hasRoute(ProjectDestination::class) == true || inHealth || inNews

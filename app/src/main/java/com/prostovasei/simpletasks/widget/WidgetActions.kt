@@ -17,7 +17,6 @@ import com.prostovasei.simpletasks.ui.feature.week.monthAfterPick
 import com.prostovasei.simpletasks.ui.feature.week.weekStart
 import java.time.LocalDate
 import java.time.YearMonth
-import com.prostovasei.simpletasks.data.news.SportsNews
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -64,7 +63,7 @@ class WidgetActionReceiver : BroadcastReceiver() {
                 WidgetActions.REFRESH_NEWS -> {
                     val id = intent.getIntExtra(WidgetActions.EXTRA_WIDGET_ID, -1)
                     if (id in WidgetRenderer.widgetIds(context) && WidgetSelection.module(context, id) == WidgetModule.NEWS) {
-                        SportsNews.refresh(context) { WidgetRenderer.renderNews(context) }
+                        WidgetRenderer.refreshNews(context)
                     }
                 }
                 WidgetActions.MODULE -> {
