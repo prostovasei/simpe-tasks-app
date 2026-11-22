@@ -52,7 +52,10 @@ object SmartDateParser {
             at = r.last + 1
         }
         out.append(text.substring(at))
-        return out.toString().replace(SPACES, " ").replace(SPACE_BEFORE_PUNCT, "$1").trim().trim(',', '-', '—', ' ').trim()
+        val result = out.toString().replace(SPACES, " ").replace(SPACE_BEFORE_PUNCT, "$1").trim().trim(',', '-', '—', ' ').trim()
+        // #95: «Завтра в 10 позвонить маме» → «Позвонить маме»: заглавная буква названия сохраняется.
+        val capital = text.trimStart().firstOrNull()?.isUpperCase() == true
+        return if (capital) result.replaceFirstChar { it.uppercaseChar() } else result
     }
 
     private data class Found(val range: IntRange, val date: LocalDate)
@@ -101,7 +104,9 @@ object SmartDateParser {
             val h = m.groupValues[1].toInt()
             if (h >= HOURS) continue
             val explicit = m.groupValues[2].isNotEmpty() || m.groupValues[3].isNotEmpty()
-            if (!explicit && !freeAfter(s, m.range.last + 1)) continue
+            // #95: «завтра в 10 позвонить» — «в N» сразу после даты тоже время (так часто диктуют голосом).
+            val afterDate = exclude != null && exclude.last < m.range.first && s.substring(exclude.last + 1, m.range.first).isBlank()
+            if (!explicit && !afterDate && !freeAfter(s, m.range.last + 1)) continue
             return FoundTime(m.range, adjust(h, m.groupValues[3]) * MINUTES)
         }
         return null

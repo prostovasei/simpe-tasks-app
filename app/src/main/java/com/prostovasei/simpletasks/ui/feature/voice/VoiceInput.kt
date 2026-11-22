@@ -100,6 +100,9 @@ internal object VoiceErrors {
         return if (cut < 0) "" to text else text.substring(0, cut) to text.substring(cut + 1)
     }
 
+    /** Итоговый текст: без пробелов по краям и точки в конце, которую иногда ставит распознаватель. */
+    fun clean(text: String): String = text.trim().trimEnd('.', '!').trim()
+
     /** Громкость в дБ из onRmsChanged (примерно −2..10) → 0..1. */
     fun level(rmsDb: Float): Float = ((rmsDb + RMS_MIN) / RMS_RANGE).coerceIn(0f, 1f)
 
@@ -187,6 +190,7 @@ class AndroidVoiceEngine(private val context: Context) : VoiceEngine {
 fun VoiceRoute(onClose: () -> Unit, onResult: (String) -> Unit, engineFactory: (Context) -> VoiceEngine = ::AndroidVoiceEngine) {
     val context = LocalContext.current
     val engine = remember { engineFactory(context.applicationContext) }
+    val deliver = onResult
     var state by remember { mutableStateOf(VoiceState()) }
     var attempt by remember { mutableStateOf(0) }
     var allowed by remember { mutableStateOf(granted(context)) }
@@ -204,7 +208,7 @@ fun VoiceRoute(onClose: () -> Unit, onResult: (String) -> Unit, engineFactory: (
                 state = state.copy(heard = heard, tail = tail)
             }
             override fun onLevel(level: Float) { state = state.copy(level = level) }
-            override fun onResult(text: String) = onResult(text.trim())
+            override fun onResult(text: String) = deliver(VoiceErrors.clean(text))
             override fun onError(error: VoiceError) { state = VoiceState(error = error) }
         })
     }

@@ -49,6 +49,7 @@ class VoiceInputTest {
         assertEquals(VoiceError.UNAVAILABLE, VoiceErrors.from(SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE))
         assertEquals("Позвонить маме завтра" to "в", VoiceErrors.split("Позвонить маме завтра в "))
         assertEquals("" to "Позвонить", VoiceErrors.split("Позвонить"))
+        assertEquals("Позвонить маме завтра в 10", VoiceErrors.clean("  Позвонить маме завтра в 10. "))
         assertEquals(0f, VoiceErrors.level(-5f))
         assertEquals(1f, VoiceErrors.level(15f))
     }
@@ -130,7 +131,7 @@ class VoiceInputTest {
         composeRule.waitForIdle()
         assertEquals("«Повторить» запускает запись заново", 2, engine.starts)
 
-        composeRule.runOnIdle { engine.listener!!.onResult("  Купить молоко завтра ") }
+        composeRule.runOnIdle { engine.listener!!.onResult("  Купить молоко завтра. ") }
         assertEquals(listOf("Купить молоко завтра"), results)
     }
 }
