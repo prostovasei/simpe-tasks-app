@@ -162,16 +162,41 @@ class WidgetWeekTest {
     }
 
     @Test
-    fun calendarHasSixClickableWeeksWithoutMonthRow() {
+    fun calendarHasFiveWeekTargetsAndSevenDayTargets() {
         val last = list().rows()[3]
         // 0.46.0: строки «октябрь 2026» со стрелками нет — месяц листается выбором недели.
         assertFalse(last.visibleTexts().contains("октябрь 2026"))
-        assertEquals(6, WeekIds.CAL_ROWS.count { last.findViewById<View>(it.row).hasOnClickListeners() })
+        assertEquals(5, WeekIds.CAL_ROWS.count { last.findViewById<View>(it.row).hasOnClickListeners() })
+        val calls = mutableListOf<Triple<Int, String, String?>>()
+        WidgetWeekRows.views(context, rich.week!!, size, WidgetWeekRows.Click { view, code, date -> calls += Triple(view, code, date) })
+        val selected = WeekIds.CAL_ROWS[4]
+        assertEquals((0L..6L).map { monday.plusDays(it).toString() }, selected.days.map { cell ->
+            calls.single { it.first == cell && it.second == WidgetClicks.DAY }.third
+        })
         // Октябрь 2026: первая строка — с 28 сентября, последняя — со 2 ноября.
         assertEquals("28", last.findViewById<TextView>(WeekIds.CAL_ROWS.first().days.first()).text.toString())
         assertEquals("8", last.findViewById<TextView>(WeekIds.CAL_ROWS.last().days.last()).text.toString())
         // Воскресенье 1 ноября — в левой ячейке последней строки.
         assertEquals("ВС", last.findViewById<TextView>(WeekIds.LEFT.weekday).text.toString())
+    }
+
+    @Test
+    fun monthLabelMovesFromTheFirstDateToTheSundayHeaderWhenNarrow() {
+        val wide = DpSize(392.dp, 640.dp)
+        val narrow = DpSize(320.dp, 640.dp)
+        val root = renderWidget(context, rich, wide).applyLikeLauncher(context)
+
+        fun dateLabels() = root.findViewById<ViewGroup>(R.id.wc_root).visibleTexts()
+        assertEquals(listOf("1 окт"), dateLabels().filter { it.startsWith("1 ") })
+        assertEquals(1, dateLabels().count { it == "1" }) // 1 ноября остаётся числом.
+
+        renderWidget(context, rich, narrow).reapply(context, root)
+        assertTrue(dateLabels().all { it.toIntOrNull() != null })
+        val last = root.findViewById<ViewGroup>(R.id.week_rows).getChildAt(3)
+        val monthLabel = last.findViewById<TextView>(R.id.wl_calendar_month)
+        assertEquals(View.VISIBLE, monthLabel.visibility)
+        assertEquals("окт", monthLabel.text.toString())
+        assertEquals("1", last.findViewById<TextView>(WeekIds.LEFT.number).text.toString())
     }
 
     private fun TextView.isBold() = (text as? Spanned)?.getSpans(0, text.length, StyleSpan::class.java)
@@ -190,7 +215,7 @@ class WidgetWeekTest {
             assertTrue(dates.all { it.background == null && it.typeface?.isBold != true })
             assertTrue(dates.first().currentTextColor != dates.first { it.text.toString() == bold && it.isBold() }.currentTextColor)
             val rows = WeekIds.CAL_ROWS.map { calendar.findViewById<View>(it.row) }
-            assertTrue(rows.all { it.hasOnClickListeners() })
+            assertEquals(rows.filterIndexed { index, _ -> index != selected }, rows.filter { it.hasOnClickListeners() })
             assertEquals(listOf(rows[selected]), rows.filter { it.background != null })
         }
         verify(selected = 4, bold = "30")

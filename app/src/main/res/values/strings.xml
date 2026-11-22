@@ -867,4 +867,7 @@
     <string name="news_first">Нажмите «Обновить новости»</string>
     <string name="news_loading">Загрузка новостей…</string>
     <string name="news_updated">Обновлено в %1$s</string>
+    <string name="week_calendar_month">Месяц календаря: %1$s</string>
+    <string name="week_select_calendar_week">Выбрать неделю</string>
+    <string name="week_open_calendar_day">Открыть день</string>
 </resources>

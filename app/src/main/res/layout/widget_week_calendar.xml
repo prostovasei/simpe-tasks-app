@@ -30,8 +30,8 @@
 
                 <TextView
                     android:id="@+id/wc_r1_d1"
-                    android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
@@ -46,8 +46,8 @@
 
                 <TextView
                     android:id="@+id/wc_r1_d2"
-                    android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
@@ -62,8 +62,8 @@
 
                 <TextView
                     android:id="@+id/wc_r1_d3"
-                    android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
@@ -78,8 +78,8 @@
 
                 <TextView
                     android:id="@+id/wc_r1_d4"
-                    android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
@@ -94,8 +94,8 @@
 
                 <TextView
                     android:id="@+id/wc_r1_d5"
-                    android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
@@ -110,8 +110,8 @@
 
                 <TextView
                     android:id="@+id/wc_r1_d6"
-                    android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
@@ -126,8 +126,8 @@
 
                 <TextView
                     android:id="@+id/wc_r1_d7"
-                    android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
@@ -151,8 +151,8 @@
 
                 <TextView
                     android:id="@+id/wc_r2_d1"
-                    android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
@@ -167,8 +167,8 @@
 
                 <TextView
                     android:id="@+id/wc_r2_d2"
-                    android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
@@ -183,8 +183,8 @@
 
                 <TextView
                     android:id="@+id/wc_r2_d3"
-                    android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
@@ -199,8 +199,8 @@
 
                 <TextView
                     android:id="@+id/wc_r2_d4"
-                    android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
@@ -215,8 +215,8 @@
 
                 <TextView
                     android:id="@+id/wc_r2_d5"
-                    android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
@@ -231,8 +231,8 @@
 
                 <TextView
                     android:id="@+id/wc_r2_d6"
-                    android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
@@ -247,8 +247,8 @@
 
                 <TextView
                     android:id="@+id/wc_r2_d7"
-                    android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
@@ -272,8 +272,8 @@
 
                 <TextView
                     android:id="@+id/wc_r3_d1"
-                    android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
@@ -288,8 +288,8 @@
 
                 <TextView
                     android:id="@+id/wc_r3_d2"
-                    android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
@@ -304,8 +304,8 @@
 
                 <TextView
                     android:id="@+id/wc_r3_d3"
-                    android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
@@ -320,8 +320,8 @@
 
                 <TextView
                     android:id="@+id/wc_r3_d4"
-                    android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
@@ -336,8 +336,8 @@
 
                 <TextView
                     android:id="@+id/wc_r3_d5"
-                    android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
@@ -352,8 +352,8 @@
 
                 <TextView
                     android:id="@+id/wc_r3_d6"
-                    android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
@@ -368,8 +368,8 @@
 
                 <TextView
                     android:id="@+id/wc_r3_d7"
-                    android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
@@ -393,8 +393,8 @@
 
                 <TextView
                     android:id="@+id/wc_r4_d1"
-                    android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
@@ -409,8 +409,8 @@
 
                 <TextView
                     android:id="@+id/wc_r4_d2"
-                    android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
@@ -425,8 +425,8 @@
 
                 <TextView
                     android:id="@+id/wc_r4_d3"
-                    android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
@@ -441,8 +441,8 @@
 
                 <TextView
                     android:id="@+id/wc_r4_d4"
-                    android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
@@ -457,8 +457,8 @@
 
                 <TextView
                     android:id="@+id/wc_r4_d5"
-                    android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
@@ -473,8 +473,8 @@
 
                 <TextView
                     android:id="@+id/wc_r4_d6"
-                    android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
@@ -489,8 +489,8 @@
 
                 <TextView
                     android:id="@+id/wc_r4_d7"
-                    android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
@@ -514,8 +514,8 @@
 
                 <TextView
                     android:id="@+id/wc_r5_d1"
-                    android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
@@ -530,8 +530,8 @@
 
                 <TextView
                     android:id="@+id/wc_r5_d2"
-                    android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
@@ -546,8 +546,8 @@
 
                 <TextView
                     android:id="@+id/wc_r5_d3"
-                    android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
@@ -562,8 +562,8 @@
 
                 <TextView
                     android:id="@+id/wc_r5_d4"
-                    android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
@@ -578,8 +578,8 @@
 
                 <TextView
                     android:id="@+id/wc_r5_d5"
-                    android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
@@ -594,8 +594,8 @@
 
                 <TextView
                     android:id="@+id/wc_r5_d6"
-                    android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
@@ -610,8 +610,8 @@
 
                 <TextView
                     android:id="@+id/wc_r5_d7"
-                    android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
@@ -635,8 +635,8 @@
 
                 <TextView
                     android:id="@+id/wc_r6_d1"
-                    android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
@@ -651,8 +651,8 @@
 
                 <TextView
                     android:id="@+id/wc_r6_d2"
-                    android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
@@ -667,8 +667,8 @@
 
                 <TextView
                     android:id="@+id/wc_r6_d3"
-                    android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
@@ -683,8 +683,8 @@
 
                 <TextView
                     android:id="@+id/wc_r6_d4"
-                    android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
@@ -699,8 +699,8 @@
 
                 <TextView
                     android:id="@+id/wc_r6_d5"
-                    android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
@@ -715,8 +715,8 @@
 
                 <TextView
                     android:id="@+id/wc_r6_d6"
-                    android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"
@@ -731,8 +731,8 @@
 
                 <TextView
                     android:id="@+id/wc_r6_d7"
-                    android:layout_width="@dimen/widget_week_cal_day"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:textColor="@color/widget_text_primary"

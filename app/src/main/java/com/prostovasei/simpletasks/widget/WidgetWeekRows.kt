@@ -23,6 +23,9 @@ import com.prostovasei.simpletasks.ui.feature.week.WEEK_LENGTH
 import com.prostovasei.simpletasks.ui.feature.week.WeekDay
 import com.prostovasei.simpletasks.ui.feature.week.startTime
 import com.prostovasei.simpletasks.ui.feature.week.weekStart
+import com.prostovasei.simpletasks.ui.feature.week.calendarMonthDescription
+import com.prostovasei.simpletasks.ui.feature.week.calendarMonthLabel
+import com.prostovasei.simpletasks.ui.feature.week.weekCalendarFullDate
 import com.prostovasei.simpletasks.widget.WidgetRows.taskCanvasColor
 import com.prostovasei.simpletasks.widget.WidgetRows.visible
 import java.time.LocalDate
@@ -75,12 +78,25 @@ object WidgetWeekRows {
     fun views(context: Context, week: WidgetWeek, size: DpSize, click: Click): List<RemoteViews> {
         val capacity = capacity(rowHeightDp(size))
         val today = week.today
+        val resources = context.resources
+        val calendarPadding = resources.getDimension(R.dimen.widget_space_xxs) / resources.displayMetrics.density
+        val inlineMonth = size.width.value / 2 - calendarPadding * 2 >=
+            SizeTokens.WEEK_MONTH_INLINE_CELL * WEEK_LENGTH * resources.configuration.fontScale
+        val fallback = if (inlineMonth) null else week.month.calendarMonthLabel()
         return (0 until ROWS).map { row ->
             val left = week.days[row * 2]
             val right = week.days.getOrNull(row * 2 + 1)
             RemoteViews(context.packageName, if (right == null) R.layout.widget_row_week_last else R.layout.widget_row_week).apply {
                 cell(context, WeekIds.LEFT, left, capacity, today, click)
-                if (right != null) cell(context, WeekIds.RIGHT, right, capacity, today, click) else calendar(week, click)
+                val monthLabel = fallback.takeIf { right == null }
+                visible(R.id.wl_calendar_month, monthLabel != null)
+                setTextViewText(R.id.wl_calendar_month, monthLabel.orEmpty())
+                if (monthLabel != null) {
+                    taskCanvasColor(R.id.wl_calendar_month, "setTextColor", ColorTokens.textPrimary)
+                    setContentDescription(R.id.wl_calendar_month, context.getString(R.string.week_calendar_month, week.month.calendarMonthDescription()))
+                }
+                if (right != null) cell(context, WeekIds.RIGHT, right, capacity, today, click)
+                else calendar(context, week, inlineMonth, click)
             }
         }
     }
@@ -133,17 +149,30 @@ object WidgetWeekRows {
      * Мини-календарь в последней ячейке (#284): шесть равных строк дат.
      * Строка выбирает неделю, а переход на соседний месяц рассчитывается при выборе.
      */
-    private fun RemoteViews.calendar(week: WidgetWeek, click: Click) {
+    private fun RemoteViews.calendar(context: Context, week: WidgetWeek, inlineMonth: Boolean, click: Click) {
         val month: YearMonth = week.month
         val first = month.atDay(1).weekStart()
         WeekIds.CAL_ROWS.forEachIndexed { index, row ->
             val start = first.plusDays(index * WEEK_LENGTH.toLong())
-            setInt(row.row, "setBackgroundResource", if (start == week.weekStart) R.drawable.widget_task_week_band else 0)
-            with(click) { set(row.row, WidgetClicks.PICK_WEEK, start.toString()) }
+            val selected = start == week.weekStart
+            setInt(row.row, "setBackgroundResource", if (selected) R.drawable.widget_task_week_band else 0)
+            if (selected) setOnClickPendingIntent(row.row, null)
+            else with(click) { set(row.row, WidgetClicks.PICK_WEEK, start.toString()) }
             row.days.forEachIndexed { offset, id ->
                 val date = start.plusDays(offset.toLong())
                 val isToday = date == week.today
-                setTextViewText(id, date.dayOfMonth.toString().bold(isToday))
+                val withMonth = inlineMonth && date.dayOfMonth == 1 && YearMonth.from(date) == month
+                val label = if (withMonth) "1 ${month.calendarMonthLabel()}" else date.dayOfMonth.toString()
+                setTextViewText(id, label.bold(isToday))
+                val textSize = if (withMonth) SizeTokens.WEEK_MONTH_INLINE_TEXT else SizeTokens.WIDGET_WEEK_CAL_TEXT
+                setTextViewTextSize(id, TypedValue.COMPLEX_UNIT_SP, textSize.toFloat())
+                val fullDate = weekCalendarFullDate.format(date)
+                val action = if (selected) R.string.week_open_calendar_day else R.string.week_select_calendar_week
+                setContentDescription(id, "$fullDate, ${context.getString(action)}")
+                with(click) {
+                    if (selected) set(id, WidgetClicks.DAY, date.toString())
+                    else set(id, WidgetClicks.PICK_WEEK, start.toString())
+                }
                 taskCanvasColor(id, "setTextColor", calendarDayColor(isToday, inMonth = YearMonth.from(date) == month))
             }
         }

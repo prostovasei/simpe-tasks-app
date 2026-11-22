@@ -15,6 +15,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
@@ -32,6 +34,7 @@ import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
 import com.prostovasei.simpletasks.domain.model.Priority
 import com.prostovasei.simpletasks.ui.common.TaskItem
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.format.TextStyle
 import java.util.Locale
 
@@ -43,6 +46,7 @@ fun WeekCell(
     isToday: Boolean,
     onOpenDay: () -> Unit,
     modifier: Modifier = Modifier,
+    calendarMonth: YearMonth? = null,
 ) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
@@ -64,7 +68,7 @@ fun WeekCell(
         val capacity = if (maxHeight == Dp.Infinity) items.size else maxOf(0, (room / rowHeight).toInt())
         val shown = items.take(capacity)
         Column(Modifier.fillMaxSize()) {
-            WeekDayHeader(date, isToday, hidden = items.size - shown.size)
+            WeekDayHeader(date, isToday, hidden = items.size - shown.size, calendarMonth = calendarMonth)
             shown.forEach { item ->
                 WeekTaskRow(item)
             }
@@ -74,7 +78,7 @@ fun WeekCell(
 }
 
 @Composable
-private fun WeekDayHeader(date: LocalDate, isToday: Boolean, hidden: Int) {
+private fun WeekDayHeader(date: LocalDate, isToday: Boolean, hidden: Int, calendarMonth: YearMonth?) {
     val colors = AppTheme.colors
     val weekday = date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.forLanguageTag("ru"))
     Row(
@@ -94,6 +98,12 @@ private fun WeekDayHeader(date: LocalDate, isToday: Boolean, hidden: Int) {
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f).then(if (isToday) Modifier.testTag("week-today:$date") else Modifier.testTag("week-date:$date")),
         )
+        if (calendarMonth != null) {
+            val description = stringResource(R.string.week_calendar_month, calendarMonth.calendarMonthDescription())
+            Text(calendarMonth.calendarMonthLabel(), style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.padding(horizontal = AppTheme.spacing.xxs).semantics { contentDescription = description },
+                maxLines = 1)
+        }
         if (hidden > 0) {
             Text(
                 "+$hidden",

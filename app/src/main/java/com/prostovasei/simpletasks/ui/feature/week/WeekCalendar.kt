@@ -26,6 +26,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.res.stringResource
+import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
 import java.time.DayOfWeek
@@ -48,11 +52,14 @@ fun WeekCalendar(
     selectedWeek: LocalDate,
     today: LocalDate,
     onSelectWeek: (LocalDate) -> Unit,
+    onOpenDay: (LocalDate) -> Unit,
+    inlineMonth: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
     val ru = Locale.forLanguageTag("ru")
+    val selectWeekLabel = stringResource(R.string.week_select_calendar_week)
     val first = month.atDay(1).weekStart()
     // Мини-календарь живёт в ячейке недели, высота которой зависит от экрана: строки недель делят то, что осталось под «пн…вс».
     BoxWithConstraints(modifier.padding(horizontal = spacing.xxs, vertical = spacing.xxs).testTag("week-calendar")) {
@@ -74,21 +81,28 @@ fun WeekCalendar(
             repeat(WEEK_CALENDAR_ROWS) { index ->
                 val start = first.plusDays(index * WEEK_LENGTH.toLong())
                 val selected = start == selectedWeek
-                val title = "${start.dayOfMonth} ${start.month.getDisplayName(TextStyle.SHORT, ru)}"
+                val title = "${weekCalendarFullDate.format(start)} — ${weekCalendarFullDate.format(start.plusDays(WEEK_LENGTH - 1L))}"
                 Row(
                     Modifier
                         .fillMaxWidth()
                         .height(rowHeight)
                         .clip(AppTheme.shapes.large)
                         .background(if (selected) colors.accentSoft else colors.background)
-                        .clickable { onSelectWeek(start) }
-                        .semantics { contentDescription = title }
+                        .then(if (selected) Modifier else Modifier.clickable(role = Role.Button, onClickLabel = selectWeekLabel) { onSelectWeek(start) }
+                            .semantics { contentDescription = title })
                         .testTag("week-cal-row:$start"),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     repeat(WEEK_LENGTH) { offset ->
                         val date = start.plusDays(offset.toLong())
-                        WeekCalendarDay(date, isToday = date == today, inMonth = YearMonth.from(date) == month, Modifier.weight(1f))
+                        val inMonth = YearMonth.from(date) == month
+                        val suffix = if (inlineMonth && inMonth && date.dayOfMonth == 1) month.calendarMonthLabel() else null
+                        val dateLabel = weekCalendarFullDate.format(date)
+                        val target = if (selected) Modifier.fillMaxSize()
+                            .clickable(role = Role.Button, onClickLabel = stringResource(R.string.week_open_calendar_day)) { onOpenDay(date) }
+                            .semantics { contentDescription = dateLabel }
+                            .testTag("week-cal-day:$date") else Modifier
+                        WeekCalendarDay(date, isToday = date == today, inMonth, Modifier.weight(1f).then(target), suffix)
                     }
                 }
             }
@@ -97,11 +111,20 @@ fun WeekCalendar(
 }
 
 @Composable
-private fun WeekCalendarDay(date: LocalDate, isToday: Boolean, inMonth: Boolean, modifier: Modifier) {
+private fun WeekCalendarDay(date: LocalDate, isToday: Boolean, inMonth: Boolean, modifier: Modifier, suffix: String?) {
     val colors = AppTheme.colors
     Box(modifier, contentAlignment = Alignment.Center) {
         val size: Dp = SizeTokens.WEEKVIEW_CAL_TODAY.dp
-        if (isToday) {
+        if (suffix != null) {
+            Text(
+                "${date.dayOfMonth} $suffix",
+                style = MaterialTheme.typography.bodySmall.copy(fontSize = SizeTokens.WEEK_MONTH_INLINE_TEXT.sp),
+                fontWeight = if (isToday) FontWeight.ExtraBold else FontWeight.SemiBold,
+                color = if (isToday) colors.onAccent else colors.textPrimary,
+                modifier = if (isToday) Modifier.background(colors.accent, CircleShape) else Modifier,
+                maxLines = 1,
+            )
+        } else if (isToday) {
             Box(Modifier.size(size).background(colors.accent, CircleShape), contentAlignment = Alignment.Center) {
                 Text(date.dayOfMonth.toString(), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.ExtraBold, color = colors.onAccent)
             }

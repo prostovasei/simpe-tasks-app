@@ -14,6 +14,19 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
 import java.time.temporal.TemporalAdjusters
+import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
+import java.util.Locale
+
+internal val weekCalendarLocale: Locale = Locale.forLanguageTag("ru")
+internal val weekCalendarFullDate: DateTimeFormatter = DateTimeFormatter.ofPattern("EEEE, d MMMM uuuu", weekCalendarLocale)
+
+private val calendarMonthDescriptionFormat = DateTimeFormatter.ofPattern("LLLL uuuu", weekCalendarLocale)
+
+internal fun YearMonth.calendarMonthDescription(): String = format(calendarMonthDescriptionFormat)
+
+internal fun YearMonth.calendarMonthLabel(): String =
+    month.getDisplayName(TextStyle.SHORT_STANDALONE, weekCalendarLocale).removeSuffix(".")
 
 /** Дней в неделе. */
 const val WEEK_LENGTH = 7
