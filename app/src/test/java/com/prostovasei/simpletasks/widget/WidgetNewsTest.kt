@@ -89,6 +89,12 @@ class WidgetNewsTest {
         val header = checkNotNull(rows.getViewAt(0)).apply(context, FrameLayout(context))
         assertEquals("Новые · 2", header.findViewById<TextView>(R.id.news_unread_count).text.toString())
         assertEquals("Прочитать все", header.findViewById<TextView>(R.id.news_read_all).text.toString())
+        // #307: у новой — «… · Новое» фиолетовым и системный жирный заголовок (свой шрифт лаунчер не применяет).
+        val fresh = checkNotNull(rows.getViewAt(layouts.indexOf(R.layout.widget_news_row_unread))).apply(context, FrameLayout(context))
+        val meta = fresh.findViewById<TextView>(R.id.news_row_meta).text
+        assertTrue(meta.toString(), meta.toString().endsWith(" · Новое"))
+        val color = (meta as android.text.Spanned).getSpans(0, meta.length, android.text.style.ForegroundColorSpan::class.java).single().foregroundColor
+        assertEquals(androidx.core.content.ContextCompat.getColor(context, R.color.widget_flat_new), color)
 
         // Нажатие на новость в виджете — прочитана.
         val open = Robolectric.buildActivity(WidgetNewsLinkActivity::class.java,

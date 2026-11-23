@@ -9,13 +9,13 @@
         android:paddingEnd="@dimen/widget_edge">
         <TextView android:id="@+id/widget_bank_label" android:layout_width="match_parent"
             android:layout_height="wrap_content" android:maxLines="1" android:ellipsize="end"
-            android:fontFamily="@font/manrope_700" android:textSize="@dimen/widget_news_title"
+            android:textStyle="bold" android:textSize="@dimen/widget_news_title"
             android:textColor="@color/widget_flat_text_primary" />
         <TextView android:id="@+id/widget_bank_time" android:layout_width="match_parent"
             android:layout_height="wrap_content" android:fontFamily="@font/manrope_400"
             android:textSize="@dimen/widget_news_meta" android:textColor="@color/widget_flat_text_secondary" />
     </LinearLayout>
     <TextView android:id="@+id/widget_bank_amount" android:layout_width="wrap_content"
-        android:layout_height="wrap_content" android:fontFamily="@font/manrope_700"
+        android:layout_height="wrap_content" android:textStyle="bold"
         android:textSize="@dimen/widget_news_meta" android:textColor="@color/widget_flat_text_primary" />
 </LinearLayout>

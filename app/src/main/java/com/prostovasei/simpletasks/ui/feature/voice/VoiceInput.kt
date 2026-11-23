@@ -88,12 +88,13 @@ import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
 import com.prostovasei.simpletasks.ui.feature.task.rememberKeyboardHeight
+import kotlinx.coroutines.delay
 import kotlin.math.PI
 import kotlin.math.sin
 
 /**
- * Голосовой ввод из виджета (#95, #299, #305; макеты design/approved/305): своё окно поверх рабочего стола. Запись начинается
- * сразу; после паузы она останавливается, а текст остаётся в окне — его правят с клавиатуры, ⏺ дописывает продолжение,
+ * Голосовой ввод из виджета (#95, #299, #305, #308; макеты design/approved/305): своё окно поверх рабочего стола. Запись
+ * начинается сразу и идёт, пока не нажата ⏸ или 10 с нет речи; на паузе текст остаётся в окне — его правят с клавиатуры, ⏺ дописывает,
  * галочка передаёт текст в [onResult] — дальше открывается окно новой задачи. «Назад» и затемнение закрывают без задачи.
  */
 @Composable
@@ -110,22 +111,49 @@ fun VoiceRoute(onClose: () -> Unit, onResult: (String) -> Unit, engineFactory: (
         if (!ok) state = VoiceState(error = VoiceError.NO_PERMISSION)
     }
     LaunchedEffect(Unit) { if (!allowed) permission.launch(Manifest.permission.RECORD_AUDIO) }
+    // #308: окно слушает, пока не нажата ⏸ (или галочка, текст, «Назад»): распознаватель Google сам завершает фразу на паузе
+    // в речи — после каждой фразы и после тишины запись незаметно перезапускается. [listening] — пользователь хочет слушать;
+    // [speech] растёт на каждом услышанном слове и перезапускает отсчёт тишины.
+    var listening by remember { mutableStateOf(true) }
+    var speech by remember { mutableIntStateOf(0) }
     LaunchedEffect(allowed, attempt) {
         if (!allowed) return@LaunchedEffect
         state = state.copy(partial = "", recording = true, error = null, level = 0f)
         engine.start(object : VoiceEngine.Listener {
-            override fun onPartial(text: String) { state = state.copy(partial = text) }
+            override fun onPartial(text: String) {
+                if (text.isNotBlank() && text != state.partial) speech++
+                state = state.copy(partial = text)
+            }
             override fun onLevel(level: Float) { state = state.copy(level = level) }
 
             // Результат дописывается к тексту: за время правки с клавиатуры пользователь мог уже что-то изменить.
             override fun onResult(text: String) {
-                state = state.copy(text = VoiceErrors.capitalize(VoiceErrors.join(state.text, VoiceErrors.clean(text))), partial = "", recording = false, level = 0f)
+                val joined = VoiceErrors.capitalize(VoiceErrors.join(state.text, VoiceErrors.clean(text)))
+                if (text.isNotBlank()) speech++
+                state = state.copy(text = joined, partial = "", recording = listening, level = 0f)
+                if (listening) attempt++
             }
 
             override fun onError(error: VoiceError) {
-                state = if (state.text.isBlank()) VoiceState(error = error) else state.copy(partial = "", recording = false, level = 0f, error = error)
+                when {
+                    // Тишина во время непрерывной записи — не ошибка: слушаем дальше, паузу ставит отсчёт [SILENCE_MILLIS].
+                    error == VoiceError.NOT_HEARD && listening -> attempt++
+                    // Автопауза после тишины: если текст есть — просто пауза, без «Не расслышал».
+                    error == VoiceError.NOT_HEARD && state.text.isNotBlank() -> state = state.copy(partial = "", recording = false, level = 0f)
+                    else -> {
+                        listening = false
+                        state = if (state.text.isBlank()) VoiceState(error = error) else state.copy(partial = "", recording = false, level = 0f, error = error)
+                    }
+                }
             }
         })
+    }
+    // #308, ответ PM: 10 с без речи — пауза, как ⏸. Отсчёт сбрасывает каждое услышанное слово.
+    LaunchedEffect(listening, speech, allowed) {
+        if (!listening || !allowed) return@LaunchedEffect
+        delay(SILENCE_MILLIS)
+        listening = false
+        engine.stop()
     }
     DisposableEffect(engine) { onDispose { engine.destroy() } }
     BackHandler(onBack = onClose)
@@ -134,20 +162,26 @@ fun VoiceRoute(onClose: () -> Unit, onResult: (String) -> Unit, engineFactory: (
         onCancel = onClose,
         onDone = {
             // Запись, если идёт, обрывается; в задачу уходит текст как есть.
+            listening = false
             engine.destroy()
             onResult(VoiceErrors.result(state.display))
         },
         onMic = {
             if (state.recording) {
+                listening = false
                 engine.stop()
             } else if (state.error?.blocking() != true) {
                 focus.clearFocus()
                 keyboard?.hide()
+                listening = true
                 attempt++
             }
         },
         onEdit = { edited -> state = state.copy(text = edited, error = null) },
-        onFocusText = { if (state.recording) engine.stop() },
+        onFocusText = {
+            listening = false
+            if (state.recording) engine.stop()
+        },
         onSettings = {
             openAppSettings(context)
             onClose()
@@ -425,6 +459,9 @@ private fun errorText(error: VoiceError) = when (error) {
 private fun VoiceError.blocking() = this == VoiceError.NO_PERMISSION || this == VoiceError.UNAVAILABLE || this == VoiceError.NO_LANGUAGE
 
 private const val KEYBOARD_FALLBACK = 0.4f
+
+/** #308: тишина, после которой запись сама встаёт на паузу (ответ PM 23.11.2026). */
+internal const val SILENCE_MILLIS = 10_000L
 private const val DISABLED_ALPHA = 0.35f
 private const val CALM_MILLIS = 600
 private const val WAVE_SPEED = 1.96f

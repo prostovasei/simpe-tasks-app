@@ -160,6 +160,10 @@ PM выбрал А для недели, предстоящих (приложен
 
 [Макеты](approved/95/README.md) · [ТЗ](approved/95/requirements.md). Микрофон рядом с «+» на вкладке «Задачи» виджета, своё окно распознавания, затем окно задачи с текстом. Согласовано PM 22.11.2026: М1 (две чёрные кнопки), К2 (на 180 dp микрофон скрыт), команда «Код». Реализация 0.82.0: `ui/feature/voice/VoiceInput.kt`, `BottomBar`, токены `WIDGET_VOICE_*`, `VOICE_*`; снимки `voice_*_light`.
 
+## Новые новости: «Новое» (#307)
+
+[Макет](approved/307/README.md) · [ТЗ](approved/307/requirements.md). Вариант В: «… · Новое» фиолетовым и жирный заголовок у новых, в приложении и виджете. Важно для всех виджетов: шрифты `res/font` в RemoteViews не работают — жирное только `textStyle="bold"`. Реализация 0.85.0: `NewsScreen.newsMeta`, `WidgetNews.newMeta`, цвет `widget_flat_new`; снимок `news_feed_unread_light`.
+
 ## Окно голосового ввода «Цветной прилив» (#305)
 
 [Макет](approved/305/README.md) · [ТЗ](approved/305/requirements.md) · [все раунды вариантов](drafts/voice-305/README.md). Окно на месте окна задачи, высота 212 dp; вода из трёх слоёв вместо микрофона; ⏸/⏺ слева, галочка справа, ошибки между ними; без подписей. Согласовано PM 23.11.2026. Реализация 0.84.0: `VoiceInput.kt` (`Tide`, `SheetButton`), токены `voiceTide`/`voiceCalm`, `VOICE_HEIGHT`, `VOICE_TIDE_*`; снимки `voice_*_light`. Заменяет окно и анимацию «Дыхание» #299.

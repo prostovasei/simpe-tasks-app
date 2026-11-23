@@ -14,6 +14,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
@@ -172,6 +173,8 @@ class NewsScreenTest {
             composeRule.onNodeWithText("Новые · 2").assertExists()
             assertEquals(2, composeRule.onAllNodesWithTag(TAG_NEWS_TITLE_UNREAD, useUnmergedTree = true).fetchSemanticsNodes().size)
             assertEquals(2, composeRule.onAllNodesWithTag(TAG_NEWS_TITLE, useUnmergedTree = true).fetchSemanticsNodes().size)
+            // #307: у новых в строке времени «Новое».
+            assertEquals(2, composeRule.onAllNodesWithText("· Новое", substring = true, useUnmergedTree = true).fetchSemanticsNodes().size)
             composeRule.onRoot().captureRoboImage("screenshots/news_feed_unread_light.png")
 
             composeRule.onNodeWithText(latest.title).performClick()

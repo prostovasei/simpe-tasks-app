@@ -10,4 +10,6 @@
     <color name="widget_flat_text_done">#B316171D</color>
     <color name="widget_flat_text_primary">#FF16171D</color>
     <color name="widget_flat_text_secondary">#FF62656E</color>
+    <!-- #307: «Новое» у новой новости — PriorityTokens.high.content (светлая). -->
+    <color name="widget_flat_new">#FF6B32A8</color>
 </resources>
