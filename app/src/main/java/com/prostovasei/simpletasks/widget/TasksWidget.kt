@@ -44,7 +44,6 @@ import androidx.glance.semantics.semantics
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextAlign
-import androidx.glance.text.TextDecoration
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.prostovasei.simpletasks.MainActivity
@@ -278,7 +277,8 @@ fun widgetDayTitle(context: Context, day: WidgetDay, today: LocalDate): WidgetDa
 /**
  * Строка шкалы: слева время (у периода — начало и конец, у задачи на весь день — пусто), по центру линия с кружком
  * приоритета (нажатие — «выполнено», у выполненной — вернуть), справа плашка: название и значки справа налево —
- * список, колокольчик (итерация 27; повтор с итерации 47 — знаком вместо кружка). Выполненная — зачёркнутая и бледнее, кружок залит с белой галочкой.
+ * список, колокольчик (итерация 27; повтор с итерации 47 — знаком вместо кружка). Выполненная — полупрозрачная (#316, без зачёркивания),
+ * кружок залит с белой галочкой. Анимаций в виджете нет — вид меняется сразу.
  */
 @Composable
 private fun TimelineRow(row: WidgetRow.Task, line: Line, overdue: Boolean, filter: WidgetFilter) {
@@ -315,7 +315,6 @@ private fun TimelineRow(row: WidgetRow.Task, line: Line, overdue: Boolean, filte
                         color = textColor,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
-                        textDecoration = if (done && !compact) TextDecoration.LineThrough else null,
                     ),
                     maxLines = 1,
                     modifier = GlanceModifier.defaultWeight(),

@@ -122,9 +122,10 @@ object TaskCanvasTokens {
     /** Неделя, #249: высокий приоритет и его выполненное состояние. */
     val priority = PriorityTokens.high.content
     val weekPriority = ThemedColor(light = 0xFF862CE0, dark = 0xFF862CE0)
-    val priorityDone = ThemedColor(light = 0xFFDED0EC, dark = 0xFFDED0EC)
-    val done = ThemedColor(light = 0xFFC9CBD0, dark = 0xFFC9CBD0)
-    const val DONE_EMOJI_ALPHA = 0.35f
+    // #316: выполненная = 40 % обычного цвета на белом холсте (как прозрачность выполненной задачи в приложении).
+    val priorityDone = ThemedColor(light = 0xFFCFABF3, dark = 0xFFCFABF3)
+    val done = ThemedColor(light = 0xFFA2A2A5, dark = 0xFFA2A2A5)
+    const val DONE_EMOJI_ALPHA = 0.4f
     val background = ThemedColor(light = 0xFFFFFFFF, dark = 0xFFFFFFFF)
     val divider = ThemedColor(light = 0xFFE8E8EA, dark = 0xFFE8E8EA)
 }

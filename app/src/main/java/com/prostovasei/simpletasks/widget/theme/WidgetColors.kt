@@ -58,4 +58,5 @@ val LocalWidgetColors = staticCompositionLocalOf<WidgetPalette> { WidgetColors }
 data class WidgetCheckColors(val ring: ColorProvider, val fill: ColorProvider, val done: ColorProvider)
 data class WidgetPriorityColors(val container: ColorProvider, val content: ColorProvider)
 
-private const val DONE_OPACITY = 0.7f
+/** #316: выполненная задача в виджете — 40 %, как [com.prostovasei.simpletasks.ui.common.DONE_ALPHA] в приложении. */
+private const val DONE_OPACITY = 0.4f

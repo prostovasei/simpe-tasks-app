@@ -33,7 +33,6 @@ import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.components.ListBadge
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
-import com.prostovasei.simpletasks.designsystem.tokens.TaskCanvasTokens
 import com.prostovasei.simpletasks.domain.model.Priority
 import com.prostovasei.simpletasks.widget.WidgetRow
 
@@ -56,7 +55,9 @@ internal fun LazyItemScope.CompactTimelineTaskRow(
     val colors = AppTheme.colors
     val item = row.item
     val tag = "task:${item.id}"
-    val text = Color(item.canvasTextColor(row.past).light)
+    // #316: выполненная — обычные цвета, полупрозрачна вся строка («медленно тает»).
+    val text = Color(item.canvasTextColor(row.past, done = false).light)
+    val fade = doneAlpha(item.showsDone)
     val node = when {
         selected == true -> colors.accent
         item.showsDone -> text
@@ -70,7 +71,7 @@ internal fun LazyItemScope.CompactTimelineTaskRow(
     })
     val height = (SizeTokens.WIDGET_ROW +
         if (item.subtitle != null) SizeTokens.TRASH_ROW_EXTRA else 0).dp
-    Row(Modifier.animateItem().fillMaxWidth().height(height)
+    Row(Modifier.animateItem().fillMaxWidth().height(height).alpha(fade)
         .padding(start = AppTheme.spacing.sm, end = AppTheme.spacing.xs).testTag(tag)) {
         Column(Modifier.width(canvasTimeWidth()).fillMaxHeight().testTag("$tag:time"),
             verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.Start) {
@@ -113,11 +114,11 @@ internal fun LazyItemScope.CompactTimelineTaskRow(
             }
             item.reminder?.let {
                 ReminderIcon(it, SizeTokens.WIDGET_REMINDER_ICON.dp, colors.textSecondary, colors.accent,
-                    Modifier.padding(start = AppTheme.spacing.xxs).alpha(if (item.showsDone) DONE_ALPHA else 1f).testTag("$tag:reminder"))
+                    Modifier.padding(start = AppTheme.spacing.xxs).testTag("$tag:reminder"))
             }
             if (showList) {
                 Spacer(Modifier.width(AppTheme.spacing.xs))
-                Box(Modifier.alpha(if (item.showsDone) TaskCanvasTokens.DONE_EMOJI_ALPHA else 1f)) { ListBadge(item.listEmoji) }
+                ListBadge(item.listEmoji)
             }
         }
     }

@@ -669,7 +669,7 @@ PM поменял порядок: шторка для созданных зад�
 - **T-60 — выполненная остаётся до 00:00.** Выборки «Все», «Входящие» и списков берут активные и выполненные
   с начала сегодняшнего дня (`status = 0 OR completed_at >= начало дня`); в полночь день сменяется (`DayTicker`,
   будильник виджета) — и выполненные уходят в «Выполненные». Схема БД не менялась (`completed_at` уже был).
-- **T-61 — вид выполненной.** Название зачёркнуто, плашка и значки — 70% (`DONE_ALPHA`), переход 0,3 с
+- **T-61 — вид выполненной** (заменено §4.110, 0.87.0). Название зачёркнуто, плашка и значки — 70% (`DONE_ALPHA`), переход 0,3 с
   (`DONE_FADE_MS`). Повторное нажатие на галочку возвращает задачу (в приложении — точная отмена, в виджете —
   `WidgetActions.UNCOMPLETE`). «Распад в пыль» в ленте убран.
 - **T-62 — кружок 14 → 16 dp** (`WIDGET_NODE`) в виджете и в приложении.
@@ -1766,6 +1766,14 @@ Compose и RemoteViews используют общие сокращения ме
 ### 4.105. Окно голосового ввода «Цветной прилив» (#305, 0.84.0)
 
 `VoiceSheet` ставит карточку как `TaskSheet`: `rememberKeyboardHeight` (запасные 40 % высоты), отступ снизу = max(клавиатура, ime, навигация) + 8 dp, высота `SizeTokens.VOICE_HEIGHT` = 212 dp. Внизу `Tide` — `Canvas` с тремя слоями-синусоидами на `VOICE_TIDE_PERCENT` высоты; цвета `ColorTokens.voiceTide` / `voiceCalm` смешиваются по анимированному признаку записи (0,6 с), подъём — громкость × `VOICE_TIDE_RISE`. Фаза волн — свои часы `tidePhase` на `withInfiniteAnimationFrameNanos`: на паузе волны замедляются вместе с переходом в серый и замирают на месте, после ⏺ продолжают с той же фазы (без рывка к началу); кадры идут только пока вода движется и при включённых анимациях системы. `withInfiniteAnimationFrameNanos`, а не `withFrameNanos` — иначе тесты Compose не дожидаются покоя. Карточка гасит нажатия через `pointerInput`, без `clickable` (не лишняя кнопка для TalkBack); ошибка — `liveRegion`, «●» озвучивается словами. Кнопки — `SheetButton` 50 dp (⏸/⏺ `ic_voice_pause`/`ic_voice_record`, галочка `ic_voice_check`); ошибка — `errorText` между ними, у `NO_PERMISSION` текст ведёт в настройки (`onSettings`). `blocking()` — нет доступа, недоступно, нет языка: ⏺ неактивна. Логика `VoiceRoute`/`VoiceState`/движка (#299, #302) не менялась. Старые токены микрофона (`VOICE_MIC`, `VOICE_GLOW`…) и строки подписей удалены.
+
+### 4.110. Выполненные тают, без зачёркивания (#316, 0.87.0); счета виджета финансов (#317)
+
+Заменяет T-61 (зачёркивание, 70 %, 0,3 с) и бледные цвета выполненных из 0.70.x. Общие константы и анимации — `ui/common/DoneFade.kt`: `DONE_ALPHA` = 0,4, `doneCheck` (заливка кружка за `DONE_CHECK_MS` = 420 мс), `doneAlpha` (после галочки — до 0,4 за `DONE_FADE_MS` = 800 мс, возврат — `UNDONE_MS` = 250 мс), `DONE_TOTAL_MS`. Прозрачность ставится на всю строку (`Modifier.alpha`), а цвета элементов — как у активной: `canvasTextColor(done = false)`, у высокого приоритета — фиолетовый и ExtraBold. Применено в `TimelineTaskList` (время, `Rail`, карточка), `CompactTimelineTasks`, `WeekCell`, `WeekGrid` (без анимации), `TaskDetailScreen` (название, пункты, подзадачи), `TaskRow` (вместо «пыли»; `Modifier.dust` остаётся у отказа в `ReminderPopup`). `ReminderPopup` по «Выполнить» тает (`Animatable` 0→1 за `DONE_FADE_MS`) и закрывается.
+
+Уход из «Все» (вариант PM «А»): `CompletionTracker` держит id в ожидающих `DONE_TOTAL_MS` (запись идёт сразу, таймер параллельно), затем убирает — строка успевает растаять, `animateItem` её плавно убирает. `RECURRING_DELAY_MS` = `DONE_TOTAL_MS` + 100 мс. Виджет RemoteViews не анимирует: цвета `widget_*_done` (`values`, `values-night`, `widget_flat_palette`) с альфой `0x66`, `WidgetColors.DONE_OPACITY` = 0,4, `TaskCanvasTokens.done*` пересчитаны; Glance без `TextDecoration`. Снимок `dust_midway` заменён на `melt_midway`.
+
+#317: строки списка виджета «Финансы» переиспользуются, а `RemoteViews.addView` при повторном применении добавляет детей к уже добавленным — счета дублировались. `WidgetFinance.accountRow` начинается с `removeAllViews(R.id.widget_finance_accounts)`; `WidgetFinanceAccountsTest` применяет строку 4 раза и ждёт 4 счёта (без правки — 16).
 
 ### 4.109. Скачанные обновления не копятся (#312, 0.86.1)
 

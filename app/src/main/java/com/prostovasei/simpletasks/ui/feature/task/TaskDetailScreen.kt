@@ -40,6 +40,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import com.prostovasei.simpletasks.ui.common.doneAlpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -51,7 +53,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.prostovasei.simpletasks.R
@@ -184,11 +185,9 @@ fun TaskDetailScreen(
                 value = task.title,
                 onValueChange = { onIntent(TaskDetailIntent.Title(it)) },
                 hint = stringResource(R.string.detail_title_hint),
-                textStyle = MaterialTheme.typography.headlineSmall.copy(
-                    fontWeight = FontWeight.ExtraBold,
-                    textDecoration = if (done) TextDecoration.LineThrough else null,
-                ),
-                modifier = Modifier.weight(1f).testTag(TAG_DETAIL_TITLE),
+                textStyle = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.ExtraBold),
+                // #316: выполненная — название полупрозрачное, без зачёркивания («медленно тает»).
+                modifier = Modifier.weight(1f).alpha(doneAlpha(done, "detailTitle")).testTag(TAG_DETAIL_TITLE),
                 visualTransformation = smartHighlight(state.smart),
             )
             // Итерация 54 (T-96): ⏰ «Отложить» — у незакрытой задачи с датой; у будущего повтора нет (его раз ещё не наступил).
@@ -417,13 +416,12 @@ private fun SheetCheckbox(checked: Boolean, modifier: Modifier = Modifier, onTog
 @Composable
 private fun ChecklistRow(item: ChecklistItem, isFirst: Boolean, isLast: Boolean, onIntent: (TaskDetailIntent) -> Unit) {
     val colors = AppTheme.colors
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.testTag("item:${item.id}")) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.alpha(doneAlpha(item.isDone, "item")).testTag("item:${item.id}")) {
         SheetCheckbox(item.isDone) { onIntent(TaskDetailIntent.ToggleItem(item.id)) }
         Text(
             text = item.title,
             style = MaterialTheme.typography.bodyMedium,
-            color = if (item.isDone) colors.textSecondary else colors.textPrimary,
-            textDecoration = if (item.isDone) TextDecoration.LineThrough else null,
+            color = colors.textPrimary,
             modifier = Modifier.weight(1f).clickable { onIntent(TaskDetailIntent.StartRenameItem(item.id)) },
         )
         ItemMenu(item, isFirst, isLast, onIntent)
@@ -468,14 +466,13 @@ private fun SubtasksSection(subtasks: List<Task>, onIntent: (TaskDetailIntent) -
         val done = sub.status != TaskStatus.ACTIVE
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth().clickable { onOpenTask(sub.id) }.testTag("subtask:${sub.id}"),
+            modifier = Modifier.fillMaxWidth().alpha(doneAlpha(done, "subtask")).clickable { onOpenTask(sub.id) }.testTag("subtask:${sub.id}"),
         ) {
             SheetCheckbox(done) { onIntent(TaskDetailIntent.ToggleSubtask(sub.id)) }
             Text(
                 text = sub.title,
                 style = MaterialTheme.typography.bodyMedium,
-                color = if (done) colors.textSecondary else colors.textPrimary,
-                textDecoration = if (done) TextDecoration.LineThrough else null,
+                color = colors.textPrimary,
                 modifier = Modifier.weight(1f),
             )
             PriorityBadge(sub.priority)

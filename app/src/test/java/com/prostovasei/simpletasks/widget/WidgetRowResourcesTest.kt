@@ -96,7 +96,7 @@ class WidgetRowResourcesTest {
         colors(dark).forEach { (res, token) ->
             assertEquals(context.resources.getResourceEntryName(res), token.toInt(), context.getColor(res))
         }
-        // Выполненная задача (0.42.2): те же цвета на 70%.
+        // Выполненная задача (0.42.2; #316 — 40 %): те же цвета, полупрозрачные.
         fun ThemedColor.done() = androidx.compose.ui.graphics.Color(if (dark) this.dark else light).copy(alpha = DONE_ALPHA).toArgb()
         mapOf(
             R.color.widget_text_done to ColorTokens.textPrimary.done(),

@@ -15,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.prostovasei.simpletasks.ui.common.doneAlpha
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.draw.alpha
@@ -123,28 +124,24 @@ private fun WeekTaskRow(item: TaskItem) {
     val colors = AppTheme.colors
     val done = item.showsDone
     val high = item.priority == Priority.HIGH
-    val titleColor = when {
-        high && done -> Color(TaskCanvasTokens.priorityDone.light)
-        high -> Color(TaskCanvasTokens.weekPriority.light)
-        done -> Color(TaskCanvasTokens.done.light)
-        else -> colors.textPrimary
-    }
+    // #316: выполненная — те же цвета, вся строка полупрозрачная.
+    val titleColor = if (high) Color(TaskCanvasTokens.weekPriority.light) else colors.textPrimary
     Row(
-        Modifier.padding(top = SizeTokens.WEEKVIEW_TASK_GAP.dp).fillMaxWidth()
+        Modifier.padding(top = SizeTokens.WEEKVIEW_TASK_GAP.dp).fillMaxWidth().alpha(doneAlpha(done))
             .height(SizeTokens.WEEKVIEW_TASK.dp).testTag("week-task:${item.id}"),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(item.listEmoji, style = MaterialTheme.typography.labelMedium, maxLines = 1,
-            modifier = Modifier.alpha(if (done) TaskCanvasTokens.DONE_EMOJI_ALPHA else 1f).testTag("week-emoji:${item.id}"))
+            modifier = Modifier.testTag("week-emoji:${item.id}"))
         Spacer(Modifier.width(SizeTokens.WEEK_CONTENT_GAP.dp))
         Text(item.title, style = MaterialTheme.typography.bodySmall,
-            fontWeight = if (high && !done) FontWeight.ExtraBold else FontWeight.Bold,
+            fontWeight = if (high) FontWeight.ExtraBold else FontWeight.Bold,
             color = titleColor, maxLines = 1, overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f).testTag("week-title:${item.id}"))
         item.startTime()?.let { time ->
             Spacer(Modifier.width(SizeTokens.WEEK_CONTENT_GAP.dp))
             Text(time, style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
-                fontWeight = if (high && !done) FontWeight.ExtraBold else FontWeight.Bold,
+                fontWeight = if (high) FontWeight.ExtraBold else FontWeight.Bold,
                 color = titleColor, maxLines = 1, modifier = Modifier.testTag("week-time:${item.id}"))
         }
     }
