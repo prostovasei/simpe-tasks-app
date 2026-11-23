@@ -99,17 +99,21 @@ fun widgetRootViews(
     size: DpSize = DpSize.Unspecified,
     liveClock: Boolean = true,
     scrollToToday: Boolean = false,
+    /** #313: выбрали другую неделю — списки дней в начало. */
+    scrollDays: Boolean = false,
 ): RemoteViews {
     val week = model.week
     if (week != null) {
-        // Вид «Неделя» (итерация 45; 0.46.0 — не лента): четыре строки делят настоящую высоту виджета поровну над нижней панелью.
+        // Вид «Неделя» (итерация 45; 0.46.0 — строки делят высоту поровну; #313 — у каждого дня свой список, календарь — лента).
+        // Разметка статическая: рабочий стол применяет действия поверх показанного виджета, списки сохраняют прокрутку.
         return RemoteViews(context.packageName, R.layout.widget_root_week).apply {
             setInt(R.id.widget_frame, "setBackgroundResource", R.drawable.widget_task_root_bg)
             val click = WidgetWeekRows.Click { viewId, code, id -> setOnClickPendingIntent(viewId, WidgetClicks.pending(context, appWidgetId, code, id)) }
-            // Рабочий стол при обновлении применяет действия поверх уже показанного виджета (reapply): без очистки строки
-            // добавлялись к прежним — проверка PM 0.46.0, неделя трижды в одном виджете.
-            removeAllViews(R.id.week_rows)
-            WidgetWeekRows.views(context, week, size, click).forEach { addView(R.id.week_rows, it) }
+            WidgetWeekRows.fill(
+                this, context, week, size, click, listTemplate(context, appWidgetId),
+                scrollDays = scrollDays || scrollToToday,
+                scrollCalendar = scrollToToday,
+            )
             removeAllViews(R.id.widget_overlay)
             addView(R.id.widget_overlay, overlay)
         }
@@ -124,19 +128,19 @@ fun widgetRootViews(
         lines.forEach { items.addItem(it.key.hashCode().toLong(), WidgetRows.views(context, it, model, liveClock)) }
         setRemoteAdapter(R.id.widget_list, items.build())
         if (scrollToToday) setScrollPosition(R.id.widget_list, model.todayLine(lines))
-        setPendingIntentTemplate(
-            R.id.widget_list,
-            PendingIntent.getActivity(
-                context,
-                appWidgetId,
-                Intent(context, WidgetClickActivity::class.java).putExtra(WidgetActions.EXTRA_WIDGET_ID, appWidgetId),
-                PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-            ),
-        )
+        setPendingIntentTemplate(R.id.widget_list, listTemplate(context, appWidgetId))
         removeAllViews(R.id.widget_overlay)
         addView(R.id.widget_overlay, overlay)
     }
 }
+
+/** Общий шаблон нажатий в строках списков виджета: добавка строки ([WidgetRows.fillIn]) дописывает код и задачу или день. */
+private fun listTemplate(context: Context, appWidgetId: Int): PendingIntent = PendingIntent.getActivity(
+    context,
+    appWidgetId,
+    Intent(context, WidgetClickActivity::class.java).putExtra(WidgetActions.EXTRA_WIDGET_ID, appWidgetId),
+    PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+)
 
 /** Строка, к которой ведёт «к сегодня» (итерация 51): подпись сегодняшнего дня; нет её — первый день после сегодня; иначе начало. */
 fun WidgetModel.todayLine(lines: List<WidgetLine>): Int {

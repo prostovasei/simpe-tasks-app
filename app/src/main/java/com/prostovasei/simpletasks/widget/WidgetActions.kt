@@ -113,7 +113,7 @@ class WidgetActionReceiver : BroadcastReceiver() {
                     val month = monthAfterPick(shown, date.weekStart())
                     WidgetLog.add(context, "неделя: $date, месяц: $month")
                     WidgetSelection.setWeekPick(context, id, WeekPick(start = date.weekStart(), month = month))
-                    WidgetRenderer.render(context, id, "неделя")
+                    WidgetRenderer.render(context, id, "неделя", scrollDays = true)
                 }
                 WidgetActions.TODAY -> {
                     // Итерация 51: дата в нижней строке — к сегодня: «Неделя» — текущая неделя и месяц, лента — к «Сегодня» / в начало.
@@ -121,7 +121,7 @@ class WidgetActionReceiver : BroadcastReceiver() {
                     val filter = WidgetSelection.get(context, id) ?: WidgetFilter.All
                     WidgetLog.add(context, "к сегодня: ${filter.encode()}")
                     if (filter == WidgetFilter.Week) WidgetSelection.setWeekPick(context, id, WeekPick())
-                    WidgetRenderer.render(context, id, "сегодня", scrollToToday = filter != WidgetFilter.Week)
+                    WidgetRenderer.render(context, id, "сегодня", scrollToToday = true)
                 }
                 WidgetActions.MIDNIGHT -> WidgetRenderer.renderAll(context, "время")
             }

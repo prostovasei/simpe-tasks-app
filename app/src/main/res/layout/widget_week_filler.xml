@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Сгенерировано design/tools/gen_widget_week.py (#313): пустое место под задачами дня — открывает день; высота (наименьшая) задаётся кодом: высоту из разметки список у строки не учитывает. Не править руками. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/wi_filler"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:minHeight="@dimen/widget_week_item" />

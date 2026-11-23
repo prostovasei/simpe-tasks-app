@@ -1,11 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Корень виджета на вкладке «Неделя» (0.46.0). Четыре строки недели — обычный вертикальный LinearLayout, а не лента: строки делят
-  настоящую высоту виджета поровну (weight). Размер, который сообщает рабочий стол, бывает больше настоящего (Samsung — на ~30 dp),
-  и строки фиксированной высоты уезжали под нижнюю панель. Снизу — место под панель (widget_overlay от Glance поверх).
+  Сгенерировано design/tools/gen_widget_week.py (#313, вариант PM 5 «Всё листается»): корень виджета на вкладке «Неделя».
+  Четыре строки делят настоящую высоту виджета поровну (weight, 0.46.0: рабочий стол сообщает размер больше настоящего);
+  у каждого дня под строкой даты — свой список задач, в последней ячейке — лента недель календаря. Разметка статическая:
+  списки не пересоздаются при обновлении и помнят прокрутку. Снизу — место под панель (widget_overlay от Glance поверх).
+  Не править руками.
 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="TooManyViews,NestedWeights,SmallSp"
     android:id="@+id/widget_frame"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -20,7 +23,444 @@
         android:layout_marginStart="@dimen/widget_list_edge"
         android:layout_marginTop="@dimen/widget_week_top"
         android:layout_marginBottom="@dimen/widget_bar"
-        android:orientation="vertical" />
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="horizontal">
+
+        <LinearLayout
+            android:id="@+id/w1_root"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/widget_week_cell"
+            android:orientation="vertical"
+            android:paddingStart="@dimen/widget_week_edge"
+            android:paddingTop="@dimen/widget_week_cell_top"
+            android:paddingEnd="@dimen/widget_space_xxs">
+
+            <LinearLayout
+                android:id="@+id/w1_head"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="@dimen/widget_week_header"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/w1_wd"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:textColor="@color/widget_text_primary"
+                    android:textSize="9sp" />
+
+                <TextView
+                    android:id="@+id/w1_num"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="@dimen/widget_space_xxs"
+                    android:ellipsize="end"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:textColor="@color/widget_text_secondary"
+                    android:textSize="9sp" />
+            </LinearLayout>
+
+            <ListView
+                android:id="@+id/w1_list"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+            android:divider="@null"
+            android:dividerHeight="0dp"
+            android:fadingEdgeLength="@dimen/widget_week_fade"
+            android:listSelector="@android:color/transparent"
+            android:overScrollMode="never"
+            android:requiresFadingEdge="vertical"
+            android:scrollbars="none" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/w2_root"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/widget_week_cell"
+            android:orientation="vertical"
+            android:paddingStart="@dimen/widget_week_edge"
+            android:paddingTop="@dimen/widget_week_cell_top"
+            android:paddingEnd="@dimen/widget_space_xxs">
+
+            <LinearLayout
+                android:id="@+id/w2_head"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="@dimen/widget_week_header"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/w2_wd"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:textColor="@color/widget_text_primary"
+                    android:textSize="9sp" />
+
+                <TextView
+                    android:id="@+id/w2_num"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="@dimen/widget_space_xxs"
+                    android:ellipsize="end"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:textColor="@color/widget_text_secondary"
+                    android:textSize="9sp" />
+            </LinearLayout>
+
+            <ListView
+                android:id="@+id/w2_list"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+            android:divider="@null"
+            android:dividerHeight="0dp"
+            android:fadingEdgeLength="@dimen/widget_week_fade"
+            android:listSelector="@android:color/transparent"
+            android:overScrollMode="never"
+            android:requiresFadingEdge="vertical"
+            android:scrollbars="none" />
+        </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="horizontal">
+
+        <LinearLayout
+            android:id="@+id/w3_root"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/widget_week_cell"
+            android:orientation="vertical"
+            android:paddingStart="@dimen/widget_week_edge"
+            android:paddingTop="@dimen/widget_week_cell_top"
+            android:paddingEnd="@dimen/widget_space_xxs">
+
+            <LinearLayout
+                android:id="@+id/w3_head"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="@dimen/widget_week_header"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/w3_wd"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:textColor="@color/widget_text_primary"
+                    android:textSize="9sp" />
+
+                <TextView
+                    android:id="@+id/w3_num"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="@dimen/widget_space_xxs"
+                    android:ellipsize="end"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:textColor="@color/widget_text_secondary"
+                    android:textSize="9sp" />
+            </LinearLayout>
+
+            <ListView
+                android:id="@+id/w3_list"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+            android:divider="@null"
+            android:dividerHeight="0dp"
+            android:fadingEdgeLength="@dimen/widget_week_fade"
+            android:listSelector="@android:color/transparent"
+            android:overScrollMode="never"
+            android:requiresFadingEdge="vertical"
+            android:scrollbars="none" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/w4_root"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/widget_week_cell"
+            android:orientation="vertical"
+            android:paddingStart="@dimen/widget_week_edge"
+            android:paddingTop="@dimen/widget_week_cell_top"
+            android:paddingEnd="@dimen/widget_space_xxs">
+
+            <LinearLayout
+                android:id="@+id/w4_head"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="@dimen/widget_week_header"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/w4_wd"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:textColor="@color/widget_text_primary"
+                    android:textSize="9sp" />
+
+                <TextView
+                    android:id="@+id/w4_num"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="@dimen/widget_space_xxs"
+                    android:ellipsize="end"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:textColor="@color/widget_text_secondary"
+                    android:textSize="9sp" />
+            </LinearLayout>
+
+            <ListView
+                android:id="@+id/w4_list"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+            android:divider="@null"
+            android:dividerHeight="0dp"
+            android:fadingEdgeLength="@dimen/widget_week_fade"
+            android:listSelector="@android:color/transparent"
+            android:overScrollMode="never"
+            android:requiresFadingEdge="vertical"
+            android:scrollbars="none" />
+        </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="horizontal">
+
+        <LinearLayout
+            android:id="@+id/w5_root"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/widget_week_cell"
+            android:orientation="vertical"
+            android:paddingStart="@dimen/widget_week_edge"
+            android:paddingTop="@dimen/widget_week_cell_top"
+            android:paddingEnd="@dimen/widget_space_xxs">
+
+            <LinearLayout
+                android:id="@+id/w5_head"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="@dimen/widget_week_header"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/w5_wd"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:textColor="@color/widget_text_primary"
+                    android:textSize="9sp" />
+
+                <TextView
+                    android:id="@+id/w5_num"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="@dimen/widget_space_xxs"
+                    android:ellipsize="end"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:textColor="@color/widget_text_secondary"
+                    android:textSize="9sp" />
+            </LinearLayout>
+
+            <ListView
+                android:id="@+id/w5_list"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+            android:divider="@null"
+            android:dividerHeight="0dp"
+            android:fadingEdgeLength="@dimen/widget_week_fade"
+            android:listSelector="@android:color/transparent"
+            android:overScrollMode="never"
+            android:requiresFadingEdge="vertical"
+            android:scrollbars="none" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/w6_root"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/widget_week_cell"
+            android:orientation="vertical"
+            android:paddingStart="@dimen/widget_week_edge"
+            android:paddingTop="@dimen/widget_week_cell_top"
+            android:paddingEnd="@dimen/widget_space_xxs">
+
+            <LinearLayout
+                android:id="@+id/w6_head"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="@dimen/widget_week_header"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/w6_wd"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:textColor="@color/widget_text_primary"
+                    android:textSize="9sp" />
+
+                <TextView
+                    android:id="@+id/w6_num"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="@dimen/widget_space_xxs"
+                    android:ellipsize="end"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:textColor="@color/widget_text_secondary"
+                    android:textSize="9sp" />
+            </LinearLayout>
+
+            <ListView
+                android:id="@+id/w6_list"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+            android:divider="@null"
+            android:dividerHeight="0dp"
+            android:fadingEdgeLength="@dimen/widget_week_fade"
+            android:listSelector="@android:color/transparent"
+            android:overScrollMode="never"
+            android:requiresFadingEdge="vertical"
+            android:scrollbars="none" />
+        </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="horizontal">
+
+        <LinearLayout
+            android:id="@+id/w7_root"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/widget_week_cell"
+            android:orientation="vertical"
+            android:paddingStart="@dimen/widget_week_edge"
+            android:paddingTop="@dimen/widget_week_cell_top"
+            android:paddingEnd="@dimen/widget_space_xxs">
+
+            <LinearLayout
+                android:id="@+id/w7_head"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="@dimen/widget_week_header"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/w7_wd"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:textColor="@color/widget_text_primary"
+                    android:textSize="9sp" />
+
+                <TextView
+                    android:id="@+id/w7_num"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="@dimen/widget_space_xxs"
+                    android:ellipsize="end"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:textColor="@color/widget_text_secondary"
+                    android:textSize="9sp" />
+            </LinearLayout>
+
+            <ListView
+                android:id="@+id/w7_list"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+            android:divider="@null"
+            android:dividerHeight="0dp"
+            android:fadingEdgeLength="@dimen/widget_week_fade"
+            android:listSelector="@android:color/transparent"
+            android:overScrollMode="never"
+            android:requiresFadingEdge="vertical"
+            android:scrollbars="none" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/wc_root"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/widget_week_cell"
+            android:orientation="vertical"
+            android:paddingStart="@dimen/widget_space_xxs"
+            android:paddingEnd="@dimen/widget_space_xxs">
+
+            <ListView
+                android:id="@+id/wc_list"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+            android:divider="@null"
+            android:dividerHeight="0dp"
+            android:fadingEdgeLength="@dimen/widget_week_fade"
+            android:listSelector="@android:color/transparent"
+            android:overScrollMode="never"
+            android:requiresFadingEdge="vertical"
+            android:scrollbars="none" />
+        </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
 
     <FrameLayout
         android:id="@+id/widget_overlay"

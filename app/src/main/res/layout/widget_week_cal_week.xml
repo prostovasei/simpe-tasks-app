@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Сгенерировано design/tools/gen_widget_week.py (#313): неделя в ленте календаря — семь чисел. Не править руками. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="DisableBaselineAlignment,SmallSp"
+    android:id="@+id/wcw_row"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:minHeight="@dimen/widget_week_cal_row"
+    android:gravity="center_vertical"
+    android:orientation="horizontal">
+
+    <TextView
+        android:id="@+id/wcw_d1"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:includeFontPadding="false"
+        android:maxLines="1"
+        android:textColor="@color/widget_text_primary"
+        android:textSize="11sp" />
+
+    <TextView
+        android:id="@+id/wcw_d2"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:includeFontPadding="false"
+        android:maxLines="1"
+        android:textColor="@color/widget_text_primary"
+        android:textSize="11sp" />
+
+    <TextView
+        android:id="@+id/wcw_d3"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:includeFontPadding="false"
+        android:maxLines="1"
+        android:textColor="@color/widget_text_primary"
+        android:textSize="11sp" />
+
+    <TextView
+        android:id="@+id/wcw_d4"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:includeFontPadding="false"
+        android:maxLines="1"
+        android:textColor="@color/widget_text_primary"
+        android:textSize="11sp" />
+
+    <TextView
+        android:id="@+id/wcw_d5"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:includeFontPadding="false"
+        android:maxLines="1"
+        android:textColor="@color/widget_text_primary"
+        android:textSize="11sp" />
+
+    <TextView
+        android:id="@+id/wcw_d6"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:includeFontPadding="false"
+        android:maxLines="1"
+        android:textColor="@color/widget_text_primary"
+        android:textSize="11sp" />
+
+    <TextView
+        android:id="@+id/wcw_d7"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:includeFontPadding="false"
+        android:maxLines="1"
+        android:textColor="@color/widget_text_primary"
+        android:textSize="11sp" />
+</LinearLayout>
