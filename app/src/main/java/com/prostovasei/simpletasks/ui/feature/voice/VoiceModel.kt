@@ -110,6 +110,9 @@ class AndroidVoiceEngine(
     /** Номер текущего запуска: события прежнего запуска, пришедшие с опозданием, отбрасываются. */
     private var session = 0
 
+    /** Идёт ли запись прямо сейчас (нет ещё ни результата, ни ошибки). */
+    private var active = false
+
     override fun start(listener: VoiceEngine.Listener) {
         if (!SpeechRecognizer.isRecognitionAvailable(context)) {
             log("голос: нет сервиса распознавания")
@@ -126,7 +129,10 @@ class AndroidVoiceEngine(
         var heard = false
         var finished = false
         val speech = recognizer ?: SpeechRecognizer.createSpeechRecognizer(context).also { recognizer = it }
-        speech.cancel()
+        // Проверка #302: cancel() только для незавершённой записи — на завершённую часть движков отвечает запоздалым
+        // ERROR_CLIENT, который попал бы уже в новый запуск и вызвал лишний повтор.
+        if (active) speech.cancel()
+        active = true
         speech.setRecognitionListener(object : RecognitionListener {
             private fun current() = id == session && !finished
 
@@ -149,6 +155,7 @@ class AndroidVoiceEngine(
             override fun onResults(results: Bundle?) {
                 if (!current()) return
                 finished = true
+                active = false
                 val text = first(results)?.takeIf { it.isNotBlank() } ?: partial
                 if (text.isBlank()) listener.onError(VoiceError.NOT_HEARD) else listener.onResult(text)
             }
@@ -156,6 +163,7 @@ class AndroidVoiceEngine(
             override fun onError(error: Int) {
                 if (!current()) return
                 finished = true
+                active = false
                 log("голос: ошибка $error" + if (retried) " (после повтора)" else "")
                 val kind = VoiceErrors.from(error)
                 when {
@@ -187,6 +195,7 @@ class AndroidVoiceEngine(
 
     override fun destroy() {
         session++
+        active = false
         handler.removeCallbacksAndMessages(null)
         destroyRecognizer()
     }
