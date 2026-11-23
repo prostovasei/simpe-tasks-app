@@ -2,9 +2,9 @@
 
 Правила [../AGENTS.md](../AGENTS.md).
 
-## В работе — #310, вопросы и макеты
+## В работе — #310, 0.86.0
 
-Исполнитель Claude Code, ветка `claude/voice-multi-tasks` от main `55bb6bd`. [#310](https://github.com/prostovasei/simpe-tasks-app/issues/310) — несколько задач голосом, как Ramble в Todoist. Разбор Ramble — в Issue. Ответ PM 1: путь А (без ИИ, фраза после паузы = задача). Вопрос 2 «где показывать задачи» — PM попросил 10 вариантов: [черновик](../design/drafts/voice-multi-310/README.md). Кода нет.
+Исполнитель Claude Code, ветка `claude/voice-multi-tasks` от main `55bb6bd`. [#310](https://github.com/prostovasei/simpe-tasks-app/issues/310) — несколько задач голосом, как Ramble в Todoist (разбор — в Issue). PM 24.11.2026: путь А (без ИИ); вариант 7 «По датам» с правками; прототип сценариев; число задач на галочке; «фиксируй ТЗ, пиши код, делай проверку и выпускай». [ТЗ](../design/approved/310/requirements.md), [прототип](../design/approved/310/prototype.html). Проверки — [отчёт](testing-runs/0.86.0-local.md). Телефон: VM310-1–6.
 
 ## Выпуск 0.85.0
 

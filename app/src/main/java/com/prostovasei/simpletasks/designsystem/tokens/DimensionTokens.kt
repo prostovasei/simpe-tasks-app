@@ -134,6 +134,11 @@ object SizeTokens {
     const val VOICE_HEIGHT = 212
     const val VOICE_TIDE_PERCENT = 58
     const val VOICE_TIDE_RISE = 16
+
+    /** #310: строка задачи в списке над окном голоса, значок «×», кружок с числом задач на галочке. */
+    const val VOICE_ROW = 36
+    const val VOICE_REMOVE_ICON = 18
+    const val VOICE_BADGE = 20
     const val NAV_SHADOW = 10
     const val CHECKBOX = 18
     const val CHECKBOX_STROKE = 2

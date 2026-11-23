@@ -160,6 +160,10 @@ PM выбрал А для недели, предстоящих (приложен
 
 [Макеты](approved/95/README.md) · [ТЗ](approved/95/requirements.md). Микрофон рядом с «+» на вкладке «Задачи» виджета, своё окно распознавания, затем окно задачи с текстом. Согласовано PM 22.11.2026: М1 (две чёрные кнопки), К2 (на 180 dp микрофон скрыт), команда «Код». Реализация 0.82.0: `ui/feature/voice/VoiceInput.kt`, `BottomBar`, токены `WIDGET_VOICE_*`, `VOICE_*`; снимки `voice_*_light`.
 
+## Несколько задач голосом (#310)
+
+[Макет и прототип](approved/310/README.md) · [ТЗ](approved/310/requirements.md) · [10 вариантов окна](drafts/voice-multi-310/README.md). Вариант 7 «По датам»: задачи над окном голоса по дням, без кружка, время справа, «×»; число задач на галочке; нажатие на задачу — окно задачи растёт из окна голоса. Реализация 0.86.0: `VoiceTasks.kt`, `VoiceInput.kt` (`VoiceList`, `CountBadge`), токены `VOICE_ROW`, `VOICE_REMOVE_ICON`, `VOICE_BADGE`; снимки `voice_tasks_light`, `voice_paused_light`, `voice_partial_dark`, `voice_error_large_font`.
+
 ## Новые новости: «Новое» (#307)
 
 [Макет](approved/307/README.md) · [ТЗ](approved/307/requirements.md). Вариант В: «… · Новое» фиолетовым и жирный заголовок у новых, в приложении и виджете. Важно для всех виджетов: шрифты `res/font` в RemoteViews не работают — жирное только `textStyle="bold"`. Реализация 0.85.0: `NewsScreen.newsMeta`, `WidgetNews.newMeta`, цвет `widget_flat_new`; снимок `news_feed_unread_light`.

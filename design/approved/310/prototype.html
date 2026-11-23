@@ -79,7 +79,8 @@
   .b { width: 50px; height: 50px; border-radius: 14px; display: grid; place-items: center; border: 0; padding: 0; cursor: pointer; flex: none; }
   .b svg { width: 25px; height: 25px; }
   .b.mic { background: var(--s); color: var(--t1); box-shadow: 0 1px 4px #0002; }
-  .b.ok { background: var(--t1); color: #fff; }
+  .b.ok { background: var(--t1); color: #fff; position: relative; }
+  .cnt { position: absolute; top: -7px; right: -7px; min-width: 20px; height: 20px; border-radius: 10px; background: #6B32A8; color: #fff; font-size: 12px; font-weight: 800; display: grid; place-items: center; padding: 0 5px; }
   .b:disabled { opacity: .35; cursor: default; }
   .err { flex: 1; text-align: center; font-size: 14px; font-weight: 700; line-height: 1.25; }
   .edit .ttl { position: absolute; left: 18px; right: 18px; top: 16px; font: 800 24px/1.25 var(--font); color: var(--t1); border: 0; outline: 0; background: transparent; padding: 0; width: calc(100% - 36px); }
@@ -126,7 +127,7 @@
           <li><b>Каждая фраза после паузы</b> — задача; срок и время разбираются как при наборе. Задачи — над окном по дням: «вт, 24 ноя», «ср, 25 ноя»…, «Без даты» — в конце.</li>
           <li><b>Нажатие на задачу</b> — запись на паузу, окно голоса плавно превращается в окно задачи. ✓ — задача сохраняется и уходит из списка; «Назад» — правки не сохраняются, задача остаётся в списке. Дальше снова окно голоса на паузе: ⏺ — диктовать дальше.</li>
           <li><b>× у задачи</b> — убрать из списка, подсказка «Убрано · Вернуть».</li>
-          <li><b>Галочка в окне голоса</b> — сохраняет все задачи списка (и недоговорённую фразу), окно закрывается, подсказка «Добавлено N · Отменить». Без задач галочка бледная.</li>
+          <li><b>Галочка в окне голоса</b> — на ней число задач (просьба PM); сохраняет все задачи списка (и недоговорённую фразу), окно закрывается, подсказка «Добавлено N · Отменить». Без задач галочка бледная.</li>
           <li><b>«Назад» или затемнение</b> при задачах в списке — вопрос «Сохранить N задач?»; без задач — просто закрыть.</li>
           <li><b>Тишина 10 с, ошибки</b> — как сейчас (#308, #305): пауза или текст ошибки между кнопками, список не теряется.</li>
           <li><b>Куда</b> — как у «+» этого виджета; срок из фразы важнее.</li>
@@ -232,6 +233,7 @@
     $('btn-mic').innerHTML = `<svg><use href="#${S.rec ? 'i-pause' : 'i-rec'}"/></svg>`;
     $('btn-mic').setAttribute('aria-label', S.rec ? 'Пауза' : 'Продолжить запись');
     $('btn-ok').disabled = !S.tasks.length && !S.partial;
+    $('btn-ok').innerHTML = '<svg><use href="#i-check"/></svg>' + (S.tasks.length ? `<span class="cnt">${S.tasks.length}</span>` : '');
     $('err').textContent = S.err;
     if (editing && S.draft) {
       if (document.activeElement !== $('edit-title')) $('edit-title').value = S.draft.title;

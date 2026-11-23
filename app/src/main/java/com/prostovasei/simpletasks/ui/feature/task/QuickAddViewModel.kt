@@ -190,6 +190,8 @@ class QuickAddViewModel @Inject constructor(
     private fun dismiss() {
         if (finished) return
         finished = true
+        // #310: правку продиктованной задачи отменили — задача остаётся в списке окна голоса, в черновик «+» не попадает.
+        if (currentState.fromVoice) return
         drafts.save(currentState.title, currentState.content)
     }
 
@@ -220,7 +222,8 @@ class QuickAddViewModel @Inject constructor(
                 ),
             )
             finished = true
-            drafts.clear()
+            // Черновик «+» не трогаем, если сохраняли продиктованную задачу: он не про неё.
+            if (!state.fromVoice) drafts.clear()
             sendEffect(QuickAddEffect.Close)
         }
     }
