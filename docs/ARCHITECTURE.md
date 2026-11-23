@@ -1761,7 +1761,7 @@ Compose и RemoteViews используют общие сокращения ме
 
 `Task.skipped: Set<LocalDate>` — даты серии, отменённые по одной; колонка `tasks.skipped_dates` (ISO-даты через запятую, `SkippedDates`), автоматическая миграция Room 11 → 12 только добавляет колонку (NULL), данные не переписываются (`MigrationTest.skippedDatesColumnIsAddedAndRepeatsAreKept`). Все повторы считаются через `nextOccurrence`/`upcomingRepeats` (`Recurrence.kt`): `upcomingRepeats` фильтрует отменённые даты (неделя, «Предстоящие», виджет), `nextOccurrence` их перешагивает (отменённый раз расходует остаток «N раз») и забывает прошедшие. `repeatsBefore` идёт через `nextOccurrence`, поэтому окно «Есть незакрытые повторы» их не перечисляет.
 
-`EarlierRepeats.ONLY` («Только этот») в `RoomTaskRepository.wontDo`: запись `ABANDONED` на дату раза (как прежний «Не буду делать») + дата в `skipped` серии; серия, чек-лист и остаток не меняются. `undoWontDo` восстанавливает прежнюю задачу (вместе с `skipped`) и удаляет запись.
+`EarlierRepeats.ONLY` («Только этот») в `RoomTaskRepository.wontDo`: запись `ABANDONED` на дату раза (как прежний «Не буду делать») + дата в `skipped` серии; серия, чек-лист и остаток не меняются. `undoWontDo` восстанавливает прежнюю задачу (вместе с `skipped`) и удаляет запись. Смена правила и «Все повторы с этого момента» отменённые даты сохраняют. Экспорт CSV TickTick их не переносит (в формате нет поля).
 
 ### 4.104. Прочитанные новости (#300)
 
