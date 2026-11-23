@@ -52,7 +52,7 @@ class GitHubAppUpdater(private val context: Context, private val io: CoroutineDi
 
     /** Скачивание в `cacheDir`; отмена корутины ([ensureActive] на каждом куске) обрывает его и удаляет недокачанный файл. */
     private fun CoroutineScope.download(url: String, onProgress: (Int) -> Unit): File {
-        val file = File.createTempFile("update-", ".apk", context.cacheDir)
+        val file = UpdateFiles.create(context.cacheDir)
         val connection = open(url)
         try {
             if (connection.responseCode != HttpURLConnection.HTTP_OK) throw IOException("Скачивание: ${connection.responseCode}")
@@ -80,8 +80,19 @@ class GitHubAppUpdater(private val context: Context, private val io: CoroutineDi
         return file
     }
 
-    /** Передать файл установщику; окно «Обновить?» покажет [UpdateInstallReceiver]. */
+    /**
+     * Передать файл установщику; окно «Обновить?» покажет [UpdateInstallReceiver]. Установщик копирует файл к себе, поэтому
+     * скачанный файл сразу удаляется — и при ошибке тоже (#312): повторная попытка скачает заново.
+     */
     private fun commitSession(apk: File) {
+        try {
+            writeSession(apk)
+        } finally {
+            apk.delete()
+        }
+    }
+
+    private fun writeSession(apk: File) {
         val installer = context.packageManager.packageInstaller
         val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL).apply {
             setAppPackageName(context.packageName)
