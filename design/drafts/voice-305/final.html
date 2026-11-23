@@ -1,0 +1,182 @@
+<title>Голосовое окно: финал</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap">
+<!--
+  #305. Черновик на согласовании PM: 10 вариантов окна распознавания голоса.
+  Внутри телефонов — светлая тема приложения (ColorTokens): surface #FFFFFF, textPrimary #16171D, textSecondary #62656E,
+  accentSoft #EAEAEA, inactive #A9A9A9, done #C9CBD0, danger #C62828, priority #862CE0, ranks #438BC9 / #359E8A, scrim 0x66000000.
+  Размеры — как у окна задачи (TaskSheet): отступ по бокам spacing.xs = 8, скругление RadiusTokens.NAV = 22, кнопки TOOL_BUTTON = 50.
+-->
+<style>
+  /* Страница: сетка карточек-вариантов, в каждой телефон 360 × 720 dp в масштабе 1:1. */
+  :root {
+    --page: #ECECEF; --ink: #16171D; --muted: #62656E; --panel: #FFFFFF; --line: #DADBE0; --chip: #E2E3E8; --chip-on: #16171D; --chip-on-ink: #FFFFFF;
+    --font: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+    /* Цвета приложения (светлая тема) — мир макета, не меняются с темой страницы. */
+    --app-surface: #FFFFFF; --app-ink: #16171D; --app-ink2: #62656E; --app-soft: #EAEAEA; --app-gray: #A9A9A9; --app-red: #C62828;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --page: #141518; --ink: #ECECEF; --muted: #A3A5AD; --panel: #1E1F23; --line: #2E3036; --chip: #2A2C31; --chip-on: #ECECEF; --chip-on-ink: #16171D; color-scheme: dark } }
+  :root[data-theme="dark"] { --page: #141518; --ink: #ECECEF; --muted: #A3A5AD; --panel: #1E1F23; --line: #2E3036; --chip: #2A2C31; --chip-on: #ECECEF; --chip-on-ink: #16171D; color-scheme: dark }
+
+  * { box-sizing: border-box; }
+  body { background: var(--page); color: var(--ink); font-family: var(--font); font-size: 15px; line-height: 1.45;
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 48px; }
+  .wrap { max-width: 1560px; margin: 0 auto; display: grid; gap: 24px; }
+  header { display: grid; gap: 10px; max-width: 760px; }
+  h1 { font-size: 26px; line-height: 1.2; margin: 0; font-weight: 800; text-wrap: balance; }
+  .lead { margin: 0; color: var(--muted); }
+  .rules { margin: 0; padding-left: 20px; color: var(--muted); display: grid; gap: 2px; }
+  .rules b { color: var(--ink); font-weight: 700; }
+  .global { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .global span { font-weight: 700; font-size: 14px; }
+  .seg { display: inline-flex; background: var(--chip); border-radius: 12px; padding: 3px; gap: 2px; }
+  .seg button { font: 700 14px/1 var(--font); color: var(--ink); background: transparent; border: 0; border-radius: 9px; padding: 9px 14px; cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--chip-on); color: var(--chip-on-ink); }
+  .seg button:focus-visible, .btn:focus-visible { outline: 2px solid #438BC9; outline-offset: 2px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 376px), 1fr)); gap: 20px; }
+  .variant { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 16px 8px 16px; display: grid; gap: 12px; justify-items: center; min-width: 0; }
+  .variant .head { width: 100%; max-width: 360px; display: grid; gap: 4px; }
+  .variant h2 { margin: 0; font-size: 18px; font-weight: 800; display: flex; gap: 8px; align-items: baseline; }
+  .variant h2 .n { font-variant-numeric: tabular-nums; color: var(--muted); font-weight: 700; }
+  .variant p { margin: 0; color: var(--muted); font-size: 14px; }
+  .variant .foot { width: 100%; max-width: 360px; display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .variant .foot small { color: var(--muted); font-size: 12px; }
+
+  /* Телефон */
+  .phone { width: 100%; max-width: 360px; aspect-ratio: 360 / 720; position: relative; border-radius: 28px; overflow: hidden;
+    background: linear-gradient(160deg, #6E7FA8 0%, #A7B5CF 45%, #D8C9B8 100%); box-shadow: 0 1px 3px #0003; container-type: inline-size; }
+  .phone .scrim { position: absolute; inset: 0; background: #00000066; }
+  /* Окно — на месте окна задачи: прижато к нижнему краю над клавиатурой (~40 % высоты), по бокам 8 dp. */
+  .sheet { position: absolute; left: 2.22cqw; right: 2.22cqw; bottom: calc(40% + 2.22cqw); height: 53cqw; background: var(--app-surface);
+    border-radius: 6.1cqw; box-shadow: 0 6px 24px #0004; overflow: hidden; display: flex; flex-direction: column; }
+  .kbd-hint { position: absolute; left: 0; right: 0; bottom: 0; height: 40%; display: grid; place-items: center; color: #FFFFFFAA; font-size: 3.3cqw; font-weight: 600; letter-spacing: .02em; }
+  .kbd-hint::before { content: ""; position: absolute; inset: 3cqw 6cqw; border: 1.5px dashed #FFFFFF55; border-radius: 4cqw; }
+  .said { position: relative; z-index: 2; padding: 4cqw 5cqw 0; font-size: 5.6cqw; font-weight: 700; line-height: 1.28; color: var(--app-ink); min-height: 14.4cqw; }
+  .inrow .wave-row { flex: 1; position: relative; align-self: stretch; margin: 0 2.5cqw; }
+  .inrow .wave-row canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .inrow .said { flex: 1; min-height: 0; }
+  .said .tail { color: var(--app-gray); }
+  .said .caret { display: inline-block; width: 2px; height: 1.05em; background: var(--app-ink); vertical-align: -0.16em; margin-left: 1px; animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .wave { position: relative; flex: 1; min-height: 0; }
+  .wave canvas { position: absolute; left: 0; width: 100%; top: 0; height: 100%; display: block; }
+  .row { position: relative; z-index: 2; display: flex; justify-content: space-between; align-items: center; padding: 0 3.3cqw 3.3cqw; }
+  .btn { width: 13.9cqw; height: 13.9cqw; border: 0; padding: 0; display: grid; place-items: center; cursor: pointer; border-radius: 3.9cqw; }
+  .btn svg { width: 6.9cqw; height: 6.9cqw; display: block; }
+  .btn.soft { background: var(--app-soft); color: var(--app-ink); }
+  .btn.white { background: var(--app-surface); color: var(--app-ink); box-shadow: 0 1px 4px #0002; }
+  .btn.ghost { background: transparent; color: var(--app-ink); border: 1.5px solid var(--app-soft); }
+  .btn.ok { background: var(--app-ink); color: #FFFFFF; }
+  .round .btn { border-radius: 50%; }
+  /* Прилив: волна под кнопками, на всю нижнюю часть окна. */
+  .tide .wave { position: absolute; left: 0; right: 0; bottom: 0; height: var(--tide); flex: none; }
+  .tide .spacer { flex: 1; }
+  @media (prefers-reduced-motion: reduce) { .said .caret { animation: none; } }
+  .err { flex: 1; margin: 0 3cqw; font-size: 3.9cqw; font-weight: 700; line-height: 1.25; color: var(--app-ink); text-align: center; text-wrap: balance; }
+  .err u { text-decoration-thickness: 1.5px; text-underline-offset: 2px; }
+  .kbd { position: absolute; left: 0; right: 0; bottom: 0; height: 40%; background: #E3E5EA; padding: 3cqw 1cqw; display: grid; grid-template-rows: repeat(4, 1fr); gap: 2.2cqw; }
+  .kbd div { display: flex; gap: 1.4cqw; justify-content: center; }
+  .kbd span { flex: 1; max-width: 8.6cqw; background: #fff; border-radius: 1.6cqw; box-shadow: 0 1px 0 #0002; }
+  .kbd .wide { max-width: 50cqw; }
+  .qa { position: absolute; left: 2.22cqw; right: 2.22cqw; bottom: calc(40% + 2.22cqw); background: #fff; border-radius: 6.1cqw; padding: 5cqw; box-shadow: 0 6px 24px #0004; }
+  .qa .t { font-size: 6.6cqw; font-weight: 800; } .qa mark { background: #EAEAEA; color: inherit; }
+  .qa .chip { display: inline-block; margin-top: 2.6cqw; background: #EAEAEA; border-radius: 5cqw; padding: 1.8cqw 3.6cqw; font-size: 3.9cqw; font-weight: 700; }
+  .qa .tools { display: flex; gap: 2.2cqw; margin-top: 5cqw; } .qa .tools span { width: 13.9cqw; height: 13.9cqw; border: 1px solid #E2E2E2; border-radius: 3.9cqw; }
+  .qa .tools b { margin-left: auto; width: 13.9cqw; height: 13.9cqw; border-radius: 3.9cqw; background: #16171D; color: #fff; display: grid; place-items: center; }
+  .qa .tools b svg { width: 6.9cqw; height: 6.9cqw; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Окно голосового ввода — финальный макет (#305)</h1>
+    <p class="lead">Выбор PM 23.11.2026: «Цветной прилив» (раунд 3, вариант 5), распознанный текст остаётся в окне, ошибки — между кнопками. Макеты живые: вода движется, кнопка слева переключает запись и паузу.</p>
+    <ul class="rules">
+      <li><b>Место и размер</b> — как у окна новой задачи без срока: высота 212 dp, снизу над клавиатурой, по бокам 8 dp, скругление 22 dp. Клавиатура окно не сдвигает.</li>
+      <li><b>Закрыть</b> — жест «Назад» или нажатие на затемнение; задача не создаётся.</li>
+      <li><b>Слева</b> — одна кнопка: ⏸ во время записи, ⏺ на паузе и после ошибки (повторить). <b>Справа</b> — галочка: текст уходит в окно задачи; без текста неактивна.</li>
+      <li><b>Вода</b> — три слоя под кнопками: сиреневый, голубой, фиолетовый; голос поднимает и раскачивает их. На паузе и при ошибке вода серая, опускается и успокаивается. С выключенными анимациями Android — неподвижна.</li>
+      <li><b>Текст</b> — распознанная фраза, уточняемое слово серым. На паузе нажатие на текст открывает клавиатуру для правки, ⏺ дописывает в конец (#299).</li>
+      <li><b>Ошибки</b> — короткий текст между кнопками, вместо подсказок и заголовков. Других текстов в окне нет.</li>
+    </ul>
+  </header>
+  <section class="grid" id="grid"></section>
+</div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6.5" y="5" width="3.6" height="14" rx="1.8" fill="currentColor"/><rect x="13.9" y="5" width="3.6" height="14" rx="1.8" fill="currentColor"/></symbol>
+  <symbol id="i-rec" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.5" fill="currentColor"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5,12.5l4.5,4.5L19,7.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</svg>
+
+<script>
+(() => {
+  const INK = '#16171D', GRAY = '#A9A9A9';
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  const mix = (a, b, k) => { const x = hex(a), y = hex(b); return '#' + x.map((v, i) => Math.round(v + (y[i] - v) * k).toString(16).padStart(2, '0')).join(''); };
+  const voice = t => Math.min(1, Math.max(0, Math.sin(t * 2.3)) ** 0.6 * (0.55 + 0.45 * Math.sin(t * 0.9 + 1)) * (0.75 + 0.25 * Math.sin(t * 17.3) * Math.sin(t * 7.1)) * 1.15);
+  const LAYERS = [['#F1F1F3', '#F1E8FA', 0.16, 1.0, 0.9], ['#E4E4E7', '#DCE8F4', 0.34, 1.35, 2.1], ['#D3D4D8', '#C9B3EA', 0.54, 1.8, 3.4]];
+  function draw(c, W, H, s) {
+    LAYERS.forEach(([gray, color, base, f, ph], i) => {
+      const y0 = H * base + (1 - s.rec) * H * 0.16 - s.amp * s.rec * H * 0.12;
+      c.beginPath(); c.moveTo(0, H);
+      for (let x = 0; x <= W; x += 3) c.lineTo(x, y0 + Math.sin(x / W * Math.PI * 2 * f + s.clock * (1.4 + i * 0.5) + ph) * (2 + (5 + s.amp * 15) * s.rec) * (1 - i * 0.15));
+      c.lineTo(W, H); c.closePath(); c.fillStyle = mix(gray, color, s.rec); c.fill();
+    });
+  }
+  const S = [
+    { cap: '1. Запись', note: 'Окно открылось — сразу идёт запись. Пока ничего не сказано, текста нет, галочка неактивна.', on: true, text: '', live: false },
+    { cap: '2. Речь', note: 'Текст по ходу речи, уточняемое слово серым. Вода поднимается с голосом.', on: true, text: 'Позвонить маме завтра в 10', tail: 'утра', live: true },
+    { cap: '3. Пауза', note: 'Нажата ⏸ или пауза в речи ~2 с. Вода серая и спокойная, текст можно править. ⏺ — дописать.', on: false, text: 'Позвонить маме завтра в 10 утра', caret: true },
+    { cap: '4. Правка', note: 'Нажатие на текст — клавиатура под окном; окно не двигается.', on: false, text: 'Позвонить маме завтра в 10 утра и', caret: true, kbd: true },
+    { cap: '5. Не расслышал', note: 'Тишина или ничего не распознано. ⏺ — повторить. Уже набранный текст остаётся.', on: false, text: '', err: 'Не расслышал — нажмите ⏺' },
+    { cap: '6. Нет доступа', note: 'Микрофон запрещён. Нажатие на «Настройки» открывает страницу приложения.', on: false, text: '', err: 'Нет доступа к микрофону · <u>Настройки</u>', off: true },
+    { cap: '7. Недоступно', note: 'Нет сервиса распознавания, сети без офлайн-пакета или микрофон занят. Текст ошибки — по причине (как в #95).', on: false, text: '', err: 'Нет интернета для распознавания', off: true },
+    { cap: '8. Галочка', note: 'Окно задачи на том же месте: текст с разобранным сроком, ✓ сохраняет.', qa: true },
+  ];
+  const grid = document.getElementById('grid');
+  const phones = S.map((st, idx) => {
+    const el = document.createElement('article'); el.className = 'variant';
+    const body = st.qa
+      ? `<div class="qa"><div class="t">Позвонить маме <mark>завтра в 10 утра</mark></div><span class="chip">📅 Завтра, 10:00 ✕</span><div class="tools"><span></span><span></span><span></span><span></span><b><svg><use href="#i-check"/></svg></b></div></div>`
+      : `<div class="sheet tide" style="--tide:58%"><div class="said"></div><div class="spacer"></div><div class="wave"><canvas aria-hidden="true"></canvas></div>
+          <div class="row"><button class="btn white toggle" type="button"></button>${st.err ? `<div class="err">${st.err}</div>` : ''}<button class="btn ok" type="button" aria-label="Готово" ${st.text ? '' : 'style="opacity:.35"'}><svg><use href="#i-check"/></svg></button></div></div>`;
+    el.innerHTML = `<div class="head"><h2>${st.cap}</h2><p>${st.note}</p></div>
+      <div class="phone"><div class="scrim"></div>${st.kbd ? '<div class="kbd">' + '<div>' + '<span></span>'.repeat(11) + '</div><div>' + '<span></span>'.repeat(11) + '</div><div>' + '<span></span>'.repeat(9) + '</div><div><span></span><span class="wide"></span><span></span></div></div>' : ''}${body}</div>`;
+    grid.appendChild(el);
+    const s = { st, el, on: st.on, rec: st.on ? 1 : 0, amp: 0.4, clock: idx * 1.3, visible: true, canvas: el.querySelector('canvas'), said: el.querySelector('.said'), toggle: el.querySelector('.toggle') };
+    if (s.toggle) { s.toggle.addEventListener('click', () => { if (!st.err) { s.on = !s.on; paint(s); } }); paint(s); }
+    return s;
+  });
+  function paint(s) {
+    const st = s.st;
+    s.toggle.innerHTML = `<svg><use href="#${s.on ? 'i-pause' : 'i-rec'}"/></svg>`;
+    s.toggle.setAttribute('aria-label', s.on ? 'Пауза' : 'Продолжить запись');
+    if (st.off) s.toggle.style.opacity = '.35';
+    const t = st.text;
+    s.said.innerHTML = s.on && st.tail ? `${t} <span class="tail">${st.tail}</span>` : (t + (st.tail && !s.on ? ' ' + st.tail : '')) + (!s.on && st.caret ? '<span class="caret"></span>' : '');
+  }
+  function frame(s) {
+    if (!s.canvas) return;
+    const cv = s.canvas, r = cv.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1);
+    if (!r.width) return;
+    if (cv.width !== Math.round(r.width * dpr)) { cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr); }
+    const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, r.width, r.height); draw(c, r.width, r.height, s);
+  }
+  phones.forEach(frame);
+  if (reduced) return;
+  let last = performance.now(), t = 0;
+  (function loop(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
+    phones.forEach((s, i) => {
+      const loud = s.on ? (s.st.live ? voice(t + i) : 0.12 + 0.05 * Math.sin(t * 3)) : 0;
+      s.rec += ((s.on ? 1 : 0) - s.rec) * Math.min(1, dt * 6);
+      s.amp += (loud - s.amp) * Math.min(1, dt * 9);
+      s.clock += dt * (0.15 + 0.85 * s.rec);
+      frame(s);
+    });
+    requestAnimationFrame(loop);
+  })(last);
+})();
+</script>
