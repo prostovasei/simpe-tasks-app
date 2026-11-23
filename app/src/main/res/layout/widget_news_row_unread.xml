@@ -1,4 +1,4 @@
-<!-- #300: новость, которую ещё не открывали, — заголовок полужирный (manrope_600). -->
+<!-- #300, #307: новая новость — жирный заголовок. Системный bold: свои шрифты (res/font) лаунчер в виджетах не применяет. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/news_row"
     android:layout_width="match_parent" android:layout_height="wrap_content"
@@ -11,6 +11,6 @@
         android:textSize="@dimen/widget_news_meta" />
     <TextView android:id="@+id/news_row_title" android:layout_width="match_parent"
         android:layout_height="wrap_content" android:textColor="@color/widget_flat_text_primary"
-        android:includeFontPadding="false" android:fontFamily="@font/manrope_600"
+        android:includeFontPadding="false" android:textStyle="bold"
         android:textSize="@dimen/widget_news_title" />
 </LinearLayout>

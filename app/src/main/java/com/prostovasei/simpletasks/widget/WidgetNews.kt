@@ -84,11 +84,22 @@ private class NewsRows(private val context: Context) :
             setOnClickFillInIntent(R.id.news_read_all, Intent().putExtra(EXTRA_READ_ALL, true))
         }
 
+    /** #307: «… · Новое» — «Новое» фиолетовым жирным, как в приложении. */
+    private fun newMeta(meta: String): CharSequence {
+        val mark = context.getString(R.string.news_new_mark)
+        val text = if (meta.isBlank()) mark else "$meta · $mark"
+        return android.text.SpannableString(text).apply {
+            val start = text.length - mark.length
+            setSpan(android.text.style.ForegroundColorSpan(androidx.core.content.ContextCompat.getColor(context, R.color.widget_flat_new)), start, text.length, 0)
+            setSpan(android.text.style.StyleSpan(android.graphics.Typeface.BOLD), start, text.length, 0)
+        }
+    }
+
     private fun row(title: String, meta: String = "", url: String? = null, unread: Boolean = false) =
         RemoteViews(context.packageName, if (unread) R.layout.widget_news_row_unread else R.layout.widget_news_row).apply {
             setTextViewText(R.id.news_row_title, title)
-            setTextViewText(R.id.news_row_meta, meta)
-            setViewVisibility(R.id.news_row_meta, if (meta.isBlank()) View.GONE else View.VISIBLE)
+            setTextViewText(R.id.news_row_meta, if (unread) newMeta(meta) else meta)
+            setViewVisibility(R.id.news_row_meta, if (meta.isBlank() && !unread) View.GONE else View.VISIBLE)
             if (url != null) setOnClickFillInIntent(R.id.news_row, Intent().putExtra(EXTRA_NEWS_URL, url))
             if (unread) setContentDescription(R.id.news_row, "${context.getString(R.string.news_unread_state)}. $meta. $title")
         }

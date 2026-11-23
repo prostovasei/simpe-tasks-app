@@ -4,7 +4,7 @@
     android:paddingHorizontal="@dimen/widget_news_inset" android:paddingVertical="@dimen/widget_news_day_inset">
     <TextView android:id="@id/news_row_title" android:layout_width="0dp"
         android:layout_height="wrap_content" android:layout_weight="1"
-        android:includeFontPadding="false" android:fontFamily="@font/manrope_700"
+        android:includeFontPadding="false" android:textStyle="bold"
         android:textColor="@color/widget_flat_text_secondary" android:textSize="@dimen/widget_news_day" />
     <TextView android:id="@+id/widget_news_updated" android:layout_width="wrap_content"
         android:layout_height="wrap_content" android:includeFontPadding="false" android:fontFamily="@font/manrope_400"

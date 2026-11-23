@@ -199,8 +199,16 @@ class VoiceInputTest {
         composeRule.waitForIdle()
     }
 
+    /** Пауза пользователя: ⏸ останавливает запись; распознаватель отдаёт последнюю фразу — запись больше не перезапускается. */
+    private fun pauseByUser(engine: FakeEngine, last: String = "") {
+        composeRule.onNodeWithTag(TAG_VOICE_MIC).performClick()
+        composeRule.runOnIdle { engine.listener!!.onResult(last) }
+        composeRule.waitForIdle()
+    }
+
+    /** #308: после фразы запись не останавливается, а незаметно продолжается; в задачу ничего не уходит. */
     @Test
-    fun pauseDoesNotSendTextToTask() {
+    fun listensContinuouslyUntilPause() {
         val engine = FakeEngine()
         val results = mutableListOf<String>()
         route(engine, results)
@@ -210,9 +218,65 @@ class VoiceInputTest {
         composeRule.onNodeWithTag(TAG_VOICE_TEXT, useUnmergedTree = true).assertTextEquals("Позвонить маме")
         composeRule.runOnIdle { engine.listener!!.onResult("позвонить маме завтра в 10.") }
         composeRule.waitForIdle()
+        assertEquals("После фразы запись продолжается сама", 2, engine.starts)
+        composeRule.onNodeWithContentDescription("Пауза").assertExists()
+        composeRule.onNodeWithTag(TAG_VOICE_TEXT, useUnmergedTree = true).assertTextEquals("Позвонить маме завтра в 10")
+
+        // Тишина до 10 с — не ошибка: запись перезапускается, «Не расслышал» нет.
+        composeRule.runOnIdle { engine.listener!!.onError(VoiceError.NOT_HEARD) }
+        composeRule.waitForIdle()
+        assertEquals(3, engine.starts)
+        composeRule.onNodeWithTag(TAG_VOICE_ERROR, useUnmergedTree = true).assertDoesNotExist()
+
+        composeRule.runOnIdle { engine.listener!!.onPartial("и купить хлеб") }
+        composeRule.runOnIdle { engine.listener!!.onResult("и купить хлеб") }
+        composeRule.waitForIdle()
+        pauseByUser(engine)
+        assertEquals("⏸ останавливает запись", 1, engine.stops)
+        assertEquals("После ⏸ запись не перезапускается", 4, engine.starts)
         composeRule.onNodeWithContentDescription("Продолжить запись").assertExists()
-        composeRule.onNodeWithTag(TAG_VOICE_FIELD).assertTextEquals("Позвонить маме завтра в 10")
-        assertEquals("После паузы в задачу ничего не уходит", emptyList<String>(), results)
+        composeRule.onNodeWithTag(TAG_VOICE_FIELD).assertTextEquals("Позвонить маме завтра в 10 и купить хлеб")
+        assertEquals(emptyList<String>(), results)
+    }
+
+    /** #308, ответ PM: 10 с без речи — пауза сама; текст остаётся, ошибки нет. Без текста — «Не расслышал». */
+    @Test
+    fun silenceOfTenSecondsPauses() {
+        val engine = FakeEngine()
+        val results = mutableListOf<String>()
+        route(engine, results)
+        composeRule.runOnIdle { engine.listener!!.onResult("купить хлеб") }
+        composeRule.waitForIdle()
+        composeRule.mainClock.autoAdvance = false
+        composeRule.mainClock.advanceTimeBy(SILENCE_MILLIS - 1_000)
+        assertEquals("До 10 с тишины запись идёт", 0, engine.stops)
+        composeRule.mainClock.advanceTimeBy(2_000)
+        assertEquals("10 с тишины — пауза", 1, engine.stops)
+        composeRule.runOnIdle { engine.listener!!.onError(VoiceError.NOT_HEARD) }
+        composeRule.mainClock.advanceTimeByFrame()
+        composeRule.mainClock.autoAdvance = true
+        composeRule.waitForIdle()
+        assertEquals("После автопаузы запись не перезапускается", 2, engine.starts)
+        composeRule.onNodeWithTag(TAG_VOICE_ERROR, useUnmergedTree = true).assertDoesNotExist()
+        composeRule.onNodeWithTag(TAG_VOICE_FIELD).assertTextEquals("Купить хлеб")
+        assertEquals(emptyList<String>(), results)
+    }
+
+    @Test
+    fun silenceWithoutTextShowsNotHeard() {
+        val engine = FakeEngine()
+        route(engine, mutableListOf())
+        composeRule.mainClock.autoAdvance = false
+        composeRule.mainClock.advanceTimeBy(SILENCE_MILLIS + 1_000)
+        assertEquals(1, engine.stops)
+        composeRule.runOnIdle { engine.listener!!.onError(VoiceError.NOT_HEARD) }
+        composeRule.mainClock.advanceTimeByFrame()
+        composeRule.mainClock.autoAdvance = true
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag(TAG_VOICE_ERROR, useUnmergedTree = true).assertTextEquals("Не расслышал — нажмите ●")
+        composeRule.onNodeWithTag(TAG_VOICE_MIC).performClick()
+        composeRule.waitForIdle()
+        assertEquals("⏺ после «Не расслышал» запускает запись заново", 2, engine.starts)
     }
 
     @Test
@@ -220,8 +284,8 @@ class VoiceInputTest {
         val engine = FakeEngine()
         val results = mutableListOf<String>()
         route(engine, results)
-        composeRule.runOnIdle { engine.listener!!.onResult("позвонить маме") }
-        composeRule.waitForIdle()
+        composeRule.runOnIdle { engine.listener!!.onPartial("позвонить маме") }
+        pauseByUser(engine, "позвонить маме")
 
         composeRule.onNodeWithTag(TAG_VOICE_FIELD).performTextInput(" завтра")
         composeRule.onNodeWithTag(TAG_VOICE_FIELD).assertTextEquals("Позвонить маме завтра")
@@ -232,10 +296,10 @@ class VoiceInputTest {
         composeRule.onNodeWithContentDescription("Пауза").assertExists()
         composeRule.runOnIdle { engine.listener!!.onResult("в 10 утра") }
         composeRule.waitForIdle()
-        composeRule.onNodeWithTag(TAG_VOICE_FIELD).assertTextEquals("Позвонить маме завтра в 10 утра")
+        composeRule.onNodeWithTag(TAG_VOICE_TEXT, useUnmergedTree = true).assertTextEquals("Позвонить маме завтра в 10 утра")
 
         composeRule.onNodeWithTag(TAG_VOICE_ACTION).performClick()
-        assertEquals(listOf("Позвонить маме завтра в 10 утра"), results)
+        assertEquals("Галочка во время записи берёт весь текст", listOf("Позвонить маме завтра в 10 утра"), results)
         assertEquals(true, engine.destroyed)
     }
 
@@ -250,6 +314,7 @@ class VoiceInputTest {
         assertEquals(1, engine.stops)
         composeRule.runOnIdle { engine.listener!!.onResult("купить молоко") }
         composeRule.waitForIdle()
+        assertEquals("Нажатие на текст — пауза, без перезапуска", 1, engine.starts)
         composeRule.onNodeWithTag(TAG_VOICE_FIELD).assertIsFocused().assertTextEquals("Купить молоко")
         assertEquals(emptyList<String>(), results)
     }
@@ -264,29 +329,24 @@ class VoiceInputTest {
         assertEquals("Во время записи ⏸ останавливает её", 1, engine.stops)
 
         composeRule.onNodeWithTag(TAG_VOICE_ACTION).performClick()
-        assertEquals("«Готово» во время записи берёт текущий текст", listOf("Купить молоко"), results)
+        assertEquals("Галочка во время записи берёт текущий текст", listOf("Купить молоко"), results)
     }
 
     @Test
-    fun errorKeepsTypedTextAndWithoutTextShowsErrorWindow() {
+    fun errorKeepsTypedTextAndBlockingErrorStops() {
         val engine = FakeEngine()
         val results = mutableListOf<String>()
         route(engine, results)
-        composeRule.runOnIdle { engine.listener!!.onError(VoiceError.NOT_HEARD) }
-        composeRule.waitForIdle()
-        composeRule.onNodeWithTag(TAG_VOICE_ERROR, useUnmergedTree = true).assertTextEquals("Не расслышал — нажмите ●")
-        composeRule.onNodeWithTag(TAG_VOICE_MIC).performClick()
-        composeRule.waitForIdle()
-        assertEquals("⏺ после ошибки запускает запись заново", 2, engine.starts)
-
         composeRule.runOnIdle { engine.listener!!.onResult("купить хлеб") }
         composeRule.waitForIdle()
+        composeRule.runOnIdle { engine.listener!!.onError(VoiceError.NO_NETWORK) }
+        composeRule.waitForIdle()
+        assertEquals("Ошибка сети останавливает непрерывную запись", 2, engine.starts)
+        composeRule.onNodeWithTag(TAG_VOICE_ERROR, useUnmergedTree = true).assertTextEquals("Нет интернета для распознавания")
+        composeRule.onNodeWithTag(TAG_VOICE_FIELD).assertTextEquals("Купить хлеб")
         composeRule.onNodeWithTag(TAG_VOICE_MIC).performClick()
         composeRule.waitForIdle()
-        composeRule.runOnIdle { engine.listener!!.onError(VoiceError.NOT_HEARD) }
-        composeRule.waitForIdle()
-        composeRule.onNodeWithTag(TAG_VOICE_ERROR, useUnmergedTree = true).assertTextEquals("Не расслышал — нажмите ●")
-        composeRule.onNodeWithTag(TAG_VOICE_FIELD).assertTextEquals("Купить хлеб")
+        assertEquals("⏺ после ошибки запускает запись заново", 3, engine.starts)
         assertEquals(emptyList<String>(), results)
     }
 }
