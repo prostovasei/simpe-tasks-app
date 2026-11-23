@@ -64,9 +64,15 @@ class VoiceInputTest {
         assertEquals(VoiceError.NOT_HEARD, VoiceErrors.from(SpeechRecognizer.ERROR_NO_MATCH))
         assertEquals(VoiceError.NOT_HEARD, VoiceErrors.from(SpeechRecognizer.ERROR_SPEECH_TIMEOUT))
         assertEquals(VoiceError.NO_PERMISSION, VoiceErrors.from(SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS))
-        assertEquals(VoiceError.BUSY, VoiceErrors.from(SpeechRecognizer.ERROR_RECOGNIZER_BUSY))
-        assertEquals(VoiceError.UNAVAILABLE, VoiceErrors.from(SpeechRecognizer.ERROR_NETWORK))
-        assertEquals(VoiceError.UNAVAILABLE, VoiceErrors.from(SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE))
+        assertEquals(VoiceError.BUSY, VoiceErrors.from(SpeechRecognizer.ERROR_AUDIO))
+        assertEquals(VoiceError.NO_NETWORK, VoiceErrors.from(SpeechRecognizer.ERROR_NETWORK))
+        assertEquals(VoiceError.NO_NETWORK, VoiceErrors.from(SpeechRecognizer.ERROR_NETWORK_TIMEOUT))
+        assertEquals(VoiceError.NO_LANGUAGE, VoiceErrors.from(SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE))
+        assertEquals(VoiceError.NO_LANGUAGE, VoiceErrors.from(SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED))
+        // #302: временные сбои сервиса больше не выдаются за «Распознавание недоступно».
+        assertEquals(VoiceError.START_FAILED, VoiceErrors.from(SpeechRecognizer.ERROR_CLIENT))
+        assertEquals(VoiceError.START_FAILED, VoiceErrors.from(SpeechRecognizer.ERROR_SERVER_DISCONNECTED))
+        assertEquals(VoiceError.START_FAILED, VoiceErrors.from(SpeechRecognizer.ERROR_RECOGNIZER_BUSY))
         assertEquals("Позвонить маме завтра" to "в", VoiceErrors.split("Позвонить маме завтра в "))
         assertEquals("" to "Позвонить", VoiceErrors.split("Позвонить"))
         assertEquals("Позвонить маме завтра в 10", VoiceErrors.clean("  Позвонить маме завтра в 10. "))
@@ -133,6 +139,14 @@ class VoiceInputTest {
         composeRule.onNodeWithText("Распознавание недоступно").assertExists()
         composeRule.onNodeWithText("Закрыть").assertExists()
         composeRule.onRoot().captureRoboImage("screenshots/voice_unavailable_light.png")
+
+        state = VoiceState(error = VoiceError.START_FAILED)
+        composeRule.onNodeWithText("Не удалось начать запись").assertExists()
+        composeRule.onNodeWithText("Повторить").assertExists()
+        composeRule.onRoot().captureRoboImage("screenshots/voice_start_failed_light.png")
+
+        state = VoiceState(error = VoiceError.NO_NETWORK)
+        composeRule.onNodeWithText("Нет сети").assertExists()
 
         state = VoiceState(error = VoiceError.BUSY)
         composeRule.onNodeWithText("Микрофон занят другим приложением. Попробуйте ещё раз.").assertExists()

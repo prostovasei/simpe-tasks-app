@@ -887,7 +887,13 @@
     <string name="voice_no_permission">Нужен доступ к микрофону</string>
     <string name="voice_no_permission_hint">Разрешите его в настройках приложения: Разрешения → Микрофон.</string>
     <string name="voice_unavailable">Распознавание недоступно</string>
-    <string name="voice_unavailable_hint">Нужно приложение Google. Без интернета — скачайте русский язык: Google → Голосовой ввод → Офлайн-распознавание.</string>
+    <string name="voice_unavailable_hint">На телефоне нет сервиса распознавания речи. Нужно приложение Google.</string>
+    <string name="voice_no_network">Нет сети</string>
+    <string name="voice_no_network_hint">Распознавание работает через интернет. Проверьте подключение или VPN, либо скачайте русский язык для офлайн-режима: Google → Голосовой ввод.</string>
+    <string name="voice_no_language">Нет русского языка</string>
+    <string name="voice_no_language_hint">Скачайте русский язык: Google → Голосовой ввод → Офлайн-распознавание.</string>
+    <string name="voice_start_failed">Не удалось начать запись</string>
+    <string name="voice_start_failed_hint">Нажмите «Повторить» или 🎤 ещё раз.</string>
     <string name="voice_busy_hint">Микрофон занят другим приложением. Попробуйте ещё раз.</string>
     <!-- #296: уведомления о новостях -->
     <string name="news_channel">Новости</string>
