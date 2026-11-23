@@ -127,14 +127,13 @@ object SizeTokens {
     const val HEALTH_TIP_WIDTH = 104
     const val HEALTH_DELTA_WIDTH = 48
 
-    /** Окно голосового ввода (#95): микрофон, наибольший круг громкости, высота области микрофона, значок, высота текста. */
-    const val VOICE_MIC = 72
-    const val VOICE_GLOW = 150
-    const val VOICE_MIC_ICON = 32
-    const val VOICE_TEXT_MIN = 64
-
-    /** #299: окно фиксированной высоты — не двигается и не растёт от клавиатуры и длины текста. */
-    const val VOICE_HEIGHT = 330
+    /**
+     * Окно голосового ввода (#305): высота как у окна новой задачи без срока — не растёт от клавиатуры и длины текста;
+     * [VOICE_TIDE_PERCENT] — доля высоты окна под «водой» снизу; [VOICE_TIDE_RISE] — на сколько dp голос поднимает воду.
+     */
+    const val VOICE_HEIGHT = 212
+    const val VOICE_TIDE_PERCENT = 58
+    const val VOICE_TIDE_RISE = 16
     const val NAV_SHADOW = 10
     const val CHECKBOX = 18
     const val CHECKBOX_STROKE = 2

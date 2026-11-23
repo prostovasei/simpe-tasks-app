@@ -1,0 +1,219 @@
+<title>Голосовое окно: прилив</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap">
+<!--
+  #305. Черновик на согласовании PM: 10 вариантов окна распознавания голоса.
+  Внутри телефонов — светлая тема приложения (ColorTokens): surface #FFFFFF, textPrimary #16171D, textSecondary #62656E,
+  accentSoft #EAEAEA, inactive #A9A9A9, done #C9CBD0, danger #C62828, priority #862CE0, ranks #438BC9 / #359E8A, scrim 0x66000000.
+  Размеры — как у окна задачи (TaskSheet): отступ по бокам spacing.xs = 8, скругление RadiusTokens.NAV = 22, кнопки TOOL_BUTTON = 50.
+-->
+<style>
+  /* Страница: сетка карточек-вариантов, в каждой телефон 360 × 720 dp в масштабе 1:1. */
+  :root {
+    --page: #ECECEF; --ink: #16171D; --muted: #62656E; --panel: #FFFFFF; --line: #DADBE0; --chip: #E2E3E8; --chip-on: #16171D; --chip-on-ink: #FFFFFF;
+    --font: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+    /* Цвета приложения (светлая тема) — мир макета, не меняются с темой страницы. */
+    --app-surface: #FFFFFF; --app-ink: #16171D; --app-ink2: #62656E; --app-soft: #EAEAEA; --app-gray: #A9A9A9; --app-red: #C62828;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --page: #141518; --ink: #ECECEF; --muted: #A3A5AD; --panel: #1E1F23; --line: #2E3036; --chip: #2A2C31; --chip-on: #ECECEF; --chip-on-ink: #16171D; color-scheme: dark } }
+  :root[data-theme="dark"] { --page: #141518; --ink: #ECECEF; --muted: #A3A5AD; --panel: #1E1F23; --line: #2E3036; --chip: #2A2C31; --chip-on: #ECECEF; --chip-on-ink: #16171D; color-scheme: dark }
+
+  * { box-sizing: border-box; }
+  body { background: var(--page); color: var(--ink); font-family: var(--font); font-size: 15px; line-height: 1.45;
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 48px; }
+  .wrap { max-width: 1560px; margin: 0 auto; display: grid; gap: 24px; }
+  header { display: grid; gap: 10px; max-width: 760px; }
+  h1 { font-size: 26px; line-height: 1.2; margin: 0; font-weight: 800; text-wrap: balance; }
+  .lead { margin: 0; color: var(--muted); }
+  .rules { margin: 0; padding-left: 20px; color: var(--muted); display: grid; gap: 2px; }
+  .rules b { color: var(--ink); font-weight: 700; }
+  .global { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .global span { font-weight: 700; font-size: 14px; }
+  .seg { display: inline-flex; background: var(--chip); border-radius: 12px; padding: 3px; gap: 2px; }
+  .seg button { font: 700 14px/1 var(--font); color: var(--ink); background: transparent; border: 0; border-radius: 9px; padding: 9px 14px; cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--chip-on); color: var(--chip-on-ink); }
+  .seg button:focus-visible, .btn:focus-visible { outline: 2px solid #438BC9; outline-offset: 2px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 376px), 1fr)); gap: 20px; }
+  .variant { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 16px 8px 16px; display: grid; gap: 12px; justify-items: center; min-width: 0; }
+  .variant .head { width: 100%; max-width: 360px; display: grid; gap: 4px; }
+  .variant h2 { margin: 0; font-size: 18px; font-weight: 800; display: flex; gap: 8px; align-items: baseline; }
+  .variant h2 .n { font-variant-numeric: tabular-nums; color: var(--muted); font-weight: 700; }
+  .variant p { margin: 0; color: var(--muted); font-size: 14px; }
+  .variant .foot { width: 100%; max-width: 360px; display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .variant .foot small { color: var(--muted); font-size: 12px; }
+
+  /* Телефон */
+  .phone { width: 100%; max-width: 360px; aspect-ratio: 360 / 720; position: relative; border-radius: 28px; overflow: hidden;
+    background: linear-gradient(160deg, #6E7FA8 0%, #A7B5CF 45%, #D8C9B8 100%); box-shadow: 0 1px 3px #0003; container-type: inline-size; }
+  .phone .scrim { position: absolute; inset: 0; background: #00000066; }
+  /* Окно — на месте окна задачи: прижато к нижнему краю над клавиатурой (~40 % высоты), по бокам 8 dp. */
+  .sheet { position: absolute; left: 2.22cqw; right: 2.22cqw; bottom: calc(40% + 2.22cqw); height: 53cqw; background: var(--app-surface);
+    border-radius: 6.1cqw; box-shadow: 0 6px 24px #0004; overflow: hidden; display: flex; flex-direction: column; }
+  .kbd-hint { position: absolute; left: 0; right: 0; bottom: 0; height: 40%; display: grid; place-items: center; color: #FFFFFFAA; font-size: 3.3cqw; font-weight: 600; letter-spacing: .02em; }
+  .kbd-hint::before { content: ""; position: absolute; inset: 3cqw 6cqw; border: 1.5px dashed #FFFFFF55; border-radius: 4cqw; }
+  .said { position: relative; z-index: 2; padding: 4cqw 5cqw 0; font-size: 5.6cqw; font-weight: 700; line-height: 1.28; color: var(--app-ink); min-height: 14.4cqw; }
+  .inrow .wave-row { flex: 1; position: relative; align-self: stretch; margin: 0 2.5cqw; }
+  .inrow .wave-row canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .inrow .said { flex: 1; min-height: 0; }
+  .said .tail { color: var(--app-gray); }
+  .said .caret { display: inline-block; width: 2px; height: 1.05em; background: var(--app-ink); vertical-align: -0.16em; margin-left: 1px; animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .wave { position: relative; flex: 1; min-height: 0; }
+  .wave canvas { position: absolute; left: 0; width: 100%; top: 0; height: 100%; display: block; }
+  .row { position: relative; z-index: 2; display: flex; justify-content: space-between; align-items: center; padding: 0 3.3cqw 3.3cqw; }
+  .btn { width: 13.9cqw; height: 13.9cqw; border: 0; padding: 0; display: grid; place-items: center; cursor: pointer; border-radius: 3.9cqw; }
+  .btn svg { width: 6.9cqw; height: 6.9cqw; display: block; }
+  .btn.soft { background: var(--app-soft); color: var(--app-ink); }
+  .btn.white { background: var(--app-surface); color: var(--app-ink); box-shadow: 0 1px 4px #0002; }
+  .btn.ghost { background: transparent; color: var(--app-ink); border: 1.5px solid var(--app-soft); }
+  .btn.ok { background: var(--app-ink); color: #FFFFFF; }
+  .round .btn { border-radius: 50%; }
+  /* Прилив: волна под кнопками, на всю нижнюю часть окна. */
+  .tide .wave { position: absolute; left: 0; right: 0; bottom: 0; height: var(--tide); flex: none; }
+  .tide .spacer { flex: 1; }
+  @media (prefers-reduced-motion: reduce) { .said .caret { animation: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Окно голосового ввода — прилив, 5 вариантов (#305)</h1>
+    <p class="lead">Макеты живые: волны двигаются от «голоса», кнопка слева в самом макете ставит на паузу и продолжает запись.</p>
+    <ul class="rules">
+      <li><b>Место и размер</b> как у окна новой задачи без срока: высота 212 dp, снизу над клавиатурой, по бокам 8 dp, скругление 22 dp.</li>
+      <li><b>Закрыть</b> — жест «Назад» или нажатие на затемнение. Кнопки «Отмена» нет.</li>
+      <li><b>Справа внизу</b> — галочка: текст уходит в окно задачи.</li>
+      <li><b>Слева внизу</b> — одна кнопка: во время записи ⏸, на паузе ⏺.</li>
+      <li><b>Текстов нет</b>, кроме распознанной фразы. На паузе её можно править, как в #299.</li>
+    </ul>
+    <div class="global"><span>Все макеты:</span>
+      <div class="seg" role="group" aria-label="Состояние всех макетов">
+        <button type="button" id="all-rec" aria-pressed="true">Запись</button>
+        <button type="button" id="all-pause" aria-pressed="false">Пауза</button>
+      </div>
+    </div>
+  </header>
+  <section class="grid" id="grid"></section>
+</div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6.5" y="5" width="3.6" height="14" rx="1.8" fill="currentColor"/><rect x="13.9" y="5" width="3.6" height="14" rx="1.8" fill="currentColor"/></symbol>
+  <symbol id="i-rec" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.5" fill="currentColor"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5,12.5l4.5,4.5L19,7.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</svg>
+
+<script>
+(() => {
+  const INK = '#16171D', GRAY = '#A9A9A9', SOFT = '#EAEAEA', DONE = '#C9CBD0';
+  const WORDS = ['Позвонить', 'маме', 'завтра', 'в', '10', 'утра'];
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  const mix = (a, b, k) => { const x = hex(a), y = hex(b); return '#' + x.map((v, i) => Math.round(v + (y[i] - v) * k).toString(16).padStart(2, '0')).join(''); };
+  const env = (x, W) => Math.sin(Math.PI * Math.min(1, Math.max(0, x / W))) ** 2;
+  const wob = (i, t) => 0.5 + 0.5 * Math.sin(i * 1.7 + t * 3.1) * Math.sin(i * 0.53 + t * 1.9 + Math.sin(t * 0.7 + i));
+  /* «Голос»: слова, паузы между ними и мелкая дрожь громкости. */
+  const voice = t => Math.min(1, Math.max(0, Math.sin(t * 2.3)) ** 0.6 * (0.55 + 0.45 * Math.sin(t * 0.9 + 1)) * (0.75 + 0.25 * Math.sin(t * 17.3) * Math.sin(t * 7.1)) * 1.15);
+
+  /* Прилив: слои «воды» снизу окна, под кнопками; голос поднимает и раскачивает их. */
+  const tide = (c, W, H, s, layers, crest) => {
+    layers.forEach(([col, base, f, ph, alpha], i) => {
+      const y0 = H * base + (1 - s.rec) * H * 0.16 - s.amp * s.rec * H * 0.12;
+      const pts = [];
+      for (let x = 0; x <= W; x += 3) pts.push([x, y0 + Math.sin(x / W * Math.PI * 2 * f + s.clock * (1.4 + i * 0.5) + ph) * (2 + (5 + s.amp * 15) * s.rec) * (1 - i * 0.15)]);
+      c.beginPath(); c.moveTo(0, H); pts.forEach(([x, y]) => c.lineTo(x, y)); c.lineTo(W, H); c.closePath();
+      c.globalAlpha = alpha ?? 1; c.fillStyle = typeof col === 'function' ? col(s) : col; c.fill(); c.globalAlpha = 1;
+      if (crest && i === layers.length - 1) { c.beginPath(); pts.forEach(([x, y], j) => j ? c.lineTo(x, y) : c.moveTo(x, y)); c.strokeStyle = mix(GRAY, INK, s.rec); c.lineWidth = 2; c.stroke(); }
+    });
+  };
+  const V = [
+    { name: 'Прилив', desc: 'Понравившаяся основа, доработанная: три серых слоя воды под кнопками, голос поднимает и раскачивает их. На паузе вода опускается и успокаивается.', btn: 'white', h: 58,
+      draw(c, W, H, s) { tide(c, W, H, s, [['#F1F1F3', 0.16, 1.0, 0.9], ['#E4E4E7', 0.34, 1.35, 2.1], ['#D3D4D8', 0.54, 1.8, 3.4]]); } },
+    { name: 'Глубина', desc: 'Нижний слой — почти чёрный, как глубокая вода; кнопки на нём белые. Самый контрастный и заметный вариант. На паузе тёмная вода опускается.', btn: 'white', okWhite: true, h: 60,
+      draw(c, W, H, s) { tide(c, W, H, s, [['#EDEDEF', 0.12, 1.0, 0.9], ['#C9CBD0', 0.3, 1.35, 2.1], [s2 => mix('#62656E', INK, s2.rec), 0.5, 1.7, 3.4]]); } },
+    { name: 'С гребнем', desc: 'Светлые слои воды, а у верхней волны — чёткая чёрная линия гребня. Спокойно, но движение хорошо видно.', btn: 'white', h: 58,
+      draw(c, W, H, s) { tide(c, W, H, s, [['#F4F4F5', 0.18, 1.3, 2.4], ['#ECECEE', 0.32, 1.0, 0.9]], true); } },
+    { name: 'Половина окна', desc: 'Вода поднимается почти до текста и занимает всё окно ниже фразы, очень мягкие слои. Текст — над водой.', btn: 'white', h: 78,
+      draw(c, W, H, s) { tide(c, W, H, s, [['#F5F5F6', 0.08, 0.9, 0.4], ['#ECECEE', 0.26, 1.25, 1.8], ['#E0E0E3', 0.46, 1.6, 3.0], ['#D3D4D8', 0.64, 2.0, 4.2]]); } },
+    { name: 'Цветной прилив', desc: 'Слои с лёгким оттенком: сиреневый (фон приоритета), голубой и фиолетовый. Цвет только во время записи, на паузе вода серая.', btn: 'white', h: 58,
+      draw(c, W, H, s) { tide(c, W, H, s, [[s2 => mix('#F1F1F3', '#F1E8FA', s2.rec), 0.16, 1.0, 0.9], [s2 => mix('#E4E4E7', '#DCE8F4', s2.rec), 0.34, 1.35, 2.1], [s2 => mix('#D3D4D8', '#C9B3EA', s2.rec), 0.54, 1.8, 3.4]]); } },
+  ];
+
+  const grid = document.getElementById('grid');
+  const phones = V.map((v, idx) => {
+    const el = document.createElement('article');
+    el.className = 'variant';
+    el.innerHTML = `
+      <div class="head"><h2><span class="n">${idx + 1}</span>${v.name}</h2><p>${v.desc}</p></div>
+      <div class="phone"><div class="scrim"></div><div class="kbd-hint">место клавиатуры</div>
+        <div class="sheet tide" style="--tide:${v.h}%">
+          <div class="said" aria-live="polite"></div>
+                    <div class="spacer"></div>
+          <div class="wave"><canvas aria-hidden="true"></canvas></div>
+          <div class="row">
+            <button class="btn ${v.btn} toggle" type="button"><svg><use href="#i-pause"/></svg></button>
+            <button class="btn ${v.okWhite ? 'white' : 'ok'}" type="button" aria-label="Готово"><svg><use href="#i-check"/></svg></button>
+          </div>
+        </div>
+      </div>
+      <div class="foot"><small>Кнопка слева в макете — пауза / запись</small>
+        <div class="seg" role="group" aria-label="Состояние варианта ${idx + 1}">
+          <button type="button" data-st="rec" aria-pressed="true">Запись</button><button type="button" data-st="pause" aria-pressed="false">Пауза</button>
+        </div></div>`;
+    grid.appendChild(el);
+    const s = { v, el, rec: 1, on: true, amp: 0.5, clock: idx * 1.7, hist: [], words: 3, wordClock: 0, frame: 0, visible: true,
+      canvas: el.querySelector('canvas'), said: el.querySelector('.said'), toggle: el.querySelector('.toggle'), segs: el.querySelectorAll('.seg button') };
+    for (let i = 0; i < 90; i++) s.hist.push(Math.max(0, voice(i * 0.18 + idx) * (0.4 + 0.6 * wob(i, idx))));
+    v.init?.(s);
+    s.toggle.addEventListener('click', () => setState(s, !s.on));
+    s.segs.forEach(b => b.addEventListener('click', () => setState(s, b.dataset.st === 'rec')));
+    setState(s, true);
+    return s;
+  });
+
+  function setState(s, on) {
+    s.on = on;
+    s.toggle.innerHTML = `<svg${on || !s.v.red ? '' : ' style="color:#C62828"'}><use href="#${on ? 'i-pause' : 'i-rec'}"/></svg>`;
+    s.toggle.setAttribute('aria-label', on ? 'Пауза' : 'Продолжить запись');
+    s.segs.forEach(b => b.setAttribute('aria-pressed', String((b.dataset.st === 'rec') === on)));
+    renderText(s);
+    if (reduced) { s.rec = on ? 1 : 0; s.amp = on ? 0.6 : 0; frame(s, 0); }
+  }
+  function renderText(s) {
+    const shown = WORDS.slice(0, s.words);
+    if (s.on) s.said.innerHTML = shown.slice(0, -1).join(' ') + ' <span class="tail">' + shown[shown.length - 1] + '</span>';
+    else s.said.innerHTML = shown.join(' ') + '<span class="caret"></span>';
+  }
+  function setAll(on) { phones.forEach(s => setState(s, on)); document.getElementById('all-rec').setAttribute('aria-pressed', String(on)); document.getElementById('all-pause').setAttribute('aria-pressed', String(!on)); }
+  document.getElementById('all-rec').addEventListener('click', () => setAll(true));
+  document.getElementById('all-pause').addEventListener('click', () => setAll(false));
+
+  function frame(s, dt) {
+    const cv = s.canvas, r = cv.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1);
+    if (!r.width) return;
+    if (cv.width !== Math.round(r.width * dpr)) { cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr); }
+    const c = cv.getContext('2d');
+    c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, r.width, r.height);
+    s.v.draw(c, r.width, r.height, s);
+  }
+
+  let last = performance.now(), t = 0;
+  const io = 'IntersectionObserver' in window ? new IntersectionObserver(es => es.forEach(e => { const s = phones.find(p => p.el === e.target); if (s) s.visible = e.isIntersecting; })) : null;
+  phones.forEach(s => io?.observe(s.el));
+  phones.forEach(s => frame(s, 0));
+  if (reduced) return;
+  (function loop(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
+    phones.forEach((s, i) => {
+      s.rec += ((s.on ? 1 : 0) - s.rec) * Math.min(1, dt * 6);
+      s.amp += ((s.on ? voice(t + i * 0.9) : 0) - s.amp) * Math.min(1, dt * 9);
+      s.clock += dt * (0.15 + 0.85 * s.rec);
+      if (s.on && s.v.tape && (s.frame++ % 3 === 0)) { s.hist.push(s.amp); if (s.hist.length > 200) s.hist.shift(); }
+      if (s.on) { s.wordClock += dt; if (s.wordClock > 0.9 && s.words < WORDS.length) { s.words++; s.wordClock = 0; renderText(s); } else if (s.wordClock > 6) { s.words = 2; s.wordClock = 0; renderText(s); } }
+      if (s.visible) frame(s, dt);
+    });
+    requestAnimationFrame(loop);
+  })(last);
+})();
+</script>

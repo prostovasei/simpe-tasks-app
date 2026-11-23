@@ -874,32 +874,18 @@
     <string name="news_unread_state">Новая</string>
     <!-- #95: голосовой ввод из виджета -->
     <string name="widget_voice">Создать задачу голосом</string>
-    <string name="voice_speak">Говорите</string>
-    <string name="voice_listening">Слушаю…</string>
-    <string name="voice_check">Проверьте текст</string>
-    <string name="voice_not_heard_again">Не расслышал — нажмите 🎤 ещё раз</string>
-    <string name="voice_tap_stop">Нажмите, чтобы остановить</string>
-    <string name="voice_tap_continue">Нажмите, чтобы продолжить</string>
-    <string name="voice_title">Голосовой ввод</string>
-    <string name="voice_example">Например, «Позвонить маме завтра в 10»</string>
-    <string name="voice_cancel">Отмена</string>
-    <string name="voice_close">Закрыть</string>
+    <string name="voice_pause">Пауза</string>
+    <string name="voice_record">Продолжить запись</string>
     <string name="voice_done">Готово</string>
-    <string name="voice_retry">Повторить</string>
-    <string name="voice_settings">Открыть настройки</string>
-    <string name="voice_not_heard">Не расслышал</string>
-    <string name="voice_not_heard_hint">Попробуйте ещё раз, говорите ближе к телефону.</string>
-    <string name="voice_no_permission">Нужен доступ к микрофону</string>
-    <string name="voice_no_permission_hint">Разрешите его в настройках приложения: Разрешения → Микрофон.</string>
-    <string name="voice_unavailable">Распознавание недоступно</string>
-    <string name="voice_unavailable_hint">На телефоне нет сервиса распознавания речи. Нужно приложение Google.</string>
-    <string name="voice_no_network">Нет сети</string>
-    <string name="voice_no_network_hint">Распознавание работает через интернет. Проверьте подключение или VPN, либо скачайте русский язык для офлайн-режима: Google → Голосовой ввод.</string>
-    <string name="voice_no_language">Нет русского языка</string>
-    <string name="voice_no_language_hint">Скачайте русский язык: Google → Голосовой ввод → Офлайн-распознавание.</string>
-    <string name="voice_start_failed">Не удалось начать запись</string>
-    <string name="voice_start_failed_hint">Нажмите «Повторить» или 🎤 ещё раз.</string>
-    <string name="voice_busy_hint">Микрофон занят другим приложением. Попробуйте ещё раз.</string>
+    <string name="voice_close_label">Закрыть голосовой ввод</string>
+    <string name="voice_err_not_heard">Не расслышал — нажмите ●</string>
+    <string name="voice_err_not_heard_spoken">Не расслышал. Нажмите «Продолжить запись»</string>
+    <string name="voice_err_no_permission">Нет доступа к микрофону · Настройки</string>
+    <string name="voice_err_unavailable">Распознавание недоступно</string>
+    <string name="voice_err_busy">Микрофон занят</string>
+    <string name="voice_err_no_network">Нет интернета для распознавания</string>
+    <string name="voice_err_no_language">Нет русского языка для распознавания</string>
+    <string name="voice_err_start_failed">Не удалось начать запись</string>
     <!-- #296: уведомления о новостях -->
     <string name="news_channel">Новости</string>
     <!-- Форма выбирается в коде по правилам русского языка (NewsAlerts.titleForm), не по языку телефона. -->
