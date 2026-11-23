@@ -82,30 +82,51 @@ fun LazyListScope.timelineItems(
     selection: Set<String>? = null,
     /** Нажатие в режиме выбора и долгое нажатие вне его; null — выбирать на этом экране нельзя. */
     onSelect: ((TaskItem) -> Unit)? = null,
+    /** #314: появление строк по очереди (окно дня); null — строки появляются сразу. */
+    rowMotion: (@Composable (index: Int, content: @Composable () -> Unit) -> Unit)? = null,
 ) {
     val rows = WidgetTimeline.rows(items, overdue = dayLabels, nowMinute = nowMinute.takeUnless { dayLabels }, days = days).filter { showNowMarker || it != WidgetRow.Now }
     // Ключ с днём: при переносе между днями Room обновляет списки не одновременно, и одна задача на миг бывает в двух днях сразу —
     // с одним лишь id это «Key was already used» и вылет.
     itemsIndexed(rows, key = { _, row -> if (row is WidgetRow.Task) "$keyPrefix:${row.item.id}" else "$keyPrefix-now" }) { index, row ->
-        val top = index > 0
-        val bottom = index < rows.lastIndex
-        when (row) {
-            is WidgetRow.Task -> {
-                val item = row.item
-                // Будущий повтор выбрать нельзя: это не задача, а её будущий раз.
-                val selectable = onSelect != null && !item.isGhost
-                val selecting = selection != null
-                TimelineTaskRow(
-                    row, top, bottom, isOverdue(item), showList,
-                    onToggle = { if (selecting) { if (selectable) onSelect?.invoke(item) } else onToggle(item) },
-                    onClick = { if (selecting) { if (selectable) onSelect?.invoke(item) } else onOpen(item) },
-                    dayLabels = dayLabels,
-                    selected = if (selecting && !item.isGhost) item.id in selection.orEmpty() else null,
-                    onLongClick = if (selectable && !selecting) { { onSelect?.invoke(item) } } else null,
-                )
-            }
-            WidgetRow.Now -> TimelineNowRow(nowMinute ?: 0, top, bottom)
+        val item = this
+        if (rowMotion != null) rowMotion(index) { item.TimelineRow(row, index, rows.lastIndex, nowMinute, isOverdue, showList, onToggle, onOpen, dayLabels, selection, onSelect) }
+        else TimelineRow(row, index, rows.lastIndex, nowMinute, isOverdue, showList, onToggle, onOpen, dayLabels, selection, onSelect)
+    }
+}
+
+@Composable
+private fun LazyItemScope.TimelineRow(
+    row: WidgetRow,
+    index: Int,
+    last: Int,
+    nowMinute: Int?,
+    isOverdue: (TaskItem) -> Boolean,
+    showList: Boolean,
+    onToggle: (TaskItem) -> Unit,
+    onOpen: (TaskItem) -> Unit,
+    dayLabels: Boolean,
+    selection: Set<String>?,
+    onSelect: ((TaskItem) -> Unit)?,
+) {
+    val top = index > 0
+    val bottom = index < last
+    when (row) {
+        is WidgetRow.Task -> {
+            val item = row.item
+            // Будущий повтор выбрать нельзя: это не задача, а её будущий раз.
+            val selectable = onSelect != null && !item.isGhost
+            val selecting = selection != null
+            TimelineTaskRow(
+                row, top, bottom, isOverdue(item), showList,
+                onToggle = { if (selecting) { if (selectable) onSelect?.invoke(item) } else onToggle(item) },
+                onClick = { if (selecting) { if (selectable) onSelect?.invoke(item) } else onOpen(item) },
+                dayLabels = dayLabels,
+                selected = if (selecting && !item.isGhost) item.id in selection.orEmpty() else null,
+                onLongClick = if (selectable && !selecting) { { onSelect?.invoke(item) } } else null,
+            )
         }
+        WidgetRow.Now -> TimelineNowRow(nowMinute ?: 0, top, bottom)
     }
 }
 

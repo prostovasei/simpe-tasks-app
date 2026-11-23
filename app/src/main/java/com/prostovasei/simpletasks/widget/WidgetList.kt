@@ -203,7 +203,8 @@ class WidgetClickActivity : Activity() {
             WidgetClicks.COMPLETE -> taskId?.let { sendBroadcast(WidgetActions.complete(this, it)) }
             WidgetClicks.UNCOMPLETE -> taskId?.let { sendBroadcast(WidgetActions.uncomplete(this, it)) }
             WidgetClicks.TOGGLE_OVERDUE -> sendBroadcast(WidgetActions.toggleOverdue(this))
-            WidgetClicks.DAY -> taskId?.let { startActivity(openDayIntent(this, it)) }
+            // #314: место ячейки — окно дня вырастает из неё и сжимается в неё же.
+            WidgetClicks.DAY -> taskId?.let { startActivity(openDayIntent(this, it).apply { sourceBounds = intent.sourceBounds }) }
             WidgetClicks.PICK_WEEK -> taskId?.let { sendBroadcast(WidgetActions.pickWeek(this, widgetId, it)) }
         }
         finish()

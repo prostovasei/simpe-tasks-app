@@ -128,6 +128,8 @@ object TaskCanvasTokens {
     const val DONE_EMOJI_ALPHA = 0.4f
     val background = ThemedColor(light = 0xFFFFFFFF, dark = 0xFFFFFFFF)
     val divider = ThemedColor(light = 0xFFE8E8EA, dark = 0xFFE8E8EA)
+    /** #314 «Праздник дня»: искры цветов приложения — приоритет, цвета долей финансов, бледный фиолетовый, чёрный. */
+    val celebration = listOf(0xFF862CE0, 0xFF438BC9, 0xFF359E8A, 0xFFCC883D, 0xFFC9B3EA, 0xFF16171D)
 }
 
 internal object FinanceShareColors {

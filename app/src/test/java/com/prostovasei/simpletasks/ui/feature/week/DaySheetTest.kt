@@ -15,6 +15,11 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeDown
+import androidx.compose.ui.test.swipeLeft
+import androidx.compose.ui.test.swipeRight
+import androidx.compose.ui.test.swipeUp
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.domain.model.Priority
@@ -90,7 +95,8 @@ class DaySheetTest {
         assertEquals(listOf(today), added)
         assertEquals("Нажатие по шторке не закрывает", 0, closed)
         composeRule.onNodeWithTag(TAG_DAY_SCRIM).performClick()
-        assertEquals(1, closed)
+        composeRule.waitForIdle()
+        assertEquals("#314: закрывается после анимации", 1, closed)
     }
 
     @Test
@@ -160,6 +166,80 @@ class DaySheetTest {
         show(state.copy(date = today.minusDays(1)))
         composeRule.onNodeWithTag(TAG_DAY_SHEET_TITLE).assertTextEquals("ПТ 06 ноя")
         composeRule.onNodeWithText("Вчера").assertDoesNotExist()
+    }
+
+    @Test
+    fun swipeShowsNextDayAndPlusAddsThere() {
+        show()
+        composeRule.onNodeWithTag(TAG_DAY_SHEET_PAGER).performTouchInput { swipeLeft() }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag(TAG_DAY_SHEET_TITLE).assertTextEquals("ВС 08 ноя")
+        composeRule.onNodeWithTag(TAG_DAY_SHEET_ADD).performClick()
+        assertEquals(listOf(today.plusDays(1)), added)
+        composeRule.onNodeWithTag(TAG_DAY_SHEET_TITLE).performTouchInput { swipeRight() }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag(TAG_DAY_SHEET_TITLE).assertTextEquals("СБ 07 ноя")
+        composeRule.onNodeWithTag(TAG_DAY_SHEET_TITLE).performTouchInput { swipeRight() }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag(TAG_DAY_SHEET_TITLE).assertTextEquals("ПТ 06 ноя")
+    }
+
+    @Test
+    fun shortPullSpringsBackLongPullExpandsAndPullDownCollapses() {
+        show()
+        val before = composeRule.onNodeWithTag(TAG_DAY_SHEET).getUnclippedBoundsInRoot()
+        composeRule.onNodeWithTag(TAG_DAY_SHEET_TITLE).performTouchInput { swipeUp(centerY, centerY - 60f) }
+        composeRule.waitForIdle()
+        assertEquals("резинка пружинит обратно", before, composeRule.onNodeWithTag(TAG_DAY_SHEET).getUnclippedBoundsInRoot())
+        composeRule.onNodeWithTag(TAG_DAY_SHEET_TITLE).performTouchInput { swipeUp(centerY, centerY - 600f) }
+        composeRule.waitForIdle()
+        val full = composeRule.onNodeWithTag(TAG_DAY_SHEET).getUnclippedBoundsInRoot()
+        org.junit.Assert.assertTrue("на весь экран: ${full.top}", full.bottom - full.top > 850.dp)
+        composeRule.onNodeWithTag(TAG_DAY_SHEET_TITLE).performTouchInput { swipeDown(centerY, centerY + 300f) }
+        composeRule.waitForIdle()
+        assertEquals("вниз из развёрнутого — обратно, не закрыть", 0, closed)
+        assertEquals(before, composeRule.onNodeWithTag(TAG_DAY_SHEET).getUnclippedBoundsInRoot())
+        composeRule.onNodeWithTag(TAG_DAY_SHEET_TITLE).performTouchInput { swipeDown(centerY, centerY + 300f) }
+        composeRule.waitForIdle()
+        assertEquals(1, closed)
+    }
+
+    @Test
+    fun lastTaskOfDayCelebratesOthersDoNot() {
+        val all = state.items
+        assertEquals(false, closesDay(all, all[1]))
+        val last = all.map { if (it.id == "hookah") it else it.copy(isDone = true) }
+        assertEquals(true, closesDay(last, last[1]))
+        assertEquals("снять отметку — не праздник", false, closesDay(last, last[0]))
+        show(state.copy(items = last))
+        composeRule.onNodeWithTag(TAG_DAY_CELEBRATION).assertDoesNotExist()
+        composeRule.onNodeWithTag("task:hookah:check").performClick()
+        composeRule.mainClock.autoAdvance = false
+        composeRule.mainClock.advanceTimeBy(com.prostovasei.simpletasks.ui.common.DONE_CHECK_MS + 300L)
+        composeRule.onNodeWithTag(TAG_DAY_CELEBRATION).assertExists()
+        composeRule.onRoot().captureRoboImage("screenshots/day_sheet_celebration.png")
+        composeRule.mainClock.autoAdvance = true
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag(TAG_DAY_CELEBRATION).assertDoesNotExist()
+    }
+
+    @Test
+    fun growsFromWidgetCellAndClosesBackIntoIt() {
+        composeRule.mainClock.autoAdvance = false
+        composeRule.setContent {
+            AppTheme {
+                DaySheet(state, { intents += it }, onClose = { closed++ }, onOpenTask = { opened += it }, onAdd = { added += it }, nowMinute = 23 * 60 + 38,
+                    origin = android.graphics.Rect(560, 300, 760, 420))
+            }
+        }
+        composeRule.mainClock.advanceTimeBy(DAY_GROW_MS / 2L)
+        composeRule.onRoot().captureRoboImage("screenshots/day_sheet_grow_midway.png")
+        composeRule.mainClock.autoAdvance = true
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag(TAG_DAY_SHEET_TITLE).assertIsDisplayed()
+        composeRule.onNodeWithTag(TAG_DAY_SCRIM).performClick()
+        composeRule.waitForIdle()
+        assertEquals(1, closed)
     }
 
     @Test

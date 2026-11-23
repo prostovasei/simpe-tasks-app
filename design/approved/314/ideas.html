@@ -1,0 +1,251 @@
+<title>Анимации окна дня</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap">
+<!--
+  Черновик на согласовании PM (24.11.2026): галерея анимаций для окон поверх рабочего стола (окно дня из виджета, окно задачи).
+  Окно — обычный экран приложения (Compose), в нём доступны любые анимации. Цвета приложения: surface #FFFFFF, textPrimary #16171D,
+  textSecondary #62656E, inactive #A9A9A9, accentSoft #EAEAEA, priority #862CE0 / #6B32A8, scrim 0x66000000.
+-->
+<style>
+  /* Страница: сетка карточек; в каждой — сцена 360 × 540 dp с окном дня и кнопка повторить. Анимации крутятся по кругу. */
+  :root { --page: #ECECEF; --ink: #16171D; --muted: #62656E; --panel: #FFFFFF; --line: #DADBE0; --chip: #E2E3E8; --on: #16171D; --on-ink: #FFFFFF; --hi: #6B32A8;
+    --font: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --s: #FFFFFF; --t1: #16171D; --t2: #62656E; --gray: #A9A9A9; --soft: #EAEAEA; --prio: #862CE0; --red: #C62828; --green: #1F8F4E; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --page: #141518; --ink: #ECECEF; --muted: #A3A5AD; --panel: #1E1F23; --line: #2E3036; --chip: #2A2C31; --on: #ECECEF; --on-ink: #16171D; --hi: #D4B8F5; color-scheme: dark } }
+  :root[data-theme="dark"] { --page: #141518; --ink: #ECECEF; --muted: #A3A5AD; --panel: #1E1F23; --line: #2E3036; --chip: #2A2C31; --on: #ECECEF; --on-ink: #16171D; --hi: #D4B8F5; color-scheme: dark }
+  * { box-sizing: border-box; }
+  body { background: var(--page); color: var(--ink); font-family: var(--font); font-size: 15px; line-height: 1.45;
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 48px; }
+  .wrap { max-width: 1560px; margin: 0 auto; display: grid; gap: 20px; }
+  h1 { margin: 0; font-size: 26px; font-weight: 800; line-height: 1.2; text-wrap: balance; }
+  .lead { margin: 0; color: var(--muted); max-width: 840px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 384px), 1fr)); gap: 20px; }
+  .v { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 16px 12px; display: grid; gap: 10px; justify-items: center; min-width: 0; align-content: start; }
+  .v .hd { width: 100%; max-width: 360px; display: grid; gap: 4px; }
+  .v h2 { margin: 0; font-size: 18px; font-weight: 800; display: flex; gap: 8px; }
+  .v h2 .n { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .v p { margin: 0; color: var(--muted); font-size: 14px; }
+  .v .when { font-size: 12.5px; font-weight: 700; color: var(--hi); }
+  .again { font: 700 13px/1 var(--font); color: var(--ink); background: var(--chip); border: 0; border-radius: 10px; padding: 9px 12px; cursor: pointer; }
+  .again:focus-visible { outline: 2px solid #438BC9; outline-offset: 2px; }
+  .scroller { width: 100%; overflow-x: auto; display: flex; justify-content: center; }
+
+  /* Сцена: виджет (бледно), затемнение, окно дня снизу */
+  .stage { width: 360px; height: 540px; flex: none; position: relative; overflow: hidden; border-radius: 26px; background: linear-gradient(170deg, #4A2E7A, #8E3E8C 55%, #D06A6A); color: var(--t1); }
+  .wgrid { position: absolute; left: 8px; right: 8px; top: 10px; height: 300px; background: #FFFFFFEE; border-radius: 16px; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(3, 1fr); }
+  .wgrid div { border-right: 1px solid #E2E2E2; border-bottom: 1px solid #E2E2E2; padding: 5px 7px; font: 600 10.5px/1.6 Roboto, system-ui, sans-serif; color: #62656E; }
+  .wgrid div b { display: block; color: #16171D; font-size: 11px; }
+  .scrim { position: absolute; inset: 0; background: #00000066; }
+  .sheet { position: absolute; left: 8px; right: 8px; bottom: 8px; height: 330px; background: var(--s); border-radius: 22px; box-shadow: 0 6px 24px #0004; overflow: hidden; }
+  .sh-h { display: flex; justify-content: space-between; align-items: center; padding: 16px 16px 6px 18px; }
+  .sh-h b { font-size: 19px; font-weight: 800; }
+  .plus { width: 72px; height: 36px; border-radius: 18px; background: var(--t1); color: #fff; display: grid; place-items: center; font-size: 22px; font-weight: 500; }
+  .rows { position: relative; padding: 0 12px; }
+  .r { display: grid; grid-template-columns: 46px 24px 1fr 26px 26px; gap: 8px; align-items: center; height: 46px; position: relative; background: var(--s); }
+  .r .tm { font-size: 14px; font-weight: 600; color: var(--t1); font-variant-numeric: tabular-nums; }
+  .r .ic { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--gray); position: relative; }
+  .r .ic.p { border-color: var(--prio); }
+  .r .ic.rep { border: 0; color: var(--gray); font-size: 17px; line-height: 20px; text-align: center; }
+  .r .ti { font-size: 16.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; position: relative; }
+  .r .bell { color: var(--t2); font-size: 15px; text-align: center; }
+  .r .em { font-size: 17px; text-align: center; }
+  .line { position: absolute; left: 70px; top: 0; bottom: 0; width: 2px; background: #E2E2E2; }
+  .now { position: absolute; left: 12px; right: 12px; height: 2px; background: var(--red); }
+  .now::before { content: ""; position: absolute; left: 56px; top: -4px; width: 10px; height: 10px; border-radius: 50%; background: var(--red); }
+  .strike { position: absolute; left: 0; top: 50%; height: 2px; width: 0; background: var(--gray); }
+  .fill { position: absolute; inset: -2px; border-radius: 50%; background: var(--gray); transform: scale(0); display: grid; place-items: center; color: #fff; font-size: 12px; font-weight: 800; }
+  .under { position: absolute; inset: 0; display: flex; align-items: center; padding: 0 16px; font-weight: 800; color: #fff; font-size: 14px; }
+  .spark { position: absolute; width: 7px; height: 7px; border-radius: 2px; }
+  .card2 { position: absolute; background: var(--s); border-radius: 22px; box-shadow: 0 6px 24px #0004; }
+  @media (prefers-reduced-motion: reduce) { .v .rm { display: block; } }
+  .rm { display: none; font-size: 12px; color: var(--muted); }
+</style>
+
+<div class="wrap">
+  <header style="display:grid;gap:8px">
+    <h1>Анимации окна поверх рабочего стола — 12 идей</h1>
+    <p class="lead">Окно дня (и окно задачи) — обычный экран приложения, поэтому в нём работают любые анимации, жесты и свайпы. Каждая идея крутится по кругу; «Повторить» запускает заново. Выберите, что нравится, — можно несколько, можно поменять скорость или характер.</p>
+    <p class="rm">В системе включено «уменьшение движения» — анимации показаны без движения.</p>
+  </header>
+  <section class="grid" id="grid"></section>
+</div>
+
+<script>
+(() => {
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const ROWS = [
+    ['10:00', 'rep', 'Сервис', '💲'], ['14:00', 'p', 'Запланировать отпуск', '💼'], ['14:30', 'rep', 'Финансы', '🔁'],
+    ['15:00', 'rep', 'Цветы', '🔁'], ['20:00', '', 'Квест', '🎮'],
+  ];
+  const row = ([tm, k, ti, em], i) => `<div class="r" data-i="${i}"><span class="tm">${tm}</span><span class="ic ${k === 'p' ? 'p' : k === 'rep' ? 'rep' : ''}">${k === 'rep' ? '⟳' : ''}</span><span class="ti">${ti}</span><span class="bell">🔔</span><span class="em">${em}</span></div>`;
+  const sheetHtml = (title = 'пт, 27 ноя', rows = ROWS) => `<div class="sheet"><div class="sh-h"><b>${title}</b><span class="plus">+</span></div><div class="rows"><div class="line"></div>${rows.map(row).join('')}</div></div>`;
+  const stageHtml = inner => `<div class="stage"><div class="wgrid">${['ПН 23', 'ВТ 24 Сегодня', 'СР 25', 'ЧТ 26', 'ПТ 27', 'СБ 28'].map((d, i) => `<div data-cell="${i}"><b>${d}</b>${i === 4 ? 'Сервис 10:00<br>Отпуск 14:00<br>Финансы 14:30' : 'Задача<br>Задача'}</div>`).join('')}</div><div class="scrim"></div>${inner}</div>`;
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const anim = (el, frames, opts) => el.animate(frames, { fill: 'both', easing: 'cubic-bezier(.2,.8,.2,1)', ...opts }).finished.catch(() => {});
+  const spring = 'cubic-bezier(.34,1.56,.64,1)';
+
+  const A = [
+    { name: 'Рост из ячейки', when: 'Открытие окна дня', desc: 'Окно вырастает из ячейки дня, на которую нажали: плашка растягивается, скругления меняются, потом проявляется содержимое.',
+      async run(st) {
+        const cell = st.querySelector('[data-cell="4"]'), sheet = st.querySelector('.sheet'), scrim = st.querySelector('.scrim');
+        const c = cell.getBoundingClientRect(), s = sheet.getBoundingClientRect();
+        const dx = c.left - s.left, dy = c.top - s.top, sx = c.width / s.width, sy = c.height / s.height;
+        sheet.style.transformOrigin = '0 0'; [...sheet.children].forEach(x => x.style.opacity = 0);
+        scrim.style.opacity = 0;
+        await anim(scrim, [{ opacity: 0 }, { opacity: 1 }], { duration: 300 });
+        anim(sheet, [{ transform: `translate(${dx}px,${dy}px) scale(${sx},${sy})`, borderRadius: '8px' }, { transform: 'none', borderRadius: '22px' }], { duration: 520, easing: 'cubic-bezier(.3,.7,.2,1)' });
+        await wait(380);
+        [...sheet.children].forEach(x => anim(x, [{ opacity: 0 }, { opacity: 1 }], { duration: 250 }));
+        await wait(1600);
+      } },
+    { name: 'Каскад задач', when: 'После открытия', desc: 'Задачи появляются по очереди снизу вверх с лёгкой пружиной — 40 мс между строками.',
+      async run(st) {
+        const rows = [...st.querySelectorAll('.r')];
+        rows.forEach(r => r.style.opacity = 0);
+        rows.forEach((r, i) => setTimeout(() => anim(r, [{ opacity: 0, transform: 'translateY(16px)' }, { opacity: 1, transform: 'none' }], { duration: 420, easing: spring }), 200 + i * 60));
+        await wait(2200);
+      } },
+    { name: 'Выполнение', when: 'Нажатие на кружок', desc: 'Кружок заливается, рисуется галочка, название зачёркивается линией слева направо, строка бледнеет и уезжает в конец списка.',
+      async run(st) {
+        const r = st.querySelector('[data-i="1"]'), ic = r.querySelector('.ic'), ti = r.querySelector('.ti');
+        ic.innerHTML = '<span class="fill">✓</span><span></span>'; const fill = ic.querySelector('.fill'); fill.style.background = 'var(--prio)';
+        ti.insertAdjacentHTML('beforeend', '<span class="strike"></span>');
+        await wait(500);
+        await anim(fill, [{ transform: 'scale(0)' }, { transform: 'scale(1.15)' }, { transform: 'scale(1)' }], { duration: 380 });
+        await anim(ti.querySelector('.strike'), [{ width: '0' }, { width: '100%' }], { duration: 320 });
+        anim(r, [{ opacity: 1 }, { opacity: .45 }], { duration: 250 });
+        await wait(300);
+        const shift = 46 * 3;
+        anim(r, [{ transform: 'none' }, { transform: `translateY(${shift}px)` }], { duration: 500 });
+        [...st.querySelectorAll('.r')].filter(x => +x.dataset.i > 1).forEach(x => anim(x, [{ transform: 'none' }, { transform: 'translateY(-46px)' }], { duration: 500 }));
+        await wait(1500);
+      } },
+    { name: 'Праздник дня', when: 'Выполнена последняя задача дня', desc: 'Из кружка последней задачи разлетаются искры цветов приложения, окно чуть подпрыгивает. Только когда день закрыт полностью.',
+      async run(st) {
+        const r = st.querySelector('[data-i="4"]'), ic = r.querySelector('.ic'), sheet = st.querySelector('.sheet');
+        [...st.querySelectorAll('.r')].slice(0, 4).forEach(x => { x.style.opacity = .45; x.querySelector('.ti').style.textDecoration = 'line-through'; });
+        ic.innerHTML = '<span class="fill">✓</span>'; await wait(500);
+        await anim(ic.querySelector('.fill'), [{ transform: 'scale(0)' }, { transform: 'scale(1)' }], { duration: 300, easing: spring });
+        const box = st.getBoundingClientRect(), at = ic.getBoundingClientRect();
+        const colors = ['#862CE0', '#438BC9', '#359E8A', '#CC883D', '#C9B3EA', '#16171D'];
+        for (let i = 0; i < 26; i++) {
+          const s = document.createElement('span'); s.className = 'spark'; s.style.background = colors[i % colors.length];
+          s.style.left = (at.left - box.left + 9) + 'px'; s.style.top = (at.top - box.top + 9) + 'px'; st.appendChild(s);
+          const a = Math.random() * Math.PI * 2, d = 50 + Math.random() * 90;
+          anim(s, [{ transform: 'translate(0,0) rotate(0)', opacity: 1 }, { transform: `translate(${Math.cos(a) * d}px,${Math.sin(a) * d - 40}px) rotate(${Math.random() * 360}deg)`, opacity: 0 }], { duration: 900 + Math.random() * 400, easing: 'cubic-bezier(.1,.7,.3,1)' });
+        }
+        anim(sheet, [{ transform: 'none' }, { transform: 'translateY(-8px)' }, { transform: 'none' }], { duration: 420, easing: spring });
+        await wait(1900);
+      } },
+    { name: 'Линия «сейчас»', when: 'Всегда, пока открыто', desc: 'Красная линия текущего времени плавно ползёт между задачами, точка мягко пульсирует.',
+      async run(st) {
+        const rows = st.querySelector('.rows'); rows.insertAdjacentHTML('beforeend', '<div class="now"></div>'); const now = rows.querySelector('.now');
+        const dot = now.animate([{ boxShadow: '0 0 0 0 #C6282855' }, { boxShadow: '0 0 0 8px #C6282800' }], { duration: 1000, iterations: 3 });
+        void dot;
+        await anim(now, [{ top: '92px' }, { top: '128px' }], { duration: 2800, easing: 'linear' });
+        await wait(300);
+      } },
+    { name: 'Перенос свайпом вправо', when: 'Свайп по задаче вправо', desc: 'Строка уезжает вправо, под ней фиолетовая подложка «Завтра →»; отпустил — задача уходит на завтра, соседи сдвигаются.',
+      async run(st) {
+        const r = st.querySelector('[data-i="2"]');
+        r.insertAdjacentHTML('beforebegin', '<div class="under" style="background:var(--prio);top:0;height:46px;position:absolute;left:12px;right:12px;transform:translateY(92px)">Завтра →</div>');
+        const under = st.querySelector('.under'); under.style.opacity = 0;
+        await wait(400);
+        anim(under, [{ opacity: 0 }, { opacity: 1 }], { duration: 200 });
+        await anim(r, [{ transform: 'none' }, { transform: 'translateX(140px)' }], { duration: 450, easing: 'ease-out' });
+        await wait(250);
+        await anim(r, [{ transform: 'translateX(140px)' }, { transform: 'translateX(380px)' }], { duration: 260, easing: 'ease-in' });
+        anim(under, [{ opacity: 1, height: '46px' }, { opacity: 0, height: '0px' }], { duration: 300 });
+        [...st.querySelectorAll('.r')].filter(x => +x.dataset.i > 2).forEach(x => anim(x, [{ transform: 'none' }, { transform: 'translateY(-46px)' }], { duration: 380 }));
+        await wait(1300);
+      } },
+    { name: 'Удаление свайпом влево', when: 'Свайп по задаче влево', desc: 'Красная подложка с корзиной, строка схлопывается по высоте, остальные подтягиваются. Внизу — «Отмена».',
+      async run(st) {
+        const r = st.querySelector('[data-i="3"]');
+        r.insertAdjacentHTML('beforebegin', '<div class="under" style="background:var(--red);justify-content:flex-end;top:0;height:46px;position:absolute;left:12px;right:12px;transform:translateY(138px)">🗑 Удалить</div>');
+        const under = st.querySelector('.under'); await wait(400);
+        await anim(r, [{ transform: 'none' }, { transform: 'translateX(-160px)' }], { duration: 450, easing: 'ease-out' });
+        await anim(r, [{ transform: 'translateX(-160px)' }, { transform: 'translateX(-380px)' }], { duration: 240, easing: 'ease-in' });
+        anim(under, [{ opacity: 1 }, { opacity: 0 }], { duration: 250 });
+        [...st.querySelectorAll('.r')].filter(x => +x.dataset.i > 3).forEach(x => anim(x, [{ transform: 'none' }, { transform: 'translateY(-46px)' }], { duration: 380 }));
+        await wait(1300);
+      } },
+    { name: 'Листание дней свайпом', when: 'Свайп по окну влево/вправо', desc: 'Окно уезжает влево, справа приезжает следующий день; заголовок дня сдвигается медленнее (параллакс). В окне свайпы работают — в отличие от виджета.',
+      async run(st) {
+        const sheet = st.querySelector('.sheet'), rows = sheet.querySelector('.rows'), title = sheet.querySelector('.sh-h b');
+        await wait(500);
+        anim(title, [{ transform: 'none', opacity: 1 }, { transform: 'translateX(-60px)', opacity: 0 }], { duration: 300 });
+        await anim(rows, [{ transform: 'none', opacity: 1 }, { transform: 'translateX(-200px)', opacity: 0 }], { duration: 300, easing: 'ease-in' });
+        title.textContent = 'сб, 28 ноя';
+        rows.innerHTML = '<div class="line"></div>' + [['20:30', '', 'Теннис', '🏀'], ['22:00', '', 'Почитать', '📚']].map(row).join('');
+        anim(title, [{ transform: 'translateX(60px)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 380 });
+        await anim(rows, [{ transform: 'translateX(200px)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 420 });
+        await wait(1300);
+      } },
+    { name: '«+» превращается в окно задачи', when: 'Нажатие на «+»', desc: 'Чёрная кнопка растягивается в белую карточку новой задачи на её месте — без резкой смены окна.',
+      async run(st) {
+        const plus = st.querySelector('.plus'), box = st.getBoundingClientRect(), p = plus.getBoundingClientRect();
+        await wait(500);
+        const card = document.createElement('div'); card.className = 'card2'; st.appendChild(card);
+        Object.assign(card.style, { left: (p.left - box.left) + 'px', top: (p.top - box.top) + 'px', width: p.width + 'px', height: p.height + 'px', background: '#16171D', borderRadius: '18px' });
+        await anim(card, [{ left: card.style.left, top: card.style.top, width: card.style.width, height: card.style.height, background: '#16171D', borderRadius: '18px' },
+          { left: '8px', top: '300px', width: '344px', height: '232px', background: '#FFFFFF', borderRadius: '22px' }], { duration: 520, easing: 'cubic-bezier(.3,.7,.2,1)' });
+        card.innerHTML = '<div style="padding:18px 18px 0;font:800 23px/1.2 var(--font);color:#A9A9A9">Название задачи</div><div style="padding:14px 18px;color:#62656E;font-weight:700">📅 пт, 27 ноя</div><div style="position:absolute;right:12px;bottom:12px;width:50px;height:50px;border-radius:14px;background:#16171D;color:#fff;display:grid;place-items:center">✓</div>';
+        [...card.children].forEach(x => anim(x, [{ opacity: 0 }, { opacity: 1 }], { duration: 250 }));
+        await wait(1500);
+      } },
+    { name: 'Колокольчик качается', when: 'Включение напоминания', desc: 'Колокольчик пару раз качается и становится чёрным — видно, что напоминание включилось.',
+      async run(st) {
+        const bell = st.querySelector('[data-i="4"] .bell'); bell.style.filter = 'grayscale(1)'; bell.style.opacity = .5; await wait(500);
+        bell.style.display = 'inline-block'; bell.style.transformOrigin = '50% 10%';
+        anim(bell, [{ opacity: .5, filter: 'grayscale(1)' }, { opacity: 1, filter: 'grayscale(0)' }], { duration: 200 });
+        await anim(bell, [{ transform: 'rotate(0)' }, { transform: 'rotate(22deg)' }, { transform: 'rotate(-18deg)' }, { transform: 'rotate(12deg)' }, { transform: 'rotate(-6deg)' }, { transform: 'rotate(0)' }], { duration: 700, easing: 'ease-out' });
+        await wait(1400);
+      } },
+    { name: 'Закрытие в ячейку', when: '«Назад» или нажатие мимо', desc: 'Окно сжимается обратно в ячейку дня, из которой выросло, затемнение растворяется. Понятно, куда «ушёл» день.',
+      async run(st) {
+        const cell = st.querySelector('[data-cell="4"]'), sheet = st.querySelector('.sheet'), scrim = st.querySelector('.scrim');
+        await wait(600);
+        const c = cell.getBoundingClientRect(), s = sheet.getBoundingClientRect();
+        sheet.style.transformOrigin = '0 0';
+        [...sheet.children].forEach(x => anim(x, [{ opacity: 1 }, { opacity: 0 }], { duration: 160 }));
+        anim(scrim, [{ opacity: 1 }, { opacity: 0 }], { duration: 420, delay: 120 });
+        await anim(sheet, [{ transform: 'none', borderRadius: '22px' }, { transform: `translate(${c.left - s.left}px,${c.top - s.top}px) scale(${c.width / s.width},${c.height / s.height})`, borderRadius: '8px', opacity: .6 }], { duration: 460, easing: 'cubic-bezier(.4,0,.2,1)' });
+        await anim(sheet, [{ opacity: .6 }, { opacity: 0 }], { duration: 120 });
+        anim(cell, [{ background: '#F1E8FA' }, { background: 'transparent' }], { duration: 700 });
+        await wait(1200);
+      } },
+    { name: 'Резинка при потягивании', when: 'Потянуть окно вверх', desc: 'Окно тянется вверх с сопротивлением и пружинит обратно; если потянуть сильнее — разворачивается на весь экран.',
+      async run(st) {
+        const sheet = st.querySelector('.sheet'); await wait(500);
+        await anim(sheet, [{ height: '330px' }, { height: '380px' }], { duration: 380, easing: 'ease-out' });
+        await anim(sheet, [{ height: '380px' }, { height: '330px' }], { duration: 520, easing: spring });
+        await wait(300);
+        await anim(sheet, [{ height: '330px' }, { height: '524px' }], { duration: 520, easing: 'cubic-bezier(.3,.7,.2,1)' });
+        await wait(1100);
+      } },
+  ];
+
+  const grid = document.getElementById('grid');
+  A.forEach((a, i) => {
+    const el = document.createElement('article'); el.className = 'v';
+    el.innerHTML = `<div class="hd"><h2><span class="n">${i + 1}</span>${a.name}</h2><span class="when">${a.when}</span><p>${a.desc}</p></div><div class="scroller"><div class="slot"></div></div><button type="button" class="again">Повторить</button>`;
+    grid.appendChild(el);
+    const slot = el.querySelector('.slot');
+    let token = 0;
+    const play = async () => {
+      const id = ++token;
+      slot.innerHTML = stageHtml(sheetHtml());
+      if (reduced) return;
+      await wait(300);
+      await a.run(slot.querySelector('.stage'));
+      if (id === token) setTimeout(() => { if (id === token && visible.has(el)) play(); }, 600);
+    };
+    el.querySelector('.again').addEventListener('click', play);
+    el._play = play;
+  });
+  const visible = new Set();
+  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { if (!visible.has(e.target)) { visible.add(e.target); e.target._play(); } } else visible.delete(e.target); }));
+  document.querySelectorAll('.v').forEach(v => { io.observe(v); if (reduced) v._play(); });
+})();
+</script>
