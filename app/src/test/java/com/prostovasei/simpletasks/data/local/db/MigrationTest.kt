@@ -184,6 +184,36 @@ class MigrationTest {
         }
     }
 
+    /**
+     * Миграция 11 → 12 (#192): у задач появляется пустая колонка отменённых дат; повторяющаяся задача PM — срок, правило,
+     * напоминания — и вес остаются как были.
+     */
+    @Test
+    fun skippedDatesColumnIsAddedAndRepeatsAreKept() {
+        val file = context.getDatabasePath(AppDatabase.NAME).apply { parentFile?.mkdirs(); delete() }
+        createVersion(file, 11) { sql ->
+            sql.execSQL("INSERT INTO projects (id, name, sort_order, is_inbox, is_deleted, created_at, updated_at) VALUES ('p1', 'Дом', 0, 0, 0, 1, 1)")
+            sql.execSQL(
+                "INSERT INTO tasks (id, project_id, title, status, priority, due_date, is_all_day, sort_order, rrule, reminders, is_deleted, created_at, updated_at) " +
+                    "VALUES ('t1', 'p1', 'Стирка', 0, 0, 1795737600000, 1, 0, 'FREQ=WEEKLY;BYDAY=MO', 'PT9H', 0, 1, 1)",
+            )
+            sql.execSQL("INSERT INTO weight_entries (id, date, tenths, comment, created_at, updated_at) VALUES ('w1', 20000, 824, NULL, 1, 1)")
+        }
+
+        val db = AppDatabase.build(context, FakeTimeProvider())
+        try {
+            val task = runBlocking { db.taskDao().getById("t1") }!!
+            assertEquals("Стирка", task.title)
+            assertEquals("FREQ=WEEKLY;BYDAY=MO", task.rrule)
+            assertEquals(1795737600000, task.dueDate)
+            assertEquals("PT9H", task.reminders)
+            assertEquals(null, task.skippedDates)
+            assertEquals(listOf(824), runBlocking { db.weightEntryDao().getAll() }.map { it.tenths })
+        } finally {
+            db.close()
+        }
+    }
+
     private fun createVersion4(file: File) = createVersion(file, 4) { sql ->
         sql.execSQL("INSERT INTO project_groups (id, name, sort_order, is_deleted, created_at, updated_at) VALUES ('g1', '🏠Дом', 0, 0, 1, 1)")
         sql.execSQL("INSERT INTO project_groups (id, name, sort_order, is_deleted, created_at, updated_at) VALUES ('g2', 'Работа', 1, 0, 1, 1)")

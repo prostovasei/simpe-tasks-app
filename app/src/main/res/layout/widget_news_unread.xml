@@ -1,0 +1,15 @@
+<!-- #300: строка «Новые · N — Прочитать все» над лентой виджета. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:orientation="horizontal" android:gravity="center_vertical"
+    android:paddingHorizontal="@dimen/widget_news_inset">
+    <TextView android:id="@+id/news_unread_count" android:layout_width="0dp"
+        android:layout_height="wrap_content" android:layout_weight="1"
+        android:includeFontPadding="false" android:fontFamily="@font/manrope_700"
+        android:textColor="@color/widget_flat_text_secondary" android:textSize="@dimen/widget_news_day" />
+    <TextView android:id="@+id/news_read_all" android:layout_width="wrap_content"
+        android:layout_height="wrap_content" android:paddingVertical="@dimen/widget_news_day_inset"
+        android:includeFontPadding="false" android:fontFamily="@font/manrope_700"
+        android:textColor="@color/widget_flat_text_primary" android:textSize="@dimen/widget_news_day"
+        android:text="@string/news_read_all" />
+</LinearLayout>

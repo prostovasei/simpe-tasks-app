@@ -8,6 +8,7 @@ import com.prostovasei.simpletasks.data.local.DueDateCodec
 import com.prostovasei.simpletasks.data.local.db.AppDatabase
 import com.prostovasei.simpletasks.data.local.entity.ChecklistItemEntity
 import com.prostovasei.simpletasks.data.local.entity.TaskEntity
+import com.prostovasei.simpletasks.data.mapper.SkippedDates
 import com.prostovasei.simpletasks.data.mapper.toDomain
 import com.prostovasei.simpletasks.domain.model.AllScreenTasks
 import com.prostovasei.simpletasks.domain.model.Completion
@@ -32,6 +33,7 @@ import com.prostovasei.simpletasks.domain.model.Task
 import com.prostovasei.simpletasks.domain.model.TaskDetails
 import com.prostovasei.simpletasks.domain.model.movedTo
 import com.prostovasei.simpletasks.domain.model.TaskStatus
+import com.prostovasei.simpletasks.domain.model.dateIn
 import com.prostovasei.simpletasks.domain.model.nextOccurrence
 import com.prostovasei.simpletasks.domain.model.withDue
 import com.prostovasei.simpletasks.domain.repository.TaskRepository
@@ -132,6 +134,7 @@ class RoomTaskRepository @Inject constructor(
             reminders = task.reminders.takeIf { it.isNotEmpty() }?.joinToString("\n"),
             parentId = task.parentId,
             sortOrder = task.sortOrder,
+            skippedDates = SkippedDates.encode(task.skipped),
             now = nowMillis(),
         )
     }
@@ -200,6 +203,14 @@ class RoomTaskRepository @Inject constructor(
         if (task.rrule == null || anchor == null) {
             taskDao.setStatus(taskId, TaskStatus.ABANDONED.value, completedAt = now, now = now)
             return@withTransaction WontDo(taskId, previous = task, closedWhole = true, occurrence = anchor)
+        }
+        // #192: «Только этот» — отменить один будущий раз: запись «Не буду делать» на его дату, дата запоминается в серии,
+        // сама серия (ближайший раз, остаток «N раз», чек-лист) не меняется. «Отмена» возвращает прежнюю серию и удаляет запись.
+        if (earlier == EarlierRepeats.ONLY && occurrence != null && occurrence != anchor) {
+            val single = task.atOccurrence(occurrence) ?: return@withTransaction null
+            val copy = insertClosedCopy(entity, single, TaskStatus.ABANDONED, now)
+            updateTask(task.copy(skipped = task.skipped + occurrence.dateIn(zone)))
+            return@withTransaction WontDo(taskId, previous = task, closedWhole = false, copyIds = listOf(copy), occurrence = occurrence)
         }
         // Будущий раз (как в TickTick): сначала закрываются незакрытые повторы перед ним — пропуском или выполнением.
         val before = occurrence?.takeIf { it != anchor }?.let { task.repeatsBefore(it, zone, today) }.orEmpty()

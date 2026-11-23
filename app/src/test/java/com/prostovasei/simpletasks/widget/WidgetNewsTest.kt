@@ -70,6 +70,43 @@ class WidgetNewsTest {
         assertNull(shadowOf(rejected).nextStartedActivity)
     }
 
+    /** #300: новые новости в виджете полужирные, над лентой «Новые · N — Прочитать все»; нажатия отмечают прочитанными. */
+    @Test
+    fun unreadRowsAreBoldAndReadAllWorks() {
+        val edition = saveEdition()
+        // Прошлый просмотр: самую старую из свежих уже видели.
+        com.prostovasei.simpletasks.data.news.NewsRead.unread(context, SportsEdition(edition.updated, edition.stories.drop(2)))
+        context.getSharedPreferences("sports_news", Context.MODE_PRIVATE).edit()
+            .putString("edition", Json.encodeToString(SportsEdition.serializer(), edition)).commit()
+
+        val service = Robolectric.buildService(WidgetNewsService::class.java).create().get()
+        val rows = service.onGetViewFactory(Intent())
+        rows.onCreate()
+        rows.onDataSetChanged()
+        val layouts = (0 until rows.count).map { checkNotNull(rows.getViewAt(it)).layoutId }
+        assertEquals(R.layout.widget_news_unread, layouts.first())
+        assertEquals(2, layouts.count { it == R.layout.widget_news_row_unread })
+        val header = checkNotNull(rows.getViewAt(0)).apply(context, FrameLayout(context))
+        assertEquals("Новые · 2", header.findViewById<TextView>(R.id.news_unread_count).text.toString())
+        assertEquals("Прочитать все", header.findViewById<TextView>(R.id.news_read_all).text.toString())
+
+        // Нажатие на новость в виджете — прочитана.
+        val open = Robolectric.buildActivity(WidgetNewsLinkActivity::class.java,
+            Intent(context, WidgetNewsLinkActivity::class.java).putExtra(EXTRA_NEWS_URL, edition.stories.first().url)).create().get()
+        assertEquals("Статья открывается, как раньше", Intent.ACTION_VIEW, shadowOf(open).nextStartedActivity?.action)
+        rows.onDataSetChanged()
+        assertEquals(1, (0 until rows.count).count { checkNotNull(rows.getViewAt(it)).layoutId == R.layout.widget_news_row_unread })
+
+        // «Прочитать все» в виджете — строки и полужирных больше нет, браузер не открывается.
+        val readAll = Robolectric.buildActivity(WidgetNewsLinkActivity::class.java,
+            Intent(context, WidgetNewsLinkActivity::class.java).putExtra(EXTRA_READ_ALL, true)).create().get()
+        assertNull(shadowOf(readAll).nextStartedActivity)
+        rows.onDataSetChanged()
+        val after = (0 until rows.count).map { checkNotNull(rows.getViewAt(it)).layoutId }
+        assertTrue(R.layout.widget_news_unread !in after && R.layout.widget_news_row_unread !in after)
+        rows.onDestroy()
+    }
+
     @OptIn(ExperimentalGlanceRemoteViewsApi::class)
     private suspend fun checkLayout(widthDp: Int, heightDp: Int, compact: Boolean, screenshot: String) {
         val edition = saveEdition()

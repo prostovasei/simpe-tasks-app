@@ -241,7 +241,7 @@ interface TaskDao {
         """
         UPDATE tasks SET project_id = :projectId, title = :title, content = :content, priority = :priority,
             due_date = :dueDate, start_date = :startDate, is_all_day = :isAllDay, rrule = :rrule,
-            reminders = :reminders, parent_id = :parentId, sort_order = :sortOrder, updated_at = :now
+            reminders = :reminders, parent_id = :parentId, sort_order = :sortOrder, skipped_dates = :skippedDates, updated_at = :now
         WHERE id = :id AND is_deleted = 0
         """,
     )
@@ -258,6 +258,7 @@ interface TaskDao {
         reminders: String?,
         parentId: String?,
         sortOrder: Int,
+        skippedDates: String?,
         now: Long,
     ): Int
 

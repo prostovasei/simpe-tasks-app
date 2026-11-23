@@ -32,7 +32,16 @@ internal fun TaskEntity.toDomain() = Task(
     createdAt = Instant.ofEpochMilli(createdAt),
     updatedAt = Instant.ofEpochMilli(updatedAt),
     isRepeatDone = isRepeatDone,
+    skipped = SkippedDates.decode(skippedDates),
 )
+
+/** #192: отменённые даты серии в колонке tasks.skipped_dates — ISO-даты через запятую. */
+internal object SkippedDates {
+    fun encode(dates: Set<java.time.LocalDate>): String? = dates.takeIf { it.isNotEmpty() }?.sorted()?.joinToString(",")
+
+    fun decode(value: String?): Set<java.time.LocalDate> =
+        value?.split(',')?.mapNotNull { runCatching { java.time.LocalDate.parse(it.trim()) }.getOrNull() }?.toSet().orEmpty()
+}
 
 internal fun ChecklistItemEntity.toDomain() = ChecklistItem(
     id = id,
