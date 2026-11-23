@@ -2,9 +2,13 @@
 
 Правила [../AGENTS.md](../AGENTS.md).
 
-## В работе — #310, 0.86.0
+## В работе — #312, 0.86.1
 
-Исполнитель Claude Code, ветка `claude/voice-multi-tasks` от main `55bb6bd`. [#310](https://github.com/prostovasei/simpe-tasks-app/issues/310) — несколько задач голосом, как Ramble в Todoist (разбор — в Issue). PM 24.11.2026: путь А (без ИИ); вариант 7 «По датам» с правками; прототип сценариев; число задач на галочке; «фиксируй ТЗ, пиши код, делай проверку и выпускай». [ТЗ](../design/approved/310/requirements.md), [прототип](../design/approved/310/prototype.html). Проверки — [отчёт](testing-runs/0.86.0-local.md). Телефон: VM310-1–6.
+Исполнитель Claude Code, ветка `claude/update-cache-cleanup` от main `b5299f3`. [#312](https://github.com/prostovasei/simpe-tasks-app/issues/312): скачанные обновления оставались в кэше (у PM 378 МБ). PM: «начинай 312, код, проверка, выпуск». Параллельно — вопросы и макеты (без кода): прокрутка сектора виджета и анимации окна поверх рабочего стола.
+
+## Выпуск 0.86.0 — #310
+
+Исполнитель Claude Code, ветка `claude/voice-multi-tasks` от main `55bb6bd`. [#310](https://github.com/prostovasei/simpe-tasks-app/issues/310) — несколько задач голосом, как Ramble в Todoist (разбор — в Issue). PM 24.11.2026: путь А (без ИИ); вариант 7 «По датам» с правками; прототип сценариев; число задач на галочке; «фиксируй ТЗ, пиши код, делай проверку и выпускай». [ТЗ](../design/approved/310/requirements.md), [прототип](../design/approved/310/prototype.html). Проверки — [отчёт](testing-runs/0.86.0-local.md). [PR #311](https://github.com/prostovasei/simpe-tasks-app/pull/311), merge `b5299f3217135c88774cbeb6f56c263725d7cc87`, APK build-477, CI PR и main зелёные. PM 24.11.2026: «Вроде всё ок».
 
 ## Выпуск 0.85.0
 
