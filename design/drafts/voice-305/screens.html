@@ -1,4 +1,4 @@
-<title>Голосовое окно: волны</title>
+<title>Голосовое окно: прилив</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap">
@@ -71,14 +71,14 @@
   .btn.ok { background: var(--app-ink); color: #FFFFFF; }
   .round .btn { border-radius: 50%; }
   /* Прилив: волна под кнопками, на всю нижнюю часть окна. */
-  .tide .wave { position: absolute; left: 0; right: 0; bottom: 0; height: 58%; }
+  .tide .wave { position: absolute; left: 0; right: 0; bottom: 0; height: var(--tide); flex: none; }
   .tide .spacer { flex: 1; }
   @media (prefers-reduced-motion: reduce) { .said .caret { animation: none; } }
 </style>
 
 <div class="wrap">
   <header>
-    <h1>Окно голосового ввода — волны, 5 вариантов (#305)</h1>
+    <h1>Окно голосового ввода — прилив, 5 вариантов (#305)</h1>
     <p class="lead">Макеты живые: волны двигаются от «голоса», кнопка слева в самом макете ставит на паузу и продолжает запись.</p>
     <ul class="rules">
       <li><b>Место и размер</b> как у окна новой задачи без срока: высота 212 dp, снизу над клавиатурой, по бокам 8 dp, скругление 22 dp.</li>
@@ -116,50 +116,28 @@
   /* «Голос»: слова, паузы между ними и мелкая дрожь громкости. */
   const voice = t => Math.min(1, Math.max(0, Math.sin(t * 2.3)) ** 0.6 * (0.55 + 0.45 * Math.sin(t * 0.9 + 1)) * (0.75 + 0.25 * Math.sin(t * 17.3) * Math.sin(t * 7.1)) * 1.15);
 
-  /* Общая «нить»: линии по всей ширине, к краям сходятся в ноль. */
-  const thread = (c, W, H, s, mid, k, f, ph, amp) => {
-    c.beginPath();
-    for (let x = 0; x <= W; x += 2) {
-      const y = mid + Math.sin(x / W * Math.PI * 3 * f + s.clock * (2.2 + f) + ph) * env(x, W) * (1.5 + s.amp * amp) * k * s.rec;
-      x ? c.lineTo(x, y) : c.moveTo(x, y);
-    }
+  /* Прилив: слои «воды» снизу окна, под кнопками; голос поднимает и раскачивает их. */
+  const tide = (c, W, H, s, layers, crest) => {
+    layers.forEach(([col, base, f, ph, alpha], i) => {
+      const y0 = H * base + (1 - s.rec) * H * 0.16 - s.amp * s.rec * H * 0.12;
+      const pts = [];
+      for (let x = 0; x <= W; x += 3) pts.push([x, y0 + Math.sin(x / W * Math.PI * 2 * f + s.clock * (1.4 + i * 0.5) + ph) * (2 + (5 + s.amp * 15) * s.rec) * (1 - i * 0.15)]);
+      c.beginPath(); c.moveTo(0, H); pts.forEach(([x, y]) => c.lineTo(x, y)); c.lineTo(W, H); c.closePath();
+      c.globalAlpha = alpha ?? 1; c.fillStyle = typeof col === 'function' ? col(s) : col; c.fill(); c.globalAlpha = 1;
+      if (crest && i === layers.length - 1) { c.beginPath(); pts.forEach(([x, y], j) => j ? c.lineTo(x, y) : c.moveTo(x, y)); c.strokeStyle = mix(GRAY, INK, s.rec); c.lineWidth = 2; c.stroke(); }
+    });
   };
   const V = [
-    { name: 'Нить', desc: 'Понравившаяся основа, доработанная: три линии, главная чуть толще и утолщается, когда голос громче. На паузе всё сходится в одну серую линию.', btn: 'soft',
-      draw(c, W, H, s) {
-        [[1, 1.0, INK, 2.2 + s.amp * s.rec * 1.4, 0], [0.72, 1.55, GRAY, 1.8, 1.4], [0.48, 2.2, DONE, 1.8, 2.7]].forEach(([k, f, col, lw, ph]) => {
-          thread(c, W, H, s, H / 2, k, f, ph, H * 0.46); c.strokeStyle = mix(GRAY, col, s.rec); c.lineWidth = lw; c.lineCap = 'round'; c.stroke();
-        });
-      } },
-    { name: 'Шёлк', desc: 'Семь тонких нитей с небольшим сдвигом складываются в струящуюся ленту — от светло-серой к чёрной. На паузе лента сворачивается в линию.', btn: 'soft',
-      draw(c, W, H, s) {
-        for (let i = 0; i < 7; i++) {
-          const k = 1 - i * 0.09;
-          thread(c, W, H, s, H / 2, k, 1 + i * 0.05, i * 0.32, H * 0.44);
-          c.strokeStyle = mix(GRAY, mix(DONE, INK, i / 6), s.rec); c.lineWidth = i === 6 ? 2 : 1.2; c.stroke();
-        }
-      } },
-    { name: 'Глубина', desc: 'Те же три волны, но под каждой мягкая полупрозрачная заливка — волна становится объёмной. На паузе заливка уходит, остаётся серая линия.', btn: 'soft',
-      draw(c, W, H, s) {
-        [[0.48, 2.2, DONE, 2.7, 0.10], [0.72, 1.55, GRAY, 1.4, 0.10], [1, 1.0, INK, 0, 0.08]].forEach(([k, f, col, ph, a]) => {
-          thread(c, W, H, s, H / 2, k, f, ph, H * 0.46); c.lineTo(W, H); c.lineTo(0, H); c.closePath();
-          const g = c.createLinearGradient(0, H * 0.1, 0, H); g.addColorStop(0, col); g.addColorStop(1, '#FFFFFF');
-          c.fillStyle = g; c.globalAlpha = a * 2 * s.rec; c.fill(); c.globalAlpha = 1;
-          thread(c, W, H, s, H / 2, k, f, ph, H * 0.46); c.strokeStyle = mix(GRAY, col, s.rec); c.lineWidth = 2; c.stroke();
-        });
-      } },
-    { name: 'Между кнопками', desc: 'Волна живёт в нижней строке, между паузой и галочкой. Окно не растёт, а распознанному тексту остаётся больше места — до трёх строк.', btn: 'soft', inrow: true,
-      draw(c, W, H, s) {
-        [[1, 1.0, INK, 2.2, 0], [0.7, 1.6, GRAY, 1.6, 1.4], [0.45, 2.3, DONE, 1.6, 2.7]].forEach(([k, f, col, lw, ph]) => {
-          thread(c, W, H, s, H / 2, k, f, ph, H * 0.46); c.strokeStyle = mix(GRAY, col, s.rec); c.lineWidth = lw; c.lineCap = 'round'; c.stroke();
-        });
-      } },
-    { name: 'Нить с цветом', desc: 'Главная линия чёрная, две другие — прозрачные фиолетовая (как приоритет) и синяя. Цвет только во время записи, на паузе всё серое.', btn: 'soft',
-      draw(c, W, H, s) {
-        [[0.5, 2.2, '#438BC9', 2, 2.7, 0.7], [0.75, 1.55, '#862CE0', 2, 1.4, 0.7], [1, 1.0, INK, 2.4, 0, 1]].forEach(([k, f, col, lw, ph, a]) => {
-          thread(c, W, H, s, H / 2, k, f, ph, H * 0.46); c.globalAlpha = 0.4 + (a - 0.4) * s.rec; c.strokeStyle = mix(GRAY, col, s.rec); c.lineWidth = lw; c.lineCap = 'round'; c.stroke(); c.globalAlpha = 1;
-        });
-      } },
+    { name: 'Прилив', desc: 'Понравившаяся основа, доработанная: три серых слоя воды под кнопками, голос поднимает и раскачивает их. На паузе вода опускается и успокаивается.', btn: 'white', h: 58,
+      draw(c, W, H, s) { tide(c, W, H, s, [['#F1F1F3', 0.16, 1.0, 0.9], ['#E4E4E7', 0.34, 1.35, 2.1], ['#D3D4D8', 0.54, 1.8, 3.4]]); } },
+    { name: 'Глубина', desc: 'Нижний слой — почти чёрный, как глубокая вода; кнопки на нём белые. Самый контрастный и заметный вариант. На паузе тёмная вода опускается.', btn: 'white', okWhite: true, h: 60,
+      draw(c, W, H, s) { tide(c, W, H, s, [['#EDEDEF', 0.12, 1.0, 0.9], ['#C9CBD0', 0.3, 1.35, 2.1], [s2 => mix('#62656E', INK, s2.rec), 0.5, 1.7, 3.4]]); } },
+    { name: 'С гребнем', desc: 'Светлые слои воды, а у верхней волны — чёткая чёрная линия гребня. Спокойно, но движение хорошо видно.', btn: 'white', h: 58,
+      draw(c, W, H, s) { tide(c, W, H, s, [['#F4F4F5', 0.18, 1.3, 2.4], ['#ECECEE', 0.32, 1.0, 0.9]], true); } },
+    { name: 'Половина окна', desc: 'Вода поднимается почти до текста и занимает всё окно ниже фразы, очень мягкие слои. Текст — над водой.', btn: 'white', h: 78,
+      draw(c, W, H, s) { tide(c, W, H, s, [['#F5F5F6', 0.08, 0.9, 0.4], ['#ECECEE', 0.26, 1.25, 1.8], ['#E0E0E3', 0.46, 1.6, 3.0], ['#D3D4D8', 0.64, 2.0, 4.2]]); } },
+    { name: 'Цветной прилив', desc: 'Слои с лёгким оттенком: сиреневый (фон приоритета), голубой и фиолетовый. Цвет только во время записи, на паузе вода серая.', btn: 'white', h: 58,
+      draw(c, W, H, s) { tide(c, W, H, s, [[s2 => mix('#F1F1F3', '#F1E8FA', s2.rec), 0.16, 1.0, 0.9], [s2 => mix('#E4E4E7', '#DCE8F4', s2.rec), 0.34, 1.35, 2.1], [s2 => mix('#D3D4D8', '#C9B3EA', s2.rec), 0.54, 1.8, 3.4]]); } },
   ];
 
   const grid = document.getElementById('grid');
@@ -169,13 +147,13 @@
     el.innerHTML = `
       <div class="head"><h2><span class="n">${idx + 1}</span>${v.name}</h2><p>${v.desc}</p></div>
       <div class="phone"><div class="scrim"></div><div class="kbd-hint">место клавиатуры</div>
-        <div class="sheet ${v.inrow ? 'inrow' : ''}">
+        <div class="sheet tide" style="--tide:${v.h}%">
           <div class="said" aria-live="polite"></div>
-                    ${v.inrow ? '' : '<div class="wave"><canvas aria-hidden="true"></canvas></div>'}
+                    <div class="spacer"></div>
+          <div class="wave"><canvas aria-hidden="true"></canvas></div>
           <div class="row">
             <button class="btn ${v.btn} toggle" type="button"><svg><use href="#i-pause"/></svg></button>
-            ${v.inrow ? '<div class="wave-row"><canvas aria-hidden="true"></canvas></div>' : ''}
-            <button class="btn ok" type="button" aria-label="Готово"><svg><use href="#i-check"/></svg></button>
+            <button class="btn ${v.okWhite ? 'white' : 'ok'}" type="button" aria-label="Готово"><svg><use href="#i-check"/></svg></button>
           </div>
         </div>
       </div>
