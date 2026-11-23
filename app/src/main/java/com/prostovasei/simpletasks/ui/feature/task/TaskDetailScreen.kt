@@ -251,7 +251,9 @@ fun TaskDetailScreen(
                 text = stringResource(R.string.unclosed_text, target, task.title, dialog.dates.joinToString(", ", transform = ::dayLabel)),
                 tag = TAG_UNCLOSED_DIALOG,
                 choices = listOf(
-                    Choice(stringResource(R.string.unclosed_skip), ChoiceStyle.Primary, TAG_CHOICE_SKIP) { onIntent(TaskDetailIntent.CloseEarlier(EarlierRepeats.SKIP)) },
+                    // #192: «Только этот» — отменить один выбранный раз, предыдущие не трогать (главная кнопка).
+                    Choice(stringResource(R.string.unclosed_only), ChoiceStyle.Primary, TAG_CHOICE_ONLY) { onIntent(TaskDetailIntent.CloseEarlier(EarlierRepeats.ONLY)) },
+                    Choice(stringResource(R.string.unclosed_skip), ChoiceStyle.Outline, TAG_CHOICE_SKIP) { onIntent(TaskDetailIntent.CloseEarlier(EarlierRepeats.SKIP)) },
                     Choice(stringResource(R.string.unclosed_complete), ChoiceStyle.Outline, TAG_CHOICE_COMPLETE) { onIntent(TaskDetailIntent.CloseEarlier(EarlierRepeats.COMPLETE)) },
                     Choice(stringResource(R.string.action_cancel), ChoiceStyle.Plain, TAG_CHOICE_CANCEL) { onIntent(TaskDetailIntent.DismissDialog) },
                 ),
@@ -501,5 +503,6 @@ const val TAG_CHOICE_ALL = "all"
 const val TAG_CHOICE_DELETE = "delete"
 const val TAG_CHOICE_WONT_DO = "wont_do"
 const val TAG_CHOICE_SKIP = "skip"
+const val TAG_CHOICE_ONLY = "only"
 const val TAG_CHOICE_COMPLETE = "complete"
 const val TAG_CHOICE_CANCEL = "cancel"

@@ -39,6 +39,8 @@ import com.prostovasei.simpletasks.testing.task
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
+import com.prostovasei.simpletasks.domain.model.EarlierRepeats
+import androidx.compose.ui.test.isDialog
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -609,6 +611,32 @@ class TaskScreensUiTest {
         composeRule.onNodeWithText("Сначала закройте ближайший повтор — вс, 08 ноя").assertExists()
         composeRule.onNodeWithTag("$TAG_CHANGE_REPEAT_DIALOG:$TAG_CHOICE_ALL").performClick()
         assertEquals(TaskDetailIntent.ChangeRepeat(all = true), intents.last())
+    }
+
+    /** #192: окно незакрытых повторов — «Только этот» главная, затем «Пропустить все», «Выполнить все», «Отмена». */
+    @Test
+    fun unclosedDialogOffersOnlyThis() {
+        val future = TaskDue.AllDay(today.plusDays(14))
+        show {
+            TaskDetailScreen(
+                detailState.copy(occurrence = future, dialog = DetailDialog.Unclosed(listOf(TaskDue.AllDay(today), TaskDue.AllDay(today.plusDays(7))))),
+                { intents += it }, {}, {},
+            )
+        }
+        composeRule.onNodeWithText("Есть незакрытые повторы").assertExists()
+        composeRule.onNodeWithText("Только этот").assertExists()
+        composeRule.onNode(isDialog()).captureRoboImage("screenshots/unclosed_dialog_light.png")
+        composeRule.onNodeWithTag("$TAG_UNCLOSED_DIALOG:$TAG_CHOICE_ONLY").performClick()
+        composeRule.onNodeWithTag("$TAG_UNCLOSED_DIALOG:$TAG_CHOICE_SKIP").performClick()
+        composeRule.onNodeWithTag("$TAG_UNCLOSED_DIALOG:$TAG_CHOICE_COMPLETE").performClick()
+        assertEquals(
+            listOf(
+                TaskDetailIntent.CloseEarlier(EarlierRepeats.ONLY),
+                TaskDetailIntent.CloseEarlier(EarlierRepeats.SKIP),
+                TaskDetailIntent.CloseEarlier(EarlierRepeats.COMPLETE),
+            ),
+            intents.takeLast(3),
+        )
     }
 
     /** Скриншоты окна (макет iteration50.py): ближайший раз и будущий. */

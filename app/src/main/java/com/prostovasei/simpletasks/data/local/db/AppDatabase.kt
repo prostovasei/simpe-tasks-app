@@ -53,9 +53,10 @@ import java.util.concurrent.Executor
     // 8 → 9 (эмодзи категорий, #237): колонка finance_categories.emoji.
     // 9 → 10 (справочник мест, #239): таблица finance_places, заполняется местами из операций ([V9to10]).
     // 10 → 11 (раздел «Здоровье», #257): новая таблица weight_entries; остальные таблицы не меняются.
-    version = 11,
+    // 11 → 12 (#192): колонка tasks.skipped_dates — отменённые по одной даты серии; существующие строки не меняются (NULL).
+    version = 12,
     exportSchema = true,
-    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3, spec = V2to3::class), AutoMigration(from = 3, to = 4), AutoMigration(from = 4, to = 5, spec = V4to5::class), AutoMigration(from = 5, to = 6), AutoMigration(from = 6, to = 7), AutoMigration(from = 7, to = 8), AutoMigration(from = 8, to = 9), AutoMigration(from = 9, to = 10, spec = V9to10::class), AutoMigration(from = 10, to = 11)],
+    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3, spec = V2to3::class), AutoMigration(from = 3, to = 4), AutoMigration(from = 4, to = 5, spec = V4to5::class), AutoMigration(from = 5, to = 6), AutoMigration(from = 6, to = 7), AutoMigration(from = 7, to = 8), AutoMigration(from = 8, to = 9), AutoMigration(from = 9, to = 10, spec = V9to10::class), AutoMigration(from = 10, to = 11), AutoMigration(from = 11, to = 12)],
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun projectGroupDao(): ProjectGroupDao

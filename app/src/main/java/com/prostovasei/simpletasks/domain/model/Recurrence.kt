@@ -179,17 +179,34 @@ object Recurrence {
  * Для интервала повтор считается от начала, конец сдвигается на то же время.
  */
 fun Task.nextOccurrence(zone: ZoneId, today: LocalDate): Task? {
-    val rule = rrule ?: return null
-    val anchor = start ?: due ?: return null
-    val next = Recurrence.next(rule, anchor, zone, today) ?: return null
-    return movedTo(next.anchor)?.copy(rrule = next.rrule)
+    var rule = rrule ?: return null
+    var anchor = start ?: due ?: return null
+    // #192: отменённые по одной даты пропускаются; у «N раз» отменённый раз тоже расходует остаток.
+    var guard = 0
+    while (true) {
+        val next = Recurrence.next(rule, anchor, zone, today) ?: return null
+        rule = next.rrule
+        anchor = next.anchor
+        if (anchor.dateIn(zone) !in skipped || ++guard > MAX_REPEATS_BEFORE) break
+    }
+    val date = anchor.dateIn(zone)
+    // Прошедшие отменённые даты больше не нужны — список не растёт.
+    return movedTo(anchor)?.copy(rrule = rule, skipped = skipped.filterTo(mutableSetOf()) { it > date })
+}
+
+/** Дата раза серии в часовом поясе [zone] — по ней хранятся отменённые даты (#192). */
+fun TaskDue.dateIn(zone: ZoneId): LocalDate = when (this) {
+    is TaskDue.AllDay -> date
+    is TaskDue.AtTime -> instant.atZone(zone).toLocalDate()
 }
 
 /** Будущие повторы задачи с датой после [today] и не позже [until] — только для показа. */
 fun Task.upcomingRepeats(zone: ZoneId, today: LocalDate, until: LocalDate): List<Task> {
     val rule = rrule ?: return emptyList()
     val anchor = start ?: due ?: return emptyList()
-    return Recurrence.upcoming(rule, anchor, zone, after = today, until = until).mapNotNull { movedTo(it) }
+    return Recurrence.upcoming(rule, anchor, zone, after = today, until = until)
+        .filter { it.dateIn(zone) !in skipped }
+        .mapNotNull { movedTo(it) }
 }
 
 /**

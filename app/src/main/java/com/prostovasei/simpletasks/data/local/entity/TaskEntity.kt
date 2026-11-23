@@ -66,6 +66,8 @@ data class TaskEntity(
      * повтора, а не с галочкой. Сбрасывается, если раз вернуть в работу.
      */
     @ColumnInfo(name = "is_repeat_done", defaultValue = "0") val isRepeatDone: Boolean = false,
+    /** #192: отменённые по одной даты серии через запятую («2026-12-08,2026-12-15»); null — нет. */
+    @ColumnInfo(name = "skipped_dates", defaultValue = "NULL") val skippedDates: String? = null,
     @ColumnInfo(name = "created_at") val createdAt: Long,
     @ColumnInfo(name = "updated_at") val updatedAt: Long,
 )

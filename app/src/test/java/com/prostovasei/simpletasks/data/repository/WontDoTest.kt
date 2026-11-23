@@ -90,6 +90,46 @@ class WontDoTest : DatabaseTest() {
         assertTrue(tasks.observeWontDo().first().isEmpty())
     }
 
+    /** #192: «Только этот» — отменён один будущий раз, ближайший и разы до него на месте, серия его пропускает и дальше. */
+    @Test
+    fun onlyThisFutureRepeatIsCancelled() = runTest {
+        val id = create(day(0), rrule = "FREQ=WEEKLY", checklist = listOf("Постельное"))
+        val item = tasks.observeTaskDetails(id).first()!!.checklist.single()
+        checklist.setDone(item.id, true)
+
+        val result = tasks.wontDo(id, occurrence = day(14), earlier = EarlierRepeats.ONLY)!!
+
+        assertFalse(result.closedWhole)
+        assertEquals(0, result.skipped)
+        assertEquals(0, result.completed)
+        assertEquals(day(14), result.occurrence)
+        val series = tasks.observeTaskDetails(id).first()!!
+        assertEquals("Ближайший раз не сдвинулся", day(0), series.task.due)
+        assertEquals(setOf(today.plusDays(14)), series.task.skipped)
+        assertTrue("Чек-лист серии не сброшен", series.checklist.all { it.isDone })
+        assertEquals(listOf(day(14)), tasks.observeWontDo().first().map { it.due })
+        assertTrue(tasks.observeCompleted().first().isEmpty())
+
+        // Серия идёт дальше: 0 → 7 → (14 отменён) → 21.
+        tasks.complete(id)
+        assertEquals(day(7), tasks.getTask(id)!!.due)
+        tasks.complete(id)
+        assertEquals("Отменённый раз пропущен", day(21), tasks.getTask(id)!!.due)
+        assertTrue("Прошедшая отменённая дата забыта", tasks.getTask(id)!!.skipped.isEmpty())
+    }
+
+    @Test
+    fun onlyThisUndoRestoresDate() = runTest {
+        val id = create(day(0), rrule = "FREQ=WEEKLY")
+
+        val result = tasks.wontDo(id, occurrence = day(14), earlier = EarlierRepeats.ONLY)!!
+        tasks.undoWontDo(result)
+
+        assertTrue(tasks.getTask(id)!!.skipped.isEmpty())
+        assertTrue(tasks.observeWontDo().first().isEmpty())
+        assertEquals(day(0), tasks.getTask(id)!!.due)
+    }
+
     @Test
     fun futureRepeatCompletesEarlierOnes() = runTest {
         val id = create(day(0), rrule = "FREQ=WEEKLY")

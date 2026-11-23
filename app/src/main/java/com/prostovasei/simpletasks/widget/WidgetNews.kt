@@ -1,6 +1,7 @@
 package com.prostovasei.simpletasks.widget
 
 import android.app.PendingIntent
+import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.Intent
 import android.os.Build
@@ -27,6 +28,18 @@ internal fun newsWidgetViews(context: Context, id: Int, bar: RemoteViews): Remot
     }
 }
 
+/** #300: после отметки «прочитано» в приложении или виджете список виджетов «Новости» перечитывается. */
+internal object NewsWidgets {
+    fun refreshList(context: Context) {
+        val manager = AppWidgetManager.getInstance(context)
+        val ids = WidgetRenderer.widgetIds(context).filter { WidgetSelection.module(context, it) == WidgetModule.NEWS }.toIntArray()
+        if (ids.isNotEmpty()) manager.notifyAppWidgetViewDataChanged(ids, R.id.widget_news_list)
+    }
+}
+
+internal const val EXTRA_NEWS_URL = "news_url"
+internal const val EXTRA_READ_ALL = "news_read_all"
+
 class WidgetNewsService : RemoteViewsService() {
     override fun onGetViewFactory(intent: Intent): RemoteViewsFactory =
         NewsRows(applicationContext)
@@ -41,7 +54,7 @@ private class NewsRows(private val context: Context) :
     override fun getCount() = rows.size
     override fun getViewAt(position: Int): RemoteViews? = rows.getOrNull(position)
     override fun getLoadingView(): RemoteViews? = null
-    override fun getViewTypeCount() = 2
+    override fun getViewTypeCount() = 4
     override fun getItemId(position: Int) = position.toLong()
     override fun hasStableIds() = false
 
@@ -50,7 +63,8 @@ private class NewsRows(private val context: Context) :
             when (it) {
                 is NewsFeedRow.Day -> day(it)
                 is NewsFeedRow.Message -> row(it.text)
-                is NewsFeedRow.Article -> row(it.title, it.meta, it.url)
+                is NewsFeedRow.Article -> row(it.title, it.meta, it.url, it.unread)
+                is NewsFeedRow.Unread -> unread(it.count)
             }
         }
     }
@@ -63,11 +77,19 @@ private class NewsRows(private val context: Context) :
             day.updatedAt?.let { setContentDescription(R.id.widget_news_updated, context.getString(R.string.news_updated, it)) }
         }
 
-    private fun row(title: String, meta: String = "", url: String? = null) =
-        RemoteViews(context.packageName, R.layout.widget_news_row).apply {
+    /** #300: «Новые · N» и «Прочитать все» — нажатие уходит в [WidgetNewsLinkActivity] с [EXTRA_READ_ALL]. */
+    private fun unread(count: Int) =
+        RemoteViews(context.packageName, R.layout.widget_news_unread).apply {
+            setTextViewText(R.id.news_unread_count, context.getString(R.string.news_unread_count, count))
+            setOnClickFillInIntent(R.id.news_read_all, Intent().putExtra(EXTRA_READ_ALL, true))
+        }
+
+    private fun row(title: String, meta: String = "", url: String? = null, unread: Boolean = false) =
+        RemoteViews(context.packageName, if (unread) R.layout.widget_news_row_unread else R.layout.widget_news_row).apply {
             setTextViewText(R.id.news_row_title, title)
             setTextViewText(R.id.news_row_meta, meta)
             setViewVisibility(R.id.news_row_meta, if (meta.isBlank()) View.GONE else View.VISIBLE)
-            if (url != null) setOnClickFillInIntent(R.id.news_row, Intent().putExtra("news_url", url))
+            if (url != null) setOnClickFillInIntent(R.id.news_row, Intent().putExtra(EXTRA_NEWS_URL, url))
+            if (unread) setContentDescription(R.id.news_row, "${context.getString(R.string.news_unread_state)}. $meta. $title")
         }
 }

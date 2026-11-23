@@ -11,6 +11,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -125,6 +126,61 @@ class NewsScreenTest {
 
             composeRule.onNodeWithText(latest.title).performClick()
             composeRule.runOnIdle { assertEquals(listOf(latest.url), opened) }
+        } finally {
+            preferences.edit().remove("edition").commit()
+            TimeZone.setDefault(defaultZone)
+        }
+    }
+
+    /** #300: новые новости полужирные, строка «Новые · N — Прочитать все», нажатие и «Прочитать все» снимают выделение. */
+    @Test
+    fun unreadNewsAreBoldUntilOpenedOrReadAll() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val preferences = context.getSharedPreferences("sports_news", Context.MODE_PRIVATE)
+        val defaultZone = TimeZone.getDefault()
+        try {
+            val now = Instant.now()
+            val zone = ZoneOffset.ofHours(12 - now.atOffset(ZoneOffset.UTC).hour)
+            TimeZone.setDefault(TimeZone.getTimeZone(zone))
+            val today = now.atOffset(zone).toLocalDate()
+            val yesterday = today.minusDays(1)
+            fun story(day: LocalDate, time: String, path: String, sport: String, title: String) = SportsStory(
+                "https://www.sports.ru/$path.html", title, sport, day.atTime(LocalTime.parse(time)).toEpochSecond(zone),
+            )
+            val old = listOf(
+                story(yesterday, "23:55", "tennis/final", "Теннис", "Определились финалисты итогового турнира"),
+                story(yesterday, "23:45", "basketball/match", "Баскетбол", "Матч лиги завершился в овертайме"),
+            )
+            fun save(stories: List<SportsStory>) = SportsEdition(now.epochSecond, stories).also {
+                preferences.edit().putString("edition", Json.encodeToString(SportsEdition.serializer(), it)).commit()
+            }
+            // Прошлое открытие ленты: старые новости уже видели.
+            com.prostovasei.simpletasks.data.news.NewsRead.unread(context, save(old))
+            val latest = story(today, "00:50", "football/match", "Футбол", "Казанская команда выиграла матч со счётом 2:1")
+            save(listOf(latest, story(today, "00:35", "hockey/match", "Хоккей", "Нападающий забросил три шайбы в домашней игре")) + old)
+
+            val opened = mutableListOf<String>()
+            val linkHandler = object : UriHandler { override fun openUri(uri: String) { opened += uri } }
+            composeRule.setContent {
+                TaskCanvasTheme {
+                    CompositionLocalProvider(LocalUriHandler provides linkHandler) {
+                        Box(Modifier.fillMaxSize().background(AppTheme.colors.background)) { NewsScreen() }
+                    }
+                }
+            }
+
+            composeRule.onNodeWithText("Новые · 2").assertExists()
+            assertEquals(2, composeRule.onAllNodesWithTag(TAG_NEWS_TITLE_UNREAD, useUnmergedTree = true).fetchSemanticsNodes().size)
+            assertEquals(2, composeRule.onAllNodesWithTag(TAG_NEWS_TITLE, useUnmergedTree = true).fetchSemanticsNodes().size)
+            composeRule.onRoot().captureRoboImage("screenshots/news_feed_unread_light.png")
+
+            composeRule.onNodeWithText(latest.title).performClick()
+            composeRule.runOnIdle { assertEquals(listOf(latest.url), opened) }
+            composeRule.onNodeWithText("Новые · 1").assertExists()
+
+            composeRule.onNodeWithTag(TAG_NEWS_READ_ALL).performClick()
+            composeRule.onNodeWithTag(TAG_NEWS_UNREAD).assertDoesNotExist()
+            assertEquals(0, composeRule.onAllNodesWithTag(TAG_NEWS_TITLE_UNREAD, useUnmergedTree = true).fetchSemanticsNodes().size)
         } finally {
             preferences.edit().remove("edition").commit()
             TimeZone.setDefault(defaultZone)

@@ -172,4 +172,35 @@ class RecurrenceTest {
         val twice = task("t", due = TaskDue.AllDay(LocalDate.of(2026, 11, 10))).copy(rrule = "FREQ=WEEKLY;BYDAY=TU,TH")
         assertEquals("Вт и чт: ср 4 → чт 5", TaskDue.AllDay(LocalDate.of(2026, 11, 5)), twice.seriesMovedTo(TaskDue.AllDay(LocalDate.of(2026, 11, 4)), null, ZoneId.of("UTC")).due)
     }
+
+    // ---------------------------------------------------------------- #192: отменённые по одной даты
+
+    private fun weekly(skipped: Set<LocalDate> = emptySet(), rule: String = "FREQ=WEEKLY") = Task(
+        id = "t", projectId = "p", title = "Стирка", content = "", status = TaskStatus.ACTIVE, priority = Priority.NONE,
+        due = day(10, 14), start = null, completedAt = null, sortOrder = 0, rrule = rule, reminders = emptyList(), parentId = null,
+        createdAt = java.time.Instant.EPOCH, updatedAt = java.time.Instant.EPOCH, skipped = skipped,
+    )
+
+    @Test
+    fun upcomingRepeatsHideSkippedDates() {
+        val repeats = weekly(setOf(LocalDate.of(2026, 10, 28))).upcomingRepeats(utc, today, LocalDate.of(2026, 11, 11)).map { it.due }
+        assertEquals(listOf(day(10, 21), day(11, 4), day(11, 11)), repeats)
+    }
+
+    @Test
+    fun nextOccurrenceSkipsCancelledDatesAndCountsThem() {
+        val next = weekly(setOf(LocalDate.of(2026, 10, 21), LocalDate.of(2026, 10, 28), LocalDate.of(2026, 12, 2))).nextOccurrence(utc, today)!!
+        assertEquals(day(11, 4), next.due)
+        assertEquals("Остаются только будущие отменённые даты", setOf(LocalDate.of(2026, 12, 2)), next.skipped)
+        // «3 раза»: 14 окт (текущий), 21 окт отменён, 28 окт — последний; отменённый раз тоже расходует остаток.
+        val counted = weekly(setOf(LocalDate.of(2026, 10, 21)), rule = "FREQ=WEEKLY;COUNT=3").nextOccurrence(utc, today)!!
+        assertEquals(day(10, 28), counted.due)
+        assertNull(counted.nextOccurrence(utc, today))
+    }
+
+    @Test
+    fun repeatsBeforeIgnoresSkippedDates() {
+        val before = weekly(setOf(LocalDate.of(2026, 10, 21))).repeatsBefore(day(11, 4), utc, today).map { it.due }
+        assertEquals(listOf(day(10, 14), day(10, 28)), before)
+    }
 }

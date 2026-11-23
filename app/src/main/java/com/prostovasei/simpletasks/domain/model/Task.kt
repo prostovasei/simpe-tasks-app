@@ -22,6 +22,11 @@ data class Task(
     val updatedAt: Instant,
     /** Выполненный раз повторяющейся задачи: показывается со знаком повтора (итерация 47). */
     val isRepeatDone: Boolean = false,
+    /**
+     * #192: даты серии, отменённые по одной («Не буду делать» → «Только этот»). Расчёт повторов их пропускает:
+     * в неделе, «Предстоящих», виджете и при переходе серии на следующий раз.
+     */
+    val skipped: Set<java.time.LocalDate> = emptySet(),
 ) {
     val isCompleted: Boolean get() = status == TaskStatus.COMPLETED
 

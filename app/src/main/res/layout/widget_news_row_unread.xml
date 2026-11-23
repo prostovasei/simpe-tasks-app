@@ -1,0 +1,16 @@
+<!-- #300: новость, которую ещё не открывали, — заголовок полужирный (manrope_600). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/news_row"
+    android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:orientation="vertical" android:paddingHorizontal="@dimen/widget_news_inset"
+    android:paddingBottom="@dimen/widget_news_row_gap">
+    <TextView android:id="@+id/news_row_meta" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:layout_marginBottom="@dimen/widget_news_meta_gap"
+        android:textColor="@color/widget_flat_text_secondary"
+        android:includeFontPadding="false" android:fontFamily="@font/manrope_400"
+        android:textSize="@dimen/widget_news_meta" />
+    <TextView android:id="@+id/news_row_title" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:textColor="@color/widget_flat_text_primary"
+        android:includeFontPadding="false" android:fontFamily="@font/manrope_600"
+        android:textSize="@dimen/widget_news_title" />
+</LinearLayout>

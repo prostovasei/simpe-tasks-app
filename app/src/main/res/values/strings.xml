@@ -506,6 +506,7 @@
     <string name="delete_series_confirm">Удалить серию</string>
     <string name="unclosed_title">Есть незакрытые повторы</string>
     <string name="unclosed_text">Перед %1$s остались повторы «%2$s»: %3$s. Что с ними сделать?</string>
+    <string name="unclosed_only">Только этот</string>
     <string name="unclosed_skip">Пропустить все</string>
     <string name="unclosed_complete">Выполнить все</string>
     <string name="future_banner">Будущий повтор · ближайший — %1$s</string>
@@ -867,6 +868,10 @@
     <string name="news_first">Нажмите «Обновить новости»</string>
     <string name="news_loading">Загрузка новостей…</string>
     <string name="news_updated">Обновлено в %1$s</string>
+    <!-- #300: новые новости -->
+    <string name="news_unread_count">Новые · %1$d</string>
+    <string name="news_read_all">Прочитать все</string>
+    <string name="news_unread_state">Новая</string>
     <!-- #95: голосовой ввод из виджета -->
     <string name="widget_voice">Создать задачу голосом</string>
     <string name="voice_speak">Говорите</string>
