@@ -871,6 +871,7 @@
     <!-- #300: новые новости -->
     <string name="news_unread_count">Новые · %1$d</string>
     <string name="news_read_all">Прочитать все</string>
+    <string name="news_unread_state">Новая</string>
     <!-- #95: голосовой ввод из виджета -->
     <string name="widget_voice">Создать задачу голосом</string>
     <string name="voice_speak">Говорите</string>

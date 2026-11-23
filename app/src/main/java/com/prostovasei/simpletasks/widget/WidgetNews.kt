@@ -90,5 +90,6 @@ private class NewsRows(private val context: Context) :
             setTextViewText(R.id.news_row_meta, meta)
             setViewVisibility(R.id.news_row_meta, if (meta.isBlank()) View.GONE else View.VISIBLE)
             if (url != null) setOnClickFillInIntent(R.id.news_row, Intent().putExtra(EXTRA_NEWS_URL, url))
+            if (unread) setContentDescription(R.id.news_row, "${context.getString(R.string.news_unread_state)}. $meta. $title")
         }
 }

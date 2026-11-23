@@ -456,6 +456,22 @@ class TaskViewModelsTest {
         }
     }
 
+    /** #192: «Только этот» в окне незакрытых повторов отменяет один будущий раз. */
+    @Test
+    fun detailFutureRepeatOnlyThis() = runTest(dispatcher) {
+        tasks.tasks.value = listOf(task("t1", due = TaskDue.AllDay(today)).copy(rrule = "FREQ=WEEKLY"))
+        val future = TaskDue.AllDay(today.plusDays(14))
+        val vm = detail(this, taskId = com.prostovasei.simpletasks.ui.common.TaskOpenKey.of("t1", future))
+        runCurrent()
+        vm.onIntent(TaskDetailIntent.WontDo)
+        runCurrent()
+        assertTrue(vm.state.value.dialog is DetailDialog.Unclosed)
+        vm.onIntent(TaskDetailIntent.CloseEarlier(EarlierRepeats.ONLY))
+        runCurrent()
+        assertEquals(Triple("t1", future, EarlierRepeats.ONLY), tasks.wontDoCalls.single())
+        assertNull(vm.state.value.dialog)
+    }
+
     /** Итерация 49: будущий повтор открывается со своей датой; «Не буду делать» спрашивает про незакрытые повторы перед ним. */
     @Test
     fun detailFutureRepeatAsksAboutEarlierOnes() = runTest(dispatcher) {

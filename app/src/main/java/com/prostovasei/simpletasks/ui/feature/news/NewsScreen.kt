@@ -13,6 +13,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.testTag
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -45,6 +47,8 @@ internal fun NewsScreen() {
     val state by SportsNews.state.collectAsStateWithLifecycle()
     // #300: отметки «прочитано» перерисовывают ленту; виджет обновляется тем же списком.
     val read by NewsRead.revision.collectAsStateWithLifecycle()
+    // Для TalkBack: полужирность не слышна, поэтому новая новость помечается словом «Новая».
+    val newLabel = stringResource(R.string.news_unread_state)
     val density = LocalDensity.current
     val inset = dimensionResource(R.dimen.widget_news_inset)
     val metaGap = dimensionResource(R.dimen.widget_news_meta_gap)
@@ -105,7 +109,8 @@ internal fun NewsScreen() {
                         .padding(start = inset, end = inset, bottom = rowGap),
                 ) {
                     if (row.meta.isNotBlank()) Text(row.meta, style = meta, modifier = Modifier.padding(bottom = metaGap))
-                    Text(row.title, style = if (row.unread) title.copy(fontFamily = semibold) else title, modifier = Modifier.testTag(if (row.unread) TAG_NEWS_TITLE_UNREAD else TAG_NEWS_TITLE))
+                    Text(row.title, style = if (row.unread) title.copy(fontFamily = semibold) else title, modifier = Modifier.testTag(if (row.unread) TAG_NEWS_TITLE_UNREAD else TAG_NEWS_TITLE)
+                        .then(if (row.unread) Modifier.semantics { stateDescription = newLabel } else Modifier))
                 }
             }
         }
