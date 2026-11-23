@@ -1,0 +1,49 @@
+<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8"><title>Отменить один повтор</title>
+<!-- #192. Макет на согласовании. Цвета ColorTokens, шрифт Manrope (app/src/main/res/font). -->
+<style>
+@font-face{font-family:Manrope;font-weight:400;src:url(../../../app/src/main/res/font/manrope_400.ttf)}
+@font-face{font-family:Manrope;font-weight:500;src:url(../../../app/src/main/res/font/manrope_500.ttf)}
+@font-face{font-family:Manrope;font-weight:600;src:url(../../../app/src/main/res/font/manrope_600.ttf)}
+@font-face{font-family:Manrope;font-weight:700;src:url(../../../app/src/main/res/font/manrope_700.ttf)}
+@font-face{font-family:Manrope;font-weight:800;src:url(../../../app/src/main/res/font/manrope_800.ttf)}
+:root{--bg:#F5F5F5;--text:#16171D;--text2:#62656E;--div:#E2E2E2;--inact:#A9A9A9;--soft:#EAEAEA}
+*{box-sizing:border-box}body{margin:0;padding:24px;background:#E9E9EC;font-family:Manrope,sans-serif;color:var(--text)}
+h1{font-size:20px;margin:0 0 4px}.note{color:var(--text2);font-size:13px;margin:0 0 16px;max-width:1180px;line-height:1.45}
+.row{display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start}.row>div{max-width:380px}
+.cap{font-size:13px;font-weight:700;margin:0 0 8px}.cap span{font-weight:500;color:var(--text2)}
+.dim{font-size:11px;color:var(--text2);margin-top:6px;line-height:1.4}
+.phone{width:360px;height:720px;border-radius:24px;overflow:hidden;position:relative;background:#fff;box-shadow:0 1px 3px #0003}
+.scrim{position:absolute;inset:0;background:#00000066}
+.dlg{position:absolute;left:24px;right:24px;top:200px;background:#fff;border-radius:22px;padding:24px 20px 12px}
+.dlg h3{margin:0 0 10px;font-size:22px;font-weight:700;line-height:1.25}.dlg p{margin:0 0 18px;color:var(--text2);font-size:14px;line-height:1.45}
+.b{border-radius:12px;padding:14px;text-align:center;font-weight:700;font-size:15px;margin-bottom:8px}
+.b.p{background:var(--text);color:#fff}.b.o{border:1px solid var(--div)}.b.t{padding:10px}
+.new{outline:2px dashed #862CE0;outline-offset:3px}
+.snack{position:absolute;left:12px;right:12px;bottom:70px;background:#16171D;color:#fff;border-radius:12px;padding:14px 16px;font-size:14px;display:flex;justify-content:space-between}
+.snack b{font-weight:700}
+.bar{position:absolute;left:0;right:0;bottom:0;height:56px;border-top:1px solid var(--div);background:#fff}
+.hdr{padding:18px 16px 6px;font-size:13px;font-weight:700;color:var(--text2);display:flex;justify-content:space-between}
+</style></head><body>
+
+<h1>#192 · Отменить только один будущий повтор</h1>
+<p class="note">Макет на согласовании. Ответ PM 23.11.2026: отменённый повтор попадает в «Не буду делать» и возвращается оттуда (А). В окне «Есть незакрытые повторы» появляется третья кнопка «Только этот». Остальные разы серии не меняются.</p>
+<div class="row">
+<div id="r1"><p class="cap">1. Будущий повтор → «Не буду делать»</p><div class="phone"><div class="scrim"></div><div class="dlg">
+<h3>Есть незакрытые повторы</h3><p>Перед пн, 8 дек остались повторы «Стирка»: пн, 24 ноя, пн, 1 дек. Что с ними сделать?</p>
+<div class="b p new">Только этот</div><div class="b o">Пропустить все</div><div class="b o">Выполнить все</div><div class="b t">Отмена</div></div></div>
+<p class="dim">Новая кнопка — главная (выделена пунктиром). «Только этот» отменяет только пн, 8 дек; 24 ноя и 1 дек остаются как были. Прежние кнопки работают как сейчас.</p></div>
+<div id="r2"><p class="cap">2. После «Только этот» <span>· неделя</span></p><div class="phone">
+<div class="hdr"><span>НЕДЕЛЯ 8–14 ДЕК</span></div>
+<div style="padding:4px 16px;font-size:14px;line-height:2.1">
+<div><b>ПН, 8 дек</b></div><div style="color:var(--inact)">—</div>
+<div><b>ВТ, 9 дек</b></div><div>Созвон с командой</div>
+<div><b>ПН, 15 дек</b></div><div>🏠 Стирка <span style="color:var(--text2);font-size:12px">· следующий повтор как обычно</span></div></div>
+<div class="snack"><span>Не буду делать · пн, 8 дек</span><b>Отмена</b></div><div class="bar"></div></div>
+<p class="dim">Повтора 8 дек больше нет в неделе, «Предстоящих», виджете и напоминаниях. Подсказка с «Отмена» — как у «Не буду делать» сейчас.</p></div>
+<div id="r3"><p class="cap">3. Список «Не буду делать»</p><div class="phone">
+<div class="hdr" style="font-size:22px;color:var(--text);padding-top:24px">Не буду делать</div>
+<div style="padding:8px 16px"><div style="padding:12px 0;border-bottom:1px solid var(--div)"><div style="font-size:16px;font-weight:600">Стирка</div><div style="font-size:12px;color:var(--text2);margin-top:2px">Не буду делать · пн, 8 дек</div></div>
+<div style="padding:12px 0;border-bottom:1px solid var(--div);color:var(--text2);font-size:16px">…</div></div>
+<div class="dlg" style="top:auto;bottom:16px;left:12px;right:12px"><h3 style="font-size:18px">Стирка</h3><p>Не буду делать · отмечено пн, 8 дек</p><div class="b p">Вернуть в работу</div></div></div>
+<p class="dim">Раз записан с датой. «Вернуть в работу» возвращает пн, 8 дек в серию: он снова появится в неделе и напоминаниях.</p></div>
+</div></body></html>
