@@ -494,8 +494,9 @@ class ScreensUiTest {
         composeRule.onRoot().captureRoboImage("screenshots/undo_snackbar_light.png")
     }
 
+    /** #316 «Медленно тает»: середина перехода — галочка уже есть, задача наполовину растаяла. */
     @Test
-    fun screenshotDustMidway() {
+    fun screenshotMeltMidway() {
         composeRule.mainClock.autoAdvance = false
         show {
             androidx.compose.foundation.layout.Column {
@@ -503,8 +504,8 @@ class ScreensUiTest {
                 TaskRow(title = "Купить продукты", priority = Priority.NONE, listEmoji = null, isCompleting = false, onToggle = {})
             }
         }
-        composeRule.mainClock.advanceTimeBy(550)
-        composeRule.onRoot().captureRoboImage("screenshots/dust_midway.png")
+        composeRule.mainClock.advanceTimeBy((com.prostovasei.simpletasks.ui.common.DONE_CHECK_MS + com.prostovasei.simpletasks.ui.common.DONE_FADE_MS / 2).toLong())
+        composeRule.onRoot().captureRoboImage("screenshots/melt_midway.png")
     }
 
     @Test

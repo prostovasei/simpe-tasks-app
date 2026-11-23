@@ -164,6 +164,10 @@ PM выбрал А для недели, предстоящих (приложен
 
 [Макет и прототип](approved/310/README.md) · [ТЗ](approved/310/requirements.md) · [10 вариантов окна](drafts/voice-multi-310/README.md). Вариант 7 «По датам»: задачи над окном голоса по дням, без кружка, время справа, «×»; число задач на галочке; нажатие на задачу — окно задачи растёт из окна голоса. Реализация 0.86.0: `VoiceTasks.kt`, `VoiceInput.kt` (`VoiceList`, `CountBadge`), токены `VOICE_ROW`, `VOICE_REMOVE_ICON`, `VOICE_BADGE`; снимки `voice_tasks_light`, `voice_paused_light`, `voice_partial_dark`, `voice_error_large_font`.
 
+## Выполненные без зачёркивания (#316)
+
+[Макет и ТЗ](approved/316/README.md) · [10 вариантов анимации](approved/316/variants.html). Вариант 10 «Медленно тает»: галочка 0,42 с, затем вся задача тает до 40 % за 0,8 с; зачёркивания нет нигде; в виджете — 40 % без анимации. Реализация 0.87.0: `ui/common/DoneFade.kt` (`DONE_ALPHA`, `doneAlpha`, `doneCheck`), `CompletionTracker`, цвета `widget_*_done`; снимок `melt_midway` (вместо `dust_midway`).
+
 ## Новые новости: «Новое» (#307)
 
 [Макет](approved/307/README.md) · [ТЗ](approved/307/requirements.md). Вариант В: «… · Новое» фиолетовым и жирный заголовок у новых, в приложении и виджете. Важно для всех виджетов: шрифты `res/font` в RemoteViews не работают — жирное только `textStyle="bold"`. Реализация 0.85.0: `NewsScreen.newsMeta`, `WidgetNews.newMeta`, цвет `widget_flat_new`; снимок `news_feed_unread_light`.

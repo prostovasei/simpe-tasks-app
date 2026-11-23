@@ -50,6 +50,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import com.prostovasei.simpletasks.ui.common.DONE_ALPHA
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
@@ -63,7 +65,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
@@ -319,13 +320,14 @@ private fun BusyBlock(slot: BusySlot, width: Dp, height: Dp, modifier: Modifier)
             .size(width, height)
             .clip(AppTheme.shapes.small)
             .background(colors.divider.copy(alpha = if (slot.isDone) BUSY_DONE_ALPHA else BUSY_ALPHA))
+            // #316: выполненная — без зачёркивания, подписи полупрозрачные.
+            .alpha(if (slot.isDone) DONE_ALPHA else 1f)
             .padding(horizontal = AppTheme.sizes.cardGap),
     ) {
         Text(
             slot.title,
             style = MaterialTheme.typography.labelSmall,
             color = colors.textSecondary,
-            textDecoration = if (slot.isDone) TextDecoration.LineThrough else null,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )

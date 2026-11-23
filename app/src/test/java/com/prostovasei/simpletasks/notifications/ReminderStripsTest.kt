@@ -116,7 +116,7 @@ class ReminderStripsTest {
     }
 
     @Test
-    fun doneActsOnceAfterDust() {
+    fun doneActsOnceAfterMelt() {
         show(listOf(strip("a", "Забрать посылку")))
         composeRule.waitForIdle()
         composeRule.mainClock.autoAdvance = false

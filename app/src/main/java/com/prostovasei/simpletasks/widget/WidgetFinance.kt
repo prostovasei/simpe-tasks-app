@@ -58,7 +58,7 @@ class WidgetFinanceService : RemoteViewsService() {
         FinanceRows(applicationContext, intent.getIntExtra("width", 320), intent.getIntExtra("height", 640))
 }
 
-private class FinanceRows(private val context: Context, private val width: Int, private val height: Int) :
+internal class FinanceRows(private val context: Context, private val width: Int, private val height: Int) :
     RemoteViewsService.RemoteViewsFactory {
     private var rows = emptyList<RemoteViews>()
     override fun onCreate() = Unit
@@ -147,8 +147,13 @@ private class FinanceRows(private val context: Context, private val width: Int, 
         }
     }
 
-    private fun accountRow(accounts: List<Account>, columns: Int) =
+    /**
+     * Строка счетов. #317: лента виджета переиспользует строки и при обновлении доприменяет команды к уже показанной —
+     * без очистки каждый `addView` добавлял ещё столько же счетов (у PM — 12 кружков без сумм вместо 4 счетов).
+     */
+    internal fun accountRow(accounts: List<Account>, columns: Int) =
         RemoteViews(context.packageName, R.layout.widget_finance_accounts).apply {
+            removeAllViews(R.id.widget_finance_accounts)
             repeat(columns) { index ->
                 val account = accounts.getOrNull(index)
                 addView(R.id.widget_finance_accounts, RemoteViews(context.packageName, R.layout.widget_finance_account).apply {

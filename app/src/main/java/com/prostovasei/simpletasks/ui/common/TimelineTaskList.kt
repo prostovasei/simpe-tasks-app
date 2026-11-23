@@ -42,7 +42,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalDensity
@@ -126,8 +125,8 @@ fun rememberNowMinute(): Int {
 
 /**
  * Строка задачи: время | линия с кружком | плашка. Период занимает обычную строку с кругом; оба времени остаются слева.
- * Выполненная (итерация 27) остаётся на месте до полуночи: кружок залит цветом приоритета с белой галочкой,
- * название зачёркнуто, плашка со значками бледнее; переход — [DONE_FADE_MS].
+ * Выполненная (итерация 27) остаётся на месте до полуночи: кружок залит цветом приоритета с белой галочкой; #316 — без
+ * зачёркивания, вся строка (время, кружок, плашка) полупрозрачная; переход «медленно тает» ([doneAlpha], [doneCheck]).
  */
 @Composable
 fun LazyItemScope.TimelineTaskRow(
@@ -151,7 +150,8 @@ fun LazyItemScope.TimelineTaskRow(
     val spacing = AppTheme.spacing
     val item = row.item
     val testTag = "task:${item.id}"
-    val done by animateFloatAsState(if (item.showsDone) 1f else 0f, tween(DONE_FADE_MS), label = "done")
+    val done = doneCheck(item.showsDone)
+    val fade = doneAlpha(item.showsDone)
     // Итерация 47 (решение PM): будущий повтор не тусклый — тусклая только прошедшая задача.
     val faded = row.past
     val baseHeight = SizeTokens.WIDGET_ROW
@@ -164,14 +164,14 @@ fun LazyItemScope.TimelineTaskRow(
             .padding(end = spacing.xs)
             .testTag(testTag),
     ) {
-        TimeColumn(row, isOverdue, faded, dayLabels)
-        Rail(row, top, bottom, faded, done, testTag, onToggle, selected)
+        Box(Modifier.alpha(fade)) { TimeColumn(row, isOverdue, faded, dayLabels) }
+        Rail(row, top, bottom, faded, done, testTag, onToggle, selected, fade)
         Row(
             Modifier
                 .weight(1f)
                 .fillMaxHeight()
                 .padding(vertical = SizeTokens.WIDGET_CARD_INSET.dp)
-                .alpha(1f - (1f - DONE_ALPHA) * done)
+                .alpha(fade)
                 .clip(AppTheme.shapes.medium)
                 .background(if (selected == true) colors.selected else if (LocalTaskCanvas.current) Color.Transparent else colors.surface)
                 .then(if (selected == true) Modifier.border(SizeTokens.CHECKBOX_STROKE.dp, colors.accent, AppTheme.shapes.medium) else Modifier)
@@ -185,7 +185,6 @@ fun LazyItemScope.TimelineTaskRow(
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
                     color = if (faded) colors.textSecondary else colors.textPrimary,
-                    textDecoration = if (item.showsDone) TextDecoration.LineThrough else null,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -252,7 +251,7 @@ private fun TimeColumn(row: WidgetRow.Task, isOverdue: Boolean, faded: Boolean, 
  * тусклым; выполненная задача высокого приоритета заливается тусклым фиолетовым.
  */
 @Composable
-private fun Rail(row: WidgetRow.Task, top: Boolean, bottom: Boolean, faded: Boolean, done: Float, testTag: String, onToggle: () -> Unit, selected: Boolean? = null) {
+private fun Rail(row: WidgetRow.Task, top: Boolean, bottom: Boolean, faded: Boolean, done: Float, testTag: String, onToggle: () -> Unit, selected: Boolean? = null, fade: Float = 1f) {
     val colors = AppTheme.colors
     val item = row.item
     // Итерация 27.1 (вариант PM «А»): кружок всегда цвета приоритета, просрочка — красными подписью дня и временем.
@@ -261,7 +260,8 @@ private fun Rail(row: WidgetRow.Task, top: Boolean, bottom: Boolean, faded: Bool
         item.priority == Priority.HIGH -> colors.checkRings.high
         else -> colors.inactive
     }
-    val fill = if (item.priority == Priority.HIGH) colors.checkRings.highDone else ring
+    // #316: кружок заливается полным цветом приоритета, бледность даёт прозрачность всей задачи.
+    val fill = ring
     // Проверка PM (0.47.0): у выполненной повторяющейся галочки нет — знак повтора остаётся, тусклым цветом выполненной.
     val repeat = item.isRecurring && selected == null
     val repeatColor = if (item.showsDone) fill else ring
@@ -283,11 +283,11 @@ private fun Rail(row: WidgetRow.Task, top: Boolean, bottom: Boolean, faded: Bool
     ) {
         Segment(top, Modifier.weight(1f))
         if (repeat) {
-            RepeatMark(repeatColor, Modifier.size(SizeTokens.WIDGET_NODE.dp).testTag("$testTag:repeat"))
+            RepeatMark(repeatColor, Modifier.size(SizeTokens.WIDGET_NODE.dp).alpha(fade).testTag("$testTag:repeat"))
         } else {
             Node(if (selected == true) colors.accent else ring,
                 if (selected != null) (if (selected) 1f else 0f) else done,
-                Modifier.size(SizeTokens.WIDGET_NODE.dp).testTag("$testTag:node"), fill)
+                Modifier.size(SizeTokens.WIDGET_NODE.dp).alpha(fade).testTag("$testTag:node"), fill)
         }
         Segment(bottom, Modifier.weight(1f))
     }
@@ -344,8 +344,6 @@ fun LazyItemScope.TimelineNowRow(nowMinute: Int, top: Boolean, bottom: Boolean) 
 }
 
 /** Переход к выполненной (решение PM: плавно, 0,3 с) и бледность выполненной плашки (70%). */
-const val DONE_FADE_MS = 300
-const val DONE_ALPHA = 0.7f
 
 private const val MINUTES_PER_HOUR = 60
 private const val SECONDS_PER_MINUTE = 60

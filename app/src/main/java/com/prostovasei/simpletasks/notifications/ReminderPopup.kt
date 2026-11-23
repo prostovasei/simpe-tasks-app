@@ -17,6 +17,8 @@ import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.FastOutSlowInEasing
+import com.prostovasei.simpletasks.ui.common.DONE_FADE_MS
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -422,6 +424,8 @@ private fun Strip(strip: PopupStrip, onDone: (String) -> Unit, onSnooze: (String
     val animate = remember { animationsEnabled(context) }
     val offset = remember { Animatable(0f) }
     val dust = remember { Animatable(0f) }
+    // #316: «Готово» — полоска «медленно тает», как выполненная задача в списках.
+    val melt = remember { Animatable(0f) }
     var leaving by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
@@ -469,7 +473,7 @@ private fun Strip(strip: PopupStrip, onDone: (String) -> Unit, onSnooze: (String
                 }
             }
             .offset { IntOffset(offset.value.roundToInt(), 0) }
-            .graphicsLayer { alpha = 1f - (offset.value / size.width).coerceIn(0f, 1f) * SWIPE_FADE }
+            .graphicsLayer { alpha = (1f - (offset.value / size.width).coerceIn(0f, 1f) * SWIPE_FADE) * (1f - melt.value) }
             .dust({ dust.value }, particles, particleSize, dustColors)
             .stripBox()
             .padding(start = spacing.md, end = spacing.xs)
@@ -489,7 +493,7 @@ private fun Strip(strip: PopupStrip, onDone: (String) -> Unit, onSnooze: (String
             if (!leaving) onSnooze(strip.taskId)
         }
         StripButton(R.drawable.ic_node_check, stringResource(R.string.notification_done), "$TAG_POPUP_DONE:${strip.taskId}") {
-            leave(onDone) { dust.animateTo(1f, tween(STRIP_DUST_MS, easing = LinearEasing)) }
+            leave(onDone) { melt.animateTo(1f, tween(DONE_FADE_MS, easing = FastOutSlowInEasing)) }
         }
     }
 }

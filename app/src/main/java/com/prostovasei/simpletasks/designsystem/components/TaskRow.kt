@@ -22,12 +22,8 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -47,22 +43,23 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.designsystem.theme.PriorityColors
 import com.prostovasei.simpletasks.domain.model.Priority
 import com.prostovasei.simpletasks.domain.model.ReminderMark
+import com.prostovasei.simpletasks.ui.common.DONE_ALPHA
 import com.prostovasei.simpletasks.ui.common.ReminderIcon
+import com.prostovasei.simpletasks.ui.common.doneAlpha
 
 /**
  * Плашка задачи в одну строку (итерация 13, макет PM): квадратная галочка (рамка — цвет приоритета),
  * цветной квадратик списка, название, ↻ у повторяющихся; справа [trailing] — время столбиком
  * («16:00» или «16:00 · 17:00»), у списков — день и время.
- * [isCompleting] — задача только что отмечена: зачёркнута и полупрозрачна (SPEC.md §4.1).
+ * [isCompleting] — задача выполнена: полупрозрачная, без зачёркивания (#316).
  * [isGhost] — будущий повтор: бледный, без галочки. [isOverdue] — рамка галочки и время красные.
- * [animateCompletion] — при отметке плашка «рассыпается в пыль» слева направо (итерация 15, вариант A4);
- * без него (экран «Выполненные», поиск) отмеченная просто зачёркнута.
+ * [animateCompletion] — переход «медленно тает» (#316, вариант PM 10); без него (экран «Выполненные», поиск) выполненная
+ * сразу полупрозрачная.
  * [highlight] — подсветить найденное в названии, [subtitle] — строка под названием (поиск).
  */
 @Composable
@@ -94,17 +91,10 @@ fun TaskRow(
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
     val sizes = AppTheme.sizes
-    val dissolving = isCompleting && animateCompletion
-    val dust = remember { Animatable(0f) }
-    LaunchedEffect(dissolving) {
-        if (dissolving) dust.animateTo(1f, tween(DUST_MS, delayMillis = DUST_DELAY_MS, easing = LinearEasing)) else dust.snapTo(0f)
-    }
-    val particles = remember(title) { dustParticles(title.hashCode()) }
-    val particleSize = with(LocalDensity.current) { sizes.dustParticle.toPx() }
-    val dustColors = listOf(colors.textSecondary, colors.inactive, colors.textPrimary)
-    val strike = isCompleting && !animateCompletion
+    val fading = doneAlpha(isCompleting)
     val alpha = when {
-        strike -> COMPLETING_ALPHA
+        isCompleting && !animateCompletion -> DONE_ALPHA
+        isCompleting -> fading
         isGhost -> GHOST_ALPHA
         else -> 1f
     }
@@ -119,7 +109,6 @@ fun TaskRow(
             .fillMaxWidth()
             .alpha(alpha)
             .padding(horizontal = spacing.xxs)
-            .dust({ dust.value }, particles, particleSize, dustColors)
             .clip(AppTheme.shapes.medium)
             .background(if (selected == true) colors.selected else colors.surface)
             .then(if (selected == true) Modifier.border(sizes.checkboxStroke, colors.accent, AppTheme.shapes.medium) else Modifier)
@@ -157,8 +146,7 @@ fun TaskRow(
                     text = highlighted(title, highlight, colors.accentSoft),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = if (strike) colors.textSecondary else colors.textPrimary,
-                    textDecoration = if (strike) TextDecoration.LineThrough else null,
+                    color = colors.textPrimary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -342,12 +330,9 @@ internal fun Modifier.dust(progress: () -> Float, particles: List<DustParticle>,
         }
     }
 
-internal const val DUST_MS = 850
-internal const val DUST_DELAY_MS = 150
 private const val DUST_PARTICLES = 90
 
 /** Сколько ширины плашки частица летит после того, как граница её прошла. */
 private const val DUST_TAIL = 0.35f
 
-internal const val COMPLETING_ALPHA = 0.4f
 internal const val GHOST_ALPHA = 0.5f
