@@ -1,5 +1,6 @@
 package com.prostovasei.simpletasks.widget
 
+import android.app.PendingIntent
 import android.content.Context
 import android.graphics.Typeface
 import android.os.Build
@@ -15,180 +16,218 @@ import androidx.compose.ui.unit.DpSize
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.tokens.ColorTokens
 import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
-import com.prostovasei.simpletasks.designsystem.tokens.ThemedColor
 import com.prostovasei.simpletasks.designsystem.tokens.TaskCanvasTokens
+import com.prostovasei.simpletasks.designsystem.tokens.ThemedColor
 import com.prostovasei.simpletasks.domain.model.Priority
 import com.prostovasei.simpletasks.ui.common.TaskItem
 import com.prostovasei.simpletasks.ui.feature.week.WEEK_LENGTH
 import com.prostovasei.simpletasks.ui.feature.week.WeekDay
 import com.prostovasei.simpletasks.ui.feature.week.startTime
-import com.prostovasei.simpletasks.ui.feature.week.weekStart
-import com.prostovasei.simpletasks.ui.feature.week.calendarMonthDescription
-import com.prostovasei.simpletasks.ui.feature.week.calendarMonthLabel
 import com.prostovasei.simpletasks.ui.feature.week.weekCalendarFullDate
+import com.prostovasei.simpletasks.ui.feature.week.weekStart
 import com.prostovasei.simpletasks.widget.WidgetRows.taskCanvasColor
-import com.prostovasei.simpletasks.widget.WidgetRows.visible
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.TextStyle
 import java.util.Locale
 
 /*
- * Вид «Неделя» в виджете (итерация 45, макет `VariantK1`; 0.46.0 — `VariantK2`: компактные строки с фоном по приоритету, до 6 в ячейке): четыре строки одинаковой высоты на весь виджет над нижней панелью
- * (0.46.0: не лента, а вертикальный LinearLayout с долями высоты — `widget_root_week`) —
- * Пн–Вт, Ср–Чт, Пт–Сб, Вс и мини-календарь. Каждая строка пишет свой вид целиком (Android перекрашивает показанные строки, см. WidgetRows).
- * Ячейка: строка даты («пн 26», у сегодня — метка, справа «+N» — не поместившиеся задачи; нажатие открывает день в приложении) и плашки
- * задач: эмодзи, название, начало справа. Любая область ячейки открывает день. Плашек в ячейке столько, сколько влезает по высоте. Разметка — `widget_week_*`,
- * `widget_row_week*` (генерирует design/tools/gen_widget_week.py), id — WidgetWeekIds.
+ * Вид «Неделя» в виджете (итерация 45; 0.46.0 — строки делят высоту поровну; #313 — вариант PM 5 «Всё листается»).
+ * Четыре строки на весь виджет над нижней панелью: Пн–Вт, Ср–Чт, Пт–Сб, Вс и мини-календарь. У каждого дня под неподвижной строкой
+ * даты («ПН 23») — свой список задач (эмодзи, название, начало справа), который листается отдельно от остальных; под задачами —
+ * пустое место, открывающее день. Мини-календарь — лента недель с названиями месяцев. Нажатие на дату, задачу или пустое место
+ * дня открывает окно дня, на неделю ленты — выбирает её, на число выбранной недели — открывает этот день.
+ * Разметка — `widget_root_week`, `widget_week_*` (генерирует design/tools/gen_widget_week.py), id — WidgetWeekIds.
  */
 @RequiresApi(Build.VERSION_CODES.S)
 object WidgetWeekRows {
     /** Строк недели: шесть дней по два, воскресенье с мини-календарём. */
     const val ROWS = 4
 
-    /**
-     * Нажатие на элемент (0.46.0): строки недели больше не лента, поэтому вместо добавки к общему шаблону у каждого элемента своё
-     * намерение ([WidgetClicks.pending]).
-     */
+    /** Нажатие на элемент вне списков (строка даты, ячейка): у каждого своё намерение ([WidgetClicks.pending]). */
     fun interface Click {
         fun RemoteViews.set(viewId: Int, code: String, id: String?)
+    }
+
+    /** Строка ленты календаря: название месяца или неделя с понедельника [start]. */
+    sealed interface CalLine {
+        data class Month(val month: YearMonth) : CalLine
+        data class Week(val start: LocalDate) : CalLine
     }
 
     private val RU: Locale = Locale.forLanguageTag("ru")
 
     /**
-     * Высота строки недели по размеру от рабочего стола — только для [capacity]: сами строки делят настоящую высоту виджета поровну
-     * (weight, `widget_root_week`). Рабочий стол бывает щедрее настоящего размера; строки задач тогда чуть ниже, но всё помещается.
+     * Высота строки недели по размеру от рабочего стола — для пустого места под задачами: сами строки делят настоящую высоту
+     * виджета поровну (weight). Рабочий стол бывает щедрее настоящего размера — пустое место тогда чуть выше нужного.
      */
     fun rowHeightDp(size: DpSize): Float {
         val height = size.height.value.takeIf { !it.isNaN() && it > 0f } ?: return SizeTokens.WIDGET_WEEK_ROW_DEFAULT.toFloat()
         return ((height - SizeTokens.WIDGET_WEEK_TOP - SizeTokens.WIDGET_BAR) / ROWS).coerceAtLeast(SizeTokens.WIDGET_WEEK_ROW_MIN.toFloat())
     }
 
-    /**
-     * Сколько строк задач влезает в ячейку высотой [rowHeight] (поле сверху, строка даты, строки с промежутком над каждой) — по наименьшей
-     * читаемой строке `WIDGET_WEEK_TASK`: сами строки делят высоту поровну и выходят выше. Решение PM — до 6 в ячейке. Строка даты
-     * (итерация 48) — по высоте текста, здесь считается по наименьшей `WIDGET_WEEK_HEADER`.
-     */
-    fun capacity(rowHeight: Float): Int {
-        val room = rowHeight - SizeTokens.WIDGET_WEEK_CELL_TOP - SizeTokens.WIDGET_WEEK_HEADER
-        return (room / (SizeTokens.WIDGET_WEEK_TASK + SizeTokens.WIDGET_WEEK_TASK_GAP)).toInt().coerceIn(0, WeekIds.SLOTS)
+    /** Пустое место под [tasks] задачами дня: до низа ячейки высотой [rowHeight], но не меньше строки задачи — его всегда можно нажать. */
+    fun fillerDp(rowHeight: Float, tasks: Int): Int {
+        val room = rowHeight - SizeTokens.WIDGET_WEEK_CELL_TOP - SizeTokens.WIDGET_WEEK_HEADER - tasks * SizeTokens.WIDGET_WEEK_ITEM - SizeTokens.WIDGET_WEEK_FILL_SLACK
+        return room.toInt().coerceAtLeast(SizeTokens.WIDGET_WEEK_ITEM)
     }
 
-    fun views(context: Context, week: WidgetWeek, size: DpSize, click: Click): List<RemoteViews> {
-        val capacity = capacity(rowHeightDp(size))
-        val today = week.today
-        val resources = context.resources
-        val calendarPadding = resources.getDimension(R.dimen.widget_space_xxs) / resources.displayMetrics.density
-        val inlineMonth = size.width.value / 2 - calendarPadding * 2 >=
-            SizeTokens.WEEK_MONTH_INLINE_CELL * WEEK_LENGTH * resources.configuration.fontScale
-        val fallback = if (inlineMonth) null else week.month.calendarMonthLabel()
-        return (0 until ROWS).map { row ->
-            val left = week.days[row * 2]
-            val right = week.days.getOrNull(row * 2 + 1)
-            RemoteViews(context.packageName, if (right == null) R.layout.widget_row_week_last else R.layout.widget_row_week).apply {
-                cell(context, WeekIds.LEFT, left, capacity, today, click)
-                val monthLabel = fallback.takeIf { right == null }
-                visible(R.id.wl_calendar_month, monthLabel != null)
-                setTextViewText(R.id.wl_calendar_month, monthLabel.orEmpty())
-                if (monthLabel != null) {
-                    taskCanvasColor(R.id.wl_calendar_month, "setTextColor", ColorTokens.textPrimary)
-                    setContentDescription(R.id.wl_calendar_month, context.getString(R.string.week_calendar_month, week.month.calendarMonthDescription()))
-                }
-                if (right != null) cell(context, WeekIds.RIGHT, right, capacity, today, click)
-                else calendar(context, week, inlineMonth, click)
+    /**
+     * Лента календаря: с недели за две до текущей (или с выбранной, если она раньше) — Android не умеет открыть список на середине,
+     * поэтому начало ленты и есть место, которое видно сразу, — и на [CAL_MONTHS] месяцев вперёд. Неделя относится к месяцу своего
+     * воскресенья; перед первой неделей месяца — его название.
+     */
+    fun calendarLines(today: LocalDate, selected: LocalDate): List<CalLine> {
+        val start = minOf(today.weekStart().minusWeeks(CAL_WEEKS_BEFORE), selected.weekStart())
+        val end = maxOf(YearMonth.from(today).plusMonths(CAL_MONTHS).atEndOfMonth(), selected.plusDays(WEEK_LENGTH - 1L))
+        val lines = mutableListOf<CalLine>()
+        var week = start
+        var month: YearMonth? = null
+        while (week <= end) {
+            val own = YearMonth.from(week.plusDays(WEEK_LENGTH - 1L))
+            if (own != month) lines += CalLine.Month(own)
+            month = own
+            lines += CalLine.Week(week)
+            week = week.plusWeeks(1)
+        }
+        return lines
+    }
+
+    /**
+     * Заполняет корень `widget_root_week`: строки дат, списки задач дней и ленту календаря. [template] — общий шаблон нажатий
+     * списков (номер виджета внутри). [scrollDays] / [scrollCalendar] — вернуть списки в начало (выбор недели, «к сегодня»).
+     */
+    fun fill(
+        views: RemoteViews,
+        context: Context,
+        week: WidgetWeek,
+        size: DpSize,
+        click: Click,
+        template: PendingIntent,
+        scrollDays: Boolean = false,
+        scrollCalendar: Boolean = false,
+    ) {
+        val rowHeight = rowHeightDp(size)
+        week.days.take(WeekIds.DAYS.size).forEachIndexed { index, day ->
+            val ids = WeekIds.DAYS[index]
+            views.head(context, ids, day, week.today, click)
+            val items = RemoteViews.RemoteCollectionItems.Builder().setHasStableIds(true).setViewTypeCount(DAY_VIEW_TYPES)
+            day.items.forEach { item -> items.addItem("${day.date}:${item.id}".hashCode().toLong(), taskRow(context, day.date, item)) }
+            items.addItem(FILLER_ID, filler(context, day.date, fillerDp(rowHeight, day.items.size)))
+            views.setRemoteAdapter(ids.list, items.build())
+            views.setPendingIntentTemplate(ids.list, template)
+            if (scrollDays) views.setScrollPosition(ids.list, 0)
+        }
+        val calendar = RemoteViews.RemoteCollectionItems.Builder().setHasStableIds(true).setViewTypeCount(CAL_VIEW_TYPES)
+        calendarLines(week.today, week.weekStart).forEach { line ->
+            when (line) {
+                is CalLine.Month -> calendar.addItem(-line.month.atDay(1).toEpochDay() - 1, monthRow(context, line.month, week.today))
+                is CalLine.Week -> calendar.addItem(line.start.toEpochDay(), weekRow(context, line.start, week))
             }
         }
+        views.setRemoteAdapter(WeekIds.CALENDAR, calendar.build())
+        views.setPendingIntentTemplate(WeekIds.CALENDAR, template)
+        if (scrollCalendar) views.setScrollPosition(WeekIds.CALENDAR, 0)
     }
 
-    private fun RemoteViews.cell(context: Context, ids: CellIds, day: WeekDay, capacity: Int, today: LocalDate, click: Click) {
+    private fun RemoteViews.head(context: Context, ids: DayIds, day: WeekDay, today: LocalDate, click: Click) {
         val isToday = day.date == today
-        val shown = day.items.take(capacity)
-        val hidden = day.items.size - shown.size
-        // Сегодня (0.46.0, проверка PM): без кружка — день недели и число жирные и основного цвета. Итерация 47: остальные дни —
-        // день недели и число одним нежирным начертанием (Medium) и серые. Жирность — через начертание в тексте: у RemoteViews нет смены шрифта.
-        // Итерация 48 (решение PM, макет `week_tune.py`): день недели капсом («ПТ 6»), остальные дни — обычным начертанием, мельче.
+        // Сегодня (0.46.0): без кружка — день недели и число жирные и основного цвета; остальные дни — обычным начертанием, серые.
+        // Итерация 48: день недели капсом («ПТ 6»). Жирность — через начертание в тексте: у RemoteViews нет смены шрифта.
         setTextViewText(ids.weekday, day.date.dayOfWeek.getDisplayName(TextStyle.SHORT, RU).uppercase(RU).bold(isToday))
         taskCanvasColor(ids.weekday, "setTextColor", if (isToday) ColorTokens.textPrimary else ColorTokens.textSecondary)
         val number = day.date.dayOfMonth.toString() + if (isToday) " ${context.getString(R.string.day_today)}" else ""
         setTextViewText(ids.number, number.bold(isToday))
         taskCanvasColor(ids.number, "setTextColor", if (isToday) ColorTokens.textPrimary else ColorTokens.textSecondary)
-        visible(ids.more, hidden > 0)
-        setTextViewText(ids.more, "+$hidden")
-        taskCanvasColor(ids.more, "setTextColor", ColorTokens.textPrimary)
-        setInt(ids.more, "setBackgroundResource", 0)
         with(click) {
             set(ids.root, WidgetClicks.DAY, day.date.toString())
             set(ids.head, WidgetClicks.DAY, day.date.toString())
         }
-        ids.slots.forEachIndexed { index, slot ->
-            val item = shown.getOrNull(index)
-            visible(slot.plaque, index < capacity)
-            // Every property is reset for launcher reapply, including empty slots.
-            setViewVisibility(slot.title, if (item != null) View.VISIBLE else View.INVISIBLE)
-            setViewVisibility(slot.emoji, if (item != null) View.VISIBLE else View.INVISIBLE)
-            setViewVisibility(slot.time, if (item?.startTime() != null) View.VISIBLE else View.GONE)
-            setInt(slot.plaque, "setBackgroundResource", 0)
-            setTextViewText(slot.title, item?.title.orEmpty().weekWeight(item?.priority == Priority.HIGH && !item.showsDone))
-            setTextViewText(slot.emoji, item?.listEmoji.orEmpty())
-            setTextViewText(slot.time, item?.startTime().orEmpty().weekWeight(item?.priority == Priority.HIGH && !item.showsDone))
+    }
+
+    /** Строка задачи в списке дня: эмодзи, название, начало справа; нажатие открывает день. */
+    internal fun taskRow(context: Context, date: LocalDate, item: TaskItem): RemoteViews =
+        RemoteViews(context.packageName, R.layout.widget_week_task).apply {
+            val high = item.priority == Priority.HIGH && !item.showsDone
+            setTextViewText(R.id.wi_title, item.title.weekWeight(high))
+            setTextViewText(R.id.wi_emoji, item.listEmoji.orEmpty())
+            val time = item.startTime()
+            setViewVisibility(R.id.wi_time, if (time != null) View.VISIBLE else View.GONE)
+            setTextViewText(R.id.wi_time, time.orEmpty().weekWeight(high))
+            // #316: выполненная — 40 % обычного цвета (на белом холсте — готовые цвета), эмодзи — с той же прозрачностью.
             val color = when {
-                item?.priority == Priority.HIGH && item.showsDone -> TaskCanvasTokens.priorityDone
-                item?.priority == Priority.HIGH -> TaskCanvasTokens.weekPriority
-                item?.showsDone == true -> TaskCanvasTokens.done
+                item.priority == Priority.HIGH && item.showsDone -> TaskCanvasTokens.priorityDone
+                item.priority == Priority.HIGH -> TaskCanvasTokens.weekPriority
+                item.showsDone -> TaskCanvasTokens.done
                 else -> ColorTokens.textPrimary
             }
-            taskCanvasColor(slot.title, "setTextColor", color)
-            taskCanvasColor(slot.time, "setTextColor", color)
-            taskCanvasColor(slot.emoji, "setTextColor", ColorTokens.textPrimary, if (item?.showsDone == true) TaskCanvasTokens.DONE_EMOJI_ALPHA else 1f)
-            with(click) { set(slot.plaque, WidgetClicks.DAY, day.date.toString()) }
+            taskCanvasColor(R.id.wi_title, "setTextColor", color)
+            taskCanvasColor(R.id.wi_time, "setTextColor", color)
+            taskCanvasColor(R.id.wi_emoji, "setTextColor", ColorTokens.textPrimary, if (item.showsDone) TaskCanvasTokens.DONE_EMOJI_ALPHA else 1f)
+            setOnClickFillInIntent(R.id.wi_row, WidgetRows.fillIn(WidgetClicks.DAY, date.toString()))
+            setContentDescription(R.id.wi_row, listOfNotNull(item.title, time).joinToString(", "))
         }
+
+    /** Пустое место под задачами дня высотой [heightDp]: открывает день. */
+    private fun filler(context: Context, date: LocalDate, heightDp: Int): RemoteViews =
+        RemoteViews(context.packageName, R.layout.widget_week_filler).apply {
+            // Список меряет строку по содержимому — высоту из разметки он не учитывает, поэтому наименьшая высота.
+            setInt(R.id.wi_filler, "setMinimumHeight", TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, heightDp.toFloat(), context.resources.displayMetrics).toInt())
+            setOnClickFillInIntent(R.id.wi_filler, WidgetRows.fillIn(WidgetClicks.DAY, date.toString()))
+        }
+
+    /** Название месяца в ленте: «ноябрь», у другого года — «январь 2027». */
+    private fun monthRow(context: Context, month: YearMonth, today: LocalDate): RemoteViews =
+        RemoteViews(context.packageName, R.layout.widget_week_cal_month).apply {
+            setTextViewText(R.id.wcm_title, monthTitle(month, today))
+            taskCanvasColor(R.id.wcm_title, "setTextColor", ColorTokens.textSecondary)
+        }
+
+    fun monthTitle(month: YearMonth, today: LocalDate): String {
+        val name = month.month.getDisplayName(TextStyle.FULL_STANDALONE, RU).lowercase(RU)
+        return if (month.year == today.year) name else "$name ${month.year}"
     }
 
     /**
-     * Мини-календарь в последней ячейке (#284): шесть равных строк дат.
-     * Строка выбирает неделю, а переход на соседний месяц рассчитывается при выборе.
+     * Неделя в ленте (#284 — светлая полоса у выбранной): нажатие выбирает неделю, у выбранной — число открывает свой день.
+     * Числа чужого месяца серые, сегодня — жирное. Строку Android переиспользует — все свойства задаются каждый раз.
      */
-    private fun RemoteViews.calendar(context: Context, week: WidgetWeek, inlineMonth: Boolean, click: Click) {
-        val month: YearMonth = week.month
-        val first = month.atDay(1).weekStart()
-        WeekIds.CAL_ROWS.forEachIndexed { index, row ->
-            val start = first.plusDays(index * WEEK_LENGTH.toLong())
+    private fun weekRow(context: Context, start: LocalDate, week: WidgetWeek): RemoteViews =
+        RemoteViews(context.packageName, R.layout.widget_week_cal_week).apply {
             val selected = start == week.weekStart
-            setInt(row.row, "setBackgroundResource", if (selected) R.drawable.widget_task_week_band else 0)
-            if (selected) setOnClickPendingIntent(row.row, null)
-            else with(click) { set(row.row, WidgetClicks.PICK_WEEK, start.toString()) }
-            row.days.forEachIndexed { offset, id ->
+            val month = YearMonth.from(start.plusDays(WEEK_LENGTH - 1L))
+            setInt(R.id.wcw_row, "setBackgroundResource", if (selected) R.drawable.widget_task_week_band else 0)
+            setOnClickFillInIntent(R.id.wcw_row, WidgetRows.fillIn(if (selected) WidgetClicks.NONE else WidgetClicks.PICK_WEEK, start.toString()))
+            WeekIds.CAL_DAYS.forEachIndexed { offset, id ->
                 val date = start.plusDays(offset.toLong())
                 val isToday = date == week.today
-                val withMonth = inlineMonth && date.dayOfMonth == 1 && YearMonth.from(date) == month
-                val label = if (withMonth) "1 ${month.calendarMonthLabel()}" else date.dayOfMonth.toString()
-                setTextViewText(id, label.bold(isToday))
-                val textSize = if (withMonth) SizeTokens.WEEK_MONTH_INLINE_TEXT else SizeTokens.WIDGET_WEEK_CAL_TEXT
-                setTextViewTextSize(id, TypedValue.COMPLEX_UNIT_SP, textSize.toFloat())
-                val fullDate = weekCalendarFullDate.format(date)
-                val action = if (selected) R.string.week_open_calendar_day else R.string.week_select_calendar_week
-                setContentDescription(id, "$fullDate, ${context.getString(action)}")
-                with(click) {
-                    if (selected) set(id, WidgetClicks.DAY, date.toString())
-                    else set(id, WidgetClicks.PICK_WEEK, start.toString())
-                }
+                setTextViewText(id, date.dayOfMonth.toString().bold(isToday))
                 taskCanvasColor(id, "setTextColor", calendarDayColor(isToday, inMonth = YearMonth.from(date) == month))
+                val action = if (selected) R.string.week_open_calendar_day else R.string.week_select_calendar_week
+                setContentDescription(id, "${weekCalendarFullDate.format(date)}, ${context.getString(action)}")
+                setOnClickFillInIntent(id, WidgetRows.fillIn(if (selected) WidgetClicks.DAY else WidgetClicks.PICK_WEEK, if (selected) date.toString() else start.toString()))
             }
         }
-    }
 
     private fun calendarDayColor(isToday: Boolean, inMonth: Boolean): ThemedColor =
         if (isToday || inMonth) ColorTokens.textPrimary else ColorTokens.inactive
 
-    /** Текст жирным начертанием ([bold] = true) или как есть. */
+    /** Текст высокого приоритета — ExtraBold 800 (#259), иначе как есть. */
     private fun String.weekWeight(high: Boolean): CharSequence =
         if (high && isNotEmpty()) SpannableString(this).apply {
-            setSpan(TypefaceSpan(Typeface.create(Typeface.DEFAULT, 800, false)), 0, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            setSpan(TypefaceSpan(Typeface.create(Typeface.DEFAULT, EXTRA_BOLD, false)), 0, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         } else this
 
     private fun String.bold(bold: Boolean): CharSequence =
         if (bold) SpannableString(this).apply { setSpan(StyleSpan(Typeface.BOLD), 0, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE) } else this
 
-    private fun dp(context: Context, value: Int): Int = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, value.toFloat(), context.resources.displayMetrics).toInt()
+    /** Видов строк в списке дня: задача и пустое место; в ленте календаря: месяц и неделя. */
+    private const val DAY_VIEW_TYPES = 2
+    private const val CAL_VIEW_TYPES = 2
+    private const val FILLER_ID = Long.MIN_VALUE
+    private const val EXTRA_BOLD = 800
+
+    /** Лента календаря: недель до текущей и месяцев вперёд. */
+    const val CAL_WEEKS_BEFORE = 2L
+    const val CAL_MONTHS = 6L
 }

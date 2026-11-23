@@ -43,6 +43,11 @@
     <dimen name="widget_week_top">2dp</dimen>
     <dimen name="widget_week_inline_gap">2dp</dimen>
     <dimen name="widget_week_task_gap">2dp</dimen>
+    <!-- #313: строка задачи в списке дня (с промежутком сверху), строка недели и месяца в ленте календаря, затухание края списка. -->
+    <dimen name="widget_week_item">22dp</dimen>
+    <dimen name="widget_week_cal_row">20dp</dimen>
+    <dimen name="widget_week_cal_month">14dp</dimen>
+    <dimen name="widget_week_fade">8dp</dimen>
     <dimen name="widget_radius_xl">16dp</dimen>
 
     <color name="widget_surface">#FFFFFFFF</color>

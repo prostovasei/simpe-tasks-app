@@ -2,51 +2,26 @@ package com.prostovasei.simpletasks.widget
 
 import com.prostovasei.simpletasks.R
 
-// Сгенерировано design/tools/gen_widget_week.py (итерация 45): id элементов ячеек и мини-календаря вида «Неделя» в виджете. Не править руками.
+// Сгенерировано design/tools/gen_widget_week.py (#313): id элементов вида «Неделя» в виджете. Не править руками.
 
-/** Пассивная строка недели: контейнер, название, эмодзи списка и начало справа. */
-class SlotIds(val plaque: Int, val title: Int, val emoji: Int, val time: Int)
-
-/** Элементы ячейки дня: общий корень, строка даты (день недели, число, «+N») и плашки задач. */
-class CellIds(val root: Int, val head: Int, val weekday: Int, val number: Int, val more: Int, val slots: List<SlotIds>)
-
-/** Строка недели мини-календаря и её семь дней. */
-class CalRow(val row: Int, val days: List<Int>)
+/** Ячейка дня: корень, строка даты (день недели и число) и список задач. */
+class DayIds(val root: Int, val head: Int, val weekday: Int, val number: Int, val list: Int)
 
 object WeekIds {
-    /** Плашек в ячейке не больше. */
-    const val SLOTS = 6
-
-    val LEFT = CellIds(
-        root = R.id.wl_root, head = R.id.wl_head, weekday = R.id.wl_wd, number = R.id.wl_num, more = R.id.wl_more,
-        slots = listOf(
-            SlotIds(R.id.wl_s1, R.id.wl_s1_title, R.id.wl_s1_emoji, R.id.wl_s1_time),
-            SlotIds(R.id.wl_s2, R.id.wl_s2_title, R.id.wl_s2_emoji, R.id.wl_s2_time),
-            SlotIds(R.id.wl_s3, R.id.wl_s3_title, R.id.wl_s3_emoji, R.id.wl_s3_time),
-            SlotIds(R.id.wl_s4, R.id.wl_s4_title, R.id.wl_s4_emoji, R.id.wl_s4_time),
-            SlotIds(R.id.wl_s5, R.id.wl_s5_title, R.id.wl_s5_emoji, R.id.wl_s5_time),
-            SlotIds(R.id.wl_s6, R.id.wl_s6_title, R.id.wl_s6_emoji, R.id.wl_s6_time),
-        ),
+    /** Дни недели по порядку: пн … вс. */
+    val DAYS = listOf(
+        DayIds(R.id.w1_root, R.id.w1_head, R.id.w1_wd, R.id.w1_num, R.id.w1_list),
+        DayIds(R.id.w2_root, R.id.w2_head, R.id.w2_wd, R.id.w2_num, R.id.w2_list),
+        DayIds(R.id.w3_root, R.id.w3_head, R.id.w3_wd, R.id.w3_num, R.id.w3_list),
+        DayIds(R.id.w4_root, R.id.w4_head, R.id.w4_wd, R.id.w4_num, R.id.w4_list),
+        DayIds(R.id.w5_root, R.id.w5_head, R.id.w5_wd, R.id.w5_num, R.id.w5_list),
+        DayIds(R.id.w6_root, R.id.w6_head, R.id.w6_wd, R.id.w6_num, R.id.w6_list),
+        DayIds(R.id.w7_root, R.id.w7_head, R.id.w7_wd, R.id.w7_num, R.id.w7_list),
     )
 
-    val RIGHT = CellIds(
-        root = R.id.wr_root, head = R.id.wr_head, weekday = R.id.wr_wd, number = R.id.wr_num, more = R.id.wr_more,
-        slots = listOf(
-            SlotIds(R.id.wr_s1, R.id.wr_s1_title, R.id.wr_s1_emoji, R.id.wr_s1_time),
-            SlotIds(R.id.wr_s2, R.id.wr_s2_title, R.id.wr_s2_emoji, R.id.wr_s2_time),
-            SlotIds(R.id.wr_s3, R.id.wr_s3_title, R.id.wr_s3_emoji, R.id.wr_s3_time),
-            SlotIds(R.id.wr_s4, R.id.wr_s4_title, R.id.wr_s4_emoji, R.id.wr_s4_time),
-            SlotIds(R.id.wr_s5, R.id.wr_s5_title, R.id.wr_s5_emoji, R.id.wr_s5_time),
-            SlotIds(R.id.wr_s6, R.id.wr_s6_title, R.id.wr_s6_emoji, R.id.wr_s6_time),
-        ),
-    )
+    /** Лента недель мини-календаря. */
+    val CALENDAR = R.id.wc_list
 
-    val CAL_ROWS = listOf(
-        CalRow(R.id.wc_r1, listOf(R.id.wc_r1_d1, R.id.wc_r1_d2, R.id.wc_r1_d3, R.id.wc_r1_d4, R.id.wc_r1_d5, R.id.wc_r1_d6, R.id.wc_r1_d7)),
-        CalRow(R.id.wc_r2, listOf(R.id.wc_r2_d1, R.id.wc_r2_d2, R.id.wc_r2_d3, R.id.wc_r2_d4, R.id.wc_r2_d5, R.id.wc_r2_d6, R.id.wc_r2_d7)),
-        CalRow(R.id.wc_r3, listOf(R.id.wc_r3_d1, R.id.wc_r3_d2, R.id.wc_r3_d3, R.id.wc_r3_d4, R.id.wc_r3_d5, R.id.wc_r3_d6, R.id.wc_r3_d7)),
-        CalRow(R.id.wc_r4, listOf(R.id.wc_r4_d1, R.id.wc_r4_d2, R.id.wc_r4_d3, R.id.wc_r4_d4, R.id.wc_r4_d5, R.id.wc_r4_d6, R.id.wc_r4_d7)),
-        CalRow(R.id.wc_r5, listOf(R.id.wc_r5_d1, R.id.wc_r5_d2, R.id.wc_r5_d3, R.id.wc_r5_d4, R.id.wc_r5_d5, R.id.wc_r5_d6, R.id.wc_r5_d7)),
-        CalRow(R.id.wc_r6, listOf(R.id.wc_r6_d1, R.id.wc_r6_d2, R.id.wc_r6_d3, R.id.wc_r6_d4, R.id.wc_r6_d5, R.id.wc_r6_d6, R.id.wc_r6_d7)),
-    )
+    /** Строка недели в ленте календаря: её семь чисел. */
+    val CAL_DAYS = listOf(R.id.wcw_d1, R.id.wcw_d2, R.id.wcw_d3, R.id.wcw_d4, R.id.wcw_d5, R.id.wcw_d6, R.id.wcw_d7)
 }

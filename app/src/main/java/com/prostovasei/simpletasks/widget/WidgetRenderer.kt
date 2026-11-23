@@ -66,8 +66,11 @@ object WidgetRenderer {
             .forEach { render(context, it, "новости") }
     }
 
-    /** [scrollToToday] — лента прокручивается к «Сегодня» (во «Входящих» — в начало): нажатие на дату в нижней строке (итерация 51). */
-    suspend fun render(context: Context, appWidgetId: Int, reason: String, scrollToToday: Boolean = false) = mutex.withLock {
+    /**
+     * [scrollToToday] — лента прокручивается к «Сегодня» (во «Входящих» — в начало), у «Недели» списки дней и календарь — в начало:
+     * нажатие на дату в нижней строке (итерация 51). [scrollDays] — у «Недели» выбрали другую неделю: списки дней в начало (#313).
+     */
+    suspend fun render(context: Context, appWidgetId: Int, reason: String, scrollToToday: Boolean = false, scrollDays: Boolean = false) = mutex.withLock {
         val started = SystemClock.elapsedRealtime()
         try {
             // Вид «Неделя» — на Android 12+ (лента на элементах Android); на 10–11 вместо него «Все».
@@ -93,7 +96,7 @@ object WidgetRenderer {
                 module == WidgetModule.HEALTH -> healthWidgetViews(context, model.today, glance, size)
                 module == WidgetModule.NEWS -> newsWidgetViews(context, appWidgetId, glance)
                 finance -> financeWidgetViews(context, appWidgetId, glance, size)
-                scrollable -> widgetRootViews(context, appWidgetId, model, glance, size, scrollToToday = scrollToToday)
+                scrollable -> widgetRootViews(context, appWidgetId, model, glance, size, scrollToToday = scrollToToday, scrollDays = scrollDays)
                 else -> glance
             }
             manager.updateAppWidget(appWidgetId, views)

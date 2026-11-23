@@ -15,7 +15,6 @@ import com.prostovasei.simpletasks.domain.model.Priority
 import com.prostovasei.simpletasks.ui.common.DayLabel
 import com.prostovasei.simpletasks.ui.common.DueText
 import com.prostovasei.simpletasks.ui.common.TaskItem
-import com.prostovasei.simpletasks.ui.feature.week.WeekDay
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -24,7 +23,6 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.time.LocalDate
-import java.time.YearMonth
 
 /** Проверяет реальный RemoteViews/reapply: тема Android не должна вернуть карточки или белый текст. */
 @RunWith(RobolectricTestRunner::class)
@@ -147,17 +145,14 @@ class TaskCanvasWidgetTest {
     fun enlargedFontKeepsMeasuredTimeColumnAndTwoDpGaps() {
         val config = android.content.res.Configuration(context.resources.configuration).apply { fontScale = 1.5f }
         val scaled = context.createConfigurationContext(config)
-        val start = today.minusDays(6)
-        val views = WidgetWeekRows.views(scaled,
-            WidgetWeek(start, YearMonth.from(today), (0L..6).map { WeekDay(start.plusDays(it), if (it == 0L) listOf(item()) else emptyList()) }, today),
-            androidx.compose.ui.unit.DpSize.Unspecified, WidgetWeekRows.Click { _, _, _ -> })[0]
+        // #313: строка задачи в списке дня.
+        val views = WidgetWeekRows.taskRow(scaled, today, item())
         val root = views.apply(scaled, FrameLayout(scaled))
-        root.measure(View.MeasureSpec.makeMeasureSpec(800, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(360, View.MeasureSpec.EXACTLY))
-        root.layout(0, 0, 800, 360)
-        val slot = WeekIds.LEFT.slots.first()
-        val time = root.findViewById<TextView>(slot.time)
-        val emoji = root.findViewById<View>(slot.emoji)
-        val title = root.findViewById<View>(slot.title)
+        root.measure(View.MeasureSpec.makeMeasureSpec(400, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED))
+        root.layout(0, 0, 400, root.measuredHeight)
+        val time = root.findViewById<TextView>(R.id.wi_time)
+        val emoji = root.findViewById<View>(R.id.wi_emoji)
+        val title = root.findViewById<View>(R.id.wi_title)
         val gap = scaled.resources.getDimensionPixelSize(R.dimen.widget_week_content_gap)
         assertTrue("время не обрезано", time.width >= kotlin.math.ceil(time.paint.measureText("10:00")).toInt())
         assertEquals(gap, title.left - emoji.right)
@@ -166,29 +161,27 @@ class TaskCanvasWidgetTest {
 
     @Test
     fun weekPriorityChangesKeepFlatRowsAndLightText() {
-        val start = today.minusDays(6)
-        fun views(priority: Priority, done: Boolean = false, timed: Boolean = true) = WidgetWeekRows.views(context,
-            WidgetWeek(start, YearMonth.from(today), (0L..6).map { WeekDay(start.plusDays(it), if (it == 0L) listOf(item(priority).copy(isDone = done, due = DueText(DayLabel.Today, if (timed) "10:00" else null))) else emptyList()) }, today),
-            androidx.compose.ui.unit.DpSize.Unspecified, WidgetWeekRows.Click { _, _, _ -> })[0]
+        // #313: строка задачи в списке дня; Android переиспользует строки — свойства задаются заново.
+        fun views(priority: Priority, done: Boolean = false, timed: Boolean = true) =
+            WidgetWeekRows.taskRow(context, today, item(priority).copy(isDone = done, due = DueText(DayLabel.Today, if (timed) "10:00" else null)))
         val high = views(Priority.HIGH)
         val root = high.apply(context, FrameLayout(context))
-        val slot = WeekIds.LEFT.slots.first()
-        assertNull(root.findViewById<View>(slot.plaque).background)
-        assertEquals(TaskCanvasTokens.weekPriority.light.toInt(), root.findViewById<TextView>(slot.title).currentTextColor)
-        assertEquals(TaskCanvasTokens.weekPriority.light.toInt(), root.findViewById<TextView>(slot.time).currentTextColor)
+        assertNull(root.findViewById<View>(R.id.wi_plaque).background)
+        assertEquals(TaskCanvasTokens.weekPriority.light.toInt(), root.findViewById<TextView>(R.id.wi_title).currentTextColor)
+        assertEquals(TaskCanvasTokens.weekPriority.light.toInt(), root.findViewById<TextView>(R.id.wi_time).currentTextColor)
         views(Priority.HIGH, done = true).reapply(context, root)
-        val title = root.findViewById<TextView>(slot.title)
+        val title = root.findViewById<TextView>(R.id.wi_title)
         assertEquals(TaskCanvasTokens.priorityDone.light.toInt(), title.currentTextColor)
-        assertEquals(TaskCanvasTokens.priorityDone.light.toInt(), root.findViewById<TextView>(slot.time).currentTextColor)
+        assertEquals(TaskCanvasTokens.priorityDone.light.toInt(), root.findViewById<TextView>(R.id.wi_time).currentTextColor)
         assertTrue(title.text !is Spanned || (title.text as Spanned).getSpans(0, title.length(), StrikethroughSpan::class.java).isEmpty())
-        val emoji = root.findViewById<TextView>(slot.emoji)
+        val emoji = root.findViewById<TextView>(R.id.wi_emoji)
         assertTrue(kotlin.math.abs((255 * TaskCanvasTokens.DONE_EMOJI_ALPHA).toInt() - android.graphics.Color.alpha(emoji.currentTextColor)) <= 1)
         views(Priority.NONE, timed = false).reapply(context, root)
         assertEquals(ColorTokens.textPrimary.light.toInt(), title.currentTextColor)
         assertEquals(255, android.graphics.Color.alpha(emoji.currentTextColor))
-        assertEquals("", root.findViewById<TextView>(slot.time).text.toString())
-        assertEquals(View.GONE, root.findViewById<View>(slot.time).visibility)
+        assertEquals("", root.findViewById<TextView>(R.id.wi_time).text.toString())
+        assertEquals(View.GONE, root.findViewById<View>(R.id.wi_time).visibility)
         assertTrue(title.text !is Spanned || (title.text as Spanned).getSpans(0, title.length(), StrikethroughSpan::class.java).isEmpty())
-        assertNull(root.findViewById<View>(slot.plaque).background)
+        assertNull(root.findViewById<View>(R.id.wi_plaque).background)
     }
 }

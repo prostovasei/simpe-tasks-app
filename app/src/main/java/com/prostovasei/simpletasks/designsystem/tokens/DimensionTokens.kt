@@ -373,6 +373,17 @@ object SizeTokens {
     const val WIDGET_WEEK_CELL_TOP = 1
     const val WIDGET_WEEK_TOP = 2
     const val WIDGET_WEEK_INLINE_GAP = 2
+
+    /**
+     * #313 «Всё листается»: строка задачи в списке дня (с промежутком 2 dp сверху), строка недели и названия месяца в ленте
+     * календаря, затухание края списка; [WIDGET_WEEK_FILL_SLACK] — запас пустого места под задачами: рабочий стол сообщает
+     * высоту виджета больше настоящей.
+     */
+    const val WIDGET_WEEK_ITEM = 22
+    const val WIDGET_WEEK_CAL_ROW = 20
+    const val WIDGET_WEEK_CAL_MONTH = 14
+    const val WIDGET_WEEK_FADE = 8
+    const val WIDGET_WEEK_FILL_SLACK = 8
     const val WEEK_MONTH_INLINE_CELL = 26
     const val WEEK_MONTH_INLINE_TEXT = 9
     const val WIDGET_WEEK_CAL_TEXT = 11

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Сгенерировано design/tools/gen_widget_week.py (#313): название месяца в ленте календаря. Не править руками. -->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="SmallSp"
+    android:id="@+id/wcm_title"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:minHeight="@dimen/widget_week_cal_month"
+    android:gravity="bottom|start"
+    android:includeFontPadding="false"
+    android:maxLines="1"
+    android:paddingStart="@dimen/widget_week_edge"
+    android:textColor="@color/widget_text_secondary"
+    android:textSize="9sp"
+    android:textStyle="bold" />
