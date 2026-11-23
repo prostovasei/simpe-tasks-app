@@ -48,6 +48,8 @@ data class AppColors(
     val goal: Color,
     val scrim: Color,
     val priority: PriorityPalette,
+    val voiceTide: List<Color>,
+    val voiceCalm: List<Color>,
     val isDark: Boolean,
 )
 
@@ -84,6 +86,8 @@ internal fun appColors(isDark: Boolean): AppColors {
             high = PriorityTokens.high.resolve(),
             none = PriorityTokens.none.resolve(),
         ),
+        voiceTide = ColorTokens.voiceTide.map { it.resolve() },
+        voiceCalm = ColorTokens.voiceCalm.map { it.resolve() },
         isDark = isDark,
     )
 }

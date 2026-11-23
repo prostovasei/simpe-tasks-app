@@ -53,6 +53,21 @@ object ColorTokens {
 
     /** Затемнение под всплывающим окном (выбор списка виджета). */
     val scrim = ThemedColor(light = 0x66000000, dark = 0x99000000)
+
+    /**
+     * «Цветной прилив» окна голосового ввода (#305, выбор PM): три слоя воды снизу вверх по глубине — дальний, средний,
+     * ближний. Во время записи — сиреневый, голубой, фиолетовый; на паузе и при ошибке — серые [voiceCalm].
+     */
+    val voiceTide = listOf(
+        ThemedColor(light = 0xFFF1E8FA, dark = 0xFF2A2236),
+        ThemedColor(light = 0xFFDCE8F4, dark = 0xFF22303F),
+        ThemedColor(light = 0xFFC9B3EA, dark = 0xFF4A3470),
+    )
+    val voiceCalm = listOf(
+        ThemedColor(light = 0xFFF1F1F3, dark = 0xFF262626),
+        ThemedColor(light = 0xFFE4E4E7, dark = 0xFF2E2E2E),
+        ThemedColor(light = 0xFFD3D4D8, dark = 0xFF3A3A3A),
+    )
 }
 
 /**

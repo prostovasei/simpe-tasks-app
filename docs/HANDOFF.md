@@ -2,7 +2,15 @@
 
 Правила [../AGENTS.md](../AGENTS.md).
 
-## В работе — #192 и #300, 0.83.0
+## В работе — #305, 0.84.0
+
+Исполнитель Claude Code, ветка `claude/voice-window-redesign` от main `482fa18`. [#305](https://github.com/prostovasei/simpe-tasks-app/issues/305) — новое окно голосового ввода: три раунда макетов (10 вариантов → 5 «нитей» → 5 «приливов»), PM выбрал «Цветной прилив», текст остаётся в окне, ошибки между кнопками. [ТЗ](../design/approved/305/requirements.md). PM согласовал финальный макет («Продолжай», 23.11.2026). Код готов, проверки — [отчёт](testing-runs/0.84.0-local.md). Следующий этап — «Проверка»/«Выпуск» по команде PM; VW305-1–5 ждут телефона.
+
+## Выпуск 0.83.0
+
+[PR #304](https://github.com/prostovasei/simpe-tasks-app/pull/304), merge `482fa182a3effcc3091e999a82e27fea94b254a0`. #192 и #300 закрыты. CI PR и main зелёные с первой попытки, APK build-462 опубликован (PM сообщено отдельно). RS192-1–4 и NR300-1–4 ждут результата PM.
+
+## История — #192 и #300, 0.83.0
 
 Исполнитель Claude Code, ветка `claude/repeat-skip-news-read` от main `bf9560123302e14bf12eb95ce33c82e143983cd2`. Решение PM 23.11.2026: обе фичи в одной итерации.
 - [#192](https://github.com/prostovasei/simpe-tasks-app/issues/192) — «Только этот» в окне «Есть незакрытые повторы», отменённый раз в «Не буду делать» (ответ 2А). Миграция Room. [ТЗ](../design/approved/192/requirements.md).
