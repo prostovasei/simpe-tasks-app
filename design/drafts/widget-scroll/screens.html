@@ -74,6 +74,7 @@
       <tr><td>Листать вверх-вниз один сектор (календарь или день)</td><td>Свайп влево-вправо, «свайп = действие»</td></tr>
       <tr><td>Несколько независимых секторов-списков</td><td>Остановка ровно на месяце (прокрутка свободная, как у списка)</td></tr>
       <tr><td>Нажатие на число / неделю / задачу внутри списка</td><td>Плавные анимации при смене содержимого</td></tr>
+      <tr><td>8 независимых списков в одном виджете (вариант 5)</td><td>Гарантированно помнить, куда долистали: при обновлении виджета список может вернуться к началу — проверим на телефоне</td></tr>
     </table></div>
   </header>
   <section class="grid" id="grid"></section>
@@ -102,6 +103,8 @@
   const dayHead = i => { const d = add(MON, i); return `<div class="dh">${same(d, TODAY) ? `<b>${DAYS[i]} ${d.getDate()} Сегодня</b>` : `${DAYS[i]} ${d.getDate()}`}</div>`; };
   const day = (i, opts = {}) => {
     const list = T[i];
+    // Вариант 5: заголовок дня стоит на месте, листаются только задачи под ним.
+    if (opts.tasks) return `<div class="cell" style="display:flex;flex-direction:column">${dayHead(i)}<div class="scroll live" style="flex:1;min-height:0">${list.map(task).join('')}</div></div>`;
     if (opts.scroll) return `<div class="cell"><div class="scroll live" style="height:100%">${dayHead(i)}${list.map(task).join('')}</div></div>`;
     const fit = 5, cut = opts.more && list.length > fit, shown = list.slice(0, cut ? fit - 1 : fit);
     return `<div class="cell">${dayHead(i)}${shown.map(task).join('')}${cut ? `<div class="more">ещё ${list.length - shown.length} ›</div>` : ''}</div>`;
@@ -142,6 +145,8 @@
   const days = opts => [...Array(7)].map((_, i) => day(i, opts));
 
   const V = [
+    { n: 5, name: 'Всё листается — 1 + 3 (выбор PM)', tag: 'Листаются: каждый день и календарь', desc: 'Каждый сектор — свой список. Заголовок дня («ВТ 24 Сегодня») стоит на месте, листаются только задачи под ним. Календарь — лента недель с названиями месяцев. Листаете один сектор — остальные не двигаются.',
+      html: () => widget([...[...Array(7)].map((_, i) => day(i, { tasks: true })), calCell(`<div class="scroll live" style="height:100%" data-strip>${weekStrip()}</div>`)]) },
     { n: 1, name: 'Календарь — лента недель', tag: 'Листается: мини-календарь', desc: 'Недели идут сплошной лентой, на смене месяца — строка с его названием. Листаете вверх-вниз — прошлые и следующие месяцы. Нажатие на неделю — показать её в виджете.',
       html: () => widget([...days({}), calCell(`<div class="scroll live" style="height:100%" data-strip>${weekStrip()}</div>`)]) },
     { n: 2, name: 'Календарь — месяцы блоками', tag: 'Листается: мини-календарь', desc: 'Каждый месяц — отдельный блок с заголовком «ноябрь», «декабрь». Листаете — следующий месяц выезжает снизу; остановка свободная, не ровно на месяце.',

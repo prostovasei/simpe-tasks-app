@@ -1,0 +1,157 @@
+<title>Выполнение задачи: анимации</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap">
+<!--
+  #314, вопрос PM 24.11.2026: другие варианты анимации выполнения (идея 3). Черновик на согласовании PM; основа — галерея анимаций для окон поверх рабочего стола (окно дня из виджета, окно задачи).
+  Окно — обычный экран приложения (Compose), в нём доступны любые анимации. Цвета приложения: surface #FFFFFF, textPrimary #16171D,
+  textSecondary #62656E, inactive #A9A9A9, accentSoft #EAEAEA, priority #862CE0 / #6B32A8, scrim 0x66000000.
+-->
+<style>
+  /* Страница: сетка карточек; в каждой — сцена 360 × 540 dp с окном дня и кнопка повторить. Анимации крутятся по кругу. */
+  :root { --page: #ECECEF; --ink: #16171D; --muted: #62656E; --panel: #FFFFFF; --line: #DADBE0; --chip: #E2E3E8; --on: #16171D; --on-ink: #FFFFFF; --hi: #6B32A8;
+    --font: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --s: #FFFFFF; --t1: #16171D; --t2: #62656E; --gray: #A9A9A9; --soft: #EAEAEA; --prio: #862CE0; --red: #C62828; --green: #1F8F4E; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --page: #141518; --ink: #ECECEF; --muted: #A3A5AD; --panel: #1E1F23; --line: #2E3036; --chip: #2A2C31; --on: #ECECEF; --on-ink: #16171D; --hi: #D4B8F5; color-scheme: dark } }
+  :root[data-theme="dark"] { --page: #141518; --ink: #ECECEF; --muted: #A3A5AD; --panel: #1E1F23; --line: #2E3036; --chip: #2A2C31; --on: #ECECEF; --on-ink: #16171D; --hi: #D4B8F5; color-scheme: dark }
+  * { box-sizing: border-box; }
+  body { background: var(--page); color: var(--ink); font-family: var(--font); font-size: 15px; line-height: 1.45;
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 48px; }
+  .wrap { max-width: 1560px; margin: 0 auto; display: grid; gap: 20px; }
+  h1 { margin: 0; font-size: 26px; font-weight: 800; line-height: 1.2; text-wrap: balance; }
+  .lead { margin: 0; color: var(--muted); max-width: 840px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 384px), 1fr)); gap: 20px; }
+  .v { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 16px 12px; display: grid; gap: 10px; justify-items: center; min-width: 0; align-content: start; }
+  .v .hd { width: 100%; max-width: 360px; display: grid; gap: 4px; }
+  .v h2 { margin: 0; font-size: 18px; font-weight: 800; display: flex; gap: 8px; }
+  .v h2 .n { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .v p { margin: 0; color: var(--muted); font-size: 14px; }
+  .v .when { font-size: 12.5px; font-weight: 700; color: var(--hi); }
+  .again { font: 700 13px/1 var(--font); color: var(--ink); background: var(--chip); border: 0; border-radius: 10px; padding: 9px 12px; cursor: pointer; }
+  .again:focus-visible { outline: 2px solid #438BC9; outline-offset: 2px; }
+  .scroller { width: 100%; overflow-x: auto; display: flex; justify-content: center; }
+
+  /* Сцена: виджет (бледно), затемнение, окно дня снизу */
+  .stage { width: 360px; height: 540px; flex: none; position: relative; overflow: hidden; border-radius: 26px; background: linear-gradient(170deg, #4A2E7A, #8E3E8C 55%, #D06A6A); color: var(--t1); }
+  .wgrid { position: absolute; left: 8px; right: 8px; top: 10px; height: 300px; background: #FFFFFFEE; border-radius: 16px; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(3, 1fr); }
+  .wgrid div { border-right: 1px solid #E2E2E2; border-bottom: 1px solid #E2E2E2; padding: 5px 7px; font: 600 10.5px/1.6 Roboto, system-ui, sans-serif; color: #62656E; }
+  .wgrid div b { display: block; color: #16171D; font-size: 11px; }
+  .scrim { position: absolute; inset: 0; background: #00000066; }
+  .sheet { position: absolute; left: 8px; right: 8px; bottom: 8px; height: 330px; background: var(--s); border-radius: 22px; box-shadow: 0 6px 24px #0004; overflow: hidden; }
+  .sh-h { display: flex; justify-content: space-between; align-items: center; padding: 16px 16px 6px 18px; }
+  .sh-h b { font-size: 19px; font-weight: 800; }
+  .plus { width: 72px; height: 36px; border-radius: 18px; background: var(--t1); color: #fff; display: grid; place-items: center; font-size: 22px; font-weight: 500; }
+  .rows { position: relative; padding: 0 12px; }
+  .r { display: grid; grid-template-columns: 46px 24px 1fr 26px 26px; gap: 8px; align-items: center; height: 46px; position: relative; background: var(--s); }
+  .r .tm { font-size: 14px; font-weight: 600; color: var(--t1); font-variant-numeric: tabular-nums; }
+  .r .ic { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--gray); position: relative; }
+  .r .ic.p { border-color: var(--prio); }
+  .r .ic.rep { border: 0; color: var(--gray); font-size: 17px; line-height: 20px; text-align: center; }
+  .r .ti { font-size: 16.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; position: relative; }
+  .r .bell { color: var(--t2); font-size: 15px; text-align: center; }
+  .r .em { font-size: 17px; text-align: center; }
+  .line { position: absolute; left: 70px; top: 0; bottom: 0; width: 2px; background: #E2E2E2; }
+  .now { position: absolute; left: 12px; right: 12px; height: 2px; background: var(--red); }
+  .now::before { content: ""; position: absolute; left: 56px; top: -4px; width: 10px; height: 10px; border-radius: 50%; background: var(--red); }
+  .strike { position: absolute; left: 0; top: 50%; height: 2px; width: 0; background: var(--gray); }
+  .fill { position: absolute; inset: -2px; border-radius: 50%; background: var(--gray); transform: scale(0); display: grid; place-items: center; color: #fff; font-size: 12px; font-weight: 800; }
+  .under { position: absolute; inset: 0; display: flex; align-items: center; padding: 0 16px; font-weight: 800; color: #fff; font-size: 14px; }
+  .spark { position: absolute; width: 7px; height: 7px; border-radius: 2px; }
+  .card2 { position: absolute; background: var(--s); border-radius: 22px; box-shadow: 0 6px 24px #0004; }
+  @media (prefers-reduced-motion: reduce) { .v .rm { display: block; } }
+  .rm { display: none; font-size: 12px; color: var(--muted); }
+</style>
+
+<div class="wrap">
+  <header style="display:grid;gap:8px">
+    <h1>Выполнение задачи — 8 вариантов анимации</h1>
+    <p class="lead">PM попросил другие варианты для идеи 3 «Выполнение». Во всех вариантах нажимается кружок у «Запланировать отпуск» (задача с приоритетом). Каждый крутится по кругу; «Повторить» запускает заново. Выберите один — его поставим и в приложении, и в окнах поверх рабочего стола.</p>
+    <p class="rm">В системе включено «уменьшение движения» — анимации показаны без движения.</p>
+  </header>
+  <section class="grid" id="grid"></section>
+</div>
+
+<script>
+(() => {
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const ROWS = [
+    ['10:00', 'rep', 'Сервис', '💲'], ['14:00', 'p', 'Запланировать отпуск', '💼'], ['14:30', 'rep', 'Финансы', '🔁'],
+    ['15:00', 'rep', 'Цветы', '🔁'], ['20:00', '', 'Квест', '🎮'],
+  ];
+  const row = ([tm, k, ti, em], i) => `<div class="r" data-i="${i}"><span class="tm">${tm}</span><span class="ic ${k === 'p' ? 'p' : k === 'rep' ? 'rep' : ''}">${k === 'rep' ? '⟳' : ''}</span><span class="ti">${ti}</span><span class="bell">🔔</span><span class="em">${em}</span></div>`;
+  const sheetHtml = (title = 'пт, 27 ноя', rows = ROWS) => `<div class="sheet"><div class="sh-h"><b>${title}</b><span class="plus">+</span></div><div class="rows"><div class="line"></div>${rows.map(row).join('')}</div></div>`;
+  const stageHtml = inner => `<div class="stage"><div class="wgrid">${['ПН 23', 'ВТ 24 Сегодня', 'СР 25', 'ЧТ 26', 'ПТ 27', 'СБ 28'].map((d, i) => `<div data-cell="${i}"><b>${d}</b>${i === 4 ? 'Сервис 10:00<br>Отпуск 14:00<br>Финансы 14:30' : 'Задача<br>Задача'}</div>`).join('')}</div><div class="scrim"></div>${inner}</div>`;
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const anim = (el, frames, opts) => el.animate(frames, { fill: 'both', easing: 'cubic-bezier(.2,.8,.2,1)', ...opts }).finished.catch(() => {});
+  const spring = 'cubic-bezier(.34,1.56,.64,1)';
+
+  /* Общее: задача 2 («Запланировать отпуск»), её кружок и название. */
+  const pick = st => { const r = st.querySelector('[data-i="1"]'); return { r, ic: r.querySelector('.ic'), ti: r.querySelector('.ti') }; };
+  const tick = (color = 'var(--prio)') => `<svg viewBox="0 0 20 20" width="20" height="20" style="position:absolute;inset:-2px"><circle cx="10" cy="10" r="10" fill="${color}" class="dot" style="transform-origin:10px 10px"/><path d="M5.5,10.5l3,3l6,-6.5" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" class="chk" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/></svg>`;
+  const draw = async (ic, ms = 260) => { const svg = ic.querySelector('svg'); await anim(svg.querySelector('.dot'), [{ transform: 'scale(0)' }, { transform: 'scale(1)' }], { duration: 220, easing: spring }); await anim(svg.querySelector('.chk'), [{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }], { duration: ms, easing: 'ease-out' }); };
+  const others = (st, from) => [...st.querySelectorAll('.r')].filter(x => +x.dataset.i > from);
+
+  const A = [
+    { name: 'Галочка и бледнеет на месте', when: 'Спокойный', desc: 'Кружок заливается, галочка рисуется штрихом, название сереет и зачёркивается. Задача остаётся на своём месте — ничего не прыгает.',
+      async run(st) { const { r, ic, ti } = pick(st); ic.style.border = '0'; ic.innerHTML = tick(); await wait(450); await draw(ic);
+        ti.style.textDecorationColor = 'transparent'; anim(ti, [{ color: '#16171D' }, { color: '#A9A9A9' }], { duration: 300 }); ti.style.textDecoration = 'line-through'; anim(ti, [{ textDecorationColor: 'transparent' }, { textDecorationColor: '#A9A9A9' }], { duration: 300 });
+        anim(r.querySelector('.tm'), [{ color: '#16171D' }, { color: '#A9A9A9' }], { duration: 300 }); await wait(1800); } },
+    { name: 'Схлопывается', when: 'Список короче', desc: 'Галочка, затем строка плавно сжимается по высоте и исчезает; задачи ниже подтягиваются. Выполненные — в «Выполнено» внизу.',
+      async run(st) { const { r, ic } = pick(st); ic.style.border = '0'; ic.innerHTML = tick(); await wait(450); await draw(ic); await wait(250);
+        anim(r, [{ opacity: 1 }, { opacity: 0 }], { duration: 220 }); others(st, 1).forEach(x => anim(x, [{ transform: 'none' }, { transform: 'translateY(-46px)' }], { duration: 380, delay: 120 })); await wait(1700); } },
+    { name: 'Волна по строке', when: 'Заметный', desc: 'От кружка по строке пробегает светло-фиолетовая волна фона, за ней текст сереет и зачёркивается.',
+      async run(st) { const { r, ic, ti } = pick(st); ic.style.border = '0'; ic.innerHTML = tick(); r.style.overflow = 'hidden';
+        r.insertAdjacentHTML('afterbegin', '<span style="position:absolute;left:0;top:4px;bottom:4px;width:0;background:#F1E8FA;border-radius:12px;z-index:0" class="wave"></span>'); [...r.children].forEach(c => { if (!c.classList.contains('wave')) c.style.position = 'relative'; c.style.zIndex = c.classList.contains('wave') ? 0 : 1; });
+        await wait(450); draw(ic); await anim(r.querySelector('.wave'), [{ width: '0%' }, { width: '100%' }], { duration: 420, easing: 'ease-out' });
+        ti.style.textDecoration = 'line-through'; anim(ti, [{ color: '#16171D' }, { color: '#A9A9A9' }], { duration: 250 }); anim(r.querySelector('.wave'), [{ opacity: 1 }, { opacity: 0 }], { duration: 500, delay: 200 }); await wait(1700); } },
+    { name: 'Пружинный чек', when: 'Игривый', desc: 'Кружок увеличивается с пружиной, внутри «выпрыгивает» галочка, строка чуть подскакивает. Задача бледнеет на месте.',
+      async run(st) { const { r, ic, ti } = pick(st); ic.style.border = '0'; ic.innerHTML = tick(); await wait(450);
+        anim(ic, [{ transform: 'scale(1)' }, { transform: 'scale(1.45)' }, { transform: 'scale(1)' }], { duration: 520, easing: spring }); await draw(ic, 200);
+        anim(r, [{ transform: 'none' }, { transform: 'translateY(-5px)' }, { transform: 'none' }], { duration: 360, easing: spring });
+        ti.style.textDecoration = 'line-through'; anim(r, [{ opacity: 1 }, { opacity: .5 }], { duration: 400, delay: 250 }); await wait(1700); } },
+    { name: 'Мини-искры', when: 'Маленький праздник', desc: 'При каждой выполненной задаче из кружка разлетается 6–8 искр, затем строка бледнеет. Большой праздник (идея 4) — когда закрыт весь день.',
+      async run(st) { const { r, ic, ti } = pick(st); ic.style.border = '0'; ic.innerHTML = tick(); await wait(450); draw(ic);
+        const box = st.getBoundingClientRect(), at = ic.getBoundingClientRect(); const colors = ['#862CE0', '#C9B3EA', '#438BC9', '#359E8A'];
+        for (let i = 0; i < 8; i++) { const s = document.createElement('span'); s.className = 'spark'; s.style.background = colors[i % 4]; s.style.width = s.style.height = '5px'; s.style.borderRadius = '50%';
+          s.style.left = (at.left - box.left + 8) + 'px'; s.style.top = (at.top - box.top + 8) + 'px'; st.appendChild(s);
+          const a = i / 8 * Math.PI * 2; anim(s, [{ transform: 'translate(0,0)', opacity: 1 }, { transform: `translate(${Math.cos(a) * 26}px,${Math.sin(a) * 26}px)`, opacity: 0 }], { duration: 520, easing: 'cubic-bezier(.1,.7,.3,1)' }); }
+        await wait(450); ti.style.textDecoration = 'line-through'; anim(r, [{ opacity: 1 }, { opacity: .5 }], { duration: 400 }); await wait(1600); } },
+    { name: 'Переворот', when: 'Эффектный', desc: 'Строка переворачивается, как карточка, и на обороте на секунду видно «Готово ✓», затем исчезает, соседи подтягиваются.',
+      async run(st) { const { r } = pick(st); await wait(500); r.style.transformOrigin = '50% 50%';
+        await anim(r, [{ transform: 'perspective(600px) rotateX(0deg)' }, { transform: 'perspective(600px) rotateX(90deg)' }], { duration: 220, easing: 'ease-in' });
+        const keep = r.innerHTML; r.innerHTML = '<span></span><span class="ic" style="border:0;background:var(--prio);color:#fff;display:grid;place-items:center;font-size:12px;font-weight:800">✓</span><span class="ti" style="color:var(--prio)">Готово</span><span></span><span></span>';
+        await anim(r, [{ transform: 'perspective(600px) rotateX(-90deg)' }, { transform: 'perspective(600px) rotateX(0deg)' }], { duration: 260, easing: 'ease-out' });
+        await wait(700); anim(r, [{ opacity: 1 }, { opacity: 0 }], { duration: 200 }); others(st, 1).forEach(x => anim(x, [{ transform: 'none' }, { transform: 'translateY(-46px)' }], { duration: 360, delay: 80 })); void keep; await wait(1500); } },
+    { name: 'Уходит вниз', when: 'Как в 3, мягче', desc: 'Галочка, затем строка сереет и плавно переезжает в конец списка, к выполненным — без зачёркивания, просто бледная.',
+      async run(st) { const { r, ic } = pick(st); ic.style.border = '0'; ic.innerHTML = tick('#A9A9A9'); await wait(450); await draw(ic); await wait(200);
+        anim(r, [{ opacity: 1, transform: 'none' }, { opacity: .45, transform: 'translateY(138px)' }], { duration: 650, easing: 'cubic-bezier(.4,0,.2,1)' });
+        others(st, 1).forEach(x => anim(x, [{ transform: 'none' }, { transform: 'translateY(-46px)' }], { duration: 650, easing: 'cubic-bezier(.4,0,.2,1)' })); await wait(1700); } },
+    { name: 'Удержание с прогрессом', when: 'Защита от случайных нажатий', desc: 'Кружок нужно подержать ~0,4 с: по ободу бежит заполнение, отпустил раньше — ничего не случилось. Потом галочка и бледнеет.',
+      async run(st) { const { r, ic, ti } = pick(st); ic.style.border = '0';
+        ic.innerHTML = '<svg viewBox="0 0 24 24" width="24" height="24" style="position:absolute;inset:-4px;transform:rotate(-90deg)"><circle cx="12" cy="12" r="10" fill="none" stroke="#E2E2E2" stroke-width="2"/><circle cx="12" cy="12" r="10" fill="none" stroke="#862CE0" stroke-width="2.4" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" class="ring"/></svg>';
+        await wait(500); await anim(ic.querySelector('.ring'), [{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }], { duration: 420, easing: 'linear' });
+        ic.innerHTML = tick(); await draw(ic, 200); ti.style.textDecoration = 'line-through'; anim(r, [{ opacity: 1 }, { opacity: .5 }], { duration: 350 }); await wait(1700); } },
+  ];
+
+  const grid = document.getElementById('grid');
+  A.forEach((a, i) => {
+    const el = document.createElement('article'); el.className = 'v';
+    el.innerHTML = `<div class="hd"><h2><span class="n">${i + 1}</span>${a.name}</h2><span class="when">${a.when}</span><p>${a.desc}</p></div><div class="scroller"><div class="slot"></div></div><button type="button" class="again">Повторить</button>`;
+    grid.appendChild(el);
+    const slot = el.querySelector('.slot');
+    let token = 0;
+    const play = async () => {
+      const id = ++token;
+      slot.innerHTML = stageHtml(sheetHtml());
+      if (reduced) return;
+      await wait(300);
+      await a.run(slot.querySelector('.stage'));
+      if (id === token) setTimeout(() => { if (id === token && visible.has(el)) play(); }, 600);
+    };
+    el.querySelector('.again').addEventListener('click', play);
+    el._play = play;
+  });
+  const visible = new Set();
+  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { if (!visible.has(e.target)) { visible.add(e.target); e.target._play(); } } else visible.delete(e.target); }));
+  document.querySelectorAll('.v').forEach(v => { io.observe(v); if (reduced) v._play(); });
+})();
+</script>
