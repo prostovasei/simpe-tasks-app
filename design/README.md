@@ -164,6 +164,10 @@ PM выбрал А для недели, предстоящих (приложен
 
 [Макет и прототип](approved/310/README.md) · [ТЗ](approved/310/requirements.md) · [10 вариантов окна](drafts/voice-multi-310/README.md). Вариант 7 «По датам»: задачи над окном голоса по дням, без кружка, время справа, «×»; число задач на галочке; нажатие на задачу — окно задачи растёт из окна голоса. Реализация 0.86.0: `VoiceTasks.kt`, `VoiceInput.kt` (`VoiceList`, `CountBadge`), токены `VOICE_ROW`, `VOICE_REMOVE_ICON`, `VOICE_BADGE`; снимки `voice_tasks_light`, `voice_paused_light`, `voice_partial_dark`, `voice_error_large_font`.
 
+## Анимации окна дня (#314)
+
+[ТЗ](approved/314/requirements.md) · [12 живых идей](approved/314/ideas.html). Идеи PM 1, 2, 4, 8, 11, 12: рост из ячейки и закрытие в неё, каскад задач, праздник дня, листание дней свайпом с параллаксом заголовка, резинка и разворот на весь экран. Реализация 0.88.0: `ui/feature/week/DaySheet.kt`, `DayMotion.kt`, токены `DAY_*`, `TaskCanvasTokens.celebration`; снимки `day_sheet_grow_midway`, `day_sheet_celebration`.
+
 ## Выполненные без зачёркивания (#316)
 
 [Макет и ТЗ](approved/316/README.md) · [10 вариантов анимации](approved/316/variants.html). Вариант 10 «Медленно тает»: галочка 0,42 с, затем вся задача тает до 40 % за 0,8 с; зачёркивания нет нигде; в виджете — 40 % без анимации. Реализация 0.87.0: `ui/common/DoneFade.kt` (`DONE_ALPHA`, `doneAlpha`, `doneCheck`), `CompletionTracker`, цвета `widget_*_done`; снимок `melt_midway` (вместо `dust_midway`).

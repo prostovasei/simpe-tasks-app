@@ -292,6 +292,21 @@ object SizeTokens {
     const val SHEET_REVEAL_BLUR = 8
     const val WIDGET_PROGRESS = 4
 
+    /**
+     * #314, анимации окна дня, dp. [DAY_CASCADE_RISE] — откуда поднимается строка в каскаде; [DAY_BOUNCE] — подскок окна
+     * в «Празднике дня»; [DAY_SPARK] — искра, [DAY_SPARK_NEAR]…[DAY_SPARK_FAR] — дальность полёта, [DAY_SPARK_LIFT] — сколько
+     * искры уходят вверх; [DAY_STRETCH] — предел растяжения резинки, [DAY_EXPAND_DRAG] — сколько протянуть вверх, чтобы окно
+     * развернулось на весь экран.
+     */
+    const val DAY_CASCADE_RISE = 16
+    const val DAY_BOUNCE = 8
+    const val DAY_SPARK = 7
+    const val DAY_SPARK_NEAR = 50
+    const val DAY_SPARK_FAR = 140
+    const val DAY_SPARK_LIFT = 40
+    const val DAY_STRETCH = 120
+    const val DAY_EXPAND_DRAG = 96
+
     /** Квадратная плитка дня в шторке (итерация 22): «чт / 22 / окт» и время. */
     const val DAY_TILE = 72
 

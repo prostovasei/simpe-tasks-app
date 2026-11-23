@@ -174,6 +174,7 @@ fun TaskPopup(start: Any, onDismiss: () -> Unit, origin: android.graphics.Rect? 
             composable<DayDestination> {
                 DaySheetRoute(
                     onClose = close,
+                    origin = origin,
                     onOpenTask = { navController.navigate(TaskDetailDestination(it)) },
                     onAdd = { navController.navigate(QuickAddDestination(date = it.toString())) },
                 )
