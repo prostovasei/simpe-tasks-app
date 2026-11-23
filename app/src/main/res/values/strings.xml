@@ -877,8 +877,31 @@
     <string name="widget_voice">Создать задачу голосом</string>
     <string name="voice_pause">Пауза</string>
     <string name="voice_record">Продолжить запись</string>
-    <string name="voice_done">Готово</string>
     <string name="voice_close_label">Закрыть голосовой ввод</string>
+    <string name="voice_no_date">Без даты</string>
+    <string name="voice_removed">Убрано: %1$s</string>
+    <string name="voice_remove">Убрать «%1$s»</string>
+    <string name="voice_save_question_text">Продиктованные задачи ещё не сохранены.</string>
+    <string name="voice_save_all">Сохранить все</string>
+    <string name="voice_discard">Не сохранять</string>
+    <plurals name="voice_save_question">
+        <item quantity="one">Сохранить %d задачу?</item>
+        <item quantity="few">Сохранить %d задачи?</item>
+        <item quantity="many">Сохранить %d задач?</item>
+        <item quantity="other">Сохранить %d задачи?</item>
+    </plurals>
+    <plurals name="voice_save_count">
+        <item quantity="one">Сохранить %d задачу</item>
+        <item quantity="few">Сохранить %d задачи</item>
+        <item quantity="many">Сохранить %d задач</item>
+        <item quantity="other">Сохранить %d задачи</item>
+    </plurals>
+    <plurals name="voice_added">
+        <item quantity="one">Добавлена %d задача</item>
+        <item quantity="few">Добавлено %d задачи</item>
+        <item quantity="many">Добавлено %d задач</item>
+        <item quantity="other">Добавлено %d задачи</item>
+    </plurals>
     <string name="voice_err_not_heard">Не расслышал — нажмите ●</string>
     <string name="voice_err_not_heard_spoken">Не расслышал. Нажмите «Продолжить запись»</string>
     <string name="voice_err_no_permission">Нет доступа к микрофону · Настройки</string>

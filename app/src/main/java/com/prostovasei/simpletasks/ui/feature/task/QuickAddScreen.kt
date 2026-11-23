@@ -45,11 +45,17 @@ import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 
 @Composable
-fun QuickAddRoute(onClose: () -> Unit, viewModel: QuickAddViewModel = hiltViewModel()) {
+fun QuickAddRoute(onClose: () -> Unit, onSaved: () -> Unit = {}, viewModel: QuickAddViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val motion = rememberSheetMotion(onClose)
     LaunchedEffect(viewModel) {
-        viewModel.effects.collect { effect -> if (effect == QuickAddEffect.Close) motion.close() }
+        // Close приходит только после сохранения.
+        viewModel.effects.collect { effect ->
+            if (effect == QuickAddEffect.Close) {
+                onSaved()
+                motion.close()
+            }
+        }
     }
     QuickAddScreen(state, viewModel::onIntent, motion.close, progress = motion.progress, reveal = motion.reveal)
 }

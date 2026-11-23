@@ -133,4 +133,7 @@ data class AppSizes(
     val healthDeltaWidth: Dp = SizeTokens.HEALTH_DELTA_WIDTH.dp,
     val voiceHeight: Dp = SizeTokens.VOICE_HEIGHT.dp,
     val voiceTideRise: Dp = SizeTokens.VOICE_TIDE_RISE.dp,
+    val voiceRow: Dp = SizeTokens.VOICE_ROW.dp,
+    val voiceRemoveIcon: Dp = SizeTokens.VOICE_REMOVE_ICON.dp,
+    val voiceBadge: Dp = SizeTokens.VOICE_BADGE.dp,
 )

@@ -56,6 +56,11 @@ import com.prostovasei.simpletasks.ui.feature.snooze.SnoozeRoute
 import com.prostovasei.simpletasks.ui.common.DayNames
 import com.prostovasei.simpletasks.ui.common.DueFormatter
 import androidx.navigation.toRoute
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.lifecycle.ViewModelProvider
+import com.prostovasei.simpletasks.ui.feature.voice.VoiceTasksSaver
+import com.prostovasei.simpletasks.ui.feature.voice.VoiceListModel
 import dagger.hilt.android.AndroidEntryPoint
 
 /**
@@ -109,6 +114,12 @@ fun TaskPopup(start: Any, onDismiss: () -> Unit, origin: android.graphics.Rect? 
         }
     }
     val snackbar = remember { SnackbarHostState() }
+    // #310: сохранение продиктованных задач и место окна голоса, из которого вырастает окно задачи.
+    val voiceSaver = hiltViewModel<VoiceTasksSaver>()
+    var voiceOrigin by remember { mutableStateOf<android.graphics.Rect?>(null) }
+    val popupScope = rememberCoroutineScope()
+    val resources = androidx.compose.ui.platform.LocalContext.current.resources
+    val addedText: (Int) -> String = { n -> resources.getQuantityString(R.plurals.voice_added, n, n) }
     val undoText = stringResource(R.string.task_undo)
     LaunchedEffect(offer) {
         val shown = offer ?: return@LaunchedEffect
@@ -169,12 +180,34 @@ fun TaskPopup(start: Any, onDismiss: () -> Unit, origin: android.graphics.Rect? 
             }
             composable<VoiceDestination> { entry ->
                 val today = entry.toRoute<VoiceDestination>().today
-                VoiceRoute(onClose = onDismiss, onResult = { text ->
-                    navController.navigate(QuickAddDestination(today = today, voiceText = text)) { popUpTo<VoiceDestination> { inclusive = true } }
-                })
+                // #310: несколько задач голосом. Нажатие на задачу — окно задачи вырастает из окна голоса; галочка — все задачи
+                // сохраняются, окно закрывается, подсказка «Добавлено N задач · Отмена».
+                VoiceRoute(
+                    onClose = onDismiss,
+                    today = today,
+                    smartDates = voiceSaver.smartDates,
+                    onEdit = { task, from ->
+                        voiceOrigin = from
+                        navController.navigate(QuickAddDestination(today = today, voiceText = task.phrase, voiceTask = task.id))
+                    },
+                    onSaveAll = { items ->
+                        popupScope.launch {
+                            val ids = voiceSaver.save(items)
+                            offer = UndoOffer(addedText(ids.size), UndoKind.Done) { voiceSaver.undo(ids) }
+                        }
+                    },
+                )
             }
-            composable<QuickAddDestination> {
-                CompositionLocalProvider(LocalSheetOrigin provides origin.takeIf { navController.previousBackStackEntry == null }) { QuickAddRoute(onClose = close) }
+            composable<QuickAddDestination> { entry ->
+                val voiceTask = entry.toRoute<QuickAddDestination>().voiceTask
+                val from = if (voiceTask != null) voiceOrigin else origin.takeIf { navController.previousBackStackEntry == null }
+                CompositionLocalProvider(LocalSheetOrigin provides from) {
+                    QuickAddRoute(onClose = close, onSaved = {
+                        // Сохранённая из окна задачи продиктованная задача уходит из списка окна голоса.
+                        val voice = navController.previousBackStackEntry
+                        if (voiceTask != null && voice != null) ViewModelProvider(voice)[VoiceListModel::class.java].saved(voiceTask)
+                    })
+                }
             }
         }
         if (offer != null) {

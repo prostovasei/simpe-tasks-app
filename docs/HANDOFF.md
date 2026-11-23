@@ -2,7 +2,15 @@
 
 Правила [../AGENTS.md](../AGENTS.md).
 
-## В работе — #307 и #308, 0.85.0
+## В работе — #310, 0.86.0
+
+Исполнитель Claude Code, ветка `claude/voice-multi-tasks` от main `55bb6bd`. [#310](https://github.com/prostovasei/simpe-tasks-app/issues/310) — несколько задач голосом, как Ramble в Todoist (разбор — в Issue). PM 24.11.2026: путь А (без ИИ); вариант 7 «По датам» с правками; прототип сценариев; число задач на галочке; «фиксируй ТЗ, пиши код, делай проверку и выпускай». [ТЗ](../design/approved/310/requirements.md), [прототип](../design/approved/310/prototype.html). Проверки — [отчёт](testing-runs/0.86.0-local.md). Телефон: VM310-1–6.
+
+## Выпуск 0.85.0
+
+[PR #309](https://github.com/prostovasei/simpe-tasks-app/pull/309), merge `55bb6bdde9003cecae09acfc30fd22000b990ca6`. #307 и #308 закрыты. CI PR и main зелёные с первой попытки, APK build-473 (PM сообщено отдельно). PM 24.11.2026: «Проверил, вроде пока всё ок» — NR307, VC308 без замечаний.
+
+## История — #307 и #308, 0.85.0
 
 Исполнитель Claude Code, ветка `claude/news-new-voice-continuous` от main `0f0d203`. PM 23.11.2026: «Делай сейчас сразу код, проверку и выпуск».
 - [#307](https://github.com/prostovasei/simpe-tasks-app/issues/307) — новые новости заметнее: вариант В («Новое» фиолетовым и жирный заголовок); исправлен виджет — свои шрифты лаунчер не применяет. [ТЗ](../design/approved/307/requirements.md).

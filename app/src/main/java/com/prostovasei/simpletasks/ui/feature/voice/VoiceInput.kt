@@ -30,9 +30,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -46,6 +43,32 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.semantics.testTag
+import com.prostovasei.simpletasks.widget.WidgetDates
+import com.prostovasei.simpletasks.ui.feature.task.ChoiceStyle
+import com.prostovasei.simpletasks.ui.feature.task.ChoiceDialog
+import com.prostovasei.simpletasks.ui.feature.task.Choice
+import com.prostovasei.simpletasks.ui.common.showUndo
+import com.prostovasei.simpletasks.designsystem.components.UndoSnackbarHost
+import com.prostovasei.simpletasks.designsystem.components.UndoKind
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.heading
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.Icons
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.pluralStringResource
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.material3.SnackbarHostState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -57,16 +80,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -74,12 +92,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
@@ -93,31 +107,52 @@ import kotlin.math.PI
 import kotlin.math.sin
 
 /**
- * Голосовой ввод из виджета (#95, #299, #305, #308; макеты design/approved/305): своё окно поверх рабочего стола. Запись
- * начинается сразу и идёт, пока не нажата ⏸ или 10 с нет речи; на паузе текст остаётся в окне — его правят с клавиатуры, ⏺ дописывает,
- * галочка передаёт текст в [onResult] — дальше открывается окно новой задачи. «Назад» и затемнение закрывают без задачи.
+ * Голосовой ввод из виджета (#95, #299, #305, #308, #310; макеты design/approved/305, design/approved/310). Окно поверх рабочего
+ * стола слушает, пока не нажата ⏸ или 10 с нет речи. Каждая фраза после паузы — отдельная задача в списке над окном, по дням
+ * (путь А, без ИИ). Нажатие на задачу — [onEdit]: окно задачи вырастает из окна голоса; сохранённая там задача уходит из списка.
+ * Галочка — [onSaveAll] со всеми задачами списка. «Назад» и затемнение при задачах — вопрос «Сохранить N задач?».
+ * [today] — как у «+» вида «Все»: задача без срока — на сегодня.
  */
 @Composable
-fun VoiceRoute(onClose: () -> Unit, onResult: (String) -> Unit, engineFactory: (Context) -> VoiceEngine = ::AndroidVoiceEngine) {
+fun VoiceRoute(
+    onClose: () -> Unit,
+    onSaveAll: (List<VoiceTask>) -> Unit,
+    onEdit: (VoiceTask, android.graphics.Rect?) -> Unit = { _, _ -> },
+    today: Boolean = false,
+    smartDates: Boolean = true,
+    clock: () -> java.time.ZonedDateTime = { java.time.ZonedDateTime.now() },
+    engineFactory: (Context) -> VoiceEngine = ::AndroidVoiceEngine,
+    list: VoiceListModel = viewModel(),
+) {
     val context = LocalContext.current
     val engine = remember { engineFactory(context.applicationContext) }
+    val tasks by list.tasks.collectAsStateWithLifecycle()
     var state by remember { mutableStateOf(VoiceState()) }
     var attempt by remember { mutableIntStateOf(0) }
     var allowed by remember { mutableStateOf(granted(context)) }
-    val keyboard = LocalSoftwareKeyboardController.current
-    val focus = LocalFocusManager.current
+    var asking by remember { mutableStateOf(false) }
+    var closing by remember { mutableStateOf(false) }
+    val snackbar = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val zone = remember { clock().zone }
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
         allowed = ok
         if (!ok) state = VoiceState(error = VoiceError.NO_PERMISSION)
     }
     LaunchedEffect(Unit) { if (!allowed) permission.launch(Manifest.permission.RECORD_AUDIO) }
-    // #308: окно слушает, пока не нажата ⏸ (или галочка, текст, «Назад»): распознаватель Google сам завершает фразу на паузе
-    // в речи — после каждой фразы и после тишины запись незаметно перезапускается. [listening] — пользователь хочет слушать;
-    // [speech] растёт на каждом услышанном слове и перезапускает отсчёт тишины.
-    var listening by remember { mutableStateOf(true) }
+    // #308: окно слушает, пока не нажата ⏸; распознаватель сам завершает фразу на паузе в речи — каждая фраза становится
+    // задачей (#310), запись незаметно продолжается. [listening] хранится в [list]: после правки задачи окно возвращается на паузе.
+    var listening by remember { mutableStateOf(list.listening) }
+    LaunchedEffect(listening) { list.listening = listening }
     var speech by remember { mutableIntStateOf(0) }
+    val add: (String) -> Unit = { phrase ->
+        if (phrase.isNotBlank()) {
+            val now = clock()
+            list.add { id -> VoiceTasks.parse(id, phrase, now.toLocalDate(), now.hour * 60 + now.minute, zone, smartDates, today) }
+        }
+    }
     LaunchedEffect(allowed, attempt) {
-        if (!allowed) return@LaunchedEffect
+        if (!allowed || !listening) return@LaunchedEffect
         state = state.copy(partial = "", recording = true, error = null, level = 0f)
         engine.start(object : VoiceEngine.Listener {
             override fun onPartial(text: String) {
@@ -126,11 +161,10 @@ fun VoiceRoute(onClose: () -> Unit, onResult: (String) -> Unit, engineFactory: (
             }
             override fun onLevel(level: Float) { state = state.copy(level = level) }
 
-            // Результат дописывается к тексту: за время правки с клавиатуры пользователь мог уже что-то изменить.
             override fun onResult(text: String) {
-                val joined = VoiceErrors.capitalize(VoiceErrors.join(state.text, VoiceErrors.clean(text)))
                 if (text.isNotBlank()) speech++
-                state = state.copy(text = joined, partial = "", recording = listening, level = 0f)
+                add(VoiceErrors.clean(text))
+                state = state.copy(partial = "", recording = listening, level = 0f)
                 if (listening) attempt++
             }
 
@@ -138,11 +172,11 @@ fun VoiceRoute(onClose: () -> Unit, onResult: (String) -> Unit, engineFactory: (
                 when {
                     // Тишина во время непрерывной записи — не ошибка: слушаем дальше, паузу ставит отсчёт [SILENCE_MILLIS].
                     error == VoiceError.NOT_HEARD && listening -> attempt++
-                    // Автопауза после тишины: если текст есть — просто пауза, без «Не расслышал».
-                    error == VoiceError.NOT_HEARD && state.text.isNotBlank() -> state = state.copy(partial = "", recording = false, level = 0f)
+                    // Автопауза после тишины: если задачи уже есть — просто пауза, без «Не расслышал».
+                    error == VoiceError.NOT_HEARD && list.tasks.value.isNotEmpty() -> state = state.copy(partial = "", recording = false, level = 0f)
                     else -> {
                         listening = false
-                        state = if (state.text.isBlank()) VoiceState(error = error) else state.copy(partial = "", recording = false, level = 0f, error = error)
+                        state = state.copy(partial = "", recording = false, level = 0f, error = error)
                     }
                 }
             }
@@ -156,37 +190,83 @@ fun VoiceRoute(onClose: () -> Unit, onResult: (String) -> Unit, engineFactory: (
         engine.stop()
     }
     DisposableEffect(engine) { onDispose { engine.destroy() } }
-    BackHandler(onBack = onClose)
+    // Недоговорённая фраза тоже становится задачей: при паузе, правке, сохранении и закрытии.
+    val takePartial = {
+        add(VoiceErrors.clean(state.partial))
+        state = state.copy(partial = "")
+    }
+    // Окно уходит (правка, сохранение, закрытие): запись обрывается без ответа движка, недоговорённая фраза — тоже задача.
+    val halt = {
+        listening = false
+        // Сразу, а не через эффект: окно уходит в этом же кадре, а при возврате оно должно быть на паузе.
+        list.listening = false
+        engine.destroy()
+        takePartial()
+        state = state.copy(recording = false, level = 0f)
+    }
+    val saveAll = {
+        halt()
+        val all = list.tasks.value
+        if (all.isNotEmpty()) {
+            closing = true
+            list.clear()
+            onSaveAll(all)
+        }
+    }
+    val back = {
+        halt()
+        if (list.tasks.value.isEmpty()) onClose() else asking = true
+    }
+    BackHandler(enabled = !closing, onBack = back)
+    if (closing) return
+    val removedText = stringResource(R.string.voice_removed)
+    val undoText = stringResource(R.string.task_undo)
     VoiceSheet(
         state = state,
-        onCancel = onClose,
-        onDone = {
-            // Запись, если идёт, обрывается; в задачу уходит текст как есть.
-            listening = false
-            engine.destroy()
-            onResult(VoiceErrors.result(state.display))
-        },
+        days = remember(tasks) { VoiceTasks.days(tasks, zone) },
+        count = tasks.size,
+        onCancel = back,
+        onDone = saveAll,
         onMic = {
             if (state.recording) {
+                // ⏸: распознаватель отдаст последнюю фразу сам — она станет задачей, запись не перезапустится.
                 listening = false
                 engine.stop()
             } else if (state.error?.blocking() != true) {
-                focus.clearFocus()
-                keyboard?.hide()
                 listening = true
                 attempt++
             }
         },
-        onEdit = { edited -> state = state.copy(text = edited, error = null) },
-        onFocusText = {
-            listening = false
-            if (state.recording) engine.stop()
+        onOpen = { task, origin ->
+            halt()
+            onEdit(task, origin)
+        },
+        onRemove = { task ->
+            list.remove(task.id)?.let { (index, removed) ->
+                scope.launch { snackbar.showUndo(removedText.format(removed.title), undoText, UndoKind.Deleted) { list.restore(index, removed) } }
+            }
         },
         onSettings = {
             openAppSettings(context)
             onClose()
         },
     )
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+        UndoSnackbarHost(snackbar, Modifier.navigationBarsPadding().padding(bottom = AppTheme.spacing.lg))
+    }
+    if (asking) {
+        val n = tasks.size
+        ChoiceDialog(
+            title = pluralStringResource(R.plurals.voice_save_question, n, n),
+            text = stringResource(R.string.voice_save_question_text),
+            tag = TAG_VOICE_ASK,
+            choices = listOf(
+                Choice(stringResource(R.string.voice_save_all), ChoiceStyle.Primary, TAG_ASK_SAVE) { asking = false; saveAll() },
+                Choice(stringResource(R.string.voice_discard), ChoiceStyle.Outline, TAG_ASK_DISCARD) { asking = false; list.clear(); onClose() },
+            ),
+            onDismiss = { asking = false },
+        )
+    }
 }
 
 private fun openAppSettings(context: Context) {
@@ -200,9 +280,10 @@ private fun granted(context: Context) =
     ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
 
 /**
- * Окно (#305, вариант PM «Цветной прилив»): затемнение и белая карточка на месте окна новой задачи — сразу над клавиатурой,
- * высотой как окно задачи без срока; клавиатура её не двигает. Сверху распознанный текст, снизу «вода» на всю ширину,
- * поверх неё — ⏸/⏺ слева, галочка справа, ошибка между ними. Других подписей нет; закрытие — «Назад» или затемнение.
+ * Окно (#305 «Цветной прилив», #310 вариант PM 7 «По датам»): затемнение, белая карточка на месте окна новой задачи — сразу
+ * над клавиатурой, высотой как окно задачи без срока; над ней — продиктованные задачи по дням («вт, 24 ноя», «Без даты» в конце),
+ * без кружка выполнения, со временем справа и «×». В карточке — текущая фраза, вода, ⏸/⏺ слева, галочка с числом задач справа,
+ * ошибка между ними. «Назад» или затемнение — [onCancel].
  */
 @Composable
 fun VoiceSheet(
@@ -210,18 +291,20 @@ fun VoiceSheet(
     onCancel: () -> Unit,
     onDone: () -> Unit,
     onMic: () -> Unit,
-    onEdit: (String) -> Unit = {},
-    onFocusText: () -> Unit = {},
+    days: List<VoiceDay> = emptyList(),
+    count: Int = 0,
+    onOpen: (VoiceTask, android.graphics.Rect?) -> Unit = { _, _ -> },
+    onRemove: (VoiceTask) -> Unit = {},
     onSettings: () -> Unit = {},
 ) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
     val sizes = AppTheme.sizes
     val error = state.error
-    // Нажатие на текст во время записи: остановить запись и, как только появится поле, сразу открыть клавиатуру (#299).
-    var wantFocus by remember { mutableStateOf(false) }
     val closeLabel = stringResource(R.string.voice_close_label)
     val notHeardSpoken = stringResource(R.string.voice_err_not_heard_spoken)
+    val view = LocalView.current
+    var card by remember { mutableStateOf<android.graphics.Rect?>(null) }
     Box(
         Modifier.fillMaxSize().background(colors.scrim)
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onCancel)
@@ -234,12 +317,25 @@ fun VoiceSheet(
             val ime = with(density) { WindowInsets.ime.getBottom(this).toDp() }
             val navBar = with(density) { WindowInsets.navigationBars.getBottom(this).toDp() }
             val lift = maxOf(keyboard, ime, navBar) + spacing.xs
+            if (days.isNotEmpty()) {
+                VoiceList(
+                    days, onOpen = { onOpen(it, card) }, onRemove = onRemove,
+                    modifier = Modifier.align(Alignment.BottomCenter)
+                        .padding(start = spacing.xs, end = spacing.xs, top = spacing.sm, bottom = lift + sizes.voiceHeight + spacing.xs),
+                )
+            }
             Box(
                 Modifier
                     .align(Alignment.BottomCenter)
                     .padding(bottom = lift, start = spacing.xs, end = spacing.xs)
                     .fillMaxWidth()
                     .height(sizes.voiceHeight)
+                    .onGloballyPositioned { coordinates ->
+                        // Откуда вырастет окно задачи (#310): место карточки на экране, как у плашки виджета.
+                        val at = IntArray(2).also(view::getLocationOnScreen)
+                        val bounds = coordinates.boundsInRoot()
+                        card = android.graphics.Rect(at[0] + bounds.left.toInt(), at[1] + bounds.top.toInt(), at[0] + bounds.right.toInt(), at[1] + bounds.bottom.toInt())
+                    }
                     .shadow(sizes.navShadow, AppTheme.shapes.nav)
                     .clip(AppTheme.shapes.nav)
                     .background(colors.surface)
@@ -247,16 +343,21 @@ fun VoiceSheet(
                     .pointerInput(Unit) { detectTapGestures { } },
             ) {
                 Tide(state, Modifier.align(Alignment.BottomCenter).fillMaxWidth().fillMaxHeight(SizeTokens.VOICE_TIDE_PERCENT / 100f))
-                VoiceText(state, wantFocus, { wantFocus = it }, onEdit, onFocusText)
+                Text(
+                    phraseText(state.partial, colors.inactive),
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, color = colors.textPrimary),
+                    maxLines = PHRASE_LINES,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.fillMaxWidth().padding(start = spacing.md, end = spacing.md, top = spacing.md).testTag(TAG_VOICE_TEXT),
+                )
                 Row(
                     Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(start = spacing.sm, end = spacing.sm, bottom = spacing.sm),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     val micEnabled = state.recording || error?.blocking() != true
-                    val micLabel = stringResource(if (state.recording) R.string.voice_pause else R.string.voice_record)
                     SheetButton(
                         icon = if (state.recording) R.drawable.ic_voice_pause else R.drawable.ic_voice_record,
-                        label = micLabel,
+                        label = stringResource(if (state.recording) R.string.voice_pause else R.string.voice_record),
                         background = colors.surface,
                         tint = colors.textPrimary,
                         enabled = micEnabled,
@@ -284,71 +385,103 @@ fun VoiceSheet(
                             )
                         }
                     }
-                    SheetButton(
-                        icon = R.drawable.ic_voice_check,
-                        label = stringResource(R.string.voice_done),
-                        background = colors.accent,
-                        tint = colors.onAccent,
-                        enabled = state.canDone,
-                        tag = TAG_VOICE_ACTION,
-                        onClick = onDone,
-                    )
+                    Box {
+                        SheetButton(
+                            icon = R.drawable.ic_voice_check,
+                            label = pluralStringResource(R.plurals.voice_save_count, count, count),
+                            background = colors.accent,
+                            tint = colors.onAccent,
+                            enabled = count > 0 || state.partial.isNotBlank(),
+                            tag = TAG_VOICE_ACTION,
+                            onClick = onDone,
+                        )
+                        // #310, просьба PM: на галочке — сколько задач будет сохранено.
+                        if (count > 0) CountBadge(count, Modifier.align(Alignment.TopEnd).offset(x = sizes.voiceBadge / 3, y = -sizes.voiceBadge / 3))
+                    }
                 }
             }
         }
     }
 }
 
-/** Распознанный текст вверху окна: во время записи — строка с серым уточняемым словом, на паузе — поле для правки (#299). */
+/** Задачи над окном по дням: заголовок дня — «вт, 24 ноя» (формат PM), строки — название, время справа, «×». */
 @Composable
-private fun VoiceText(state: VoiceState, wantFocus: Boolean, setWantFocus: (Boolean) -> Unit, onEdit: (String) -> Unit, onFocusText: () -> Unit) {
+private fun VoiceList(days: List<VoiceDay>, onOpen: (VoiceTask) -> Unit, onRemove: (VoiceTask) -> Unit, modifier: Modifier) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
-    val big = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, color = colors.textPrimary)
+    val zone = remember { java.time.ZoneId.systemDefault() }
     val scroll = rememberScrollState()
-    LaunchedEffect(state.display) { scroll.scrollTo(scroll.maxValue) }
-    // Текст не заходит на кнопки: снизу — место под строку кнопок.
-    val modifier = Modifier.fillMaxWidth().padding(start = spacing.md, end = spacing.md, top = spacing.md)
-        .height(AppTheme.sizes.voiceHeight - AppTheme.sizes.toolButton - spacing.sm * 2 - spacing.md)
-    if (state.recording || state.error != null && state.text.isBlank()) {
-        Text(
-            tailText(state, colors.inactive),
-            style = big,
-            modifier = modifier.verticalScroll(scroll)
-                .clickable(enabled = state.recording, interactionSource = remember { MutableInteractionSource() }, indication = null) {
-                    setWantFocus(true)
-                    onFocusText()
+    val total = days.sumOf { it.tasks.size }
+    // Новая задача всегда видна: список прокручивается к концу.
+    LaunchedEffect(total) { scroll.animateScrollTo(scroll.maxValue) }
+    val noDate = stringResource(R.string.voice_no_date)
+    Column(
+        modifier
+            .fillMaxWidth()
+            .shadow(sizes().navShadow / 2, AppTheme.shapes.large)
+            .clip(AppTheme.shapes.large)
+            .background(colors.surface)
+            .pointerInput(Unit) { detectTapGestures { } }
+            .verticalScroll(scroll)
+            .padding(horizontal = spacing.md, vertical = spacing.xs)
+            .testTag(TAG_VOICE_LIST),
+    ) {
+        days.forEach { day ->
+            Text(
+                day.date?.let { WidgetDates.bar(it, withWeekday = true) } ?: noDate,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.ExtraBold,
+                color = colors.textSecondary,
+                modifier = Modifier.padding(top = spacing.xs).semantics { heading() },
+            )
+            day.tasks.forEach { task ->
+                Row(
+                    Modifier.fillMaxWidth().heightIn(min = sizes().voiceRow)
+                        .clip(AppTheme.shapes.small)
+                        .clickable(onClick = { onOpen(task) })
+                        .testTag("$TAG_VOICE_ROW:${task.id}"),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(task.title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = colors.textPrimary, modifier = Modifier.weight(1f).padding(vertical = spacing.xxs))
+                    task.time(zone)?.let { Text(it, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = colors.textSecondary) }
+                    val removeLabel = stringResource(R.string.voice_remove, task.title)
+                    Box(
+                        Modifier.size(sizes().voiceRow).clip(CircleShape)
+                            .clickable(role = Role.Button, onClickLabel = removeLabel) { onRemove(task) }
+                            .semantics { contentDescription = removeLabel }
+                            .testTag("$TAG_VOICE_REMOVE:${task.id}"),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(Icons.Default.Close, contentDescription = null, tint = colors.inactive, modifier = Modifier.size(sizes().voiceRemoveIcon))
+                    }
                 }
-                .testTag(TAG_VOICE_TEXT),
-        )
-    } else {
-        // Курсор после паузы — в конце текста: можно сразу дописывать; внешнее изменение (продолжение диктовки) тоже ставит его в конец.
-        var field by remember { mutableStateOf(TextFieldValue(state.text, TextRange(state.text.length))) }
-        LaunchedEffect(state.text) {
-            if (VoiceErrors.capitalize(field.text) != state.text) field = TextFieldValue(state.text, TextRange(state.text.length))
-        }
-        val requester = remember { FocusRequester() }
-        val keyboard = LocalSoftwareKeyboardController.current
-        LaunchedEffect(wantFocus) {
-            if (wantFocus) {
-                requester.requestFocus()
-                keyboard?.show()
-                setWantFocus(false)
             }
         }
-        BasicTextField(
-            value = field,
-            onValueChange = {
-                field = it
-                onEdit(VoiceErrors.capitalize(it.text))
-            },
-            textStyle = big,
-            cursorBrush = SolidColor(colors.accent),
-            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Default),
-            keyboardActions = KeyboardActions(),
-            modifier = modifier.verticalScroll(scroll).focusRequester(requester).testTag(TAG_VOICE_FIELD),
-        )
     }
+}
+
+@Composable
+private fun sizes() = AppTheme.sizes
+
+/** Число задач на галочке: кружок цвета приоритета, как метка «Новое» у новостей. */
+@Composable
+private fun CountBadge(count: Int, modifier: Modifier) {
+    val colors = AppTheme.colors
+    Box(
+        modifier.size(AppTheme.sizes.voiceBadge).clip(CircleShape).background(colors.priority.high.content).clearAndSetSemantics { testTag = TAG_VOICE_COUNT },
+        contentAlignment = Alignment.Center,
+    ) {
+        Text("$count", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.ExtraBold, color = colors.surface)
+    }
+}
+
+/** Текущая фраза: последнее слово, которое движок ещё уточняет, — серым. */
+private fun phraseText(partial: String, gray: Color) = buildAnnotatedString {
+    val (heard, tail) = VoiceErrors.split(partial)
+    val head = VoiceErrors.capitalize(heard)
+    append(head)
+    if (head.isNotEmpty() && tail.isNotEmpty()) append(' ')
+    withStyle(SpanStyle(color = gray)) { append(if (head.isEmpty()) VoiceErrors.capitalize(tail) else tail) }
 }
 
 /** Квадратная кнопка окна, как на панели окна задачи: ⏸/⏺ слева (белая с тенью — лежит на воде) и галочка справа. */
@@ -369,20 +502,6 @@ private fun SheetButton(icon: Int, label: String, background: Color, tint: Color
         contentAlignment = Alignment.Center,
     ) {
         Icon(painterResource(icon), contentDescription = null, tint = tint, modifier = Modifier.size(sizes.toolIcon))
-    }
-}
-
-/** Текст записи: подтверждённая часть чёрным, последнее слово текущей фразы, которое движок ещё уточняет, — серым. */
-private fun tailText(state: VoiceState, gray: Color) = buildAnnotatedString {
-    val full = state.display
-    val (heard, tail) = VoiceErrors.split(VoiceErrors.join(state.text, state.partial))
-    val head = VoiceErrors.capitalize(heard)
-    if (state.partial.isBlank()) {
-        append(full)
-    } else {
-        append(head)
-        if (head.isNotEmpty() && tail.isNotEmpty()) append(' ')
-        withStyle(SpanStyle(color = gray)) { append(if (head.isEmpty()) VoiceErrors.capitalize(tail) else tail) }
     }
 }
 
@@ -481,7 +600,14 @@ private const val STEP = 6f
 
 const val TAG_VOICE = "voice"
 const val TAG_VOICE_TEXT = "voice_text"
-const val TAG_VOICE_FIELD = "voice_field"
 const val TAG_VOICE_MIC = "voice_mic"
 const val TAG_VOICE_ERROR = "voice_error"
 const val TAG_VOICE_ACTION = "voice_action"
+const val TAG_VOICE_LIST = "voice_list"
+const val TAG_VOICE_ROW = "voice_row"
+const val TAG_VOICE_REMOVE = "voice_remove"
+const val TAG_VOICE_COUNT = "voice_count"
+const val TAG_VOICE_ASK = "voice_ask"
+const val TAG_ASK_SAVE = "save"
+const val TAG_ASK_DISCARD = "discard"
+private const val PHRASE_LINES = 3

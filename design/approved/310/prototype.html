@@ -1,0 +1,480 @@
+<title>Голосом несколько задач: прототип</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+<!--
+  #310. Прототип на согласовании PM: вариант 7 «По датам» с правками PM 24.11.2026 — без кружка выполнения, даты «вт, 24 ноя»,
+  нажатие на задачу превращает окно голоса в окно задачи, сохранённая уходит из списка, галочка в окне голоса сохраняет все.
+  Путь А: без ИИ — каждая фраза после паузы — задача, срок — SmartDateParser. Окно голоса — «Цветной прилив» #305, запись — #308.
+  Цвета приложения (светлая тема): surface #FFFFFF, textPrimary #16171D, textSecondary #62656E, accentSoft #EAEAEA,
+  inactive #A9A9A9, divider #E2E2E2, scrim 0x66000000, вода voiceTide #F1E8FA / #DCE8F4 / #C9B3EA.
+-->
+<style>
+  /* Страница: слева выбор сценария и журнал шагов, справа телефон 360 × 720 dp; на телефоне — одной колонкой. */
+  :root {
+    --page: #ECECEF; --ink: #16171D; --muted: #62656E; --panel: #FFFFFF; --line: #DADBE0; --chip: #E2E3E8; --on: #16171D; --on-ink: #FFFFFF; --hi: #6B32A8;
+    --font: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --s: #FFFFFF; --t1: #16171D; --t2: #62656E; --soft: #EAEAEA; --gray: #A9A9A9; --div: #E2E2E2;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --page: #141518; --ink: #ECECEF; --muted: #A3A5AD; --panel: #1E1F23; --line: #2E3036; --chip: #2A2C31; --on: #ECECEF; --on-ink: #16171D; --hi: #D4B8F5; color-scheme: dark } }
+  :root[data-theme="dark"] { --page: #141518; --ink: #ECECEF; --muted: #A3A5AD; --panel: #1E1F23; --line: #2E3036; --chip: #2A2C31; --on: #ECECEF; --on-ink: #16171D; --hi: #D4B8F5; color-scheme: dark }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { background: var(--page); color: var(--ink); font-family: var(--font); font-size: 15px; line-height: 1.45;
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 48px; }
+  .wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 20px; }
+  h1 { font-size: 26px; line-height: 1.2; margin: 0; font-weight: 800; text-wrap: balance; }
+  .lead { margin: 0; color: var(--muted); max-width: 820px; }
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 24px; align-items: start; }
+  @media (max-width: 860px) { .layout { grid-template-columns: minmax(0, 1fr); } .phone-col { order: -1; } }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 16px; display: grid; gap: 12px; min-width: 0; }
+  .panel h2 { margin: 0; font-size: 16px; font-weight: 800; }
+  .scen { display: grid; gap: 6px; }
+  .scen button { text-align: left; font: inherit; color: var(--ink); background: transparent; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; cursor: pointer; display: grid; gap: 2px; }
+  .scen button b { font-size: 14.5px; }
+  .scen button span { font-size: 12.5px; color: var(--muted); }
+  .scen button[aria-pressed="true"] { border-color: var(--on); box-shadow: inset 0 0 0 1px var(--on); }
+  .scen button:focus-visible, .ctl button:focus-visible { outline: 2px solid #438BC9; outline-offset: 2px; }
+  .log { margin: 0; padding-left: 22px; display: grid; gap: 6px; font-size: 14px; }
+  .log li.now { color: var(--hi); font-weight: 700; }
+  .log li.todo { color: var(--muted); }
+  .ctl { display: flex; flex-wrap: wrap; gap: 8px; }
+  .ctl button { font: 700 13.5px/1 var(--font); color: var(--ink); background: var(--chip); border: 0; border-radius: 10px; padding: 9px 12px; cursor: pointer; }
+  .ctl button.main { background: var(--on); color: var(--on-ink); }
+  .rules { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 14px; color: var(--muted); }
+  .rules b { color: var(--ink); }
+  .phone-col { display: grid; gap: 10px; justify-items: center; }
+  .scroller { width: 100%; overflow-x: auto; display: flex; justify-content: center; }
+
+  /* Телефон */
+  .phone { width: 360px; height: 720px; flex: none; position: relative; border-radius: 30px; overflow: hidden; color: var(--t1);
+    background: linear-gradient(160deg, #6E7FA8 0%, #A7B5CF 45%, #D8C9B8 100%); box-shadow: 0 2px 10px #0003; }
+  .scrim { position: absolute; inset: 0; background: #00000066; transition: opacity .35s; }
+  .kbd { position: absolute; left: 0; right: 0; bottom: 0; height: 288px; display: grid; place-items: center; color: #FFFFFF99; font-size: 12px; font-weight: 600; }
+  .kbd::before { content: ""; position: absolute; inset: 12px 22px 52px; border: 1.5px dashed #FFFFFF44; border-radius: 14px; }
+  .nav { position: absolute; left: 0; right: 0; bottom: 0; height: 44px; display: flex; justify-content: center; align-items: center; gap: 70px; z-index: 9; }
+  .nav button { width: 44px; height: 36px; border: 0; background: transparent; color: #fff; font-size: 20px; cursor: pointer; border-radius: 10px; }
+  .nav button:hover { background: #FFFFFF22; }
+  .home { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 15px; text-align: center; opacity: 0; transition: opacity .35s; pointer-events: none; }
+
+  .list { position: absolute; left: 8px; right: 8px; top: 34px; bottom: 516px; display: flex; flex-direction: column; justify-content: flex-end; transition: bottom .35s ease, opacity .3s; pointer-events: none; }
+  .list .card { background: var(--s); border-radius: 18px; box-shadow: 0 2px 10px #0003; padding: 6px 14px 6px; overflow-y: auto; max-height: 100%; pointer-events: auto; scroll-behavior: smooth; }
+  .list .day { color: var(--t2); font-size: 12px; font-weight: 800; padding-top: 6px; }
+  .list .tr { display: flex; align-items: center; gap: 8px; min-height: 34px; cursor: pointer; border-radius: 8px; margin: 0 -6px; padding: 0 6px; }
+  .list .tr:hover { background: #F4F4F6; }
+  .list .tr b { flex: 1; font-size: 15px; line-height: 1.25; padding: 6px 0; }
+  .list .tr i { font-style: normal; color: var(--t2); font-size: 12.5px; font-weight: 600; }
+  .list .tr .x { border: 0; background: transparent; color: var(--gray); font-size: 18px; line-height: 1; padding: 6px 4px; cursor: pointer; }
+  .list .tr.fresh { animation: fresh 1.4s ease; }
+  @keyframes fresh { 0% { background: #F1E8FA; } 100% { background: transparent; } }
+  .list.dim { opacity: .35; }
+  .list.dim .card { pointer-events: none; }
+
+  .win { position: absolute; left: 8px; right: 8px; bottom: 296px; height: 212px; background: var(--s); border-radius: 22px; box-shadow: 0 6px 24px #0004; overflow: hidden;
+    transition: height .35s cubic-bezier(.3,.7,.2,1), opacity .3s, transform .3s; }
+  .layer { position: absolute; inset: 0; transition: opacity .25s ease; }
+  .layer.off { opacity: 0; pointer-events: none; }
+  .voice canvas { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 123px; }
+  .voice .said { position: absolute; left: 18px; right: 18px; top: 16px; font-size: 21px; font-weight: 700; line-height: 1.28; color: var(--gray); }
+  .row { position: absolute; left: 12px; right: 12px; bottom: 12px; display: flex; align-items: center; gap: 8px; z-index: 2; }
+  .b { width: 50px; height: 50px; border-radius: 14px; display: grid; place-items: center; border: 0; padding: 0; cursor: pointer; flex: none; }
+  .b svg { width: 25px; height: 25px; }
+  .b.mic { background: var(--s); color: var(--t1); box-shadow: 0 1px 4px #0002; }
+  .b.ok { background: var(--t1); color: #fff; position: relative; }
+  .cnt { position: absolute; top: -7px; right: -7px; min-width: 20px; height: 20px; border-radius: 10px; background: #6B32A8; color: #fff; font-size: 12px; font-weight: 800; display: grid; place-items: center; padding: 0 5px; }
+  .b:disabled { opacity: .35; cursor: default; }
+  .err { flex: 1; text-align: center; font-size: 14px; font-weight: 700; line-height: 1.25; }
+  .edit .ttl { position: absolute; left: 18px; right: 18px; top: 16px; font: 800 24px/1.25 var(--font); color: var(--t1); border: 0; outline: 0; background: transparent; padding: 0; width: calc(100% - 36px); }
+  .edit .dt { position: absolute; left: 14px; top: 64px; display: flex; gap: 22px; align-items: center; font-size: 16.5px; font-weight: 700; }
+  .edit .dt button { font: inherit; color: inherit; background: transparent; border: 0; padding: 6px 4px; border-radius: 8px; cursor: pointer; display: inline-flex; gap: 8px; align-items: center; }
+  .edit .dt button:hover { background: #F4F4F6; }
+  .edit .tools { position: absolute; left: 12px; right: 12px; bottom: 12px; display: flex; gap: 6px; align-items: center; }
+  .edit .tool { width: 46px; height: 46px; border: 1px solid var(--div); border-radius: 14px; display: grid; place-items: center; color: var(--t2); }
+  .edit .tool svg { width: 21px; height: 21px; }
+  .edit .tools .b.ok { margin-left: auto; }
+  .pick { position: absolute; left: 12px; top: 102px; background: var(--s); border-radius: 14px; box-shadow: 0 6px 20px #0003; padding: 6px; display: grid; gap: 2px; z-index: 5; min-width: 200px; }
+  .pick button { font: 600 15px/1 var(--font); color: var(--t1); background: transparent; border: 0; text-align: left; padding: 10px 12px; border-radius: 10px; cursor: pointer; }
+  .pick button:hover { background: #F4F4F6; }
+  .pick small { color: var(--t2); font-size: 11.5px; padding: 4px 12px 2px; }
+
+  .toast { position: absolute; left: 16px; right: 16px; bottom: 64px; background: #2B2C31; color: #fff; border-radius: 14px; padding: 12px 14px; display: flex; justify-content: space-between; gap: 12px; align-items: center; font-size: 14px; font-weight: 600; z-index: 8;
+    transform: translateY(20px); opacity: 0; transition: .25s; pointer-events: none; }
+  .toast.on { transform: none; opacity: 1; pointer-events: auto; }
+  .toast button { font: 800 14px/1 var(--font); color: #D4B8F5; background: transparent; border: 0; cursor: pointer; padding: 4px; }
+  .dlg { position: absolute; left: 24px; right: 24px; top: 210px; background: var(--s); border-radius: 22px; padding: 20px; z-index: 10; box-shadow: 0 10px 30px #0005; display: none; }
+  .dlg.on { display: block; }
+  .dlg h3 { margin: 0 0 6px; font-size: 20px; font-weight: 800; line-height: 1.25; }
+  .dlg p { margin: 0 0 16px; color: var(--t2); font-size: 14px; }
+  .dlg button { display: block; width: 100%; font: 700 15px/1 var(--font); border: 0; border-radius: 14px; padding: 14px; margin-top: 8px; cursor: pointer; }
+  .dlg .p1 { background: var(--t1); color: #fff; }
+  .dlg .p2 { background: var(--soft); color: var(--t1); }
+  .tap { position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%; background: #6B32A855; border: 2px solid #6B32A8; z-index: 20; pointer-events: none; opacity: 0; transform: scale(.6); transition: opacity .15s, transform .15s; }
+  .tap.on { opacity: 1; transform: scale(1); }
+  .cap { min-height: 44px; max-width: 360px; text-align: center; font-weight: 700; color: var(--hi); font-size: 14.5px; }
+  @media (prefers-reduced-motion: reduce) { .win, .layer, .list, .toast, .scrim { transition: none; } .list .tr.fresh { animation: none; } }
+</style>
+
+<div class="wrap">
+  <header style="display:grid;gap:8px">
+    <h1>Несколько задач голосом — прототип сценариев (#310)</h1>
+    <p class="lead">Вариант 7 «По датам» с правками PM. Выберите сценарий — он проиграется сам, фиолетовый круг показывает нажатия. «Свободно» — управляйте сами: продиктуйте фразы кнопками справа, нажимайте на задачи и кнопки в телефоне, ◁ внизу — жест «Назад».</p>
+  </header>
+  <div class="layout">
+    <div style="display:grid;gap:16px;min-width:0">
+      <section class="panel"><h2>Сценарии</h2><div class="scen" id="scen"></div></section>
+      <section class="panel"><h2 id="log-title">Шаги</h2><ol class="log" id="log"></ol></section>
+      <section class="panel"><h2>Поведение — предложение для согласования</h2>
+        <ul class="rules">
+          <li><b>Каждая фраза после паузы</b> — задача; срок и время разбираются как при наборе. Задачи — над окном по дням: «вт, 24 ноя», «ср, 25 ноя»…, «Без даты» — в конце.</li>
+          <li><b>Нажатие на задачу</b> — запись на паузу, окно голоса плавно превращается в окно задачи. ✓ — задача сохраняется и уходит из списка; «Назад» — правки не сохраняются, задача остаётся в списке. Дальше снова окно голоса на паузе: ⏺ — диктовать дальше.</li>
+          <li><b>× у задачи</b> — убрать из списка, подсказка «Убрано · Вернуть».</li>
+          <li><b>Галочка в окне голоса</b> — на ней число задач (просьба PM); сохраняет все задачи списка (и недоговорённую фразу), окно закрывается, подсказка «Добавлено N · Отменить». Без задач галочка бледная.</li>
+          <li><b>«Назад» или затемнение</b> при задачах в списке — вопрос «Сохранить N задач?»; без задач — просто закрыть.</li>
+          <li><b>Тишина 10 с, ошибки</b> — как сейчас (#308, #305): пауза или текст ошибки между кнопками, список не теряется.</li>
+          <li><b>Куда</b> — как у «+» этого виджета; срок из фразы важнее.</li>
+        </ul>
+      </section>
+    </div>
+    <div class="phone-col">
+      <div class="cap" id="cap" aria-live="polite"></div>
+      <div class="scroller"><div class="phone" id="phone">
+        <div class="home" id="home">Рабочий стол<br><span style="font-weight:500;font-size:13px;opacity:.8">окно закрыто</span></div>
+        <div class="scrim" id="scrim"></div>
+        <div class="kbd">место клавиатуры</div>
+        <div class="list" id="list"><div class="card" id="listcard"></div></div>
+        <div class="win" id="win">
+          <div class="layer voice" id="voice">
+            <div class="said" id="said"></div>
+            <canvas id="water"></canvas>
+            <div class="row"><button class="b mic" id="btn-mic" type="button" aria-label="Пауза"></button><div class="err" id="err"></div><button class="b ok" id="btn-ok" type="button" aria-label="Сохранить все"><svg><use href="#i-check"/></svg></button></div>
+          </div>
+          <div class="layer edit off" id="edit">
+            <input class="ttl" id="edit-title" aria-label="Название задачи">
+            <div class="dt"><button type="button" id="edit-date"></button><span id="edit-time" style="display:inline-flex;gap:8px;align-items:center"></span></div>
+            <div class="pick" id="pick" hidden></div>
+            <div class="tools"><span class="tool"><svg><use href="#i-flag"/></svg></span><span class="tool"><svg><use href="#i-list"/></svg></span><span class="tool"><svg><use href="#i-rep"/></svg></span><span class="tool"><svg><use href="#i-bell"/></svg></span><button class="b ok" id="edit-save" type="button" aria-label="Сохранить задачу"><svg><use href="#i-check"/></svg></button></div>
+          </div>
+        </div>
+        <div class="dlg" id="dlg"><h3 id="dlg-t"></h3><p>Задачи из списка ещё не сохранены.</p><button class="p1" id="dlg-save" type="button"></button><button class="p2" id="dlg-drop" type="button">Не сохранять</button></div>
+        <div class="toast" id="toast"><span id="toast-t"></span><button type="button" id="toast-b"></button></div>
+        <div class="nav"><button type="button" id="nav-back" aria-label="Назад">◁</button><button type="button" aria-hidden="true" tabindex="-1">○</button></div>
+        <div class="tap" id="tap"></div>
+      </div></div>
+      <div class="ctl" id="free" style="max-width:360px;justify-content:center"></div>
+    </div>
+  </div>
+</div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6.5" y="5" width="3.6" height="14" rx="1.8" fill="currentColor"/><rect x="13.9" y="5" width="3.6" height="14" rx="1.8" fill="currentColor"/></symbol>
+  <symbol id="i-rec" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.5" fill="currentColor"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5,12.5l4.5,4.5L19,7.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3.5,10h17 M8,3v4 M16,3v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12,7.5V12l3,2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-flag" viewBox="0 0 24 24"><path d="M6,21V4h11l-3,4l3,4H6" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M10,6h10 M10,12h10 M10,18h10 M4,6l1.5,1.5L8,5 M4,12l1.5,1.5L8,11 M4,18l1.5,1.5L8,17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-rep" viewBox="0 0 24 24"><path d="M4,10a5,5 0 0 1 5,-5h9l-3,-3 M20,14a5,5 0 0 1 -5,5H6l3,3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6,16V11a6,6 0 0 1 12,0v5l1.5,2h-15z M10,21h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+</svg>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* Даты: «сегодня» — вт, 24 ноя 2026. Формат PM: «вт, 24 ноя». */
+  const TODAY = new Date(2026, 10, 24);
+  const DAYS = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
+  const MON = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+  const day = off => { const d = new Date(TODAY); d.setDate(d.getDate() + off); return d; };
+  const fmt = off => { const d = day(off); return `${DAYS[d.getDay()]}, ${d.getDate()} ${MON[d.getMonth()]}`; };
+
+  /* Фразы: как сказано и как разобрано (SmartDateParser). d — дней от сегодня, null — без даты. */
+  const P = {
+    groceries: { said: 'Купить продукты сегодня', title: 'Купить продукты', d: 0 },
+    hack: { said: 'Провести хакатон 15 декабря', title: 'Провести хакатон', d: 21 },
+    mom: { said: 'Позвонить маме завтра в 10', title: 'Позвонить маме', d: 1, time: '10:00' },
+    report: { said: 'Отправить отчёт в пятницу', title: 'Отправить отчёт', d: 3 },
+    gym: { said: 'Тренировка послезавтра в 19', title: 'Тренировка', d: 2, time: '19:00' },
+    dentist: { said: 'Записаться к стоматологу', title: 'Записаться к стоматологу', d: null },
+    combo: { said: 'Купить хлеб и позвонить маме', title: 'Купить хлеб и позвонить маме', d: null },
+    mom2: { said: 'Позвонить маме', title: 'Позвонить маме', d: null },
+    junk: { said: 'Нет, это не надо', title: 'Нет, это не надо', d: null },
+    gift: { said: 'Купить подарок Ане до субботы', title: 'Купить подарок Ане до', d: 4 },
+  };
+
+  /* Состояние прототипа */
+  let S;
+  let seq = 0;
+  const reset = () => { S = { mode: 'voice', rec: true, partial: '', tasks: [], editId: null, draft: null, err: '', saved: 0, lastAdded: null, removed: null }; hideToast(); $('dlg').classList.remove('on'); $('pick').hidden = true; render(); };
+
+  const groups = () => {
+    const keys = [...new Set(S.tasks.map(t => t.d))].sort((a, b) => (a ?? 1e9) - (b ?? 1e9));
+    return keys.map(k => ({ k, title: k === null ? 'Без даты' : fmt(k), items: S.tasks.filter(t => t.d === k) }));
+  };
+
+  function render() {
+    const editing = S.mode === 'edit';
+    const closed = S.mode === 'closed';
+    $('win').style.height = (editing ? 214 : 212) + 'px';
+    $('win').style.opacity = closed ? 0 : 1;
+    $('win').style.transform = closed ? 'translateY(20px)' : 'none';
+    $('scrim').style.opacity = closed ? 0 : 1;
+    $('home').style.opacity = closed ? 1 : 0;
+    $('voice').classList.toggle('off', editing);
+    $('edit').classList.toggle('off', !editing);
+    const list = $('list');
+    list.style.bottom = (296 + (editing ? 214 : 212) + 8) + 'px';
+    list.classList.toggle('dim', editing);
+    list.style.opacity = closed || !S.tasks.length ? 0 : (editing ? .35 : 1);
+    $('listcard').innerHTML = groups().map(g => `<div class="day">${g.title}</div>${g.items.map(t => `<div class="tr ${t.id === S.lastAdded ? 'fresh' : ''}" data-row="${t.key}" data-id="${t.id}"><b>${t.title}</b>${t.time ? `<i>${t.time}</i>` : ''}<button class="x" type="button" data-x="${t.key}" aria-label="Убрать ${t.title}">×</button></div>`).join('')}`).join('');
+    const card = $('listcard'); card.scrollTop = card.scrollHeight;
+    S.lastAdded = null;
+    $('said').textContent = S.partial;
+    $('btn-mic').innerHTML = `<svg><use href="#${S.rec ? 'i-pause' : 'i-rec'}"/></svg>`;
+    $('btn-mic').setAttribute('aria-label', S.rec ? 'Пауза' : 'Продолжить запись');
+    $('btn-ok').disabled = !S.tasks.length && !S.partial;
+    $('btn-ok').innerHTML = '<svg><use href="#i-check"/></svg>' + (S.tasks.length ? `<span class="cnt">${S.tasks.length}</span>` : '');
+    $('err').textContent = S.err;
+    if (editing && S.draft) {
+      if (document.activeElement !== $('edit-title')) $('edit-title').value = S.draft.title;
+      $('edit-date').innerHTML = `<svg width="22" height="22"><use href="#i-cal"/></svg>${S.draft.d === null ? '<span style="color:var(--gray)">Без даты</span>' : fmt(S.draft.d)}`;
+      $('edit-time').innerHTML = S.draft.time ? `<svg width="22" height="22"><use href="#i-clock"/></svg>${S.draft.time}` : '';
+    }
+  }
+
+  /* Действия — их вызывают и нажатия в телефоне, и сценарии */
+  const A = {
+    say(key, partial) { S.partial = partial; S.err = ''; render(); },
+    commit(key) {
+      const p = P[key]; S.partial = '';
+      const t = { ...p, key, id: ++seq };
+      S.tasks.push(t); S.lastAdded = t.id; render();
+    },
+    mic() {
+      if (S.mode !== 'voice') return;
+      if (S.rec) { if (S.partial) A.commitPartial(); S.rec = false; } else { S.rec = true; S.err = ''; }
+      render();
+    },
+    commitPartial() { const k = Object.keys(P).find(k => P[k].said === S.partial); if (k) A.commit(k); S.partial = ''; },
+    open(id) {
+      const t = S.tasks.find(t => t.id === id); if (!t) return;
+      if (S.partial) A.commitPartial();
+      S.rec = false; S.mode = 'edit'; S.editId = id; S.draft = { ...t }; $('pick').hidden = true; render();
+    },
+    pickOpen() {
+      const opts = [[0, 'Сегодня'], [1, 'Завтра'], [3, fmt(3)], [null, 'Без даты']];
+      $('pick').innerHTML = opts.map(([d, l]) => `<button type="button" data-pick="${d}">${l}</button>`).join('') + '<small>в приложении — обычное окно даты</small>';
+      $('pick').hidden = false;
+    },
+    pick(d) { S.draft.d = d === 'null' ? null : Number(d); if (S.draft.d === null) S.draft.time = undefined; $('pick').hidden = true; render(); },
+    editSave() {
+      S.draft.title = $('edit-title').value.trim() || S.draft.title;
+      S.tasks = S.tasks.filter(t => t.id !== S.editId); S.saved++;
+      const title = S.draft.title, when = S.draft.d === null ? '' : ` · ${fmt(S.draft.d)}`;
+      S.mode = 'voice'; S.editId = null; S.draft = null; render();
+      toast(`Сохранено: ${title}${when}`, '');
+    },
+    back() {
+      if (!$('pick').hidden) { $('pick').hidden = true; return; }
+      if (S.mode === 'edit') { S.mode = 'voice'; S.editId = null; S.draft = null; render(); return; }
+      if (S.mode === 'voice') {
+        if (S.partial) A.commitPartial();
+        if (S.tasks.length) { S.rec = false; render(); $('dlg-t').textContent = `Сохранить ${plural(S.tasks.length)}?`; $('dlg-save').textContent = 'Сохранить все'; $('dlg').classList.add('on'); }
+        else { S.mode = 'closed'; render(); }
+      }
+    },
+    remove(key) {
+      const i = S.tasks.findIndex(t => t.key === key); if (i < 0) return;
+      const [t] = S.tasks.splice(i, 1); S.removed = { t, i }; render();
+      toast(`Убрано: ${t.title}`, 'Вернуть', () => { S.tasks.splice(S.removed.i, 0, S.removed.t); S.removed = null; render(); });
+    },
+    saveAll() {
+      if (S.mode !== 'voice') return;
+      if (S.partial) A.commitPartial();
+      if (!S.tasks.length) return;
+      const n = S.tasks.length + S.saved; const added = S.tasks.length;
+      S.tasks = []; S.mode = 'closed'; S.rec = false; $('dlg').classList.remove('on'); render();
+      toast(`Добавлено ${plural(added)}`, 'Отменить');
+      void n;
+    },
+    drop() { S.tasks = []; S.mode = 'closed'; $('dlg').classList.remove('on'); render(); },
+    silence() { if (S.partial) A.commitPartial(); S.rec = false; render(); },
+    error() { if (S.partial) A.commitPartial(); S.rec = false; S.err = 'Нет интернета для распознавания'; render(); },
+  };
+  const plural = n => `${n} ${n % 10 === 1 && n % 100 !== 11 ? 'задачу' : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 'задачи' : 'задач')}`;
+
+  let toastTimer;
+  function toast(text, action, undo) {
+    $('toast-t').textContent = text; $('toast-b').textContent = action; $('toast-b').hidden = !action;
+    $('toast-b').onclick = () => { undo?.(); hideToast(); };
+    $('toast').classList.add('on'); clearTimeout(toastTimer); toastTimer = setTimeout(hideToast, 3200);
+  }
+  function hideToast() { $('toast').classList.remove('on'); }
+
+  /* Нажатия в телефоне */
+  $('btn-mic').onclick = () => A.mic();
+  $('btn-ok').onclick = () => A.saveAll();
+  $('nav-back').onclick = () => A.back();
+  $('scrim').onclick = () => A.back();
+  $('edit-save').onclick = () => A.editSave();
+  $('edit-date').onclick = () => A.pickOpen();
+  $('pick').onclick = e => { const b = e.target.closest('[data-pick]'); if (b) A.pick(b.dataset.pick); };
+  $('edit-title').oninput = e => { if (S.draft) S.draft.title = e.target.value; };
+  $('listcard').onclick = e => {
+    const x = e.target.closest('[data-x]'); if (x) { A.remove(x.dataset.x); return; }
+    const r = e.target.closest('[data-id]'); if (r) A.open(Number(r.dataset.id));
+  };
+  $('dlg-save').onclick = () => A.saveAll();
+  $('dlg-drop').onclick = () => A.drop();
+
+  /* Вода «Цветной прилив» */
+  const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  const mix = (a, b, k) => '#' + hex(a).map((v, i) => Math.round(v + (hex(b)[i] - v) * k).toString(16).padStart(2, '0')).join('');
+  const LAYERS = [['#F1F1F3', '#F1E8FA', 0.16, 1.0, 0.9], ['#E4E4E7', '#DCE8F4', 0.34, 1.35, 2.1], ['#D3D4D8', '#C9B3EA', 0.54, 1.8, 3.4]];
+  let rec = 1, amp = 0, clock = 0, last = performance.now();
+  function water(now) {
+    const dt = Math.min(.05, (now - last) / 1000); last = now;
+    const on = S.rec && S.mode === 'voice';
+    rec += ((on ? 1 : 0) - rec) * Math.min(1, dt * 6);
+    const loud = on && S.partial ? Math.min(1, Math.max(0, Math.sin(now / 1000 * 2.3)) ** .6 * 1.1) : (on ? .12 : 0);
+    amp += (loud - amp) * Math.min(1, dt * 9);
+    clock += dt * (0.15 + 0.85 * rec);
+    const cv = $('water'), W = cv.clientWidth, H = cv.clientHeight, dpr = Math.min(2, devicePixelRatio || 1);
+    if (cv.width !== Math.round(W * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+    const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, W, H);
+    LAYERS.forEach(([g, col, base, f, ph], i) => {
+      const y0 = H * base + (1 - rec) * H * 0.16 - amp * rec * H * 0.12;
+      c.beginPath(); c.moveTo(0, H);
+      for (let x = 0; x <= W; x += 3) c.lineTo(x, y0 + Math.sin(x / W * Math.PI * 2 * f + clock * (1.4 + i * .5) + ph) * (2 + (5 + amp * 15) * rec) * (1 - i * .15));
+      c.lineTo(W, H); c.closePath(); c.fillStyle = mix(g, col, rec); c.fill();
+    });
+    if (!reduced) requestAnimationFrame(water);
+  }
+
+  /* Проигрывание сценариев */
+  let run = 0;
+  const sleep = (ms, id) => new Promise((ok, no) => setTimeout(() => (id === run ? ok() : no('stop')), reduced ? Math.min(ms, 60) : ms));
+  async function tapOn(sel, id) {
+    const el = document.querySelector(sel); if (!el) return;
+    const ph = $('phone').getBoundingClientRect(), r = el.getBoundingClientRect();
+    const t = $('tap'); t.style.left = (r.left - ph.left + r.width / 2) + 'px'; t.style.top = (r.top - ph.top + r.height / 2) + 'px';
+    t.classList.add('on'); await sleep(450, id); t.classList.remove('on'); el.click(); await sleep(250, id);
+  }
+  async function speak(key, id) {
+    const words = P[key].said.split(' ');
+    for (let i = 1; i <= words.length; i++) { A.say(key, words.slice(0, i).join(' ')); await sleep(330, id); }
+    await sleep(550, id); A.commit(key); await sleep(450, id);
+  }
+  async function typeTitle(text, id) {
+    const input = $('edit-title');
+    for (let i = input.value.length; i >= text.length && !input.value.startsWith(text) ; i--) { input.value = input.value.slice(0, -1); S.draft.title = input.value; await sleep(45, id); }
+    for (let i = input.value.length; i < text.length; i++) { input.value = text.slice(0, i + 1); S.draft.title = input.value; await sleep(70, id); }
+  }
+
+  /* Сценарии: шаги [подпись, действие]. */
+  const SC = [
+    { id: 'main', name: 'Основной', hint: 'Три задачи → галочка', steps: [
+      ['Говорите: «Купить продукты сегодня»', id => speak('groceries', id)],
+      ['Пауза — фраза стала задачей в дне «вт, 24 ноя»', id => sleep(600, id)],
+      ['«Провести хакатон 15 декабря» — новый день в конце', id => speak('hack', id)],
+      ['«Позвонить маме завтра в 10» — встаёт между ними, время справа', id => speak('mom', id)],
+      ['Галочка в окне голоса — сохраняются все три', id => tapOn('#btn-ok', id)],
+      ['Окно закрыто, подсказка «Добавлено 3 задачи · Отменить»', id => sleep(1500, id)] ] },
+    { id: 'edit', name: 'Правка задачи', hint: 'Нажатие на задачу → окно задачи → ✓', steps: [
+      ['Диктовка трёх задач', async id => { await speak('groceries', id); await speak('mom', id); await speak('hack', id); }],
+      ['Нажатие на «Позвонить маме» — запись на паузу, окно голоса превращается в окно задачи', id => tapOn('[data-row="mom"]', id)],
+      ['Список над окном бледнеет, пока идёт правка', id => sleep(900, id)],
+      ['Меняем срок: нажатие на дату', id => tapOn('#edit-date', id)],
+      [`Выбираем «${fmt(3)}»`, id => tapOn('[data-pick="3"]', id)],
+      ['✓ в окне задачи — задача сохранена и ушла из списка', id => tapOn('#edit-save', id)],
+      ['Снова окно голоса, на паузе; в списке две задачи', id => sleep(1400, id)],
+      ['Галочка — сохраняются оставшиеся две', id => tapOn('#btn-ok', id)],
+      ['Готово', id => sleep(1200, id)] ] },
+    { id: 'back', name: 'Правка без сохранения', hint: 'Окно задачи → «Назад»', steps: [
+      ['Диктовка двух задач', async id => { await speak('groceries', id); await speak('report', id); }],
+      ['Нажатие на «Отправить отчёт»', id => tapOn('[data-row="report"]', id)],
+      ['Начали менять название…', id => typeTitle('Отправить отчёт Ивану', id)],
+      ['…и передумали: жест «Назад»', id => tapOn('#nav-back', id)],
+      ['Правка не сохранилась, задача осталась в списке, окно голоса на паузе', id => sleep(1500, id)],
+      ['⏺ — диктуем дальше', id => tapOn('#btn-mic', id)],
+      ['«Позвонить маме завтра в 10»', id => speak('mom', id)],
+      ['Галочка — все три сохранены', id => tapOn('#btn-ok', id)] ] },
+    { id: 'remove', name: 'Лишняя фраза', hint: '× убирает, «Вернуть»', steps: [
+      ['«Купить продукты сегодня»', id => speak('groceries', id)],
+      ['Оговорка: «Нет, это не надо» — тоже стала задачей (без ИИ смысл не понять)', id => speak('junk', id)],
+      ['× у лишней задачи', id => tapOn('[data-x="junk"]', id)],
+      ['Убрана; подсказка «Убрано · Вернуть»', id => sleep(1600, id)],
+      ['Продолжаем: «Провести хакатон 15 декабря»', id => speak('hack', id)],
+      ['Галочка', id => tapOn('#btn-ok', id)] ] },
+    { id: 'combo', name: 'Две задачи без паузы', hint: 'Одна фраза → правка → досказать', steps: [
+      ['Сказали подряд: «Купить хлеб и позвонить маме» — без паузы это одна задача', id => speak('combo', id)],
+      ['Нажатие на неё', id => tapOn('[data-row="combo"]', id)],
+      ['Оставляем «Купить хлеб»', id => typeTitle('Купить хлеб', id)],
+      ['✓ — сохранена, ушла из списка', id => tapOn('#edit-save', id)],
+      ['⏺ — и отдельно «Позвонить маме»', async id => { await tapOn('#btn-mic', id); await speak('mom2', id); }],
+      ['Галочка', id => tapOn('#btn-ok', id)] ] },
+    { id: 'many', name: 'Много задач, без даты', hint: '6 фраз, «Без даты» внизу, прокрутка', steps: [
+      ['Шесть фраз подряд', async id => { for (const k of ['groceries', 'dentist', 'report', 'mom', 'hack', 'gym']) await speak(k, id); }],
+      ['Дни по порядку, «Без даты» — в конце; список прокручивается, новая задача видна', id => sleep(1600, id)],
+      ['Галочка — сохраняются все шесть', id => tapOn('#btn-ok', id)] ] },
+    { id: 'silence', name: 'Тишина 10 секунд', hint: 'Автопауза, ⏺ продолжает', steps: [
+      ['«Купить продукты сегодня»', id => speak('groceries', id)],
+      ['…10 секунд тишины', id => sleep(1400, id)],
+      ['Запись сама на паузе (вода серая), список на месте', id => { A.silence(); return sleep(1400, id); }],
+      ['⏺ — продолжить', id => tapOn('#btn-mic', id)],
+      ['«Позвонить маме завтра в 10»', id => speak('mom', id)],
+      ['Галочка', id => tapOn('#btn-ok', id)] ] },
+    { id: 'close', name: 'Закрыть, не сохранив', hint: '«Назад» при задачах в списке', steps: [
+      ['Диктовка двух задач', async id => { await speak('groceries', id); await speak('mom', id); }],
+      ['Жест «Назад»', id => tapOn('#nav-back', id)],
+      ['Вопрос «Сохранить 2 задачи?» — чтобы не потерять продиктованное', id => sleep(1600, id)],
+      ['«Не сохранять» — окно закрыто, задач нет (или «Сохранить все»)', id => tapOn('#dlg-drop', id)] ] },
+    { id: 'error', name: 'Ошибка сети', hint: 'Список не теряется', steps: [
+      ['Две задачи', async id => { await speak('groceries', id); await speak('hack', id); }],
+      ['Пропал интернет — ошибка между кнопками, запись на паузе', id => { A.error(); return sleep(1600, id); }],
+      ['Задачи в списке целы; галочка их сохраняет (сохранение без интернета работает)', id => tapOn('#btn-ok', id)] ] },
+    { id: 'one', name: 'Одна задача', hint: 'Фраза → галочка', steps: [
+      ['«Позвонить маме завтра в 10»', id => speak('mom', id)],
+      ['Галочка — задача сохранена сразу, без окна задачи (раньше открывалось окно задачи)', id => tapOn('#btn-ok', id)],
+      ['Чтобы поправить перед сохранением — нажать на задачу, как во «Правке»', id => sleep(1400, id)] ] },
+    { id: 'free', name: 'Свободно', hint: 'Управляйте сами', steps: [] },
+  ];
+
+  function showLog(sc, now) {
+    $('log').innerHTML = sc.steps.length ? sc.steps.map((s, i) => `<li class="${i < now ? '' : i === now ? 'now' : 'todo'}">${s[0]}</li>`).join('')
+      : '<li>Кнопки под телефоном — продиктовать фразу, тишина 10 с, ошибка сети. В телефоне нажимайте на задачи, ×, ⏸/⏺, галочку; ◁ — «Назад».</li>';
+  }
+  async function play(sc) {
+    const id = ++run; reset();
+    document.querySelectorAll('#scen button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.id === sc.id)));
+    $('free').hidden = sc.id !== 'free';
+    showLog(sc, 0); $('cap').textContent = sc.id === 'free' ? 'Свободный режим' : '';
+    try {
+      for (let i = 0; i < sc.steps.length; i++) {
+        showLog(sc, i); $('cap').textContent = sc.steps[i][0];
+        await sc.steps[i][1](id);
+        await sleep(350, id);
+      }
+      showLog(sc, sc.steps.length);
+      if (sc.steps.length) { $('cap').innerHTML = '<button type="button" id="again" style="font:inherit;color:inherit;background:transparent;border:0;cursor:pointer;text-decoration:underline">Повторить сценарий</button>'; $('again').onclick = () => play(sc); }
+    } catch (e) { if (e !== 'stop') throw e; }
+  }
+
+  $('scen').innerHTML = SC.map((s, i) => `<button type="button" data-id="${s.id}" aria-pressed="false"><b>${i + 1}. ${s.name}</b><span>${s.hint}</span></button>`).join('');
+  $('scen').onclick = e => { const b = e.target.closest('button'); if (b) play(SC.find(s => s.id === b.dataset.id)); };
+  $('free').innerHTML = ['groceries', 'mom', 'hack', 'report', 'dentist', 'combo', 'junk'].map(k => `<button type="button" data-say="${k}">«${P[k].said}»</button>`).join('') +
+    '<button type="button" data-act="silence">Тишина 10 с</button><button type="button" data-act="error">Ошибка сети</button><button type="button" class="main" data-act="reset">Сначала</button>';
+  $('free').onclick = async e => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.act === 'reset') return play(SC.at(-1));
+    if (b.dataset.act) return A[b.dataset.act]();
+    if (S.mode !== 'voice') return;
+    if (!S.rec) { S.rec = true; S.err = ''; render(); }
+    const id = run; try { await speak(b.dataset.say, id); } catch (er) { if (er !== 'stop') throw er; }
+  };
+
+  reset();
+  requestAnimationFrame(water);
+  play(SC[0]);
+})();
+</script>

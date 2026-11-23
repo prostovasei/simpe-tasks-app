@@ -1,0 +1,199 @@
+<title>Несколько задач голосом</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+<!--
+  #310. Черновик на согласовании PM: 10 вариантов окна, где голосом создаётся сразу несколько задач (путь А — без ИИ:
+  каждая фраза после паузы — задача, срок — SmartDateParser). Основа — окно «Цветной прилив» #305 (212 dp над клавиатурой).
+  Цвета приложения (светлая тема): surface #FFFFFF, textPrimary #16171D, textSecondary #62656E, accentSoft #EAEAEA,
+  inactive #A9A9A9, scrim 0x66000000, вода voiceTide #F1E8FA / #DCE8F4 / #C9B3EA.
+-->
+<style>
+  /* Страница: сетка карточек-вариантов, в каждой телефон 360 × 720 dp в масштабе 1:1 с проигрываемой диктовкой. */
+  :root {
+    --page: #ECECEF; --ink: #16171D; --muted: #62656E; --panel: #FFFFFF; --line: #DADBE0; --chip: #E2E3E8; --chip-on: #16171D; --chip-on-ink: #FFFFFF;
+    --font: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --s: #FFFFFF; --t1: #16171D; --t2: #62656E; --soft: #EAEAEA; --gray: #A9A9A9; --line-a: #E2E2E2;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --page: #141518; --ink: #ECECEF; --muted: #A3A5AD; --panel: #1E1F23; --line: #2E3036; --chip: #2A2C31; --chip-on: #ECECEF; --chip-on-ink: #16171D; color-scheme: dark } }
+  :root[data-theme="dark"] { --page: #141518; --ink: #ECECEF; --muted: #A3A5AD; --panel: #1E1F23; --line: #2E3036; --chip: #2A2C31; --chip-on: #ECECEF; --chip-on-ink: #16171D; color-scheme: dark }
+  * { box-sizing: border-box; }
+  body { background: var(--page); color: var(--ink); font-family: var(--font); font-size: 15px; line-height: 1.45;
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 48px; }
+  .wrap { max-width: 1560px; margin: 0 auto; display: grid; gap: 22px; }
+  header { display: grid; gap: 8px; max-width: 800px; }
+  h1 { font-size: 26px; line-height: 1.2; margin: 0; font-weight: 800; text-wrap: balance; }
+  .lead { margin: 0; color: var(--muted); }
+  .rules { margin: 0; padding-left: 20px; color: var(--muted); }
+  .rules b { color: var(--ink); }
+  .seg { display: inline-flex; background: var(--chip); border-radius: 12px; padding: 3px; gap: 2px; }
+  .seg button { font: 700 14px/1 var(--font); color: var(--ink); background: transparent; border: 0; border-radius: 9px; padding: 9px 14px; cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--chip-on); color: var(--chip-on-ink); }
+  .seg button:focus-visible { outline: 2px solid #438BC9; outline-offset: 2px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 384px), 1fr)); gap: 20px; }
+  .variant { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 16px 12px; display: grid; gap: 12px; justify-items: center; min-width: 0; }
+  .variant .head { width: 100%; max-width: 360px; display: grid; gap: 4px; }
+  .variant h2 { margin: 0; font-size: 18px; font-weight: 800; display: flex; gap: 8px; }
+  .variant h2 .n { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .variant p { margin: 0; color: var(--muted); font-size: 14px; }
+  .scroller { width: 100%; max-width: 360px; overflow-x: auto; }
+
+  /* Телефон 360 × 720 */
+  .phone { width: 360px; height: 720px; position: relative; border-radius: 28px; overflow: hidden; margin: 0 auto;
+    background: linear-gradient(160deg, #6E7FA8 0%, #A7B5CF 45%, #D8C9B8 100%); box-shadow: 0 1px 3px #0003; font-family: var(--font); color: var(--t1); }
+  .scrim { position: absolute; inset: 0; background: #00000066; }
+  .kbd { position: absolute; left: 0; right: 0; bottom: 0; height: 288px; display: grid; place-items: center; color: #FFFFFFAA; font-size: 12px; font-weight: 600; }
+  .kbd::before { content: ""; position: absolute; inset: 12px 22px; border: 1.5px dashed #FFFFFF55; border-radius: 14px; }
+  .stage { position: absolute; left: 0; right: 0; top: 0; height: 424px; }  /* всё выше места клавиатуры */
+  .win { position: absolute; left: 8px; right: 8px; bottom: 0; height: 212px; background: var(--s); border-radius: 22px; box-shadow: 0 6px 24px #0004; overflow: hidden; transition: height .35s ease; }
+  .win canvas { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 123px; }
+  .win .said { position: absolute; left: 18px; right: 18px; top: 16px; font-size: 21px; font-weight: 700; line-height: 1.28; min-height: 27px; }
+  .said .p { color: var(--gray); }
+  .said .ph { color: var(--gray); font-weight: 600; }
+  .row { position: absolute; left: 12px; right: 12px; bottom: 12px; display: flex; justify-content: space-between; align-items: center; z-index: 2; }
+  .b { width: 50px; height: 50px; border-radius: 14px; display: grid; place-items: center; }
+  .b svg { width: 25px; height: 25px; }
+  .b.mic { background: var(--s); box-shadow: 0 1px 4px #0002; }
+  .b.ok { background: var(--t1); color: #fff; }
+  .badge { position: absolute; top: -6px; right: -6px; min-width: 20px; height: 20px; border-radius: 10px; background: #6B32A8; color: #fff; font-size: 12px; font-weight: 800; display: grid; place-items: center; padding: 0 5px; }
+  /* Задача */
+  .card { background: var(--s); border-radius: 16px; padding: 10px 12px; display: flex; gap: 10px; align-items: flex-start; box-shadow: 0 2px 10px #0003; }
+  .ring { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--gray); flex: none; margin-top: 2px; }
+  .tt { flex: 1; min-width: 0; }
+  .tt b { display: block; font-size: 15.5px; font-weight: 700; line-height: 1.3; }
+  .meta { display: flex; gap: 10px; font-size: 12.5px; color: var(--t2); font-weight: 600; margin-top: 3px; }
+  .meta i { font-style: normal; }
+  .x { color: var(--gray); font-size: 18px; line-height: 1; padding: 0 2px; }
+  .enter { animation: pop .35s ease both; }
+  @keyframes pop { from { opacity: 0; transform: translateY(10px) scale(.97); } }
+  @media (prefers-reduced-motion: reduce) { .enter { animation: none; } .win { transition: none; } }
+  .note { font-size: 12px; color: var(--muted); max-width: 360px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Несколько задач голосом — 10 вариантов окна (#310)</h1>
+    <p class="lead">Путь А (ответ PM): без ИИ — каждая фраза после паузы становится задачей, срок разбирается как при наборе. В макетах проигрывается диктовка: «Купить продукты сегодня… Провести хакатон 15 декабря… Позвонить маме завтра в 10».</p>
+    <ul class="rules">
+      <li><b>Общее</b>: окно голоса — «Цветной прилив» на месте окна задачи; ⏸/⏺ слева, галочка справа сохраняет все задачи; «Назад» — закрыть без задач.</li>
+      <li><b>Правка</b>: нажатие на задачу — исправить текст и срок; × — убрать.</li>
+    </ul>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><b style="font-size:14px">Все макеты:</b>
+      <div class="seg" role="group" aria-label="Режим показа"><button type="button" id="m-play" aria-pressed="true">Диктовка</button><button type="button" id="m-done" aria-pressed="false">Итог: 3 задачи</button></div></div>
+  </header>
+  <section class="grid" id="grid"></section>
+</div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6.5" y="5" width="3.6" height="14" rx="1.8" fill="currentColor"/><rect x="13.9" y="5" width="3.6" height="14" rx="1.8" fill="currentColor"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5,12.5l4.5,4.5L19,7.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3.5,10h17 M8,3v4 M16,3v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+</svg>
+
+<script>
+(() => {
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const TASKS = [
+    { title: 'Купить продукты', date: 'Сегодня', said: 'Купить продукты сегодня', group: 'Сегодня' },
+    { title: 'Провести хакатон', date: '15 дек', said: 'Провести хакатон 15 декабря', group: '15 декабря' },
+    { title: 'Позвонить маме', date: 'Завтра, 10:00', said: 'Позвонить маме завтра в 10', group: 'Завтра' },
+  ];
+  /* Сценарий диктовки: [секунда, сколько задач уже готово, текущая фраза]. */
+  const SCRIPT = [[0, 0, ''], [0.6, 0, 'Купить'], [1.2, 0, 'Купить продукты'], [1.8, 0, 'Купить продукты сегодня'], [2.6, 1, ''],
+    [3.2, 1, 'Провести'], [3.8, 1, 'Провести хакатон'], [4.6, 1, 'Провести хакатон 15 декабря'], [5.4, 2, ''],
+    [6.0, 2, 'Позвонить маме'], [6.8, 2, 'Позвонить маме завтра в 10'], [7.6, 3, ''], [12, 3, '']];
+  const LOOP = 12;
+  const esc = s => s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  const cal = '<svg width="13" height="13" style="vertical-align:-2px"><use href="#i-cal"/></svg>';
+  const meta = t => `<div class="meta"><i>${cal} ${t.date}</i><i>Входящие</i></div>`;
+  const card = (t, extra = '') => `<div class="card ${extra}"><span class="ring"></span><div class="tt"><b>${t.title}</b>${meta(t)}</div><span class="x">×</span></div>`;
+  const said = st => st.partial ? `<span class="p">${esc(st.partial)}</span>` : (st.done ? '' : '<span class="ph">…</span>');
+  const winBase = (st, opts = {}) => `<div class="win" style="height:${opts.h || 212}px">${opts.inner ?? `<div class="said">${said(st)}</div>`}<canvas></canvas>
+      <div class="row"><span class="b mic"><svg><use href="#i-pause"/></svg></span><span class="b ok" style="position:relative"><svg><use href="#i-check"/></svg>${opts.badge && st.n ? `<span class="badge">${st.n}</span>` : ''}</span></div></div>`;
+
+  const V = [
+    { name: 'Карточки над окном', desc: 'Как в Ramble: задачи появляются белыми карточками над окном, новая — ближе к окну. Старые уходят вверх.',
+      render: st => `<div style="position:absolute;left:8px;right:8px;bottom:220px;display:flex;flex-direction:column;gap:8px">${TASKS.slice(0, st.n).map((t, i) => card(t, i === st.n - 1 && st.fresh ? 'enter' : '')).join('')}</div>${winBase(st)}` },
+    { name: 'Стопка', desc: 'Карточки ложатся друг на друга с лёгким наклоном, как листки. Видна последняя целиком и края предыдущих.',
+      render: st => `<div style="position:absolute;left:14px;right:14px;bottom:232px;height:120px">${TASKS.slice(0, st.n).map((t, i) => { const back = st.n - 1 - i; return `<div style="position:absolute;left:0;right:0;bottom:${back * 16}px;transform:rotate(${i % 2 ? 1.6 : -1.6}deg) scale(${1 - back * 0.04});z-index:${i};opacity:${back > 2 ? 0 : 1}">${card(t, i === st.n - 1 && st.fresh ? 'enter' : '')}</div>`; }).join('')}</div>${winBase(st)}` },
+    { name: 'Список в окне', desc: 'Окно растёт вверх: сверху нумерованные строки задач, под ними текущая фраза, внизу вода и кнопки.',
+      render: st => { const h = 212 + st.n * 46; return winBase(st, { h, inner: `<div style="position:absolute;left:16px;right:16px;top:14px">${TASKS.slice(0, st.n).map((t, i) => `<div class="${i === st.n - 1 && st.fresh ? 'enter' : ''}" style="display:flex;align-items:center;gap:10px;height:46px;border-bottom:1px solid var(--line-a)"><span style="width:22px;height:22px;border-radius:50%;background:var(--soft);display:grid;place-items:center;font-size:12px;font-weight:800">${i + 1}</span><b style="flex:1;font-size:16px">${t.title}</b><span style="color:var(--t2);font-size:13px;font-weight:600">${t.date}</span><span class="x">×</span></div>`).join('')}<div class="said" style="position:static;margin-top:10px">${said(st)}</div></div>` }); } },
+    { name: 'Шторка', desc: 'Окно сразу высокое — от верха экрана до места клавиатуры. Задачи списком с разделителями, места хватает на 5–6 задач.',
+      render: st => winBase(st, { h: 384, inner: `<div style="position:absolute;left:16px;right:16px;top:16px">${TASKS.slice(0, st.n).map((t, i) => `<div class="${i === st.n - 1 && st.fresh ? 'enter' : ''}" style="display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--line-a)"><span class="ring"></span><div class="tt"><b>${t.title}</b>${meta(t)}</div><span class="x">×</span></div>`).join('')}<div class="said" style="position:static;margin-top:12px">${said(st)}</div></div>` }) },
+    { name: 'Пилюли', desc: 'Компактно: каждая задача — пилюля «название · срок» над окном, переносятся в несколько строк.',
+      render: st => `<div style="position:absolute;left:12px;right:12px;bottom:222px;display:flex;flex-wrap:wrap-reverse;gap:8px;justify-content:flex-start">${TASKS.slice(0, st.n).map((t, i) => `<span class="${i === st.n - 1 && st.fresh ? 'enter' : ''}" style="background:var(--s);border-radius:20px;padding:8px 12px;font-size:14px;font-weight:700;box-shadow:0 2px 8px #0003;display:inline-flex;gap:6px;align-items:center">${t.title}<span style="color:var(--t2);font-weight:600">· ${t.date}</span><span class="x" style="font-size:15px">×</span></span>`).join('')}</div>${winBase(st)}` },
+    { name: 'Счётчик', desc: 'Окно не меняется. Готовая задача на секунду показывается строкой «✓ … · срок», на галочке — число задач. Нажатие на число раскрывает список.',
+      render: st => { const last = TASKS[st.n - 1]; return winBase(st, { badge: true, inner: `<div style="position:absolute;left:18px;right:18px;top:14px">${last ? `<div class="${st.fresh ? 'enter' : ''}" style="display:flex;gap:6px;align-items:center;font-size:13.5px;font-weight:700;color:#6B32A8">✓ ${last.title} <span style="color:var(--t2);font-weight:600">· ${last.date}</span></div>` : '<div style="height:19px"></div>'}<div class="said" style="position:static;margin-top:6px">${said(st)}</div></div>` }); } },
+    { name: 'По датам', desc: 'Карточки над окном сгруппированы по дням: «Сегодня», «Завтра», «15 декабря». Сразу видно, на какой день что легло.',
+      render: st => { const order = ['Сегодня', 'Завтра', '15 декабря']; const shown = TASKS.slice(0, st.n); return shown.length ? `<div style="position:absolute;left:8px;right:8px;bottom:220px;background:var(--s);border-radius:18px;box-shadow:0 2px 10px #0003;padding:8px 14px 4px">${order.filter(g => shown.some(t => t.group === g)).map(g => `<div style="color:var(--t2);font-size:12px;font-weight:800;padding-top:4px">${g}</div>${shown.filter(t => t.group === g).map(t => `<div class="${t === shown[shown.length - 1] && st.fresh ? 'enter' : ''}" style="display:flex;align-items:center;gap:10px;height:32px"><span class="ring" style="margin:0"></span><b style="flex:1;font-size:15px">${t.title}</b><span style="color:var(--t2);font-size:12.5px;font-weight:600">${t.date.includes(',') ? t.date.split(', ')[1] : ''}</span><span class="x">×</span></div>`).join('')}`).join('')}</div>${winBase(st)}` : winBase(st); } },
+    { name: 'Карусель', desc: 'Задачи — карточки в ряд над окном, листаются вбок. Новая появляется справа, старые уезжают влево.',
+      render: st => `<div style="position:absolute;left:0;right:0;bottom:222px;overflow:hidden;padding:4px 0"><div style="display:flex;gap:8px;justify-content:flex-end;padding:0 8px;transform:translateX(${Math.max(0, st.n - 2) * 0}px)">${TASKS.slice(0, st.n).map((t, i) => `<div class="card ${i === st.n - 1 && st.fresh ? 'enter' : ''}" style="flex:none;width:168px;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;width:100%"><span class="ring"></span><span class="x">×</span></div><b style="font-size:15px;line-height:1.25">${t.title}</b>${meta(t)}</div>`).join('')}</div></div>${winBase(st)}` },
+    { name: 'Проверка после', desc: 'Во время записи окно как сейчас, задачи — строками текста. Галочка открывает окно проверки со списком; «Добавить» сохраняет.',
+      render: st => st.done
+        ? `<div class="win" style="height:330px"><div style="position:absolute;left:16px;right:16px;top:16px">${TASKS.map(t => `<div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--line-a);align-items:flex-start"><span style="width:20px;height:20px;border-radius:6px;background:var(--t1);color:#fff;display:grid;place-items:center;font-size:13px;flex:none">✓</span><div class="tt"><b>${t.title}</b>${meta(t)}</div></div>`).join('')}</div><div class="row"><span class="b" style="width:auto;padding:0 6px;color:var(--t2);font-weight:700">Назад к записи</span><span class="b ok" style="width:auto;padding:0 18px;font-weight:800">Добавить 3</span></div></div>`
+        : winBase(st, { inner: `<div class="said" style="font-size:17px;line-height:1.4">${TASKS.slice(0, st.n).map(t => `<div>• ${t.said}</div>`).join('')}${st.partial ? `<div>• ${said(st)}</div>` : ''}</div>` }) },
+    { name: 'Разметка в тексте', desc: 'Один общий текст в окне; каждая задача подсвечивается своей плашкой, срок внутри выделен, как при наборе. Нажатие на плашку — правка.',
+      render: st => winBase(st, { h: 212 + Math.max(0, st.n - 1) * 30, inner: `<div class="said" style="font-size:18px;line-height:1.9">${TASKS.slice(0, st.n).map((t, i) => `<span class="${i === st.n - 1 && st.fresh ? 'enter' : ''}" style="display:inline-block;background:${['#F1E8FA', '#DCE8F4', '#EAEAEA'][i]};border-radius:8px;padding:0 6px;margin:0 4px 4px 0">${t.title} <u style="text-decoration-color:#6B32A8;text-decoration-thickness:2px;text-underline-offset:3px">${t.said.slice(t.title.length + 1)}</u></span>`).join('')}${st.partial ? said(st) : ''}</div>` }) },
+  ];
+
+  const grid = document.getElementById('grid');
+  const phones = V.map((v, idx) => {
+    const el = document.createElement('article');
+    el.className = 'variant';
+    el.innerHTML = `<div class="head"><h2><span class="n">${idx + 1}</span>${v.name}</h2><p>${v.desc}</p></div><div class="scroller"><div class="phone"><div class="scrim"></div><div class="kbd">место клавиатуры</div><div class="stage"></div></div></div>`;
+    grid.appendChild(el);
+    return { v, el, stage: el.querySelector('.stage'), key: '', clock: idx * 1.3 };
+  });
+
+  /* Вода «Цветной прилив» (#305) */
+  const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  const mix = (a, b, k) => '#' + hex(a).map((v, i) => Math.round(v + (hex(b)[i] - v) * k).toString(16).padStart(2, '0')).join('');
+  const LAYERS = [['#F1F1F3', '#F1E8FA', 0.16, 1.0, 0.9], ['#E4E4E7', '#DCE8F4', 0.34, 1.35, 2.1], ['#D3D4D8', '#C9B3EA', 0.54, 1.8, 3.4]];
+  const voice = t => Math.min(1, Math.max(0, Math.sin(t * 2.3)) ** 0.6 * (0.55 + 0.45 * Math.sin(t * 0.9 + 1)) * 1.1);
+  function water(p, rec, amp) {
+    const cv = p.stage.querySelector('canvas'); if (!cv) return;
+    const W = cv.clientWidth, H = cv.clientHeight, dpr = Math.min(2, devicePixelRatio || 1);
+    if (cv.width !== Math.round(W * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+    const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, W, H);
+    LAYERS.forEach(([g, col, base, f, ph], i) => {
+      const y0 = H * base + (1 - rec) * H * 0.16 - amp * rec * H * 0.12;
+      c.beginPath(); c.moveTo(0, H);
+      for (let x = 0; x <= W; x += 3) c.lineTo(x, y0 + Math.sin(x / W * Math.PI * 2 * f + p.clock * (1.4 + i * 0.5) + ph) * (2 + (5 + amp * 15) * rec) * (1 - i * 0.15));
+      c.lineTo(W, H); c.closePath(); c.fillStyle = mix(g, col, rec); c.fill();
+    });
+  }
+
+  let mode = 'play', t0 = performance.now();
+  function stateAt(sec) {
+    let s = SCRIPT[0];
+    for (const step of SCRIPT) if (step[0] <= sec) s = step;
+    return { n: s[1], partial: s[2], done: false };
+  }
+  function render(p, st) {
+    const key = JSON.stringify(st);
+    if (key === p.key) return;
+    st.fresh = p.lastN !== undefined && st.n > p.lastN;
+    p.lastN = st.n; p.key = key;
+    p.stage.innerHTML = p.v.render(st);
+  }
+  function frame(now) {
+    const sec = ((now - t0) / 1000) % LOOP;
+    const st = mode === 'done' || reduced ? { n: 3, partial: '', done: mode === 'done' } : stateAt(sec);
+    phones.forEach(p => {
+      render(p, { ...st });
+      const rec = st.done ? 0 : 1;
+      if (!reduced) p.clock += 0.016;
+      water(p, rec, st.partial ? voice(now / 1000) : 0.15);
+    });
+    if (!reduced) requestAnimationFrame(frame);
+  }
+  function setMode(m) {
+    mode = m; t0 = performance.now();
+    document.getElementById('m-play').setAttribute('aria-pressed', String(m === 'play'));
+    document.getElementById('m-done').setAttribute('aria-pressed', String(m === 'done'));
+    if (reduced) frame(performance.now());
+  }
+  document.getElementById('m-play').addEventListener('click', () => setMode('play'));
+  document.getElementById('m-done').addEventListener('click', () => setMode('done'));
+  requestAnimationFrame(frame);
+})();
+</script>

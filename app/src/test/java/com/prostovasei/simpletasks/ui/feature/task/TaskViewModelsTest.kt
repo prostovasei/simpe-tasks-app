@@ -738,6 +738,23 @@ class TaskViewModelsTest {
         assertEquals("Позвонить маме", tasks.created.single().title)
     }
 
+    /** #310: правка продиктованной задачи не трогает черновик «+»: отмена его не создаёт, сохранение не стирает. */
+    @Test
+    fun voiceTaskEditKeepsPlusDraft() = runTest(dispatcher) {
+        val cancelled = quickAdd("voiceText" to "Купить хлеб", "voiceTask" to 1L)
+        runCurrent()
+        cancelled.onIntent(QuickAddIntent.Dismiss)
+        assertNull("Отмена правки — без черновика", draftStore.get())
+
+        draftStore.save("Мой черновик", "")
+        val vm = quickAdd("voiceText" to "Купить хлеб", "voiceTask" to 2L)
+        runCurrent()
+        vm.onIntent(QuickAddIntent.Save)
+        runCurrent()
+        assertEquals("Купить хлеб", tasks.created.single().title)
+        assertEquals("Мой черновик", draftStore.get()?.title)
+    }
+
     @Test
     fun quickAddFromVoiceWithoutDateKeepsTarget() = runTest(dispatcher) {
         val vm = quickAdd("today" to true, "voiceText" to "Купить молоко")
