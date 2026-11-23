@@ -879,6 +879,7 @@
     <string name="voice_done">Готово</string>
     <string name="voice_close_label">Закрыть голосовой ввод</string>
     <string name="voice_err_not_heard">Не расслышал — нажмите ●</string>
+    <string name="voice_err_not_heard_spoken">Не расслышал. Нажмите «Продолжить запись»</string>
     <string name="voice_err_no_permission">Нет доступа к микрофону · Настройки</string>
     <string name="voice_err_unavailable">Распознавание недоступно</string>
     <string name="voice_err_busy">Микрофон занят</string>

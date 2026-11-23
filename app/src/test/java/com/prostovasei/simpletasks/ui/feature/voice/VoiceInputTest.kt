@@ -164,6 +164,23 @@ class VoiceInputTest {
         assertEquals(listOf("mic", "settings"), clicks)
     }
 
+    @Test
+    fun darkTheme() {
+        composeRule.mainClock.autoAdvance = false
+        composeRule.setContent {
+            AppTheme(darkTheme = true) { VoiceSheet(VoiceState(partial = "позвонить маме завтра в 10", recording = true, level = 0.6f), {}, {}, {}) }
+        }
+        composeRule.onRoot().captureRoboImage("screenshots/voice_partial_dark.png")
+    }
+
+    /** Крупный шрифт (как на телефоне PM): текст ошибки помещается между кнопками, не наезжает на них. */
+    @Test
+    @Config(qualifiers = "w412dp-h915dp-xxhdpi", fontScale = 1.3f)
+    fun largeFontError() {
+        show(VoiceState(text = "Позвонить маме завтра в 10 утра и купить хлеб по дороге домой", error = VoiceError.NO_PERMISSION))
+        composeRule.onRoot().captureRoboImage("screenshots/voice_error_large_font.png")
+    }
+
     /** Распознаватель-заглушка: запоминает запуски, события передаёт тест. */
     private class FakeEngine : VoiceEngine {
         var listener: VoiceEngine.Listener? = null

@@ -9,12 +9,7 @@ import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -51,6 +46,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.animation.core.withInfiniteAnimationFrameNanos
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
@@ -185,6 +187,7 @@ fun VoiceSheet(
     // Нажатие на текст во время записи: остановить запись и, как только появится поле, сразу открыть клавиатуру (#299).
     var wantFocus by remember { mutableStateOf(false) }
     val closeLabel = stringResource(R.string.voice_close_label)
+    val notHeardSpoken = stringResource(R.string.voice_err_not_heard_spoken)
     Box(
         Modifier.fillMaxSize().background(colors.scrim)
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onCancel)
@@ -206,8 +209,8 @@ fun VoiceSheet(
                     .shadow(sizes.navShadow, AppTheme.shapes.nav)
                     .clip(AppTheme.shapes.nav)
                     .background(colors.surface)
-                    // Нажатия по карточке не закрывают окно.
-                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = {}),
+                    // Нажатия по карточке не закрывают окно; без clickable — TalkBack не видит здесь лишней кнопки.
+                    .pointerInput(Unit) { detectTapGestures { } },
             ) {
                 Tide(state, Modifier.align(Alignment.BottomCenter).fillMaxWidth().fillMaxHeight(SizeTokens.VOICE_TIDE_PERCENT / 100f))
                 VoiceText(state, wantFocus, { wantFocus = it }, onEdit, onFocusText)
@@ -234,8 +237,15 @@ fun VoiceSheet(
                                 fontWeight = FontWeight.Bold,
                                 color = colors.textPrimary,
                                 textAlign = TextAlign.Center,
+                                maxLines = ERROR_LINES,
+                                overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier
                                     .then(if (error == VoiceError.NO_PERMISSION) Modifier.clickable(role = Role.Button, onClick = onSettings) else Modifier)
+                                    // Ошибка появляется без действия пользователя — TalkBack её проговаривает; «●» читается словами.
+                                    .semantics {
+                                        liveRegion = LiveRegionMode.Polite
+                                        if (error == VoiceError.NOT_HEARD) contentDescription = notHeardSpoken
+                                    }
                                     .testTag(TAG_VOICE_ERROR),
                             )
                         }
@@ -353,7 +363,7 @@ private fun Tide(state: VoiceState, modifier: Modifier) {
     val animated = remember { Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) > 0f }
     val rec by animateFloatAsState(if (state.recording) 1f else 0f, tween(CALM_MILLIS), label = "voiceRec")
     val level by animateFloatAsState(if (state.recording) state.level else 0f, label = "voiceLevel")
-    val phase = tidePhase(state.recording && animated)
+    val phase = tidePhase(state.recording, animated) { rec }
     val rise = with(LocalDensity.current) { AppTheme.sizes.voiceTideRise.toPx() }
     Canvas(modifier) {
         val w = size.width
@@ -376,17 +386,24 @@ private fun Tide(state: VoiceState, modifier: Modifier) {
     }
 }
 
-/** Фаза волн 0..2π, круг за [WAVE_MILLIS]; бесконечная анимация есть только во время записи. */
+/**
+ * Фаза волн: свои часы вместо бесконечной анимации, чтобы на паузе волны не прыгали к началу, а плавно замедлялись вместе
+ * с переходом в серую воду и продолжались с того же места после ⏺. Кадры идут только пока вода движется; при выключенных
+ * анимациях системы — никогда.
+ */
 @Composable
-private fun tidePhase(active: Boolean): Float {
-    if (!active) return 0f
-    val transition = rememberInfiniteTransition(label = "voiceTide")
-    val phase by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 2f * PI.toFloat(),
-        animationSpec = infiniteRepeatable(tween(WAVE_MILLIS, easing = LinearEasing), RepeatMode.Restart),
-        label = "phase",
-    )
+private fun tidePhase(recording: Boolean, animated: Boolean, rec: () -> Float): Float {
+    var phase by remember { mutableFloatStateOf(0f) }
+    LaunchedEffect(recording, animated) {
+        if (!animated) return@LaunchedEffect
+        var last = withInfiniteAnimationFrameNanos { it }
+        while (recording || rec() > STILL) {
+            val now = withInfiniteAnimationFrameNanos { it }
+            val speed = WAVE_SPEED * (WAVE_SLOW + (1f - WAVE_SLOW) * rec())
+            phase = (phase + (now - last) / NANOS * speed) % PHASE_WRAP
+            last = now
+        }
+    }
     return phase
 }
 
@@ -410,7 +427,14 @@ private fun VoiceError.blocking() = this == VoiceError.NO_PERMISSION || this == 
 private const val KEYBOARD_FALLBACK = 0.4f
 private const val DISABLED_ALPHA = 0.35f
 private const val CALM_MILLIS = 600
-private const val WAVE_MILLIS = 3200
+private const val WAVE_SPEED = 1.96f
+private const val WAVE_SLOW = 0.15f
+private const val STILL = 0.01f
+private const val NANOS = 1_000_000_000f
+private const val ERROR_LINES = 2
+
+/** Слои движутся с множителями 1; 1,35; 1,7 — сброс фазы на 20 кругах для всех слоёв приходится на целый круг. */
+private val PHASE_WRAP = 2f * PI.toFloat() * 20f
 private const val CALM_DROP = 0.16f
 private const val WAVE_MIN = 0.015f
 private const val WAVE_REC = 0.04f
