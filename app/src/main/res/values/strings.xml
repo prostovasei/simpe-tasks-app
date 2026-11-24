@@ -862,6 +862,14 @@
     <string name="weigh_in_text_first">Сегодня записи веса ещё нет.</string>
     <string name="weigh_in_action">Записать</string>
     <string name="module_news">Новости</string>
+    <string name="module_hub">Главная</string>
+    <string name="hub_add_task">Задача</string>
+    <string name="hub_add_expense">Расход</string>
+    <string name="hub_add_weight">Вес</string>
+    <string name="hub_group_overdue">Просрочено</string>
+    <string name="hub_no_tasks">На сегодня и завтра задач нет</string>
+    <string name="hub_add_task_button">+ Задача</string>
+    <string name="hub_news_page">Новости, страница %1$d из %2$d</string>
     <string name="news_refresh">Обновить новости</string>
     <string name="news_failed">Не удалось обновить новости. Попробуйте ещё раз.</string>
     <string name="news_empty">Нет новостей за последние 24 часа</string>
