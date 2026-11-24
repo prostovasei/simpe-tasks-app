@@ -145,3 +145,32 @@ button.wide { width: 100%; }
 .w-tabs { color: var(--muted); font-size: 18px; }
 .w-tabs b { color: var(--ink); font-size: 22px; }
 .w-month { color: var(--muted); font-size: 15px; }
+
+.thick-row { display: flex; align-items: center; gap: 8px; margin: 2px 0 6px; }
+.thick { position: relative; flex: 1; height: 26px; border-radius: 13px; background: var(--soft); }
+.thick i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 13px; background: var(--warning); display: flex; align-items: center; padding-left: 12px; }
+.thick i span { color: #fff; font-weight: 700; font-size: 14px; }
+.thick b { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; background: var(--muted); box-shadow: 0 0 0 1.5px #fff; }
+.thick-limit { font-weight: 700; font-size: 16px; }
+.ends .ahead { font-weight: 700; }
+.ruler-head { display: flex; justify-content: space-between; font-size: 12.5px; font-weight: 600; color: var(--muted); }
+.ruler-head .ahead { color: var(--warning); font-size: 14px; font-weight: 700; }
+.ruler { position: relative; height: 60px; margin: 0 6px 4px; }
+.ruler .track { position: absolute; left: 0; right: 0; top: 26px; height: 6px; border-radius: 3px; background: var(--soft); }
+.ruler .track i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; background: var(--warning); }
+.ruler .track em { position: absolute; top: 2px; height: 0; border-top: 2px dashed var(--muted); }
+.ruler .lim { position: absolute; top: 20px; height: 18px; width: 3px; margin-left: -1.5px; background: var(--ink); border-radius: 1px; }
+.ruler .today { position: absolute; top: 22px; height: 14px; width: 2px; margin-left: -1px; background: var(--muted); box-shadow: 0 0 0 1.5px #fff; }
+.ruler .dot { position: absolute; top: 24px; width: 10px; height: 10px; margin-left: -5px; border-radius: 50%; border: 2px solid var(--ink); background: #fff; }
+.ruler .bubble { position: absolute; top: 0; transform: translateX(-50%); background: var(--warning); color: #fff; font-size: 12px; font-weight: 700; border-radius: 8px; padding: 2px 7px; }
+.ruler .lab { position: absolute; top: 40px; font-size: 11.5px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+.ruler .lab.mid { transform: translateX(-80%); color: var(--ink); }
+.ruler .lab.end { transform: translateX(-100%); display: none; }
+.ruler .lab.mid::after { content: " · прогноз 68k"; color: var(--muted); }
+.summary.f { align-items: center; }
+.summary .gauge { flex-direction: column; gap: 0; padding: 0; position: relative; width: 112px; }
+.summary .gauge .arc { width: 100px; height: 52px; }
+.summary .gauge b { position: absolute; top: 24px; font-size: 17px; }
+.summary .gauge small { font-size: 11.5px; color: var(--muted); font-weight: 600; margin-top: 2px; }
+.widget .summary .gauge { width: 100px; }
+.bar i, .thick i, .track i { font-style: normal; }

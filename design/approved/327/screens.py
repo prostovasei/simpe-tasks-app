@@ -2,7 +2,7 @@
 python3 design/approved/327/screens.py && node design/approved/327/render.js
 Цвета — токены ColorTokens (warning — новый), шрифт Manrope из app/src/main/res/font. Суммы вымышленные, сегодня 24 ноября 2026."""
 from html import escape
-from math import ceil
+from math import ceil, cos, pi, sin
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -201,6 +201,28 @@ def limit_variant(kind, widget=False):
 <div class="limit">{line}<div class="ends"><span>потрачено</span><span>лимит 57k ₽</span></div></div>'''
     if kind == 'B':
         return f'''<div class="summary b"><span>{RECEIPT}<b>55k ₽</b></span><span class="mid"><span class="mid-top">{GAUGE}<b>2k ₽</b></span>{line}<small>из 57k ₽</small></span><span>{CALENDAR}<b>68k ₽</b></span></div>'''
+    if kind == 'D':  # Г — толстая полоса с суммой внутри
+        fill = spent / plan_out * 100
+        return f'''<div class="thick-row"><div class="thick"><i style="width:{fill:.1f}%"><span>55k ₽</span></i><b style="left:{PACE * 100:.1f}%"></b></div><span class="thick-limit">57k</span></div>
+<div class="ends"><span class="ahead">осталось 2k ₽</span><span class="forecast">{CALENDAR}прогноз 68k ₽</span></div>'''
+    if kind == 'E':  # Д — шкала до прогноза
+        top = 68_437
+        at = lambda amount: f'{amount / top * 100:.1f}%'
+        return f'''<div class="ruler-head"><span>потрачено</span><span class="ahead">осталось 2k ₽</span></div>
+<div class="ruler"><span class="bubble" style="left:{at(spent)}">55k</span>
+  <div class="track"><i style="width:{at(spent)}"></i><em style="left:{at(plan_out)};width:calc(100% - {at(plan_out)})"></em></div>
+  <b class="today" style="left:{at(plan_out * PACE)}"></b><b class="lim" style="left:{at(plan_out)}"></b><span class="dot" style="left:100%"></span>
+  <span class="lab" style="left:0">0</span><span class="lab mid" style="left:{at(plan_out)}">лимит 57k</span><span class="lab end" style="left:100%">прогноз 68k</span></div>'''
+    if kind == 'F':  # Е — дуга-спидометр в центре
+        r, cx, cy = 38, 50, 46
+        length = pi * r
+        filled = spent / plan_out * length
+        theta = pi * (1 - PACE)
+        tick = (cx + (r - 7) * cos(theta), cy - (r - 7) * sin(theta), cx + (r + 7) * cos(theta), cy - (r + 7) * sin(theta))
+        arc = f'''<svg class="arc" viewBox="0 0 100 52"><path d="M{cx - r} {cy} A{r} {r} 0 0 1 {cx + r} {cy}" fill="none" stroke="#EAEAEA" stroke-width="8" stroke-linecap="round"/>
+<path d="M{cx - r} {cy} A{r} {r} 0 0 1 {cx + r} {cy}" fill="none" stroke="#C98500" stroke-width="8" stroke-linecap="round" stroke-dasharray="{filled:.1f} {length:.1f}"/>
+<line x1="{tick[0]:.1f}" y1="{tick[1]:.1f}" x2="{tick[2]:.1f}" y2="{tick[3]:.1f}" stroke="#62656E" stroke-width="2"/></svg>'''
+        return f'''<div class="summary f"><span>{RECEIPT}<b>55k ₽</b></span><span class="gauge">{arc}<b>2k ₽</b><small>из 57k ₽</small></span><span>{CALENDAR}<b>68k ₽</b></span></div>'''
     return f'''<div class="limit c"><div class="ends top"><span><b>55k</b> из 57k ₽</span><span class="ahead">осталось 2k ₽</span></div>{line}<div class="ends"><span></span><span class="forecast">{CALENDAR}прогноз 68k ₽</span></div></div>'''
 
 
@@ -252,6 +274,11 @@ sheets = [
         variant('A', 'А · Полоска под суммами', 'Три суммы как сейчас. Под ними полоска во всю ширину: заполнение — потрачено, чёрточка — план к сегодня, справа «лимит 57k». Осталось — в центре сверху.'),
         variant('B', 'Б · Полоска в центре', 'Строка остаётся одной. В центре «осталось 2k», под ним короткая полоска и «из 57k». Самый компактный вариант.'),
         variant('C', 'В · Как строка бюджета', 'Вместо трёх сумм — строка как «Всего» в окне «Бюджет»: «55k из 57k ₽ · осталось 2k», полоска, под ней прогноз.'),
+    ]),
+    ('sheet-5', 'Полоска лимита — ещё три варианта', [
+        variant('D', 'Г · Толстая полоса с суммой', 'Одна крупная полоса: внутри потрачено «55k ₽», справа лимит «57k». Под ней «осталось 2k» и прогноз. Три суммы убираются.'),
+        variant('E', 'Д · Шкала с прогнозом', 'Шкала от 0 до прогноза: заполнено — потрачено (метка «55k»), жирная риска — лимит, пунктир за ней — сколько выйдет сверх лимита по прогнозу.'),
+        variant('F', 'Е · Спидометр в центре', 'Значок лимита становится дугой-спидометром: заполнение — потрачено, риска — план к сегодня, внутри «2k» осталось, под ним «из 57k».'),
     ]),
 ]
 
