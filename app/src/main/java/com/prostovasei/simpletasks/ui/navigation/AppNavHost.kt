@@ -144,6 +144,8 @@ import com.prostovasei.simpletasks.ui.feature.finance.CategoriesRoute
 import com.prostovasei.simpletasks.ui.feature.finance.UnsortedRoute
 import com.prostovasei.simpletasks.ui.feature.finance.FinanceIntent
 import com.prostovasei.simpletasks.ui.feature.finance.FinanceRoute
+import com.prostovasei.simpletasks.ui.feature.finance.FinanceEffects
+import com.prostovasei.simpletasks.ui.feature.hub.HubRoute
 import com.prostovasei.simpletasks.ui.feature.finance.FinanceSettingsRoute
 import com.prostovasei.simpletasks.ui.feature.finance.PlacesRoute
 import com.prostovasei.simpletasks.ui.feature.finance.FinanceTrashRoute
@@ -257,7 +259,8 @@ fun AppNavHost(
     val context = LocalContext.current
     // Страница, с которой открывается приложение: «Предстоящее» или «Неделя» — выбранная последней.
     var left by remember { mutableStateOf(NavPrefs.left(context)) }
-    val startDestination = remember { NavPrefs.lastTask(context).route }
+    // #329: приложение открывается на хабе «Главная»; раздел задач помнит последний выбор (Предстоящие, Неделя, Списки).
+    val startDestination = HubDestination
 
     // Финансы (#217, этап 1 — #221): отдельный модуль. Нижняя панель общая (#241): модуль меняется кнопкой справа;
     // при возврате в модуль открывается то же место (сохранённое состояние страницы).
@@ -265,6 +268,8 @@ fun AppNavHost(
     // «Здоровье» (#257) — отдельный модуль со своей панелью; экран белый плоский, как «Неделя» (макеты design/approved/257).
     val inHealth = destination?.hasRoute(HealthDestination::class) == true
     val inNews = destination?.hasRoute(NewsDestination::class) == true
+    val inHub = destination?.hasRoute(HubDestination::class) == true
+    var hubMenu by remember { mutableStateOf(false) }
     val newsScope = rememberCoroutineScope()
     val refreshNews: suspend () -> Unit = {
         WidgetRenderer.refreshNews(context.applicationContext, cancelNotification = true)
@@ -277,7 +282,7 @@ fun AppNavHost(
         navController.openRoot(NewsDestination, restore = true)
         onRouteOpened()
     }
-    val taskCanvas = currentTab == Tab.UPCOMING || currentTab == Tab.WEEK || destination?.hasRoute(ProjectDestination::class) == true || inHealth || inNews
+    val taskCanvas = currentTab == Tab.UPCOMING || currentTab == Tab.WEEK || destination?.hasRoute(ProjectDestination::class) == true || inHealth || inNews || inHub
     val lightBars = taskCanvas || !isSystemInDarkTheme()
     SideEffect {
         (context as? Activity)?.window?.let { window ->
@@ -386,9 +391,10 @@ fun AppNavHost(
         containerColor = if (taskCanvas) Color(TaskCanvasTokens.background.light) else AppTheme.colors.background,
         snackbarHost = { UndoSnackbarHost(snackbar) },
         bottomBar = {
-            if (inFinance || inHealth || inNews || (!selectionMode.value && (destination == null || currentTab != null))) {
+            if (inHub || inFinance || inHealth || inNews || (!selectionMode.value && (destination == null || currentTab != null))) {
                 val task = currentTab ?: Tab.valueOf(lastTaskTab)
                 val active = when {
+                    inHub -> "hub"
                     inFinance -> "finance"
                     inHealth -> "health"
                     inNews -> "news"
@@ -405,24 +411,27 @@ fun AppNavHost(
                     } else if (currentTab != tab) navController.openTab(tab)
                 }
                 val pages = listOf(
+                    BarPage("hub", R.drawable.ic_module_hub, R.string.module_hub, "module:HUB"),
                     BarPage("tasks", task.icon, task.label, "tab:${task.name}"),
                     BarPage("finance", R.drawable.ic_module_finance, R.string.module_finance, "module:FINANCE"),
                     BarPage("health", R.drawable.ic_module_health, R.string.module_health, "module:HEALTH"),
                     BarPage("news", R.drawable.ic_module_news, R.string.module_news, "module:NEWS"),
                 )
-                TaskCanvasTheme(enabled = inFinance || inHealth || inNews || active == "tasks" && task != Tab.LISTS) {
+                TaskCanvasTheme(enabled = inHub || inFinance || inHealth || inNews || active == "tasks" && task != Tab.LISTS) {
                     androidx.compose.foundation.layout.Box {
                         AppBottomBar(pages, active, { key ->
                             when {
                                 key == "tasks" && active == "tasks" -> taskPickerOpen = true
                                 key == "tasks" -> navController.openTab(task)
                                 key == active -> Unit
+                                key == "hub" -> navController.popBackStack(HubDestination, inclusive = false)
                                 key == "finance" -> navController.openRoot(FinanceDestination, restore = true)
                                 key == "health" -> navController.openRoot(HealthDestination, restore = true)
                                 key == "news" -> navController.openRoot(NewsDestination, restore = true)
                             }
                         }, onAdd = {
                             when (active) {
+                                "hub" -> hubMenu = true
                                 "finance" -> finance.onIntent(FinanceIntent.Add)
                                 "health" -> health.onIntent(HealthIntent.Add)
                                 "news" -> { newsScope.launch { refreshNews() } }
@@ -444,6 +453,22 @@ fun AppNavHost(
                             refreshAction = inNews,
                             longClickPage = "tasks".takeIf { active == "tasks" && task == Tab.WEEK },
                             onPageLongClick = { weekFilterOpen = true })
+                        // #329: «+» на хабе — меню «Задача / Расход / Вес», окна открываются поверх хаба.
+                        androidx.compose.material3.DropdownMenu(expanded = hubMenu, onDismissRequest = { hubMenu = false },
+                            modifier = Modifier.testTag(TAG_HUB_MENU)) {
+                            listOf(
+                                Triple(R.string.hub_add_task, R.drawable.ic_module_tasks) { navController.navigate(QuickAddDestination(today = true)) },
+                                Triple(R.string.hub_add_expense, R.drawable.ic_module_finance) { finance.onIntent(FinanceIntent.Add) },
+                                Triple(R.string.hub_add_weight, R.drawable.ic_module_health) { health.onIntent(HealthIntent.Add) },
+                            ).forEach { (label, icon, action) ->
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(label), fontWeight = androidx.compose.ui.text.font.FontWeight.Bold) },
+                                    leadingIcon = { androidx.compose.material3.Icon(androidx.compose.ui.res.painterResource(icon), null) },
+                                    onClick = { hubMenu = false; action() },
+                                    modifier = Modifier.testTag("$TAG_HUB_MENU:$label"),
+                                )
+                            }
+                        }
                         if (active == "tasks" && taskPickerOpen) {
                             androidx.compose.material3.AlertDialog(
                                 onDismissRequest = { taskPickerOpen = false },
@@ -537,6 +562,13 @@ fun AppNavHost(
             }
             composable<SettingsDestination> { SettingsRoute(onBack = { navController.popBackStack() }) }
             composable<AppInfoDestination> { AppInfoRoute(onBack = { navController.popBackStack() }) }
+            composable<HubDestination> {
+                val financeState by finance.state.collectAsStateWithLifecycle()
+                val healthState by health.state.collectAsStateWithLifecycle()
+                FinanceEffects(finance)
+                HubRoute(financeState, finance::onIntent, healthState, health::onIntent, onOpenTask = openTask,
+                    onAddTask = { navController.navigate(QuickAddDestination(today = true)) })
+            }
             composable<FinanceDestination> {
                 FinanceRoute(finance, onOpenUnsorted = { navController.navigate(FinanceUnsortedDestination) { launchSingleTop = true } })
             }
@@ -631,6 +663,8 @@ private fun AnimatedContentTransitionScope<NavBackStackEntry>.slideOut(push: Boo
 
 /** Сдвиг экрана при переходе — десятая часть ширины. */
 private const val SHIFT_PART = 10
+
+const val TAG_HUB_MENU = "hub_menu"
 
 /** Переход на вкладку с сохранением состояния каждой вкладки (стандартное поведение нижнего бара). */
 // Итерация 55: «Списки» всегда открываются с корня — «Входящие», «Поиск» и «Настройки» внутри не «залипают».

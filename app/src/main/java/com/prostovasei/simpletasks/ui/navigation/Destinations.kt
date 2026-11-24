@@ -106,6 +106,10 @@ data class SnoozeDestination(val taskId: String)
 @Serializable
 data class ProjectDestination(val projectId: String)
 
+/** Хаб «Главная» (#329): стартовый экран, первая вкладка нижней панели (домик). */
+@Serializable
+data object HubDestination
+
 /** Раздел «Финансы» (#217, этап 1 — #221): открывается значком «₽» верхнего бара модулей. */
 @Serializable
 data object FinanceDestination
