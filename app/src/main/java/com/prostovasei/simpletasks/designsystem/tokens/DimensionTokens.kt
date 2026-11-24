@@ -128,6 +128,16 @@ object SizeTokens {
     const val HEALTH_DELTA_WIDTH = 48
 
     /**
+     * Бюджет (#327), dp. [LIMIT_BAR] — толстая полоса лимита вверху «Финансов» (вариант Г); [BUDGET_BAR] — полоска строки окна «Бюджет»;
+     * [BUDGET_MARK] — ширина отметки «сегодня», [BUDGET_MARK_OVER] — насколько она выступает над полоской; [BUDGET_TOTAL_RULE] — линия под итогом.
+     */
+    const val LIMIT_BAR = 26
+    const val BUDGET_BAR = 6
+    const val BUDGET_MARK = 2
+    const val BUDGET_MARK_OVER = 4
+    const val BUDGET_TOTAL_RULE = 2
+
+    /**
      * Окно голосового ввода (#305): высота как у окна новой задачи без срока — не растёт от клавиатуры и длины текста;
      * [VOICE_TIDE_PERCENT] — доля высоты окна под «водой» снизу; [VOICE_TIDE_RISE] — на сколько dp голос поднимает воду.
      */

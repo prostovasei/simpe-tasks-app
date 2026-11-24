@@ -43,6 +43,7 @@ class FinanceViewModel @Inject constructor(
         viewModelScope.launch { finance.observePlaces().collect { places -> setState { copy(places = places) } } }
         viewModelScope.launch { finance.observeFormHints().collect { hints -> setState { copy(hints = hints) } } }
         viewModelScope.launch { finance.observeTrash().collect { trash -> setState { copy(trash = trash) } } }
+        viewModelScope.launch { finance.observeBudgets().collect { budgets -> setState { copy(budgets = budgets) } } }
         viewModelScope.launch { finance.observeCounts().collect { counts -> setState { copy(counts = counts) } } }
         viewModelScope.launch { purchases.observeSettings().collect { settings -> setState { copy(bank = settings) } } }
         viewModelScope.launch {
@@ -59,6 +60,20 @@ class FinanceViewModel @Inject constructor(
 
     override fun onIntent(intent: FinanceIntent) {
         when (intent) {
+            is FinanceIntent.OpenBudget -> setState { copy(budgetWindow = BudgetWindow(intent.month, prepare = intent.prepare), today = time.today()) }
+            FinanceIntent.CloseBudget -> setState { copy(budgetWindow = null) }
+            is FinanceIntent.EditBudget -> setState { copy(budgetWindow = budgetWindow?.copy(editing = intent.categoryId)) }
+            is FinanceIntent.SaveBudget -> currentState.budgetWindow?.let { window ->
+                setState { copy(budgetWindow = window.copy(editing = null)) }
+                viewModelScope.launch { finance.setBudgets(window.month, mapOf(intent.categoryId to intent.amount)) }
+            }
+            is FinanceIntent.SetBudgets -> currentState.budgetWindow?.let { window ->
+                if (intent.amounts.isNotEmpty()) viewModelScope.launch { finance.setBudgets(window.month, intent.amounts) }
+            }
+            FinanceIntent.ConfirmBudget -> currentState.budgetWindow?.let { window ->
+                setState { copy(budgetWindow = null) }
+                viewModelScope.launch { finance.setBudgets(window.month, emptyMap()) }
+            }
             is FinanceIntent.SelectTab -> setState { copy(tab = intent.tab) }
             is FinanceIntent.ShiftMonth -> shiftMonth(intent.by)
             FinanceIntent.Add -> add()

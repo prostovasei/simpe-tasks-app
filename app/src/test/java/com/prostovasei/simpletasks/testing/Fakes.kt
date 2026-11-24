@@ -553,6 +553,18 @@ class FakeFinanceRepository : com.prostovasei.simpletasks.domain.repository.Fina
         calls += "deletePlace:$id"
         places.value = places.value.filterNot { it.id == id }
     }
+
+    val budgets = MutableStateFlow<List<com.prostovasei.simpletasks.domain.model.finance.Budget>>(emptyList())
+    override fun observeBudgets(): Flow<List<com.prostovasei.simpletasks.domain.model.finance.Budget>> = budgets
+    override suspend fun setBudgets(month: java.time.YearMonth, amounts: Map<String, Long>) {
+        calls += "budgets:$month:$amounts"
+        if (budgets.value.none { it.month == month }) {
+            val previous = budgets.value.filter { it.month < month }.maxOfOrNull { it.month }
+            budgets.value += budgets.value.filter { it.month == previous }.map { it.copy(month = month) }
+        }
+        budgets.value = budgets.value.filterNot { it.month == month && it.categoryId in amounts } +
+            amounts.map { (category, amount) -> com.prostovasei.simpletasks.domain.model.finance.Budget(month, category, amount) }
+    }
 }
 
 fun account(

@@ -95,4 +95,13 @@ interface FinanceRepository {
 
     /** Удаление места навсегда: у его операций место становится пустым. */
     suspend fun deletePlaceForever(id: String)
+
+    /** Бюджеты категорий всех месяцев (#327), включая снятые (сумма 0). */
+    fun observeBudgets(): Flow<List<com.prostovasei.simpletasks.domain.model.finance.Budget>>
+
+    /**
+     * Ставит бюджеты месяца: [amounts] — категория → сумма в копейках, 0 — снять. Незаведённый месяц сначала заводится копией
+     * последнего заведённого месяца раньше него. Пустой [amounts] только заводит месяц («Оставить» в уведомлении).
+     */
+    suspend fun setBudgets(month: java.time.YearMonth, amounts: Map<String, Long>)
 }

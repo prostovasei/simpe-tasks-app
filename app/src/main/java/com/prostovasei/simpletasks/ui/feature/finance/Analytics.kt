@@ -52,29 +52,10 @@ fun AnalyticsBlock(state: FinanceState, onIntent: (FinanceIntent) -> Unit) {
     val model = remember(state.operations, state.month, state.today) {
         MonthSpending.of(state.operations.orEmpty(), state.month, state.today)
     }
-    val prefs = financeLimitPreferences(LocalContext.current)
-    val monthKey = state.month.toString()
-    var limit by remember(monthKey) { mutableStateOf(prefs.getLong(monthKey, 0L).takeIf { it > 0 }) }
-    var editing by rememberSaveable(monthKey) { mutableStateOf(false) }
-    if (editing) {
-        var input by rememberSaveable(monthKey) { mutableStateOf(limit?.let(Money::input).orEmpty()) }
-        val value = Money.parse(input)
-        FinanceWindow("Лимит на месяц", "finance_limit_dialog", { editing = false }, actions = {
-            Button(enabled = value != null && (input.isBlank() || value > 0), onClick = {
-                if (value != null) {
-                    limit = value.takeIf { it > 0 }
-                    val editor = prefs.edit()
-                    if (value == 0L) editor.remove(monthKey) else editor.putLong(monthKey, value)
-                    editor.apply()
-                    editing = false
-                }
-            }) { Text("Сохранить") }
-        }) {
-            OutlinedTextField(input, { input = Money.filterInput(it) },
-                label = { Text("Лимит, ₽") }, singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
-        }
-    }
+    val context = LocalContext.current
+    val budget = remember(state.budgets, state.categories, state.operations, state.month, state.today) { state.monthBudget(state.month) }
+    val limit = monthLimit(context, budget)
+    val openBudget = { onIntent(FinanceIntent.OpenBudget(state.month)) }
     Column(Modifier.fillMaxWidth().padding(horizontal = spacing.md).testTag(TAG_ANALYTICS)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text("${compactAmount(model.average, 1)}/день", Modifier.weight(1f), style = MaterialTheme.typography.labelLarge)
@@ -82,37 +63,23 @@ fun AnalyticsBlock(state: FinanceState, onIntent: (FinanceIntent) -> Unit) {
             Text(financeMonthLabel(state.month), Modifier.testTag(TAG_MONTH_TITLE), style = MaterialTheme.typography.labelLarge)
             MonthArrow(Icons.AutoMirrored.Filled.KeyboardArrowRight, stringResource(R.string.analytics_next_month), TAG_MONTH_NEXT, state.canGoNextMonth) { onIntent(FinanceIntent.ShiftMonth(1)) }
         }
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Amount(R.drawable.ic_finance_receipt, "Потрачено", compactAmount(model.total), Modifier.weight(1f), amountTag = Modifier.testTag(TAG_ANALYTICS_TOTAL))
-            Amount(R.drawable.ic_finance_limit, "Остаток до лимита", limit?.let { compactAmount((it - model.total).coerceAtLeast(0)) } ?: "—",
-                Modifier.weight(1f).clickable(role = Role.Button) { editing = true }.padding(vertical = spacing.xs), Arrangement.Center)
-            Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
-                model.forecast?.let { Amount(R.drawable.ic_finance_forecast, "Прогноз", compactAmount(it)) }
-            }
-        }
+        LimitBar(model.total, limit, model.forecast, state.month, state.today, openBudget)
         SpendingChart(model, state.month == YearMonth.from(state.today))
         if (model.total == 0L) {
             Text(stringResource(R.string.analytics_empty), Modifier.padding(vertical = spacing.sm).testTag(TAG_ANALYTICS_EMPTY))
         } else {
-            SpendingStrip("Категории", model.categories, model.total)
+            SpendingStrip("Категории", model.categories, model.total, openBudget)
             SpendingStrip("Места", model.places, model.total)
         }
     }
 }
 
 @Composable
-private fun Amount(icon: Int, label: String, amount: String, modifier: Modifier = Modifier, arrangement: Arrangement.Horizontal = Arrangement.Start, amountTag: Modifier = Modifier) {
-    Row(modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = arrangement) {
-        Icon(painterResource(icon), label, Modifier.size(AppTheme.sizes.moduleIcon).padding(end = AppTheme.spacing.xxs), tint = AppTheme.colors.textSecondary)
-        Text(amount, amountTag, style = MaterialTheme.typography.titleMedium)
-    }
-}
-
-@Composable
-private fun SpendingStrip(title: String, rows: List<MonthSpending.Rank>, total: Long) {
+private fun SpendingStrip(title: String, rows: List<MonthSpending.Rank>, total: Long, onClick: (() -> Unit)? = null) {
     val density = LocalDensity.current
     val ink = AppTheme.colors.textPrimary.toArgb()
-    BoxWithConstraints(Modifier.fillMaxWidth().padding(top = AppTheme.spacing.md)) {
+    BoxWithConstraints(Modifier.fillMaxWidth().padding(top = AppTheme.spacing.md)
+        .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick).testTag(TAG_ANALYTICS_CATEGORY) else Modifier)) {
         val width = with(density) { maxWidth.roundToPx() }.coerceAtLeast(1)
         val bitmap = remember(rows, total, width, density, ink) {
             sharesBitmap(rows, total, width, density.density, density.fontScale, ink).asImageBitmap()
