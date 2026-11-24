@@ -3,6 +3,9 @@ package com.prostovasei.simpletasks.ui.feature.week
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.semantics.SemanticsActions
@@ -263,22 +266,22 @@ class DaySheetTest {
         assertEquals(listOf("football"), opened)
     }
 
-    /** #323: окно дня под окном задачи — сразу на месте (без роста и каскада) и не забирает «Назад». */
+    /** #323: пока над окном дня открыто окно задачи, «Назад» не закрывает окно дня; без окна задачи — закрывает. */
     @Test
-    fun settledSheetUnderTheTaskWindowIsAlreadyOpen() {
-        composeRule.mainClock.autoAdvance = false
+    fun coveredSheetLeavesBackToTheTaskWindow() {
+        var covered by mutableStateOf(true)
         composeRule.setContent {
             AppTheme {
-                DaySheet(state, { intents += it }, onClose = { closed++ }, onOpenTask = { opened += it }, onAdd = { added += it }, settled = true)
+                DaySheet(state, { intents += it }, onClose = { closed++ }, onOpenTask = { opened += it }, onAdd = { added += it }, covered = covered)
             }
         }
-        composeRule.mainClock.advanceTimeByFrame()
-        composeRule.onRoot().captureRoboImage("screenshots/day_sheet_settled.png")
-        composeRule.mainClock.autoAdvance = true
-        composeRule.onNodeWithTag(TAG_DAY_SHEET_TITLE).assertIsDisplayed()
         composeRule.runOnIdle { composeRule.activity.onBackPressedDispatcher.onBackPressed() }
         composeRule.waitForIdle()
         assertEquals(0, closed)
+        covered = false
+        composeRule.runOnIdle { composeRule.activity.onBackPressedDispatcher.onBackPressed() }
+        composeRule.waitForIdle()
+        assertEquals(1, closed)
     }
 
     @Test

@@ -113,8 +113,8 @@ fun DaySheetRoute(
     onOpenTask: (String) -> Unit,
     onAdd: (LocalDate) -> Unit,
     origin: android.graphics.Rect? = null,
-    /** #323: окно дня лежит под окном задачи — уже открыто, без анимаций появления. */
-    settled: Boolean = false,
+    /** #323: над окном дня открыто окно задачи — «Назад» его, не окна дня. */
+    covered: Boolean = false,
     /** #323: место «+» или строки задачи на экране — из него растёт окно задачи. */
     onOrigin: (android.graphics.Rect) -> Unit = {},
     viewModel: DayViewModel = hiltViewModel(),
@@ -127,7 +127,7 @@ fun DaySheetRoute(
         nowMinute = rememberNowMinute(),
         origin = origin,
         dayOf = { date -> remember(date) { viewModel.day(date) }.collectAsStateWithLifecycle().value },
-        settled = settled,
+        covered = covered,
         startPage = viewModel.page,
         onPage = { viewModel.page = it },
         onOrigin = onOrigin,
@@ -155,7 +155,7 @@ fun DaySheet(
     nowMinute: Int? = null,
     origin: android.graphics.Rect? = null,
     dayOf: @Composable (LocalDate) -> DayState = { date -> if (date == state.date) state else DayState(date = date, today = state.today, isLoading = false) },
-    settled: Boolean = false,
+    covered: Boolean = false,
     startPage: Int = PAGE_CENTER,
     onPage: (Int) -> Unit = {},
     onOrigin: (android.graphics.Rect) -> Unit = {},
@@ -179,7 +179,7 @@ fun DaySheet(
         val dateAt: (Int) -> LocalDate = { start.plusDays((it - PAGE_CENTER).toLong()) }
 
         // Возврат из окна задачи: окно уже открыто — не растёт и не каскадит заново.
-        var opened by rememberSaveable { mutableStateOf(settled) }
+        var opened by rememberSaveable { mutableStateOf(false) }
         var expanded by rememberSaveable { mutableStateOf(false) }
         val quietPage = remember { if (opened) pager.currentPage else NO_PAGE }
         val scrim = remember { Animatable(if (opened) 1f else 0f) }
@@ -248,7 +248,7 @@ fun DaySheet(
             }
         }
         // Под окном задачи (#323) «Назад» — его, не окна дня.
-        BackHandler(enabled = !settled, onBack = close)
+        BackHandler(enabled = !covered, onBack = close)
 
         val closeDistance = with(density) { sizes.toolButton.toPx() }
         val expandDistance = with(density) { SizeTokens.DAY_EXPAND_DRAG.dp.toPx() }
