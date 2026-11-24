@@ -100,6 +100,9 @@ fun AllScreen(
                             relative = group.relative?.let(days::day),
                             isOverdue = group.isOverdue,
                             modifier = Modifier.animateItem(),
+                            // #331: как в виджете — у «Сегодня» прогресс, у остальных дней число задач.
+                            count = group.items.size,
+                            progress = if (group.relative == DayLabel.Today && group.items.isNotEmpty()) group.items.count { it.isDone } to group.items.size else null,
                         )
                     }
                     // Итерация 26: задачи — как в виджете (время | линия с кружком | плашка); «сейчас» — только у сегодня.

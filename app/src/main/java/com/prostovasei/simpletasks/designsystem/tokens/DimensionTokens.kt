@@ -224,7 +224,8 @@ object SizeTokens {
      * (умножается на его масштаб) — «Сегодня» на телефоне PM обрезалось до «Сегодн».
      */
     const val TIMELINE_DAY_COLUMN = 56
-    const val WIDGET_RAIL = 26
+    /** Колонка кружка: кружок 20 dp и по 8 dp слева и справа (#331, решение PM 25.11.2026; было 26). */
+    const val WIDGET_RAIL = 36
 
     /** Высота строки: задача со временем или на весь день, период; отметка «сейчас». */
     const val WIDGET_ROW = 46
@@ -412,6 +413,9 @@ object SizeTokens {
     /** #253: минимальное поле и равные зазоры; ширина времени измеряется по HH:mm. */
     const val WEEK_EDGE = 2
     const val WEEK_CONTENT_GAP = 2
+
+    /** Отступ слева и справа от кружка в списках задач на холсте (#331, решение PM 25.11.2026: 8 dp). */
+    const val TIMELINE_CHECK_GAP = 8
     const val WIDGET_WEEK_TIME_TEXT = 10
     const val CANVAS_TIME_TEXT = 13
     const val WEEKVIEW_TASK = 22

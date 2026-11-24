@@ -331,8 +331,10 @@ private fun Node(ring: Color, done: Float, modifier: Modifier, fill: Color = rin
 }
 
 @Composable
+@Suppress("UNUSED_PARAMETER")
 private fun Segment(visible: Boolean, modifier: Modifier) {
-    Box(modifier.width(AppTheme.sizes.hairline).background(if (visible) AppTheme.colors.divider else Color.Transparent))
+    // #331 (решение PM 25.11.2026): вертикальной линии между кружками нет — сегмент лишь держит кружок по центру строки.
+    Box(modifier.width(AppTheme.sizes.hairline))
 }
 
 /** Отметка «сейчас»: зелёное время слева, точка на линии и линия до правого края. */

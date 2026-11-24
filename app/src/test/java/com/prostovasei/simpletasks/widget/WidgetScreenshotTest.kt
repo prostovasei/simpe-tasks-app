@@ -166,10 +166,11 @@ class WidgetScreenshotTest {
 
     /** Время отметки «сейчас» на телефоне — системные часы: идут сами, без перерисовки виджета. */
     @Test
-    fun nowMarkerShowsSystemClock() {
+    fun noNowMarkerInTheList() {
+        // #331 (решение PM 25.11.2026): линии «сейчас» с часами больше нет.
         val views = runBlocking { Preview(model, liveClock = true).compose(context, size = DpSize(320.dp, 420.dp)) }
         val root = views.apply(context, FrameLayout(context))
-        assertEquals(1, root.descendants().filterIsInstance<android.widget.TextClock>().count())
+        assertEquals(0, root.descendants().filterIsInstance<android.widget.TextClock>().count())
     }
 
     private fun View.descendants(): Sequence<View> = sequence {

@@ -440,8 +440,8 @@ def trow(time, color, title, done=False, over=False, period=None, rep=False, rem
     h = 46
     tcol = 'var(--overdue)' if over else ('var(--text-secondary)' if done else 'var(--text-primary)')
     t = f'<div style="width:38px;text-align:right;font-size:12px;line-height:16px;font-weight:700;color:{tcol};display:flex;flex-direction:column;justify-content:center">{time}' + (f'<span style="color:{"var(--overdue)" if over else "var(--text-secondary)"}">{end}</span>' if end else '') + '</div>'
-    rail = (f'<div style="width:26px;display:flex;flex-direction:column;align-items:center"><span style="width:1px;flex:1;background:{"var(--divider)" if top else "transparent"}"></span>'
-            f'{node(color, done, 20, rep)}<span style="width:1px;flex:1;background:{"var(--divider)" if bottom else "transparent"}"></span></div>')
+    # #331: без вертикальной линии и линии «сейчас»; кружок 20 и по 8 dp с боков (колонка 36).
+    rail = f'<div style="width:36px;display:flex;align-items:center;justify-content:center">{node(color, done, 20, rep)}</div>'
     icons = f'<span style="margin-left:4px">{bell(22, rem)}</span>' if rem else ''
     lsqh = f'<span class="list-sq" style="background:var(--inbox-list);margin-left:8px">{svg("ic_list_inbox", 12)}</span>' if lsq else ''
     plaque = (f'<div style="flex:1;margin:3px 0;border-radius:var(--radius-md);background:var(--surface);display:flex;align-items:center;padding:0 12px;opacity:{.7 if done else 1}">'

@@ -43,9 +43,8 @@ object WidgetTimeline {
                 )
             }
         }
-        if (overdue || nowMinute == null || items.none { span(it) != null }) return rows
-        val at = items.indexOfFirst { item -> span(item)?.let { it.first > nowMinute } == true }.let { if (it < 0) rows.size else it }
-        return rows.take(at) + WidgetRow.Now + rows.drop(at)
+        // #331 (решение PM 25.11.2026): строки «сейчас» больше нет — ни в приложении, ни в виджете; nowMinute лишь гасит прошедшие.
+        return rows
     }
 
     /**

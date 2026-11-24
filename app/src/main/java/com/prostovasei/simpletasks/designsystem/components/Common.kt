@@ -10,6 +10,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -79,14 +87,23 @@ fun SectionHeader(text: String, modifier: Modifier = Modifier, color: Color = Ap
  * [isOverdue] — прошедший день с невыполненными задачами: подпись красная.
  */
 @Composable
-fun DayHeader(text: String, relative: String?, isOverdue: Boolean, modifier: Modifier = Modifier) {
+fun DayHeader(
+    text: String,
+    relative: String?,
+    isOverdue: Boolean,
+    modifier: Modifier = Modifier,
+    /** #331: как в виджете — число задач дня справа; null — без числа. */
+    count: Int? = null,
+    /** #331: у «Сегодня» вместо числа — полоса и «N из M» ([done] из [total]). */
+    progress: Pair<Int, Int>? = null,
+) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
     val color = if (isOverdue) colors.overdue else colors.textPrimary
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(spacing.xs),
-        modifier = modifier.padding(start = spacing.sm, top = spacing.sm, bottom = spacing.xxs),
+        modifier = modifier.fillMaxWidth().padding(start = spacing.sm, end = spacing.sm, top = spacing.sm, bottom = spacing.xxs),
     ) {
         Text(text, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = color)
         if (relative != null) {
@@ -100,8 +117,24 @@ fun DayHeader(text: String, relative: String?, isOverdue: Boolean, modifier: Mod
                     .padding(horizontal = spacing.xs, vertical = AppTheme.sizes.hairline),
             )
         }
+        if (progress != null) {
+            val (done, total) = progress
+            Box(
+                Modifier.weight(1f).padding(start = spacing.xs).height(SizeTokens.WIDGET_PROGRESS.dp)
+                    .clip(AppTheme.shapes.small).background(colors.divider).testTag(TAG_DAY_PROGRESS),
+            ) {
+                Box(Modifier.fillMaxHeight().fillMaxWidth(if (total == 0) 0f else done.toFloat() / total).background(colors.textPrimary))
+            }
+            Text(stringResource(R.string.widget_progress, done, total), style = MaterialTheme.typography.labelSmall, color = colors.textSecondary, maxLines = 1)
+        } else if (count != null) {
+            Spacer(Modifier.weight(1f))
+            Text(count.toString(), style = MaterialTheme.typography.labelSmall, color = colors.textSecondary, modifier = Modifier.testTag(TAG_DAY_COUNT))
+        }
     }
 }
+
+const val TAG_DAY_PROGRESS = "day_progress"
+const val TAG_DAY_COUNT = "day_count"
 
 /**
  * Подпись блока «Просрочено · N» со стрелкой «свернуть» и значком «перенести на сегодня» рядом (итерация 37).

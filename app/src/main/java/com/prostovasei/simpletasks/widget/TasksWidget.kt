@@ -382,8 +382,8 @@ private fun Rail(row: WidgetRow.Task, line: Line) {
     }
     val label = if (item.isGhost) null else context.getString(if (done) R.string.task_uncomplete else R.string.widget_complete)
     Column(
-        modifier = GlanceModifier.width((if (compact) SizeTokens.WEEKVIEW_CHECK + 2 * SizeTokens.WEEK_CONTENT_GAP else SizeTokens.WIDGET_RAIL).dp).fillMaxHeight()
-            .then(if (compact) GlanceModifier.padding(horizontal = SizeTokens.WEEK_CONTENT_GAP.dp) else GlanceModifier).then(action),
+        modifier = GlanceModifier.width((if (compact) SizeTokens.WEEKVIEW_CHECK + 2 * SizeTokens.TIMELINE_CHECK_GAP else SizeTokens.WIDGET_RAIL).dp).fillMaxHeight()
+            .then(if (compact) GlanceModifier.padding(horizontal = SizeTokens.TIMELINE_CHECK_GAP.dp) else GlanceModifier).then(action),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
             LineSegment(line.top, GlanceModifier.defaultWeight())
@@ -414,7 +414,7 @@ private fun NodeCheck() {
 /** Отрезок линии шкалы ([visible] = false — пустое место той же высоты: у первой и последней строки дня). */
 @Composable
 private fun LineSegment(visible: Boolean, modifier: GlanceModifier) {
-    if (visible) Box(modifier.width(SizeTokens.HAIRLINE.dp).background(LocalWidgetColors.current.divider)) {} else Spacer(modifier)
+    Spacer(modifier) // #331: без вертикальной линии
 }
 
 /**

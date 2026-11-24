@@ -26,7 +26,7 @@
             <include layout="@layout/widget_row_time_flat" />
 
             <LinearLayout
-                android:id="@+id/row_rail" android:layout_marginStart="@dimen/widget_week_content_gap" android:layout_width="@dimen/widget_week_check"
+                android:id="@+id/row_rail" android:layout_marginStart="@dimen/widget_check_gap" android:layout_width="@dimen/widget_week_check"
                 android:layout_height="match_parent"
                 android:gravity="center_horizontal"
                 android:orientation="vertical">

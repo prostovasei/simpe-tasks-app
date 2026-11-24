@@ -177,8 +177,8 @@ class ScreensUiTest {
             val time = bounds("time")
             val node = bounds("node")
             val content = bounds("content")
-            assertEquals(2.dp, node.left - time.right)
-            assertEquals(2.dp, content.left - node.right)
+            assertEquals(8.dp, node.left - time.right) // #331: 8 dp у кружка
+            assertEquals(8.dp, content.left - node.right)
             assertEquals(14.dp, node.right - node.left)
             assertEquals(14.dp, node.bottom - node.top)
         }
