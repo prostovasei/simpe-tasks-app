@@ -54,6 +54,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -65,6 +66,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
@@ -111,6 +113,10 @@ fun DaySheetRoute(
     onOpenTask: (String) -> Unit,
     onAdd: (LocalDate) -> Unit,
     origin: android.graphics.Rect? = null,
+    /** #323: окно дня лежит под окном задачи — уже открыто, без анимаций появления. */
+    settled: Boolean = false,
+    /** #323: место «+» или строки задачи на экране — из него растёт окно задачи. */
+    onOrigin: (android.graphics.Rect) -> Unit = {},
     viewModel: DayViewModel = hiltViewModel(),
 ) {
     val state by remember(viewModel) { viewModel.day(viewModel.startDate) }.collectAsStateWithLifecycle()
@@ -121,6 +127,10 @@ fun DaySheetRoute(
         nowMinute = rememberNowMinute(),
         origin = origin,
         dayOf = { date -> remember(date) { viewModel.day(date) }.collectAsStateWithLifecycle().value },
+        settled = settled,
+        startPage = viewModel.page,
+        onPage = { viewModel.page = it },
+        onOrigin = onOrigin,
     )
 }
 
@@ -145,6 +155,10 @@ fun DaySheet(
     nowMinute: Int? = null,
     origin: android.graphics.Rect? = null,
     dayOf: @Composable (LocalDate) -> DayState = { date -> if (date == state.date) state else DayState(date = date, today = state.today, isLoading = false) },
+    settled: Boolean = false,
+    startPage: Int = PAGE_CENTER,
+    onPage: (Int) -> Unit = {},
+    onOrigin: (android.graphics.Rect) -> Unit = {},
 ) {
     val start = state.date ?: return
     TaskCanvasTheme {
@@ -155,11 +169,17 @@ fun DaySheet(
         val view = LocalView.current
         val scope = rememberCoroutineScope()
         val days = DayNames(stringResource(R.string.day_today), stringResource(R.string.day_tomorrow), stringResource(R.string.day_yesterday))
-        val pager = rememberPagerState(initialPage = PAGE_CENTER) { PAGE_COUNT }
+        val pager = rememberPagerState(initialPage = startPage) { PAGE_COUNT }
+        LaunchedEffect(pager) { snapshotFlow { pager.currentPage }.collect(onPage) }
+        // #323: прямоугольник в координатах окна → экрана (как `sourceBounds` рабочего стола).
+        val toScreen: (Rect) -> android.graphics.Rect = { r ->
+            val at = IntArray(2).also(view::getLocationOnScreen)
+            android.graphics.Rect((r.left + at[0]).toInt(), (r.top + at[1]).toInt(), (r.right + at[0]).toInt(), (r.bottom + at[1]).toInt())
+        }
         val dateAt: (Int) -> LocalDate = { start.plusDays((it - PAGE_CENTER).toLong()) }
 
         // Возврат из окна задачи: окно уже открыто — не растёт и не каскадит заново.
-        var opened by rememberSaveable { mutableStateOf(false) }
+        var opened by rememberSaveable { mutableStateOf(settled) }
         var expanded by rememberSaveable { mutableStateOf(false) }
         val quietPage = remember { if (opened) pager.currentPage else NO_PAGE }
         val scrim = remember { Animatable(if (opened) 1f else 0f) }
@@ -173,6 +193,7 @@ fun DaySheet(
         var shrinking by remember { mutableStateOf(false) }
         var closing by remember { mutableStateOf(false) }
         var sheetAt by remember { mutableStateOf(Offset.Zero) }
+        var sheetWidth by remember { mutableStateOf(0f) }
         var lastTap by remember { mutableStateOf<Offset?>(null) }
         val celebration = remember { Celebration() }
         // Ячейка виджета — в координатах окна.
@@ -226,7 +247,8 @@ fun DaySheet(
                 }
             }
         }
-        BackHandler(onBack = close)
+        // Под окном задачи (#323) «Назад» — его, не окна дня.
+        BackHandler(enabled = !settled, onBack = close)
 
         val closeDistance = with(density) { sizes.toolButton.toPx() }
         val expandDistance = with(density) { SizeTokens.DAY_EXPAND_DRAG.dp.toPx() }
@@ -264,7 +286,10 @@ fun DaySheet(
                     .padding(start = spacing.xs, end = spacing.xs, bottom = spacing.xs)
                     .heightIn(min = lerp(Dp.Hairline, fullMax, e), max = lerp(baseMax, fullMax, e) + stretchDp)
                     .fillMaxWidth()
-                    .onGloballyPositioned { sheetAt = it.positionInRoot() }
+                    .onGloballyPositioned {
+                        sheetAt = it.positionInRoot()
+                        sheetWidth = it.size.width.toFloat()
+                    }
                     .graphicsLayer {
                         val p = grow.value
                         val c = cell
@@ -294,7 +319,7 @@ fun DaySheet(
                         pager = pager,
                         dateAt = dateAt,
                         today = state.today,
-                        onAdd = onAdd,
+                        onAdd = { date, plus -> plus?.let { onOrigin(toScreen(it)) }; onAdd(date) },
                         modifier = Modifier
                             .pointerInput(Unit) {
                                 var dragged = 0f
@@ -351,7 +376,14 @@ fun DaySheet(
                                 if (closesDay(day.items, item)) lastTap?.let(celebration::fire)
                                 onIntent(TaskListIntent.ToggleComplete(item.id, item.isRecurring, item.showsDone))
                             },
-                            onOpen = { onOpenTask(it.taskId) },
+                            onOpen = {
+                                // #323: окно задачи растёт из строки — по месту нажатия, на ширину окна дня.
+                                lastTap?.let { tap ->
+                                    val half = with(density) { ROW_ORIGIN_HALF.dp.toPx() }
+                                    onOrigin(toScreen(Rect(sheetAt.x, tap.y - half, sheetAt.x + sheetWidth, tap.y + half)))
+                                }
+                                onOpenTask(it.taskId)
+                            },
                         )
                     }
                 }
@@ -365,7 +397,8 @@ fun DaySheet(
 
 /** Заголовок: дата текущего дня и «+». 8: при листании дата сдвигается вдвое медленнее окна и сменяется плавно. */
 @Composable
-private fun DayHeader(pager: PagerState, dateAt: (Int) -> LocalDate, today: LocalDate?, onAdd: (LocalDate) -> Unit, modifier: Modifier) {
+private fun DayHeader(pager: PagerState, dateAt: (Int) -> LocalDate, today: LocalDate?, onAdd: (LocalDate, Rect?) -> Unit, modifier: Modifier) {
+    var plusAt by remember { mutableStateOf<Rect?>(null) }
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
     val sizes = AppTheme.sizes
@@ -401,7 +434,8 @@ private fun DayHeader(pager: PagerState, dateAt: (Int) -> LocalDate, today: Loca
         Box(
             Modifier.size(width = SizeTokens.WIDGET_ADD_W.dp, height = sizes.toolButton)
                 .clip(AppTheme.shapes.extraLarge)
-                .clickable(role = Role.Button) { onAdd(date) }
+                .onGloballyPositioned { plusAt = it.boundsInRoot() }
+                .clickable(role = Role.Button) { onAdd(date, plusAt) }
                 .semantics { contentDescription = addLabel }
                 .testTag(TAG_DAY_SHEET_ADD),
             contentAlignment = Alignment.Center,
@@ -485,12 +519,16 @@ private fun settlePage(pager: PagerState, velocity: Float): Int {
 private const val SHEET_MAX_FRACTION = 0.8f
 
 /** 8: дней в листалке — по 10 лет в обе стороны от открытого. */
-private const val PAGE_CENTER = 3650
+internal const val DAY_PAGE_CENTER = 3650
+private const val PAGE_CENTER = DAY_PAGE_CENTER
 private const val PAGE_COUNT = PAGE_CENTER * 2 + 1
 private const val NO_PAGE = -1
 private const val TITLE_PARALLAX = 0.5f
 private const val FLING_VELOCITY = 400f
 private const val STRETCH_DAMPING = 0.5f
+
+/** #323: полувысота строки задачи (dp), из которой растёт окно задачи. */
+private const val ROW_ORIGIN_HALF = 20
 
 const val TAG_DAY_SHEET = "day_sheet"
 const val TAG_DAY_SCRIM = "day_sheet_scrim"

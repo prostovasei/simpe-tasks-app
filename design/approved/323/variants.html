@@ -1,0 +1,241 @@
+<title>Окно задачи поверх дня</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Roboto:wght@400;500;700&display=swap">
+<!--
+  Черновик на согласовании PM (24.11.2026, выбор «1 + 2»): окно задачи открывается поверх окна дня и растёт из того,
+  на что нажали, — из «+» (новая задача) или из строки задачи; при закрытии сжимается обратно, окно дня остаётся под ним.
+  Три варианта поведения окна дня под окном задачи. Цвета — как в приложении (белый холст, чёрный «+», фиолетовый приоритет).
+-->
+<style>
+  /* Раскладка: сверху пояснение и общие кнопки, ниже три телефона-варианта в ряд (на узком экране — столбиком). */
+  :root {
+    --page: #ECECEF; --ink: #16171D; --muted: #62656E; --panel: #FFFFFF; --line: #DADBE0; --hi: #6B32A8;
+    --font: "Manrope", system-ui, sans-serif; --app: "Manrope", "Roboto", system-ui, sans-serif;
+    --a-ink: #16171D; --a-muted: #62656E; --a-faint: #A9A9A9; --a-line: #E8E8EA; --a-bg: #FFFFFF; --a-prio: #862CE0;
+    --a-scrim: rgba(22, 23, 29, .42); --a-kb: #E3E4EA; --a-key: #FFFFFF;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --page: #141518; --ink: #ECECEF; --muted: #A3A5AD; --panel: #1E1F23; --line: #2E3036; --hi: #D4B8F5; color-scheme: dark } }
+  :root[data-theme="dark"] { --page: #141518; --ink: #ECECEF; --muted: #A3A5AD; --panel: #1E1F23; --line: #2E3036; --hi: #D4B8F5; color-scheme: dark }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink); font-family: var(--font); font-size: 15px; line-height: 1.45;
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 48px; }
+  .wrap { max-width: 1240px; margin: 0 auto; display: grid; gap: 20px; }
+  h1 { margin: 0; font-size: 26px; font-weight: 800; line-height: 1.2; text-wrap: balance; }
+  .lead { margin: 0; color: var(--muted); max-width: 860px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; }
+  button.c { font: 700 14px var(--font); border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 12px; padding: 9px 14px; cursor: pointer; }
+  button.c:focus-visible { outline: 2px solid var(--hi); outline-offset: 2px; }
+  button.c.primary { background: var(--ink); color: var(--page); border-color: var(--ink); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr)); gap: 20px; }
+  .v { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 16px 12px; display: grid; gap: 10px; justify-items: center; min-width: 0; }
+  .v h2 { margin: 0; font-size: 18px; font-weight: 800; justify-self: start; }
+  .v h2 span { color: var(--hi); }
+  .v p { margin: 0; color: var(--muted); font-size: 14px; justify-self: start; }
+  .scroller { width: 100%; overflow-x: auto; display: flex; justify-content: center; }
+  .row-btns { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+  .row-btns button.c { padding: 6px 10px; font-size: 13px; }
+
+  /* Телефон 360 × 740: рабочий стол с виджетом, затемнение, окно дня, второе затемнение, окно задачи, клавиатура. */
+  .phone { position: relative; width: 360px; height: 740px; flex: none; border-radius: 28px; overflow: hidden; background: #6E2A8E; font-family: var(--app); color: var(--a-ink); box-shadow: 0 4px 18px #0004; }
+  .home { position: absolute; inset: 0; padding: 34px 8px 0; display: grid; grid-template-rows: auto 1fr; gap: 10px; }
+  .widget { background: var(--a-bg); border-radius: 18px; height: 470px; padding: 6px; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(4, 1fr); gap: 0; }
+  .widget div { border-bottom: 1px solid var(--a-line); padding: 4px 5px; font-size: 9px; color: var(--a-muted); overflow: hidden; }
+  .widget div:nth-child(odd) { border-right: 1px solid var(--a-line); }
+  .widget b { color: var(--a-ink); font-size: 9px; }
+  .widget i { display: block; font-style: normal; color: var(--a-ink); font-size: 10px; font-weight: 700; line-height: 1.7; white-space: nowrap; }
+  .icons { display: grid; grid-template-columns: repeat(4, 56px); justify-content: space-around; gap: 18px; padding-top: 20px; }
+  .icons span { width: 56px; height: 56px; border-radius: 16px; background: linear-gradient(135deg, #FFB86B, #E9407A); opacity: .85; }
+  .scrim { position: absolute; inset: 0; background: var(--a-scrim); }
+  .scrim2 { position: absolute; inset: 0; background: var(--a-scrim); opacity: 0; pointer-events: none; }
+  .day { position: absolute; left: 8px; right: 8px; bottom: 8px; height: 382px; background: var(--a-bg); border-radius: 22px; transform-origin: 50% 0; overflow: hidden; }
+  .day-h { display: flex; align-items: center; padding: 10px 12px 6px; }
+  .day-h b { flex: 1; font-size: 13px; font-weight: 700; }
+  .plus { width: 64px; height: 32px; border-radius: 16px; background: var(--a-ink); color: #fff; display: grid; place-items: center; font-size: 22px; line-height: 1; cursor: pointer; border: 0; }
+  .plus:focus-visible, .task:focus-visible { outline: 2px solid var(--a-prio); outline-offset: 2px; }
+  .task { display: grid; grid-template-columns: 38px 22px 1fr auto; align-items: center; height: 40px; padding: 0 12px 0 10px; cursor: pointer; border-radius: 10px; }
+  .task .t { font-size: 11px; color: var(--a-muted); font-variant-numeric: tabular-nums; }
+  .task .o { width: 14px; height: 14px; border-radius: 50%; border: 1.6px solid #8B949E; }
+  .task.p .o { border-color: var(--a-prio); }
+  .task .n { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .task.p .n, .task.p .t { color: var(--a-prio); font-weight: 700; }
+  .task .e { font-size: 13px; }
+  .kb { position: absolute; left: 0; right: 0; bottom: 0; height: 268px; background: var(--a-kb); transform: translateY(100%); padding: 10px 4px; display: grid; grid-template-rows: repeat(4, 1fr) 1.1fr; gap: 6px; }
+  .kb div { display: grid; gap: 4px; }
+  .kb span { background: var(--a-key); border-radius: 6px; box-shadow: 0 1px 0 #0002; }
+  .card { position: absolute; left: 8px; width: 344px; height: 178px; border-radius: 22px; background: var(--a-bg); transform-origin: 0 0; visibility: hidden; overflow: hidden; box-shadow: 0 6px 22px #0003; }
+  .card .glyph { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; font-size: 22px; }
+  .card .in { position: absolute; inset: 0; padding: 16px 16px 12px; display: grid; grid-template-rows: auto auto auto 1fr; gap: 8px; opacity: 0; }
+  .card .ttl { font: 800 21px/1.2 var(--app); color: var(--a-faint); }
+  .card .ttl.filled { color: var(--a-ink); }
+  .card .ds { font-size: 12px; color: var(--a-faint); }
+  .card .when { font-size: 12px; font-weight: 700; color: var(--a-muted); display: flex; gap: 6px; align-items: center; }
+  .card .bar { display: flex; gap: 16px; align-items: end; color: var(--a-muted); font-size: 16px; }
+  .card .ok { margin-left: auto; width: 44px; height: 44px; border-radius: 14px; background: var(--a-ink); color: #fff; display: grid; place-items: center; font-size: 18px; }
+  .hint { font-size: 12.5px; color: var(--muted); justify-self: start; }
+</style>
+<div class="wrap">
+  <header style="display:grid;gap:10px">
+    <h1>Окно задачи поверх окна дня — 1 + 2</h1>
+    <p class="lead">Нажатие на «+» — чёрная кнопка вырастает в окно новой задачи; нажатие на задачу — окно задачи вырастает из её строки. Окно встаёт сразу на своё место над клавиатурой и поднимается вместе с ней — без прыжка. Окно дня не исчезает: оно под окном задачи, затемнение не мигает. «Назад» или нажатие мимо — окно сжимается обратно в «+» или строку, окно дня уже на месте. Три варианта отличаются тем, что делает окно дня под окном задачи.</p>
+    <div class="controls">
+      <button class="c primary" type="button" id="all">▶ Показать во всех</button>
+      <button class="c" type="button" id="allPlus">«+» во всех</button>
+      <button class="c" type="button" id="allTask">Задача во всех</button>
+      <button class="c" type="button" id="allBack">Назад во всех</button>
+    </div>
+  </header>
+  <section class="grid" id="grid"></section>
+</div>
+<script>
+(() => {
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const TASKS = [
+    ['10:00', 'Higgsfield', '💲'], ['14:00', 'Запланировать отпуск', '💼', 'p'], ['14:30', 'Финансы', '🗂'],
+    ['15:00', 'Цветы', '🏠'], ['15:30', 'Бритьё', '🏠'], ['18:00', 'Сделать двухфакторную аутентификацию на гитхабе', '💼', 'p'],
+    ['20:00', 'Сходить в Эскондиду', '🎮'], ['21:00', 'Почитать', '📚'],
+  ];
+  const V = [
+    { n: 1, name: 'Остаётся на месте', desc: 'Окно дня стоит, где было, и только темнеет под окном задачи. Самый спокойный вариант.',
+      under: [{ transform: 'none' }, { transform: 'none' }] },
+    { n: 2, name: 'Отступает вглубь', desc: 'Окно дня чуть уменьшается и темнеет — видно, что задача «сверху», а день ждёт под ней.',
+      under: [{ transform: 'none', borderRadius: '22px' }, { transform: 'translateY(-6px) scale(.94)', borderRadius: '26px' }] },
+    { n: 3, name: 'Поднимается выше', desc: 'Окно дня уезжает вверх: над окном задачи видны дата и первые задачи дня — удобно сверяться, пока пишете.',
+      under: [{ transform: 'none' }, { transform: 'translateY(-300px)' }] },
+  ];
+  const EASE = 'cubic-bezier(.3,.7,.2,1)';
+  const EASE_OUT = 'cubic-bezier(.4,0,.2,1)';
+  const GROW = 380, KB = 340, SHRINK = 300;
+  const CARD_TOP = 740 - 268 - 8 - 178; // над клавиатурой
+  const anim = (el, frames, opts) => el.animate(frames, { fill: 'forwards', easing: EASE, ...opts }).finished.catch(() => {});
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+
+  const widgetHtml = ['ПН 23', 'ВТ 24 Сегодня', 'СР 25', 'ЧТ 26', 'ПТ 27', 'СБ 28', 'ВС 29', ''].map((d, i) =>
+    `<div>${d ? `<b>${d}</b>` : ''}${i < 7 ? '<i>💼 Задача</i><i>🏠 Задача</i>' : ''}</div>`).join('');
+  const taskHtml = ([t, n, e, k], i) => `<div class="task ${k || ''}" tabindex="0" role="button" data-i="${i}" aria-label="Открыть задачу ${n}"><span class="t">${t}</span><span class="o"></span><span class="n">${n}</span><span class="e">${e}</span></div>`;
+  const kbHtml = [10, 10, 11, 9].map(n => `<div style="grid-template-columns:repeat(${n},1fr)">${'<span></span>'.repeat(n)}</div>`).join('') +
+    '<div style="grid-template-columns:1.4fr 1fr 4fr 1fr 1.4fr"><span></span><span></span><span></span><span></span><span style="background:#3B7BF0"></span></div>';
+
+  function phone(v) {
+    return `<div class="phone">
+      <div class="home"><div class="widget">${widgetHtml}</div><div class="icons"><span></span><span></span><span></span><span></span></div></div>
+      <div class="scrim"></div>
+      <div class="day"><div class="day-h"><b>ПТ 27 ноя</b><button class="plus" type="button" aria-label="Новая задача на пт, 27 ноя">+</button></div>${TASKS.map(taskHtml).join('')}</div>
+      <div class="scrim2"></div>
+      <div class="kb">${kbHtml}</div>
+      <div class="card" style="top:${CARD_TOP}px" aria-live="polite"><div class="glyph">+</div><div class="in">
+        <div class="ttl">Название задачи</div><div class="ds">Описание</div>
+        <div class="when">📅 пт, 27 ноя</div>
+        <div class="bar"><span>📌</span><span>⚑</span><span>☰</span><span>⟳</span><span>🔔</span><span class="ok">✓</span></div>
+      </div></div>
+    </div>`;
+  }
+
+  function setup(el, v) {
+    const ph = el.querySelector('.phone');
+    const day = ph.querySelector('.day'), plus = ph.querySelector('.plus'), card = ph.querySelector('.card');
+    const glyph = card.querySelector('.glyph'), inner = card.querySelector('.in'), kb = ph.querySelector('.kb'), scrim2 = ph.querySelector('.scrim2');
+    const ttl = card.querySelector('.ttl'), ds = card.querySelector('.ds');
+    let open = null, busy = false;
+
+    // Откуда растёт: прямоугольник «+» или строки в координатах телефона.
+    const rectOf = node => { const p = ph.getBoundingClientRect(), r = node.getBoundingClientRect(); const s = p.width / 360; return { x: (r.left - p.left) / s, y: (r.top - p.top) / s, w: r.width / s, h: r.height / s }; };
+    const from = o => `translate(${o.x - 8}px, ${o.y - CARD_TOP}px) scale(${o.w / 344}, ${o.h / 178})`;
+
+    async function show(source, isPlus) {
+      if (busy || open) return;
+      busy = true;
+      const o = rectOf(source);
+      if (isPlus) { ttl.textContent = 'Название задачи'; ttl.classList.remove('filled'); ds.textContent = 'Описание'; }
+      else { const t = TASKS[+source.dataset.i]; ttl.textContent = t[1]; ttl.classList.add('filled'); ds.textContent = 'Описание задачи'; }
+      glyph.style.opacity = isPlus ? 1 : 0;
+      card.style.visibility = 'visible';
+      if (isPlus) plus.style.visibility = 'hidden';
+      open = { o, isPlus };
+      if (reduced) {
+        card.style.transform = 'none'; card.style.background = 'var(--a-bg)'; inner.style.opacity = 1; glyph.style.opacity = 0;
+        kb.style.transform = 'none'; scrim2.style.opacity = 1; day.animate(v.under, { duration: 0, fill: 'forwards' });
+        busy = false; return;
+      }
+      const start = isPlus ? '#16171D' : '#FFFFFF';
+      anim(scrim2, [{ opacity: 0 }, { opacity: 1 }], { duration: 260 });
+      anim(day, v.under, { duration: GROW });
+      anim(kb, [{ transform: 'translateY(100%)' }, { transform: 'none' }], { duration: KB, easing: EASE });
+      anim(glyph, [{ opacity: 1 }, { opacity: 0 }], { duration: 120 });
+      setTimeout(() => anim(inner, [{ opacity: 0 }, { opacity: 1 }], { duration: 160 }), GROW - 120);
+      await anim(card, [
+        { transform: from(o), background: start, borderRadius: isPlus ? '16px' : '10px' },
+        { offset: .45, background: '#FFFFFF' },
+        { transform: 'none', background: '#FFFFFF', borderRadius: '22px' },
+      ], { duration: GROW });
+      busy = false;
+    }
+
+    async function hide() {
+      if (busy || !open) return;
+      busy = true;
+      const { o, isPlus } = open;
+      if (reduced) {
+        card.style.visibility = 'hidden'; kb.style.transform = 'translateY(100%)'; scrim2.style.opacity = 0;
+        day.getAnimations().forEach(a => a.cancel()); plus.style.visibility = 'visible'; open = null; busy = false; return;
+      }
+      anim(inner, [{ opacity: 1 }, { opacity: 0 }], { duration: 100 });
+      anim(kb, [{ transform: 'none' }, { transform: 'translateY(100%)' }], { duration: 260, easing: EASE_OUT });
+      anim(day, [v.under[1], v.under[0]], { duration: SHRINK + 60, easing: EASE_OUT });
+      anim(scrim2, [{ opacity: 1 }, { opacity: 0 }], { duration: SHRINK + 60, delay: 60 });
+      if (isPlus) setTimeout(() => anim(glyph, [{ opacity: 0 }, { opacity: 1 }], { duration: 120 }), SHRINK - 140);
+      await anim(card, [
+        { transform: 'none', background: '#FFFFFF', borderRadius: '22px' },
+        { offset: .6, background: '#FFFFFF' },
+        { transform: from(o), background: isPlus ? '#16171D' : '#FFFFFF', borderRadius: isPlus ? '16px' : '10px' },
+      ], { duration: SHRINK, easing: EASE_OUT });
+      if (isPlus) plus.style.visibility = 'visible';
+      if (!isPlus) await anim(card, [{ opacity: 1 }, { opacity: 0 }], { duration: 120 });
+      card.getAnimations().forEach(a => a.cancel());
+      card.style.visibility = 'hidden';
+      [inner, kb, glyph, scrim2].forEach(x => x.getAnimations().forEach(a => a.cancel()));
+      day.getAnimations().forEach(a => a.cancel());
+      open = null; busy = false;
+    }
+
+    plus.addEventListener('click', () => show(plus, true));
+    ph.querySelectorAll('.task').forEach(t => {
+      t.addEventListener('click', () => show(t, false));
+      t.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); show(t, false); } });
+    });
+    scrim2.style.pointerEvents = 'auto';
+    scrim2.addEventListener('click', () => hide());
+    kb.addEventListener('click', () => hide());
+    const api = {
+      plus: () => show(plus, true),
+      task: () => show(ph.querySelectorAll('.task')[2], false),
+      back: () => hide(),
+      async demo() {
+        if (open) { await hide(); await wait(300); }
+        await show(plus, true); await wait(1400); await hide(); await wait(700);
+        await show(ph.querySelectorAll('.task')[2], false); await wait(1400); await hide();
+      },
+    };
+    el.querySelector('[data-a="plus"]').addEventListener('click', api.plus);
+    el.querySelector('[data-a="task"]').addEventListener('click', api.task);
+    el.querySelector('[data-a="back"]').addEventListener('click', api.back);
+    el.querySelector('[data-a="demo"]').addEventListener('click', api.demo);
+    return api;
+  }
+
+  const grid = document.getElementById('grid');
+  const apis = V.map(v => {
+    const el = document.createElement('article');
+    el.className = 'v';
+    el.innerHTML = `<h2><span>${v.n}.</span> ${v.name}</h2><p>${v.desc}</p><div class="scroller">${phone(v)}</div>
+      <div class="row-btns"><button class="c" type="button" data-a="demo">▶ Показать</button><button class="c" type="button" data-a="plus">«+»</button><button class="c" type="button" data-a="task">Задача</button><button class="c" type="button" data-a="back">Назад</button></div>
+      <span class="hint">В телефоне можно нажать «+», любую задачу, затемнение или клавиатуру (= «Назад»).</span>`;
+    grid.appendChild(el);
+    return setup(el, v);
+  });
+  document.getElementById('all').addEventListener('click', () => apis.forEach(a => a.demo()));
+  document.getElementById('allPlus').addEventListener('click', () => apis.forEach(a => a.plus()));
+  document.getElementById('allTask').addEventListener('click', () => apis.forEach(a => a.task()));
+  document.getElementById('allBack').addEventListener('click', () => apis.forEach(a => a.back()));
+  if (!reduced) setTimeout(() => apis.forEach(a => a.demo()), 600);
+})();
+</script>

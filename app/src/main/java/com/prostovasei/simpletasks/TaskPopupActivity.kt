@@ -56,6 +56,9 @@ import com.prostovasei.simpletasks.ui.feature.snooze.SnoozeRoute
 import com.prostovasei.simpletasks.ui.common.DayNames
 import com.prostovasei.simpletasks.ui.common.DueFormatter
 import androidx.navigation.toRoute
+import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.ViewModelProvider
@@ -130,7 +133,22 @@ fun TaskPopup(start: Any, onDismiss: () -> Unit, origin: android.graphics.Rect? 
     val days = DayNames(stringResource(R.string.day_today), stringResource(R.string.day_tomorrow), stringResource(R.string.day_yesterday))
     val today = java.time.LocalDate.now()
     val zone = java.time.ZoneId.systemDefault()
+    // #323: окно задачи из окна дня — поверх него. Пока сверху задача, окно дня рисуется под NavHost тем же экземпляром
+    // (ViewModel его записи), уже открытым; окно задачи растёт из «+» или строки ([dayOrigin]).
+    var dayOrigin by remember { mutableStateOf<android.graphics.Rect?>(null) }
+    val top by navController.currentBackStackEntryAsState()
+    val dayEntry = remember(top) {
+        top?.takeIf { !it.destination.hasRoute<DayDestination>() }?.let { runCatching { navController.getBackStackEntry<DayDestination>() }.getOrNull() }
+    }
+    val openTask: (String) -> Unit = { id -> navController.navigate(TaskDetailDestination(id)) }
+    val addTask: (java.time.LocalDate) -> Unit = { date -> navController.navigate(QuickAddDestination(date = date.toString())) }
+    val setDayOrigin: (android.graphics.Rect) -> Unit = { rect -> dayOrigin = rect }
     Box(Modifier.fillMaxSize()) {
+        if (dayEntry != null) {
+            CompositionLocalProvider(LocalViewModelStoreOwner provides dayEntry) {
+                DaySheetRoute(onClose = {}, onOpenTask = openTask, onAdd = addTask, settled = true, onOrigin = setDayOrigin)
+            }
+        }
         NavHost(
             navController,
             startDestination = start,
@@ -143,7 +161,7 @@ fun TaskPopup(start: Any, onDismiss: () -> Unit, origin: android.graphics.Rect? 
             // Растёт из виджета только первое окно; подзадача, открытая из него, выезжает снизу.
             composable<TaskDetailDestination> { entry ->
                 val openDate = entry.toRoute<TaskDetailDestination>().openDate
-                CompositionLocalProvider(LocalSheetOrigin provides origin.takeIf { navController.previousBackStackEntry == null }) {
+                CompositionLocalProvider(LocalSheetOrigin provides sheetOrigin(navController, origin, dayOrigin)) {
                     TaskDetailRoute(onClose = close, onOpenTask = { navController.navigate(TaskDetailDestination(it)) }, openDate = openDate)
                 }
             }
@@ -172,12 +190,7 @@ fun TaskPopup(start: Any, onDismiss: () -> Unit, origin: android.graphics.Rect? 
             }
             // Итерация 51: нажатие на дату дня в «Неделе» виджета — шторка дня поверх рабочего стола, без приложения.
             composable<DayDestination> {
-                DaySheetRoute(
-                    onClose = close,
-                    origin = origin,
-                    onOpenTask = { navController.navigate(TaskDetailDestination(it)) },
-                    onAdd = { navController.navigate(QuickAddDestination(date = it.toString())) },
-                )
+                DaySheetRoute(onClose = close, origin = origin, onOpenTask = openTask, onAdd = addTask, onOrigin = setDayOrigin)
             }
             composable<VoiceDestination> { entry ->
                 val today = entry.toRoute<VoiceDestination>().today
@@ -201,7 +214,7 @@ fun TaskPopup(start: Any, onDismiss: () -> Unit, origin: android.graphics.Rect? 
             }
             composable<QuickAddDestination> { entry ->
                 val voiceTask = entry.toRoute<QuickAddDestination>().voiceTask
-                val from = if (voiceTask != null) voiceOrigin else origin.takeIf { navController.previousBackStackEntry == null }
+                val from = if (voiceTask != null) voiceOrigin else sheetOrigin(navController, origin, dayOrigin)
                 CompositionLocalProvider(LocalSheetOrigin provides from) {
                     QuickAddRoute(onClose = close, onSaved = {
                         // Сохранённая из окна задачи продиктованная задача уходит из списка окна голоса.
@@ -216,6 +229,15 @@ fun TaskPopup(start: Any, onDismiss: () -> Unit, origin: android.graphics.Rect? 
             UndoSnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = AppTheme.spacing.lg))
         }
     }
+}
+
+/**
+ * Откуда растёт окно задачи: первое окно — из места в виджете ([widget]); открытое из окна дня — из «+» или строки ([day], #323);
+ * остальные (подзадача из задачи) — выезжают снизу.
+ */
+private fun sheetOrigin(navController: NavHostController, widget: android.graphics.Rect?, day: android.graphics.Rect?): android.graphics.Rect? {
+    val previous = navController.previousBackStackEntry ?: return widget
+    return day.takeIf { previous.destination.hasRoute<DayDestination>() }
 }
 
 /** Подсказка с «Отменой» в прозрачном окне: [text] и что сделать по нажатию. */
