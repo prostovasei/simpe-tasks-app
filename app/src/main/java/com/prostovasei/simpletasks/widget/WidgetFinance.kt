@@ -177,7 +177,7 @@ internal class FinanceRows(private val context: Context, private val width: Int,
         }
 
     /** Полоса лимита (#327, вариант Г): картинка полосы и строка «осталось · прогноз». */
-    private fun limitViews(model: MonthSpending, limit: Long?, month: YearMonth, today: java.time.LocalDate): RemoteViews =
+    internal fun limitViews(model: MonthSpending, limit: Long?, month: YearMonth, today: java.time.LocalDate): RemoteViews =
         RemoteViews(context.packageName, R.layout.widget_finance_limit).apply {
             val pace = limit?.let { BudgetRules.pace(it, model.total, month, today) }
             setImageViewBitmap(R.id.widget_finance_limit_bar, limitBar(model.total, limit, pace, BudgetRules.todayShare(month, today)))

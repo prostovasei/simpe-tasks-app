@@ -35,6 +35,11 @@
 Генератор пишет HTML-доски и canvas.json; итоговая доска — Final2.dc.html.
 Это воспроизведение исходника, не новый акт согласования PM.
 
+## Бюджет на месяц по категориям — #327
+
+Согласовано PM 24.11.2026 («Г код»). [Пакет](approved/327/README.md), [ТЗ](approved/327/requirements.md); полоса лимита — вариант Г (лист 5), остальные варианты отвергнуты.
+Реализовано в 0.91.0: `ui/feature/finance/Budget.kt`, `widget/WidgetFinance.kt` (`limitBar`), `notifications/BudgetAlerts.kt`; токены `warning`, `LIMIT_BAR`, `BUDGET_*`; снимки `finance_limit_bar_light`, `finance_budget_light`, обновлены `finance_*`.
+
 ## Финансы и общий бар модулей — #217
 
 Согласовано PM 10.11.2026: компактный верхний бар без заголовков модулей и комплект из 25 экранов. [Пакет](approved/217/README.md),
