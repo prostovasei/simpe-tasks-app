@@ -82,6 +82,13 @@ class AppSmokeTest {
     @get:Rule
     val composeRule = createAndroidComposeRule<MainActivity>()
 
+    /** #329: запуск открывает хаб «Главная»; сценарии ниже начинаются с задач — переходим вкладкой. */
+    @org.junit.Before
+    fun leaveHub() {
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists("hub") }
+        taskTab().performClick()
+    }
+
     @Test
     fun walkThroughTabsAndCreateList() {
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Всё сделано") }

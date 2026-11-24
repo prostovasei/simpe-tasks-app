@@ -132,6 +132,10 @@ object SizeTokens {
      * [BUDGET_MARK] — ширина отметки «сегодня», [BUDGET_MARK_OVER] — насколько она выступает над полоской; [BUDGET_TOTAL_RULE] — линия под итогом.
      */
     const val LIMIT_BAR = 26
+
+    /** Хаб «Главная» (#329), dp: минимальная высота карточки новости в сетке 2 × 2 и точка страницы. */
+    const val HUB_NEWS_CARD = 76
+    const val HUB_DOT = 6
     const val BUDGET_BAR = 6
     const val BUDGET_MARK = 2
     const val BUDGET_MARK_OVER = 4
