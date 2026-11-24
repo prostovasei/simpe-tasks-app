@@ -1,0 +1,590 @@
+<title>Хаб «Главная»</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+<style>
+/* Страница согласования: живой телефон с переключателями сверху, ниже галерея вариантов, виджет и оценка. Макеты — светлая тема приложения. */
+:root {
+  --pg-bg: #EEF0F4; --pg-fg: #16171D; --pg-muted: #5D616E; --pg-line: #D7DAE1; --pg-surface: #FFFFFF;
+  --pg-accent: #6B2BB8; --pg-accent-soft: #EFE6FA;
+  --font: Manrope, "Segoe UI", Roboto, system-ui, sans-serif;
+  /* Цвета приложения (ColorTokens, светлая тема) — внутри макетов не меняются с темой страницы. */
+  --ink: #16171D; --muted: #62656E; --inactive: #A9A9A9; --divider: #E8E8EA; --soft: #EAEAEA; --field: #F3F3F4;
+  --danger: #C62828; --income: #1F8F4E; --warning: #C98500; --violet: #862CE0; --surface: #FFFFFF;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --pg-bg: #111216; --pg-fg: #ECEDF0; --pg-muted: #A3A7B3; --pg-line: #2A2C34; --pg-surface: #1A1B21;
+    --pg-accent: #C6A2F2; --pg-accent-soft: #2B2338; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --pg-bg: #111216; --pg-fg: #ECEDF0; --pg-muted: #A3A7B3; --pg-line: #2A2C34; --pg-surface: #1A1B21;
+  --pg-accent: #C6A2F2; --pg-accent-soft: #2B2338; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--pg-bg); color: var(--pg-fg); font-family: var(--font); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 64px; }
+svg { display: block; width: 100%; height: 100%; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+button:focus-visible, [data-act]:focus-visible { outline: 2px solid var(--pg-accent); outline-offset: 2px; }
+.page { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 44px; }
+.intro { display: flex; flex-direction: column; gap: 10px; max-width: 780px; }
+.eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--pg-muted); }
+.intro h1 { margin: 0; font-size: clamp(28px, 4.4vw, 40px); line-height: 1.1; font-weight: 800; text-wrap: balance; }
+.intro p { margin: 0; color: var(--pg-muted); max-width: 66ch; }
+.chip-status { align-self: flex-start; background: var(--pg-accent-soft); color: var(--pg-accent); font-weight: 700; font-size: 13px; border-radius: 999px; padding: 4px 12px; }
+.block { display: flex; flex-direction: column; gap: 14px; }
+.block > h2 { margin: 0; font-size: 23px; font-weight: 800; text-wrap: balance; }
+.block > p.lead { margin: 0; color: var(--pg-muted); max-width: 70ch; }
+.choose::after { content: "нужно решение"; margin-left: 10px; vertical-align: middle; font-size: 12px; font-weight: 700; background: var(--pg-accent-soft); color: var(--pg-accent); border-radius: 999px; padding: 3px 10px; }
+
+/* Живой прототип */
+.stage { display: flex; gap: 28px; align-items: flex-start; flex-wrap: wrap; }
+.controls { display: flex; flex-direction: column; gap: 14px; min-width: 0; flex: 1 1 300px; max-width: 460px; }
+.ctrl { display: flex; flex-direction: column; gap: 6px; }
+.ctrl-label { font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--pg-muted); }
+.seg { display: flex; flex-wrap: wrap; gap: 6px; }
+.seg button { border: 1px solid var(--pg-line); background: var(--pg-surface); border-radius: 12px; padding: 7px 12px; font-size: 14px; font-weight: 600; }
+.seg button[aria-pressed="true"] { background: var(--pg-fg); color: var(--pg-bg); border-color: var(--pg-fg); }
+.tries { margin: 0; padding-left: 18px; color: var(--pg-muted); font-size: 14px; display: flex; flex-direction: column; gap: 4px; }
+.back-btn { align-self: flex-start; border: 1px solid var(--pg-line); background: var(--pg-surface); border-radius: 12px; padding: 7px 14px; font-weight: 700; font-size: 14px; }
+.phone-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+
+/* Галереи */
+.cells { display: flex; flex-wrap: wrap; gap: 28px 24px; align-items: flex-start; }
+.cell { margin: 0; display: flex; flex-direction: column; gap: 10px; width: 360px; max-width: 100%; }
+.cell figcaption { font-size: 13.5px; color: var(--pg-muted); line-height: 1.45; }
+.cell figcaption b { color: var(--pg-fg); }
+.cell.wide { width: 392px; }
+.bars { display: flex; flex-direction: column; gap: 14px; max-width: 100%; }
+.bar-strip { display: flex; flex-direction: column; gap: 6px; }
+.bar-strip .label { font-size: 14px; font-weight: 700; }
+.bar-strip .label span { font-weight: 500; color: var(--pg-muted); }
+.strip { width: 360px; max-width: 100%; background: var(--surface); border-radius: 16px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+
+/* Сложность */
+.table-wrap { overflow-x: auto; border: 1px solid var(--pg-line); border-radius: 16px; background: var(--pg-surface); }
+table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 14px; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--pg-line); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+th { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--pg-muted); }
+.dots-scale { display: inline-flex; gap: 3px; vertical-align: middle; }
+.dots-scale i { width: 9px; height: 9px; border-radius: 50%; background: var(--pg-line); display: block; }
+.dots-scale i.on { background: var(--pg-accent); }
+ul.risks { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; max-width: 80ch; }
+.decide { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+.decide div { background: var(--pg-surface); border: 1px solid var(--pg-line); border-radius: 16px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.decide b { font-size: 14px; }
+.decide span { font-size: 14px; color: var(--pg-muted); }
+footer { color: var(--pg-muted); font-size: 13px; }
+
+/* ===== Макет телефона (цвета приложения) ===== */
+.phone { width: 360px; height: 760px; border-radius: 30px; background: var(--surface); color: var(--ink); position: relative; overflow: hidden;
+  display: flex; flex-direction: column; box-shadow: 0 1px 2px rgba(0,0,0,.08), 0 8px 28px rgba(20,22,30,.14); font-family: var(--font); font-size: 15px; line-height: 1.35; }
+.status { height: 26px; flex: none; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; font-size: 12.5px; font-weight: 700; }
+.status .sys { display: flex; gap: 5px; align-items: center; }
+.status .sys i { width: 15px; height: 9px; border: 1.6px solid var(--ink); border-radius: 2px; display: block; position: relative; }
+.status .sys i::after { content: ""; position: absolute; inset: 1px 3px 1px 1px; background: var(--ink); }
+.screen { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; }
+.screen::-webkit-scrollbar { display: none; }
+.screen.fixed { overflow: hidden; }
+.appbar { flex: none; border-top: 1px solid var(--divider); background: var(--surface); padding: 0 12px 14px; }
+.appbar-row { height: 46px; display: flex; align-items: center; }
+.add-btn { width: 72px; height: 34px; border-radius: 17px; background: var(--ink); color: #fff; display: flex; align-items: center; justify-content: center; flex: none; }
+.add-btn span { width: 22px; height: 22px; }
+.tabs { flex: 1; display: flex; justify-content: center; }
+.tab { flex: 1; max-width: 48px; height: 44px; display: flex; align-items: center; justify-content: center; color: var(--inactive); }
+.tab span { width: 24px; height: 24px; }
+.tab.on { color: var(--ink); }
+.right-slot { width: 72px; display: flex; justify-content: flex-end; flex: none; }
+.right-slot .tab { max-width: 48px; width: 48px; }
+
+.hub-head { display: flex; align-items: flex-start; padding: 10px 16px 4px; gap: 8px; }
+.hub-head .greet { font-size: 27px; font-weight: 800; letter-spacing: -.01em; line-height: 1.15; }
+.hub-head .date { font-size: 14px; color: var(--muted); font-weight: 600; }
+.hub-head .gear { margin-left: auto; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; color: var(--ink); }
+.hub-head .gear span { width: 24px; height: 24px; }
+.sec { padding: 6px 16px 4px; }
+.sec + .sec { border-top: 1px solid var(--divider); }
+.sec-head { display: flex; align-items: center; gap: 7px; height: 30px; cursor: pointer; }
+.sec-icon { width: 18px; height: 18px; color: var(--ink); flex: none; }
+.sec-title { font-size: 15px; font-weight: 800; }
+.sec-meta { margin-left: auto; font-size: 12.5px; font-weight: 700; color: var(--muted); white-space: nowrap; }
+.sec-meta .new { color: var(--violet); }
+.chev { width: 18px; height: 18px; color: var(--inactive); flex: none; }
+.sec-head .sec-meta + .chev { margin-left: 2px; }
+.sec-head .sec-title + .chev { margin-left: auto; }
+
+/* Задачи (строка как в окне дня) */
+.tasks-scroll { overflow-y: auto; scrollbar-width: thin; position: relative; }
+.group { font-size: 12px; font-weight: 800; color: var(--muted); padding: 5px 0 1px 52px; background: var(--surface); }
+.tasks-scroll .group { position: sticky; top: 0; z-index: 1; }
+.group.late { color: var(--danger); }
+.trow { display: flex; align-items: center; min-height: 38px; gap: 8px; cursor: pointer; transition: opacity .4s; }
+.trow.done { opacity: .4; }
+.ttime { width: 40px; flex: none; text-align: right; font-size: 11.5px; color: var(--muted); font-weight: 600; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.ttime.late { color: var(--danger); }
+.tcheck { width: 22px; height: 22px; flex: none; border-radius: 50%; border: 2px solid var(--inactive); display: flex; align-items: center; justify-content: center; color: #fff; }
+.tcheck.repeat { border: 0; color: var(--inactive); }
+.trow.done .tcheck { background: var(--ink); border-color: var(--ink); }
+.trow.done .tcheck.repeat { background: none; color: var(--ink); }
+.tcheck span { width: 14px; height: 14px; }
+.tcheck.repeat span { width: 20px; height: 20px; }
+.ttitle { flex: 1; min-width: 0; font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ttitle.pri { color: var(--violet); }
+.temoji { width: 22px; text-align: center; font-size: 16px; flex: none; }
+.empty-line { font-size: 14px; color: var(--muted); padding: 6px 0; }
+.summary { display: flex; flex-direction: column; gap: 2px; padding: 0 0 4px; cursor: pointer; }
+.summary .sum1 { font-size: 14px; font-weight: 700; }
+.summary .sum1 .late { color: var(--danger); }
+.summary .sum2 { font-size: 13.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Финансы: полоса Г */
+.limit { cursor: pointer; padding: 2px 0; }
+.limit-row { display: flex; align-items: center; gap: 8px; }
+.thick { position: relative; flex: 1; height: 26px; border-radius: 13px; background: var(--soft); }
+.thick .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 13px; background: var(--warning); display: flex; align-items: center; padding-left: 11px; color: #fff; font-weight: 800; font-size: 13.5px; }
+.thick .mark { position: absolute; top: -4px; bottom: -4px; width: 4px; margin-left: -2px; background: var(--surface); }
+.thick .mark::after { content: ""; position: absolute; left: 1px; right: 1px; top: 0; bottom: 0; background: var(--muted); }
+.limit-num { font-weight: 800; font-size: 16px; }
+.limit-status { display: flex; align-items: center; font-size: 13px; font-weight: 700; margin-top: 3px; }
+.limit-status .left { color: var(--warning); flex: 1; }
+.limit-status .fc { display: flex; align-items: center; gap: 4px; color: var(--muted); font-weight: 600; }
+.limit-status .fc span { width: 15px; height: 15px; }
+.alarm { display: flex; align-items: center; gap: 8px; min-height: 26px; font-size: 14px; cursor: pointer; }
+.alarm .em { width: 22px; text-align: center; font-size: 15px; }
+.alarm .nm { flex: 1; font-weight: 600; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.alarm .nt { font-weight: 700; font-size: 13px; white-space: nowrap; }
+.alarm .nt.over { color: var(--danger); }
+.alarm .nt.ahead { color: var(--warning); }
+.sub-label { font-size: 12px; font-weight: 800; color: var(--muted); margin: 8px 0 2px; }
+.accounts { display: flex; align-items: center; gap: 6px; margin-top: 6px; flex-wrap: nowrap; overflow: hidden; }
+.accounts .total { font-weight: 800; font-size: 15px; margin-right: 2px; white-space: nowrap; }
+.acc { background: var(--field); border-radius: 14px; padding: 3px 10px; font-size: 13.5px; font-weight: 700; white-space: nowrap; }
+.accounts.big { flex-wrap: wrap; }
+.accounts.big .total { width: 100%; font-size: 20px; }
+.accounts.big .acc { padding: 6px 12px; font-size: 14.5px; }
+
+/* Здоровье */
+.chart { cursor: pointer; }
+.chart-dates { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); font-weight: 600; margin-top: 2px; }
+.inline-health { display: flex; align-items: center; gap: 10px; }
+.inline-health b { font-size: 17px; }
+.inline-health .spark { width: 96px; height: 26px; }
+
+/* Новости: карусель */
+.carousel { display: flex; gap: 8px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; padding-bottom: 2px; }
+.carousel::-webkit-scrollbar { display: none; }
+.ncard { flex: 0 0 86%; scroll-snap-align: start; background: var(--field); border-radius: 16px; padding: 9px 12px; cursor: pointer; min-height: 70px; }
+.ncard .meta { font-size: 11.5px; color: var(--muted); font-weight: 600; }
+.ncard .meta .new { color: var(--violet); font-weight: 800; }
+.ncard .tt { font-size: 14.5px; font-weight: 500; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ncard.unread .tt { font-weight: 800; }
+.ncard.big { min-height: 104px; padding: 12px 14px; }
+.ncard.big .tt { font-size: 16px; -webkit-line-clamp: 3; }
+.dots { display: flex; gap: 5px; justify-content: center; margin-top: 6px; }
+.dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--soft); display: block; }
+.dots i.on { background: var(--ink); }
+
+/* Меню «+», подсказка, экран раздела */
+.scrim { position: absolute; inset: 0; background: rgba(0,0,0,.28); z-index: 5; }
+.plus-menu { position: absolute; z-index: 6; left: 12px; bottom: 66px; background: var(--surface); border-radius: 18px; padding: 6px; min-width: 188px; box-shadow: 0 8px 28px rgba(0,0,0,.22); }
+.plus-menu button { display: flex; align-items: center; gap: 12px; width: 100%; height: 46px; padding: 0 12px; border-radius: 12px; font-weight: 700; font-size: 15.5px; }
+.plus-menu button:hover { background: var(--field); }
+.plus-menu button span { width: 22px; height: 22px; }
+.toast { position: absolute; z-index: 7; left: 50%; bottom: 74px; transform: translateX(-50%); background: var(--ink); color: #fff; border-radius: 12px; padding: 8px 14px; font-size: 13px; font-weight: 600; white-space: nowrap; max-width: 92%; overflow: hidden; text-overflow: ellipsis; }
+.module { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+.module h3 { margin: 0; font-size: 24px; font-weight: 800; }
+.module p { margin: 0; color: var(--muted); font-size: 14px; }
+.skel { height: 14px; border-radius: 7px; background: var(--field); }
+.hint { align-self: flex-start; background: var(--field); border-radius: 12px; padding: 6px 10px; font-size: 13px; font-weight: 700; }
+
+/* Виджет */
+.widget { background: var(--surface); color: var(--ink); border-radius: 24px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,.08), 0 8px 24px rgba(20,22,30,.12); font-family: var(--font); line-height: 1.3; display: flex; flex-direction: column; }
+.w-body { padding: 10px 12px 6px; display: flex; flex-direction: column; gap: 6px; }
+.w-head { display: flex; align-items: baseline; justify-content: space-between; font-size: 13px; font-weight: 800; }
+.w-head span { color: var(--muted); font-weight: 600; font-size: 12px; }
+.w-bar { display: flex; align-items: center; height: 50px; padding: 0 8px; border-top: 1px solid var(--divider); gap: 2px; }
+.w-bar .add-btn { width: 58px; height: 36px; border-radius: 18px; }
+.w-bar .tab { max-width: 40px; height: 40px; }
+.w-bar .tab span { width: 22px; height: 22px; }
+.w-bar .date { display: flex; align-items: center; gap: 2px; margin-left: auto; font-weight: 800; font-size: 22px; }
+.w-bar .date small { display: flex; flex-direction: column; font-size: 9px; line-height: 1; font-weight: 700; }
+.w-bar .dl { width: 22px; height: 22px; margin-left: 6px; color: var(--ink); }
+.w-news { display: flex; align-items: center; gap: 4px; }
+.w-news .arrow { width: 28px; height: 28px; border-radius: 50%; background: var(--field); display: flex; align-items: center; justify-content: center; flex: none; }
+.w-news .arrow span { width: 16px; height: 16px; }
+.w-news .ncard { flex: 1; min-height: 0; }
+.w-head3 .tt { font-size: 13.5px; font-weight: 700; line-height: 1.25; padding: 3px 0; border-bottom: 1px solid var(--divider); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.w-head3 .tt.read { font-weight: 500; }
+.w-small .w-bar { height: 44px; padding: 0 6px; }
+.w-small .w-bar .add-btn { width: 44px; height: 32px; }
+.w-small .w-bar .tab { max-width: 26px; }
+.w-small .w-bar .tab span { width: 19px; height: 19px; }
+
+@media (max-width: 420px) {
+  .phone, .strip, .cell { zoom: .9; }
+}
+@media (prefers-reduced-motion: reduce) { .trow { transition: none; } }
+</style>
+
+<main class="page">
+  <header class="intro">
+    <span class="eyebrow">Simple Tasks · #329 · прототип v1</span>
+    <h1>Хаб «Главная»</h1>
+    <p>Один экран отвечает на четыре вопроса: что сделать, сколько ещё можно тратить, как вес и что нового. Собрано по 12 ответам 24.11.2026.
+      Данные, суммы и заголовки новостей вымышленные, «сейчас» — вторник, 24 ноября.</p>
+    <span class="chip-status">ТЗ v1 и варианты на согласовании</span>
+  </header>
+
+  <section class="block" id="live">
+    <h2>Живой прототип</h2>
+    <p class="lead">Переключайте плотность, навигацию и время суток. Внутри телефона нажимается почти всё: кружки задач, строки, «+», заголовки блоков, вкладки, полоса лимита, карточки новостей.</p>
+    <div class="stage">
+      <div class="phone-wrap">
+        <div class="phone" id="live-phone"></div>
+        <button class="back-btn" id="live-back" type="button">◁ Системная «Назад»</button>
+      </div>
+      <div class="controls">
+        <div class="ctrl"><span class="ctrl-label">Плотность</span>
+          <div class="seg" data-ctrl="density">
+            <button type="button" data-v="A">A · Один экран</button><button type="button" data-v="B">B · Подробная лента</button><button type="button" data-v="C">C · Компактно + раскрытие</button>
+          </div></div>
+        <div class="ctrl"><span class="ctrl-label">Навигация</span>
+          <div class="seg" data-ctrl="nav">
+            <button type="button" data-v="N1">N1 · Пятая вкладка</button><button type="button" data-v="N2">N2 · Домик вместо ⚙</button><button type="button" data-v="N3">N3 · «Назад» в хаб</button>
+          </div></div>
+        <div class="ctrl"><span class="ctrl-label">Время суток</span>
+          <div class="seg" data-ctrl="time">
+            <button type="button" data-v="morning">09:12</button><button type="button" data-v="day">14:30</button><button type="button" data-v="evening">21:40</button>
+          </div></div>
+        <div class="ctrl"><span class="ctrl-label">Что попробовать</span>
+          <ul class="tries">
+            <li>Кружок у задачи — выполнено, задача тает; нажатие на строку — окно задачи.</li>
+            <li>Чёрная «+» — меню «Задача / Расход / Вес».</li>
+            <li>Карточки новостей листаются вбок; нажатие делает новость прочитанной.</li>
+            <li>Заголовок блока «Задачи ›», «Финансы ›» — переход в раздел; «Назад» под телефоном — возврат.</li>
+            <li>В варианте C нажатие на блок раскрывает его, остальные сворачиваются.</li>
+          </ul></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="density">
+    <h2 class="choose">Плотность: три варианта</h2>
+    <p class="lead">Те же данные в трёх подачах. В каждом макете — своя навигация, чтобы сравнить и её; сочетания можно собрать в живом прототипе.</p>
+    <div class="cells">
+      <figure class="cell"><div class="phone" data-static='{"density":"A","nav":"N1"}'></div>
+        <figcaption><b>A · Один экран</b> + навигация N1. Всё видно без прокрутки страницы: задачи — окно на 5 строк со своей прокруткой, новости — одна карточка с краем следующей.</figcaption></figure>
+      <figure class="cell"><div class="phone" data-static='{"density":"B","nav":"N2"}'></div>
+        <figcaption><b>B · Подробная лента</b> + навигация N2. Блоки крупнее, экран прокручивается: все задачи списком, бюджеты и счета полностью, график с датами, крупные карточки.</figcaption></figure>
+      <figure class="cell"><div class="phone" data-static='{"density":"C","nav":"N3","open":"tasks"}'></div>
+        <figcaption><b>C · Компактно + раскрытие</b> + навигация N3. Каждый блок — сводка в 1–2 строки; раскрыт один блок (здесь задачи). На хабе ни одна вкладка не выбрана.</figcaption></figure>
+    </div>
+  </section>
+
+  <section class="block" id="nav">
+    <h2 class="choose">Навигация: как попасть в хаб</h2>
+    <p class="lead">Сейчас внизу: «+», вкладки Задачи · ₽ · ♥ · Новости и ⚙ справа. Три способа добавить хаб; в виджете во всех вариантах хаб — первая вкладка.</p>
+    <div class="bars">
+      <div class="bar-strip"><div class="label">N1 · Пятая вкладка <span>— домик первым, на экране 360 dp вкладки чуть теснее</span></div><div class="strip" data-bar='{"nav":"N1","screen":"hub"}'></div></div>
+      <div class="bar-strip"><div class="label">N2 · Домик вместо ⚙ <span>— настройки переезжают в шапку хаба (шестерёнка справа от приветствия)</span></div><div class="strip" data-bar='{"nav":"N2","screen":"hub"}'></div></div>
+      <div class="bar-strip"><div class="label">N3 · «Назад» в хаб <span>— отдельной кнопки нет: на хабе ни одна вкладка не выбрана, системная «Назад» из любого раздела ведёт в хаб</span></div><div class="strip" data-bar='{"nav":"N3","screen":"hub"}'></div></div>
+      <div class="bar-strip"><div class="label">Для сравнения — открыт раздел «Финансы» <span>(N1)</span></div><div class="strip" data-bar='{"nav":"N1","screen":"finance"}'></div></div>
+    </div>
+  </section>
+
+  <section class="block" id="extras">
+    <h2>«+» на хабе и раскрытие блоков</h2>
+    <div class="cells">
+      <figure class="cell"><div class="phone" data-static='{"density":"A","nav":"N1","menu":true}'></div>
+        <figcaption><b>«+» → меню.</b> Дальше привычные окна (новая задача, окно операции, окно веса) поверх хаба; после сохранения остаёмся на хабе.</figcaption></figure>
+      <figure class="cell"><div class="phone" data-static='{"density":"C","nav":"N1","open":"finance"}'></div>
+        <figcaption><b>C — раскрыты «Финансы».</b> Полоса лимита, тревожные бюджеты (сначала красные) и счета; нажатие на полосу — окно «Бюджет».</figcaption></figure>
+      <figure class="cell"><div class="phone" data-static='{"density":"B","nav":"N2","scroll":420}'></div>
+        <figcaption><b>B — ниже по ленте.</b> Здоровье — график веса за 30 дней с датами, новости — крупные карточки, листаются вбок.</figcaption></figure>
+    </div>
+  </section>
+
+  <section class="block" id="widget">
+    <h2 class="choose">Виджет «Главная» (этап 2)</h2>
+    <p class="lead">В виджете Android внутри прокручиваемого списка нельзя листать вбок, поэтому новости — карточка со стрелками ‹ › или три заголовка столбиком. Выберите вариант.</p>
+    <div class="cells">
+      <figure class="cell wide"><div class="widget" data-widget="wide" style="width:392px"></div>
+        <figcaption><b>Широкий, 392 dp.</b> Задачи со своей прокруткой и кружками, полоса лимита, мини-график, новость со стрелками ‹ ›.</figcaption></figure>
+      <figure class="cell"><div class="widget" data-widget="mid" style="width:320px"></div>
+        <figcaption><b>320 dp, вариант новостей «три заголовка».</b> Непрочитанные жирные, нажатие открывает материал.</figcaption></figure>
+      <figure class="cell" style="width:200px"><div class="widget w-small" data-widget="small" style="width:180px"></div>
+        <figcaption><b>180 × 110 dp.</b> Задачи на сегодня и полоса лимита; шесть кнопок в панели — тесно, но помещаются.</figcaption></figure>
+    </div>
+  </section>
+
+  <section class="block" id="estimate">
+    <h2>Оценка сложности</h2>
+    <p class="lead">Новых таблиц в базе нет: хаб собирает то, что уже хранится и считается в разделах. Основная работа — экран, навигация и виджет.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Этап</th><th>Что делаем</th><th>Сложность</th><th>По опыту проекта</th><th>Выпуск</th></tr></thead>
+      <tbody>
+        <tr><td><b>1. Экран «Главная»</b></td><td>Сбор данных четырёх разделов, шапка, 4 блока, отметка задач, карусель, «+» с тремя окнами поверх хаба</td><td><span class="dots-scale"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span> средняя</td><td>Как окно «Бюджет» и полоса в #327</td><td rowspan="2">0.92.0</td></tr>
+        <tr><td><b>2. Навигация и запуск</b></td><td>Хаб — стартовый экран, выбранный вариант панели, «Назад», переходы из блоков, уведомлений и виджета</td><td><span class="dots-scale"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span> средняя, задевает все разделы</td><td>Как вкладки модулей #273</td></tr>
+        <tr><td><b>3. Виджет «Главная»</b></td><td>Новая вкладка: список задач с кружками, полоса и график картинками, новости со стрелками</td><td><span class="dots-scale"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span> высокая</td><td>Как виджет «Неделя» #313</td><td>0.93.0</td></tr>
+      </tbody>
+    </table></div>
+    <p class="lead"><b>Итого: 2–3 итерации, два выпуска.</b> Самый дешёвый вариант — A или C с навигацией N3 (панель не меняется); самый дорогой — B с N1 и полным виджетом.</p>
+    <ul class="risks">
+      <li>Окна расхода и веса сейчас живут внутри своих разделов — для «+» на хабе их нужно поднять на общий уровень, как окно задачи.</li>
+      <li>Хаб читает данные всех разделов при запуске — нужно следить, чтобы приложение открывалось так же быстро.</li>
+      <li>Стартовым экраном становится хаб: «Неделя» и «Предстоящие» отодвигаются на одно нажатие.</li>
+      <li>Все переходы из уведомлений и виджета (задача, покупка, вес, новости, бюджет) нужно перепроверить — под ними теперь хаб.</li>
+      <li>В виджете карусель только кнопками ‹ ›, свайп вбок там невозможен.</li>
+    </ul>
+  </section>
+
+  <section class="block" id="decide">
+    <h2>Что решить, чтобы начать код</h2>
+    <div class="decide">
+      <div><b>1. Плотность</b><span>A · один экран, B · подробная лента или C · компактно + раскрытие.</span></div>
+      <div><b>2. Навигация</b><span>N1 · пятая вкладка, N2 · домик вместо ⚙ или N3 · «Назад» в хаб.</span></div>
+      <div><b>3. Новости в виджете</b><span>Карточка со стрелками ‹ › или три заголовка столбиком.</span></div>
+      <div><b>4. Возврат в приложение</b><span>С иконки — всегда хаб; из списка недавних — туда, где был. Подходит?</span></div>
+    </div>
+  </section>
+
+  <footer>Исходник в репозитории: design/approved/329 — requirements.md, build.py, prototype.template.html, render.js. Issue #329.</footer>
+</main>
+
+<script>
+const ICONS = /*ICONS*/null;
+const DATE = 'вторник, 24 ноября';
+const TIMES = { morning: ['09:12', 'Доброе утро'], day: ['14:30', 'Добрый день'], evening: ['21:40', 'Добрый вечер'] };
+const TASKS = [
+  ['Просрочено', 'late', [{ id: 'o1', time: 'вчера', title: 'Оплатить интернет', emoji: '🏠', pri: true }]],
+  ['Сегодня', 'today', [
+    { id: 't1', time: '10:00', end: '10:30', title: 'Созвон с командой', emoji: '💼' },
+    { id: 't2', time: '13:00', title: 'Забрать посылку', emoji: '📦' },
+    { id: 't3', time: '19:00', end: '20:30', title: 'Тренировка', emoji: '🏋️', repeat: true },
+    { id: 't4', title: 'Купить продукты', emoji: '🛒' },
+    { id: 't5', title: 'Позвонить маме', emoji: '👪', pri: true },
+  ]],
+  ['Завтра', 'tomorrow', [
+    { id: 'm1', time: '09:30', title: 'Стоматолог', emoji: '🦷' },
+    { id: 'm2', time: '15:00', end: '16:00', title: 'Встреча с подрядчиком', emoji: '💼' },
+    { id: 'm3', time: '17:00', title: 'Отчёт за неделю', emoji: '💼', pri: true },
+  ]],
+];
+const ALARMS = [
+  { emoji: '☕', name: 'Кафе', note: 'перерасход 800 ₽', kind: 'over' },
+  { emoji: '🛒', name: 'Продукты', note: 'быстрее плана · осталось 3 200 ₽', kind: 'ahead' },
+];
+const ACCOUNTS = [['💳', '42k'], ['👛', '6k'], ['🏦', '80k']];
+const WEIGHTS = [83.2, 83.1, 83.3, 83.0, 82.9, 83.1, 82.8, 82.9, 82.7, 82.8, 82.6, 82.7, 82.5, 82.6, 82.4];
+const NEWS = [
+  ['n1', '09:05', 'Футбол', '«Бавария» обыграла «Боруссию» в дерби — 3:1', true],
+  ['n2', '08:40', 'Баскетбол', 'Дончич набрал 41 очко в победе «Лейкерс»', true],
+  ['n3', '08:12', 'Баскетбол', 'Вембаньяма — восемь блок-шотов против «Голден Стэйт»', true],
+  ['n4', '07:55', 'Хоккей', '«Каролина» обыграла «Эдмонтон» в овертайме', true],
+  ['n5', '07:30', 'Теннис', 'Определились финалисты итогового турнира', true],
+  ['n6', '06:58', 'Футбол', 'Кейн повторил рекорд Бундеслиги по голам в первом круге', false],
+  ['n7', '06:20', 'Бокс/MMA/UFC', 'UFC Fight Night: главный бой перенесён на неделю', false],
+  ['n8', '23:41', 'Футбол', 'ЦСКА проиграл «Ахмату» дома — 1:2', false],
+  ['n9', '23:10', 'Фигурное катание', 'Селевко победил на Гран-при Финляндии', false],
+  ['n10', '22:27', 'Футбол', '«Челси» разгромлен «Лидсом», «Арсенал» сыграл вничью', false],
+];
+const MODULES = { tasks: ['Неделя', 'week'], finance: ['Финансы', 'finance'], health: ['Здоровье', 'health'], news: ['Новости', 'news'] };
+const PLUS_TOAST = { task: 'Окно «Новая задача» поверх хаба', expense: 'Окно нового расхода поверх хаба', weight: 'Окно веса поверх хаба' };
+
+const ic = (name) => `<span>${ICONS[name]}</span>`;
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+function unreadCount(s) { return NEWS.filter((n) => n[4] && !s.read.has(n[0])).length; }
+
+function taskRow(s, t, late) {
+  const done = s.done.has(t.id);
+  const time = t.time ? `${esc(t.time)}${t.end ? `<br>${esc(t.end)}` : ''}` : '';
+  return `<div class="trow${done ? ' done' : ''}" data-act="open-task" role="button" tabindex="0">
+    <div class="ttime${late ? ' late' : ''}">${time}</div>
+    <button type="button" class="tcheck${t.repeat ? ' repeat' : ''}" data-act="check" data-id="${t.id}" aria-label="Выполнено: ${esc(t.title)}">${t.repeat ? (done ? ic('check') : ic('repeat')) : (done ? ic('check') : '')}</button>
+    <div class="ttitle${t.pri ? ' pri' : ''}">${esc(t.title)}</div><div class="temoji">${t.emoji}</div></div>`;
+}
+
+function taskList(s) {
+  return TASKS.map(([label, kind, list]) => `<div class="group${kind === 'late' ? ' late' : ''}">${label}</div>${list.map((t) => taskRow(s, t, kind === 'late')).join('')}`).join('');
+}
+
+function secHead(s, key, title, icon, meta, toggle) {
+  const act = toggle ? `data-act="toggle" data-block="${key}"` : `data-act="go" data-to="${key}"`;
+  return `<div class="sec-head" ${act} role="button" tabindex="0"><span class="sec-icon">${ICONS[icon]}</span><span class="sec-title">${title}</span>${meta ? `<span class="sec-meta">${meta}</span>` : ''}<span class="chev" data-act="go" data-to="${key}" role="button" aria-label="Открыть раздел ${title}">${ICONS.chevron}</span></div>`;
+}
+
+function limitBar() {
+  return `<div class="limit" data-act="budget" role="button" tabindex="0"><div class="limit-row"><div class="thick"><div class="fill" style="width:96%">54k ₽</div><div class="mark" style="left:80%"></div></div><span class="limit-num">57k</span></div>
+    <div class="limit-status"><span class="left">осталось 2k ₽</span><span class="fc">${ic('forecast')}прогноз 68k ₽</span></div></div>`;
+}
+
+function alarms(big) {
+  return (big ? '<div class="sub-label">Тревожные бюджеты</div>' : '') + ALARMS.map((a) => `<div class="alarm" data-act="budget"><span class="em">${a.emoji}</span><span class="nm">${a.name}</span><span class="nt ${a.kind}">${big ? a.note : a.note.replace('быстрее плана · ', '')}</span></div>`).join('');
+}
+
+function accounts(big) {
+  return (big ? '<div class="sub-label">Счета</div>' : '') + `<div class="accounts${big ? ' big' : ''}"><span class="total">128k ₽</span>${ACCOUNTS.map(([e, v]) => `<span class="acc">${e} ${v}</span>`).join('')}</div>`;
+}
+
+function chart(w, h, labels) {
+  const min = Math.min(...WEIGHTS) - 0.15, max = Math.max(...WEIGHTS) + 0.15;
+  const right = labels ? w - 34 : w - 40;
+  const x = (i) => 4 + (right - 4) * i / (WEIGHTS.length - 1);
+  const y = (v) => 6 + (h - 12) * (1 - (v - min) / (max - min));
+  const pts = WEIGHTS.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  const last = WEIGHTS.length - 1;
+  const grid = labels ? [0, 0.5, 1].map((f) => `<line x1="4" x2="${right}" y1="${6 + (h - 12) * f}" y2="${6 + (h - 12) * f}" stroke="#E8E8EA"/>`).join('') : '';
+  const side = labels ? `<text x="${right + 6}" y="${y(max - 0.15) + 4}" font-size="10" fill="#62656E">${(max - 0.15).toFixed(1).replace('.', ',')}</text><text x="${right + 6}" y="${y(min + 0.15) + 4}" font-size="10" fill="#62656E">${(min + 0.15).toFixed(1).replace('.', ',')}</text>` : '';
+  return `<svg viewBox="0 0 ${w} ${h}" style="height:${h}px" aria-label="Вес за 30 дней, сейчас 82,4 кг">${grid}<polyline points="${pts}" fill="none" stroke="#16171D" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${x(last)}" cy="${y(WEIGHTS[last])}" r="3.6" fill="#16171D"/>${labels ? side : `<text x="${x(last) + 7}" y="${y(WEIGHTS[last]) + 4}" font-size="12.5" font-weight="800" fill="#16171D">82,4</text>`}</svg>`;
+}
+
+function carousel(s, big) {
+  const cards = NEWS.map(([id, time, sport, title, unread]) => {
+    const isNew = unread && !s.read.has(id);
+    return `<div class="ncard${isNew ? ' unread' : ''}${big ? ' big' : ''}" data-act="news" data-id="${id}" role="button" tabindex="0"><div class="meta">${time} · ${esc(sport)}${isNew ? ' · <span class="new">Новое</span>' : ''}</div><div class="tt">${esc(title)}</div></div>`;
+  }).join('');
+  return `<div class="carousel">${cards}</div><div class="dots">${NEWS.map((_, i) => `<i class="${i === (s.newsIndex || 0) ? 'on' : ''}"></i>`).join('')}</div>`;
+}
+
+function newsMeta(s) {
+  const n = unreadCount(s);
+  return n ? `<span class="new">Новые · ${n}</span>` : 'всё прочитано';
+}
+
+function hub(s) {
+  const head = `<div class="hub-head"><div><div class="greet">${TIMES[s.time][1]}</div><div class="date">${DATE}</div></div>${s.nav === 'N2' ? `<button type="button" class="gear" data-act="settings" aria-label="Настройки">${ic('settings')}</button>` : ''}</div>`;
+  const doneToday = TASKS[1][2].filter((t) => s.done.has(t.id)).length;
+  const taskMeta = `сегодня ${TASKS[1][2].length - doneToday} · завтра ${TASKS[2][2].length}`;
+  if (s.density === 'C') {
+    const open = s.open;
+    const block = (key, title, icon, meta, collapsed, expanded) => `<div class="sec">${secHead(s, key, title, icon, meta, true)}${open === key ? expanded : `<div class="summary" data-act="toggle" data-block="${key}">${collapsed}</div>`}</div>`;
+    const lateLeft = TASKS[0][2].filter((t) => !s.done.has(t.id)).length;
+    const next = TASKS[1][2].find((t) => t.time && !s.done.has(t.id));
+    return head
+      + block('tasks', 'Задачи', 'week', '', `<div class="sum1">${lateLeft ? `<span class="late">Просрочено ${lateLeft}</span> · ` : ''}Сегодня ${TASKS[1][2].length - doneToday} · Завтра ${TASKS[2][2].length}</div><div class="sum2">${next ? `${next.time} ${esc(next.title)}` : 'Дальше задач со временем нет'}</div>`,
+        `<div class="tasks-scroll" style="max-height:318px">${taskList(s)}</div>`)
+      + block('finance', 'Финансы', 'finance', '', `${limitBar()}<div class="sum2" style="font-size:13px;color:#62656E;margin-top:2px">2 тревожных бюджета · на счетах 128k ₽</div>`,
+        `${limitBar()}${alarms(true)}${accounts(true)}`)
+      + block('health', 'Здоровье', 'health', '', `<div class="inline-health"><b>82,4 кг</b><span class="spark">${chart(96, 26, false).replace('font-size="12.5"', 'font-size="0"')}</span><span style="font-size:13px;color:#62656E;font-weight:600">за 30 дней</span></div>`,
+        `<div class="chart" data-act="go" data-to="health">${chart(328, 96, true)}</div><div class="chart-dates"><span>25 окт</span><span>24 ноя</span></div>`)
+      + block('news', 'Новости', 'news', newsMeta(s), `<div class="sum2" style="font-weight:700;color:#16171D">${esc(NEWS[0][3])}</div>`, carousel(s, false));
+  }
+  const big = s.density === 'B';
+  const tasks = big ? taskList(s) : `<div class="tasks-scroll" style="max-height:190px">${taskList(s)}</div>`;
+  return head
+    + `<div class="sec">${secHead(s, 'tasks', 'Задачи', 'week', taskMeta)}${tasks}</div>`
+    + `<div class="sec">${secHead(s, 'finance', 'Финансы', 'finance', '')}${limitBar()}${alarms(big)}${accounts(big)}</div>`
+    + `<div class="sec">${secHead(s, 'health', 'Здоровье', 'health', big ? '82,4 кг · 30 дней' : '')}<div class="chart" data-act="go" data-to="health">${big ? chart(328, 110, true) : chart(328, 50, false)}</div>${big ? '<div class="chart-dates"><span>25 окт</span><span>24 ноя</span></div>' : ''}</div>`
+    + `<div class="sec">${secHead(s, 'news', 'Новости', 'news', newsMeta(s))}${carousel(s, big)}</div>`;
+}
+
+function moduleScreen(s) {
+  const [title] = MODULES[s.screen];
+  const back = s.nav === 'N3' ? '<span class="hint">◁ «Назад» — в хаб</span>' : '';
+  return `<div class="module"><h3>${title}</h3><p>Раздел как сейчас — без изменений.</p>${back}${Array.from({ length: 9 }, (_, i) => `<div class="skel" style="width:${[92, 70, 84, 60, 88, 76, 66, 90, 58][i]}%"></div>`).join('')}</div>`;
+}
+
+function barRow(s) {
+  const tabs = [['tasks', 'week'], ['finance', 'finance'], ['health', 'health'], ['news', 'news']];
+  const center = (s.nav === 'N1' ? [['hub', 'home'], ...tabs] : tabs).map(([key, icon]) => `<button type="button" class="tab${s.screen === key ? ' on' : ''}" data-act="tab" data-to="${key}" aria-label="${key === 'hub' ? 'Главная' : MODULES[key][0]}">${ic(icon)}</button>`).join('');
+  const right = s.nav === 'N2'
+    ? `<button type="button" class="tab${s.screen === 'hub' ? ' on' : ''}" data-act="tab" data-to="hub" aria-label="Главная">${ic('home')}</button>`
+    : `<button type="button" class="tab on" data-act="settings" aria-label="Настройки">${ic('settings')}</button>`;
+  return `<div class="appbar-row"><button type="button" class="add-btn" data-act="plus" aria-label="Добавить">${s.screen === 'news' ? ic('refresh') : ic('add')}</button><div class="tabs">${center}</div><div class="right-slot">${right}</div></div>`;
+}
+
+function phone(s) {
+  const fixed = s.screen === 'hub' && s.density === 'A';
+  const body = s.screen === 'hub' ? hub(s) : moduleScreen(s);
+  const menu = s.menu ? `<div class="scrim" data-act="close"></div><div class="plus-menu" role="menu"><button type="button" data-act="plus-item" data-kind="task">${ic('task')}Задача</button><button type="button" data-act="plus-item" data-kind="expense">${ic('finance')}Расход</button><button type="button" data-act="plus-item" data-kind="weight">${ic('health')}Вес</button></div>` : '';
+  const toast = s.toast ? `<div class="toast">${esc(s.toast)}</div>` : '';
+  return `<div class="status"><span>${TIMES[s.time][0]}</span><span class="sys">5G <i></i></span></div><div class="screen${fixed ? ' fixed' : ''}">${body}</div><div class="appbar">${barRow(s)}</div>${menu}${toast}`;
+}
+
+function mount(root, init) {
+  const s = Object.assign({ density: 'A', nav: 'N1', time: 'morning', screen: 'hub', open: 'tasks', menu: false, toast: '', done: new Set(), read: new Set(), newsIndex: 0 }, init);
+  let timer = 0;
+  const render = () => {
+    const screen = root.querySelector('.screen'), list = root.querySelector('.tasks-scroll'), car = root.querySelector('.carousel');
+    const keep = [screen && screen.scrollTop, list && list.scrollTop, car && car.scrollLeft];
+    root.innerHTML = phone(s);
+    const nScreen = root.querySelector('.screen'), nList = root.querySelector('.tasks-scroll'), nCar = root.querySelector('.carousel');
+    if (nScreen && keep[0]) nScreen.scrollTop = keep[0];
+    if (nList && keep[1]) nList.scrollTop = keep[1];
+    if (nCar) {
+      if (keep[2]) nCar.scrollLeft = keep[2];
+      nCar.addEventListener('scroll', () => {
+        const i = Math.round(nCar.scrollLeft / (nCar.firstElementChild.offsetWidth + 8));
+        if (i !== s.newsIndex) { s.newsIndex = i; root.querySelectorAll('.dots i').forEach((d, k) => d.classList.toggle('on', k === i)); }
+      }, { passive: true });
+    }
+  };
+  const toast = (text) => { s.toast = text; render(); clearTimeout(timer); timer = setTimeout(() => { s.toast = ''; render(); }, 1800); };
+  root.addEventListener('click', (e) => {
+    const t = e.target.closest('[data-act]');
+    if (!t || !root.contains(t)) return;
+    e.stopPropagation();
+    const act = t.dataset.act;
+    if (act === 'check') { const id = t.dataset.id; s.done.has(id) ? s.done.delete(id) : s.done.add(id); render(); }
+    else if (act === 'open-task') toast('Окно задачи поверх хаба');
+    else if (act === 'go' || act === 'tab') { s.menu = false; s.screen = t.dataset.to; render(); }
+    else if (act === 'toggle') { s.open = s.open === t.dataset.block ? null : t.dataset.block; render(); }
+    else if (act === 'plus') { if (s.screen === 'hub') { s.menu = !s.menu; render(); } else toast(s.screen === 'news' ? 'Обновить ленту' : 'Как сейчас в разделе'); }
+    else if (act === 'plus-item') { s.menu = false; toast(PLUS_TOAST[t.dataset.kind]); }
+    else if (act === 'close') { s.menu = false; render(); }
+    else if (act === 'budget') toast('Окно «Бюджет»');
+    else if (act === 'news') { s.read.add(t.dataset.id); toast('Откроется материал на Sports.ru'); }
+    else if (act === 'settings') toast('Настройки');
+  });
+  root.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[role="button"]')) { e.preventDefault(); e.target.click(); } });
+  render();
+  if (init.scroll) requestAnimationFrame(() => { const sc = root.querySelector('.screen'); if (sc) sc.scrollTop = init.scroll; });
+  return {
+    set(patch) { Object.assign(s, patch); render(); },
+    back() { if (s.menu) { s.menu = false; render(); } else if (s.screen !== 'hub') { s.screen = 'hub'; render(); } else toast('На хабе «Назад» закрывает приложение'); },
+    state: s,
+  };
+}
+
+function widget(kind) {
+  const s = { done: new Set(), read: new Set() };
+  const rows = (n) => TASKS.flatMap(([label, k, list]) => [`<div class="group${k === 'late' ? ' late' : ''}" style="padding-left:52px">${label}</div>`, ...list.map((t) => taskRow(s, t, k === 'late'))]).slice(0, n).join('');
+  const bar = (small) => `<div class="w-bar"><span class="add-btn">${ic('add')}</span><span class="tab on">${ic('home')}</span><span class="tab">${ic('week')}</span><span class="tab">${ic('finance')}</span><span class="tab">${ic('health')}</span><span class="tab">${ic('news')}</span>${small ? '' : `<span class="date">24<small><span>вт</span><span>ноя</span></small></span><span class="dl">${ICONS.download}</span>`}</div>`;
+  if (kind === 'small') {
+    return `<div class="w-body" style="padding:8px 10px 4px;gap:4px"><div class="w-head" style="font-size:12px">Сегодня 5 <span style="color:#C62828;font-weight:800">· просрочено 1</span></div>
+      <div style="font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">10:00 Созвон с командой</div>
+      <div class="limit" style="padding:0"><div class="limit-row"><div class="thick" style="height:18px"><div class="fill" style="width:96%;font-size:11px;padding-left:7px">54k</div><div class="mark" style="left:80%"></div></div><span class="limit-num" style="font-size:12.5px">57k</span></div></div></div>${bar(true)}`;
+  }
+  const news = kind === 'wide'
+    ? `<div class="w-news"><span class="arrow">${ic('left')}</span><div class="ncard unread"><div class="meta">${NEWS[0][1]} · ${NEWS[0][2]} · <span class="new">Новое</span></div><div class="tt">${esc(NEWS[0][3])}</div></div><span class="arrow">${ic('right')}</span></div>`
+    : `<div class="w-head3">${NEWS.slice(0, 3).map((n) => `<div class="tt">${esc(n[3])}</div>`).join('')}</div>`;
+  const listH = kind === 'wide' ? 196 : 158;
+  return `<div class="w-body"><div class="w-head">Доброе утро <span>вт, 24 ноября</span></div>
+    <div class="tasks-scroll" style="max-height:${listH}px">${rows(12)}</div>
+    ${limitBar()}
+    <div class="chart">${chart(kind === 'wide' ? 368 : 296, 40, false)}</div>
+    ${news}</div>${bar(false)}`;
+}
+
+const live = mount(document.getElementById('live-phone'), { density: 'A', nav: 'N1', time: 'morning' });
+document.querySelectorAll('.seg').forEach((seg) => {
+  const key = seg.dataset.ctrl;
+  const sync = () => seg.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === live.state[key])));
+  seg.addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    live.set({ [key]: b.dataset.v, screen: 'hub', menu: false, open: 'tasks' });
+    sync();
+  });
+  sync();
+});
+document.getElementById('live-back').addEventListener('click', () => live.back());
+document.querySelectorAll('[data-static]').forEach((el) => mount(el, JSON.parse(el.dataset.static)));
+document.querySelectorAll('[data-bar]').forEach((el) => { const cfg = Object.assign({ density: 'A', time: 'morning' }, JSON.parse(el.dataset.bar)); el.innerHTML = barRow(cfg); });
+document.querySelectorAll('[data-widget]').forEach((el) => { el.innerHTML = widget(el.dataset.widget); });
+</script>
