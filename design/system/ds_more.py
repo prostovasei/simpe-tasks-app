@@ -1524,3 +1524,39 @@ PREVIEWS['ScreenHealth'] = lambda: doc('Экраны', 800, 'Здоровье, �
                                        f'<div class="row" style="align-items:flex-start">{health_screen()}<div style="padding-top:140px">{health_weight_dialog()}</div></div>')
 README_MORE['ScreenHealth'] = ('Экран «Здоровье → Вес» (0.71).',
     'Третий модуль (#257; макеты design/approved/257). Белый плоский экран, как «Неделя»: текущий вес `display-medium` Bold, под ним изменение за период (снижение — `income`), строка цели (название Bold, подпись `text-secondary`: остаток, прогноз даты, ИМТ), переключатель периода «Месяц / 3 мес / Год / Всё» (выбранный на `selected`), график `size-health-chart-height` (линия `size-health-line`, точки `size-health-point`, последняя закрашена `size-health-point-last`, цель — пунктир `goal` с подписью справа), записи: дата и комментарий, разница с прошлой записью, вес Bold; строка не ниже `size-operation-row`. Окно ввода веса — `FinanceWindow` с двумя барабанами: строка `size-health-drum-item`, видно пять строк, выбранная крупная на `selected`. Нижняя панель — общая (#241): «+», одна страница «Вес» (значок весов), кнопка модуля с сердцем.')
+
+
+# ---------------------------------------------------------------- хаб «Главная» (0.92, #329)
+
+def hub_screen():
+    bar = ('<div style="padding:16px 16px 0"><div style="position:relative;height:26px;border-radius:var(--radius-sm);background:var(--selected);overflow:hidden">'
+           '<div style="width:68%;height:100%;background:var(--text-primary)"></div>'
+           '<span style="position:absolute;left:10px;top:4px;font-size:12px;font-weight:700;color:var(--surface)">57 000 ₽</span>'
+           '<span style="position:absolute;left:62%;top:0;bottom:0;width:3px;background:var(--text-secondary);border:1px solid var(--surface)"></span>'
+           '<span style="position:absolute;right:10px;top:4px;font-size:12px;font-weight:700">80 000 ₽</span></div>'
+           '<div style="display:flex;padding-top:6px;font-size:12px;color:var(--text-secondary)"><span style="flex:1">осталось 23 000 ₽</span><span>прогноз 68 000 ₽</span></div>'
+           '<div style="display:flex;gap:6px;padding-top:10px;font-size:12px;font-weight:700"><span style="padding:4px 8px">128k ₽</span>'
+           + ''.join(f'<span style="padding:4px 8px;border-radius:var(--radius-sm);background:var(--selected)">{a}</span>' for a in ('💳 42k', '👛 6k', '🏦 80k'))
+           + '</div></div>')
+    label = lambda t, c='var(--text-secondary)': f'<div style="padding:12px 16px 2px;font-size:13px;font-weight:700;color:{c}">{t}</div>'
+    tasks = ('<div style="padding:0 4px">' + label('Просрочено', 'var(--danger)')
+             + B.trow('Вчера', 'var(--inactive)', 'Оплатить интернет', over=True, top=False, bottom=False)
+             + label('Сегодня') + B.trow('10:00', 'var(--ring-medium)', 'Созвон с командой', top=False, bottom=False)
+             + B.trow('14:00', 'var(--inactive)', 'Купить продукты', top=False, bottom=False)
+             + label('Завтра') + B.trow('09:30', 'var(--inactive)', 'Стоматолог', top=False, bottom=False) + '</div>')
+    card = lambda meta, t, unread=False: (f'<div style="min-height:76px;border-radius:var(--radius-lg);background:var(--selected);padding:8px 10px;box-sizing:border-box">'
+                                          f'<div style="font-size:10.5px;color:var(--text-secondary)">{meta}</div><div style="font-size:13px;line-height:17px;font-weight:{700 if unread else 500}">{t}</div></div>')
+    news = ('<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:14px 16px 6px">'
+            + card('09:05 · Футбол · Новое', 'Бавария обыграла Боруссию в дерби', True) + card('08:40 · Баскетбол · Новое', 'Дончич набрал трипл-дабл', True)
+            + card('08:12 · Футбол', 'Расписание тура Бундеслиги') + card('07:55 · Баскетбол', 'Вембаньяма — игрок недели') + '</div>'
+            '<div style="display:flex;justify-content:center;gap:6px">' + ''.join(f'<span style="width:6px;height:6px;border-radius:50%;background:var(--{c})"></span>' for c in ('text-primary', 'inactive', 'inactive')) + '</div>')
+    return frame(f'{bar}{tasks}{news}', 760)
+
+
+PREVIEWS['ScreenHub'] = lambda: doc('Экраны', 790, 'Хаб «Главная» (0.92): полоса лимита и счета, задачи, новости 2 × 2', hub_screen())
+README_MORE['ScreenHub'] = ('Хаб «Главная» (0.92).',
+    'Стартовый экран и первая вкладка панели — домик `ic_module_hub` (#329; макеты design/approved/329, вариант A + N1). Без шапки, заголовков блоков и линий: '
+    'сверху полоса лимита Г (`size-limit-bar`) и чипы счетов (до четырёх), посередине задачи «Просрочено» (`danger`) · «Сегодня» · «Завтра» — строки окна дня без линии «сейчас», '
+    'блок занимает свободное место и прокручивается внутри; пусто — «На сегодня и завтра задач нет» и «+ Задача». Внизу новости страницами 2 × 2 со свайпом: '
+    'карточка `size-hub-news-card` (мин. высота) на `selected`, `radius-lg`, мета 10,5 sp `text-secondary`, заголовок 13 sp до трёх строк, непрочитанные Bold; '
+    'точки страниц `size-hub-dot`. «+» на хабе — меню «Задача / Расход / Вес».')
