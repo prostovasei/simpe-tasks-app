@@ -45,6 +45,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.semantics.testTag
 import com.prostovasei.simpletasks.widget.WidgetDates
+import com.prostovasei.simpletasks.widget.WidgetLog
 import com.prostovasei.simpletasks.ui.feature.task.ChoiceStyle
 import com.prostovasei.simpletasks.ui.feature.task.ChoiceDialog
 import com.prostovasei.simpletasks.ui.feature.task.Choice
@@ -64,6 +65,7 @@ import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.pluralStringResource
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.material3.SnackbarHostState
@@ -151,6 +153,33 @@ fun VoiceRoute(
             list.add { id -> VoiceTasks.parse(id, phrase, now.toLocalDate(), now.hour * 60 + now.minute, zone, smartDates, today) }
         }
     }
+    // Недоговорённая фраза тоже становится задачей: при паузе, правке, сохранении и закрытии.
+    val takePartial = {
+        add(VoiceErrors.clean(state.partial))
+        state = state.copy(partial = "")
+    }
+    // #321: ожидание последней фразы после ⏸. Распознаватель, которому нажали ⏸ до начала речи, иногда не отвечает вовсе —
+    // окно оставалось в записи, и ⏸ «не нажималась». Теперь пауза видна сразу, а без ответа за [STOP_GRACE_MILLIS] запись
+    // обрывается, недоговорённое — в задачи.
+    var pausing by remember { mutableStateOf<Job?>(null) }
+    val settle = {
+        pausing?.cancel()
+        pausing = null
+    }
+    val pause = {
+        listening = false
+        state = state.copy(recording = false, level = 0f)
+        engine.stop()
+        pausing?.cancel()
+        pausing = scope.launch {
+            delay(STOP_GRACE_MILLIS)
+            pausing = null
+            WidgetLog.add(context, "голос: ⏸ без ответа распознавателя")
+            engine.cancel()
+            if (state.partial.isBlank() && list.tasks.value.isEmpty()) state = state.copy(error = VoiceError.NOT_HEARD)
+            takePartial()
+        }
+    }
     LaunchedEffect(allowed, attempt) {
         if (!allowed || !listening) return@LaunchedEffect
         state = state.copy(partial = "", recording = true, error = null, level = 0f)
@@ -159,9 +188,10 @@ fun VoiceRoute(
                 if (text.isNotBlank() && text != state.partial) speech++
                 state = state.copy(partial = text)
             }
-            override fun onLevel(level: Float) { state = state.copy(level = level) }
+            override fun onLevel(level: Float) { if (listening) state = state.copy(level = level) }
 
             override fun onResult(text: String) {
+                settle()
                 if (text.isNotBlank()) speech++
                 add(VoiceErrors.clean(text))
                 state = state.copy(partial = "", recording = listening, level = 0f)
@@ -169,6 +199,7 @@ fun VoiceRoute(
             }
 
             override fun onError(error: VoiceError) {
+                settle()
                 when {
                     // Тишина во время непрерывной записи — не ошибка: слушаем дальше, паузу ставит отсчёт [SILENCE_MILLIS].
                     error == VoiceError.NOT_HEARD && listening -> attempt++
@@ -186,17 +217,12 @@ fun VoiceRoute(
     LaunchedEffect(listening, speech, allowed) {
         if (!listening || !allowed) return@LaunchedEffect
         delay(SILENCE_MILLIS)
-        listening = false
-        engine.stop()
+        pause()
     }
     DisposableEffect(engine) { onDispose { engine.destroy() } }
-    // Недоговорённая фраза тоже становится задачей: при паузе, правке, сохранении и закрытии.
-    val takePartial = {
-        add(VoiceErrors.clean(state.partial))
-        state = state.copy(partial = "")
-    }
     // Окно уходит (правка, сохранение, закрытие): запись обрывается без ответа движка, недоговорённая фраза — тоже задача.
     val halt = {
+        settle()
         listening = false
         // Сразу, а не через эффект: окно уходит в этом же кадре, а при возврате оно должно быть на паузе.
         list.listening = false
@@ -230,9 +256,13 @@ fun VoiceRoute(
         onMic = {
             if (state.recording) {
                 // ⏸: распознаватель отдаст последнюю фразу сам — она станет задачей, запись не перезапустится.
-                listening = false
-                engine.stop()
+                pause()
             } else if (state.error?.blocking() != true) {
+                // ⏺ раньше ответа на ⏸: недоговорённое — задача, поздний ответ прежней записи отбросит новый запуск.
+                if (pausing != null) {
+                    settle()
+                    takePartial()
+                }
                 listening = true
                 attempt++
             }
@@ -581,6 +611,9 @@ private const val KEYBOARD_FALLBACK = 0.4f
 
 /** #308: тишина, после которой запись сама встаёт на паузу (ответ PM 23.11.2026). */
 internal const val SILENCE_MILLIS = 10_000L
+
+/** #321: сколько ждать последнюю фразу после ⏸, прежде чем оборвать запись. */
+internal const val STOP_GRACE_MILLIS = 1_500L
 private const val DISABLED_ALPHA = 0.35f
 private const val CALM_MILLIS = 600
 private const val WAVE_SPEED = 1.96f

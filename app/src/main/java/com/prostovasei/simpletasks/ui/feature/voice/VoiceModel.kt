@@ -37,6 +37,9 @@ data class VoiceState(
 interface VoiceEngine {
     fun start(listener: Listener)
     fun stop()
+
+    /** #321: оборвать запись без ответа — распознаватель не ответил на [stop]; поздние события прежней записи отбрасываются. */
+    fun cancel()
     fun destroy()
 
     interface Listener {
@@ -191,6 +194,13 @@ class AndroidVoiceEngine(
 
     override fun stop() {
         recognizer?.stopListening()
+    }
+
+    override fun cancel() {
+        session++
+        handler.removeCallbacksAndMessages(null)
+        if (active) recognizer?.cancel()
+        active = false
     }
 
     override fun destroy() {
