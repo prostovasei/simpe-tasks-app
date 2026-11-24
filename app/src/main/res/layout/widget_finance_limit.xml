@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Полоса лимита в финансовом виджете (#327, вариант Г): полоса картинкой, под ней «осталось» и прогноз. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools" tools:ignore="HardcodedText"
+    android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:orientation="vertical" android:paddingHorizontal="@dimen/widget_edge">
+    <ImageView android:id="@+id/widget_finance_limit_bar" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:adjustViewBounds="true"
+        android:scaleType="fitCenter" android:contentDescription="@null" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:gravity="center_vertical">
+        <TextView android:id="@+id/widget_finance_limit_status" android:layout_width="0dp"
+            android:layout_weight="1" android:layout_height="wrap_content" android:textSize="12sp"
+            android:textStyle="bold" android:textColor="@color/widget_flat_text_secondary" />
+        <LinearLayout android:id="@+id/widget_finance_estimate_group"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:gravity="end|center_vertical">
+            <ImageView android:layout_width="14dp" android:layout_height="14dp"
+                android:src="@drawable/ic_finance_forecast" android:tint="@color/widget_flat_text_secondary"
+                android:contentDescription="Прогноз"/>
+            <TextView android:id="@+id/widget_finance_estimate" android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:textSize="12sp"
+                android:textColor="@color/widget_flat_text_secondary" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

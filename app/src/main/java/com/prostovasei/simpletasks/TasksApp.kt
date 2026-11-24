@@ -24,6 +24,8 @@ class TasksApp : Application() {
 
     @Inject lateinit var weighIn: WeighInReminder
 
+    @Inject lateinit var budget: com.prostovasei.simpletasks.notifications.BudgetAlerts
+
     @Inject @ApplicationScope lateinit var appScope: CoroutineScope
 
     override fun onCreate() {
@@ -32,6 +34,7 @@ class TasksApp : Application() {
         widgets.start()
         summary.schedule()
         weighIn.schedule()
+        budget.start()
         NewsChecks.schedule(this)
         // #312: скачанные раньше обновления (~19 МБ каждое) больше не нужны — установщик их уже скопировал.
         appScope.launch(Dispatchers.IO) { UpdateFiles.clear(cacheDir) }

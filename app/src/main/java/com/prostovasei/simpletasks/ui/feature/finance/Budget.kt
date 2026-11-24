@@ -1,7 +1,6 @@
 package com.prostovasei.simpletasks.ui.feature.finance
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -95,12 +94,15 @@ internal fun BudgetProgress(fill: Float, color: Color, today: Float?, modifier: 
             content()
         }
         if (today != null) {
+            // Отметка с белыми краями: видна и на тёмном заполнении, и на сером фоне.
+            val outline = SizeTokens.BUDGET_MARK + 2 * SizeTokens.HAIRLINE
             Box(
                 Modifier
-                    .offset(x = maxWidth * today - (SizeTokens.BUDGET_MARK / 2).dp)
-                    .width(SizeTokens.BUDGET_MARK.dp)
+                    .offset(x = maxWidth * today - (outline / 2f).dp)
+                    .width(outline.dp)
                     .fillMaxHeight()
-                    .border(SizeTokens.HAIRLINE.dp, colors.surface)
+                    .background(colors.surface)
+                    .padding(horizontal = SizeTokens.HAIRLINE.dp)
                     .background(colors.textSecondary)
                     .testTag(TAG_BUDGET_TODAY),
             )
@@ -146,7 +148,7 @@ internal fun LimitBar(spent: Long, limit: Long?, forecast: Long?, month: YearMon
                 },
             )
             if (forecast != null) {
-                Icon(painterResource(R.drawable.ic_finance_forecast), null, Modifier.size(AppTheme.sizes.moduleIcon).padding(end = spacing.xxs), tint = colors.textSecondary)
+                Icon(painterResource(R.drawable.ic_finance_forecast), "Прогноз", Modifier.size(AppTheme.sizes.moduleIcon).padding(end = spacing.xxs), tint = colors.textSecondary)
                 Text("прогноз ${compactAmount(forecast)}", style = MaterialTheme.typography.labelLarge, color = colors.textSecondary)
             }
         }

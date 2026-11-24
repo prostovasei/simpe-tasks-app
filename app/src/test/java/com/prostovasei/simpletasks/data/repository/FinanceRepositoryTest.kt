@@ -50,6 +50,26 @@ class FinanceRepositoryTest : DatabaseTest() {
         assertEquals("💰", none.accountEmoji)
     }
 
+    /** #327: бюджет ставится на месяц; незаведённый месяц сначала копирует прошлый; копия и восстановление сохраняют бюджеты. */
+    @Test
+    fun budgetsCopyPreviousMonthAndSurviveBackup() = runTest {
+        val food = finance.createCategory("Продукты", OperationKind.EXPENSE)
+        val cafe = finance.createCategory("Кафе", OperationKind.EXPENSE)
+        val nov = java.time.YearMonth.of(2026, 11)
+        finance.setBudgets(nov, mapOf(food to 2_000_000L, cafe to 600_000L))
+        finance.setBudgets(nov.plusMonths(1), mapOf(cafe to 0L))
+
+        val dec = finance.observeBudgets().first().filter { it.month == nov.plusMonths(1) }.associate { it.categoryId to it.amount }
+        assertEquals(mapOf(food to 2_000_000L, cafe to 0L), dec)
+
+        val json = finance.exportBackup()
+        finance.restoreBackup(json)
+        assertEquals(4, finance.observeBudgets().first().size)
+
+        finance.deleteCategoryForever(food)
+        assertEquals(listOf(cafe, cafe), finance.observeBudgets().first().map { it.categoryId })
+    }
+
     @Test
     fun accountsAreCreatedInOrderWithBalance() = runTest {
         assertTrue(finance.observeAccounts().first().isEmpty())
