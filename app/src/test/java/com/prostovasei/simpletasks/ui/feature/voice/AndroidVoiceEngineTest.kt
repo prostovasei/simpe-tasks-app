@@ -68,6 +68,26 @@ class AndroidVoiceEngineTest {
         assertEquals(2000L, intent.getLongExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 0))
     }
 
+    /** #321: ⏸ без ответа — запись обрывается, поздние события прежней записи отбрасываются; новая запись работает. */
+    @Test
+    fun cancelDropsLateEventsAndAllowsANewStart() {
+        installRecognizer()
+        val engine = AndroidVoiceEngine(app, log = { logs += it })
+        engine.start(listener)
+        idle()
+        val first = shadow()
+        engine.stop()
+        engine.cancel()
+        first.triggerOnPartialResults(results("поздно"))
+        first.triggerOnResults(results("поздно"))
+        first.triggerOnError(SpeechRecognizer.ERROR_CLIENT)
+        assertTrue("после обрыва событий нет: $events", events.isEmpty())
+        engine.start(listener)
+        idle()
+        shadow().triggerOnResults(results("Купить хлеб"))
+        assertEquals(listOf("result:Купить хлеб"), events)
+    }
+
     @Test
     fun streamsTextAndFinishesWithResult() {
         installRecognizer()

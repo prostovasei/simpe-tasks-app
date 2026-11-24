@@ -2,9 +2,13 @@
 
 Правила [../AGENTS.md](../AGENTS.md).
 
-## В работе — #313, 0.89.0
+## В работе — #321, 0.89.1
 
-Исполнитель Claude Code, ветка `claude/widget-week-scroll` от main `c2b748f`. [#313](https://github.com/prostovasei/simpe-tasks-app/issues/313) — виджет «Неделя», вариант PM 5 «Всё листается»: у каждого дня свой список задач под неподвижной датой, календарь — лента недель с названиями месяцев. PM 24.11.2026: «Все ок, делай следующую итерацию». [ТЗ](../design/approved/313/requirements.md). Проверки — [отчёт](testing-runs/0.89.0-local.md). Ограничение Android: лента календаря начинается за 2 недели до текущей (открыть список «на середине» виджет не умеет).
+Исполнитель Claude Code, ветка `claude/voice-pause-fix` от main `0d93911`. [#321](https://github.com/prostovasei/simpe-tasks-app/issues/321) — PM прислал видео: в окне голоса ⏸ не ставила запись на паузу. Причина и исправление — в Issue и ARCHITECTURE §4.113. Проверки — [отчёт](testing-runs/0.89.1-local.md). Открыт вопрос PM о минутах GitHub Actions (90 % лимита): урезать проверку на main и бюджет — ждёт ответа.
+
+## Выпуск 0.89.0 — #313
+
+[PR #320](https://github.com/prostovasei/simpe-tasks-app/pull/320), merge `0d9391190fcff41c04e0edd4ab436be8b3d1d8a5`, APK build-488. CI PR и main зелёные с первой попытки, #313 закрыта. Виджет «Неделя»: у каждого дня свой список, календарь — лента недель ([ТЗ](../design/approved/313/requirements.md)). WS313-1–7 ждут результата PM.
 
 ## Выпуск 0.88.0 — #314
 

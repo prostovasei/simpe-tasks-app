@@ -241,9 +241,11 @@ class VoiceInputTest {
         var listener: VoiceEngine.Listener? = null
         var starts = 0
         var stops = 0
+        var cancels = 0
         var destroys = 0
         override fun start(listener: VoiceEngine.Listener) { this.listener = listener; starts++ }
         override fun stop() { stops++ }
+        override fun cancel() { cancels++ }
         override fun destroy() { destroys++ }
     }
 
@@ -411,6 +413,64 @@ class VoiceInputTest {
         composeRule.onNodeWithTag(TAG_VOICE_MIC).performClick()
         composeRule.waitForIdle()
         assertEquals("⏺ после «Не расслышал» запускает запись заново", 2, engine.starts)
+    }
+
+    /**
+     * #321 (видео PM): ⏸ после продиктованной фразы, когда новая речь ещё не началась, — распознаватель не отвечает.
+     * Пауза видна сразу, без ответа за 1,5 с запись обрывается; задачи на месте, перезапуска нет.
+     */
+    @Test
+    fun pauseWorksEvenIfTheRecognizerNeverAnswers() {
+        val engine = FakeEngine()
+        route(engine)
+        say(engine, "сделать двухфакторную аутентификацию на гитхабе")
+        composeRule.mainClock.autoAdvance = false
+        composeRule.onNodeWithTag(TAG_VOICE_MIC).performClick()
+        composeRule.mainClock.advanceTimeByFrame()
+        assertEquals(1, engine.stops)
+        composeRule.onNodeWithContentDescription("Продолжить запись").assertExists()
+        composeRule.mainClock.advanceTimeBy(STOP_GRACE_MILLIS + 100)
+        assertEquals("Без ответа запись оборвана", 1, engine.cancels)
+        composeRule.mainClock.autoAdvance = true
+        composeRule.waitForIdle()
+        assertEquals("Перезапуска нет", 2, engine.starts)
+        row("Сделать двухфакторную аутентификацию на гитхабе").assertExists()
+        composeRule.onNodeWithTag(TAG_VOICE_ERROR, useUnmergedTree = true).assertDoesNotExist()
+        composeRule.onNodeWithTag(TAG_VOICE_MIC).performClick()
+        composeRule.waitForIdle()
+        assertEquals("⏺ снова пишет", 3, engine.starts)
+        composeRule.onNodeWithContentDescription("Продолжить запись").assertDoesNotExist()
+    }
+
+    /** #321: недоговорённая фраза при ⏸ без ответа — тоже задача; ⏺ раньше ответа — то же и сразу новая запись. */
+    @Test
+    fun unansweredPauseKeepsThePartialPhrase() {
+        val engine = FakeEngine()
+        route(engine)
+        composeRule.runOnIdle { engine.listener!!.onPartial("купить хлеб") }
+        composeRule.mainClock.autoAdvance = false
+        composeRule.onNodeWithTag(TAG_VOICE_MIC).performClick()
+        composeRule.mainClock.advanceTimeBy(STOP_GRACE_MILLIS + 100)
+        composeRule.mainClock.autoAdvance = true
+        composeRule.waitForIdle()
+        row("Купить хлеб").assertExists()
+        assertEquals(1, engine.cancels)
+
+        composeRule.onNodeWithTag(TAG_VOICE_MIC).performClick() // ⏺
+        composeRule.waitForIdle()
+        composeRule.runOnIdle { engine.listener!!.onPartial("позвонить маме") }
+        composeRule.mainClock.autoAdvance = false
+        composeRule.onNodeWithTag(TAG_VOICE_MIC).performClick() // ⏸
+        composeRule.mainClock.advanceTimeByFrame()
+        composeRule.onNodeWithTag(TAG_VOICE_MIC).performClick() // ⏺ раньше ответа
+        composeRule.mainClock.autoAdvance = true
+        composeRule.waitForIdle()
+        row("Позвонить маме").assertExists()
+        assertEquals("Новая запись началась", 3, engine.starts)
+        composeRule.mainClock.autoAdvance = false
+        composeRule.mainClock.advanceTimeBy(STOP_GRACE_MILLIS + 100)
+        composeRule.mainClock.autoAdvance = true
+        assertEquals("Отменённое ожидание не обрывает новую запись", 1, engine.cancels)
     }
 
     @Test
