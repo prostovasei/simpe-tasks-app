@@ -2,9 +2,13 @@
 
 Правила [../AGENTS.md](../AGENTS.md).
 
-## В работе — #321, 0.89.1
+## В работе — #323, 0.90.0
 
-Исполнитель Claude Code, ветка `claude/voice-pause-fix` от main `0d93911`. [#321](https://github.com/prostovasei/simpe-tasks-app/issues/321) — PM прислал видео: в окне голоса ⏸ не ставила запись на паузу. Причина и исправление — в Issue и ARCHITECTURE §4.113. Проверки — [отчёт](testing-runs/0.89.1-local.md). Открыт вопрос PM о минутах GitHub Actions (90 % лимита): урезать проверку на main и бюджет — ждёт ответа.
+Исполнитель Claude Code, ветка `claude/sheet-stack-motion` от main `210b43e`. [#323](https://github.com/prostovasei/simpe-tasks-app/issues/323) — PM (видео): окно новой задачи из окна дня «дёргается». PM выбрал «1 + 2», вариант 1 «Остаётся на месте» ([макет и решение](../design/approved/323/README.md)). Проверки — [отчёт](testing-runs/0.90.0-local.md). Репозиторий PM сделал публичным 24.11.2026 (минуты GitHub Actions бесплатны). Открыто предложение: правки голосом без ИИ (слова-команды) — ждёт решения PM.
+
+## Выпуск 0.89.1 — #321
+
+[PR #322](https://github.com/prostovasei/simpe-tasks-app/pull/322), merge `210b43e07b96d4232cc5c741b4e1b3dff93ce2d7`, APK build-490. CI PR и main зелёные, #321 закрыта: ⏸ в окне голоса ставит паузу сразу (ARCHITECTURE §4.113). VP321-1–2 ждут PM.
 
 ## Выпуск 0.89.0 — #313
 

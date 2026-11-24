@@ -11,7 +11,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.test.assertTextEquals
-import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
@@ -42,7 +42,7 @@ import java.time.LocalDate
 @Config(qualifiers = "w412dp-h900dp-xhdpi")
 class DaySheetTest {
     @get:Rule
-    val composeRule = createComposeRule()
+    val composeRule = createAndroidComposeRule<androidx.activity.ComponentActivity>()
 
     private val intents = mutableListOf<Any>()
     private val opened = mutableListOf<String>()
@@ -240,6 +240,45 @@ class DaySheetTest {
         composeRule.onNodeWithTag(TAG_DAY_SCRIM).performClick()
         composeRule.waitForIdle()
         assertEquals(1, closed)
+    }
+
+    /** #323: «+» и задача сообщают своё место — из него растёт окно задачи поверх окна дня. */
+    @Test
+    fun plusAndTaskReportWhereTheTaskWindowGrowsFrom() {
+        val origins = mutableListOf<android.graphics.Rect>()
+        composeRule.setContent {
+            AppTheme {
+                DaySheet(state, { intents += it }, onClose = { closed++ }, onOpenTask = { opened += it }, onAdd = { added += it }, onOrigin = { origins += it })
+            }
+        }
+        composeRule.onNodeWithTag(TAG_DAY_SHEET_ADD).performClick()
+        val plus = composeRule.onNodeWithTag(TAG_DAY_SHEET_ADD).getUnclippedBoundsInRoot()
+        val density = composeRule.density.density
+        val rect = origins.single()
+        assertEquals((plus.right - plus.left).value * density, rect.width().toFloat(), 2f)
+        composeRule.onNodeWithTag("task:football").performClick()
+        val row = origins.last()
+        val sheet = composeRule.onNodeWithTag(TAG_DAY_SHEET).getUnclippedBoundsInRoot()
+        assertEquals("строка — на ширину окна дня", (sheet.right - sheet.left).value * density, row.width().toFloat(), 2f)
+        assertEquals(listOf("football"), opened)
+    }
+
+    /** #323: окно дня под окном задачи — сразу на месте (без роста и каскада) и не забирает «Назад». */
+    @Test
+    fun settledSheetUnderTheTaskWindowIsAlreadyOpen() {
+        composeRule.mainClock.autoAdvance = false
+        composeRule.setContent {
+            AppTheme {
+                DaySheet(state, { intents += it }, onClose = { closed++ }, onOpenTask = { opened += it }, onAdd = { added += it }, settled = true)
+            }
+        }
+        composeRule.mainClock.advanceTimeByFrame()
+        composeRule.onRoot().captureRoboImage("screenshots/day_sheet_settled.png")
+        composeRule.mainClock.autoAdvance = true
+        composeRule.onNodeWithTag(TAG_DAY_SHEET_TITLE).assertIsDisplayed()
+        composeRule.runOnIdle { composeRule.activity.onBackPressedDispatcher.onBackPressed() }
+        composeRule.waitForIdle()
+        assertEquals(0, closed)
     }
 
     @Test

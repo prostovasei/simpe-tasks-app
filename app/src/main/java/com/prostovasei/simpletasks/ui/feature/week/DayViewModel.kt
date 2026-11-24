@@ -44,6 +44,9 @@ class DayViewModel @Inject constructor(
     /** День, с которого открыли окно дня (#314: дальше его листают). */
     val startDate: LocalDate get() = date
 
+    /** #323: показанная страница листалки — окно дня под окном задачи открывается на том же дне. */
+    var page: Int = DAY_PAGE_CENTER
+
     private val completion = CompletionTracker(viewModelScope, tasks, time)
     private val days = mutableMapOf<LocalDate, StateFlow<DayState>>()
 
