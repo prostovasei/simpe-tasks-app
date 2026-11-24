@@ -71,6 +71,7 @@ COLOR_USAGE = {
     'selected': 'Мягкая подсветка выбранного: кнопки панели, дни под сеткой, переключатель виджета. Значок на ней чёрный (`accent`).',
     'danger': 'Опасные действия: «Удалить». Совпадает по значению с `overdue`, но роль другая.',
     'income': 'Доходы в списке операций (0.68): сумма со знаком «+»; в «Здоровье» (0.71) — снижение веса.',
+    'warning': 'Бюджет (0.91, #327): тратится быстрее плана к сегодня — полоса и «осталось» жёлтые.',
     'week-row-week-priority': 'Неделя (0.73): активный высокий приоритет ярко-фиолетовый #862CE0 и начертание 800.',
     'week-row-priority-done': 'Неделя и Предстоящие (0.70): выполненная задача высокого приоритета — бледно-фиолетовые время и название, без зачёркивания.',
     'week-row-done': 'Неделя и Предстоящие (0.70): выполненная обычная задача — бледно-серые время и название, без зачёркивания.',
@@ -190,7 +191,7 @@ def contrast(a, b):
 def build_tokens():
     color = []
     order = ['background', 'surface', 'text-primary', 'text-secondary', 'accent', 'on-accent', 'accent-soft', 'selected', 'inactive', 'divider',
-             'overdue', 'danger', 'income', 'goal', 'scrim', 'on-list-square']
+             'overdue', 'danger', 'income', 'warning', 'goal', 'scrim', 'on-list-square']
     order += [n for n in COLORS if n.startswith('ring-')] + [n for n in COLORS if n.startswith('priority-')] + [n for n in COLORS if n.startswith('week-row-')]
     for n in order:
         light, dark = COLORS[n]

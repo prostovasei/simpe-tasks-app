@@ -121,6 +121,7 @@ internal fun FinanceDialogs(state: FinanceState, onIntent: (FinanceIntent) -> Un
         AccountWindow.Create -> AccountDialog(null, onSave = { onIntent(FinanceIntent.SaveAccount(it)) }, onDismiss = { onIntent(FinanceIntent.CloseWindow) })
         is AccountWindow.Edit -> AccountDialog(window.account, onSave = { onIntent(FinanceIntent.SaveAccount(it)) }, onDismiss = { onIntent(FinanceIntent.CloseWindow) }, onReconcile = { onIntent(FinanceIntent.OpenReconcile) })
     }
+    BudgetDialog(state, onIntent)
     state.reconcile?.let { ReconcileDialogs(it, state.today, onIntent) }
     state.correction?.let { CorrectionDialog(it, state.today, onTrash = { onIntent(FinanceIntent.TrashOperation) }, onDismiss = { onIntent(FinanceIntent.CloseCorrection) }) }
 }

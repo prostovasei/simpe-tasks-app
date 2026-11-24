@@ -6,6 +6,9 @@ import com.prostovasei.simpletasks.core.time.TimeProvider
 import com.prostovasei.simpletasks.data.local.db.AppDatabase
 import com.prostovasei.simpletasks.data.local.entity.AccountWithBalance
 import com.prostovasei.simpletasks.data.local.entity.FinanceAccountEntity
+import com.prostovasei.simpletasks.data.local.entity.FinanceBudgetEntity
+import com.prostovasei.simpletasks.domain.model.finance.Budget
+import java.time.YearMonth
 import com.prostovasei.simpletasks.data.local.entity.FinanceCategoryEntity
 import com.prostovasei.simpletasks.data.local.entity.FinanceOperationEntity
 import com.prostovasei.simpletasks.data.local.entity.FinancePlaceEntity
@@ -37,6 +40,7 @@ class RoomFinanceRepository @Inject constructor(
     private val accounts = db.financeAccountDao()
     private val operations = db.financeOperationDao()
     private val places = db.financePlaceDao()
+    private val budgets = db.financeBudgetDao()
 
     private fun now() = time.now().toEpochMilli()
 
@@ -102,7 +106,7 @@ class RoomFinanceRepository @Inject constructor(
         combine(accounts.observeCount(), operations.observeCategoryCount(), operations.observeCount()) { a, c, o -> FinanceCounts(a, c, o) }.distinctUntilChanged()
 
     override suspend fun exportBackup(): String = db.withTransaction {
-        FinanceBackupCodec.encode(FinanceBackup(accounts.getAll(), operations.getAllCategories(), operations.getAll(), places.getAll()), exportedAt = now())
+        FinanceBackupCodec.encode(FinanceBackup(accounts.getAll(), operations.getAllCategories(), operations.getAll(), places.getAll(), budgets.getAll()), exportedAt = now())
     }
 
     override fun inspectBackup(json: String): FinanceCounts =
@@ -116,12 +120,14 @@ class RoomFinanceRepository @Inject constructor(
             db.bankPurchaseDao().deleteAll()
             operations.deleteAll()
             operations.deleteAllCategories()
+            budgets.deleteAll()
             places.deleteAll()
             accounts.deleteAll()
             accounts.insertAll(backup.accounts)
             operations.insertAllCategories(backup.categories)
             operations.insertAll(backup.operations)
             places.insertAll(backup.places)
+            budgets.insertAll(backup.budgets)
         }
     }
 
@@ -286,4 +292,20 @@ class RoomFinanceRepository @Inject constructor(
         balance = balance,
         createdAt = Instant.ofEpochMilli(account.createdAt),
     )
+
+    override fun observeBudgets(): Flow<List<Budget>> =
+        budgets.observeAll().map { list -> list.map { Budget(YearMonth.parse(it.month), it.categoryId, it.amount) } }.distinctUntilChanged()
+
+    override suspend fun setBudgets(month: YearMonth, amounts: Map<String, Long>) {
+        val key = month.toString()
+        val now = now()
+        db.withTransaction {
+            if (budgets.getMonth(key).isEmpty()) {
+                budgets.lastMonthBefore(key)?.let { previous ->
+                    budgets.insertAll(budgets.getMonth(previous).map { it.copy(month = key, updatedAt = now) })
+                }
+            }
+            budgets.upsertAll(amounts.map { (category, amount) -> FinanceBudgetEntity(key, category, amount.coerceAtLeast(0), now) })
+        }
+    }
 }

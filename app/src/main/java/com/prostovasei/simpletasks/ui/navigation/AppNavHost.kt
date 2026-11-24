@@ -243,7 +243,7 @@ fun AppNavHost(
     LaunchedEffect(openRoute) {
         openRoute ?: return@LaunchedEffect
         // Покупка из уведомления банка (#233) открывается ниже, когда готова модель финансов.
-        if (openRoute is OpenBankPurchase || openRoute is OpenBankQueue || openRoute is OpenHealthWeight || openRoute is OpenNews) return@LaunchedEffect
+        if (openRoute is OpenBankPurchase || openRoute is OpenBankQueue || openRoute is OpenBudget || openRoute is OpenHealthWeight || openRoute is OpenNews) return@LaunchedEffect
         navController.currentBackStackEntryFlow.first()
         navController.navigate(openRoute) { launchSingleTop = true }
         onRouteOpened()
@@ -291,7 +291,7 @@ fun AppNavHost(
     val finance = hiltViewModel<FinanceViewModel>()
     // #233: «Изменить» в уведомлении о покупке — раздел финансов с окном нового расхода.
     LaunchedEffect(openRoute) {
-        if (openRoute !is OpenBankPurchase && openRoute !is OpenBankQueue) return@LaunchedEffect
+        if (openRoute !is OpenBankPurchase && openRoute !is OpenBankQueue && openRoute !is OpenBudget) return@LaunchedEffect
         navController.currentBackStackEntryFlow.first()
         val inStack = runCatching { navController.getBackStackEntry<FinanceDestination>() }.isSuccess
         if (inStack) navController.popBackStack<FinanceDestination>(inclusive = false) else navController.openRoot(FinanceDestination, restore = true)
@@ -300,6 +300,9 @@ fun AppNavHost(
             is OpenBankQueue -> {
                 val opened = openRoute.purchaseId?.let { finance.openPendingPurchase(it) } == true
                 if (!opened) navController.navigate(FinanceUnsortedDestination) { launchSingleTop = true }
+            }
+            is OpenBudget -> runCatching { java.time.YearMonth.parse(openRoute.month) }.getOrNull()?.let {
+                finance.onIntent(FinanceIntent.OpenBudget(it, openRoute.prepare))
             }
         }
         onRouteOpened()

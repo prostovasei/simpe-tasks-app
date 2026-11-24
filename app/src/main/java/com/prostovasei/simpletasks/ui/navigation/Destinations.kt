@@ -63,6 +63,9 @@ data object FinanceUnsortedDestination
 data class OpenBankPurchase(val purchaseId: String)
 data class OpenBankQueue(val purchaseId: String?)
 
+/** Не экран: уведомление бюджета (#327) — финансы с окном «Бюджет» месяца [month] («YYYY-MM»). */
+data class OpenBudget(val month: String, val prepare: Boolean)
+
 /** Корзина (итерация 39). */
 @Serializable
 data object TrashDestination

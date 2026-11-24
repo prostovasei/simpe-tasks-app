@@ -1,6 +1,7 @@
 package com.prostovasei.simpletasks.data.repository
 
 import com.prostovasei.simpletasks.data.local.entity.FinanceAccountEntity
+import com.prostovasei.simpletasks.data.local.entity.FinanceBudgetEntity
 import com.prostovasei.simpletasks.data.local.entity.FinanceCategoryEntity
 import com.prostovasei.simpletasks.data.local.entity.FinanceOperationEntity
 import com.prostovasei.simpletasks.data.local.entity.FinancePlaceEntity
@@ -16,6 +17,8 @@ internal data class FinanceBackup(
     val operations: List<FinanceOperationEntity>,
     /** Справочник мест (#239). В копиях до 0.65.0 его нет — места берутся из операций. */
     val places: List<FinancePlaceEntity> = emptyList(),
+    /** Бюджеты категорий (#327). В копиях до 0.91.0 их нет. */
+    val budgets: List<FinanceBudgetEntity> = emptyList(),
 )
 
 /**
@@ -26,6 +29,7 @@ internal data class FinanceBackup(
 internal object FinanceBackupCodec {
     const val FORMAT = "simple-tasks-finance"
     const val VERSION = 1
+    private val MONTH = Regex("\\d{4}-\\d{2}")
 
     fun encode(backup: FinanceBackup, exportedAt: Long): String = JSONObject()
         .put("format", FORMAT)
@@ -41,6 +45,9 @@ internal object FinanceBackupCodec {
         }))
         .put("places", JSONArray(backup.places.map { p ->
             JSONObject().put("id", p.id).put("name", p.name).put("is_archived", p.isArchived).put("created_at", p.createdAt).put("updated_at", p.updatedAt)
+        }))
+        .put("budgets", JSONArray(backup.budgets.map { b ->
+            JSONObject().put("month", b.month).put("category_id", b.categoryId).put("amount", b.amount).put("updated_at", b.updatedAt)
         }))
         .put("operations", JSONArray(backup.operations.map { o ->
             JSONObject().put("id", o.id).put("kind", o.kind).put("amount", o.amount).put("account_id", o.accountId)
@@ -82,7 +89,13 @@ internal object FinanceBackupCodec {
             if (places.map { it.id }.toSet().size != places.size || places.map { it.name }.toSet().size != places.size) {
                 throw InvalidFinanceBackupException("Резервная копия повреждена")
             }
-            return FinanceBackup(accounts, categories, operations, places)
+            val budgets = root.optJSONArray("budgets")?.objects()?.map { b ->
+                FinanceBudgetEntity(b.getString("month"), b.getString("category_id"), b.getLong("amount"), b.getLong("updated_at"))
+            }.orEmpty()
+            val budgetBroken = budgets.any { it.categoryId !in categoryIds || !MONTH.matches(it.month) } ||
+                budgets.map { it.month to it.categoryId }.toSet().size != budgets.size
+            if (budgetBroken) throw InvalidFinanceBackupException("Резервная копия повреждена")
+            return FinanceBackup(accounts, categories, operations, places, budgets)
         } catch (e: JSONException) {
             throw InvalidFinanceBackupException("Файл не читается как резервная копия", e)
         }

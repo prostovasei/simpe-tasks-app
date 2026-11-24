@@ -1,5 +1,8 @@
 package com.prostovasei.simpletasks.ui.feature.finance
 
+import com.prostovasei.simpletasks.domain.model.finance.Budget
+import com.prostovasei.simpletasks.domain.model.finance.BudgetRules
+import com.prostovasei.simpletasks.domain.model.finance.MonthBudget
 import com.prostovasei.simpletasks.domain.model.finance.Account
 import com.prostovasei.simpletasks.domain.model.finance.AccountDraft
 import com.prostovasei.simpletasks.domain.model.finance.BankSettings
@@ -65,6 +68,12 @@ data class OperationForm(
     val hasInput: Boolean get() = amount.isNotEmpty() || place.isNotBlank() || comment.isNotBlank()
 }
 
+/**
+ * Окно «Бюджет» (#327) месяца [month]. [editing] — открыта правка бюджета категории. [prepare] — подготовка следующего месяца
+ * из уведомления: суммы и подсказки «в среднем», кнопки «Всё по средним» и «Подтвердить».
+ */
+data class BudgetWindow(val month: YearMonth, val editing: String? = null, val prepare: Boolean = false)
+
 /** [accounts] и [operations] = null — ещё читаются из базы (экран пустой, без мигания пустых состояний). */
 data class FinanceState(
     val accounts: List<Account>? = null,
@@ -94,7 +103,17 @@ data class FinanceState(
     val bank: BankSettings = BankSettings(),
     val bankAccess: Boolean = false,
     val pending: List<PendingPurchase> = emptyList(),
+    /** Бюджеты категорий всех месяцев (#327) и открытое окно «Бюджет». */
+    val budgets: List<Budget> = emptyList(),
+    val budgetWindow: BudgetWindow? = null,
 ) {
+    /** Бюджеты, действующие в месяце (#327): свои или перенесённые из последнего заведённого. */
+    fun budgetsOf(month: YearMonth): Map<String, Long> = BudgetRules.effective(budgets, month, YearMonth.from(today))
+
+    /** Бюджет месяца для окна, полосы лимита и подсказки в окне операции. */
+    fun monthBudget(month: YearMonth): MonthBudget =
+        MonthBudget.of(budgetsOf(month), categories, operations.orEmpty(), month, today, BudgetRules.suggestions(operations.orEmpty(), today))
+
     /** Счёт для Яндекс Банка; после восстановления копии выбранного счёта может уже не быть. */
     val bankAccount: Account? get() = accounts?.firstOrNull { it.id == bank.accountId }
 
@@ -124,6 +143,20 @@ data class FinanceState(
 }
 
 sealed interface FinanceIntent {
+    /** Окно «Бюджет» (#327): нажатие на полосу лимита или доли категорий; [prepare] — следующий месяц из уведомления. */
+    data class OpenBudget(val month: YearMonth, val prepare: Boolean = false) : FinanceIntent
+    data object CloseBudget : FinanceIntent
+
+    /** Правка бюджета категории: открыть, закрыть без изменений, сохранить ([amount] = 0 — снять бюджет). */
+    data class EditBudget(val categoryId: String?) : FinanceIntent
+    data class SaveBudget(val categoryId: String, val amount: Long) : FinanceIntent
+
+    /** «Заполнить по средним» / «Всё по средним» / подставить одну подсказку: категория → сумма. */
+    data class SetBudgets(val amounts: Map<String, Long>) : FinanceIntent
+
+    /** «Подтвердить» следующий месяц: месяц заводится копией текущего с правками, окно закрывается. */
+    data object ConfirmBudget : FinanceIntent
+
     data class SelectTab(val tab: FinanceTab) : FinanceIntent
 
     /** Стрелки месяца в аналитике: -1 — предыдущий, 1 — следующий (не дальше текущего). */

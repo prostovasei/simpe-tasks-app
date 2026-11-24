@@ -27,7 +27,12 @@ import com.prostovasei.simpletasks.domain.model.finance.Money
 import com.prostovasei.simpletasks.domain.model.finance.MonthSpending
 import com.prostovasei.simpletasks.ui.feature.finance.axisAmount
 import com.prostovasei.simpletasks.ui.feature.finance.compactAmount
-import com.prostovasei.simpletasks.ui.feature.finance.financeLimitPreferences
+import com.prostovasei.simpletasks.ui.feature.finance.monthLimit
+import com.prostovasei.simpletasks.ui.feature.finance.paceText
+import com.prostovasei.simpletasks.domain.model.finance.BudgetPace
+import com.prostovasei.simpletasks.domain.model.finance.BudgetRules
+import com.prostovasei.simpletasks.domain.model.finance.MonthBudget
+import com.prostovasei.simpletasks.designsystem.tokens.ColorTokens
 import java.time.YearMonth
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -81,14 +86,12 @@ internal class FinanceRows(private val context: Context, private val width: Int,
             val today = entry.time().today()
             val month = YearMonth.from(today)
             val model = MonthSpending.of(repository.observeOperations().first(), month, today)
-            val limit = financeLimitPreferences(context).getLong(month.toString(), 0L).takeIf { it > 0 }
-            val amounts = RemoteViews(context.packageName, R.layout.widget_finance_summary).apply {
-                setTextViewText(R.id.widget_finance_total, compactAmount(model.total))
-                setTextViewText(R.id.widget_finance_remaining,
-                    limit?.let { compactAmount((it - model.total).coerceAtLeast(0)) } ?: "—")
-                setTextViewText(R.id.widget_finance_estimate, model.forecast?.let { compactAmount(it) }.orEmpty())
-                if (model.forecast == null) setViewVisibility(R.id.widget_finance_estimate_group, android.view.View.INVISIBLE)
-            }
+            val budgets = repository.observeBudgets().first()
+            val categories = repository.observeCategories().first()
+            val operations = repository.observeOperations().first()
+            val budget = MonthBudget.of(BudgetRules.effective(budgets, month, month), categories, operations, month, today)
+            val limit = monthLimit(context, budget)
+            val amounts = limitViews(model, limit, month, today)
             val compact = height <= SizeTokens.WIDGET_BAR + SizeTokens.WIDGET_FINANCE_CHART_COMPACT + SizeTokens.WIDGET_EDGE
             buildList {
                 if (!compact) add(amounts)
@@ -172,6 +175,70 @@ internal class FinanceRows(private val context: Context, private val width: Int,
             setContentDescription(R.id.widget_finance_left, description)
             setViewVisibility(R.id.widget_finance_right_column, android.view.View.GONE)
         }
+
+    /** Полоса лимита (#327, вариант Г): картинка полосы и строка «осталось · прогноз». */
+    internal fun limitViews(model: MonthSpending, limit: Long?, month: YearMonth, today: java.time.LocalDate): RemoteViews =
+        RemoteViews(context.packageName, R.layout.widget_finance_limit).apply {
+            val pace = limit?.let { BudgetRules.pace(it, model.total, month, today) }
+            setImageViewBitmap(R.id.widget_finance_limit_bar, limitBar(model.total, limit, pace, BudgetRules.todayShare(month, today)))
+            setContentDescription(R.id.widget_finance_limit_bar,
+                limit?.let { "Потрачено ${Money.format(model.total)} из ${Money.format(it)}" } ?: "Потрачено ${Money.format(model.total)}, бюджет не задан")
+            setTextViewText(R.id.widget_finance_limit_status,
+                if (limit == null || pace == null) "Бюджет не задан" else paceText(pace, limit, model.total, ::compactAmount))
+            val status = when (pace) {
+                BudgetPace.AHEAD -> ColorTokens.warning.light
+                BudgetPace.OVER -> ColorTokens.danger.light
+                else -> ColorTokens.textSecondary.light
+            }
+            setTextColor(R.id.widget_finance_limit_status, status.toInt())
+            setTextViewText(R.id.widget_finance_estimate, model.forecast?.let { "прогноз ${compactAmount(it)}" }.orEmpty())
+            if (model.forecast == null) setViewVisibility(R.id.widget_finance_estimate_group, android.view.View.INVISIBLE)
+        }
+
+    /** Толстая полоса: внутри потрачено, отметка «сегодня», справа лимит. Рисуется в 2× (как график). */
+    private fun limitBar(spent: Long, limit: Long?, pace: BudgetPace?, todayShare: Float?): Bitmap {
+        val scale = 2f
+        val width = ((width.coerceIn(180, 440) - 12) * scale).toInt()
+        val bar = SizeTokens.LIMIT_BAR * scale
+        val over = SizeTokens.BUDGET_MARK_OVER * scale
+        val height = (bar + 2 * over).toInt()
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        bitmap.density = android.util.DisplayMetrics.DENSITY_XHIGH
+        val canvas = Canvas(bitmap)
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+        paint.typeface = android.graphics.Typeface.DEFAULT_BOLD
+        paint.textSize = 15 * scale
+        val limitText = limit?.let { compactAmount(it).removeSuffix("\u00a0₽").removeSuffix(" ₽") } ?: "—"
+        val right = width - paint.measureText(limitText) - SizeTokens.BUDGET_BAR * scale
+        val top = over
+        val radius = bar / 2
+        paint.color = ColorTokens.accentSoft.light.toInt()
+        canvas.drawRoundRect(0f, top, right, top + bar, radius, radius, paint)
+        val fill = if (limit == null) 0f else (spent.toFloat() / limit).coerceIn(0f, 1f)
+        if (fill > 0f) {
+            paint.color = when (pace) {
+                BudgetPace.AHEAD -> ColorTokens.warning.light
+                BudgetPace.OVER -> ColorTokens.danger.light
+                else -> ColorTokens.textPrimary.light
+            }.toInt()
+            canvas.drawRoundRect(0f, top, maxOf(right * fill, bar), top + bar, radius, radius, paint)
+        }
+        if (limit != null && todayShare != null) {
+            val x = right * todayShare
+            paint.color = ColorTokens.surface.light.toInt()
+            canvas.drawRect(x - SizeTokens.BUDGET_MARK * scale, 0f, x + SizeTokens.BUDGET_MARK * scale, height.toFloat(), paint)
+            paint.color = ColorTokens.textSecondary.light.toInt()
+            canvas.drawRect(x - SizeTokens.BUDGET_MARK * scale / 2, 0f, x + SizeTokens.BUDGET_MARK * scale / 2, height.toFloat(), paint)
+        }
+        paint.textSize = 13 * scale
+        val baseline = top + bar / 2 - (paint.descent() + paint.ascent()) / 2
+        paint.color = (if (fill >= 0.3f) ColorTokens.onAccent.light else ColorTokens.textPrimary.light).toInt()
+        canvas.drawText(compactAmount(spent), SizeTokens.BUDGET_BAR * 2 * scale, baseline, paint)
+        paint.textSize = 15 * scale
+        paint.color = ColorTokens.textPrimary.light.toInt()
+        canvas.drawText(limitText, width - paint.measureText(limitText), baseline, paint)
+        return bitmap
+    }
 
     private fun chart(model: MonthSpending, compact: Boolean): Bitmap {
         val width = (width.coerceIn(180, 440) - 12) * 2

@@ -35,4 +35,23 @@ class WidgetFinanceAccountsTest {
         val first = (strip.getChildAt(0) as TextView).text.toString()
         assertTrue("С суммой, а не только эмодзи: $first", first.startsWith("💳") && first.contains("32"))
     }
+
+    /** #327: полоса лимита виджета (вариант Г) — картинка полосы и «осталось» жёлтым, когда тратится быстрее плана. */
+    @Test
+    fun limitBarShowsRemainingByPace() {
+        val today = java.time.LocalDate.of(2026, 11, 24)
+        val month = java.time.YearMonth.from(today)
+        val ops = listOf(
+            com.prostovasei.simpletasks.domain.model.finance.Operation(
+                "o", com.prostovasei.simpletasks.domain.model.finance.OperationKind.EXPENSE, 1_680_000, "a", "Карта", null, null, "c", "Продукты", null, null, today,
+            ),
+        )
+        val model = com.prostovasei.simpletasks.domain.model.finance.MonthSpending.of(ops, month, today)
+        val view = FinanceRows(context, 392, 600).limitViews(model, 2_000_000, month, today).apply(context, FrameLayout(context))
+        val status = view.findViewById<TextView>(R.id.widget_finance_limit_status)
+        assertEquals("осталось 3k ₽", status.text.toString())
+        assertEquals(com.prostovasei.simpletasks.designsystem.tokens.ColorTokens.warning.light.toInt(), status.currentTextColor)
+        val bar = view.findViewById<android.widget.ImageView>(R.id.widget_finance_limit_bar)
+        assertTrue("Полоса нарисована", (bar.drawable as android.graphics.drawable.BitmapDrawable).bitmap.width > 0)
+    }
 }

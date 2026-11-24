@@ -445,7 +445,7 @@ class FinanceScreenTest {
         show(FinanceState(accounts = three, operations = spend, today = today))
 
         composeRule.onNodeWithTag(TAG_MONTH_TITLE).assertTextEquals("ноя 26")
-        composeRule.onNodeWithTag(TAG_ANALYTICS_TOTAL).assertTextEquals("43k ₽")
+        composeRule.onNodeWithTag(TAG_ANALYTICS_TOTAL, useUnmergedTree = true).assertTextEquals("43k ₽")
         composeRule.onNodeWithContentDescription("Прогноз").assertExists()
         composeRule.onNodeWithContentDescription("Категории.", substring = true).assertExists()
         composeRule.onNodeWithContentDescription("Места.", substring = true).assertExists()
@@ -454,6 +454,56 @@ class FinanceScreenTest {
         composeRule.onNodeWithTag(TAG_MONTH_PREV).performClick()
         assertEquals(listOf<FinanceIntent>(FinanceIntent.ShiftMonth(-1)), intents)
         composeRule.onRoot().captureRoboImage("screenshots/finance_analytics_light.png")
+    }
+
+    /** #327: полоса лимита (вариант Г) — потрачено из суммы бюджетов; нажатие открывает окно «Бюджет» с цветами по темпу. */
+    @Test
+    fun budgetWindowShowsPaceAndOpensFromLimitBar() {
+        val nov = java.time.YearMonth.of(2026, 11)
+        val categories = listOf(
+            com.prostovasei.simpletasks.domain.model.finance.Category("c-Продукты", "Продукты", OperationKind.EXPENSE, false, "🛒"),
+            com.prostovasei.simpletasks.domain.model.finance.Category("c-Кафе", "Кафе", OperationKind.EXPENSE, false, "☕"),
+            com.prostovasei.simpletasks.domain.model.finance.Category("c-Подарки", "Подарки", OperationKind.EXPENSE, false, "🎁"),
+            com.prostovasei.simpletasks.domain.model.finance.Category("c-Зарплата", "Зарплата", OperationKind.INCOME, false, "💼"),
+        )
+        val budgets = listOf(
+            com.prostovasei.simpletasks.domain.model.finance.Budget(nov, "c-Продукты", 2_500_000),
+            com.prostovasei.simpletasks.domain.model.finance.Budget(nov, "c-Кафе", 800_000),
+            com.prostovasei.simpletasks.domain.model.finance.Budget(nov, "c-Зарплата", 8_000_000),
+        )
+        val state = FinanceState(accounts = three, operations = spend, today = today, categories = categories, budgets = budgets)
+        show(state)
+        // Лимит = 25 000 + 8 000; потрачено 42 800 — перерасход.
+        composeRule.onNodeWithTag(TAG_LIMIT_STATUS, useUnmergedTree = true).assertTextEquals("перерасход 10k ₽")
+        composeRule.onNodeWithTag(TAG_LIMIT_BAR).performClick()
+        assertEquals(listOf<FinanceIntent>(FinanceIntent.OpenBudget(nov)), intents)
+        composeRule.onRoot().captureRoboImage("screenshots/finance_limit_bar_light.png")
+    }
+
+    @Test
+    fun budgetWindowListsCategoriesByPace() {
+        val nov = java.time.YearMonth.of(2026, 11)
+        val categories = listOf(
+            com.prostovasei.simpletasks.domain.model.finance.Category("c-Продукты", "Продукты", OperationKind.EXPENSE, false, "🛒"),
+            com.prostovasei.simpletasks.domain.model.finance.Category("c-Кафе", "Кафе", OperationKind.EXPENSE, false, "☕"),
+            com.prostovasei.simpletasks.domain.model.finance.Category("c-Подарки", "Подарки", OperationKind.EXPENSE, false, "🎁"),
+            com.prostovasei.simpletasks.domain.model.finance.Category("c-Зарплата", "Зарплата", OperationKind.INCOME, false, "💼"),
+        )
+        val budgets = listOf(
+            com.prostovasei.simpletasks.domain.model.finance.Budget(nov, "c-Продукты", 2_500_000),
+            com.prostovasei.simpletasks.domain.model.finance.Budget(nov, "c-Кафе", 800_000),
+            com.prostovasei.simpletasks.domain.model.finance.Budget(nov, "c-Зарплата", 8_000_000),
+        )
+        show(FinanceState(accounts = three, operations = spend, today = today, categories = categories, budgets = budgets, budgetWindow = BudgetWindow(nov)))
+
+        // 10 ноября: план к сегодня — треть бюджета. Продукты 21 000 из 25 000 — быстрее плана, Кафе 10 000 из 8 000 — перерасход.
+        composeRule.onNodeWithTag("$TAG_BUDGET_NOTE:c-Продукты", useUnmergedTree = true).assertTextEquals("осталось 4${s}000${s}₽")
+        composeRule.onNodeWithTag("$TAG_BUDGET_NOTE:c-Кафе", useUnmergedTree = true).assertTextEquals("перерасход 2${s}000${s}₽")
+        composeRule.onNodeWithTag("$TAG_BUDGET_NOTE:c-Зарплата", useUnmergedTree = true).assertTextEquals("ещё 15${s}000${s}₽")
+        composeRule.onNodeWithTag("$TAG_BUDGET_ROW:c-Подарки").assertExists()
+        composeRule.onRoot().captureRoboImage("screenshots/finance_budget_light.png")
+        composeRule.onNodeWithTag("$TAG_BUDGET_ROW:c-Кафе").performClick()
+        assertEquals(listOf<FinanceIntent>(FinanceIntent.EditBudget("c-Кафе")), intents)
     }
 
     /** Завершённый месяц — «за месяц» и сравнение с целым прошлым месяцем, где расходов не было. */
@@ -473,7 +523,7 @@ class FinanceScreenTest {
     fun monthWithoutExpensesShowsNote() {
         show(FinanceState(accounts = three, operations = spend.filter { it.date.monthValue == 10 }, today = today))
 
-        composeRule.onNodeWithTag(TAG_ANALYTICS_TOTAL).assertTextEquals("0${s}₽")
+        composeRule.onNodeWithTag(TAG_ANALYTICS_TOTAL, useUnmergedTree = true).assertTextEquals("0${s}₽")
         composeRule.onNodeWithText("В этом месяце расходов пока нет.").assertExists()
         composeRule.onNodeWithText("По категориям").assertDoesNotExist()
         composeRule.onRoot().captureRoboImage("screenshots/finance_analytics_empty_light.png")
@@ -482,7 +532,7 @@ class FinanceScreenTest {
     @Test
     fun noOperationsAtAllHidesDelta() {
         show(FinanceState(accounts = three, operations = emptyList(), today = today))
-        composeRule.onNodeWithTag(TAG_ANALYTICS_TOTAL).assertTextEquals("0${s}₽")
+        composeRule.onNodeWithTag(TAG_ANALYTICS_TOTAL, useUnmergedTree = true).assertTextEquals("0${s}₽")
         composeRule.onNodeWithTag(TAG_ANALYTICS_DELTA).assertDoesNotExist()
         composeRule.onNodeWithTag(TAG_ANALYTICS_COMPARE).assertDoesNotExist()
     }

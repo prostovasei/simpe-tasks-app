@@ -190,6 +190,7 @@ fun OperationDialog(state: FinanceState, form: OperationForm, onIntent: (Finance
                 onSelect = { id -> edit { copy(categoryId = id) } },
                 onAll = { allCategories = true },
                 onCreate = { newCategory = true },
+                hint = state.categories.firstOrNull { it.id == form.categoryId }?.let { budgetHint(state, form, it.name) },
             )
         }
         Row(horizontalArrangement = Arrangement.spacedBy(spacing.xs), modifier = Modifier.fillMaxWidth().padding(top = spacing.xs, bottom = spacing.xxs)) {
@@ -448,7 +449,15 @@ private fun AccountMenu(expanded: Boolean, onDismiss: () -> Unit, accounts: List
  * под рядом её название («Без категории», пока не выбрана). Нажатие на выбранную снимает выбор. Категорий нет — «Создать категорию» и пояснение.
  */
 @Composable
-private fun CategoryTiles(chips: List<Category>, selected: Category?, onSelect: (String?) -> Unit, onAll: () -> Unit, onCreate: () -> Unit) {
+private fun CategoryTiles(
+    chips: List<Category>,
+    selected: Category?,
+    onSelect: (String?) -> Unit,
+    onAll: () -> Unit,
+    onCreate: () -> Unit,
+    /** Подсказка бюджета (#327) вместо названия: текст и превышение (красным). */
+    hint: Pair<String, Boolean>? = null,
+) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
     if (chips.isEmpty()) {
@@ -496,9 +505,10 @@ private fun CategoryTiles(chips: List<Category>, selected: Category?, onSelect: 
         repeat(MAX_TILES - chips.size - 1) { Box(Modifier.weight(1f)) }
     }
     Text(
-        selected?.name ?: stringResource(R.string.category_none_selected),
+        hint?.first ?: selected?.name ?: stringResource(R.string.category_none_selected),
         style = MaterialTheme.typography.labelSmall,
-        color = colors.textSecondary,
+        color = if (hint?.second == true) colors.danger else colors.textSecondary,
+        fontWeight = if (hint != null) FontWeight.SemiBold else null,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
         modifier = Modifier.padding(start = spacing.xxs, top = spacing.xs).testTag(TAG_OPERATION_CATEGORY_NAME),

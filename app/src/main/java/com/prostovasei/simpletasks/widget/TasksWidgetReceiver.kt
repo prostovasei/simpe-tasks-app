@@ -108,7 +108,8 @@ class WidgetUpdater @Inject constructor(
             }
         }
         appScope.launch {
-            combine(finance.observeAccounts(), finance.observeOperations(), bankPurchases.observePending()) { _, _, _ -> }
+            // #327: бюджеты и категории меняют полосу лимита виджета.
+            combine(finance.observeAccounts(), finance.observeOperations(), bankPurchases.observePending(), finance.observeBudgets(), finance.observeCategories()) { _, _, _, _, _ -> }
                 .debounce(DEBOUNCE_MS).collect { refreshFinance() }
         }
         val prefs = com.prostovasei.simpletasks.ui.feature.finance.financeLimitPreferences(context)

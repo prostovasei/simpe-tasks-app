@@ -21,6 +21,8 @@ class ReminderReceiver : BroadcastReceiver() {
 
     @Inject lateinit var weighIn: AndroidWeighInReminder
 
+    @Inject lateinit var budget: BudgetAlerts
+
     @Inject @ApplicationScope
     lateinit var appScope: CoroutineScope
 
@@ -37,10 +39,13 @@ class ReminderReceiver : BroadcastReceiver() {
                     ACTION_WONT_DO -> taskId?.let { reminders.wontDoFromNotification(it) }
                     ACTION_SUMMARY -> summary.fire()
                     ACTION_WEIGH -> weighIn.fire()
+                    ACTION_BUDGET_MONTH -> budget.fireMonth()
+                    ACTION_BUDGET_KEEP -> intent.getStringExtra(BudgetAlerts.EXTRA_MONTH)?.let { budget.keep(java.time.YearMonth.parse(it)) }
                     else -> {
                         reminders.check()
                         summary.schedule()
                         weighIn.schedule()
+                        budget.schedule()
                     }
                 }
             } finally {
@@ -56,6 +61,10 @@ class ReminderReceiver : BroadcastReceiver() {
         const val ACTION_WONT_DO = "com.prostovasei.simpletasks.REMINDER_WONT_DO"
         const val ACTION_SUMMARY = "com.prostovasei.simpletasks.DAY_SUMMARY"
         const val ACTION_WEIGH = "com.prostovasei.simpletasks.WEIGH_IN"
+
+        /** #327: «Бюджет на следующий месяц» и его кнопка «Оставить». */
+        const val ACTION_BUDGET_MONTH = "com.prostovasei.simpletasks.BUDGET_MONTH"
+        const val ACTION_BUDGET_KEEP = "com.prostovasei.simpletasks.BUDGET_KEEP"
         const val EXTRA_TASK_ID = "task_id"
     }
 }
