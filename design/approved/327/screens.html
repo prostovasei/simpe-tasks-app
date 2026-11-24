@@ -1,0 +1,221 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>Бюджет #327</title><style>@font-face { font-family: Manrope; font-weight: 400; src: url(../../../app/src/main/res/font/manrope_400.ttf); }
+@font-face { font-family: Manrope; font-weight: 500; src: url(../../../app/src/main/res/font/manrope_500.ttf); }
+@font-face { font-family: Manrope; font-weight: 600; src: url(../../../app/src/main/res/font/manrope_600.ttf); }
+@font-face { font-family: Manrope; font-weight: 700; src: url(../../../app/src/main/res/font/manrope_700.ttf); }
+:root {
+  --ink: #16171D; --muted: #62656E; --inactive: #A9A9A9; --divider: #E2E2E2; --soft: #EAEAEA; --field: #F3F3F4;
+  --danger: #C62828; --income: #1F8F4E; --warning: #C98500; --scrim: #6B6B6B;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: #F5F5F6; font-family: Manrope, 'Noto Color Emoji', sans-serif; color: var(--ink); }
+.sheet { padding: 24px; display: inline-block; background: #F5F5F6; }
+.sheet-title { font-size: 18px; margin: 0 0 16px; font-weight: 700; }
+.cells { display: flex; gap: 24px; align-items: flex-start; }
+.cell { margin: 0; width: 360px; }
+.cell figcaption { font-size: 13px; line-height: 1.4; color: var(--muted); margin-top: 10px; }
+.frame { position: relative; width: 360px; display: flow-root; background: #fff; border-radius: 24px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.frame.dim { background: var(--scrim); }
+svg { width: 24px; height: 24px; display: block; }
+
+.window { position: relative; margin: 0 16px 24px; background: #fff; border-radius: 24px; padding: 20px 16px 16px; display: flex; flex-direction: column; }
+.window header { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+.window h1 { font-size: 24px; font-weight: 700; margin: 0; }
+.window .month { font-size: 16px; font-weight: 600; color: var(--muted); flex: 1; }
+.window .close { color: var(--muted); align-self: center; }
+.scroll { flex: 1; }
+.plan { font-size: 13px; color: var(--muted); margin: 0 0 6px; line-height: 1.4; }
+.plan strong { color: var(--ink); font-weight: 700; }
+h2 { font-size: 16px; font-weight: 700; margin: 16px 0 4px; display: flex; justify-content: space-between; }
+h2 .sum { font-weight: 600; color: var(--muted); font-size: 14px; }
+h3 { font-size: 13px; font-weight: 600; color: var(--muted); margin: 14px 0 0; }
+
+.row { padding: 10px 0; border-bottom: 1px solid var(--divider); }
+.row.head { border-bottom: 2px solid var(--divider); padding-top: 4px; }
+.row.head .name { font-weight: 700; }
+.row:last-child { border-bottom: 0; }
+.line { display: flex; align-items: center; gap: 8px; font-size: 15px; }
+.emoji { font-size: 18px; width: 24px; text-align: center; }
+.name { flex: 1; font-weight: 600; }
+.amt { font-weight: 700; font-size: 15px; white-space: nowrap; }
+.amt .of { font-weight: 500; color: var(--muted); font-size: 13px; }
+.row.plain .amt { font-weight: 600; color: var(--muted); }
+.row.muted .name { color: var(--inactive); }
+.bar { position: relative; height: 6px; border-radius: 3px; background: var(--soft); margin: 8px 0 4px; }
+.bar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; background: var(--ink); }
+.bar.ahead i { background: var(--warning); }
+.bar.over i { background: var(--danger); }
+.bar.income i { background: var(--income); }
+.bar b { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--muted); box-shadow: 0 0 0 1.5px #fff; }
+.note { font-size: 12.5px; text-align: right; color: var(--muted); font-weight: 600; }
+.note.ahead { color: var(--warning); }
+.note.over { color: var(--danger); }
+.note.extra { color: var(--income); }
+
+.field-label { font-size: 14px; color: var(--muted); margin-top: 8px; }
+.big { font-size: 40px; font-weight: 700; text-align: center; margin: 12px 0 8px; border-bottom: 2px solid var(--ink); padding-bottom: 8px; }
+.hint { font-size: 14px; color: var(--muted); margin: 8px 0; text-align: center; }
+.hint.small { font-size: 12.5px; }
+.chips { display: flex; justify-content: center; margin: 8px 0; }
+.chip { background: var(--field); border-radius: 12px; padding: 8px 14px; font-size: 14px; font-weight: 600; white-space: nowrap; }
+.chip.small { font-size: 11.5px; padding: 4px 8px; border-radius: 8px; color: var(--muted); }
+.chip.same { color: var(--inactive); }
+.avg { display: flex; justify-content: flex-end; margin-top: 4px; }
+.avg:empty { display: none; }
+.placeholder { color: var(--inactive); font-weight: 500; }
+
+.actions { display: flex; gap: 12px; margin-top: 14px; }
+button { font: inherit; border: 0; border-radius: 16px; height: 48px; font-size: 16px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+button.primary { background: var(--ink); color: #fff; flex: 1; }
+button.ghost { background: var(--soft); color: var(--ink); width: 56px; }
+button.ghost.text { width: auto; padding: 0 16px; font-size: 15px; }
+button.wide { width: 100%; }
+.empty { font-size: 15px; line-height: 1.45; color: var(--muted); margin: 8px 0 4px; }
+
+.window.op { padding: 8px 16px 12px; }
+.segmented { display: flex; background: var(--soft); border-radius: 16px; padding: 4px; }
+.segmented span { flex: 1; text-align: center; padding: 10px 0; font-size: 15px; color: var(--muted); font-weight: 600; }
+.segmented .on { background: #fff; border-radius: 12px; color: var(--ink); font-weight: 700; }
+.op-amount { display: flex; justify-content: space-between; align-items: center; margin: 14px 0; }
+.op-amount > span:first-child { font-size: 32px; font-weight: 700; }
+.account { background: var(--soft); border-radius: 12px; padding: 10px 12px; font-size: 15px; font-weight: 600; }
+.tiles { display: flex; gap: 6px; }
+.tile { flex: 1; height: 44px; border-radius: 12px; background: var(--soft); display: flex; align-items: center; justify-content: center; font-size: 20px; }
+.tile.on { background: var(--ink); }
+.tile.more { color: var(--muted); }
+.op-hint { font-size: 12.5px; color: var(--muted); margin: 8px 4px 10px; font-weight: 600; }
+.op-hint .over { color: var(--danger); }
+.pair { display: flex; gap: 8px; }
+.pair > div { flex: 1; background: var(--field); border-radius: 16px; padding: 10px 12px; font-size: 14px; display: flex; flex-direction: column; justify-content: center; min-height: 52px; }
+.pair small { color: var(--muted); font-size: 12px; }
+.comment { display: flex; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid var(--divider); font-size: 15px; color: var(--muted); }
+
+.shade { background: #2B2C31; min-height: 470px; padding: 20px 12px; display: flex; flex-direction: column; gap: 10px; }
+.note-card { background: #F2F2F4; border-radius: 20px; padding: 14px 16px; }
+.note-card strong { display: block; font-size: 15px; margin: 6px 0 2px; }
+.note-card p { margin: 0; font-size: 13.5px; color: #3A3B40; line-height: 1.4; }
+.app-line { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.app-dot { width: 14px; height: 14px; border-radius: 50%; background: var(--ink); }
+.note-actions { display: flex; gap: 22px; margin-top: 10px; font-size: 14px; font-weight: 700; }
+
+.finance { padding: 16px; position: relative; height: 100%; }
+.total { display: flex; justify-content: space-between; font-size: 20px; }
+.total span { font-size: 26px; line-height: 1; }
+.accounts { display: flex; gap: 8px; margin: 12px 0; }
+.accounts span { background: var(--field); border-radius: 20px; padding: 8px 14px; font-size: 15px; }
+.month-row { display: flex; justify-content: space-between; font-size: 15px; font-weight: 600; margin-bottom: 12px; }
+.summary { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.summary span { display: flex; align-items: center; gap: 6px; font-size: 17px; color: var(--muted); padding: 4px 6px; border-radius: 12px; }
+.summary b { color: var(--ink); font-weight: 600; }
+.chart { width: 100%; height: 120px; }
+.shares { margin-top: 14px; padding: 6px; border-radius: 14px; }
+.share-line { display: flex; gap: 3px; }
+.share-line i { height: 8px; border-radius: 4px; display: block; }
+.legend { display: flex; gap: 6px; margin-top: 8px; }
+.legend span { background: var(--field); border-radius: 14px; padding: 4px 10px; font-size: 12px; display: flex; flex-direction: column; }
+.tap { outline: 2px dashed var(--warning); outline-offset: 2px; }
+.callout { position: absolute; background: var(--ink); color: #fff; font-size: 12px; font-weight: 600; border-radius: 10px; padding: 5px 10px; }
+.callout.c1 { top: 178px; left: 104px; }
+.callout.c2 { top: 418px; left: 104px; }
+</style></head><body>
+<section class="sheet" id="sheet-1"><h1 class="sheet-title">#327 · Вход и окно «Бюджет» текущего месяца</h1><div class="cells"><figure class="cell"><div class="frame" data-name="entry" style="min-height:470px"><div class="finance">
+  <div class="total"><strong>128k ₽</strong><span>+</span></div>
+  <div class="accounts"><span>💳 <b>42k</b></span><span>👛 <b>6k</b></span><span>🏦 <b>80k</b></span></div>
+  <div class="month-row"><span>2,3k ₽/день</span><span class="switch">‹ &nbsp;ноя 26&nbsp; ›</span></div>
+  <div class="summary"><span><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6M9 16h3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><b>55k ₽</b></span><span class="tap"><svg viewBox="0 0 24 24"><path d="M3.5,17A8.5,8.5 0,0 1,20.5 17H3.5 M12,15.5L15.5,11.5 M6.7,12.7L7.7,13.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><b>2k ₽</b></span><span><svg viewBox="0 0 24 24"><path d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4M15 16h2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><b>68k ₽</b></span></div>
+  <svg class="chart" viewBox="0 0 328 120"><path d="M0 1H328M0 60H328M0 119H328" stroke="#E2E2E2"/>
+    <polyline points="0,118 8,70 40,66 80,60 120,52 160,46 200,40 238,30 262,26" fill="none" stroke="#16171D" stroke-width="1.6"/>
+    <line x1="262" y1="26" x2="328" y2="10" stroke="#16171D" stroke-dasharray="3 3"/></svg>
+  <div class="shares tap"><div class="share-line"><i style="width:46%;background:#8858D6"></i><i style="width:18%;background:#438BC9"></i><i style="width:12%;background:#359E8A"></i><i style="width:10%;background:#CC883D"></i><i style="width:14%;background:#8590A7"></i></div>
+    <div class="legend"><span>Аренда<b>25k</b></span><span>Продукты<b>17k</b></span><span>Кафе<b>7k</b></span><span>Транспорт<b>3k</b></span></div></div>
+  <div class="callout c1">нажатие → окно «Бюджет»</div>
+  <div class="callout c2">нажатие → окно «Бюджет»</div>
+</div></div><figcaption>1. Финансы: две точки входа. «Остаток до лимита» = сумма бюджетов (57 000) − потрачено (54 750)</figcaption></figure><figure class="cell"><div class="frame dim" data-name="budget" style="min-height:760px"><div class="window" style="margin-top:24px;">
+  <header><h1>Бюджет</h1><span class="month">ноя 26</span><span class="close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span></header>
+  <div class="scroll"><p class="plan">Доходы 90 000 − расходы 57 000 = <strong>отложится 33 000 ₽</strong></p>
+<h2>Расходы</h2>
+<div class="row head">
+  <div class="line"><span class="name">Всего</span><span class="amt">54 750 <span class="of">из 57 000 ₽</span></span></div>
+  <div class="bar ahead"><i style="width:96.1%"></i><b style="left:80.0%"></b></div>
+  <div class="note ahead">осталось 2 250 ₽</div>
+</div>
+<div class="row">
+  <div class="line"><span class="emoji">🏠</span><span class="name">Аренда</span><span class="amt">25 000 <span class="of">из 25 000 ₽</span></span></div>
+  <div class="bar done"><i style="width:100.0%"></i><b style="left:80.0%"></b></div>
+  <div class="note done">бюджет выбран</div>
+</div><div class="row">
+  <div class="line"><span class="emoji">🛒</span><span class="name">Продукты</span><span class="amt">16 800 <span class="of">из 20 000 ₽</span></span></div>
+  <div class="bar ahead"><i style="width:84.0%"></i><b style="left:80.0%"></b></div>
+  <div class="note ahead">осталось 3 200 ₽</div>
+</div><div class="row">
+  <div class="line"><span class="emoji">☕</span><span class="name">Кафе</span><span class="amt">6 800 <span class="of">из 6 000 ₽</span></span></div>
+  <div class="bar over"><i style="width:100.0%"></i><b style="left:80.0%"></b></div>
+  <div class="note over">перерасход 800 ₽</div>
+</div><div class="row">
+  <div class="line"><span class="emoji">🚕</span><span class="name">Транспорт</span><span class="amt">3 100 <span class="of">из 5 000 ₽</span></span></div>
+  <div class="bar ok"><i style="width:62.0%"></i><b style="left:80.0%"></b></div>
+  <div class="note ok">осталось 1 900 ₽</div>
+</div><div class="row">
+  <div class="line"><span class="emoji">📱</span><span class="name">Связь</span><span class="amt">650 <span class="of">из 1 000 ₽</span></span></div>
+  <div class="bar ok"><i style="width:65.0%"></i><b style="left:80.0%"></b></div>
+  <div class="note ok">осталось 350 ₽</div>
+</div>
+<h3>Без бюджета</h3>
+<div class="row plain"><div class="line"><span class="emoji">🎁</span><span class="name">Подарки</span><span class="amt">2 400 ₽</span></div></div>
+<div class="row plain muted"><div class="line"><span class="emoji">💊</span><span class="name">Здоровье</span><span class="amt">—</span></div></div>
+<h2>Доходы</h2>
+<div class="row head">
+  <div class="line"><span class="name">Всего</span><span class="amt">77 000 <span class="of">из 90 000 ₽</span></span></div>
+  <div class="bar income"><i style="width:85.6%"></i></div>
+  <div class="note wait">ещё 13 000 ₽</div>
+</div>
+<div class="row">
+  <div class="line"><span class="emoji">💼</span><span class="name">Зарплата</span><span class="amt">65 000 <span class="of">из 80 000 ₽</span></span></div>
+  <div class="bar income"><i style="width:81.2%"></i></div>
+  <div class="note wait">ещё 15 000 ₽</div>
+</div><div class="row">
+  <div class="line"><span class="emoji">💻</span><span class="name">Подработка</span><span class="amt">12 000 <span class="of">из 10 000 ₽</span></span></div>
+  <div class="bar income"><i style="width:100.0%"></i></div>
+  <div class="note extra">сверх плана 2 000 ₽</div>
+</div></div>
+</div></div><figcaption>2. Окно «Бюджет», 24 ноября. Чёрточка — план к сегодня (80%). Аренда — «бюджет выбран», Продукты — быстрее плана, Кафе — перерасход</figcaption></figure></div></section><section class="sheet" id="sheet-2"><h1 class="sheet-title">#327 · Правка бюджета и подсказка в окне операции</h1><div class="cells"><figure class="cell"><div class="frame dim" data-name="edit" style="min-height:760px"><div class="window" style="margin-top:210px;">
+  <header><h1>🛒 Продукты</h1><span class="month">ноя 26</span><span class="close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span></header>
+  <div class="scroll"><div class="field-label">Бюджет на месяц</div>
+<div class="big">20&nbsp;000 ₽</div>
+<p class="hint">Потрачено 16 800 ₽ · осталось 7 дней</p>
+<div class="chips"><span class="chip">В среднем 21 300 ₽</span></div>
+<p class="hint small">Пустое поле — без бюджета.</p></div><div class="actions"><button class="primary wide">Сохранить</button></div>
+</div></div><figcaption>3. Нажатие на «Продукты»: сумма, чип со средним подставляет 21 300</figcaption></figure><figure class="cell"><div class="frame dim" data-name="operation" style="min-height:760px"><div class="window op" style="margin-top:150px">
+  <div class="segmented"><span class="on">Расход</span><span>Доход</span><span>Перевод</span></div>
+  <div class="op-amount"><span>1 200 ₽</span><span class="account">💳 Карта ⌄</span></div>
+  <div class="tiles"><span class="tile on">🛒</span><span class="tile">☕</span><span class="tile">🚕</span><span class="tile">🏠</span><span class="tile">📱</span><span class="tile more">⋯</span></div>
+  <div class="op-hint">Продукты · останется 2 000 ₽ из 20 000</div>
+  <div class="pair"><div><strong>вт. 24 ноя 2026</strong><small>сегодня</small></div><div class="placeholder">Место платежа</div></div>
+  <div class="comment"><span>Комментарий</span><span class="placeholder">Необязательно</span></div>
+  <div class="actions"><button class="ghost"><svg viewBox="0 0 24 24"><path d="M19 12H5m6-6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="primary"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+</div></div><figcaption>4. Расход 1 200 ₽ в «Продукты»: в бюджете</figcaption></figure><figure class="cell"><div class="frame dim" data-name="operation-over" style="min-height:760px"><div class="window op" style="margin-top:150px">
+  <div class="segmented"><span class="on">Расход</span><span>Доход</span><span>Перевод</span></div>
+  <div class="op-amount"><span>2 500 ₽</span><span class="account">💳 Карта ⌄</span></div>
+  <div class="tiles"><span class="tile">🛒</span><span class="tile">☕</span><span class="tile on">🚕</span><span class="tile">🏠</span><span class="tile">📱</span><span class="tile more">⋯</span></div>
+  <div class="op-hint"><span class="over">Транспорт · превысит бюджет на 600 ₽</span></div>
+  <div class="pair"><div><strong>вт. 24 ноя 2026</strong><small>сегодня</small></div><div class="placeholder">Место платежа</div></div>
+  <div class="comment"><span>Комментарий</span><span class="placeholder">Необязательно</span></div>
+  <div class="actions"><button class="ghost"><svg viewBox="0 0 24 24"><path d="M19 12H5m6-6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="primary"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+</div></div><figcaption>5. Расход 2 500 ₽ в «Транспорт»: выйдет за бюджет</figcaption></figure></div></section><section class="sheet" id="sheet-3"><h1 class="sheet-title">#327 · Уведомления и следующий месяц</h1><div class="cells"><figure class="cell"><div class="frame" data-name="notifications" style="min-height:470px"><div class="shade">
+  <div class="note-card"><div class="app-line"><span class="app-dot"></span>Simple Tasks · Финансы · сейчас</div>
+    <strong>Продукты: 84% бюджета</strong><p>Потрачено 16&nbsp;800 из 20&nbsp;000 ₽ · осталось 3&nbsp;200 ₽ на 7 дней</p></div>
+  <div class="note-card"><div class="app-line"><span class="app-dot"></span>Simple Tasks · Финансы · 19:00</div>
+    <strong>Бюджет на декабрь</strong><p>Оставить как в ноябре — 57&nbsp;000 ₽ расходов — или поправить по средним тратам?</p>
+    <div class="note-actions"><span>Оставить</span><span>Изменить</span></div></div>
+</div></div><figcaption>6. Уведомления: 80% бюджета и «Бюджет на декабрь» (24 ноября, 19:00)</figcaption></figure><figure class="cell"><div class="frame dim" data-name="next" style="min-height:760px"><div class="window" style="margin-top:24px;">
+  <header><h1>Бюджет</h1><span class="month">дек 26</span><span class="close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span></header>
+  <div class="scroll"><p class="plan">Копия ноября. Под суммой — средние за 3 месяца, нажатие подставляет.</p>
+<h2>Расходы <span class="sum">57 000 ₽</span></h2>
+<div class="row plan-row"><div class="line"><span class="emoji">🏠</span><span class="name">Аренда</span><span class="amt">25 000 ₽</span></div><div class="avg"><span class="chip small same">как в среднем</span></div></div><div class="row plan-row"><div class="line"><span class="emoji">🛒</span><span class="name">Продукты</span><span class="amt">20 000 ₽</span></div><div class="avg"><span class="chip small">в среднем 21 300</span></div></div><div class="row plan-row"><div class="line"><span class="emoji">☕</span><span class="name">Кафе</span><span class="amt">6 000 ₽</span></div><div class="avg"><span class="chip small">в среднем 7 400</span></div></div><div class="row plan-row"><div class="line"><span class="emoji">🚕</span><span class="name">Транспорт</span><span class="amt">5 000 ₽</span></div><div class="avg"><span class="chip small">в среднем 3 900</span></div></div><div class="row plan-row"><div class="line"><span class="emoji">📱</span><span class="name">Связь</span><span class="amt">1 000 ₽</span></div><div class="avg"><span class="chip small">в среднем 700</span></div></div><div class="row plan-row"><div class="line"><span class="emoji">🎁</span><span class="name">Подарки</span><span class="amt"><span class="placeholder">—</span></span></div><div class="avg"><span class="chip small">в среднем 2 600</span></div></div>
+<h2>Доходы <span class="sum">90 000 ₽</span></h2>
+<div class="row plan-row"><div class="line"><span class="emoji">💼</span><span class="name">Зарплата</span><span class="amt">80 000 ₽</span></div><div class="avg"><span class="chip small same">как в среднем</span></div></div><div class="row plan-row"><div class="line"><span class="emoji">💻</span><span class="name">Подработка</span><span class="amt">10 000 ₽</span></div><div class="avg"><span class="chip small">в среднем 8 500</span></div></div></div><div class="actions"><button class="ghost text">Всё по средним</button><button class="primary">Подтвердить</button></div>
+</div></div><figcaption>7. «Изменить» из уведомления: декабрь, копия ноября + средние</figcaption></figure><figure class="cell"><div class="frame dim" data-name="empty" style="min-height:760px"><div class="window" style="margin-top:300px;">
+  <header><h1>Бюджет</h1><span class="month">ноя 26</span><span class="close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span></header>
+  <div class="scroll"><p class="empty">Бюджетов пока нет. Задайте сумму у категории или заполните все категории по средним тратам — их можно поправить.</p>
+<div class="actions"><button class="primary wide">Заполнить по средним</button></div></div>
+</div></div><figcaption>8. Первый запуск: бюджетов нет</figcaption></figure></div></section>
+</body></html>
