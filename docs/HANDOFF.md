@@ -2,9 +2,13 @@
 
 Правила [../AGENTS.md](../AGENTS.md).
 
-## В работе — #323, 0.90.0
+## В работе — #325, 0.90.1
 
-Исполнитель Claude Code, ветка `claude/sheet-stack-motion` от main `210b43e`. [#323](https://github.com/prostovasei/simpe-tasks-app/issues/323) — PM (видео): окно новой задачи из окна дня «дёргается». PM выбрал «1 + 2», вариант 1 «Остаётся на месте» ([макет и решение](../design/approved/323/README.md)). Проверки — [отчёт](testing-runs/0.90.0-local.md). Репозиторий PM сделал публичным 24.11.2026 (минуты GitHub Actions бесплатны). Открыто предложение: правки голосом без ИИ (слова-команды) — ждёт решения PM.
+Исполнитель Claude Code, ветка `claude/day-sheet-flicker` от main `7f857ca`. [#325](https://github.com/prostovasei/simpe-tasks-app/issues/325) — PM (видео 0.90.0): экран мигает при открытии/закрытии окна задачи из окна дня. Причина и исправление — в Issue и ARCHITECTURE §4.114. Проверки — [отчёт](testing-runs/0.90.1-local.md). Открыто предложение: правки голосом без ИИ (слова-команды) — ждёт решения PM.
+
+## Выпуск 0.90.0 — #323
+
+[PR #324](https://github.com/prostovasei/simpe-tasks-app/pull/324), merge `7f857ca84a4b8c813fb75cb41f6bd43500d0eada`, APK build-492. CI PR и main зелёные, #323 закрыта: окно задачи поверх окна дня растёт из «+» или строки ([решение](../design/approved/323/README.md)). PM прислал видео с миганием → #325.
 
 ## Выпуск 0.89.1 — #321
 

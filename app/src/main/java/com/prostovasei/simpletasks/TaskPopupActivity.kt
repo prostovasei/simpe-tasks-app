@@ -133,20 +133,20 @@ fun TaskPopup(start: Any, onDismiss: () -> Unit, origin: android.graphics.Rect? 
     val days = DayNames(stringResource(R.string.day_today), stringResource(R.string.day_tomorrow), stringResource(R.string.day_yesterday))
     val today = java.time.LocalDate.now()
     val zone = java.time.ZoneId.systemDefault()
-    // #323: окно задачи из окна дня — поверх него. Пока сверху задача, окно дня рисуется под NavHost тем же экземпляром
-    // (ViewModel его записи), уже открытым; окно задачи растёт из «+» или строки ([dayOrigin]).
+    // #323, #325: окно дня — один экземпляр под NavHost, пока его запись в стеке (ViewModel записи): окна задачи растут
+    // поверх него из «+» или строки ([dayOrigin]). Раньше окно дня было и в NavHost, и подложкой — при смене на кадр были
+    // видны оба (двойное затемнение) или ни одного (без затемнения): экран мигал.
     var dayOrigin by remember { mutableStateOf<android.graphics.Rect?>(null) }
     val top by navController.currentBackStackEntryAsState()
-    val dayEntry = remember(top) {
-        top?.takeIf { !it.destination.hasRoute<DayDestination>() }?.let { runCatching { navController.getBackStackEntry<DayDestination>() }.getOrNull() }
-    }
+    val dayEntry = remember(top) { runCatching { navController.getBackStackEntry<DayDestination>() }.getOrNull() }
+    val dayOnTop = top?.destination?.hasRoute<DayDestination>() == true
     val openTask: (String) -> Unit = { id -> navController.navigate(TaskDetailDestination(id)) }
     val addTask: (java.time.LocalDate) -> Unit = { date -> navController.navigate(QuickAddDestination(date = date.toString())) }
     val setDayOrigin: (android.graphics.Rect) -> Unit = { rect -> dayOrigin = rect }
     Box(Modifier.fillMaxSize()) {
         if (dayEntry != null) {
             CompositionLocalProvider(LocalViewModelStoreOwner provides dayEntry) {
-                DaySheetRoute(onClose = {}, onOpenTask = openTask, onAdd = addTask, settled = true, onOrigin = setDayOrigin)
+                DaySheetRoute(onClose = close, origin = origin, onOpenTask = openTask, onAdd = addTask, covered = !dayOnTop, onOrigin = setDayOrigin)
             }
         }
         NavHost(
@@ -190,7 +190,7 @@ fun TaskPopup(start: Any, onDismiss: () -> Unit, origin: android.graphics.Rect? 
             }
             // Итерация 51: нажатие на дату дня в «Неделе» виджета — шторка дня поверх рабочего стола, без приложения.
             composable<DayDestination> {
-                DaySheetRoute(onClose = close, origin = origin, onOpenTask = openTask, onAdd = addTask, onOrigin = setDayOrigin)
+                // Само окно дня рисуется над NavHost одним экземпляром (см. выше), здесь — только запись стека.
             }
             composable<VoiceDestination> { entry ->
                 val today = entry.toRoute<VoiceDestination>().today
