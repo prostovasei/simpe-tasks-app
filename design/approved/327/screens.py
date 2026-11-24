@@ -193,6 +193,46 @@ def frame(name, caption, content, height=760, dim=True):
     return f'<figure class="cell"><div class="{cls}" data-name="{name}" style="min-height:{height}px">{content}</div><figcaption>{caption}</figcaption></figure>'
 
 
+def limit_variant(kind, widget=False):
+    """Варианты полоски лимита вверху «Финансов» (дополнение PM к вопросу 11)."""
+    line = bar('ahead', spent / plan_out)
+    if kind == 'A':
+        return f'''<div class="summary"><span>{RECEIPT}<b>55k ₽</b></span><span>{GAUGE}<b>2k ₽</b></span><span>{CALENDAR}<b>68k ₽</b></span></div>
+<div class="limit">{line}<div class="ends"><span>потрачено</span><span>лимит 57k ₽</span></div></div>'''
+    if kind == 'B':
+        return f'''<div class="summary b"><span>{RECEIPT}<b>55k ₽</b></span><span class="mid"><span class="mid-top">{GAUGE}<b>2k ₽</b></span>{line}<small>из 57k ₽</small></span><span>{CALENDAR}<b>68k ₽</b></span></div>'''
+    return f'''<div class="limit c"><div class="ends top"><span><b>55k</b> из 57k ₽</span><span class="ahead">осталось 2k ₽</span></div>{line}<div class="ends"><span></span><span class="forecast">{CALENDAR}прогноз 68k ₽</span></div></div>'''
+
+
+def app_top(kind):
+    return f'''<div class="finance top">
+  <div class="total"><strong>128k ₽</strong><span>+</span></div>
+  <div class="accounts"><span>💳 <b>42k</b></span><span>👛 <b>6k</b></span><span>🏦 <b>80k</b></span></div>
+  <div class="month-row"><span>2,3k ₽/день</span><span class="switch">‹ &nbsp;ноя 26&nbsp; ›</span></div>
+  {limit_variant(kind)}
+  <svg class="chart short" viewBox="0 0 328 80"><path d="M0 1H328M0 40H328M0 79H328" stroke="#E2E2E2"/>
+    <polyline points="0,78 8,48 40,45 80,40 120,35 160,30 200,26 238,20 262,17" fill="none" stroke="#16171D" stroke-width="1.6"/>
+    <line x1="262" y1="17" x2="328" y2="6" stroke="#16171D" stroke-dasharray="3 3"/></svg>
+</div>'''
+
+
+def widget_top(kind):
+    return f'''<div class="widget">
+  {limit_variant(kind, widget=True)}
+  <svg class="chart short" viewBox="0 0 296 70"><path d="M0 1H296M0 35H296M0 69H296" stroke="#E2E2E2"/>
+    <polyline points="0,68 8,42 40,39 80,35 120,31 160,26 200,22 236,17" fill="none" stroke="#16171D" stroke-width="1.6"/>
+    <line x1="236" y1="17" x2="296" y2="5" stroke="#16171D" stroke-dasharray="3 3"/></svg>
+  <div class="widget-bar"><span class="w-add">+</span><span class="w-tabs">✓ &nbsp;&nbsp; <b>₽</b></span><span class="w-month">ноя 26</span></div>
+</div>'''
+
+
+def variant(kind, title, text):
+    return f'''<figure class="cell"><div class="variant-title">{title}</div>
+<div class="frame" style="min-height:0">{app_top(kind)}</div>
+<div class="widget-caption">Виджет 320 dp</div><div class="widget-wrap">{widget_top(kind)}</div>
+<figcaption>{text}</figcaption></figure>'''
+
+
 sheets = [
     ('sheet-1', 'Вход и окно «Бюджет» текущего месяца', [
         frame('entry', '1. Финансы: две точки входа. «Остаток до лимита» = сумма бюджетов (57 000) − потрачено (54 750)', entry(), 470, dim=False),
@@ -207,6 +247,11 @@ sheets = [
         frame('notifications', '6. Уведомления: 80% бюджета и «Бюджет на декабрь» (24 ноября, 19:00)', notifications(), 470, dim=False),
         frame('next', '7. «Изменить» из уведомления: декабрь, копия ноября + средние', next_window(), 760),
         frame('empty', '8. Первый запуск: бюджетов нет', empty_window(), 760),
+    ]),
+    ('sheet-4', 'Полоска лимита вверху «Финансов» и виджета — выберите вариант', [
+        variant('A', 'А · Полоска под суммами', 'Три суммы как сейчас. Под ними полоска во всю ширину: заполнение — потрачено, чёрточка — план к сегодня, справа «лимит 57k». Осталось — в центре сверху.'),
+        variant('B', 'Б · Полоска в центре', 'Строка остаётся одной. В центре «осталось 2k», под ним короткая полоска и «из 57k». Самый компактный вариант.'),
+        variant('C', 'В · Как строка бюджета', 'Вместо трёх сумм — строка как «Всего» в окне «Бюджет»: «55k из 57k ₽ · осталось 2k», полоска, под ней прогноз.'),
     ]),
 ]
 
