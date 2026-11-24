@@ -3,14 +3,14 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
 <style>
-/* Страница согласования: живой телефон с переключателями сверху, ниже галерея вариантов, виджет и оценка. Макеты — светлая тема приложения. */
+/* Финальный вариант хаба (#329): живой телефон в масштабе 1:1, экраны, виджет, оценка; отвергнутые варианты — справкой внизу. */
 :root {
   --pg-bg: #EEF0F4; --pg-fg: #16171D; --pg-muted: #5D616E; --pg-line: #D7DAE1; --pg-surface: #FFFFFF;
   --pg-accent: #6B2BB8; --pg-accent-soft: #EFE6FA;
   --font: Manrope, "Segoe UI", Roboto, system-ui, sans-serif;
   /* Цвета приложения (ColorTokens, светлая тема) — внутри макетов не меняются с темой страницы. */
   --ink: #16171D; --muted: #62656E; --inactive: #A9A9A9; --divider: #E8E8EA; --soft: #EAEAEA; --field: #F3F3F4;
-  --danger: #C62828; --income: #1F8F4E; --warning: #C98500; --violet: #862CE0; --surface: #FFFFFF;
+  --danger: #C62828; --warning: #C98500; --violet: #862CE0; --surface: #FFFFFF;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -34,36 +34,21 @@ button:focus-visible, [data-act]:focus-visible { outline: 2px solid var(--pg-acc
 .intro h1 { margin: 0; font-size: clamp(28px, 4.4vw, 40px); line-height: 1.1; font-weight: 800; text-wrap: balance; }
 .intro p { margin: 0; color: var(--pg-muted); max-width: 66ch; }
 .chip-status { align-self: flex-start; background: var(--pg-accent-soft); color: var(--pg-accent); font-weight: 700; font-size: 13px; border-radius: 999px; padding: 4px 12px; }
+.full-open { align-self: flex-start; background: var(--pg-fg); color: var(--pg-bg); border-radius: 14px; padding: 10px 18px; font-weight: 800; font-size: 15px; }
 .block { display: flex; flex-direction: column; gap: 14px; }
 .block > h2 { margin: 0; font-size: 23px; font-weight: 800; text-wrap: balance; }
-.block > p.lead { margin: 0; color: var(--pg-muted); max-width: 70ch; }
-.choose::after { content: "нужно решение"; margin-left: 10px; vertical-align: middle; font-size: 12px; font-weight: 700; background: var(--pg-accent-soft); color: var(--pg-accent); border-radius: 999px; padding: 3px 10px; }
-
-/* Живой прототип */
+.block > p.lead { margin: 0; color: var(--pg-muted); max-width: 72ch; }
 .stage { display: flex; gap: 28px; align-items: flex-start; flex-wrap: wrap; }
-.controls { display: flex; flex-direction: column; gap: 14px; min-width: 0; flex: 1 1 300px; max-width: 460px; }
-.ctrl { display: flex; flex-direction: column; gap: 6px; }
-.ctrl-label { font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--pg-muted); }
-.seg { display: flex; flex-wrap: wrap; gap: 6px; }
-.seg button { border: 1px solid var(--pg-line); background: var(--pg-surface); border-radius: 12px; padding: 7px 12px; font-size: 14px; font-weight: 600; }
-.seg button[aria-pressed="true"] { background: var(--pg-fg); color: var(--pg-bg); border-color: var(--pg-fg); }
-.tries { margin: 0; padding-left: 18px; color: var(--pg-muted); font-size: 14px; display: flex; flex-direction: column; gap: 4px; }
-.back-btn { align-self: flex-start; border: 1px solid var(--pg-line); background: var(--pg-surface); border-radius: 12px; padding: 7px 14px; font-weight: 700; font-size: 14px; }
+.notes { display: flex; flex-direction: column; gap: 10px; min-width: 0; flex: 1 1 300px; max-width: 480px; }
+.notes h3 { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--pg-muted); }
+.notes ul { margin: 0; padding-left: 18px; color: var(--pg-muted); font-size: 14px; display: flex; flex-direction: column; gap: 4px; }
+.back-btn { align-self: center; border: 1px solid var(--pg-line); background: var(--pg-surface); border-radius: 12px; padding: 7px 14px; font-weight: 700; font-size: 14px; }
 .phone-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; }
-
-/* Галереи */
 .cells { display: flex; flex-wrap: wrap; gap: 28px 24px; align-items: flex-start; }
 .cell { margin: 0; display: flex; flex-direction: column; gap: 10px; width: 360px; max-width: 100%; }
 .cell figcaption { font-size: 13.5px; color: var(--pg-muted); line-height: 1.45; }
 .cell figcaption b { color: var(--pg-fg); }
 .cell.wide { width: 392px; }
-.bars { display: flex; flex-direction: column; gap: 14px; max-width: 100%; }
-.bar-strip { display: flex; flex-direction: column; gap: 6px; }
-.bar-strip .label { font-size: 14px; font-weight: 700; }
-.bar-strip .label span { font-weight: 500; color: var(--pg-muted); }
-.strip { width: 360px; max-width: 100%; background: var(--surface); border-radius: 16px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
-
-/* Сложность */
 .table-wrap { overflow-x: auto; border: 1px solid var(--pg-line); border-radius: 16px; background: var(--pg-surface); }
 table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 14px; }
 th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--pg-line); vertical-align: top; }
@@ -73,25 +58,22 @@ th { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: v
 .dots-scale i { width: 9px; height: 9px; border-radius: 50%; background: var(--pg-line); display: block; }
 .dots-scale i.on { background: var(--pg-accent); }
 ul.risks { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; max-width: 80ch; }
-.decide { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
-.decide div { background: var(--pg-surface); border: 1px solid var(--pg-line); border-radius: 16px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.decide b { font-size: 14px; }
-.decide span { font-size: 14px; color: var(--pg-muted); }
+.rejected { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+.rejected div { background: var(--pg-surface); border: 1px solid var(--pg-line); border-radius: 16px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.rejected b { font-size: 14px; }
+.rejected span { font-size: 14px; color: var(--pg-muted); }
 footer { color: var(--pg-muted); font-size: 13px; }
 
-/* ===== Макет телефона (цвета приложения) ===== */
+/* ===== Макет телефона (цвета и размеры приложения) ===== */
 .phone { width: 360px; height: 760px; border-radius: 30px; background: var(--surface); color: var(--ink); position: relative; overflow: hidden;
   display: flex; flex-direction: column; box-shadow: 0 1px 2px rgba(0,0,0,.08), 0 8px 28px rgba(20,22,30,.14); font-family: var(--font); font-size: 15px; line-height: 1.35; }
 .status { height: 26px; flex: none; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; font-size: 12.5px; font-weight: 700; }
 .status .sys { display: flex; gap: 5px; align-items: center; }
 .status .sys i { width: 15px; height: 9px; border: 1.6px solid var(--ink); border-radius: 2px; display: block; position: relative; }
 .status .sys i::after { content: ""; position: absolute; inset: 1px 3px 1px 1px; background: var(--ink); }
-.screen { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; }
-.screen::-webkit-scrollbar { display: none; }
-.screen.fixed { overflow: hidden; display: flex; flex-direction: column; }
-.screen.fixed > * { flex: none; }
-.screen.fixed > .sec.grow { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
-.screen.fixed > .sec.grow .tasks-scroll { flex: 1; min-height: 0; }
+.screen { flex: 1; min-height: 0; overflow: hidden; position: relative; display: flex; flex-direction: column; }
+.screen > * { flex: none; }
+.screen.module-screen { overflow-y: auto; display: block; }
 .appbar { flex: none; border-top: 1px solid var(--divider); background: var(--surface); padding: 0 12px 14px; }
 .appbar-row { height: 46px; display: flex; align-items: center; }
 .add-btn { width: 72px; height: 34px; border-radius: 17px; background: var(--ink); color: #fff; display: flex; align-items: center; justify-content: center; flex: none; }
@@ -101,20 +83,18 @@ footer { color: var(--pg-muted); font-size: 13px; }
 .tab span { width: 24px; height: 24px; }
 .tab.on { color: var(--ink); }
 .right-slot { width: 72px; display: flex; justify-content: flex-end; flex: none; }
-.right-slot .tab { max-width: 48px; width: 48px; }
+.right-slot .tab { width: 48px; color: var(--ink); }
 
-/* Итерация 2 (PM): без шапки, без заголовков блоков и линий — блоки разделены только отступами. */
-.screen { position: relative; }
+/* Блоки хаба: без шапки, заголовков и линий — только отступы (итерации 2–4). */
 .sec { padding: 6px 16px; }
-.screen > .sec:first-of-type { padding-top: 10px; }
+.screen > .sec:first-child { padding-top: 10px; }
 .sec + .sec { margin-top: 14px; }
-.float-gear { position: absolute; z-index: 2; top: 4px; right: 8px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: var(--ink); }
-.float-gear span { width: 22px; height: 22px; }
+.sec.grow { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.sec.grow .tasks-scroll { flex: 1; min-height: 0; }
 
-/* Задачи (строка как в окне дня) */
+/* Задачи (строка как в окне дня: время 38, кружок 20, строка 46, текст 16) */
 .tasks-scroll { overflow-y: auto; scrollbar-width: thin; position: relative; }
-.group { font-size: 12px; font-weight: 800; color: var(--muted); padding: 6px 0 2px 46px; background: var(--surface); }
-.tasks-scroll .group { position: sticky; top: 0; z-index: 1; }
+.group { font-size: 12px; font-weight: 800; color: var(--muted); padding: 6px 0 2px 46px; background: var(--surface); position: sticky; top: 0; z-index: 1; }
 .group.late { color: var(--danger); }
 .trow { display: flex; align-items: center; min-height: 46px; gap: 8px; cursor: pointer; transition: opacity .4s; }
 .trow.done { opacity: .4; }
@@ -129,15 +109,10 @@ footer { color: var(--pg-muted); font-size: 13px; }
 .ttitle { flex: 1; min-width: 0; font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ttitle.pri { color: var(--violet); }
 .temoji { width: 24px; text-align: center; font-size: 18px; flex: none; }
-.empty-line { font-size: 14px; color: var(--muted); padding: 6px 0; }
-.summary { display: flex; align-items: center; gap: 8px; padding: 2px 0; cursor: pointer; }
-.summary .sum-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.summary .sum-chev { width: 18px; height: 18px; color: var(--inactive); flex: none; transform: rotate(90deg); }
-.summary .sum1 { font-size: 14px; font-weight: 700; }
-.summary .sum1 .late { color: var(--danger); }
-.summary .sum2 { font-size: 13.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.empty-tasks { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: var(--muted); font-size: 15px; font-weight: 600; text-align: center; }
+.empty-tasks button { background: var(--field); color: var(--ink); border-radius: 14px; padding: 8px 14px; font-weight: 800; font-size: 14px; }
 
-/* Финансы: полоса Г */
+/* Финансы: полоса Г и счета */
 .limit { cursor: pointer; padding: 2px 0; }
 .limit-row { display: flex; align-items: center; gap: 8px; }
 .thick { position: relative; flex: 1; height: 26px; border-radius: 13px; background: var(--soft); }
@@ -149,28 +124,22 @@ footer { color: var(--pg-muted); font-size: 13px; }
 .limit-status .left { color: var(--warning); flex: 1; }
 .limit-status .fc { display: flex; align-items: center; gap: 4px; color: var(--muted); font-weight: 600; }
 .limit-status .fc span { width: 15px; height: 15px; }
-.sub-label { font-size: 12px; font-weight: 800; color: var(--muted); margin: 8px 0 2px; }
-.accounts { display: flex; align-items: center; gap: 6px; margin-top: 6px; flex-wrap: nowrap; overflow: hidden; }
+.accounts { display: flex; align-items: center; gap: 6px; margin-top: 8px; flex-wrap: nowrap; overflow: hidden; }
 .accounts .total { font-weight: 800; font-size: 15px; margin-right: 2px; white-space: nowrap; }
 .acc { background: var(--field); border-radius: 14px; padding: 3px 10px; font-size: 13.5px; font-weight: 700; white-space: nowrap; }
-.accounts.big { flex-wrap: wrap; }
-.accounts.big .total { width: 100%; font-size: 20px; }
-.accounts.big .acc { padding: 6px 12px; font-size: 14.5px; }
 
-
-/* Новости: карусель */
-/* Новости: четыре карточки сеткой 2 × 2, шрифт мельче (итерация 4) */
-.ngrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+/* Новости: страницы по четыре карточки 2 × 2, листаются вбок */
+.npager { display: flex; gap: 16px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; }
+.npager::-webkit-scrollbar { display: none; }
+.npage { flex: 0 0 100%; scroll-snap-align: start; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .ncard { background: var(--field); border-radius: 14px; padding: 8px 10px 9px; cursor: pointer; min-width: 0; min-height: 76px; display: flex; flex-direction: column; gap: 2px; }
 .ncard .meta { font-size: 10.5px; color: var(--muted); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ncard .meta .new { color: var(--violet); font-weight: 800; }
 .ncard .tt { font-size: 13px; font-weight: 500; line-height: 1.28; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .ncard.unread .tt { font-weight: 800; }
-.ngrid.big .ncard { padding: 10px 12px; min-height: 88px; }
-.ngrid.big .tt { font-size: 14px; }
-.ngrid.w .ncard { padding: 6px 8px 7px; min-height: 0; border-radius: 12px; }
-.ngrid.w .tt { font-size: 12px; -webkit-line-clamp: 2; }
-.ngrid.w .meta { font-size: 10px; }
+.ndots { display: flex; gap: 6px; justify-content: center; align-items: center; margin-top: 8px; height: 6px; }
+.ndots i { width: 6px; height: 6px; border-radius: 50%; background: var(--soft); display: block; transition: background .2s; }
+.ndots i.on { background: var(--ink); }
 
 /* Меню «+», подсказка, экран раздела */
 .scrim { position: absolute; inset: 0; background: rgba(0,0,0,.28); z-index: 5; }
@@ -183,13 +152,21 @@ footer { color: var(--pg-muted); font-size: 13px; }
 .module h3 { margin: 0; font-size: 24px; font-weight: 800; }
 .module p { margin: 0; color: var(--muted); font-size: 14px; }
 .skel { height: 14px; border-radius: 7px; background: var(--field); }
-.hint { align-self: flex-start; background: var(--field); border-radius: 12px; padding: 6px 10px; font-size: 13px; font-weight: 700; }
+
+/* Полноэкранный режим 1:1 */
+.full { position: fixed; inset: 0; z-index: 100; background: #0E0F13; display: flex; flex-direction: column; align-items: center;
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px); }
+.full[hidden] { display: none !important; }
+.full-strip { flex: none; width: 100%; max-width: 480px; height: 34px; display: flex; align-items: center; gap: 6px; padding: 0 6px; color: #fff; font-family: var(--font); }
+.full-strip button { color: #fff; font-weight: 700; font-size: 13px; border-radius: 10px; padding: 5px 10px; background: rgba(255,255,255,.12); white-space: nowrap; }
+.full-strip .what { flex: 1; min-width: 0; text-align: center; font-size: 13px; font-weight: 700; opacity: .8; }
+.full .phone { width: 100%; max-width: 480px; flex: 1; height: auto; min-height: 0; border-radius: 0; box-shadow: none; }
+.full .phone .status { display: none; }
 
 /* Виджет */
 .widget { background: var(--surface); color: var(--ink); border-radius: 24px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,.08), 0 8px 24px rgba(20,22,30,.12); font-family: var(--font); line-height: 1.3; display: flex; flex-direction: column; }
-.w-body { padding: 10px 12px 6px; display: flex; flex-direction: column; gap: 6px; }
-.w-head { display: flex; align-items: baseline; justify-content: space-between; font-size: 13px; font-weight: 800; }
-.w-head span { color: var(--muted); font-weight: 600; font-size: 12px; }
+.w-body { padding: 10px 12px 6px; display: flex; flex-direction: column; gap: 8px; }
+.w-head { font-size: 12px; font-weight: 800; }
 .w-bar { display: flex; align-items: center; height: 50px; padding: 0 8px; border-top: 1px solid var(--divider); gap: 2px; }
 .w-bar .add-btn { width: 58px; height: 36px; border-radius: 18px; }
 .w-bar .tab { max-width: 40px; height: 40px; }
@@ -197,159 +174,127 @@ footer { color: var(--pg-muted); font-size: 13px; }
 .w-bar .date { display: flex; align-items: center; gap: 2px; margin-left: auto; font-weight: 800; font-size: 22px; }
 .w-bar .date small { display: flex; flex-direction: column; font-size: 9px; line-height: 1; font-weight: 700; }
 .w-bar .dl { width: 22px; height: 22px; margin-left: 6px; color: var(--ink); }
+.w-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.w-grid .ncard { padding: 6px 8px 7px; min-height: 0; border-radius: 12px; }
+.w-grid .tt { font-size: 12px; -webkit-line-clamp: 2; }
+.w-grid .meta { font-size: 10px; }
+.w-pages { display: flex; align-items: center; justify-content: center; gap: 10px; }
+.w-pages .arrow { width: 26px; height: 22px; border-radius: 11px; background: var(--field); display: flex; align-items: center; justify-content: center; }
+.w-pages .arrow span { width: 14px; height: 14px; }
+.w-pages .ndots { margin: 0; }
 .w-small .w-bar { height: 44px; padding: 0 6px; }
 .w-small .w-bar .add-btn { width: 44px; height: 32px; }
 .w-small .w-bar .tab { max-width: 26px; }
 .w-small .w-bar .tab span { width: 19px; height: 19px; }
 
-.full-open { align-self: flex-start; background: var(--pg-fg); color: var(--pg-bg); border-radius: 14px; padding: 10px 18px; font-weight: 800; font-size: 15px; }
-.full { position: fixed; inset: 0; z-index: 100; background: #0E0F13; display: flex; flex-direction: column; align-items: center;
-  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px); }
-.full-strip { flex: none; width: 100%; max-width: 480px; height: 34px; display: flex; align-items: center; gap: 6px; padding: 0 6px; color: #fff; font-family: var(--font); }
-.full-strip button { color: #fff; font-weight: 700; font-size: 13px; border-radius: 10px; padding: 5px 10px; background: rgba(255,255,255,.12); white-space: nowrap; }
-.full-strip .what { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; text-align: center; }
-.full .phone { width: 100%; max-width: 480px; flex: 1; height: auto; min-height: 0; border-radius: 0; box-shadow: none; }
-.full .phone .status { display: none; }
-.full-panel { position: absolute; z-index: 120; top: calc(env(safe-area-inset-top, 0px) + 40px); left: 50%; transform: translateX(-50%); width: min(92vw, 420px);
-  background: #fff; color: #16171D; border-radius: 18px; padding: 14px; box-shadow: 0 10px 32px rgba(0,0,0,.35); display: flex; flex-direction: column; gap: 10px; font-family: var(--font); }
-.full-panel .ctrl-label { color: #62656E; }
-.full-panel .seg button { background: #F3F3F4; border-color: #E2E2E2; color: #16171D; }
-.full-panel .seg button[aria-pressed="true"] { background: #16171D; color: #fff; border-color: #16171D; }
-.full-panel p { margin: 0; font-size: 13px; color: #62656E; }
 @media (max-width: 420px) {
-  .phone, .strip, .cell { zoom: .9; }
+  .phone, .cell { zoom: .9; }
   .full .phone { zoom: 1; }
 }
-.full[hidden], .full-panel[hidden] { display: none !important; }
-@media (prefers-reduced-motion: reduce) { .trow { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .trow, .ndots i { transition: none; } }
 </style>
 
 <main class="page">
   <header class="intro">
-    <span class="eyebrow">Simple Tasks · #329 · прототип v1</span>
+    <span class="eyebrow">Simple Tasks · #329 · финальный вариант</span>
     <h1>Хаб «Главная»</h1>
-    <p>Один экран отвечает на три вопроса: что сделать, сколько ещё можно тратить и что нового. Собрано по 12 ответам 24.11.2026.
-      Данные, суммы и заголовки новостей вымышленные, «сейчас» — вторник, 24 ноября.</p>
-    <span class="chip-status">Итерация 4: финансы сверху, новости 2 × 2</span>
+    <p>Один экран отвечает на три вопроса: сколько ещё можно тратить, что сделать и что нового. Решение PM 24.11.2026: плотность A «Один экран»,
+      навигация N1 «Пятая вкладка», новости — страницы по четыре карточки, листаются вбок. Данные, суммы и заголовки новостей вымышленные.</p>
+    <span class="chip-status">Финальный вариант · ждёт команды «Код»</span>
     <button type="button" class="full-open" data-full-open>Открыть на весь экран · масштаб 1:1</button>
   </header>
 
   <section class="block" id="live">
     <h2>Живой прототип</h2>
-    <button type="button" class="full-open" data-full-open>На весь экран · масштаб 1:1</button>
-    <p class="lead">На телефоне откройте «На весь экран»: хаб займёт всё окно в реальном размере — строка задачи 46 dp, текст 16, как в приложении. Переключайте плотность и навигацию. Внутри телефона нажимается почти всё: кружки задач, строки, «+», вкладки, полоса лимита, карточки новостей.</p>
+    <p class="lead">Масштаб как в приложении: строка задачи 46 dp, текст 16. На телефоне откройте «На весь экран» — хаб займёт всё окно.</p>
     <div class="stage">
       <div class="phone-wrap">
         <div class="phone" id="live-phone"></div>
         <button class="back-btn" id="live-back" type="button">◁ Системная «Назад»</button>
       </div>
-      <div class="controls">
-        <div class="ctrl"><span class="ctrl-label">Плотность</span>
-          <div class="seg" data-ctrl="density">
-            <button type="button" data-v="A">A · Один экран</button><button type="button" data-v="B">B · Подробная лента</button><button type="button" data-v="C">C · Компактно + раскрытие</button>
-          </div></div>
-        <div class="ctrl"><span class="ctrl-label">Навигация</span>
-          <div class="seg" data-ctrl="nav">
-            <button type="button" data-v="N1">N1 · Пятая вкладка</button><button type="button" data-v="N2">N2 · Домик вместо ⚙</button><button type="button" data-v="N3">N3 · «Назад» в хаб</button>
-          </div></div>
-        <div class="ctrl"><span class="ctrl-label">Что попробовать</span>
-          <ul class="tries">
-            <li>Кружок у задачи — выполнено, задача тает; нажатие на строку — окно задачи.</li>
-            <li>Чёрная «+» — меню «Задача / Расход / Вес».</li>
-            <li>Новости — четыре карточки 2 × 2; нажатие открывает материал, новость становится прочитанной.</li>
-            <li>Вкладки внизу — переход в разделы; «Назад» под телефоном — возврат.</li>
-            <li>В варианте C нажатие на сводку раскрывает блок, остальные сворачиваются.</li>
-          </ul></div>
+      <div class="notes">
+        <h3>Что попробовать</h3>
+        <ul>
+          <li>Новости — проведите вбок: страницы по четыре карточки, точки показывают страницу. Нажатие на карточку делает новость прочитанной.</li>
+          <li>Кружок у задачи — выполнено, задача тает; нажатие на строку — окно задачи.</li>
+          <li>Полоса лимита — окно «Бюджет».</li>
+          <li>Чёрная «+» — меню «Задача / Расход / Вес».</li>
+          <li>Вкладки внизу — разделы; домик — обратно в хаб.</li>
+        </ul>
+        <h3>Сверху вниз</h3>
+        <ul>
+          <li>Финансы: полоса лимита и счета.</li>
+          <li>Задачи «Просрочено · Сегодня · Завтра» — занимают всё свободное место и прокручиваются внутри.</li>
+          <li>Новости: 2 × 2, листаются вбок.</li>
+        </ul>
       </div>
     </div>
   </section>
 
-  <section class="block" id="density">
-    <h2 class="choose">Плотность: три варианта</h2>
-    <p class="lead">Те же данные в трёх подачах. В каждом макете — своя навигация, чтобы сравнить и её; сочетания можно собрать в живом прототипе.</p>
+  <section class="block" id="screens">
+    <h2>Экраны</h2>
     <div class="cells">
-      <figure class="cell"><div class="phone" data-static='{"density":"A","nav":"N1"}'></div>
-        <figcaption><b>A · Один экран</b> + навигация N1. Всё видно без прокрутки страницы: сверху финансы, задачи занимают свободное место и прокручиваются внутри, внизу четыре новости 2 × 2 мелким шрифтом.</figcaption></figure>
-      <figure class="cell"><div class="phone" data-static='{"density":"B","nav":"N2"}'></div>
-        <figcaption><b>B · Подробная лента</b> + навигация N2. Блоки крупнее, экран прокручивается: сверху полоса лимита и счета крупно, все задачи списком, новости 2 × 2.</figcaption></figure>
-      <figure class="cell"><div class="phone" data-static='{"density":"C","nav":"N3","open":"tasks"}'></div>
-        <figcaption><b>C · Компактно + раскрытие</b> + навигация N3. Каждый блок — сводка в 1–2 строки, финансы сверху; раскрыт один блок (здесь задачи). На хабе ни одна вкладка не выбрана.</figcaption></figure>
-    </div>
-  </section>
-
-  <section class="block" id="nav">
-    <h2 class="choose">Навигация: как попасть в хаб</h2>
-    <p class="lead">Сейчас внизу: «+», вкладки Задачи · ₽ · ♥ · Новости и ⚙ справа. Три способа добавить хаб; в виджете во всех вариантах хаб — первая вкладка.</p>
-    <div class="bars">
-      <div class="bar-strip"><div class="label">N1 · Пятая вкладка <span>— домик первым, на экране 360 dp вкладки чуть теснее</span></div><div class="strip" data-bar='{"nav":"N1","screen":"hub"}'></div></div>
-      <div class="bar-strip"><div class="label">N2 · Домик вместо ⚙ <span>— настройки — шестерёнка справа вверху хаба</span></div><div class="strip" data-bar='{"nav":"N2","screen":"hub"}'></div></div>
-      <div class="bar-strip"><div class="label">N3 · «Назад» в хаб <span>— отдельной кнопки нет: на хабе ни одна вкладка не выбрана, системная «Назад» из любого раздела ведёт в хаб</span></div><div class="strip" data-bar='{"nav":"N3","screen":"hub"}'></div></div>
-      <div class="bar-strip"><div class="label">Для сравнения — открыт раздел «Финансы» <span>(N1)</span></div><div class="strip" data-bar='{"nav":"N1","screen":"finance"}'></div></div>
-    </div>
-  </section>
-
-  <section class="block" id="extras">
-    <h2>«+» на хабе и раскрытие блоков</h2>
-    <div class="cells">
-      <figure class="cell"><div class="phone" data-static='{"density":"A","nav":"N1","menu":true}'></div>
+      <figure class="cell"><div class="phone" data-static='{}'></div>
+        <figcaption><b>Хаб.</b> Финансы сверху, задачи со своей прокруткой, новости — первая страница из трёх. В нижней панели выбран домик.</figcaption></figure>
+      <figure class="cell"><div class="phone" data-static='{"newsPage":1,"done":["t1","t2"]}'></div>
+        <figcaption><b>Новости — вторая страница</b> после свайпа; две задачи отмечены и тают до конца дня.</figcaption></figure>
+      <figure class="cell"><div class="phone" data-static='{"menu":true}'></div>
         <figcaption><b>«+» → меню.</b> Дальше привычные окна (новая задача, окно операции, окно веса) поверх хаба; после сохранения остаёмся на хабе.</figcaption></figure>
-      <figure class="cell"><div class="phone" data-static='{"density":"C","nav":"N1","open":"finance"}'></div>
-        <figcaption><b>C — раскрыты «Финансы».</b> Полоса лимита и счета; нажатие на полосу — окно «Бюджет».</figcaption></figure>
-      <figure class="cell"><div class="phone" data-static='{"density":"B","nav":"N2","scroll":420}'></div>
-        <figcaption><b>B — ниже по ленте.</b> Конец списка задач и новости сеткой 2 × 2.</figcaption></figure>
+      <figure class="cell"><div class="phone" data-static='{"empty":true}'></div>
+        <figcaption><b>Задач нет.</b> На сегодня и завтра пусто — подсказка и кнопка «+ Задача» на месте списка; финансы и новости как обычно.</figcaption></figure>
+      <figure class="cell"><div class="phone" data-static='{"screen":"finance"}'></div>
+        <figcaption><b>Открыт раздел «Финансы».</b> Выбран ₽, домик серый; нажатие на домик возвращает в хаб.</figcaption></figure>
     </div>
   </section>
 
   <section class="block" id="widget">
     <h2>Виджет «Главная» (этап 2)</h2>
-    <p class="lead">Тот же порядок, что в хабе: финансы сверху, задачи, новости сеткой 2 × 2. Сетке не нужно листание вбок, поэтому в виджете Android она делается без ограничений.</p>
+    <p class="lead">Тот же порядок: финансы, задачи, новости 2 × 2. Свайпа вбок в виджетах Android нет, поэтому страницы новостей переключаются стрелками ‹ › под сеткой.</p>
     <div class="cells">
       <figure class="cell wide"><div class="widget" data-widget="wide" style="width:392px"></div>
-        <figcaption><b>Широкий, 392 dp.</b> Полоса лимита сверху, задачи со своей прокруткой и кружками, четыре новости 2 × 2.</figcaption></figure>
+        <figcaption><b>Широкий, 392 dp.</b> Полоса лимита, задачи со своей прокруткой и кружками, новости 2 × 2 и стрелки страниц.</figcaption></figure>
       <figure class="cell"><div class="widget" data-widget="mid" style="width:320px"></div>
         <figcaption><b>320 dp.</b> То же, заголовки новостей в две строки.</figcaption></figure>
       <figure class="cell" style="width:200px"><div class="widget w-small" data-widget="small" style="width:180px"></div>
-        <figcaption><b>180 × 110 dp.</b> Полоса лимита и задачи на сегодня; шесть кнопок в панели — тесно, но помещаются.</figcaption></figure>
+        <figcaption><b>180 × 110 dp.</b> Полоса лимита и задачи на сегодня; новости не помещаются.</figcaption></figure>
     </div>
   </section>
 
   <section class="block" id="estimate">
     <h2>Оценка сложности</h2>
-    <p class="lead">Новых таблиц в базе нет: хаб собирает то, что уже хранится и считается в разделах. Основная работа — экран, навигация и виджет.</p>
+    <p class="lead">Новых таблиц в базе нет: хаб собирает то, что уже хранится и считается в разделах.</p>
     <div class="table-wrap"><table>
       <thead><tr><th>Этап</th><th>Что делаем</th><th>Сложность</th><th>По опыту проекта</th><th>Выпуск</th></tr></thead>
       <tbody>
-        <tr><td><b>1. Экран «Главная»</b></td><td>Сбор данных трёх разделов, 3 блока (финансы, задачи, новости 2 × 2), отметка задач, «+» с тремя окнами поверх хаба</td><td><span class="dots-scale"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span> средняя</td><td>Как окно «Бюджет» и полоса в #327</td><td rowspan="2">0.92.0</td></tr>
-        <tr><td><b>2. Навигация и запуск</b></td><td>Хаб — стартовый экран, выбранный вариант панели, «Назад», переходы из блоков, уведомлений и виджета</td><td><span class="dots-scale"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span> средняя, задевает все разделы</td><td>Как вкладки модулей #273</td></tr>
-        <tr><td><b>3. Виджет «Главная»</b></td><td>Новая вкладка: полоса лимита картинкой, список задач с кружками, новости сеткой 2 × 2</td><td><span class="dots-scale"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span> высокая</td><td>Как виджет «Неделя» #313</td><td>0.93.0</td></tr>
+        <tr><td><b>1. Экран «Главная»</b></td><td>Финансы (полоса и счета), задачи с отметкой, новости 2 × 2 с листанием, «+» с тремя окнами поверх хаба</td><td><span class="dots-scale"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span> средняя</td><td>Как окно «Бюджет» и полоса в #327</td><td rowspan="2">0.92.0</td></tr>
+        <tr><td><b>2. Навигация и запуск</b></td><td>Пятая вкладка с домиком, хаб — стартовый экран, переходы из уведомлений и виджета поверх хаба</td><td><span class="dots-scale"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span> средняя, задевает все разделы</td><td>Как вкладки модулей #273</td></tr>
+        <tr><td><b>3. Виджет «Главная»</b></td><td>Вкладка с домиком: полоса лимита картинкой, список задач с кружками, новости 2 × 2 со стрелками страниц</td><td><span class="dots-scale"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span> высокая</td><td>Как виджет «Неделя» #313</td><td>0.93.0</td></tr>
       </tbody>
     </table></div>
-    <p class="lead"><b>Итого: 2–3 итерации, два выпуска.</b> Самый дешёвый вариант — A или C с навигацией N3 (панель не меняется); самый дорогой — B с N1 и полным виджетом.</p>
+    <p class="lead"><b>Итого: 2–3 итерации, два выпуска.</b></p>
     <ul class="risks">
       <li>Окна расхода и веса сейчас живут внутри своих разделов — для «+» на хабе их нужно поднять на общий уровень, как окно задачи.</li>
-      <li>Хаб читает данные всех разделов при запуске — нужно следить, чтобы приложение открывалось так же быстро.</li>
-      <li>Стартовым экраном становится хаб: «Неделя» и «Предстоящие» отодвигаются на одно нажатие.</li>
+      <li>Хаб читает данные трёх разделов при запуске — нужно следить, чтобы приложение открывалось так же быстро.</li>
+      <li>Стартовым экраном становится хаб: «Неделя» и «Предстоящие» — на одно нажатие дальше.</li>
+      <li>Пять вкладок в панели: на экране 360 dp они чуть теснее, в узком виджете 180 dp — шесть кнопок вплотную.</li>
       <li>Все переходы из уведомлений и виджета (задача, покупка, вес, новости, бюджет) нужно перепроверить — под ними теперь хаб.</li>
     </ul>
   </section>
 
-  <section class="block" id="decide">
-    <h2>Что решить, чтобы начать код</h2>
-    <div class="decide">
-      <div><b>1. Плотность</b><span>A · один экран, B · подробная лента или C · компактно + раскрытие.</span></div>
-      <div><b>2. Навигация</b><span>N1 · пятая вкладка, N2 · домик вместо ⚙ или N3 · «Назад» в хаб.</span></div>
-      <div><b>3. Возврат в приложение</b><span>С иконки — всегда хаб; из списка недавних — туда, где был. Подходит?</span></div>
+  <section class="block" id="rejected">
+    <h2>Отвергнутые варианты (справка)</h2>
+    <p class="lead">Показывались в итерациях 1–4 и не выбраны. Листы лежат в репозитории рядом с ТЗ: rejected-density.png, rejected-nav.png, rejected-extras.png.</p>
+    <div class="rejected">
+      <div><b>B · Подробная лента</b><span>Блоки крупнее, весь экран прокручивается.</span></div>
+      <div><b>C · Компактно + раскрытие</b><span>Сводки в 1–2 строки, раскрывается один блок.</span></div>
+      <div><b>N2 · Домик вместо ⚙</b><span>Домик справа, настройки — шестерёнкой в хабе.</span></div>
+      <div><b>N3 · «Назад» в хаб</b><span>Без вкладки: в хаб — только системной «Назад».</span></div>
     </div>
   </section>
 
   <div class="full" id="full" hidden>
-    <div class="full-strip"><button type="button" id="full-back">◁ Назад</button><button type="button" class="what" id="full-what">Варианты ▾</button><button type="button" id="full-close" aria-label="Закрыть полноэкранный режим">✕</button></div>
+    <div class="full-strip"><button type="button" id="full-back">◁ Назад</button><span class="what">Хаб · масштаб 1:1</span><button type="button" id="full-close" aria-label="Закрыть полноэкранный режим">✕</button></div>
     <div class="phone" id="full-phone"></div>
-    <div class="full-panel" id="full-panel" hidden>
-      <div class="ctrl"><span class="ctrl-label">Плотность</span><div class="seg" data-full="density"><button type="button" data-v="A">A · Один экран</button><button type="button" data-v="B">B · Лента</button><button type="button" data-v="C">C · Компактно</button></div></div>
-      <div class="ctrl"><span class="ctrl-label">Навигация</span><div class="seg" data-full="nav"><button type="button" data-v="N1">N1 · Вкладка</button><button type="button" data-v="N2">N2 · Вместо ⚙</button><button type="button" data-v="N3">N3 · «Назад»</button></div></div>
-      <p>Масштаб 1:1: размеры как в приложении. Полоска сверху — только для прототипа, в приложении её нет.</p>
-    </div>
   </div>
 
   <footer>Исходник в репозитории: design/approved/329 — requirements.md, build.py, prototype.template.html, render.js. Issue #329.</footer>
@@ -357,8 +302,6 @@ footer { color: var(--pg-muted); font-size: 13px; }
 
 <script>
 const ICONS = /*ICONS*/null;
-const DATE = 'вторник, 24 ноября';
-const TIMES = { morning: ['09:12', 'Доброе утро'], day: ['14:30', 'Добрый день'], evening: ['21:40', 'Добрый вечер'] };
 const TASKS = [
   ['Просрочено', 'late', [{ id: 'o1', time: 'вчера', title: 'Оплатить интернет', emoji: '🏠', pri: true }]],
   ['Сегодня', 'today', [
@@ -383,17 +326,18 @@ const NEWS = [
   ['n5', '07:30', 'Теннис', 'Определились финалисты итогового турнира', true],
   ['n6', '06:58', 'Футбол', 'Кейн повторил рекорд Бундеслиги по голам в первом круге', false],
   ['n7', '06:20', 'Бокс/MMA/UFC', 'UFC Fight Night: главный бой перенесён на неделю', false],
-  ['n8', '23:41', 'Футбол', 'ЦСКА проиграл «Ахмату» дома — 1:2', false],
-  ['n9', '23:10', 'Фигурное катание', 'Селевко победил на Гран-при Финляндии', false],
-  ['n10', '22:27', 'Футбол', '«Челси» разгромлен «Лидсом», «Арсенал» сыграл вничью', false],
+  ['n8', '05:45', 'Формула-1', 'Квалификацию перенесли из-за дождя', false],
+  ['n9', '23:41', 'Футбол', 'ЦСКА проиграл «Ахмату» дома — 1:2', false],
+  ['n10', '23:10', 'Фигурное катание', 'Селевко победил на Гран-при Финляндии', false],
+  ['n11', '22:27', 'Футбол', '«Челси» разгромлен «Лидсом», «Арсенал» сыграл вничью', false],
+  ['n12', '21:50', 'Волейбол', '«Зенит-Казань» выиграл восьмой матч подряд', false],
 ];
-const MODULES = { tasks: ['Неделя', 'week'], finance: ['Финансы', 'finance'], health: ['Здоровье', 'health'], news: ['Новости', 'news'] };
+const PAGE = 4;
+const MODULES = { tasks: 'Неделя', finance: 'Финансы', health: 'Здоровье', news: 'Новости' };
 const PLUS_TOAST = { task: 'Окно «Новая задача» поверх хаба', expense: 'Окно нового расхода поверх хаба', weight: 'Окно веса поверх хаба' };
 
 const ic = (name) => `<span>${ICONS[name]}</span>`;
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-
-function unreadCount(s) { return NEWS.filter((n) => n[4] && !s.read.has(n[0])).length; }
 
 function taskRow(s, t, late) {
   const done = s.done.has(t.id);
@@ -408,89 +352,71 @@ function taskList(s) {
   return TASKS.map(([label, kind, list]) => `<div class="group${kind === 'late' ? ' late' : ''}">${label}</div>${list.map((t) => taskRow(s, t, kind === 'late')).join('')}`).join('');
 }
 
-
-function limitBar(interactive = true) {
-  return `<div class="limit"${interactive ? ' data-act="budget" role="button" tabindex="0"' : ''}><div class="limit-row"><div class="thick"><div class="fill" style="width:96%">54k ₽</div><div class="mark" style="left:80%"></div></div><span class="limit-num">57k</span></div>
+function limitBar() {
+  return `<div class="limit" data-act="budget" role="button" tabindex="0"><div class="limit-row"><div class="thick"><div class="fill" style="width:96%">54k ₽</div><div class="mark" style="left:80%"></div></div><span class="limit-num">57k</span></div>
     <div class="limit-status"><span class="left">осталось 2k ₽</span><span class="fc">${ic('forecast')}прогноз 68k ₽</span></div></div>`;
 }
 
-
-function accounts(big) {
-  return (big ? '<div class="sub-label">Счета</div>' : '') + `<div class="accounts${big ? ' big' : ''}"><span class="total">128k ₽</span>${ACCOUNTS.map(([e, v]) => `<span class="acc">${e} ${v}</span>`).join('')}</div>`;
+function accounts() {
+  return `<div class="accounts"><span class="total">128k ₽</span>${ACCOUNTS.map(([e, v]) => `<span class="acc">${e} ${v}</span>`).join('')}</div>`;
 }
 
-
-function newsGrid(s, kind) {
-  const cards = NEWS.slice(0, 4).map(([id, time, sport, title, unread]) => {
-    const isNew = unread && !s.read.has(id);
-    return `<div class="ncard${isNew ? ' unread' : ''}" data-act="news" data-id="${id}" role="button" tabindex="0"><div class="meta">${time} · ${esc(sport)}${isNew ? ' · <span class="new">Новое</span>' : ''}</div><div class="tt">${esc(title)}</div></div>`;
-  }).join('');
-  return `<div class="ngrid${kind ? ` ${kind}` : ''}">${cards}</div>`;
+function newsCard(s, [id, time, sport, title, unread]) {
+  const isNew = unread && !s.read.has(id);
+  return `<div class="ncard${isNew ? ' unread' : ''}" data-act="news" data-id="${id}" role="button" tabindex="0"><div class="meta">${time} · ${esc(sport)}${isNew ? ' · <span class="new">Новое</span>' : ''}</div><div class="tt">${esc(title)}</div></div>`;
 }
 
+function newsPages(s) {
+  const pages = [];
+  for (let i = 0; i < NEWS.length; i += PAGE) pages.push(NEWS.slice(i, i + PAGE));
+  return `<div class="npager" aria-label="Новости, страницы по четыре">${pages.map((p) => `<div class="npage">${p.map((n) => newsCard(s, n)).join('')}</div>`).join('')}</div>
+    <div class="ndots">${pages.map((_, i) => `<i class="${i === s.newsPage ? 'on' : ''}"></i>`).join('')}</div>`;
+}
 
 function hub(s) {
-  // Итерация 2 (PM 24.11.2026): без приветствия и даты, без заголовков блоков и линий между ними; в разделы — вкладками внизу.
-  // Итерация 3: в финансах только полоса лимита и счета (без категорий), блока «Здоровье» нет.
-  // Итерация 4: финансы — первым блоком; новости — четыре карточки 2 × 2, шрифт мельче.
-  const gear = s.nav === 'N2' ? `<button type="button" class="float-gear" data-act="settings" aria-label="Настройки">${ic('settings')}</button>` : '';
-  const doneToday = TASKS[1][2].filter((t) => s.done.has(t.id)).length;
-  if (s.density === 'C') {
-    const open = s.open;
-    const block = (key, collapsed, expanded) => `<div class="sec">${open === key ? expanded : `<div class="summary" data-act="toggle" data-block="${key}" role="button" tabindex="0"><div class="sum-body">${collapsed}</div><span class="sum-chev">${ICONS.chevron}</span></div>`}</div>`;
-    const lateLeft = TASKS[0][2].filter((t) => !s.done.has(t.id)).length;
-    const next = TASKS[1][2].find((t) => t.time && !s.done.has(t.id));
-    const first = NEWS[0];
-    const firstNew = first[4] && !s.read.has(first[0]);
-    return gear
-      + block('finance', `${limitBar(false)}<div class="sum2" style="font-size:13px;color:#62656E;margin-top:2px">на счетах 128k ₽</div>`,
-        `${limitBar()}${accounts(true)}`)
-      + block('tasks', `<div class="sum1">${lateLeft ? `<span class="late">Просрочено ${lateLeft}</span> · ` : ''}Сегодня ${TASKS[1][2].length - doneToday} · Завтра ${TASKS[2][2].length}</div><div class="sum2">${next ? `${next.time} ${esc(next.title)}` : 'Дальше задач со временем нет'}</div>`,
-        `<div class="tasks-scroll" style="max-height:${s.full ? 'none' : '318px'}">${taskList(s)}</div>`)
-      + block('news', `<div class="sum2" style="font-size:12px">${first[1]} · ${esc(first[2])}${firstNew ? ' · <span style="color:#862CE0;font-weight:800">Новое</span>' : ''}</div><div class="sum1" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(first[3])}</div>`, newsGrid(s, ''));
-  }
-  const big = s.density === 'B';
-  const tasks = big ? taskList(s) : `<div class="tasks-scroll">${taskList(s)}</div>`;
-  return gear
-    + `<div class="sec">${limitBar()}${accounts(big)}</div>`
-    + `<div class="sec${big ? '' : ' grow'}">${tasks}</div>`
-    + `<div class="sec">${newsGrid(s, big ? 'big' : '')}</div>`;
+  const tasks = s.empty
+    ? `<div class="empty-tasks">На сегодня и завтра задач нет<button type="button" data-act="plus-item" data-kind="task">+ Задача</button></div>`
+    : `<div class="tasks-scroll">${taskList(s)}</div>`;
+  return `<div class="sec">${limitBar()}${accounts()}</div>`
+    + `<div class="sec grow">${tasks}</div>`
+    + `<div class="sec">${newsPages(s)}</div>`;
 }
 
 function moduleScreen(s) {
-  const [title] = MODULES[s.screen];
-  const back = s.nav === 'N3' ? '<span class="hint">◁ «Назад» — в хаб</span>' : '';
-  return `<div class="module"><h3>${title}</h3><p>Раздел как сейчас — без изменений.</p>${back}${Array.from({ length: 9 }, (_, i) => `<div class="skel" style="width:${[92, 70, 84, 60, 88, 76, 66, 90, 58][i]}%"></div>`).join('')}</div>`;
+  return `<div class="module"><h3>${MODULES[s.screen]}</h3><p>Раздел как сейчас — без изменений.</p>${Array.from({ length: 9 }, (_, i) => `<div class="skel" style="width:${[92, 70, 84, 60, 88, 76, 66, 90, 58][i]}%"></div>`).join('')}</div>`;
 }
 
 function barRow(s) {
-  const tabs = [['tasks', 'week'], ['finance', 'finance'], ['health', 'health'], ['news', 'news']];
-  const center = (s.nav === 'N1' ? [['hub', 'home'], ...tabs] : tabs).map(([key, icon]) => `<button type="button" class="tab${s.screen === key ? ' on' : ''}" data-act="tab" data-to="${key}" aria-label="${key === 'hub' ? 'Главная' : MODULES[key][0]}">${ic(icon)}</button>`).join('');
-  const right = s.nav === 'N2'
-    ? `<button type="button" class="tab${s.screen === 'hub' ? ' on' : ''}" data-act="tab" data-to="hub" aria-label="Главная">${ic('home')}</button>`
-    : `<button type="button" class="tab on" data-act="settings" aria-label="Настройки">${ic('settings')}</button>`;
-  return `<div class="appbar-row"><button type="button" class="add-btn" data-act="plus" aria-label="Добавить">${s.screen === 'news' ? ic('refresh') : ic('add')}</button><div class="tabs">${center}</div><div class="right-slot">${right}</div></div>`;
+  const tabs = [['hub', 'home', 'Главная'], ['tasks', 'week', 'Задачи'], ['finance', 'finance', 'Финансы'], ['health', 'health', 'Здоровье'], ['news', 'news', 'Новости']];
+  const center = tabs.map(([key, icon, label]) => `<button type="button" class="tab${s.screen === key ? ' on' : ''}" data-act="tab" data-to="${key}" aria-label="${label}">${ic(icon)}</button>`).join('');
+  return `<div class="appbar-row"><button type="button" class="add-btn" data-act="plus" aria-label="Добавить">${s.screen === 'news' ? ic('refresh') : ic('add')}</button><div class="tabs">${center}</div><div class="right-slot"><button type="button" class="tab" data-act="settings" aria-label="Настройки">${ic('settings')}</button></div></div>`;
 }
 
 function phone(s) {
-  const fixed = s.screen === 'hub' && s.density === 'A';
-  const body = s.screen === 'hub' ? hub(s) : moduleScreen(s);
+  const onHub = s.screen === 'hub';
   const menu = s.menu ? `<div class="scrim" data-act="close"></div><div class="plus-menu" role="menu"><button type="button" data-act="plus-item" data-kind="task">${ic('task')}Задача</button><button type="button" data-act="plus-item" data-kind="expense">${ic('finance')}Расход</button><button type="button" data-act="plus-item" data-kind="weight">${ic('health')}Вес</button></div>` : '';
   const toast = s.toast ? `<div class="toast">${esc(s.toast)}</div>` : '';
-  return `<div class="status"><span>${TIMES[s.time][0]}</span><span class="sys">5G <i></i></span></div><div class="screen${fixed ? ' fixed' : ''}">${body}</div><div class="appbar">${barRow(s)}</div>${menu}${toast}`;
+  return `<div class="status"><span>09:12</span><span class="sys">5G <i></i></span></div><div class="screen${onHub ? '' : ' module-screen'}">${onHub ? hub(s) : moduleScreen(s)}</div><div class="appbar">${barRow(s)}</div>${menu}${toast}`;
 }
 
 function mount(root, init) {
-  const s = Object.assign({ density: 'A', nav: 'N1', time: 'morning', screen: 'hub', open: 'tasks', menu: false, toast: '', done: new Set(), read: new Set() }, init);
+  const s = Object.assign({ screen: 'hub', menu: false, toast: '', newsPage: 0, empty: false }, init, { done: new Set(init.done || []), read: new Set() });
   let timer = 0;
+  const pagerStep = (pager) => pager.clientWidth + 16;
   const render = () => {
-    s.w = Math.max(280, Math.round(root.clientWidth || 360) - 32);
-    const screen = root.querySelector('.screen'), list = root.querySelector('.tasks-scroll');
-    const keep = [screen && screen.scrollTop, list && list.scrollTop];
+    const list = root.querySelector('.tasks-scroll');
+    const keepList = list ? list.scrollTop : 0;
     root.innerHTML = phone(s);
-    const nScreen = root.querySelector('.screen'), nList = root.querySelector('.tasks-scroll');
-    if (nScreen && keep[0]) nScreen.scrollTop = keep[0];
-    if (nList && keep[1]) nList.scrollTop = keep[1];
+    const nList = root.querySelector('.tasks-scroll');
+    if (nList && keepList) nList.scrollTop = keepList;
+    const pager = root.querySelector('.npager');
+    if (pager) {
+      pager.scrollLeft = s.newsPage * pagerStep(pager);
+      pager.addEventListener('scroll', () => {
+        const i = Math.round(pager.scrollLeft / pagerStep(pager));
+        if (i !== s.newsPage) { s.newsPage = i; root.querySelectorAll('.ndots i').forEach((d, k) => d.classList.toggle('on', k === i)); }
+      }, { passive: true });
+    }
   };
   const toast = (text) => { s.toast = text; render(); clearTimeout(timer); timer = setTimeout(() => { s.toast = ''; render(); }, 1800); };
   root.addEventListener('click', (e) => {
@@ -500,8 +426,7 @@ function mount(root, init) {
     const act = t.dataset.act;
     if (act === 'check') { const id = t.dataset.id; s.done.has(id) ? s.done.delete(id) : s.done.add(id); render(); }
     else if (act === 'open-task') toast('Окно задачи поверх хаба');
-    else if (act === 'go' || act === 'tab') { s.menu = false; s.screen = t.dataset.to; render(); }
-    else if (act === 'toggle') { s.open = s.open === t.dataset.block ? null : t.dataset.block; render(); }
+    else if (act === 'tab') { s.menu = false; s.screen = t.dataset.to; render(); }
     else if (act === 'plus') { if (s.screen === 'hub') { s.menu = !s.menu; render(); } else toast(s.screen === 'news' ? 'Обновить ленту' : 'Как сейчас в разделе'); }
     else if (act === 'plus-item') { s.menu = false; toast(PLUS_TOAST[t.dataset.kind]); }
     else if (act === 'close') { s.menu = false; render(); }
@@ -511,9 +436,8 @@ function mount(root, init) {
   });
   root.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[role="button"]')) { e.preventDefault(); e.target.click(); } });
   render();
-  if (init.scroll) requestAnimationFrame(() => { const sc = root.querySelector('.screen'); if (sc) sc.scrollTop = init.scroll; });
   return {
-    set(patch) { Object.assign(s, patch); render(); },
+    rerender: render,
     back() { if (s.menu) { s.menu = false; render(); } else if (s.screen !== 'hub') { s.screen = 'hub'; render(); } else toast('На хабе «Назад» закрывает приложение'); },
     state: s,
   };
@@ -521,72 +445,43 @@ function mount(root, init) {
 
 function widget(kind) {
   const s = { done: new Set(), read: new Set() };
-  const rows = (n) => TASKS.flatMap(([label, k, list]) => [`<div class="group${k === 'late' ? ' late' : ''}" style="padding-left:52px">${label}</div>`, ...list.map((t) => taskRow(s, t, k === 'late'))]).slice(0, n).join('');
+  const rows = TASKS.flatMap(([label, k, list]) => [`<div class="group${k === 'late' ? ' late' : ''}">${label}</div>`, ...list.map((t) => taskRow(s, t, k === 'late'))]).join('');
   const bar = (small) => `<div class="w-bar"><span class="add-btn">${ic('add')}</span><span class="tab on">${ic('home')}</span><span class="tab">${ic('week')}</span><span class="tab">${ic('finance')}</span><span class="tab">${ic('health')}</span><span class="tab">${ic('news')}</span>${small ? '' : `<span class="date">24<small><span>вт</span><span>ноя</span></small></span><span class="dl">${ICONS.download}</span>`}</div>`;
   if (kind === 'small') {
     return `<div class="w-body" style="padding:8px 10px 4px;gap:4px"><div class="limit" style="padding:0"><div class="limit-row"><div class="thick" style="height:18px"><div class="fill" style="width:96%;font-size:11px;padding-left:7px">54k</div><div class="mark" style="left:80%"></div></div><span class="limit-num" style="font-size:12.5px">57k</span></div></div>
-      <div class="w-head" style="font-size:12px">Сегодня 5 <span style="color:#C62828;font-weight:800">· просрочено 1</span></div>
+      <div class="w-head">Сегодня 5 <span style="color:#C62828">· просрочено 1</span></div>
       <div style="font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">10:00 Созвон с командой</div></div>${bar(true)}`;
   }
   const listH = kind === 'wide' ? 196 : 162;
-  return `<div class="w-body">
-    ${limitBar()}
-    <div class="tasks-scroll" style="max-height:${listH}px">${rows(12)}</div>
-    ${newsGrid(s, 'w')}</div>${bar(false)}`;
+  return `<div class="w-body">${limitBar()}
+    <div class="tasks-scroll" style="max-height:${listH}px">${rows}</div>
+    <div class="w-grid">${NEWS.slice(0, PAGE).map((n) => newsCard(s, n)).join('')}</div>
+    <div class="w-pages"><span class="arrow">${ic('left')}</span><span class="ndots"><i class="on"></i><i></i><i></i></span><span class="arrow">${ic('right')}</span></div></div>${bar(false)}`;
 }
 
-const live = mount(document.getElementById('live-phone'), { density: 'A', nav: 'N1', time: 'morning' });
-document.querySelectorAll('.seg').forEach((seg) => {
-  const key = seg.dataset.ctrl;
-  const sync = () => seg.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === live.state[key])));
-  seg.addEventListener('click', (e) => {
-    const b = e.target.closest('button');
-    if (!b) return;
-    live.set({ [key]: b.dataset.v, screen: 'hub', menu: false, open: 'tasks' });
-    sync();
-  });
-  sync();
-});
+const live = mount(document.getElementById('live-phone'), {});
 document.getElementById('live-back').addEventListener('click', () => live.back());
+document.querySelectorAll('[data-static]').forEach((el) => mount(el, JSON.parse(el.dataset.static)));
+document.querySelectorAll('[data-widget]').forEach((el) => { el.innerHTML = widget(el.dataset.widget); });
+
 const fullEl = document.getElementById('full');
-const fullPanel = document.getElementById('full-panel');
 let full = null;
-const LABELS = { A: 'A · Один экран', B: 'B · Лента', C: 'C · Компактно', morning: '09:12', day: '14:30', evening: '21:40' };
-function syncFull() {
-  document.getElementById('full-what').textContent = `${LABELS[full.state.density]} · ${full.state.nav} ▾`;
-  fullPanel.querySelectorAll('.seg').forEach((seg) => seg.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === full.state[seg.dataset.full]))));
-}
 function openFull() {
   fullEl.hidden = false;
   document.body.style.overflow = 'hidden';
-  const st = live.state;
-  if (!full) full = mount(document.getElementById('full-phone'), { density: st.density, nav: st.nav, time: st.time, full: true });
-  else full.set({ density: st.density, nav: st.nav, time: st.time, screen: 'hub', menu: false });
-  syncFull();
+  if (!full) full = mount(document.getElementById('full-phone'), {});
+  else full.rerender();
   if (location.hash !== '#full') { try { location.hash = 'full'; } catch (e) { /* ссылка без режима — не страшно */ } }
 }
 function closeFull() {
   fullEl.hidden = true;
-  fullPanel.hidden = true;
   document.body.style.overflow = '';
   if (location.hash === '#full') { try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { location.hash = ''; } }
 }
 document.querySelectorAll('[data-full-open]').forEach((b) => b.addEventListener('click', openFull));
 document.getElementById('full-close').addEventListener('click', closeFull);
 document.getElementById('full-back').addEventListener('click', () => full && full.back());
-document.getElementById('full-what').addEventListener('click', () => { fullPanel.hidden = !fullPanel.hidden; });
-fullPanel.addEventListener('click', (e) => {
-  const b = e.target.closest('button');
-  if (!b) return;
-  const key = b.closest('.seg').dataset.full;
-  full.set({ [key]: b.dataset.v, screen: 'hub', menu: false, open: 'tasks' });
-  syncFull();
-});
-document.getElementById('full-phone').addEventListener('click', () => { fullPanel.hidden = true; });
-window.addEventListener('resize', () => { if (full && !fullEl.hidden) full.set({}); });
+window.addEventListener('resize', () => { if (full && !fullEl.hidden) full.rerender(); });
 window.addEventListener('hashchange', () => { if (location.hash === '#full') openFull(); else if (!fullEl.hidden) closeFull(); });
 if (location.hash === '#full') openFull();
-document.querySelectorAll('[data-static]').forEach((el) => mount(el, JSON.parse(el.dataset.static)));
-document.querySelectorAll('[data-bar]').forEach((el) => { const cfg = Object.assign({ density: 'A', time: 'morning' }, JSON.parse(el.dataset.bar)); el.innerHTML = barRow(cfg); });
-document.querySelectorAll('[data-widget]').forEach((el) => { el.innerHTML = widget(el.dataset.widget); });
 </script>
