@@ -149,12 +149,6 @@ footer { color: var(--pg-muted); font-size: 13px; }
 .limit-status .left { color: var(--warning); flex: 1; }
 .limit-status .fc { display: flex; align-items: center; gap: 4px; color: var(--muted); font-weight: 600; }
 .limit-status .fc span { width: 15px; height: 15px; }
-.alarm { display: flex; align-items: center; gap: 8px; min-height: 30px; font-size: 15px; cursor: pointer; }
-.alarm .em { width: 22px; text-align: center; font-size: 15px; }
-.alarm .nm { flex: 1; font-weight: 600; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.alarm .nt { font-weight: 700; font-size: 13px; white-space: nowrap; }
-.alarm .nt.over { color: var(--danger); }
-.alarm .nt.ahead { color: var(--warning); }
 .sub-label { font-size: 12px; font-weight: 800; color: var(--muted); margin: 8px 0 2px; }
 .accounts { display: flex; align-items: center; gap: 6px; margin-top: 6px; flex-wrap: nowrap; overflow: hidden; }
 .accounts .total { font-weight: 800; font-size: 15px; margin-right: 2px; white-space: nowrap; }
@@ -163,12 +157,6 @@ footer { color: var(--pg-muted); font-size: 13px; }
 .accounts.big .total { width: 100%; font-size: 20px; }
 .accounts.big .acc { padding: 6px 12px; font-size: 14.5px; }
 
-/* Здоровье */
-.chart { cursor: pointer; }
-.chart-dates { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); font-weight: 600; margin-top: 2px; }
-.inline-health { display: flex; align-items: center; gap: 10px; }
-.inline-health b { font-size: 17px; }
-.inline-health .spark { width: 96px; height: 26px; }
 
 /* Новости: карусель */
 .carousel { display: flex; gap: 8px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; padding-bottom: 2px; }
@@ -246,16 +234,16 @@ footer { color: var(--pg-muted); font-size: 13px; }
   <header class="intro">
     <span class="eyebrow">Simple Tasks · #329 · прототип v1</span>
     <h1>Хаб «Главная»</h1>
-    <p>Один экран отвечает на четыре вопроса: что сделать, сколько ещё можно тратить, как вес и что нового. Собрано по 12 ответам 24.11.2026.
+    <p>Один экран отвечает на три вопроса: что сделать, сколько ещё можно тратить и что нового. Собрано по 12 ответам 24.11.2026.
       Данные, суммы и заголовки новостей вымышленные, «сейчас» — вторник, 24 ноября.</p>
-    <span class="chip-status">Итерация 2: без шапки, заголовков блоков и линий</span>
+    <span class="chip-status">Итерация 3: задачи, полоса лимита со счетами, новости</span>
     <button type="button" class="full-open" data-full-open>Открыть на весь экран · масштаб 1:1</button>
   </header>
 
   <section class="block" id="live">
     <h2>Живой прототип</h2>
     <button type="button" class="full-open" data-full-open>На весь экран · масштаб 1:1</button>
-    <p class="lead">На телефоне откройте «На весь экран»: хаб займёт всё окно в реальном размере — строка задачи 46 dp, текст 16, как в приложении. Переключайте плотность и навигацию. Внутри телефона нажимается почти всё: кружки задач, строки, «+», вкладки, полоса лимита, график, карточки новостей.</p>
+    <p class="lead">На телефоне откройте «На весь экран»: хаб займёт всё окно в реальном размере — строка задачи 46 dp, текст 16, как в приложении. Переключайте плотность и навигацию. Внутри телефона нажимается почти всё: кружки задач, строки, «+», вкладки, полоса лимита, карточки новостей.</p>
     <div class="stage">
       <div class="phone-wrap">
         <div class="phone" id="live-phone"></div>
@@ -275,7 +263,7 @@ footer { color: var(--pg-muted); font-size: 13px; }
             <li>Кружок у задачи — выполнено, задача тает; нажатие на строку — окно задачи.</li>
             <li>Чёрная «+» — меню «Задача / Расход / Вес».</li>
             <li>Карточки новостей листаются вбок; нажатие делает новость прочитанной.</li>
-            <li>Вкладки внизу — переход в разделы; «Назад» под телефоном — возврат. Нажатие на график веса — раздел «Здоровье».</li>
+            <li>Вкладки внизу — переход в разделы; «Назад» под телефоном — возврат.</li>
             <li>В варианте C нажатие на сводку раскрывает блок, остальные сворачиваются.</li>
           </ul></div>
       </div>
@@ -289,7 +277,7 @@ footer { color: var(--pg-muted); font-size: 13px; }
       <figure class="cell"><div class="phone" data-static='{"density":"A","nav":"N1"}'></div>
         <figcaption><b>A · Один экран</b> + навигация N1. Всё видно без прокрутки страницы: задачи занимают всё свободное место и прокручиваются внутри — в реальном размере на экране 360 × 760 это 2–3 задачи, на телефоне 6,5″ около четырёх. Новости — одна карточка с краем следующей.</figcaption></figure>
       <figure class="cell"><div class="phone" data-static='{"density":"B","nav":"N2"}'></div>
-        <figcaption><b>B · Подробная лента</b> + навигация N2. Блоки крупнее, экран прокручивается: все задачи списком, бюджеты и счета полностью, график с датами, крупные карточки.</figcaption></figure>
+        <figcaption><b>B · Подробная лента</b> + навигация N2. Блоки крупнее, экран прокручивается: все задачи списком, полоса лимита и счета крупно, крупные карточки новостей.</figcaption></figure>
       <figure class="cell"><div class="phone" data-static='{"density":"C","nav":"N3","open":"tasks"}'></div>
         <figcaption><b>C · Компактно + раскрытие</b> + навигация N3. Каждый блок — сводка в 1–2 строки; раскрыт один блок (здесь задачи). На хабе ни одна вкладка не выбрана.</figcaption></figure>
     </div>
@@ -312,9 +300,9 @@ footer { color: var(--pg-muted); font-size: 13px; }
       <figure class="cell"><div class="phone" data-static='{"density":"A","nav":"N1","menu":true}'></div>
         <figcaption><b>«+» → меню.</b> Дальше привычные окна (новая задача, окно операции, окно веса) поверх хаба; после сохранения остаёмся на хабе.</figcaption></figure>
       <figure class="cell"><div class="phone" data-static='{"density":"C","nav":"N1","open":"finance"}'></div>
-        <figcaption><b>C — раскрыты «Финансы».</b> Полоса лимита, тревожные бюджеты (сначала красные) и счета; нажатие на полосу — окно «Бюджет».</figcaption></figure>
+        <figcaption><b>C — раскрыты «Финансы».</b> Полоса лимита и счета; нажатие на полосу — окно «Бюджет».</figcaption></figure>
       <figure class="cell"><div class="phone" data-static='{"density":"B","nav":"N2","scroll":420}'></div>
-        <figcaption><b>B — ниже по ленте.</b> Здоровье — график веса за 30 дней с датами, новости — крупные карточки, листаются вбок.</figcaption></figure>
+        <figcaption><b>B — ниже по ленте.</b> Счета крупно, новости — крупные карточки, листаются вбок.</figcaption></figure>
     </div>
   </section>
 
@@ -323,7 +311,7 @@ footer { color: var(--pg-muted); font-size: 13px; }
     <p class="lead">В виджете Android внутри прокручиваемого списка нельзя листать вбок, поэтому новости — карточка со стрелками ‹ › или три заголовка столбиком. Выберите вариант.</p>
     <div class="cells">
       <figure class="cell wide"><div class="widget" data-widget="wide" style="width:392px"></div>
-        <figcaption><b>Широкий, 392 dp.</b> Задачи со своей прокруткой и кружками, полоса лимита, мини-график, новость со стрелками ‹ ›.</figcaption></figure>
+        <figcaption><b>Широкий, 392 dp.</b> Задачи со своей прокруткой и кружками, полоса лимита, новость со стрелками ‹ ›.</figcaption></figure>
       <figure class="cell"><div class="widget" data-widget="mid" style="width:320px"></div>
         <figcaption><b>320 dp, вариант новостей «три заголовка».</b> Непрочитанные жирные, нажатие открывает материал.</figcaption></figure>
       <figure class="cell" style="width:200px"><div class="widget w-small" data-widget="small" style="width:180px"></div>
@@ -337,9 +325,9 @@ footer { color: var(--pg-muted); font-size: 13px; }
     <div class="table-wrap"><table>
       <thead><tr><th>Этап</th><th>Что делаем</th><th>Сложность</th><th>По опыту проекта</th><th>Выпуск</th></tr></thead>
       <tbody>
-        <tr><td><b>1. Экран «Главная»</b></td><td>Сбор данных четырёх разделов, шапка, 4 блока, отметка задач, карусель, «+» с тремя окнами поверх хаба</td><td><span class="dots-scale"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span> средняя</td><td>Как окно «Бюджет» и полоса в #327</td><td rowspan="2">0.92.0</td></tr>
+        <tr><td><b>1. Экран «Главная»</b></td><td>Сбор данных трёх разделов, 3 блока (задачи, финансы, новости), отметка задач, карусель, «+» с тремя окнами поверх хаба</td><td><span class="dots-scale"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span> средняя</td><td>Как окно «Бюджет» и полоса в #327</td><td rowspan="2">0.92.0</td></tr>
         <tr><td><b>2. Навигация и запуск</b></td><td>Хаб — стартовый экран, выбранный вариант панели, «Назад», переходы из блоков, уведомлений и виджета</td><td><span class="dots-scale"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span> средняя, задевает все разделы</td><td>Как вкладки модулей #273</td></tr>
-        <tr><td><b>3. Виджет «Главная»</b></td><td>Новая вкладка: список задач с кружками, полоса и график картинками, новости со стрелками</td><td><span class="dots-scale"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span> высокая</td><td>Как виджет «Неделя» #313</td><td>0.93.0</td></tr>
+        <tr><td><b>3. Виджет «Главная»</b></td><td>Новая вкладка: список задач с кружками, полоса лимита картинкой, новости со стрелками</td><td><span class="dots-scale"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span> высокая</td><td>Как виджет «Неделя» #313</td><td>0.93.0</td></tr>
       </tbody>
     </table></div>
     <p class="lead"><b>Итого: 2–3 итерации, два выпуска.</b> Самый дешёвый вариант — A или C с навигацией N3 (панель не меняется); самый дорогой — B с N1 и полным виджетом.</p>
@@ -394,12 +382,7 @@ const TASKS = [
     { id: 'm3', time: '17:00', title: 'Отчёт за неделю', emoji: '💼', pri: true },
   ]],
 ];
-const ALARMS = [
-  { emoji: '☕', name: 'Кафе', note: 'перерасход 800 ₽', kind: 'over' },
-  { emoji: '🛒', name: 'Продукты', note: 'быстрее плана · осталось 3 200 ₽', kind: 'ahead' },
-];
 const ACCOUNTS = [['💳', '42k'], ['👛', '6k'], ['🏦', '80k']];
-const WEIGHTS = [83.2, 83.1, 83.3, 83.0, 82.9, 83.1, 82.8, 82.9, 82.7, 82.8, 82.6, 82.7, 82.5, 82.6, 82.4];
 const NEWS = [
   ['n1', '09:05', 'Футбол', '«Бавария» обыграла «Боруссию» в дерби — 3:1', true],
   ['n2', '08:40', 'Баскетбол', 'Дончич набрал 41 очко в победе «Лейкерс»', true],
@@ -439,26 +422,11 @@ function limitBar(interactive = true) {
     <div class="limit-status"><span class="left">осталось 2k ₽</span><span class="fc">${ic('forecast')}прогноз 68k ₽</span></div></div>`;
 }
 
-function alarms(big) {
-  return (big ? '<div class="sub-label">Тревожные бюджеты</div>' : '') + ALARMS.map((a) => `<div class="alarm" data-act="budget"><span class="em">${a.emoji}</span><span class="nm">${a.name}</span><span class="nt ${a.kind}">${big ? a.note : a.note.replace('быстрее плана · ', '')}</span></div>`).join('');
-}
 
 function accounts(big) {
   return (big ? '<div class="sub-label">Счета</div>' : '') + `<div class="accounts${big ? ' big' : ''}"><span class="total">128k ₽</span>${ACCOUNTS.map(([e, v]) => `<span class="acc">${e} ${v}</span>`).join('')}</div>`;
 }
 
-function chart(w, h, labels, endLabel = true) {
-  const min = Math.min(...WEIGHTS) - 0.15, max = Math.max(...WEIGHTS) + 0.15;
-  const right = labels ? w - 34 : endLabel ? w - 40 : w - 6;
-  const x = (i) => 4 + (right - 4) * i / (WEIGHTS.length - 1);
-  const y = (v) => 6 + (h - 12) * (1 - (v - min) / (max - min));
-  const pts = WEIGHTS.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
-  const last = WEIGHTS.length - 1;
-  const grid = labels ? [0, 0.5, 1].map((f) => `<line x1="4" x2="${right}" y1="${6 + (h - 12) * f}" y2="${6 + (h - 12) * f}" stroke="#E8E8EA"/>`).join('') : '';
-  const side = labels ? `<text x="${right + 6}" y="${y(max - 0.15) + 4}" font-size="10" fill="#62656E">${(max - 0.15).toFixed(1).replace('.', ',')}</text><text x="${right + 6}" y="${y(min + 0.15) + 4}" font-size="10" fill="#62656E">${(min + 0.15).toFixed(1).replace('.', ',')}</text>` : '';
-  return `<svg viewBox="0 0 ${w} ${h}" style="height:${h}px" aria-label="Вес за 30 дней, сейчас 82,4 кг">${grid}<polyline points="${pts}" fill="none" stroke="#16171D" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
-    <circle cx="${x(last)}" cy="${y(WEIGHTS[last])}" r="3.6" fill="#16171D"/>${labels ? side : endLabel ? `<text x="${x(last) + 7}" y="${y(WEIGHTS[last]) + 4}" font-size="12.5" font-weight="800" fill="#16171D">82,4</text>` : ''}</svg>`;
-}
 
 function carousel(s, big) {
   const cards = NEWS.map(([id, time, sport, title, unread]) => {
@@ -471,6 +439,7 @@ function carousel(s, big) {
 
 function hub(s) {
   // Итерация 2 (PM 24.11.2026): без приветствия и даты, без заголовков блоков и линий между ними; в разделы — вкладками внизу.
+  // Итерация 3: в финансах только полоса лимита и счета (без категорий), блока «Здоровье» нет.
   const gear = s.nav === 'N2' ? `<button type="button" class="float-gear" data-act="settings" aria-label="Настройки">${ic('settings')}</button>` : '';
   const doneToday = TASKS[1][2].filter((t) => s.done.has(t.id)).length;
   if (s.density === 'C') {
@@ -483,18 +452,15 @@ function hub(s) {
     return gear
       + block('tasks', `<div class="sum1">${lateLeft ? `<span class="late">Просрочено ${lateLeft}</span> · ` : ''}Сегодня ${TASKS[1][2].length - doneToday} · Завтра ${TASKS[2][2].length}</div><div class="sum2">${next ? `${next.time} ${esc(next.title)}` : 'Дальше задач со временем нет'}</div>`,
         `<div class="tasks-scroll" style="max-height:${s.full ? 'none' : '318px'}">${taskList(s)}</div>`)
-      + block('finance', `${limitBar(false)}<div class="sum2" style="font-size:13px;color:#62656E;margin-top:2px">2 тревожных бюджета · на счетах 128k ₽</div>`,
-        `${limitBar()}${alarms(true)}${accounts(true)}`)
-      + block('health', `<div class="inline-health"><b>82,4 кг</b><span class="spark">${chart(96, 26, false, false)}</span><span style="font-size:13px;color:#62656E;font-weight:600">за 30 дней</span></div>`,
-        `<div class="chart" data-act="go" data-to="health">${chart(s.w, 96, true)}</div><div class="chart-dates"><span>25 окт</span><span>24 ноя</span></div>`)
+      + block('finance', `${limitBar(false)}<div class="sum2" style="font-size:13px;color:#62656E;margin-top:2px">на счетах 128k ₽</div>`,
+        `${limitBar()}${accounts(true)}`)
       + block('news', `<div class="sum2" style="font-size:12px">${first[1]} · ${esc(first[2])}${firstNew ? ' · <span style="color:#862CE0;font-weight:800">Новое</span>' : ''}</div><div class="sum1" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(first[3])}</div>`, carousel(s, false));
   }
   const big = s.density === 'B';
   const tasks = big ? taskList(s) : `<div class="tasks-scroll">${taskList(s)}</div>`;
   return gear
     + `<div class="sec${big ? '' : ' grow'}">${tasks}</div>`
-    + `<div class="sec">${limitBar()}${alarms(big)}${accounts(big)}</div>`
-    + `<div class="sec"><div class="chart" data-act="go" data-to="health">${big ? chart(s.w, 110, true) : chart(s.w, 50, false)}</div>${big ? '<div class="chart-dates"><span>25 окт</span><span>24 ноя</span></div>' : ''}</div>`
+    + `<div class="sec">${limitBar()}${accounts(big)}</div>`
     + `<div class="sec">${carousel(s, big)}</div>`;
 }
 
@@ -583,7 +549,6 @@ function widget(kind) {
   return `<div class="w-body">
     <div class="tasks-scroll" style="max-height:${listH}px">${rows(12)}</div>
     ${limitBar()}
-    <div class="chart">${chart(kind === 'wide' ? 368 : 296, 40, false)}</div>
     ${news}</div>${bar(false)}`;
 }
 
