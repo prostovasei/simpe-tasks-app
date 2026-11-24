@@ -159,18 +159,18 @@ footer { color: var(--pg-muted); font-size: 13px; }
 
 
 /* Новости: карусель */
-.carousel { display: flex; gap: 8px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; padding-bottom: 2px; }
-.carousel::-webkit-scrollbar { display: none; }
-.ncard { flex: 0 0 86%; scroll-snap-align: start; background: var(--field); border-radius: 16px; padding: 9px 12px; cursor: pointer; min-height: 70px; }
-.ncard .meta { font-size: 11.5px; color: var(--muted); font-weight: 600; }
+/* Новости: четыре карточки сеткой 2 × 2, шрифт мельче (итерация 4) */
+.ngrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ncard { background: var(--field); border-radius: 14px; padding: 8px 10px 9px; cursor: pointer; min-width: 0; min-height: 76px; display: flex; flex-direction: column; gap: 2px; }
+.ncard .meta { font-size: 10.5px; color: var(--muted); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ncard .meta .new { color: var(--violet); font-weight: 800; }
-.ncard .tt { font-size: 15.5px; font-weight: 500; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ncard .tt { font-size: 13px; font-weight: 500; line-height: 1.28; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .ncard.unread .tt { font-weight: 800; }
-.ncard.big { min-height: 104px; padding: 12px 14px; }
-.ncard.big .tt { font-size: 16px; -webkit-line-clamp: 3; }
-.dots { display: flex; gap: 5px; justify-content: center; margin-top: 6px; }
-.dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--soft); display: block; }
-.dots i.on { background: var(--ink); }
+.ngrid.big .ncard { padding: 10px 12px; min-height: 88px; }
+.ngrid.big .tt { font-size: 14px; }
+.ngrid.w .ncard { padding: 6px 8px 7px; min-height: 0; border-radius: 12px; }
+.ngrid.w .tt { font-size: 12px; -webkit-line-clamp: 2; }
+.ngrid.w .meta { font-size: 10px; }
 
 /* Меню «+», подсказка, экран раздела */
 .scrim { position: absolute; inset: 0; background: rgba(0,0,0,.28); z-index: 5; }
@@ -197,12 +197,6 @@ footer { color: var(--pg-muted); font-size: 13px; }
 .w-bar .date { display: flex; align-items: center; gap: 2px; margin-left: auto; font-weight: 800; font-size: 22px; }
 .w-bar .date small { display: flex; flex-direction: column; font-size: 9px; line-height: 1; font-weight: 700; }
 .w-bar .dl { width: 22px; height: 22px; margin-left: 6px; color: var(--ink); }
-.w-news { display: flex; align-items: center; gap: 4px; }
-.w-news .arrow { width: 28px; height: 28px; border-radius: 50%; background: var(--field); display: flex; align-items: center; justify-content: center; flex: none; }
-.w-news .arrow span { width: 16px; height: 16px; }
-.w-news .ncard { flex: 1; min-height: 0; }
-.w-head3 .tt { font-size: 13.5px; font-weight: 700; line-height: 1.25; padding: 3px 0; border-bottom: 1px solid var(--divider); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.w-head3 .tt.read { font-weight: 500; }
 .w-small .w-bar { height: 44px; padding: 0 6px; }
 .w-small .w-bar .add-btn { width: 44px; height: 32px; }
 .w-small .w-bar .tab { max-width: 26px; }
@@ -236,7 +230,7 @@ footer { color: var(--pg-muted); font-size: 13px; }
     <h1>Хаб «Главная»</h1>
     <p>Один экран отвечает на три вопроса: что сделать, сколько ещё можно тратить и что нового. Собрано по 12 ответам 24.11.2026.
       Данные, суммы и заголовки новостей вымышленные, «сейчас» — вторник, 24 ноября.</p>
-    <span class="chip-status">Итерация 3: задачи, полоса лимита со счетами, новости</span>
+    <span class="chip-status">Итерация 4: финансы сверху, новости 2 × 2</span>
     <button type="button" class="full-open" data-full-open>Открыть на весь экран · масштаб 1:1</button>
   </header>
 
@@ -262,7 +256,7 @@ footer { color: var(--pg-muted); font-size: 13px; }
           <ul class="tries">
             <li>Кружок у задачи — выполнено, задача тает; нажатие на строку — окно задачи.</li>
             <li>Чёрная «+» — меню «Задача / Расход / Вес».</li>
-            <li>Карточки новостей листаются вбок; нажатие делает новость прочитанной.</li>
+            <li>Новости — четыре карточки 2 × 2; нажатие открывает материал, новость становится прочитанной.</li>
             <li>Вкладки внизу — переход в разделы; «Назад» под телефоном — возврат.</li>
             <li>В варианте C нажатие на сводку раскрывает блок, остальные сворачиваются.</li>
           </ul></div>
@@ -275,11 +269,11 @@ footer { color: var(--pg-muted); font-size: 13px; }
     <p class="lead">Те же данные в трёх подачах. В каждом макете — своя навигация, чтобы сравнить и её; сочетания можно собрать в живом прототипе.</p>
     <div class="cells">
       <figure class="cell"><div class="phone" data-static='{"density":"A","nav":"N1"}'></div>
-        <figcaption><b>A · Один экран</b> + навигация N1. Всё видно без прокрутки страницы: задачи занимают всё свободное место и прокручиваются внутри — в реальном размере на экране 360 × 760 это 2–3 задачи, на телефоне 6,5″ около четырёх. Новости — одна карточка с краем следующей.</figcaption></figure>
+        <figcaption><b>A · Один экран</b> + навигация N1. Всё видно без прокрутки страницы: сверху финансы, задачи занимают свободное место и прокручиваются внутри, внизу четыре новости 2 × 2 мелким шрифтом.</figcaption></figure>
       <figure class="cell"><div class="phone" data-static='{"density":"B","nav":"N2"}'></div>
-        <figcaption><b>B · Подробная лента</b> + навигация N2. Блоки крупнее, экран прокручивается: все задачи списком, полоса лимита и счета крупно, крупные карточки новостей.</figcaption></figure>
+        <figcaption><b>B · Подробная лента</b> + навигация N2. Блоки крупнее, экран прокручивается: сверху полоса лимита и счета крупно, все задачи списком, новости 2 × 2.</figcaption></figure>
       <figure class="cell"><div class="phone" data-static='{"density":"C","nav":"N3","open":"tasks"}'></div>
-        <figcaption><b>C · Компактно + раскрытие</b> + навигация N3. Каждый блок — сводка в 1–2 строки; раскрыт один блок (здесь задачи). На хабе ни одна вкладка не выбрана.</figcaption></figure>
+        <figcaption><b>C · Компактно + раскрытие</b> + навигация N3. Каждый блок — сводка в 1–2 строки, финансы сверху; раскрыт один блок (здесь задачи). На хабе ни одна вкладка не выбрана.</figcaption></figure>
     </div>
   </section>
 
@@ -302,20 +296,20 @@ footer { color: var(--pg-muted); font-size: 13px; }
       <figure class="cell"><div class="phone" data-static='{"density":"C","nav":"N1","open":"finance"}'></div>
         <figcaption><b>C — раскрыты «Финансы».</b> Полоса лимита и счета; нажатие на полосу — окно «Бюджет».</figcaption></figure>
       <figure class="cell"><div class="phone" data-static='{"density":"B","nav":"N2","scroll":420}'></div>
-        <figcaption><b>B — ниже по ленте.</b> Счета крупно, новости — крупные карточки, листаются вбок.</figcaption></figure>
+        <figcaption><b>B — ниже по ленте.</b> Конец списка задач и новости сеткой 2 × 2.</figcaption></figure>
     </div>
   </section>
 
   <section class="block" id="widget">
-    <h2 class="choose">Виджет «Главная» (этап 2)</h2>
-    <p class="lead">В виджете Android внутри прокручиваемого списка нельзя листать вбок, поэтому новости — карточка со стрелками ‹ › или три заголовка столбиком. Выберите вариант.</p>
+    <h2>Виджет «Главная» (этап 2)</h2>
+    <p class="lead">Тот же порядок, что в хабе: финансы сверху, задачи, новости сеткой 2 × 2. Сетке не нужно листание вбок, поэтому в виджете Android она делается без ограничений.</p>
     <div class="cells">
       <figure class="cell wide"><div class="widget" data-widget="wide" style="width:392px"></div>
-        <figcaption><b>Широкий, 392 dp.</b> Задачи со своей прокруткой и кружками, полоса лимита, новость со стрелками ‹ ›.</figcaption></figure>
+        <figcaption><b>Широкий, 392 dp.</b> Полоса лимита сверху, задачи со своей прокруткой и кружками, четыре новости 2 × 2.</figcaption></figure>
       <figure class="cell"><div class="widget" data-widget="mid" style="width:320px"></div>
-        <figcaption><b>320 dp, вариант новостей «три заголовка».</b> Непрочитанные жирные, нажатие открывает материал.</figcaption></figure>
+        <figcaption><b>320 dp.</b> То же, заголовки новостей в две строки.</figcaption></figure>
       <figure class="cell" style="width:200px"><div class="widget w-small" data-widget="small" style="width:180px"></div>
-        <figcaption><b>180 × 110 dp.</b> Задачи на сегодня и полоса лимита; шесть кнопок в панели — тесно, но помещаются.</figcaption></figure>
+        <figcaption><b>180 × 110 dp.</b> Полоса лимита и задачи на сегодня; шесть кнопок в панели — тесно, но помещаются.</figcaption></figure>
     </div>
   </section>
 
@@ -325,9 +319,9 @@ footer { color: var(--pg-muted); font-size: 13px; }
     <div class="table-wrap"><table>
       <thead><tr><th>Этап</th><th>Что делаем</th><th>Сложность</th><th>По опыту проекта</th><th>Выпуск</th></tr></thead>
       <tbody>
-        <tr><td><b>1. Экран «Главная»</b></td><td>Сбор данных трёх разделов, 3 блока (задачи, финансы, новости), отметка задач, карусель, «+» с тремя окнами поверх хаба</td><td><span class="dots-scale"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span> средняя</td><td>Как окно «Бюджет» и полоса в #327</td><td rowspan="2">0.92.0</td></tr>
+        <tr><td><b>1. Экран «Главная»</b></td><td>Сбор данных трёх разделов, 3 блока (финансы, задачи, новости 2 × 2), отметка задач, «+» с тремя окнами поверх хаба</td><td><span class="dots-scale"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span> средняя</td><td>Как окно «Бюджет» и полоса в #327</td><td rowspan="2">0.92.0</td></tr>
         <tr><td><b>2. Навигация и запуск</b></td><td>Хаб — стартовый экран, выбранный вариант панели, «Назад», переходы из блоков, уведомлений и виджета</td><td><span class="dots-scale"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span> средняя, задевает все разделы</td><td>Как вкладки модулей #273</td></tr>
-        <tr><td><b>3. Виджет «Главная»</b></td><td>Новая вкладка: список задач с кружками, полоса лимита картинкой, новости со стрелками</td><td><span class="dots-scale"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span> высокая</td><td>Как виджет «Неделя» #313</td><td>0.93.0</td></tr>
+        <tr><td><b>3. Виджет «Главная»</b></td><td>Новая вкладка: полоса лимита картинкой, список задач с кружками, новости сеткой 2 × 2</td><td><span class="dots-scale"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span> высокая</td><td>Как виджет «Неделя» #313</td><td>0.93.0</td></tr>
       </tbody>
     </table></div>
     <p class="lead"><b>Итого: 2–3 итерации, два выпуска.</b> Самый дешёвый вариант — A или C с навигацией N3 (панель не меняется); самый дорогой — B с N1 и полным виджетом.</p>
@@ -336,7 +330,6 @@ footer { color: var(--pg-muted); font-size: 13px; }
       <li>Хаб читает данные всех разделов при запуске — нужно следить, чтобы приложение открывалось так же быстро.</li>
       <li>Стартовым экраном становится хаб: «Неделя» и «Предстоящие» отодвигаются на одно нажатие.</li>
       <li>Все переходы из уведомлений и виджета (задача, покупка, вес, новости, бюджет) нужно перепроверить — под ними теперь хаб.</li>
-      <li>В виджете карусель только кнопками ‹ ›, свайп вбок там невозможен.</li>
     </ul>
   </section>
 
@@ -345,8 +338,7 @@ footer { color: var(--pg-muted); font-size: 13px; }
     <div class="decide">
       <div><b>1. Плотность</b><span>A · один экран, B · подробная лента или C · компактно + раскрытие.</span></div>
       <div><b>2. Навигация</b><span>N1 · пятая вкладка, N2 · домик вместо ⚙ или N3 · «Назад» в хаб.</span></div>
-      <div><b>3. Новости в виджете</b><span>Карточка со стрелками ‹ › или три заголовка столбиком.</span></div>
-      <div><b>4. Возврат в приложение</b><span>С иконки — всегда хаб; из списка недавних — туда, где был. Подходит?</span></div>
+      <div><b>3. Возврат в приложение</b><span>С иконки — всегда хаб; из списка недавних — туда, где был. Подходит?</span></div>
     </div>
   </section>
 
@@ -428,18 +420,19 @@ function accounts(big) {
 }
 
 
-function carousel(s, big) {
-  const cards = NEWS.map(([id, time, sport, title, unread]) => {
+function newsGrid(s, kind) {
+  const cards = NEWS.slice(0, 4).map(([id, time, sport, title, unread]) => {
     const isNew = unread && !s.read.has(id);
-    return `<div class="ncard${isNew ? ' unread' : ''}${big ? ' big' : ''}" data-act="news" data-id="${id}" role="button" tabindex="0"><div class="meta">${time} · ${esc(sport)}${isNew ? ' · <span class="new">Новое</span>' : ''}</div><div class="tt">${esc(title)}</div></div>`;
+    return `<div class="ncard${isNew ? ' unread' : ''}" data-act="news" data-id="${id}" role="button" tabindex="0"><div class="meta">${time} · ${esc(sport)}${isNew ? ' · <span class="new">Новое</span>' : ''}</div><div class="tt">${esc(title)}</div></div>`;
   }).join('');
-  return `<div class="carousel">${cards}</div><div class="dots">${NEWS.map((_, i) => `<i class="${i === (s.newsIndex || 0) ? 'on' : ''}"></i>`).join('')}</div>`;
+  return `<div class="ngrid${kind ? ` ${kind}` : ''}">${cards}</div>`;
 }
 
 
 function hub(s) {
   // Итерация 2 (PM 24.11.2026): без приветствия и даты, без заголовков блоков и линий между ними; в разделы — вкладками внизу.
   // Итерация 3: в финансах только полоса лимита и счета (без категорий), блока «Здоровье» нет.
+  // Итерация 4: финансы — первым блоком; новости — четыре карточки 2 × 2, шрифт мельче.
   const gear = s.nav === 'N2' ? `<button type="button" class="float-gear" data-act="settings" aria-label="Настройки">${ic('settings')}</button>` : '';
   const doneToday = TASKS[1][2].filter((t) => s.done.has(t.id)).length;
   if (s.density === 'C') {
@@ -450,18 +443,18 @@ function hub(s) {
     const first = NEWS[0];
     const firstNew = first[4] && !s.read.has(first[0]);
     return gear
-      + block('tasks', `<div class="sum1">${lateLeft ? `<span class="late">Просрочено ${lateLeft}</span> · ` : ''}Сегодня ${TASKS[1][2].length - doneToday} · Завтра ${TASKS[2][2].length}</div><div class="sum2">${next ? `${next.time} ${esc(next.title)}` : 'Дальше задач со временем нет'}</div>`,
-        `<div class="tasks-scroll" style="max-height:${s.full ? 'none' : '318px'}">${taskList(s)}</div>`)
       + block('finance', `${limitBar(false)}<div class="sum2" style="font-size:13px;color:#62656E;margin-top:2px">на счетах 128k ₽</div>`,
         `${limitBar()}${accounts(true)}`)
-      + block('news', `<div class="sum2" style="font-size:12px">${first[1]} · ${esc(first[2])}${firstNew ? ' · <span style="color:#862CE0;font-weight:800">Новое</span>' : ''}</div><div class="sum1" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(first[3])}</div>`, carousel(s, false));
+      + block('tasks', `<div class="sum1">${lateLeft ? `<span class="late">Просрочено ${lateLeft}</span> · ` : ''}Сегодня ${TASKS[1][2].length - doneToday} · Завтра ${TASKS[2][2].length}</div><div class="sum2">${next ? `${next.time} ${esc(next.title)}` : 'Дальше задач со временем нет'}</div>`,
+        `<div class="tasks-scroll" style="max-height:${s.full ? 'none' : '318px'}">${taskList(s)}</div>`)
+      + block('news', `<div class="sum2" style="font-size:12px">${first[1]} · ${esc(first[2])}${firstNew ? ' · <span style="color:#862CE0;font-weight:800">Новое</span>' : ''}</div><div class="sum1" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(first[3])}</div>`, newsGrid(s, ''));
   }
   const big = s.density === 'B';
   const tasks = big ? taskList(s) : `<div class="tasks-scroll">${taskList(s)}</div>`;
   return gear
-    + `<div class="sec${big ? '' : ' grow'}">${tasks}</div>`
     + `<div class="sec">${limitBar()}${accounts(big)}</div>`
-    + `<div class="sec">${carousel(s, big)}</div>`;
+    + `<div class="sec${big ? '' : ' grow'}">${tasks}</div>`
+    + `<div class="sec">${newsGrid(s, big ? 'big' : '')}</div>`;
 }
 
 function moduleScreen(s) {
@@ -488,23 +481,16 @@ function phone(s) {
 }
 
 function mount(root, init) {
-  const s = Object.assign({ density: 'A', nav: 'N1', time: 'morning', screen: 'hub', open: 'tasks', menu: false, toast: '', done: new Set(), read: new Set(), newsIndex: 0 }, init);
+  const s = Object.assign({ density: 'A', nav: 'N1', time: 'morning', screen: 'hub', open: 'tasks', menu: false, toast: '', done: new Set(), read: new Set() }, init);
   let timer = 0;
   const render = () => {
     s.w = Math.max(280, Math.round(root.clientWidth || 360) - 32);
-    const screen = root.querySelector('.screen'), list = root.querySelector('.tasks-scroll'), car = root.querySelector('.carousel');
-    const keep = [screen && screen.scrollTop, list && list.scrollTop, car && car.scrollLeft];
+    const screen = root.querySelector('.screen'), list = root.querySelector('.tasks-scroll');
+    const keep = [screen && screen.scrollTop, list && list.scrollTop];
     root.innerHTML = phone(s);
-    const nScreen = root.querySelector('.screen'), nList = root.querySelector('.tasks-scroll'), nCar = root.querySelector('.carousel');
+    const nScreen = root.querySelector('.screen'), nList = root.querySelector('.tasks-scroll');
     if (nScreen && keep[0]) nScreen.scrollTop = keep[0];
     if (nList && keep[1]) nList.scrollTop = keep[1];
-    if (nCar) {
-      if (keep[2]) nCar.scrollLeft = keep[2];
-      nCar.addEventListener('scroll', () => {
-        const i = Math.round(nCar.scrollLeft / (nCar.firstElementChild.offsetWidth + 8));
-        if (i !== s.newsIndex) { s.newsIndex = i; root.querySelectorAll('.dots i').forEach((d, k) => d.classList.toggle('on', k === i)); }
-      }, { passive: true });
-    }
   };
   const toast = (text) => { s.toast = text; render(); clearTimeout(timer); timer = setTimeout(() => { s.toast = ''; render(); }, 1800); };
   root.addEventListener('click', (e) => {
@@ -538,18 +524,15 @@ function widget(kind) {
   const rows = (n) => TASKS.flatMap(([label, k, list]) => [`<div class="group${k === 'late' ? ' late' : ''}" style="padding-left:52px">${label}</div>`, ...list.map((t) => taskRow(s, t, k === 'late'))]).slice(0, n).join('');
   const bar = (small) => `<div class="w-bar"><span class="add-btn">${ic('add')}</span><span class="tab on">${ic('home')}</span><span class="tab">${ic('week')}</span><span class="tab">${ic('finance')}</span><span class="tab">${ic('health')}</span><span class="tab">${ic('news')}</span>${small ? '' : `<span class="date">24<small><span>вт</span><span>ноя</span></small></span><span class="dl">${ICONS.download}</span>`}</div>`;
   if (kind === 'small') {
-    return `<div class="w-body" style="padding:8px 10px 4px;gap:4px"><div class="w-head" style="font-size:12px">Сегодня 5 <span style="color:#C62828;font-weight:800">· просрочено 1</span></div>
-      <div style="font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">10:00 Созвон с командой</div>
-      <div class="limit" style="padding:0"><div class="limit-row"><div class="thick" style="height:18px"><div class="fill" style="width:96%;font-size:11px;padding-left:7px">54k</div><div class="mark" style="left:80%"></div></div><span class="limit-num" style="font-size:12.5px">57k</span></div></div></div>${bar(true)}`;
+    return `<div class="w-body" style="padding:8px 10px 4px;gap:4px"><div class="limit" style="padding:0"><div class="limit-row"><div class="thick" style="height:18px"><div class="fill" style="width:96%;font-size:11px;padding-left:7px">54k</div><div class="mark" style="left:80%"></div></div><span class="limit-num" style="font-size:12.5px">57k</span></div></div>
+      <div class="w-head" style="font-size:12px">Сегодня 5 <span style="color:#C62828;font-weight:800">· просрочено 1</span></div>
+      <div style="font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">10:00 Созвон с командой</div></div>${bar(true)}`;
   }
-  const news = kind === 'wide'
-    ? `<div class="w-news"><span class="arrow">${ic('left')}</span><div class="ncard unread"><div class="meta">${NEWS[0][1]} · ${NEWS[0][2]} · <span class="new">Новое</span></div><div class="tt">${esc(NEWS[0][3])}</div></div><span class="arrow">${ic('right')}</span></div>`
-    : `<div class="w-head3">${NEWS.slice(0, 3).map((n) => `<div class="tt">${esc(n[3])}</div>`).join('')}</div>`;
-  const listH = kind === 'wide' ? 196 : 158;
+  const listH = kind === 'wide' ? 196 : 162;
   return `<div class="w-body">
-    <div class="tasks-scroll" style="max-height:${listH}px">${rows(12)}</div>
     ${limitBar()}
-    ${news}</div>${bar(false)}`;
+    <div class="tasks-scroll" style="max-height:${listH}px">${rows(12)}</div>
+    ${newsGrid(s, 'w')}</div>${bar(false)}`;
 }
 
 const live = mount(document.getElementById('live-phone'), { density: 'A', nav: 'N1', time: 'morning' });
