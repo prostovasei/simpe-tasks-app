@@ -88,7 +88,10 @@ footer { color: var(--pg-muted); font-size: 13px; }
 .status .sys i::after { content: ""; position: absolute; inset: 1px 3px 1px 1px; background: var(--ink); }
 .screen { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; }
 .screen::-webkit-scrollbar { display: none; }
-.screen.fixed { overflow: hidden; }
+.screen.fixed { overflow: hidden; display: flex; flex-direction: column; }
+.screen.fixed > * { flex: none; }
+.screen.fixed > .sec.grow { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.screen.fixed > .sec.grow .tasks-scroll { flex: 1; min-height: 0; }
 .appbar { flex: none; border-top: 1px solid var(--divider); background: var(--surface); padding: 0 12px 14px; }
 .appbar-row { height: 46px; display: flex; align-items: center; }
 .add-btn { width: 72px; height: 34px; border-radius: 17px; background: var(--ink); color: #fff; display: flex; align-items: center; justify-content: center; flex: none; }
@@ -105,11 +108,11 @@ footer { color: var(--pg-muted); font-size: 13px; }
 .hub-head .date { font-size: 14px; color: var(--muted); font-weight: 600; }
 .hub-head .gear { margin-left: auto; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; color: var(--ink); }
 .hub-head .gear span { width: 24px; height: 24px; }
-.sec { padding: 6px 16px 4px; }
+.sec { padding: 8px 16px 8px; }
 .sec + .sec { border-top: 1px solid var(--divider); }
 .sec-head { display: flex; align-items: center; gap: 7px; height: 30px; cursor: pointer; }
 .sec-icon { width: 18px; height: 18px; color: var(--ink); flex: none; }
-.sec-title { font-size: 15px; font-weight: 800; }
+.sec-title { font-size: 16px; font-weight: 800; }
 .sec-meta { margin-left: auto; font-size: 12.5px; font-weight: 700; color: var(--muted); white-space: nowrap; }
 .sec-meta .new { color: var(--violet); }
 .chev { width: 18px; height: 18px; color: var(--inactive); flex: none; }
@@ -118,22 +121,22 @@ footer { color: var(--pg-muted); font-size: 13px; }
 
 /* Задачи (строка как в окне дня) */
 .tasks-scroll { overflow-y: auto; scrollbar-width: thin; position: relative; }
-.group { font-size: 12px; font-weight: 800; color: var(--muted); padding: 5px 0 1px 52px; background: var(--surface); }
+.group { font-size: 12px; font-weight: 800; color: var(--muted); padding: 6px 0 2px 46px; background: var(--surface); }
 .tasks-scroll .group { position: sticky; top: 0; z-index: 1; }
 .group.late { color: var(--danger); }
-.trow { display: flex; align-items: center; min-height: 38px; gap: 8px; cursor: pointer; transition: opacity .4s; }
+.trow { display: flex; align-items: center; min-height: 46px; gap: 8px; cursor: pointer; transition: opacity .4s; }
 .trow.done { opacity: .4; }
-.ttime { width: 40px; flex: none; text-align: right; font-size: 11.5px; color: var(--muted); font-weight: 600; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.ttime { width: 38px; flex: none; text-align: right; font-size: 12px; color: var(--muted); font-weight: 600; line-height: 1.15; font-variant-numeric: tabular-nums; }
 .ttime.late { color: var(--danger); }
-.tcheck { width: 22px; height: 22px; flex: none; border-radius: 50%; border: 2px solid var(--inactive); display: flex; align-items: center; justify-content: center; color: #fff; }
+.tcheck { width: 20px; height: 20px; flex: none; border-radius: 50%; border: 2px solid var(--inactive); display: flex; align-items: center; justify-content: center; color: #fff; }
 .tcheck.repeat { border: 0; color: var(--inactive); }
 .trow.done .tcheck { background: var(--ink); border-color: var(--ink); }
 .trow.done .tcheck.repeat { background: none; color: var(--ink); }
 .tcheck span { width: 14px; height: 14px; }
 .tcheck.repeat span { width: 20px; height: 20px; }
-.ttitle { flex: 1; min-width: 0; font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ttitle { flex: 1; min-width: 0; font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ttitle.pri { color: var(--violet); }
-.temoji { width: 22px; text-align: center; font-size: 16px; flex: none; }
+.temoji { width: 24px; text-align: center; font-size: 18px; flex: none; }
 .empty-line { font-size: 14px; color: var(--muted); padding: 6px 0; }
 .summary { display: flex; flex-direction: column; gap: 2px; padding: 0 0 4px; cursor: pointer; }
 .summary .sum1 { font-size: 14px; font-weight: 700; }
@@ -152,7 +155,7 @@ footer { color: var(--pg-muted); font-size: 13px; }
 .limit-status .left { color: var(--warning); flex: 1; }
 .limit-status .fc { display: flex; align-items: center; gap: 4px; color: var(--muted); font-weight: 600; }
 .limit-status .fc span { width: 15px; height: 15px; }
-.alarm { display: flex; align-items: center; gap: 8px; min-height: 26px; font-size: 14px; cursor: pointer; }
+.alarm { display: flex; align-items: center; gap: 8px; min-height: 30px; font-size: 15px; cursor: pointer; }
 .alarm .em { width: 22px; text-align: center; font-size: 15px; }
 .alarm .nm { flex: 1; font-weight: 600; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .alarm .nt { font-weight: 700; font-size: 13px; white-space: nowrap; }
@@ -179,7 +182,7 @@ footer { color: var(--pg-muted); font-size: 13px; }
 .ncard { flex: 0 0 86%; scroll-snap-align: start; background: var(--field); border-radius: 16px; padding: 9px 12px; cursor: pointer; min-height: 70px; }
 .ncard .meta { font-size: 11.5px; color: var(--muted); font-weight: 600; }
 .ncard .meta .new { color: var(--violet); font-weight: 800; }
-.ncard .tt { font-size: 14.5px; font-weight: 500; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ncard .tt { font-size: 15.5px; font-weight: 500; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .ncard.unread .tt { font-weight: 800; }
 .ncard.big { min-height: 104px; padding: 12px 14px; }
 .ncard.big .tt { font-size: 16px; -webkit-line-clamp: 3; }
@@ -223,9 +226,25 @@ footer { color: var(--pg-muted); font-size: 13px; }
 .w-small .w-bar .tab { max-width: 26px; }
 .w-small .w-bar .tab span { width: 19px; height: 19px; }
 
+.full-open { align-self: flex-start; background: var(--pg-fg); color: var(--pg-bg); border-radius: 14px; padding: 10px 18px; font-weight: 800; font-size: 15px; }
+.full { position: fixed; inset: 0; z-index: 100; background: #0E0F13; display: flex; flex-direction: column; align-items: center;
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px); }
+.full-strip { flex: none; width: 100%; max-width: 480px; height: 34px; display: flex; align-items: center; gap: 6px; padding: 0 6px; color: #fff; font-family: var(--font); }
+.full-strip button { color: #fff; font-weight: 700; font-size: 13px; border-radius: 10px; padding: 5px 10px; background: rgba(255,255,255,.12); white-space: nowrap; }
+.full-strip .what { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; text-align: center; }
+.full .phone { width: 100%; max-width: 480px; flex: 1; height: auto; min-height: 0; border-radius: 0; box-shadow: none; }
+.full .phone .status { display: none; }
+.full-panel { position: absolute; z-index: 120; top: calc(env(safe-area-inset-top, 0px) + 40px); left: 50%; transform: translateX(-50%); width: min(92vw, 420px);
+  background: #fff; color: #16171D; border-radius: 18px; padding: 14px; box-shadow: 0 10px 32px rgba(0,0,0,.35); display: flex; flex-direction: column; gap: 10px; font-family: var(--font); }
+.full-panel .ctrl-label { color: #62656E; }
+.full-panel .seg button { background: #F3F3F4; border-color: #E2E2E2; color: #16171D; }
+.full-panel .seg button[aria-pressed="true"] { background: #16171D; color: #fff; border-color: #16171D; }
+.full-panel p { margin: 0; font-size: 13px; color: #62656E; }
 @media (max-width: 420px) {
   .phone, .strip, .cell { zoom: .9; }
+  .full .phone { zoom: 1; }
 }
+.full[hidden], .full-panel[hidden] { display: none !important; }
 @media (prefers-reduced-motion: reduce) { .trow { transition: none; } }
 </style>
 
@@ -236,11 +255,13 @@ footer { color: var(--pg-muted); font-size: 13px; }
     <p>Один экран отвечает на четыре вопроса: что сделать, сколько ещё можно тратить, как вес и что нового. Собрано по 12 ответам 24.11.2026.
       Данные, суммы и заголовки новостей вымышленные, «сейчас» — вторник, 24 ноября.</p>
     <span class="chip-status">ТЗ v1 и варианты на согласовании</span>
+    <button type="button" class="full-open" data-full-open>Открыть на весь экран · масштаб 1:1</button>
   </header>
 
   <section class="block" id="live">
     <h2>Живой прототип</h2>
-    <p class="lead">Переключайте плотность, навигацию и время суток. Внутри телефона нажимается почти всё: кружки задач, строки, «+», заголовки блоков, вкладки, полоса лимита, карточки новостей.</p>
+    <button type="button" class="full-open" data-full-open>На весь экран · масштаб 1:1</button>
+    <p class="lead">На телефоне откройте «На весь экран»: хаб займёт всё окно в реальном размере — строка задачи 46 dp, текст 16, как в приложении. Переключайте плотность, навигацию и время суток. Внутри телефона нажимается почти всё: кружки задач, строки, «+», заголовки блоков, вкладки, полоса лимита, карточки новостей.</p>
     <div class="stage">
       <div class="phone-wrap">
         <div class="phone" id="live-phone"></div>
@@ -276,7 +297,7 @@ footer { color: var(--pg-muted); font-size: 13px; }
     <p class="lead">Те же данные в трёх подачах. В каждом макете — своя навигация, чтобы сравнить и её; сочетания можно собрать в живом прототипе.</p>
     <div class="cells">
       <figure class="cell"><div class="phone" data-static='{"density":"A","nav":"N1"}'></div>
-        <figcaption><b>A · Один экран</b> + навигация N1. Всё видно без прокрутки страницы: задачи — окно на 5 строк со своей прокруткой, новости — одна карточка с краем следующей.</figcaption></figure>
+        <figcaption><b>A · Один экран</b> + навигация N1. Всё видно без прокрутки страницы: задачи занимают всё свободное место и прокручиваются внутри — в реальном размере на экране 360 × 760 это 2–3 задачи, на телефоне 6,5″ около четырёх. Новости — одна карточка с краем следующей.</figcaption></figure>
       <figure class="cell"><div class="phone" data-static='{"density":"B","nav":"N2"}'></div>
         <figcaption><b>B · Подробная лента</b> + навигация N2. Блоки крупнее, экран прокручивается: все задачи списком, бюджеты и счета полностью, график с датами, крупные карточки.</figcaption></figure>
       <figure class="cell"><div class="phone" data-static='{"density":"C","nav":"N3","open":"tasks"}'></div>
@@ -350,6 +371,17 @@ footer { color: var(--pg-muted); font-size: 13px; }
       <div><b>4. Возврат в приложение</b><span>С иконки — всегда хаб; из списка недавних — туда, где был. Подходит?</span></div>
     </div>
   </section>
+
+  <div class="full" id="full" hidden>
+    <div class="full-strip"><button type="button" id="full-back">◁ Назад</button><button type="button" class="what" id="full-what">Варианты ▾</button><button type="button" id="full-close" aria-label="Закрыть полноэкранный режим">✕</button></div>
+    <div class="phone" id="full-phone"></div>
+    <div class="full-panel" id="full-panel" hidden>
+      <div class="ctrl"><span class="ctrl-label">Плотность</span><div class="seg" data-full="density"><button type="button" data-v="A">A · Один экран</button><button type="button" data-v="B">B · Лента</button><button type="button" data-v="C">C · Компактно</button></div></div>
+      <div class="ctrl"><span class="ctrl-label">Навигация</span><div class="seg" data-full="nav"><button type="button" data-v="N1">N1 · Вкладка</button><button type="button" data-v="N2">N2 · Вместо ⚙</button><button type="button" data-v="N3">N3 · «Назад»</button></div></div>
+      <div class="ctrl"><span class="ctrl-label">Время суток</span><div class="seg" data-full="time"><button type="button" data-v="morning">09:12</button><button type="button" data-v="day">14:30</button><button type="button" data-v="evening">21:40</button></div></div>
+      <p>Масштаб 1:1: размеры как в приложении. Полоска сверху — только для прототипа, в приложении её нет.</p>
+    </div>
+  </div>
 
   <footer>Исходник в репозитории: design/approved/329 — requirements.md, build.py, prototype.template.html, render.js. Issue #329.</footer>
 </main>
@@ -467,19 +499,19 @@ function hub(s) {
     const next = TASKS[1][2].find((t) => t.time && !s.done.has(t.id));
     return head
       + block('tasks', 'Задачи', 'week', '', `<div class="sum1">${lateLeft ? `<span class="late">Просрочено ${lateLeft}</span> · ` : ''}Сегодня ${TASKS[1][2].length - doneToday} · Завтра ${TASKS[2][2].length}</div><div class="sum2">${next ? `${next.time} ${esc(next.title)}` : 'Дальше задач со временем нет'}</div>`,
-        `<div class="tasks-scroll" style="max-height:318px">${taskList(s)}</div>`)
+        `<div class="tasks-scroll" style="max-height:${s.full ? 'none' : '318px'}">${taskList(s)}</div>`)
       + block('finance', 'Финансы', 'finance', '', `${limitBar()}<div class="sum2" style="font-size:13px;color:#62656E;margin-top:2px">2 тревожных бюджета · на счетах 128k ₽</div>`,
         `${limitBar()}${alarms(true)}${accounts(true)}`)
       + block('health', 'Здоровье', 'health', '', `<div class="inline-health"><b>82,4 кг</b><span class="spark">${chart(96, 26, false).replace('font-size="12.5"', 'font-size="0"')}</span><span style="font-size:13px;color:#62656E;font-weight:600">за 30 дней</span></div>`,
-        `<div class="chart" data-act="go" data-to="health">${chart(328, 96, true)}</div><div class="chart-dates"><span>25 окт</span><span>24 ноя</span></div>`)
+        `<div class="chart" data-act="go" data-to="health">${chart(s.w, 96, true)}</div><div class="chart-dates"><span>25 окт</span><span>24 ноя</span></div>`)
       + block('news', 'Новости', 'news', newsMeta(s), `<div class="sum2" style="font-weight:700;color:#16171D">${esc(NEWS[0][3])}</div>`, carousel(s, false));
   }
   const big = s.density === 'B';
-  const tasks = big ? taskList(s) : `<div class="tasks-scroll" style="max-height:190px">${taskList(s)}</div>`;
+  const tasks = big ? taskList(s) : `<div class="tasks-scroll">${taskList(s)}</div>`;
   return head
-    + `<div class="sec">${secHead(s, 'tasks', 'Задачи', 'week', taskMeta)}${tasks}</div>`
+    + `<div class="sec${big ? '' : ' grow'}">${secHead(s, 'tasks', 'Задачи', 'week', taskMeta)}${tasks}</div>`
     + `<div class="sec">${secHead(s, 'finance', 'Финансы', 'finance', '')}${limitBar()}${alarms(big)}${accounts(big)}</div>`
-    + `<div class="sec">${secHead(s, 'health', 'Здоровье', 'health', big ? '82,4 кг · 30 дней' : '')}<div class="chart" data-act="go" data-to="health">${big ? chart(328, 110, true) : chart(328, 50, false)}</div>${big ? '<div class="chart-dates"><span>25 окт</span><span>24 ноя</span></div>' : ''}</div>`
+    + `<div class="sec">${secHead(s, 'health', 'Здоровье', 'health', big ? '82,4 кг · 30 дней' : '')}<div class="chart" data-act="go" data-to="health">${big ? chart(s.w, 110, true) : chart(s.w, 50, false)}</div>${big ? '<div class="chart-dates"><span>25 окт</span><span>24 ноя</span></div>' : ''}</div>`
     + `<div class="sec">${secHead(s, 'news', 'Новости', 'news', newsMeta(s))}${carousel(s, big)}</div>`;
 }
 
@@ -510,6 +542,7 @@ function mount(root, init) {
   const s = Object.assign({ density: 'A', nav: 'N1', time: 'morning', screen: 'hub', open: 'tasks', menu: false, toast: '', done: new Set(), read: new Set(), newsIndex: 0 }, init);
   let timer = 0;
   const render = () => {
+    s.w = Math.max(280, Math.round(root.clientWidth || 360) - 32);
     const screen = root.querySelector('.screen'), list = root.querySelector('.tasks-scroll'), car = root.querySelector('.carousel');
     const keep = [screen && screen.scrollTop, list && list.scrollTop, car && car.scrollLeft];
     root.innerHTML = phone(s);
@@ -584,6 +617,44 @@ document.querySelectorAll('.seg').forEach((seg) => {
   sync();
 });
 document.getElementById('live-back').addEventListener('click', () => live.back());
+const fullEl = document.getElementById('full');
+const fullPanel = document.getElementById('full-panel');
+let full = null;
+const LABELS = { A: 'A · Один экран', B: 'B · Лента', C: 'C · Компактно', morning: '09:12', day: '14:30', evening: '21:40' };
+function syncFull() {
+  document.getElementById('full-what').textContent = `${LABELS[full.state.density]} · ${full.state.nav} · ${LABELS[full.state.time]} ▾`;
+  fullPanel.querySelectorAll('.seg').forEach((seg) => seg.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === full.state[seg.dataset.full]))));
+}
+function openFull() {
+  fullEl.hidden = false;
+  document.body.style.overflow = 'hidden';
+  const st = live.state;
+  if (!full) full = mount(document.getElementById('full-phone'), { density: st.density, nav: st.nav, time: st.time, full: true });
+  else full.set({ density: st.density, nav: st.nav, time: st.time, screen: 'hub', menu: false });
+  syncFull();
+  if (location.hash !== '#full') { try { location.hash = 'full'; } catch (e) { /* ссылка без режима — не страшно */ } }
+}
+function closeFull() {
+  fullEl.hidden = true;
+  fullPanel.hidden = true;
+  document.body.style.overflow = '';
+  if (location.hash === '#full') { try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { location.hash = ''; } }
+}
+document.querySelectorAll('[data-full-open]').forEach((b) => b.addEventListener('click', openFull));
+document.getElementById('full-close').addEventListener('click', closeFull);
+document.getElementById('full-back').addEventListener('click', () => full && full.back());
+document.getElementById('full-what').addEventListener('click', () => { fullPanel.hidden = !fullPanel.hidden; });
+fullPanel.addEventListener('click', (e) => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  const key = b.closest('.seg').dataset.full;
+  full.set({ [key]: b.dataset.v, screen: 'hub', menu: false, open: 'tasks' });
+  syncFull();
+});
+document.getElementById('full-phone').addEventListener('click', () => { fullPanel.hidden = true; });
+window.addEventListener('resize', () => { if (full && !fullEl.hidden) full.set({}); });
+window.addEventListener('hashchange', () => { if (location.hash === '#full') openFull(); else if (!fullEl.hidden) closeFull(); });
+if (location.hash === '#full') openFull();
 document.querySelectorAll('[data-static]').forEach((el) => mount(el, JSON.parse(el.dataset.static)));
 document.querySelectorAll('[data-bar]').forEach((el) => { const cfg = Object.assign({ density: 'A', time: 'morning' }, JSON.parse(el.dataset.bar)); el.innerHTML = barRow(cfg); });
 document.querySelectorAll('[data-widget]').forEach((el) => { el.innerHTML = widget(el.dataset.widget); });
