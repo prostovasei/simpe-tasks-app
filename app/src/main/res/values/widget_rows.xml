@@ -8,7 +8,7 @@
     <dimen name="widget_period_row">64dp</dimen>
     <dimen name="widget_now_row">14dp</dimen>
     <dimen name="widget_time">38dp</dimen>
-    <dimen name="widget_rail">26dp</dimen>
+    <dimen name="widget_rail">36dp</dimen>
     <dimen name="widget_node">20dp</dimen>
     <dimen name="widget_node_check">12dp</dimen>
     <dimen name="widget_period_stub">3dp</dimen>
@@ -35,6 +35,8 @@
     <dimen name="widget_week_task">18dp</dimen>
     <dimen name="widget_week_hit">40dp</dimen>
     <dimen name="widget_week_content_gap">2dp</dimen>
+    <!-- #331: отступ слева и справа от кружка в списках задач (TIMELINE_CHECK_GAP). -->
+    <dimen name="widget_check_gap">8dp</dimen>
     <dimen name="widget_week_edge">2dp</dimen>
     <dimen name="widget_week_check">14dp</dimen>
     <dimen name="widget_week_tick">9dp</dimen>

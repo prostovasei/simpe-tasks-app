@@ -78,7 +78,7 @@ internal fun LazyItemScope.CompactTimelineTaskRow(
             row.start?.let { Text(it, style = canvasTimeStyle(), color = text, maxLines = 1) }
             row.end?.let { Text(it, style = canvasTimeStyle(), color = text, maxLines = 1) }
         }
-        Spacer(Modifier.width(SizeTokens.WEEK_CONTENT_GAP.dp))
+        Spacer(Modifier.width(SizeTokens.TIMELINE_CHECK_GAP.dp))
         Column(Modifier.width(SizeTokens.WEEKVIEW_CHECK.dp).fillMaxHeight()
             .then(if (item.isGhost) Modifier else Modifier.clickable(onClick = onToggle)
                 .semantics { contentDescription = label }.testTag("$tag:check")),
@@ -100,7 +100,7 @@ internal fun LazyItemScope.CompactTimelineTaskRow(
             }
             CanvasSegment(bottom, Modifier.weight(1f))
         }
-        Spacer(Modifier.width(SizeTokens.WEEK_CONTENT_GAP.dp))
+        Spacer(Modifier.width(SizeTokens.TIMELINE_CHECK_GAP.dp))
         Row(Modifier.weight(1f).fillMaxHeight().padding(vertical = SizeTokens.WIDGET_CARD_INSET.dp)
             .then(if (selected == true) Modifier.background(colors.selected, AppTheme.shapes.medium)
                 .border(SizeTokens.CHECKBOX_STROKE.dp, colors.accent, AppTheme.shapes.medium) else Modifier)
@@ -125,8 +125,10 @@ internal fun LazyItemScope.CompactTimelineTaskRow(
 }
 
 @Composable
+@Suppress("UNUSED_PARAMETER")
 private fun CanvasSegment(visible: Boolean, modifier: Modifier) {
-    Box(modifier.width(AppTheme.sizes.hairline).background(if (visible) AppTheme.colors.divider else Color.Transparent))
+    // #331: без вертикальной линии — сегмент лишь центрирует кружок.
+    Box(modifier.width(AppTheme.sizes.hairline))
 }
 
 @Composable

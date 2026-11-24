@@ -24,9 +24,10 @@ class WidgetTimelineTest {
     private fun List<WidgetRow>.ids() = map { (it as? WidgetRow.Task)?.item?.id ?: "now" }
 
     @Test
-    fun nowGoesBeforeFirstTaskNotStartedYet() {
+    fun noNowRowButPastTasksFade() {
+        // #331: строки «сейчас» нет.
         val rows = WidgetTimeline.rows(listOf(allDay, office, sync, food), overdue = false, nowMinute = 10 * 60 + 17, days = days)
-        assertEquals(listOf("net", "office", "now", "sync", "food"), rows.ids())
+        assertEquals(listOf("net", "office", "sync", "food"), rows.ids())
         val tasks = rows.filterIsInstance<WidgetRow.Task>().associateBy { it.item.id }
         assertEquals(true, tasks.getValue("office").past)
         assertEquals(false, tasks.getValue("sync").past)
@@ -37,15 +38,15 @@ class WidgetTimelineTest {
     }
 
     @Test
-    fun periodInProgressIsNotPastAndNowGoesAfterIt() {
+    fun periodInProgressIsNotPast() {
         val rows = WidgetTimeline.rows(listOf(food, item("bus", "17:00")), overdue = false, nowMinute = 14 * 60 + 30, days = days)
-        assertEquals(listOf("food", "now", "bus"), rows.ids())
+        assertEquals(listOf("food", "bus"), rows.ids())
         assertEquals(false, (rows.first() as WidgetRow.Task).past)
     }
 
     @Test
-    fun nowAtEndWhenEverythingStartedAndAbsentWithoutTimedTasks() {
-        assertEquals(listOf("office", "now"), WidgetTimeline.rows(listOf(office), false, 20 * 60, days).ids())
+    fun noNowRowEvenWhenEverythingStarted() {
+        assertEquals(listOf("office"), WidgetTimeline.rows(listOf(office), false, 20 * 60, days).ids())
         assertEquals(listOf("net"), WidgetTimeline.rows(listOf(allDay), false, 20 * 60, days).ids())
         // Не «Сегодня» — без отметки и без бледных задач.
         val tomorrow = WidgetTimeline.rows(listOf(office), false, null, days)

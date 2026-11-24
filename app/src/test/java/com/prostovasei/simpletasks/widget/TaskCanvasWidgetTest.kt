@@ -63,7 +63,7 @@ class TaskCanvasWidgetTest {
             val node = root.findViewById<View>(R.id.row_node)
             val title = root.findViewById<TextView>(R.id.row_title)
             val start = root.findViewById<TextView>(R.id.row_start)
-            val gap = context.resources.getDimensionPixelSize(R.dimen.widget_week_content_gap)
+            val gap = context.resources.getDimensionPixelSize(R.dimen.widget_check_gap) // #331: 8 dp
             assertEquals(gap, x(node) - x(time) - time.width)
             assertEquals(gap, x(title) - x(node) - node.width)
             assertEquals(context.resources.getDimensionPixelSize(R.dimen.widget_week_check), node.width)

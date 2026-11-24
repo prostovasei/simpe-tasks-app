@@ -88,7 +88,7 @@ class WidgetListTest {
         val list = list()
         assertEquals(model.lines(dayNames(context)).size, list.adapter.count)
         val texts = list.rows().flatMap { it.texts() }
-        listOf("Отчёт", "Зарядка", "Созвон", "Зарядка завтра", "10:00", "11:00", "1 из 2", "09:00").forEach {
+        listOf("Отчёт", "Зарядка", "Созвон", "Зарядка завтра", "10:00", "11:00", "1 из 2").forEach {
             assertTrue("нет «$it» в $texts", it in texts)
         }
     }

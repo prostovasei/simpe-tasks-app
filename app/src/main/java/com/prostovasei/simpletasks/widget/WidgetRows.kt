@@ -113,8 +113,8 @@ object WidgetRows {
 
             // Шкала: линия вверх и вниз, кружок цвета приоритета (у прошедшей — серый). Итерация 47: у повторяющейся — знак повтора
             // вместо кружка (у периода — вытянутый), выполненная высокого приоритета — тусклый фиолетовый.
-            setViewVisibility(R.id.row_line_top, if (line.line.top) View.VISIBLE else View.INVISIBLE)
-            setViewVisibility(R.id.row_line_bottom, if (line.line.bottom) View.VISIBLE else View.INVISIBLE)
+            setViewVisibility(R.id.row_line_top, View.INVISIBLE /* #331: без линии */)
+            setViewVisibility(R.id.row_line_bottom, View.INVISIBLE)
             color(
                 R.id.row_node,
                 "setColorFilter",
@@ -182,8 +182,8 @@ object WidgetRows {
     private fun now(context: Context, line: WidgetLine.Now, liveClock: Boolean, flat: Boolean): RemoteViews =
         RemoteViews(context.packageName, if (flat) R.layout.widget_row_now_flat else R.layout.widget_row_now).apply {
             if (flat) setViewLayoutWidth(R.id.now_time, canvasTimeWidthPx(context).toFloat(), TypedValue.COMPLEX_UNIT_PX)
-            setViewVisibility(R.id.now_line_top, if (line.line.top) View.VISIBLE else View.INVISIBLE)
-            setViewVisibility(R.id.now_line_bottom, if (line.line.bottom) View.VISIBLE else View.INVISIBLE)
+            setViewVisibility(R.id.now_line_top, View.INVISIBLE /* #331: без линии */)
+            setViewVisibility(R.id.now_line_bottom, View.INVISIBLE)
             // В снимках для тестов — неподвижное время из модели вместо часов системы.
             val fixed = line.nowMinute?.takeIf { !liveClock }
             visible(R.id.now_clock, liveClock)

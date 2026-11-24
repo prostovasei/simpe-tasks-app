@@ -19,7 +19,7 @@
         android:layout_height="match_parent"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingStart="@dimen/widget_week_content_gap"
+        android:paddingStart="@dimen/widget_check_gap"
         android:paddingEnd="@dimen/widget_space_sm">
 
         <TextView
