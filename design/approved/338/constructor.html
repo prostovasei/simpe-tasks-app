@@ -1,0 +1,365 @@
+<title>Конструктор хаба 2</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+<style>
+/* Конструктор #338: доработка хаба после 0.95.0. Приложение и виджет рядом (1:1), переключатели слева; превью — светлая тема приложения. */
+:root {
+  --page: #e9ebef; --pagefg: #16171d; --pagemuted: #62656e; --chip: #f3f3f4; --rec: #2e7d32; --line: #dcdee3;
+  --card: #ffffff; --title: #2e3036; --muted: #62656e; --done: #c4c5c8; --ring: #a9a9a9; --pri: #862ce0;
+  --late: #c62828; --track: #e8e8ea; --fill: #16171d; --soft: #f3f3f4; --black: #16171d; --onblack: #ffffff; --ground: #f1f2f4;
+  --font: Manrope, system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --page: #0f1013; --pagefg: #ececec; --pagemuted: #a3a3a3; --chip: #24262b; --rec: #81c784; --line: #2f3137; color-scheme: dark } }
+:root[data-theme="dark"] { --page: #0f1013; --pagefg: #ececec; --pagemuted: #a3a3a3; --chip: #24262b; --rec: #81c784; --line: #2f3137; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--page); color: var(--pagefg); font-family: var(--font); margin: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 16px 40px }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--page) }
+h1 { font-size: 21px; margin: 0 0 4px; text-wrap: balance }
+.lead { color: var(--pagemuted); margin: 0 0 14px; max-width: 80ch; line-height: 1.45; font-size: 14px }
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px; align-items: start }
+.previews { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); display: flex; gap: 20px; align-items: flex-start }
+.pv { display: grid; gap: 6px; justify-items: start }
+.pv b { font-size: 13px; color: var(--pagemuted); font-weight: 600 }
+@media (max-width: 1180px) {
+  .layout { grid-template-columns: minmax(0, 1fr) }
+  .previews { order: -1; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--page); padding-bottom: 8px; overflow-x: auto; max-width: 100% }
+  body.one .pv.hide { display: none }
+}
+@media (max-width: 760px) { .phone { zoom: .78 } .previews { max-height: 52vh; overflow: auto; box-shadow: 0 6px 12px -8px rgb(0 0 0 / .3) } }
+.panel { display: grid; gap: 12px; min-width: 0; align-content: start }
+fieldset { border: 0; margin: 0; padding: 12px 14px; background: var(--card); color: var(--title); border-radius: 16px; display: grid; gap: 10px; min-width: 0 }
+legend { font-weight: 700; font-size: 15px; padding: 0; float: left; width: 100% }
+.ctl { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px }
+.ctl > span { flex: 0 0 160px; color: var(--muted); font-size: 13px }
+.seg { display: inline-flex; background: #f3f3f4; border-radius: 10px; padding: 3px; gap: 2px; flex-wrap: wrap; min-width: 0 }
+.seg button { font: 600 13px var(--font); color: #16171d; background: none; border: 0; border-radius: 8px; padding: 6px 9px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px }
+.seg button[aria-pressed="true"] { background: #fff; box-shadow: inset 0 0 0 1.5px #16171d }
+.seg button:focus-visible { outline: 2px solid #862ce0; outline-offset: 1px }
+.seg .tag { font-size: 10px; font-weight: 700 } .seg .tag.pm { color: #2e7d32 } .seg .tag.rec { color: #6b32a8 }
+.seg svg { display: block }
+.top { display: flex; flex-wrap: wrap; gap: 8px; align-items: center }
+.btn { font: 600 13px var(--font); border: 0; border-radius: 10px; padding: 8px 12px; cursor: pointer; background: var(--pagefg); color: var(--page) }
+.btn.ghost { background: var(--chip); color: var(--pagefg) }
+.btn:focus-visible { outline: 2px solid #862ce0; outline-offset: 2px }
+#summary { width: 100%; min-height: 130px; font: 12px/1.45 ui-monospace, Menlo, monospace; color: var(--pagefg); background: var(--page); border: 1px solid var(--line); border-radius: 12px; padding: 10px; resize: vertical }
+.hint { color: var(--pagemuted); font-size: 12px; margin: 0; line-height: 1.45 }
+#copied { color: var(--rec); font-size: 12px }
+/* телефон */
+.phone { position: relative; width: 360px; height: 760px; border-radius: 30px; overflow: hidden; background: #fff; box-shadow: 0 0 0 1px rgb(0 0 0 / .08), 0 10px 30px rgb(0 0 0 / .12); color: var(--title); font-family: var(--font); flex: none }
+.status { height: 28px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; font-size: 12px; font-weight: 600; position: relative; z-index: 1 }
+.wall { background: linear-gradient(160deg, #5b2bc9 0%, #b03fb8 45%, #f2717e 100%) }
+.wall > .status { color: #fff }
+.screen { position: absolute; inset: 28px 0 0 0; display: flex; flex-direction: column; overflow: hidden; background: #fff }
+.wdg { position: absolute; left: 10px; right: 10px; top: 40px; height: 600px; background: #fff; border-radius: 24px; overflow: hidden; display: flex; flex-direction: column }
+.icons { position: absolute; left: 22px; right: 22px; bottom: 30px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px }
+.icons span { aspect-ratio: 1; border-radius: 18px; background: rgb(255 255 255 / .28) }
+.body { display: flex; flex-direction: column; flex: 1; min-height: 0; padding-top: 10px }
+.ground { background: var(--ground) }
+/* разделы */
+.sec { flex: none }
+.sec.card { background: #fff; border-radius: 22px; margin: 0 8px; padding: 12px 0 }
+.sec.card.tail { border-radius: 22px 22px 0 0; margin-bottom: 0 }
+.sec.hero { background: var(--black); color: #fff; border-radius: 22px; margin: 0 8px; padding: 12px 0 }
+.stitle { display: flex; align-items: center; gap: 4px; padding: 0 14px 8px; font-size: 13px; font-weight: 700; color: var(--title) }
+.stitle svg { color: var(--muted) }
+.hero .stitle, .hero .stitle svg { color: #fff }
+/* финансы */
+.fin { padding: 0 14px }
+.l1 { display: flex; align-items: center; gap: 8px }
+.limit { flex: 1; min-width: 0; height: 26px; border-radius: 8px; background: var(--soft); position: relative; overflow: hidden; font-size: 12px; font-weight: 700 }
+.limit i { position: absolute; inset: 0 auto 0 0; width: 67.5%; background: var(--black) }
+.limit em { position: absolute; top: 3px; bottom: 3px; left: 83%; width: 2px; background: #62656e; outline: 1px solid #fff }
+.limit > span { position: absolute; top: 5px; white-space: nowrap }
+.hero .limit { background: #2c2d33 } .hero .limit i { background: #fff } .hero .limit em { background: #a3a3a3; outline-color: #16171d }
+.goal { font-size: 15px; font-weight: 800; white-space: nowrap }
+.l2 { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding-top: 6px; flex-wrap: wrap }
+.lab { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap }
+.lab.grey { font-size: 12px; font-weight: 600; color: var(--muted) }
+.lab.dark { font-size: 13px; font-weight: 700; color: var(--title) }
+.lab.chips { font-size: 12px; font-weight: 700; color: var(--title); background: var(--soft); border-radius: 999px; padding: 3px 9px 3px 7px }
+.hero .lab.grey { color: #a3a3a3 } .hero .lab.dark { color: #fff } .hero .lab.chips { background: #2c2d33; color: #fff }
+.lab svg { flex: none }
+.old { display: flex; justify-content: space-between; gap: 8px; padding-top: 5px; font-size: 11.5px; color: var(--muted); font-weight: 600 }
+.hero .old { color: #a3a3a3 }
+.accs { display: flex; gap: 6px; padding-top: 10px; align-items: center; flex-wrap: wrap }
+.acc { background: var(--soft); border-radius: 999px; padding: 7px 12px; font-size: 14px; font-weight: 700; white-space: nowrap }
+.hero .acc { background: #2c2d33 }
+.total { font-size: 14px; font-weight: 800; padding-right: 2px; white-space: nowrap }
+/* новости */
+.news { padding: 0 14px }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px }
+.ncard { background: var(--soft); border-radius: 12px; padding: 7px 9px; min-height: 56px; font-size: 11.5px; line-height: 1.3 }
+.ncard small { display: block; color: var(--muted); font-size: 10px; margin-bottom: 2px }
+.ncard .n { color: var(--pri); font-weight: 700 }
+.dots { display: flex; justify-content: center; align-items: center; gap: 8px; font-size: 9px; letter-spacing: 3px; color: var(--muted); padding-top: 4px; height: 20px }
+.dots .arr { font-size: 15px; letter-spacing: 0; color: var(--title); padding: 0 6px }
+/* задачи */
+.tasks { flex: 1; min-height: 0; overflow: hidden; position: relative }
+.tasks.stop { flex: 1 }
+.head { display: flex; align-items: center; gap: 8px; padding: 6px 14px 2px; font-size: 12px; font-weight: 500; color: var(--muted); white-space: nowrap }
+.head.late { color: var(--late) }
+.bar { flex: 1; height: 1px; background: var(--track); position: relative; min-width: 30px }
+.bar i { position: absolute; inset: 0 auto 0 0; background: var(--fill) }
+.cnt { margin-left: auto }
+.row { display: flex; align-items: center; min-height: 44px; padding: 0 14px; color: var(--title) }
+.row .title { flex: 1; min-width: 0; font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.row .t { font-size: 13px; font-weight: 500; white-space: nowrap; margin-left: 8px }
+.row .emo { flex: none; width: 16px; font-size: 13px; text-align: center; margin-right: 8px }
+.row .chk { flex: none; display: block; margin-right: 10px }
+.row .bell { flex: none; display: block; color: var(--muted); margin-left: 8px }
+.row.pri { color: var(--pri) } .row.late .t { color: var(--late) } .row.off { color: var(--done) } .row.off .emo, .row.off .bell { opacity: .45 }
+.fade { position: absolute; left: 0; right: 0; bottom: 0; height: 84px; background: linear-gradient(rgb(255 255 255 / 0), #fff 78%); z-index: 2; pointer-events: none }
+.strip { flex: none; background: #fff }
+/* панель */
+.nav { position: absolute; right: 12px; bottom: 14px; display: flex; align-items: center; z-index: 3 }
+.cap { display: flex; align-items: center; gap: 2px; border-radius: 999px }
+.ib { display: grid; place-items: center; border-radius: 999px }
+.st-dark { background: #16171d; color: #fff; box-shadow: 0 6px 18px rgb(0 0 0 / .22) } .st-dark .ib.on { background: #2c2d33 }
+.st-white { background: #fff; color: #16171d; box-shadow: 0 4px 16px rgb(0 0 0 / .16), 0 0 0 1px rgb(0 0 0 / .04) } .st-white .ib.on { background: #ececef }
+.st-glass { background: rgb(255 255 255 / .72); color: #16171d; backdrop-filter: blur(10px); box-shadow: 0 4px 14px rgb(0 0 0 / .12) } .st-glass .ib.on { background: rgb(0 0 0 / .07) }
+/* окно «+» */
+.scrim { position: absolute; inset: 0; background: rgb(0 0 0 / .22); z-index: 4 }
+.qa { position: absolute; left: 10px; right: 10px; bottom: 10px; z-index: 5; background: #fff; border-radius: 24px; padding: 14px; box-shadow: 0 -6px 30px rgb(0 0 0 / .18); display: grid; gap: 10px }
+.qa .inp { display: flex; align-items: center; gap: 8px; background: var(--soft); border-radius: 14px; padding: 10px 12px; font-size: 15px; font-weight: 600; color: var(--title) }
+.qa .inp span { flex: 1 }
+.qa .mic { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: #f1e8fa; color: var(--pri) }
+.qa .chips { display: flex; gap: 6px; align-items: center }
+.qa .chips span { background: var(--soft); border-radius: 999px; padding: 6px 10px; font-size: 12px; font-weight: 700 }
+.qa .chips .send { margin-left: auto; padding: 0; width: 38px; height: 38px; border-radius: 50%; background: var(--pri); color: #fff; display: grid; place-items: center }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important } }
+</style>
+
+<h1>Конструктор хаба 2</h1>
+<p class="lead">Доработка хаба после 0.95.0. Приложение и виджет стоят рядом, и каждый переключатель меняет оба превью сразу. Дату из панели убрал, как ты просил. Метки: зелёная «PM» — твоё прямое решение, фиолетовая «реком.» — моя рекомендация. Кнопка «Окно «+»» показывает окно новой задачи: там виден вариант с 🎤. Когда вид понравится, нажми «Скопировать выбор» и пришли текст в чат. Задачи, суммы и новости придуманы для примера.</p>
+
+<div class="layout">
+  <div class="panel">
+    <div class="top">
+      <button type="button" class="btn" id="copy">Скопировать выбор</button>
+      <button type="button" class="btn ghost" id="reset">Рекомендации</button>
+      <button type="button" class="btn ghost" id="qaBtn">Окно «+»: скрыто</button>
+      <button type="button" class="btn ghost" id="viewBtn">Показать: оба</button>
+      <span id="copied" aria-live="polite"></span>
+    </div>
+    <div id="groups" class="panel"></div>
+    <p class="hint">«До низа, панель поверх»: задачи идут до края экрана, правую часть нижних строк закрывает панель. При прокрутке до конца последняя задача поднимается над панелью, иначе её нельзя было бы отметить. В виджете то же самое: панель лежит поверх списка.</p>
+    <p class="hint">Новая раскладка финансов. Первая строка: полоса, цель «80k» и прогноз со значком. Вторая строка: под тратами — сколько в среднем тратится в день, справа — остаток со значком. «Можно в день» — это остаток, делённый на оставшиеся дни, поэтому по умолчанию он стоит рядом с остатком.</p>
+    <p class="hint">Голосовой ввод: в 0.95.0 микрофон ушёл из панели виджета вместе со всей старой строкой, и голосом сейчас создать задачу нельзя. «В окне «+»» добавляет 🎤 в окно новой задачи, оно одинаковое в приложении и в виджете.</p>
+    <label class="hint" for="summary">Выбор текстом:</label>
+    <textarea id="summary" readonly></textarea>
+  </div>
+  <div class="previews">
+    <div class="pv" id="pvApp"><b>Приложение</b><div class="phone" id="app"></div></div>
+    <div class="pv" id="pvW"><b>Виджет</b><div class="phone wall" id="widget"></div></div>
+  </div>
+</div>
+
+<script>
+// ---------- значки (24 × 24, линии) ----------
+const polar = (r, deg) => { const a = deg * Math.PI / 180; return `${(12 + r * Math.cos(a)).toFixed(2)} ${(12 + r * Math.sin(a)).toFixed(2)}` };
+function gearPath() {
+  const pts = [];
+  for (let i = 0; i < 8; i++) { const a = i * 45 - 90; for (const [r, d] of [[7.3, -13], [9.7, -7], [9.7, 7], [7.3, 13]]) pts.push(polar(r, a + d)) }
+  return 'M' + pts.join('L') + 'Z';
+}
+const rr = (x, y, w, h, r) => `M${x + r} ${y}h${w - 2 * r}a${r} ${r} 0 0 1 ${r} ${r}v${h - 2 * r}a${r} ${r} 0 0 1 -${r} ${r}h-${w - 2 * r}a${r} ${r} 0 0 1 -${r} -${r}v-${h - 2 * r}a${r} ${r} 0 0 1 ${r} -${r}z`;
+const C = (cx, cy, r, fill) => `<circle cx="${cx}" cy="${cy}" r="${r}" ${fill ? 'fill="currentColor"' : 'fill="none" stroke="currentColor" stroke-width="SW"'}/>`;
+const IC = {
+  grid: ['M4 4h6.5v6.5H4z M13.5 4H20v6.5h-6.5z M4 13.5h6.5V20H4z M13.5 13.5H20V20h-6.5z'],
+  gridRound: [rr(4, 4, 7, 7, 2.2) + ' ' + rr(13, 4, 7, 7, 2.2) + ' ' + rr(4, 13, 7, 7, 2.2) + ' ' + rr(13, 13, 7, 7, 2.2)],
+  dots4: ['', C(7.5, 7.5, 2.6, 1) + C(16.5, 7.5, 2.6, 1) + C(7.5, 16.5, 2.6, 1) + C(16.5, 16.5, 2.6, 1)],
+  cog: [gearPath(), C(12, 12, 3)],
+  hex: ['M12 2.8l8 4.6v9.2l-8 4.6l-8-4.6V7.4z', C(12, 12, 3.2)],
+  slidersV: ['M6 4v5.5 M6 14.5V20 M12 4v1.5 M12 10.5V20 M18 4v9.5 M18 18.5V20', C(6, 12, 2.3) + C(12, 8, 2.3) + C(18, 16, 2.3)],
+  toggle: [rr(2.5, 6.5, 19, 11, 5.5), C(15.8, 12, 2.9)],
+  dotsH: ['', C(5.5, 12, 1.9, 1) + C(12, 12, 1.9, 1) + C(18.5, 12, 1.9, 1)],
+  sliders: ['M4 7h9 M17 7h3 M4 17h3 M11 17h9 M15 4.5v5 M9 14.5v5', C(15, 7, 2.2, 1) + C(9, 17, 2.2, 1)],
+  plus: ['M12 5v14 M5 12h14'],
+  mic: ['M12 3.5a3 3 0 0 1 3 3V11a3 3 0 0 1-6 0V6.5a3 3 0 0 1 3-3z M5.8 11a6.2 6.2 0 0 0 12.4 0 M12 17.2V20.5'],
+  chevron: ['M9.5 6.5l5.5 5.5l-5.5 5.5'],
+  send: ['M12 19V5 M6 11l6-6l6 6'],
+  wallet: ['M4.5 8A2 2 0 0 1 6.5 6h10a1 1 0 0 1 1 1v1 M4.5 8v9a2 2 0 0 0 2 2h12a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-12a2 2 0 0 1-2-1z', C(16, 13.5, 1.2, 1)],
+  hourglass: ['M7 3.5h10 M7 20.5h10 M8 3.5v2c0 2.2 4 4.3 4 6.5s-4 4.3-4 6.5v2 M16 3.5v2c0 2.2-4 4.3-4 6.5s4 4.3 4 6.5v2'],
+  pie: ['M12 4v8h8', C(12, 12, 8)],
+  coins: ['M4 8c0-1.4 2.2-2.5 5-2.5s5 1.1 5 2.5s-2.2 2.5-5 2.5S4 9.4 4 8z M4 8v4c0 1.4 2.2 2.5 5 2.5 M10 14c0-1.4 2.2-2.5 5-2.5s5 1.1 5 2.5s-2.2 2.5-5 2.5s-5-1.1-5-2.5z M10 14v3c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5v-3 M14 8v2'],
+  trend: ['M4 16.5l5-5l4 4l7-7 M15 8.5h5v5'],
+  flag: ['M6 21V4 M6 4.5h10.5l-2 3.75l2 3.75H6'],
+  calendar: ['M5 6h14v14H5z M5 10h14 M9 3v4 M15 3v4'],
+  target: ['', C(12, 12, 8.5) + C(12, 12, 4.5) + C(12, 12, 1.3, 1)],
+  approx: ['M5 9.5c2.3-2 4.7-2 7 0s4.7 2 7 0 M5 15c2.3-2 4.7-2 7 0s4.7 2 7 0'],
+  calDay: ['M5 6h14v14H5z M5 10h14 M9 3v4 M15 3v4', C(12, 15, 1.7, 1)],
+  avg: ['M5.5 18.5l13-13', C(12, 12, 6.5)],
+  sun: ['M12 3v2 M12 19v2 M3 12h2 M19 12h2 M5.6 5.6l1.4 1.4 M17 17l1.4 1.4 M5.6 18.4L7 17 M17 7l1.4-1.4', C(12, 12, 4)],
+};
+const ico = (name, s = 22, sw = 2) => {
+  const [d, extra = ''] = IC[name];
+  return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" aria-hidden="true">${d ? `<path d="${d}" stroke="currentColor" stroke-width="${sw}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>` : ''}${extra.replaceAll('SW', sw)}</svg>`;
+};
+
+// ---------- переключатели: [ключ, подпись, варианты [значение, текст], рекомендация, решение PM] ----------
+const GROUPS = [
+  ['Панель', [
+    ['navH', 'Высота', [[36, '36 (сейчас)'], [40, '40'], [44, '44'], [48, '48']], 44],
+    ['style', 'Фон', [['dark', 'Тёмный'], ['white', 'Белый с тенью'], ['glass', 'Полупрозрачный']], 'dark', 'dark'],
+    ['hubBg', 'Подложка у значка хаба', [['none', 'Нет'], ['bg', 'Есть (сейчас)']], 'none', 'none'],
+    ['plus', '«+»', [['violet', 'Фиолетовый'], ['lilac', 'Светло-фиолетовый'], ['white', 'Белый'], ['circle', 'В круге (сейчас)']], 'lilac'],
+    ['plusSize', 'Размер «+»', [['same', 'Как значки'], ['big', 'Крупнее']], 'big'],
+    ['stroke', 'Толщина линий значков', [[1.5, '1,5'], [1.75, '1,75'], [2, '2 (сейчас)']], 1.75],
+  ]],
+  ['Значки', [
+    ['setIcon', 'Настройки', [['cog', 'cog'], ['hex', 'hex'], ['slidersV', 'slidersV'], ['toggle', 'toggle'], ['dotsH', 'dotsH'], ['sliders', 'sliders']], 'cog'],
+    ['hubIcon', 'Хаб', [['grid', 'grid'], ['gridRound', 'gridRound'], ['dots4', 'dots4']], 'gridRound'],
+  ]],
+  ['Хаб', [
+    ['design', 'Дизайн', [['flat', 'Плоский (сейчас)'], ['cards', 'Карточки разделов'], ['titled', 'Заголовки разделов'], ['hero', 'Тёмная карточка финансов']], 'cards'],
+    ['gap', 'Отступ между разделами', [[12, '12 (сейчас)'], [20, '20'], [24, '24'], [32, '32']], 24],
+    ['under', 'Задачи у панели', [['overlap', 'До низа, панель поверх'], ['fade', 'До низа + мягкое затухание'], ['stop', 'Обрываются над панелью (сейчас)']], 'overlap', 'overlap'],
+  ]],
+  ['Финансы', [
+    ['layout', 'Раскладка', [['new', 'Прогноз у цели, остаток справа, в день под тратами'], ['now', 'Как сейчас']], 'new', 'new'],
+    ['leftIcon', 'Значок «осталось»', [['wallet', 'wallet'], ['hourglass', 'hourglass'], ['pie', 'pie'], ['coins', 'coins']], 'wallet'],
+    ['fcIcon', 'Значок «прогноз»', [['trend', 'trend'], ['flag', 'flag'], ['calendar', 'calendar'], ['target', 'target']], 'trend'],
+    ['dayIcon', 'Значок «в среднем в день»', [['calDay', 'calDay'], ['approx', 'approx'], ['avg', 'avg'], ['sun', 'sun']], 'calDay'],
+    ['canDay', '«Можно в день»', [['left', 'Рядом с остатком'], ['bar', 'В серой части полосы (сейчас)'], ['none', 'Убрать']], 'left'],
+    ['lstyle', 'Стиль подписей', [['grey', 'Серые 12'], ['dark', 'Чёрные 13'], ['chips', 'Плашки']], 'grey'],
+  ]],
+  ['Голосовой ввод (вопрос из 0.95.0)', [
+    ['voice', 'Где 🎤', [['sheet', 'В окне «+»'], ['bar', 'Кнопкой в панели'], ['none', 'Нет (сейчас)']], 'sheet'],
+  ]],
+];
+const ICONIC = new Set(['setIcon', 'hubIcon', 'leftIcon', 'fcIcon', 'dayIcon']);
+const NAMES = {
+  cog: 'шестерёнка', hex: 'шестигранник', slidersV: 'ползунки вертикальные', toggle: 'тумблер', dotsH: 'три точки', sliders: 'ползунки (сейчас)',
+  grid: 'сетка (сейчас)', gridRound: 'сетка скруглённая', dots4: 'четыре точки',
+  wallet: 'кошелёк', hourglass: 'песочные часы', pie: 'круг-остаток', coins: 'монеты',
+  trend: 'стрелка роста', flag: 'флажок финиша', calendar: 'календарь (сейчас)', target: 'мишень',
+  calDay: 'календарь с точкой', approx: '≈', avg: '⌀', sun: 'солнце',
+};
+const REC = Object.fromEntries(GROUPS.flatMap(([, l]) => l.map(([k, , , r]) => [k, r])));
+const PMK = Object.fromEntries(GROUPS.flatMap(([, l]) => l.filter(c => c[4] !== undefined).map(([k, , , , pm]) => [k, pm])));
+const KEY = 'c338a';
+let state = { ...REC };
+try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s) state = { ...REC, ...s } } catch (e) {}
+let showQa = false, view = 'both';
+
+// ---------- данные ----------
+const tri = c => `<svg class="chk" width="18" height="18" viewBox="0 0 14 14" aria-hidden="true"><path d="M0.8,6.2A6.25,6.25 0,0 1,13.2 6.2M13.2,7.8A6.25,6.25 0,0 1,0.8 7.8" stroke="${c}" stroke-width="1.5" fill="none"/><path d="M10.1,5.8L13.2,6.2L13.3,2.8ZM3.9,8.2L0.8,7.8L0.7,11.2Z" fill="${c}"/></svg>`;
+const BELL = '<svg class="bell" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z M10 20.5a2 2 0 0 0 4 0" stroke="currentColor" stroke-width="2" fill="none" stroke-linejoin="round" stroke-linecap="round"/></svg>';
+function row(x, late) {
+  const c = x.pri ? 'var(--pri)' : (x.done || x.past) ? 'var(--done)' : 'var(--ring)';
+  const mark = x.rep ? tri(c) : x.done
+    ? `<svg class="chk" width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="9" fill="${c}"/><path d="M5.4 9.4l2.5 2.5l4.9-5.4" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+    : `<svg class="chk" width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="8" stroke="${c}" stroke-width="2" fill="none"/></svg>`;
+  const cls = ['row', x.pri && 'pri', (x.done || x.past) && 'off', late && 'late'].filter(Boolean).join(' ');
+  return `<div class="${cls}">${mark}<span class="emo">${x.e}</span><span class="title">${x.title}</span>${x.bell ? BELL : ''}${x.r ? `<span class="t">${x.r}</span>` : ''}</div>`;
+}
+const OVER = [{ title: 'Оплатить интернет', e: '💼', bell: 1, r: 'вт' }];
+const TODAY = [
+  { title: 'Созвон с командой', e: '💼', bell: 1, done: 1, r: '10:00' }, { title: 'Купить продукты', e: '🏠', r: '' },
+  { title: 'Оценка займов', e: '💼', bell: 1, pri: 1, r: '14:00–16:00' }, { title: 'Тренировка', e: '🏀', rep: 1, r: '19:00' },
+];
+const TOM = [{ title: 'Стоматолог', e: '🏠', bell: 1, r: '09:30' }, { title: 'Дейлик', e: '💼', rep: 1, r: '11:00' }, { title: 'Бавария — Боруссия', e: '⚽', bell: 1, r: '20:30' }];
+const FRI = [{ title: 'Отчёт за месяц', e: '💼', pri: 1, r: '12:00' }, { title: 'Забрать посылку', e: '🏠', r: '' }, { title: 'Дончич: Лейкерс — Сперс', e: '🏀', bell: 1, r: '04:30' }];
+const NEWS = [['09:05 · Футбол', 'Бавария обыграла Боруссию в дерби', 1], ['08:40 · НБА', 'Дончич набрал трипл-дабл', 1], ['08:12 · Футбол', 'Расписание тура Бундеслиги'], ['07:55 · НБА', 'Вембаньяма — игрок недели']];
+const ACC = [['💳', '42k'], ['👛', '6k'], ['🏦', '80k']];
+
+// ---------- разделы ----------
+const sw = () => state.stroke;
+const lab = (icon, text) => `<span class="lab ${state.lstyle}">${ico(icon, state.lstyle === 'dark' ? 16 : 15, sw())}<span>${text}</span></span>`;
+function finance() {
+  const o = state, hero = o.design === 'hero';
+  const accs = `<div class="accs"><span class="total">128k ₽</span>${ACC.map(a => `<span class="acc">${a[0]} ${a[1]}</span>`).join('')}</div>`;
+  const fillC = hero ? '#16171d' : '#fff';
+  if (o.layout === 'now') {
+    return `<div class="fin"><div class="l1"><div class="limit"><i></i><em></em><span style="left:10px;color:${fillC}">54k ₽ <span style="font-weight:500;opacity:.8">· ≈2 200/день</span></span><span style="right:6px;color:var(--muted);font-weight:500">4 300/день</span></div><span class="goal">80k</span></div>`
+      + `<div class="old"><span>осталось 26k ₽</span><span style="display:inline-flex;gap:3px;align-items:center">${ico('calendar', 13, 2)}прогноз 65k ₽</span></div>${accs}</div>`;
+  }
+  const inBar = o.canDay === 'bar' ? `<span style="right:6px;color:${hero ? '#a3a3a3' : 'var(--muted)'};font-weight:500">4 300/день</span>` : '';
+  const left = `26k${o.canDay === 'left' ? ' · 4 300/день' : ''}`;
+  return `<div class="fin"><div class="l1"><div class="limit"><i></i><em></em><span style="left:10px;color:${fillC}">54k ₽</span>${inBar}</div><span class="goal">80k</span>${lab(o.fcIcon, '65k')}</div>`
+    + `<div class="l2">${lab(o.dayIcon, '2 200/день')}${lab(o.leftIcon, left)}</div>${accs}</div>`;
+}
+const card = ([m, t, u]) => `<div class="ncard"><small>${m}${u ? ' · <span class="n">Новое</span>' : ''}</small><span style="font-weight:${u ? 700 : 500}">${t}</span></div>`;
+const news = widget => `<div class="news"><div class="grid">${NEWS.map(card).join('')}</div><div class="dots">${widget ? '<span class="arr">‹</span>● ○ ○<span class="arr">›</span>' : '● ○ ○'}</div></div>`;
+function tasks() {
+  return `<div class="head late"><span>Просрочено</span><span class="cnt">1</span></div>${OVER.map(x => row(x, true)).join('')}`
+    + `<div class="head"><span>ср 25 ноя · Сегодня</span><span class="bar"><i style="width:25%"></i></span><span>1 из 4</span></div>${TODAY.map(x => row(x)).join('')}`
+    + `<div class="head"><span>чт 26 ноя · Завтра</span><span class="cnt">3</span></div>${TOM.map(x => row(x)).join('')}`
+    + `<div class="head"><span>пт 27 ноя</span><span class="cnt">3</span></div>${FRI.map(x => row(x)).join('')}`;
+}
+const TITLES = { fin: 'Финансы', news: 'Новости', tasks: 'Задачи' };
+const stitle = k => state.design === 'titled' ? `<div class="stitle">${TITLES[k]}${ico('chevron', 14, 2.2)}</div>` : '';
+const DIMS = { 36: [30, 3], 40: [34, 3], 44: [38, 3], 48: [40, 4] };
+const barSpace = () => 14 + state.navH + 10;
+function hub(widget) {
+  const o = state, d = o.design;
+  const secCls = k => d === 'cards' ? 'sec card' : d === 'hero' && k === 'fin' ? 'sec hero' : 'sec';
+  const finSec = `<div class="${secCls('fin')}">${stitle('fin')}${finance()}</div>`;
+  const newsSec = `<div class="${secCls('news')}">${stitle('news')}${news(widget)}</div>`;
+  const t = `<div class="tasks">${tasks()}${o.under === 'fade' ? '<div class="fade"></div>' : ''}</div>`;
+  const tasksSec = d === 'cards'
+    ? `<div class="sec card tail" style="flex:1;min-height:0;display:flex;flex-direction:column;padding-bottom:0">${stitle('tasks')}${t}</div>`
+    : `<div class="sec" style="flex:1;min-height:0;display:flex;flex-direction:column">${stitle('tasks')}${t}</div>`;
+  const strip = o.under === 'stop' ? `<div class="strip" style="height:${barSpace()}px"></div>` : '';
+  return `<div class="body${d === 'cards' ? ' ground' : ''}" style="gap:${o.gap}px">${finSec}${newsSec}${tasksSec}</div>${strip}`;
+}
+function navbar() {
+  const o = state, [s, pad] = DIMS[o.navH], i = Math.round(s * .56), w = sw();
+  const dark = o.style === 'dark';
+  const btn = (name, on) => `<span class="ib${on ? ' on' : ''}" style="width:${s}px;height:${s}px">${ico(name, i, w)}</span>`;
+  const pi = o.plusSize === 'big' ? i + 5 : i, pw = o.plusSize === 'big' ? w + .5 : w;
+  const pc = { violet: '#862ce0', lilac: dark ? '#c39bff' : '#862ce0', white: dark ? '#ffffff' : '#16171d' }[o.plus];
+  const plus = o.plus === 'circle'
+    ? `<span class="ib" style="width:${s}px;height:${s}px;background:#862ce0;color:#fff">${ico('plus', i, w)}</span>`
+    : `<span class="ib" style="width:${s}px;height:${s}px;color:${pc}">${ico('plus', pi, pw)}</span>`;
+  const mic = o.voice === 'bar' ? btn('mic', false) : '';
+  return `<div class="nav"><div class="cap st-${o.style}" style="padding:${pad}px">${btn(o.hubIcon, o.hubBg === 'bg')}${btn(o.setIcon, false)}${mic}${plus}</div></div>`;
+}
+function quickAdd() {
+  if (!showQa) return '';
+  const mic = state.voice === 'sheet' ? `<span class="mic">${ico('mic', 20, 2)}</span>` : '';
+  return `<div class="scrim"></div><div class="qa"><div class="inp"><span>Купить хлеб завтра в 10</span>${mic}</div>`
+    + `<div class="chips"><span>📅 Сегодня</span><span>📥 Входящие</span><span>🔔</span><span class="send">${ico('send', 20, 2.2)}</span></div></div>`;
+}
+const status = '<div class="status"><span>14:51</span><span>▾ ▴ ▮ 97</span></div>';
+function render() {
+  document.getElementById('app').innerHTML = status + `<div class="screen">${hub(false)}${navbar()}${quickAdd()}</div>`;
+  document.getElementById('widget').innerHTML = status + `<div class="wdg">${hub(true)}${navbar()}</div><div class="icons">${'<span></span>'.repeat(4)}</div>${showQa ? quickAdd().replace('class="qa"', 'class="qa" style="bottom:120px"') : ''}`;
+  renderGroups();
+  document.getElementById('summary').value = summary();
+  try { localStorage.setItem(KEY, JSON.stringify(state)) } catch (e) {}
+}
+function renderGroups() {
+  document.getElementById('groups').innerHTML = GROUPS.map(([title, ctls]) =>
+    `<fieldset><legend>${title}</legend>${ctls.map(([k, label, opts]) =>
+      `<div class="ctl"><span id="l-${k}">${label}</span><div class="seg" role="group" aria-labelledby="l-${k}">${opts.map(([v, t]) =>
+        `<button type="button" id="c-${k}-${v}" data-k="${k}" data-v="${v}" aria-pressed="${state[k] == v}"${ICONIC.has(k) ? ` aria-label="${NAMES[v]}" title="${NAMES[v]}"` : ''}>${ICONIC.has(k) ? ico(v, 20, 1.75) : t}${PMK[k] == v ? '<span class="tag pm">PM</span>' : REC[k] == v ? '<span class="tag rec">реком.</span>' : ''}</button>`).join('')}</div></div>`).join('')}</fieldset>`).join('');
+}
+function summary() {
+  return 'Дата в панели — убрана\n' + GROUPS.map(([title, ctls]) => `${title}: ` + ctls.map(([k, label, opts]) => {
+    const t = opts.find(([v]) => v == state[k])[1];
+    return `${label.toLowerCase()} — ${NAMES[t] || t}`;
+  }).join('; ')).join('\n');
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('button[data-k]'); if (!b) return;
+  const v = b.dataset.v; state[b.dataset.k] = isNaN(+v) ? v : +v; render();
+});
+document.getElementById('reset').addEventListener('click', () => { state = { ...REC }; render() });
+document.getElementById('qaBtn').addEventListener('click', e => { showQa = !showQa; e.currentTarget.textContent = `Окно «+»: ${showQa ? 'открыто' : 'скрыто'}`; render() });
+document.getElementById('viewBtn').addEventListener('click', e => {
+  view = view === 'both' ? 'app' : view === 'app' ? 'widget' : 'both';
+  document.body.classList.toggle('one', view !== 'both');
+  document.getElementById('pvApp').classList.toggle('hide', view === 'widget');
+  document.getElementById('pvW').classList.toggle('hide', view === 'app');
+  e.currentTarget.textContent = `Показать: ${view === 'both' ? 'оба' : view === 'app' ? 'приложение' : 'виджет'}`;
+});
+document.getElementById('copy').addEventListener('click', () => {
+  const out = document.getElementById('copied');
+  const fallback = () => { const s = document.getElementById('summary'); s.focus(); s.select(); out.textContent = 'Текст выделен — скопируй вручную' };
+  try { navigator.clipboard.writeText(summary()).then(() => { out.textContent = 'Скопировано' }, fallback) } catch (e) { fallback() }
+});
+render();
+</script>
