@@ -7,6 +7,7 @@ import android.os.Build
 import android.view.View
 import android.widget.RemoteViews
 import androidx.annotation.RequiresApi
+import androidx.core.net.toUri
 import com.prostovasei.simpletasks.MainActivity
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.domain.model.habits.Habit
@@ -46,7 +47,7 @@ internal fun habitsViews(context: Context, id: Int, habits: List<Habit>, today: 
         setRemoteAdapter(R.id.widget_habits_list, items.build())
         setPendingIntentTemplate(R.id.widget_habits_list, PendingIntent.getBroadcast(
             context, id,
-            Intent(context, WidgetActionReceiver::class.java).setAction(WidgetActions.TOGGLE_HABIT).setData(android.net.Uri.parse("simpletasks://widget/$id/habits")),
+            Intent(context, WidgetActionReceiver::class.java).setAction(WidgetActions.TOGGLE_HABIT).setData("simpletasks://widget/$id/habits".toUri()),
             PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         ))
         removeAllViews(R.id.widget_habits_bar)
@@ -94,7 +95,7 @@ internal fun hubHabitViews(views: RemoteViews, context: Context, id: Int, habits
 private fun openHabits(context: Context, id: Int): PendingIntent = PendingIntent.getActivity(
     context, id,
     Intent(context, MainActivity::class.java).putExtra(MainActivity.EXTRA_OPEN_HABITS, true)
-        .setData(android.net.Uri.parse("simpletasks://widget/$id/open-habits"))
+        .setData("simpletasks://widget/$id/open-habits".toUri())
         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
     PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
 )
