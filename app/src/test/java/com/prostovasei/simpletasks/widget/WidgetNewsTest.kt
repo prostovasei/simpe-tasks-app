@@ -125,7 +125,7 @@ class WidgetNewsTest {
         }.remoteViews
         val root = newsWidgetViews(context, 1, bar).apply(context, FrameLayout(context))
 
-        val refresh = root.viewsWithDescription(context.getString(R.string.news_refresh)).single()
+        val refresh = root.viewsWithDescription(context.getString(R.string.nav_add)).single() // #338: обновление — в меню «+»
         assertTrue(generateSequence(refresh) { it.parent as? View }.take(3).any(View::hasOnClickListeners))
         assertEquals(0, root.viewsWithDescription(context.getString(R.string.update_title)).size) // #336: в панели только дата, разделы, настройки и «+»
 

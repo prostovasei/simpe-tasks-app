@@ -269,7 +269,7 @@ fun AppNavHost(
     val inHealth = destination?.hasRoute(HealthDestination::class) == true
     val inNews = destination?.hasRoute(NewsDestination::class) == true
     val inHub = destination?.hasRoute(HubDestination::class) == true
-    var hubMenu by remember { mutableStateOf(false) }
+    var addOpen by rememberSaveable { mutableStateOf(false) }
     val newsScope = rememberCoroutineScope()
     val refreshNews: suspend () -> Unit = {
         WidgetRenderer.refreshNews(context.applicationContext, cancelNotification = true)
@@ -413,32 +413,30 @@ fun AppNavHost(
                 }
                 TaskCanvasTheme(enabled = inHub || inFinance || inHealth || inNews || active == "tasks" && task != Tab.LISTS) {
                     androidx.compose.foundation.layout.Box {
-                        // #336 (конструктор PM): вместо вкладок — плавающая капсула справа: дата, хаб (выбор раздела), настройки, «+».
+                        // #336/#338 (конструктор PM): плавающая капсула справа — разделы, настройки, голос, «+» (меню «что добавить»).
                         FloatingNavBar(
-                            today = java.time.LocalDate.now(),
                             onHub = { sectionsOpen = true },
                             onSettings = { navController.navigate(AppSettingsDestination) { launchSingleTop = true } },
-                            onAdd = {
-                                when (active) {
-                                    "hub" -> hubMenu = true
-                                    "finance" -> finance.onIntent(FinanceIntent.Add)
-                                    "health" -> health.onIntent(HealthIntent.Add)
-                                    "news" -> { newsScope.launch { refreshNews() } }
-                                    "tasks" -> navController.navigate(QuickAddDestination(today = task != Tab.LISTS))
-                                }
-                            }, addTag = when (active) {
-                                "finance" -> TAG_FINANCE_ADD
-                                "health" -> TAG_HEALTH_ADD
-                                "news" -> "news:refresh"
-                                else -> TAG_ADD_TASK
-                            }, addLabel = when (active) {
-                                "finance" -> R.string.finance_add
-                                "health" -> R.string.health_add
-                                "news" -> R.string.news_refresh
-                                else -> R.string.add_task
-                            },
+                            onVoice = { context.startActivity(com.prostovasei.simpletasks.widget.voiceIntent(context, com.prostovasei.simpletasks.widget.WidgetFilter.All)) },
+                            onAdd = { addOpen = true },
                             onHubLongClick = { weekFilterOpen = true }.takeIf { active == "tasks" && task == Tab.WEEK },
                         )
+                        if (addOpen) {
+                            TabPickerSheet(
+                                selected = null,
+                                entries = addEntries(news = active == "news"),
+                                onPick = { key ->
+                                    addOpen = false
+                                    when (key) {
+                                        ADD_TASK -> navController.navigate(QuickAddDestination(today = !(active == "tasks" && task == Tab.LISTS)))
+                                        ADD_EXPENSE -> finance.onIntent(FinanceIntent.Add)
+                                        ADD_WEIGHT -> health.onIntent(HealthIntent.Add)
+                                        ADD_NEWS -> newsScope.launch { refreshNews() }
+                                    }
+                                },
+                                onDismiss = { addOpen = false },
+                            )
+                        }
                         if (sectionsOpen) {
                             TabPickerSheet(
                                 selected = if (active == "tasks") task.name else active,
@@ -458,22 +456,6 @@ fun AppNavHost(
                                 },
                                 onDismiss = { sectionsOpen = false },
                             )
-                        }
-                        // #329: «+» на хабе — меню «Задача / Расход / Вес», окна открываются поверх хаба.
-                        androidx.compose.material3.DropdownMenu(expanded = hubMenu, onDismissRequest = { hubMenu = false },
-                            modifier = Modifier.testTag(TAG_HUB_MENU)) {
-                            listOf(
-                                Triple(R.string.hub_add_task, R.drawable.ic_module_tasks) { navController.navigate(QuickAddDestination(today = true)) },
-                                Triple(R.string.hub_add_expense, R.drawable.ic_module_finance) { finance.onIntent(FinanceIntent.Add) },
-                                Triple(R.string.hub_add_weight, R.drawable.ic_module_health) { health.onIntent(HealthIntent.Add) },
-                            ).forEach { (label, icon, action) ->
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(label), fontWeight = androidx.compose.ui.text.font.FontWeight.Bold) },
-                                    leadingIcon = { androidx.compose.material3.Icon(androidx.compose.ui.res.painterResource(icon), null) },
-                                    onClick = { hubMenu = false; action() },
-                                    modifier = Modifier.testTag("$TAG_HUB_MENU:$label"),
-                                )
-                            }
                         }
                         if (active == "tasks" && taskPickerOpen) {
                             androidx.compose.material3.AlertDialog(
@@ -506,7 +488,8 @@ fun AppNavHost(
         NavHost(
             navController,
             startDestination = startDestination,
-            modifier = Modifier.padding(padding).consumeWindowInsets(padding),
+            // #338: на хабе задачи идут до низа экрана, капсула лежит поверх (в конце списка — отступ под неё).
+            modifier = (if (inHub) Modifier.padding(top = padding.calculateTopPadding()) else Modifier.padding(padding)).consumeWindowInsets(padding),
             enterTransition = { slideIn(push = true) },
             exitTransition = { slideOut(push = true) },
             popEnterTransition = { slideIn(push = false) },
@@ -573,7 +556,14 @@ fun AppNavHost(
                 val healthState by health.state.collectAsStateWithLifecycle()
                 FinanceEffects(finance)
                 HubRoute(financeState, finance::onIntent, healthState, health::onIntent, onOpenTask = openTask,
-                    onAddTask = { navController.navigate(QuickAddDestination(today = true)) })
+                    onAddTask = { navController.navigate(QuickAddDestination(today = true)) },
+                    onOpenSection = { key ->
+                        when (key) {
+                            com.prostovasei.simpletasks.ui.feature.hub.HUB_FINANCE -> navController.openRoot(FinanceDestination, restore = true)
+                            com.prostovasei.simpletasks.ui.feature.hub.HUB_NEWS_SECTION -> navController.openRoot(NewsDestination, restore = true)
+                            else -> navController.openTab(Tab.valueOf(lastTaskTab).takeIf { it != Tab.LISTS } ?: Tab.UPCOMING)
+                        }
+                    })
             }
             composable<FinanceDestination> {
                 FinanceRoute(finance, onOpenUnsorted = { navController.navigate(FinanceUnsortedDestination) { launchSingleTop = true } })
@@ -670,7 +660,6 @@ private fun AnimatedContentTransitionScope<NavBackStackEntry>.slideOut(push: Boo
 /** Сдвиг экрана при переходе — десятая часть ширины. */
 private const val SHIFT_PART = 10
 
-const val TAG_HUB_MENU = "hub_menu"
 
 /** Переход на вкладку с сохранением состояния каждой вкладки (стандартное поведение нижнего бара). */
 // Итерация 55: «Списки» всегда открываются с корня — «Входящие», «Поиск» и «Настройки» внутри не «залипают».

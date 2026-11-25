@@ -35,6 +35,14 @@ internal fun widgetSectionsIntent(context: Context, id: Int): Intent =
         .putExtra("sections", true)
         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
+/** #338: «+» виджета — меню «что добавить» (задача, расход, вес; в «Новостях» — ещё «Обновить новости»). */
+internal fun widgetAddIntent(context: Context, id: Int): Intent =
+    Intent(context, WidgetPopupActivity::class.java)
+        .setData("simpletasks://widget/$id/add".toUri())
+        .putExtra(WidgetActions.EXTRA_WIDGET_ID, id)
+        .putExtra("add", true)
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+
 /** #336: разделы виджета — «Главная», три вида задач («Все», «Неделя», «Входящие»), финансы, здоровье, новости, настройки. */
 internal val WIDGET_PICKER_ENTRIES: List<com.prostovasei.simpletasks.ui.navigation.PickerEntry> = listOf(
     com.prostovasei.simpletasks.ui.navigation.PickerEntry("HUB", R.drawable.ic_nav_grid, R.string.module_hub, "widget_pick:HUB"),
@@ -75,7 +83,25 @@ class WidgetPopupActivity : ComponentActivity() {
         }
         setContent {
             TaskCanvasTheme {
-                if (intent.getBooleanExtra("sections", false)) {
+                if (intent.getBooleanExtra("add", false)) {
+                    val module = WidgetSelection.module(this, id)
+                    com.prostovasei.simpletasks.ui.navigation.TabPickerSheet(
+                        selected = null,
+                        entries = com.prostovasei.simpletasks.ui.navigation.addEntries(news = module == WidgetModule.NEWS),
+                        onDismiss = ::finish,
+                        onPick = { key ->
+                            val context = this@WidgetPopupActivity
+                            when (key) {
+                                com.prostovasei.simpletasks.ui.navigation.ADD_TASK ->
+                                    startActivity(quickAddIntent(context, if (module == WidgetModule.TASKS) WidgetSelection.get(context, id) ?: WidgetFilter.All else WidgetFilter.All))
+                                com.prostovasei.simpletasks.ui.navigation.ADD_EXPENSE -> startActivity(widgetPopupIntent(context, id, finance = true))
+                                com.prostovasei.simpletasks.ui.navigation.ADD_WEIGHT -> startActivity(widgetPopupIntent(context, id, finance = false, health = true))
+                                com.prostovasei.simpletasks.ui.navigation.ADD_NEWS -> sendBroadcast(WidgetActions.refreshNews(context, id))
+                            }
+                            finish()
+                        },
+                    )
+                } else if (intent.getBooleanExtra("sections", false)) {
                     val entries = WIDGET_PICKER_ENTRIES.filter { it.key != "week" || Build.VERSION.SDK_INT >= Build.VERSION_CODES.S }
                     com.prostovasei.simpletasks.ui.navigation.TabPickerSheet(
                         selected = widgetPickerSelected(WidgetSelection.module(this, id), WidgetSelection.get(this, id)),

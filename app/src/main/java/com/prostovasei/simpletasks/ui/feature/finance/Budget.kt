@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.Spacer
+import com.prostovasei.simpletasks.domain.model.finance.financeThousands
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
@@ -117,7 +119,7 @@ internal fun BudgetProgress(fill: Float, color: Color, today: Float?, modifier: 
 @Composable
 internal fun LimitBar(
     spent: Long, limit: Long?, forecast: Long?, month: YearMonth, today: java.time.LocalDate,
-    /** #336: в хабе — сумма в день прямо в полосе: «≈2 200/день» рядом с потраченным, «4 300/день» — в серой части у лимита. */
+    /** #338: в хабе — прогноз справа от цели, под тратами «в среднем в день», справа «осталось» (и «можно в день»), подписи значками. */
     daily: Boolean = false,
     onClick: () -> Unit,
 ) {
@@ -133,22 +135,32 @@ internal fun LimitBar(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(spacing.xs)) {
             BudgetProgress(fill, color, limit?.let { BudgetRules.todayShare(month, today) }, Modifier.weight(1f), SizeTokens.LIMIT_BAR) {
-                val notes = if (daily) DailyNotes.of(spent, limit, month, today, fill) else DailyNotes.NONE
                 Text(
-                    notes.spent?.let { "${compactAmount(spent)} · $it" } ?: compactAmount(spent),
-                    Modifier.align(Alignment.CenterStart).padding(horizontal = spacing.sm).testTag(TAG_ANALYTICS_TOTAL),
+                    compactAmount(spent), Modifier.align(Alignment.CenterStart).padding(horizontal = spacing.sm).testTag(TAG_ANALYTICS_TOTAL),
                     style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold,
                     color = if (inside) colors.onAccent else colors.textPrimary, maxLines = 1,
                 )
-                notes.left?.let {
-                    Text(
-                        it, Modifier.align(Alignment.CenterEnd).padding(horizontal = spacing.sm).testTag(TAG_LIMIT_DAILY),
-                        style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Medium, color = colors.textSecondary, maxLines = 1,
-                    )
+            }
+            Text(limit?.let { compactAmount(it).removeSuffix(" ₽").removeSuffix(" ₽") } ?: "—",
+                style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+            if (daily && forecast != null) LimitNote(R.drawable.ic_finance_trend, financeThousands(forecast), "Прогноз", TAG_LIMIT_FORECAST)
+        }
+        if (daily) {
+            val notes = DailyNotes.of(spent, limit, month, today)
+            Row(Modifier.padding(top = spacing.xxs), verticalAlignment = Alignment.CenterVertically) {
+                notes.spent?.let { LimitNote(R.drawable.ic_finance_day, it, "В среднем в день", TAG_LIMIT_DAILY) }
+                Spacer(Modifier.weight(1f))
+                when {
+                    limit == null || pace == null -> Text("Задать бюджет", Modifier.testTag(TAG_LIMIT_STATUS), style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold, color = colors.textSecondary)
+                    pace == BudgetPace.OVER || pace == BudgetPace.DONE -> Text(paceText(pace, limit, spent, ::compactAmount), Modifier.testTag(TAG_LIMIT_STATUS),
+                        style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold,
+                        color = if (pace == BudgetPace.OVER) colors.pace(pace) else colors.textSecondary)
+                    else -> LimitNote(R.drawable.ic_finance_left, listOfNotNull(financeThousands(limit - spent), notes.left).joinToString(" · "), "Осталось", TAG_LIMIT_STATUS,
+                        if (pace == BudgetPace.OK) colors.textSecondary else colors.pace(pace))
                 }
             }
-            Text(limit?.let { compactAmount(it).removeSuffix(" ₽").removeSuffix(" ₽") } ?: "—",
-                style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+            return@Column
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             val status = if (limit == null || pace == null) "Задать бюджет" else paceText(pace, limit, spent, ::compactAmount)
@@ -164,6 +176,16 @@ internal fun LimitBar(
                 Text("прогноз ${compactAmount(forecast)}", style = MaterialTheme.typography.labelLarge, color = colors.textSecondary)
             }
         }
+    }
+}
+
+/** Подпись хаба (#338): значок и сумма серым 12 sp — «прогноз», «в среднем в день», «осталось» в одном стиле. */
+@Composable
+private fun LimitNote(icon: Int, text: String, description: String, tag: String, color: Color = AppTheme.colors.textSecondary) {
+    Row(Modifier.semantics(mergeDescendants = true) { contentDescription = "$description $text" }.testTag(tag), verticalAlignment = Alignment.CenterVertically) {
+        Icon(painterResource(icon), null, Modifier.size(SizeTokens.LIMIT_NOTE_ICON.dp), tint = color)
+        Spacer(Modifier.width(AppTheme.spacing.xxs))
+        Text(text, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = color, maxLines = 1)
     }
 }
 
@@ -416,12 +438,13 @@ internal data class DailyNotes(val spent: String?, val left: String?) {
     companion object {
         val NONE = DailyNotes(null, null)
 
-        fun of(spent: Long, limit: Long?, month: YearMonth, today: java.time.LocalDate, fill: Float): DailyNotes {
+        /** #338: подписи стоят под полосой — показываются всегда, когда есть смысл: траты в месяце; лимит текущего месяца не выбран. */
+        fun of(spent: Long, limit: Long?, month: YearMonth, today: java.time.LocalDate): DailyNotes {
             val current = YearMonth.from(today) == month
             val passed = if (current) today.dayOfMonth else month.lengthOfMonth()
-            val spentNote = (spent / passed).takeIf { spent > 0 && fill >= SPENT_NOTE_MIN }?.let { "≈${perDay(it)}/день" }
+            val spentNote = (spent / passed).takeIf { spent > 0 }?.let { "${perDay(it)}/день" }
             val daysLeft = month.lengthOfMonth() - today.dayOfMonth + 1
-            val leftNote = limit?.takeIf { current && it > spent && 1f - fill >= LEFT_NOTE_MIN }?.let { "${perDay((it - spent) / daysLeft)}/день" }
+            val leftNote = limit?.takeIf { current && it > spent }?.let { "${perDay((it - spent) / daysLeft)}/день" }
             return DailyNotes(spentNote, leftNote)
         }
 
@@ -431,14 +454,13 @@ internal data class DailyNotes(val spent: String?, val left: String?) {
             return rubles.toString().reversed().chunked(3).joinToString("\u00A0").reversed()
         }
 
-        private const val SPENT_NOTE_MIN = 0.55f
-        private const val LEFT_NOTE_MIN = 0.3f
         private const val KOPECKS = 100L
         private const val HUNDRED = 100L
     }
 }
 
 const val TAG_LIMIT_DAILY = "limit_daily"
+const val TAG_LIMIT_FORECAST = "limit_forecast"
 
 const val TAG_LIMIT_BAR = "finance_limit_bar"
 const val TAG_LIMIT_STATUS = "finance_limit_status"

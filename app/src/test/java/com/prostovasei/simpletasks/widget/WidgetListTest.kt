@@ -185,7 +185,7 @@ class WidgetListTest {
     fun bottomBarOverList() {
         val root = renderWidget(context, model).applyLikeLauncher(context)
         // На ширине 320 dp свободная зона находится слева от четырёх вкладок.
-        listOf("Разделы", "Настройки", "Новая задача").forEach { label ->
+        listOf("Разделы", "Настройки", "Создать задачу голосом", "Добавить").forEach { label ->
             val found = ArrayList<View>()
             root.findViewsWithText(found, label, View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
             assertEquals(label, 1, found.size)

@@ -182,28 +182,41 @@ internal class FinanceRows(private val context: Context, private val width: Int,
             setViewVisibility(R.id.widget_finance_right_column, android.view.View.GONE)
         }
 
-    /** Полоса лимита (#327, вариант Г): картинка полосы и строка «осталось · прогноз». */
+    /** Полоса лимита (#327, вариант Г): картинка полосы и строка «осталось · прогноз»; [daily] — раскладка хаба (#338). */
     internal fun limitViews(model: MonthSpending, limit: Long?, month: YearMonth, today: java.time.LocalDate, daily: Boolean = false): RemoteViews =
-        RemoteViews(context.packageName, R.layout.widget_finance_limit).apply {
+        RemoteViews(context.packageName, if (daily) R.layout.widget_hub_limit else R.layout.widget_finance_limit).apply {
             val pace = limit?.let { BudgetRules.pace(it, model.total, month, today) }
-            setImageViewBitmap(R.id.widget_finance_limit_bar, limitBar(model.total, limit, pace, BudgetRules.todayShare(month, today),
-                if (daily) com.prostovasei.simpletasks.ui.feature.finance.DailyNotes.of(model.total, limit, month, today, limit?.let { (model.total.toFloat() / it).coerceIn(0f, 1f) } ?: 0f) else null))
+            setImageViewBitmap(R.id.widget_finance_limit_bar, limitBar(model.total, limit, pace, BudgetRules.todayShare(month, today)))
             setContentDescription(R.id.widget_finance_limit_bar,
                 limit?.let { "Потрачено ${Money.format(model.total)} из ${Money.format(it)}" } ?: "Потрачено ${Money.format(model.total)}, бюджет не задан")
-            setTextViewText(R.id.widget_finance_limit_status,
-                if (limit == null || pace == null) "Бюджет не задан" else paceText(pace, limit, model.total, ::compactAmount))
+            val notes = if (daily) com.prostovasei.simpletasks.ui.feature.finance.DailyNotes.of(model.total, limit, month, today) else null
+            val leftNote = daily && limit != null && pace != null && pace != BudgetPace.OVER && pace != BudgetPace.DONE
+            setTextViewText(R.id.widget_finance_limit_status, when {
+                limit == null || pace == null -> "Бюджет не задан"
+                leftNote -> listOfNotNull(financeThousands(limit - model.total), notes?.left).joinToString(" · ")
+                else -> paceText(pace, limit, model.total, ::compactAmount)
+            })
             val status = when (pace) {
                 BudgetPace.AHEAD -> ColorTokens.warning.light
                 BudgetPace.OVER -> ColorTokens.danger.light
                 else -> ColorTokens.textSecondary.light
             }
             setTextColor(R.id.widget_finance_limit_status, status.toInt())
-            setTextViewText(R.id.widget_finance_estimate, model.forecast?.let { "прогноз ${compactAmount(it)}" }.orEmpty())
-            if (model.forecast == null) setViewVisibility(R.id.widget_finance_estimate_group, android.view.View.INVISIBLE)
+            if (daily) {
+                setViewVisibility(R.id.widget_finance_left_icon, if (leftNote) android.view.View.VISIBLE else android.view.View.GONE)
+                setInt(R.id.widget_finance_left_icon, "setColorFilter", status.toInt())
+                setTextViewText(R.id.widget_finance_daily, notes?.spent.orEmpty())
+                if (notes?.spent == null) setViewVisibility(R.id.widget_finance_daily_group, android.view.View.INVISIBLE)
+                setTextViewText(R.id.widget_finance_estimate, model.forecast?.let { financeThousands(it) }.orEmpty())
+                if (model.forecast == null) setViewVisibility(R.id.widget_finance_estimate_group, android.view.View.GONE)
+            } else {
+                setTextViewText(R.id.widget_finance_estimate, model.forecast?.let { "прогноз ${compactAmount(it)}" }.orEmpty())
+                if (model.forecast == null) setViewVisibility(R.id.widget_finance_estimate_group, android.view.View.INVISIBLE)
+            }
         }
 
     /** Толстая полоса: внутри потрачено, отметка «сегодня», справа лимит. Рисуется в 2× (как график). */
-    private fun limitBar(spent: Long, limit: Long?, pace: BudgetPace?, todayShare: Float?, notes: com.prostovasei.simpletasks.ui.feature.finance.DailyNotes? = null): Bitmap {
+    private fun limitBar(spent: Long, limit: Long?, pace: BudgetPace?, todayShare: Float?): Bitmap {
         val scale = 2f
         val width = ((width.coerceIn(180, 440) - 12) * scale).toInt()
         val bar = SizeTokens.LIMIT_BAR * scale
@@ -241,25 +254,6 @@ internal class FinanceRows(private val context: Context, private val width: Int,
         val baseline = top + bar / 2 - (paint.descent() + paint.ascent()) / 2
         paint.color = (if (fill >= 0.3f) ColorTokens.onAccent.light else ColorTokens.textPrimary.light).toInt()
         canvas.drawText(compactAmount(spent), SizeTokens.BUDGET_BAR * 2 * scale, baseline, paint)
-        // #336: сумма в день прямо в полосе (хаб): «≈2 200/день» после потраченного, «4 300/день» — у правого края серой части.
-        notes?.spent?.let {
-            val x = SizeTokens.BUDGET_BAR * 2 * scale + paint.measureText(compactAmount(spent) + " ")
-            paint.typeface = android.graphics.Typeface.DEFAULT
-            canvas.drawText("· $it", x, baseline, paint)
-            paint.typeface = android.graphics.Typeface.DEFAULT_BOLD
-        }
-        notes?.left?.let {
-            paint.typeface = android.graphics.Typeface.DEFAULT
-            paint.textSize = 12 * scale
-            paint.color = ColorTokens.textSecondary.light.toInt()
-            val w = paint.measureText(it)
-            val x = right - w - SizeTokens.BUDGET_BAR * scale
-            paint.color = ColorTokens.accentSoft.light.toInt()
-            canvas.drawRect(x - 4 * scale, top + 2 * scale, x + w + 4 * scale, top + bar - 2 * scale, paint)
-            paint.color = ColorTokens.textSecondary.light.toInt()
-            canvas.drawText(it, x, baseline, paint)
-            paint.typeface = android.graphics.Typeface.DEFAULT_BOLD
-        }
         paint.textSize = 15 * scale
         paint.color = ColorTokens.textPrimary.light.toInt()
         canvas.drawText(limitText, width - paint.measureText(limitText), baseline, paint)

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Полоса лимита виджета «Главная» (#338, выбор PM): полоса с целью, справа прогноз со стрелкой; под ней слева «в среднем в день»
+  (календарь с точкой), справа «осталось» (кошелёк) и «можно в день». Подписи серые 12 sp, как в приложении.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:orientation="vertical" android:paddingHorizontal="@dimen/widget_edge">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical">
+        <ImageView android:id="@+id/widget_finance_limit_bar" android:layout_width="0dp" android:layout_weight="1"
+            android:layout_height="wrap_content" android:adjustViewBounds="true"
+            android:scaleType="fitCenter" android:contentDescription="@null" />
+        <LinearLayout android:id="@+id/widget_finance_estimate_group" android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:paddingStart="6dp" android:gravity="center_vertical">
+            <ImageView android:layout_width="14dp" android:layout_height="14dp" android:src="@drawable/ic_finance_trend"
+                android:tint="@color/widget_flat_text_secondary" android:contentDescription="@null" />
+            <TextView android:id="@+id/widget_finance_estimate" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:paddingStart="3dp" android:textSize="12sp" android:textStyle="bold" android:textColor="@color/widget_flat_text_secondary" />
+        </LinearLayout>
+    </LinearLayout>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical">
+        <LinearLayout android:id="@+id/widget_finance_daily_group" android:layout_width="0dp" android:layout_weight="1"
+            android:layout_height="wrap_content" android:gravity="center_vertical">
+            <ImageView android:layout_width="14dp" android:layout_height="14dp" android:src="@drawable/ic_finance_day"
+                android:tint="@color/widget_flat_text_secondary" android:contentDescription="@null" />
+            <TextView android:id="@+id/widget_finance_daily" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:paddingStart="3dp" android:textSize="12sp" android:textStyle="bold" android:textColor="@color/widget_flat_text_secondary" />
+        </LinearLayout>
+        <ImageView android:id="@+id/widget_finance_left_icon" android:layout_width="14dp" android:layout_height="14dp"
+            android:src="@drawable/ic_finance_left" android:tint="@color/widget_flat_text_secondary" android:contentDescription="@null" />
+        <TextView android:id="@+id/widget_finance_limit_status" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:paddingStart="3dp" android:textSize="12sp" android:textStyle="bold" android:textColor="@color/widget_flat_text_secondary" />
+    </LinearLayout>
+</LinearLayout>

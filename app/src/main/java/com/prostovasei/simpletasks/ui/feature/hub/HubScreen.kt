@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -91,6 +93,7 @@ fun HubRoute(
     onHealth: (HealthIntent) -> Unit,
     onOpenTask: (String) -> Unit,
     onAddTask: () -> Unit,
+    onOpenSection: (String) -> Unit = {},
     viewModel: HubViewModel = androidx.hilt.navigation.compose.hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -99,7 +102,7 @@ fun HubRoute(
     val read by NewsRead.revision.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) { WidgetRenderer.refreshNews(context.applicationContext) }
     val news = remember(newsState, read) { hubNews(context) }
-    HubScreen(state, viewModel::onIntent, finance, onFinance, news, onOpenTask, onAddTask)
+    HubScreen(state, viewModel::onIntent, finance, onFinance, news, onOpenTask, onAddTask, onOpenSection)
     FinanceDialogs(finance, onFinance)
     health.form?.let { WeightDialog(health, it, onHealth) }
 }
@@ -124,17 +127,44 @@ internal fun HubScreen(
     news: List<HubNews>,
     onOpenTask: (String) -> Unit,
     onAddTask: () -> Unit,
+    onOpenSection: (String) -> Unit = {},
 ) {
     val spacing = AppTheme.spacing
     Column(Modifier.fillMaxSize().testTag(TAG_HUB)) {
-        // #336 (выбор PM): финансы, новости, задачи.
+        // #336 (выбор PM): финансы, новости, задачи; #338 — у каждого раздела заголовок «Финансы ›», нажатие открывает раздел.
+        HubSectionTitle(R.string.module_finance, HUB_FINANCE, onOpenSection, Modifier.padding(top = spacing.sm))
         HubFinance(finance, onFinance)
-        if (news.isNotEmpty()) HubNewsPager(news)
-        Box(Modifier.weight(1f).fillMaxWidth().padding(top = spacing.xs)) {
+        if (news.isNotEmpty()) {
+            HubSectionTitle(R.string.module_news, HUB_NEWS_SECTION, onOpenSection, Modifier.padding(top = spacing.sm))
+            HubNewsPager(news)
+        }
+        HubSectionTitle(R.string.module_tasks, HUB_TASKS_SECTION, onOpenSection, Modifier.padding(top = spacing.sm))
+        Box(Modifier.weight(1f).fillMaxWidth()) {
             if (state.isEmpty) HubNoTasks(onAddTask) else HubTasks(state, onIntent, onOpenTask)
         }
     }
 }
+
+/** Заголовок раздела хаба (#338, выбор PM «Заголовки разделов»): «Финансы ›» 13 sp полужирным, нажатие открывает раздел. */
+@Composable
+private fun HubSectionTitle(@androidx.annotation.StringRes label: Int, key: String, onOpen: (String) -> Unit, modifier: Modifier = Modifier) {
+    val colors = AppTheme.colors
+    val spacing = AppTheme.spacing
+    Row(
+        modifier.padding(horizontal = spacing.sm).clip(AppTheme.shapes.small).clickable(role = Role.Button) { onOpen(key) }
+            .padding(horizontal = spacing.xs, vertical = spacing.xxs).testTag("$TAG_HUB_SECTION:$key"),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(stringResource(label), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+        androidx.compose.material3.Icon(androidx.compose.ui.res.painterResource(R.drawable.ic_hub_next), null,
+            Modifier.size(SizeTokens.LIMIT_NOTE_ICON.dp), tint = colors.textSecondary)
+    }
+}
+
+const val HUB_FINANCE = "finance"
+const val HUB_NEWS_SECTION = "news"
+const val HUB_TASKS_SECTION = "tasks"
+const val TAG_HUB_SECTION = "hub_section"
 
 @Composable
 private fun HubFinance(state: FinanceState, onIntent: (FinanceIntent) -> Unit) {
@@ -144,7 +174,7 @@ private fun HubFinance(state: FinanceState, onIntent: (FinanceIntent) -> Unit) {
     val month = java.time.YearMonth.from(today)
     val model = remember(state.operations, today) { MonthSpending.of(state.operations.orEmpty(), month, today) }
     val budget = remember(state.budgets, state.categories, state.operations, today) { state.monthBudget(month) }
-    Column(Modifier.fillMaxWidth().padding(horizontal = spacing.md).padding(top = spacing.sm).testTag(TAG_HUB_FINANCE)) {
+    Column(Modifier.fillMaxWidth().padding(horizontal = spacing.md).testTag(TAG_HUB_FINANCE)) {
         LimitBar(model.total, monthLimit(context, budget), model.forecast, month, today, daily = true) { onIntent(FinanceIntent.OpenBudget(month)) }
         state.accounts?.takeIf { it.isNotEmpty() }?.let { HubAccounts(it, state.total) }
     }
@@ -180,7 +210,9 @@ private fun HubTasks(state: HubState, onIntent: (TaskListIntent) -> Unit, onOpen
         Triple(today, state.todayItems, false),
         Triple(today.plusDays(1), state.tomorrowItems, false),
     )
-    LazyColumn(Modifier.fillMaxSize().testTag(TAG_HUB_TASKS)) {
+    // #338: список идёт под капсулу; снизу отступ в её высоту, чтобы последнюю задачу можно было поднять над панелью.
+    LazyColumn(Modifier.fillMaxSize().testTag(TAG_HUB_TASKS), contentPadding = androidx.compose.foundation.layout.WindowInsets.navigationBars
+        .asPaddingValues().let { androidx.compose.foundation.layout.PaddingValues(bottom = it.calculateBottomPadding() + SizeTokens.NAV_BAR_SPACE.dp) }) {
         groups.forEachIndexed { index, (date, items, late) ->
             if (items.isEmpty()) return@forEachIndexed
             // #334: подписи как в «Предстоящем» — «Просрочено» красным с числом справа, дни 12 sp серым с полосой у «Сегодня».

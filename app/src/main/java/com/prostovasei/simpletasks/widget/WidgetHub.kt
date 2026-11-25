@@ -67,6 +67,12 @@ internal fun hubViews(context: Context, id: Int, model: WidgetModel, bar: Remote
         ))
 
         hubNewsViews(this, context, id, news)
+        // #338: заголовки разделов переключают виджет на раздел.
+        listOf(R.id.widget_hub_title_finance to WidgetModule.FINANCE, R.id.widget_hub_title_news to WidgetModule.NEWS, R.id.widget_hub_title_tasks to WidgetModule.TASKS)
+            .forEach { (view, module) ->
+                setOnClickPendingIntent(view, PendingIntent.getBroadcast(context, id, WidgetActions.module(context, id, module),
+                    PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT))
+            }
         removeAllViews(R.id.widget_hub_bar)
         bar?.let { addView(R.id.widget_hub_bar, it) }
     }
@@ -92,9 +98,11 @@ private fun hubNewsViews(views: RemoteViews, context: Context, id: Int, news: Li
     val pages = (news.size + HUB_WIDGET_PAGE - 1) / HUB_WIDGET_PAGE
     if (pages == 0) {
         views.setViewVisibility(R.id.widget_hub_news, View.GONE)
+        views.setViewVisibility(R.id.widget_hub_title_news, View.GONE)
         return
     }
     views.setViewVisibility(R.id.widget_hub_news, View.VISIBLE)
+    views.setViewVisibility(R.id.widget_hub_title_news, View.VISIBLE)
     val page = hubPage(WidgetSelection.hubPage(context, id), pages)
     val shown = news.drop(page * HUB_WIDGET_PAGE).take(HUB_WIDGET_PAGE)
     listOf(R.id.widget_hub_news_row1, R.id.widget_hub_news_row2).forEachIndexed { row, rowId ->
