@@ -60,7 +60,7 @@ legend { font-weight: 700; font-size: 15px; padding: 0; float: left; width: 100%
 .limit { height: 26px; border-radius: 8px; background: var(--soft); position: relative; overflow: hidden; font-size: 12px; font-weight: 700 }
 .limit i { position: absolute; inset: 0 auto 0 0; width: 67.5%; background: var(--black) }
 .limit em { position: absolute; top: 3px; bottom: 3px; left: 83%; width: 2px; background: #62656e; outline: 1px solid #fff }
-.limit span { position: absolute; top: 5px }
+.limit > span { position: absolute; top: 5px }
 .sub { display: flex; justify-content: space-between; gap: 8px; padding-top: 5px; font-size: 11.5px; color: var(--muted); font-weight: 600; flex-wrap: wrap }
 .sub .ok { color: var(--muted) }
 .avg { font-size: 12px; font-weight: 700; color: var(--title); padding-top: 4px }
@@ -137,13 +137,13 @@ legend { font-weight: 700; font-size: 15px; padding: 0; float: left; width: 100%
 </style>
 
 <h1>Конструктор хаба и навбара</h1>
-<p class="lead">Хаб в приложении и виджете стоят рядом, каждый переключатель меняет оба сразу. Метки: зелёная «PM» — так ты прямо попросил, фиолетовая «реком.» — моя рекомендация там, где выбор за тобой. «Выбор вкладки» показывает, что откроется по нажатию на значок хаба. Когда вид понравится, нажми «Скопировать выбор». Задачи взяты с твоего скриншота, суммы и новости придуманы для примера.</p>
+<p class="lead">Хаб в приложении и виджете стоят рядом, каждый переключатель меняет оба сразу. Метки: зелёная «PM» — твой выбор, фиолетовая «реком.» — моя рекомендация для новых вопросов (высота панели, дата, где сумма в день). «Выбор вкладки» показывает, что откроется по нажатию на значок хаба. Когда вид понравится, нажми «Скопировать выбор». Задачи взяты с твоего скриншота, суммы и новости придуманы для примера.</p>
 
 <div class="layout">
   <div class="panel">
     <div class="top">
       <button type="button" class="btn" id="copy">Скопировать выбор</button>
-      <button type="button" class="btn ghost" id="reset">Рекомендации</button>
+      <button type="button" class="btn ghost" id="reset">Решения PM</button>
       <button type="button" class="btn ghost" id="pickerBtn">Выбор вкладки: скрыт</button>
       <button type="button" class="btn ghost" id="viewBtn">Показать: оба</button>
       <span id="copied" aria-live="polite"></span>
@@ -187,35 +187,36 @@ const ico = (name, s = 22, sw = 2) => name === 'dots'
 // [ключ, подпись, варианты [значение, текст], рекомендация, просьба PM (если прямо сказано)]
 const GROUPS = [
   ['Навбар', [
-    ['nav', 'Вид панели', [['split', 'Капсула + круг «+»'], ['one', 'Одна капсула'], ['vertical', 'Столбик справа'], ['circles', 'Три круга']], 'split'],
-    ['side', 'Где «+»', [['plusRight', 'Справа, у большого пальца'], ['plusLeft', 'Слева']], 'plusRight'],
-    ['size', 'Размер кнопок', [[40, '40'], [44, '44'], [48, '48'], [52, '52']], 44],
-    ['style', 'Фон панели', [['white', 'Белый с тенью'], ['glass', 'Полупрозрачный'], ['dark', 'Тёмный']], 'white'],
-    ['plus', '«+»', [['black', 'Чёрный круг'], ['outline', 'Контур'], ['accent', 'Фиолетовый']], 'black', 'black'],
+    ['nav', 'Вид панели', [['split', 'Капсула + круг «+»'], ['one', 'Одна капсула'], ['vertical', 'Столбик справа'], ['circles', 'Три круга']], 'one', 'one'],
+    ['side', 'Где «+»', [['plusRight', 'Справа, у большого пальца'], ['plusLeft', 'Слева']], 'plusRight', 'plusRight'],
+    ['navH', 'Высота панели', [[48, '48 (кнопки 40, выбор PM)'], [40, '40'], [36, '36'], [32, '32']], 36],
+    ['style', 'Фон панели', [['white', 'Белый с тенью'], ['glass', 'Полупрозрачный'], ['dark', 'Тёмный']], 'dark', 'dark'],
+    ['plus', '«+»', [['black', 'Чёрный круг'], ['outline', 'Контур'], ['accent', 'Фиолетовый']], 'accent', 'accent'],
+    ['date', 'Дата в панели', [['stack', '«25» и «ср / ноя» столбиком'], ['short', '«ср 25»'], ['full', '«25 ноя»'], ['none', 'Нет']], 'stack'],
   ]],
   ['Значки', [
-    ['hubIcon', 'Хаб', [['house', 'house'], ['houseHeart', 'houseHeart'], ['grid', 'grid'], ['tiles', 'tiles'], ['dots9', 'dots9'], ['layers', 'layers']], 'tiles'],
-    ['setIcon', 'Настройки', [['gear', 'gear'], ['sliders', 'sliders'], ['dots', 'dots'], ['menu', 'menu'], ['user', 'user']], 'sliders'],
+    ['hubIcon', 'Хаб', [['house', 'house'], ['houseHeart', 'houseHeart'], ['grid', 'grid'], ['tiles', 'tiles'], ['dots9', 'dots9'], ['layers', 'layers']], 'grid', 'grid'],
+    ['setIcon', 'Настройки', [['gear', 'gear'], ['sliders', 'sliders'], ['dots', 'dots'], ['menu', 'menu'], ['user', 'user']], 'sliders', 'sliders'],
   ]],
   ['Выбор вкладки (нажатие на хаб)', [
-    ['picker', 'Вид', [['menu', 'Меню над кнопкой'], ['fan', 'Круги столбиком'], ['expand', 'Капсула раскрывается'], ['sheet', 'Плитки снизу']], 'menu'],
-    ['taskTabs', 'Задачи в выборе', [['three', '«Предстоящее», «Неделя», «Списки» отдельно'], ['one', 'Одна «Задачи» (последний вид)']], 'three'],
+    ['picker', 'Вид', [['menu', 'Меню над кнопкой'], ['fan', 'Круги столбиком'], ['expand', 'Капсула раскрывается'], ['sheet', 'Плитки снизу']], 'sheet', 'sheet'],
+    ['taskTabs', 'Задачи в выборе', [['three', '«Предстоящее», «Неделя», «Списки» отдельно'], ['one', 'Одна «Задачи» (последний вид)']], 'three', 'three'],
   ]],
   ['Хаб', [
     ['order', 'Порядок блоков', [['news', 'Финансы · новости · задачи'], ['tasks', 'Финансы · задачи · новости (сейчас)']], 'news', 'news'],
-    ['avg', 'Средняя сумма в день', [['spent', 'Тратите в среднем'], ['left', 'Можно в день до конца месяца'], ['both', 'Обе'], ['none', 'Нет (сейчас)']], 'both'],
-    ['avgAt', 'Где показать', [['status', 'В строке под полосой'], ['line', 'Отдельной строкой'], ['chip', 'Плашкой рядом со счетами']], 'status'],
-    ['acc', 'Плашки счетов', [['s', 'Как сейчас'], ['m', 'Крупнее'], ['t', 'Плитки с названием'], ['g', 'Плитки 2 × 2']], 't'],
-    ['newsApp', 'Новости в приложении', [['pages', '2 × 2, свайп (сейчас)'], ['wide', 'Одна широкая, свайп'], ['list', 'Список из 4']], 'pages'],
+    ['avg', 'Средняя сумма в день', [['spent', 'Тратите в среднем'], ['left', 'Можно в день до конца месяца'], ['both', 'Обе'], ['none', 'Нет (сейчас)']], 'both', 'both'],
+    ['avgAt', 'Где показать', [['barBoth', 'В полосе: в среднем — в чёрной части, можно — в серой'], ['barFill', 'В полосе: обе в чёрной части'], ['barUnder', 'Тонкой строкой прямо под полосой'], ['chip', 'Плашкой у счетов (прошлый выбор)'], ['status', 'В строке «осталось»']], 'barBoth'],
+    ['acc', 'Плашки счетов', [['s', 'Как сейчас'], ['m', 'Крупнее'], ['t', 'Плитки с названием'], ['g', 'Плитки 2 × 2']], 'm', 'm'],
+    ['newsApp', 'Новости в приложении', [['pages', '2 × 2, свайп (сейчас)'], ['wide', 'Одна широкая, свайп'], ['list', 'Список из 4']], 'pages', 'pages'],
   ]],
   ['Виджет', [
-    ['newsW', 'Листание новостей', [['arrows', 'Стрелки ‹ › (сейчас)'], ['stack', 'Стопка со свайпом'], ['auto', 'Сами сменяются'], ['chip', 'Кнопка «1 / 3 ›»'], ['list', 'Прокручиваемый список'], ['grid1', 'Одна страница 2 × 2, «Все новости»']], 'stack'],
+    ['newsW', 'Листание новостей', [['arrows', 'Стрелки ‹ › (сейчас)'], ['stack', 'Стопка со свайпом'], ['auto', 'Сами сменяются'], ['chip', 'Кнопка «1 / 3 ›»'], ['list', 'Прокручиваемый список'], ['grid1', 'Одна страница 2 × 2, «Все новости»']], 'arrows', 'arrows'],
   ]],
 ];
 const REC = Object.fromEntries(GROUPS.flatMap(([, l]) => l.map(([k, , , r]) => [k, r])));
 const PMK = Object.fromEntries(GROUPS.flatMap(([, l]) => l.filter(c => c[4] !== undefined).map(([k, , , , pm]) => [k, pm])));
 let state = { ...REC };
-try { const s = JSON.parse(localStorage.getItem('c336') || 'null'); if (s) state = { ...REC, ...s } } catch (e) {}
+try { const s = JSON.parse(localStorage.getItem('c336b') || 'null'); if (s) state = { ...REC, ...s } } catch (e) {}
 let showPicker = false, view = 'both';
 
 // данные
@@ -248,14 +249,22 @@ function finance() {
   const avgText = o.avg === 'spent' ? spent : o.avg === 'left' ? left : o.avg === 'both' ? `${spent} · ${left.replace('можно ', 'можно ')}` : '';
   let status = `<div class="sub"><span>осталось 26k ₽</span><span>прогноз 65k ₽</span></div>`;
   if (o.avg !== 'none' && o.avgAt === 'status') status = `<div class="sub"><span>осталось 26k ₽</span><span style="color:var(--title)">${o.avg === 'both' ? '2 200 ₽/день · можно 4 300' : o.avg === 'spent' ? '≈ 2 200 ₽ в день' : 'можно 4 300 ₽ в день'}</span></div>`;
-  const line = o.avg !== 'none' && o.avgAt === 'line' ? `<div class="avg">${avgText}</div>` : '';
+  const line = o.avg !== 'none' && o.avgAt === 'barUnder' ? `<div class="avg" style="font-size:11px;font-weight:600;color:var(--muted);padding-top:3px">${avgText}</div>` : '';
   const chip = o.avg !== 'none' && o.avgAt === 'chip' ? `<span class="acc-s" style="background:#f1e8fa;color:#6b32a8">${o.avg === 'left' ? '4 300 ₽/день' : '2 200 ₽/день'}</span>` : '';
   let accs;
   if (o.acc === 's') accs = `<div class="accs"><span class="total">141k ₽</span>${ACC.slice(0, 3).map(a => `<span class="acc-s">${a[0]} ${a[3]}</span>`).join('')}${chip}</div>`;
   else if (o.acc === 'm') accs = `<div class="accs" style="flex-wrap:wrap"><span class="total" style="font-size:14px">141k ₽</span>${ACC.slice(0, 3).map(a => `<span class="acc-m">${a[0]} ${a[3]}</span>`).join('')}${chip}</div>`;
   else if (o.acc === 't') accs = `${chip ? `<div class="accs">${chip}</div>` : ''}<div class="accs">${ACC.map(a => `<div class="acc-t"><small>${a[0]} ${a[1]}</small><b>${a[3]}</b></div>`).join('')}</div>`;
   else accs = `${chip ? `<div class="accs">${chip}</div>` : ''}<div class="acc-g">${ACC.map(a => `<div><small>${a[0]} ${a[1]}</small><b>${a[2]} ₽</b></div>`).join('')}</div>`;
-  return `<div class="fin"><div class="limit"><i></i><em></em><span style="left:10px;color:#fff">54k ₽</span><span style="right:10px">80k</span></div>${status}${line}${accs}</div>`;
+  let fillText = '54k ₽', trackText = '80k';
+  if (o.avg !== 'none' && o.avgAt === 'barBoth') {
+    fillText = o.avg === 'left' ? '54k ₽' : `54k ₽ <span style="font-weight:500;opacity:.8">· ≈2 200/день</span>`;
+    trackText = o.avg === 'spent' ? '80k' : `<span style="font-weight:500;color:var(--muted)">4 300/день ·</span> 80k`;
+  }
+  if (o.avg !== 'none' && o.avgAt === 'barFill') {
+    fillText = `54k ₽ <span style="font-weight:500;opacity:.8">· ${o.avg === 'both' ? '≈2 200 · можно 4 300/день' : o.avg === 'spent' ? '≈2 200 ₽/день' : 'можно 4 300 ₽/день'}</span>`;
+  }
+  return `<div class="fin"><div class="limit"><i></i><em></em><span style="left:10px;color:#fff;white-space:nowrap">${fillText}</span><span style="right:6px;white-space:nowrap;background:var(--soft);padding:0 4px;border-radius:4px;z-index:1">${trackText}</span></div>${line}${status}${accs}</div>`;
 }
 const card = ([m, t, u]) => `<div class="card"><small>${m}${u ? ' · <span class="n">Новое</span>' : ''}</small><span style="font-weight:${u ? 700 : 500}">${t}</span></div>`;
 const wide = ([m, t, u], cls = '') => `<div class="wide ${cls}"><small>${m}${u ? ' · <span class="n">Новое</span>' : ''}</small><span style="font-weight:${u ? 700 : 600}">${t}</span></div>`;
@@ -275,23 +284,32 @@ function newsWidget() {
     default: return `<div class="news">${g}<div class="dots"><span class="arr">‹</span>● ○ ○<span class="arr">›</span></div></div>`;
   }
 }
+const DIMS = { 48: [40, 4], 40: [34, 3], 36: [30, 3], 32: [28, 2] };
+function dateEl(on) {
+  const o = state, col = o.style === 'dark' ? '#fff' : '#16171d', sub = o.style === 'dark' ? '#a3a3a3' : '#62656e';
+  const h = DIMS[o.navH][0];
+  if (o.date === 'none') return '';
+  if (o.date === 'stack') return `<span style="display:flex;align-items:center;gap:3px;padding:0 6px 0 8px;height:${h}px;color:${col}"><b style="font-size:${Math.round(h * .55)}px;line-height:1">25</b><span style="display:grid;font-size:9px;line-height:1.05;font-weight:700;color:${sub}"><span>ср</span><span>ноя</span></span></span>`;
+  return `<span style="display:flex;align-items:center;padding:0 8px;height:${h}px;font-size:13px;font-weight:700;color:${col};white-space:nowrap">${o.date === 'short' ? 'ср 25' : '25 ноя'}</span>`;
+}
 function navbar() {
-  const o = state, s = o.size, i = Math.round(s * .48);
+  const o = state, [s, pad] = DIMS[o.navH], i = Math.round(s * .55);
   const btn = (name, on) => `<span class="ib${on ? ' on' : ''}" style="width:${s}px;height:${s}px">${ico(name, i)}</span>`;
   const plus = `<span class="plus p-${o.plus}" style="width:${s + 8}px;height:${s + 8}px">${ico('plus', i + 2, 2.4)}</span>`;
   const hub = btn(o.hubIcon, true), set = btn(o.setIcon, false);
   const st = `st-${o.style}`;
   if (o.nav === 'one') {
-    const inner = o.side === 'plusLeft' ? `${plus}${hub}${set}` : `${hub}${set}${plus}`;
-    return `<div class="nav"><div class="cap ${st}" style="gap:4px">${inner.replace(`width:${s + 8}px;height:${s + 8}px`, `width:${s}px;height:${s}px`)}</div></div>`;
+    const inner = o.side === 'plusLeft' ? `${plus}${dateEl()}${hub}${set}` : `${dateEl()}${hub}${set}${plus}`;
+    return `<div class="nav"><div class="cap ${st}" style="gap:2px;padding:${pad}px">${inner.replace(`width:${s + 8}px;height:${s + 8}px`, `width:${s}px;height:${s}px`)}</div></div>`;
   }
-  if (o.nav === 'vertical') return `<div class="nav v">${plus}<div class="cap v ${st}">${hub}${set}</div></div>`;
+  if (o.nav === 'vertical') return `<div class="nav v">${plus}<div class="cap v ${st}" style="padding:${pad}px">${hub}${set}</div>${o.date !== 'none' ? `<div class="cap ${st}" style="padding:${pad}px">${dateEl()}</div>` : ''}</div>`;
   if (o.nav === 'circles') {
     const c = name => `<span class="plus ${st}" style="width:${s + 4}px;height:${s + 4}px;color:${o.style === 'dark' ? '#fff' : '#16171d'}">${ico(name, i)}</span>`;
     const items = [c(o.setIcon), c(o.hubIcon), plus];
+    if (o.date !== 'none') items.unshift(`<div class="cap ${st}" style="padding:${pad}px">${dateEl()}</div>`);
     return `<div class="nav">${(o.side === 'plusLeft' ? items.reverse() : items).join('')}</div>`;
   }
-  const cap = `<div class="cap ${st}">${hub}${set}</div>`;
+  const cap = `<div class="cap ${st}" style="padding:${pad}px">${dateEl()}${hub}${set}</div>`;
   return `<div class="nav">${o.side === 'plusLeft' ? plus + cap : cap + plus}</div>`;
 }
 const P2 = { upcoming: 'M5 6h14 M5 12h14 M5 18h9', week: 'M4 5h16v15H4z M4 10h16 M10 10v10 M15 10v10', lists: 'M8 6h12 M8 12h12 M8 18h12 M4 6h.01 M4 12h.01 M4 18h.01' };
@@ -301,12 +319,12 @@ const tabs0 = () => state.taskTabs === 'one'
   : [['house', 'Главная', true], ['upcoming', 'Предстоящее'], ['week', 'Неделя'], ['lists', 'Списки'], ['rub', 'Финансы'], ['heart', 'Здоровье'], ['bolt', 'Новости']];
 function picker() {
   if (!showPicker) return '';
-  const o = state, bottom = 14 + o.size + 18;
+  const o = state, bottom = 14 + o.navH + 10;
   const tabs = tabs0().map(([n, l, on]) => [n === 'house' ? o.hubIcon : n, l, on]);
   switch (o.picker) {
     case 'fan': return `<div class="scrim"></div><div class="pick fan" style="bottom:${bottom}px">${tabs.slice().reverse().map(([n, l, on]) => `<div class="${on ? 'on' : ''}">${l}<span class="c">${ico(n, 20)}</span></div>`).join('')}</div>`;
     case 'expand': {
-      const s = o.size;
+      const s = DIMS[o.navH][0];
       return `<div class="nav"><div class="cap st-${o.style}" style="gap:2px">${tabs.map(([n, , on]) => `<span class="ib${on ? ' on' : ''}" style="width:${s}px;height:${s}px">${ico(n, Math.round(s * .46))}</span>`).join('')}<span class="ib" style="width:${s}px;height:${s}px">${ico(o.setIcon, Math.round(s * .46))}</span></div></div>`;
     }
     case 'sheet': return `<div class="scrim"></div><div class="pick sheet">${tabs.map(([n, l, on]) => `<div class="${on ? 'on' : ''}">${ico(n, 22)}${l}</div>`).join('')}<div>${ico(o.setIcon, 22)}Настройки</div></div>`;
@@ -324,7 +342,7 @@ function render() {
   document.getElementById('widget').innerHTML = status + `<div class="wdg">${blocks(newsWidget())}${expanding ? '' : navbar()}${pk}</div><div class="icons">${'<span></span>'.repeat(4)}</div>`;
   renderGroups();
   document.getElementById('summary').value = summary();
-  try { localStorage.setItem('c336', JSON.stringify(state)) } catch (e) {}
+  try { localStorage.setItem('c336b', JSON.stringify(state)) } catch (e) {}
 }
 const ICONIC = new Set(['hubIcon', 'setIcon']);
 function renderGroups() {
