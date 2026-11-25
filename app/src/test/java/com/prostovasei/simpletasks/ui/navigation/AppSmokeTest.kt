@@ -36,6 +36,8 @@ import com.prostovasei.simpletasks.ui.feature.settings.TAG_SETTINGS_APP
 import com.prostovasei.simpletasks.ui.feature.settings.TAG_SETTINGS_FINANCE
 import com.prostovasei.simpletasks.ui.feature.settings.TAG_SETTINGS_TASKS
 import com.prostovasei.simpletasks.ui.navigation.TAG_APP_BAR
+import com.prostovasei.simpletasks.ui.navigation.TAG_NAV_HUB
+import com.prostovasei.simpletasks.ui.navigation.TAG_PICKER
 import com.prostovasei.simpletasks.ui.navigation.TAG_MODULE_SETTINGS
 import com.prostovasei.simpletasks.ui.feature.lists.TAG_NEW_LIST
 import com.prostovasei.simpletasks.ui.feature.task.TAG_DETAIL_CLOSE
@@ -86,7 +88,7 @@ class AppSmokeTest {
     @org.junit.Before
     fun leaveHub() {
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists("hub") }
-        taskTab().performClick()
+        pick("tab:UPCOMING")
     }
 
     @Test
@@ -94,7 +96,11 @@ class AppSmokeTest {
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Всё сделано") }
         // #241: заголовка «Предстоящее» над лентой нет; названия страниц — только в нижней панели.
         composeRule.onNodeWithText("Предстоящее").assertDoesNotExist()
+        // #336: вкладок в панели нет — «Предстоящее» плиткой в окне выбора раздела.
+        composeRule.onNodeWithTag(TAG_NAV_HUB).performClick()
         composeRule.onNodeWithContentDescription("Предстоящее").assertExists()
+        composeRule.onNodeWithTag("tab:UPCOMING").performClick()
+        composeRule.waitUntil(5_000) { !composeRule.onAllNodesWithTagExists(TAG_PICKER) }
 
         // Итерация 55: «Входящие» и «Поиск» — в «Списках» (настройки с #241 — из меню кнопки модуля).
         pickTask("LISTS")
@@ -126,7 +132,7 @@ class AppSmokeTest {
         composeRule.onNodeWithText("Обновление").assertExists()
         composeRule.onNodeWithContentDescription("Назад").performClick()
         composeRule.onNodeWithContentDescription("Назад").performClick()
-        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists("tab:LISTS") }
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists(TAG_APP_BAR) }
 
         // После настроек открыт поиск (откуда уходили): «Списки» ведут к самим «Спискам» — ждём, пока переход закончится.
         pickTask("LISTS")
@@ -139,7 +145,7 @@ class AppSmokeTest {
 
         // Новый список открывается сразу, нижний бар скрыт.
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("В списке пусто") }
-        composeRule.onNodeWithTag("tab:LISTS").assertDoesNotExist()
+        composeRule.onNodeWithTag(TAG_APP_BAR).assertDoesNotExist()
 
         composeRule.onNodeWithContentDescription("Назад").performClick()
         // «Списки» прокручиваются: новый список — под системными строками, на тестовом экране ниже края.
@@ -158,7 +164,7 @@ class AppSmokeTest {
 
         // Первый запуск: счетов нет, нижняя панель — финансовая, «+» ведёт к созданию счёта.
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Начнём со счёта") }
-        composeRule.onNodeWithTag("tab:LISTS").assertExists()
+        composeRule.onNodeWithTag(TAG_APP_BAR).assertExists()
         composeRule.onNodeWithTag("finance_add").performClick()
         composeRule.onNodeWithTag("account_amount").performTextReplacement("42300")
         composeRule.onNodeWithTag("account_save").performClick()
@@ -192,7 +198,7 @@ class AppSmokeTest {
         composeRule.onNodeWithTag("finance_tab:OPERATIONS").assertDoesNotExist()
         composeRule.onNodeWithTag("finance_operations").performScrollToNode(hasText("− 850\u00A0₽") and hasClickAction())
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("− 850\u00A0₽") }
-        switchModule("TASKS")
+        pickTask("LISTS")
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists(TAG_LISTS_SCROLL) }
         composeRule.onNodeWithTag("finance_tab:OPERATIONS").assertDoesNotExist()
         switchModule("FINANCE")
@@ -219,7 +225,7 @@ class AppSmokeTest {
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("− 850\u00A0₽") }
 
         // На вложенных экранах (настройки) нижней панели нет.
-        switchModule("TASKS")
+        pickTask("LISTS")
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists(TAG_LISTS_SCROLL) }
         composeRule.onNodeWithTag(TAG_MODULE_SETTINGS).performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists(TAG_APP_SETTINGS) }
@@ -234,8 +240,7 @@ class AppSmokeTest {
 
         // Записей нет: нижняя панель — «Здоровья» (одна страница «Вес»), «+» открывает окно ввода с 70,0.
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists("health_empty") }
-        composeRule.onNodeWithTag("tab:LISTS").assertDoesNotExist()
-        composeRule.onNodeWithTag("module:HEALTH").assertExists()
+        composeRule.onNodeWithTag(TAG_APP_BAR).assertExists()
         composeRule.onNodeWithTag("health_add").performClick()
         composeRule.onNodeWithTag("weight_window:confirm").performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists("health_hero") }
@@ -263,7 +268,7 @@ class AppSmokeTest {
 
         // Возврат в задачи и снова в «Здоровье»: запись на месте (лента — с начала, на крошечном экране её верх мог уйти за край).
         switchModule("TASKS")
-        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists("tab:UPCOMING") }
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists(TAG_ADD_TASK) }
         composeRule.onNodeWithTag("health_list").assertDoesNotExist()
         switchModule("HEALTH")
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists("health_list") }
@@ -295,19 +300,19 @@ class AppSmokeTest {
 
     /** Меню кнопки модуля: выбрать модуль. */
     private fun switchModule(name: String) {
-        if (name == "TASKS") taskTab().performClick()
-        else composeRule.onNodeWithTag("module:$name").performClick()
+        if (name == "TASKS") pick("tab:UPCOMING") else pick("module:$name")
     }
 
-    private fun taskTab() = composeRule.onNode(
-        androidx.compose.ui.test.hasTestTag("tab:UPCOMING") or
-            androidx.compose.ui.test.hasTestTag("tab:WEEK") or androidx.compose.ui.test.hasTestTag("tab:LISTS"),
-    )
-
-    private fun pickTask(name: String) {
-        taskTab().performClick()
-        composeRule.onNodeWithTag("task_view:$name").performClick()
+    /** #336: разделы — в окне выбора, открывается значком хаба в плавающей панели. */
+    private fun pick(tag: String) {
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists(TAG_NAV_HUB) }
+        composeRule.onNodeWithTag(TAG_NAV_HUB).performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists(tag) }
+        composeRule.onNodeWithTag(tag).performClick()
+        composeRule.waitUntil(5_000) { !composeRule.onAllNodesWithTagExists(TAG_PICKER) }
     }
+
+    private fun pickTask(name: String) = pick("tab:$name")
 
     /** Единые настройки → «Финансы» (#241). */
     private fun openFinanceSettings() {
@@ -409,7 +414,7 @@ class AppSmokeTest {
 
         composeRule.onNodeWithText("Первая").performTouchInput { longClick() }
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_SELECTION_BAR).fetchSemanticsNodes().isNotEmpty() }
-        composeRule.onNodeWithTag("tab:UPCOMING").assertDoesNotExist()
+        composeRule.onNodeWithTag(TAG_APP_BAR).assertDoesNotExist()
         composeRule.onNodeWithText("Вторая").performClick()
         composeRule.onNodeWithTag(TAG_SELECTION_COUNT).assertTextEquals("Выбрано: 2")
 
@@ -417,7 +422,7 @@ class AppSmokeTest {
         composeRule.onNodeWithTag(TAG_BULK_DELETE).performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Удалено: 2") }
         composeRule.onNodeWithTag(TAG_SELECTION_BAR).assertDoesNotExist()
-        composeRule.onNodeWithTag("tab:UPCOMING").assertExists()
+        composeRule.onNodeWithTag(TAG_APP_BAR).assertExists()
         composeRule.waitUntil(5_000) { !composeRule.onAllNodesWithTextExists("Первая") }
 
         composeRule.onNodeWithText("Отмена").performClick()

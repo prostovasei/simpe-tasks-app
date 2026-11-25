@@ -125,6 +125,15 @@ object WeekRowTokens {
  * Строка задачи (#334, конструкторы PM 25.11.2026): название графитом, высокий приоритет — ярким фиолетовым,
  * выполненные и прошедшие — «ещё светлее». Время справа — тем же цветом, у просроченных — [ColorTokens.overdue].
  */
+/** Плавающая панель (#336, выбор PM): тёмная капсула, подложка выбранного хаба, фиолетовый «+», значки и дата. */
+object NavBarTokens {
+    val background = ThemedColor(light = 0xFF16171D, dark = 0xFF16171D)
+    val selected = ThemedColor(light = 0xFF2C2D33, dark = 0xFF2C2D33)
+    val plus = ThemedColor(light = 0xFF862CE0, dark = 0xFF862CE0)
+    val icon = ThemedColor(light = 0xFFFFFFFF, dark = 0xFFFFFFFF)
+    val muted = ThemedColor(light = 0xFFA3A3A3, dark = 0xFFA3A3A3)
+}
+
 object TaskRowTokens {
     val title = ThemedColor(light = 0xFF2E3036, dark = 0xFFD6D6D8)
     val priority = ThemedColor(light = 0xFF862CE0, dark = 0xFFC49BF2)

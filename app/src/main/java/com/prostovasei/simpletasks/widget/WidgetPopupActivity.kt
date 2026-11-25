@@ -27,6 +27,32 @@ import com.prostovasei.simpletasks.ui.feature.health.*
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
+/** #336: окно выбора раздела виджета — плитки, как в приложении. */
+internal fun widgetSectionsIntent(context: Context, id: Int): Intent =
+    Intent(context, WidgetPopupActivity::class.java)
+        .setData("simpletasks://widget/$id/sections".toUri())
+        .putExtra(WidgetActions.EXTRA_WIDGET_ID, id)
+        .putExtra("sections", true)
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+
+/** #336: разделы виджета — «Главная», три вида задач («Все», «Неделя», «Входящие»), финансы, здоровье, новости, настройки. */
+internal val WIDGET_PICKER_ENTRIES: List<com.prostovasei.simpletasks.ui.navigation.PickerEntry> = listOf(
+    com.prostovasei.simpletasks.ui.navigation.PickerEntry("HUB", R.drawable.ic_nav_grid, R.string.module_hub, "widget_pick:HUB"),
+    com.prostovasei.simpletasks.ui.navigation.PickerEntry("all", R.drawable.ic_widget_bar_all, R.string.tab_upcoming, "widget_pick:all"),
+    com.prostovasei.simpletasks.ui.navigation.PickerEntry("week", R.drawable.ic_widget_bar_week, R.string.tab_week, "widget_pick:week"),
+    com.prostovasei.simpletasks.ui.navigation.PickerEntry("inbox", R.drawable.ic_widget_bar_inbox, R.string.inbox_list_name, "widget_pick:inbox"),
+    com.prostovasei.simpletasks.ui.navigation.PickerEntry("FINANCE", R.drawable.ic_module_finance, R.string.module_finance, "widget_pick:FINANCE"),
+    com.prostovasei.simpletasks.ui.navigation.PickerEntry("HEALTH", R.drawable.ic_module_health, R.string.module_health, "widget_pick:HEALTH"),
+    com.prostovasei.simpletasks.ui.navigation.PickerEntry("NEWS", R.drawable.ic_module_news, R.string.module_news, "widget_pick:NEWS"),
+    com.prostovasei.simpletasks.ui.navigation.PickerEntry("settings", R.drawable.ic_nav_sliders, R.string.settings_title, "widget_pick:settings"),
+)
+
+/** Ключ выбранной плитки: модуль виджета, у «Задач» — вид ленты. */
+internal fun widgetPickerSelected(module: WidgetModule, filter: WidgetFilter?): String = when (module) {
+    WidgetModule.TASKS -> (filter ?: WidgetFilter.All).encode()
+    else -> module.name
+}
+
 internal fun widgetPopupIntent(context: Context, id: Int, finance: Boolean, health: Boolean = false): Intent =
     Intent(context, WidgetPopupActivity::class.java)
         .setData("simpletasks://widget/$id/popup/$finance/$health".toUri())
@@ -49,7 +75,33 @@ class WidgetPopupActivity : ComponentActivity() {
         }
         setContent {
             TaskCanvasTheme {
-                if (intent.getBooleanExtra("health", false)) {
+                if (intent.getBooleanExtra("sections", false)) {
+                    val entries = WIDGET_PICKER_ENTRIES.filter { it.key != "week" || Build.VERSION.SDK_INT >= Build.VERSION_CODES.S }
+                    com.prostovasei.simpletasks.ui.navigation.TabPickerSheet(
+                        selected = widgetPickerSelected(WidgetSelection.module(this, id), WidgetSelection.get(this, id)),
+                        entries = entries,
+                        onDismiss = ::finish,
+                        onPick = { key ->
+                            lifecycleScope.launch {
+                                when (key) {
+                                    "settings" -> startActivity(Intent(this@WidgetPopupActivity, com.prostovasei.simpletasks.MainActivity::class.java)
+                                        .putExtra(com.prostovasei.simpletasks.MainActivity.EXTRA_OPEN_SETTINGS, true)
+                                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP))
+                                    "all", "week", "inbox" -> {
+                                        WidgetSelection.setModule(this@WidgetPopupActivity, id, WidgetModule.TASKS)
+                                        WidgetSelection.set(this@WidgetPopupActivity, id, WidgetFilter.decode(key))
+                                        WidgetRenderer.render(applicationContext, id, "выбран раздел")
+                                    }
+                                    else -> WidgetModule.entries.firstOrNull { it.name == key }?.let {
+                                        WidgetSelection.setModule(this@WidgetPopupActivity, id, it)
+                                        WidgetRenderer.render(applicationContext, id, "выбран раздел")
+                                    }
+                                }
+                                finish()
+                            }
+                        },
+                    )
+                } else if (intent.getBooleanExtra("health", false)) {
                     val vm = healthViewModel
                     val state by vm.state.collectAsStateWithLifecycle()
                     LaunchedEffect(state.entries != null) {

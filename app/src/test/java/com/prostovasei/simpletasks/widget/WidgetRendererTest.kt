@@ -1,5 +1,6 @@
 package com.prostovasei.simpletasks.widget
 
+import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
 import android.appwidget.AppWidgetManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -51,7 +52,7 @@ class WidgetRendererTest {
         val id = manager.createWidget(TasksWidgetReceiver::class.java, androidx.glance.appwidget.R.layout.glance_default_loading_layout)
         WidgetRenderer.render(context, id, "тест")
         val view = manager.getViewFor(id)
-        listOf("Задачи · Все, выбрано", "Финансы", "Открыть приложение", "Новая задача").forEach {
+        listOf("Разделы", "Настройки", "Новая задача").forEach {
             assertTrue(it, view.hasDescription(it))
         }
         assertTrue(WidgetLog.read(context).contains("отрисовка $id: all"))
@@ -76,14 +77,14 @@ class WidgetRendererTest {
         WidgetActionReceiver.handle(context, WidgetActions.module(context, one, true))
         assertTrue(WidgetSelection.finance(context, one))
         assertTrue(!WidgetSelection.finance(context, two))
-        assertTrue(manager.getViewFor(one).hasDescription("Финансы, выбрано"))
+        assertTrue(manager.getViewFor(one).hasDescription(context.getString(R.string.finance_add)))
         WidgetActionReceiver.handle(context, WidgetActions.module(context, one, WidgetModule.HEALTH))
         assertEquals(WidgetModule.HEALTH, WidgetSelection.module(context, one))
         assertEquals(WidgetModule.TASKS, WidgetSelection.module(context, two))
-        assertTrue(manager.getViewFor(one).hasDescription("Здоровье, выбрано"))
+        assertTrue(manager.getViewFor(one).hasDescription(context.getString(R.string.health_add)))
         WidgetActionReceiver.handle(context, WidgetActions.module(context, one, false))
         assertEquals(WidgetFilter.Inbox, WidgetSelection.get(context, one))
-        assertTrue(manager.getViewFor(one).hasDescription("Задачи · Входящие, выбрано"))
+        assertTrue(manager.getViewFor(one).hasDescription("Новая задача"))
     }
 
     @Test
@@ -140,18 +141,17 @@ class WidgetRendererTest {
         assertTrue("График заполняет высоту: ${plot.height()} из ${chart.height}", abs(plot.height() - chart.height) <= 3 * density)
         assertEquals(ImageView.ScaleType.FIT_CENTER, chart.scaleType)
 
-        val tabs = listOf("Задачи · Неделя", "Финансы", "Здоровье, выбрано", "Новости")
-        val centers = tabs.map { label ->
+        // #336: капсула справа — «Разделы», «Настройки», «Добавить вес» по порядку слева направо.
+        val buttons = listOf("Разделы", "Настройки", context.getString(R.string.health_add))
+        val centers = buttons.map { label ->
             val matches = ArrayList<View>()
             panel.findViewsWithText(matches, label, View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
             val icon = matches.single { it.contentDescription == label }
             assertTrue(icon.width > 0)
             generateSequence(icon) { it.parent as? View }.sumOf { it.left } + icon.width / 2
         }
-        val gaps = centers.zipWithNext { left, right -> right - left }
-        assertTrue(gaps.all { it > 0 })
-        assertTrue(gaps.max() - gaps.min() <= 2)
-        assertEquals(width >= 356, panel.hasDescription("Обновление"))
+        assertTrue(centers.zipWithNext { left, right -> right - left }.all { it > 0 })
+        assertTrue("капсула справа", centers.last() > panel.width / 2)
         val goalLabel = root.findViewById<android.widget.TextView>(R.id.widget_health_goal)
         assertEquals("Цель 80,0 кг · осталось 2,0 кг", goalLabel.text.toString())
         val details = root.findViewById<android.widget.TextView>(R.id.widget_health_details)
@@ -161,73 +161,41 @@ class WidgetRendererTest {
         bitmap.captureRoboImage("screenshots/$screenshot.png")
     }
 
+    /** #336: в каждом разделе — тёмная капсула справа: дата (в «Задачах» — к сегодня), «Разделы», «Настройки», «+» раздела. */
     @Test
     @OptIn(ExperimentalGlanceRemoteViewsApi::class)
-    fun wideWidgetKeepsTabsAndDateInTheSamePlaceAcrossModules() = runBlocking {
+    fun barIsCapsuleOnTheRightInEveryModule() = runBlocking {
         val today = LocalDate.of(2026, 11, 21)
-        val model = WidgetModel(WidgetFilter.Week, null, today, emptyList())
+        val model = WidgetModel(WidgetFilter.All, null, today, emptyList())
         val density = context.resources.displayMetrics.density
-        val width = (392 * density).toInt()
-        val height = (40 * density).toInt()
         val description = context.getString(R.string.widget_today_date, WidgetDates.bar(today, withWeekday = true))
-        for (module in WidgetModule.entries) {
-            val bar = GlanceRemoteViews().compose(context, DpSize(392.dp, 110.dp)) {
+        for (widthDp in listOf(180, 392)) for (module in WidgetModule.entries) {
+            val bar = GlanceRemoteViews().compose(context, DpSize(widthDp.dp, 110.dp)) {
                 CompositionLocalProvider(LocalWidgetColors provides TaskWidgetColors) {
                     BottomBar(model, 1, imageButtons = true, module = module)
                 }
             }.remoteViews.apply(context, FrameLayout(context))
-            bar.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
-                View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY))
-            bar.layout(0, 0, width, height)
+            val width = (widthDp * density).toInt()
+            bar.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec((52 * density).toInt(), View.MeasureSpec.EXACTLY))
+            bar.layout(0, 0, width, bar.measuredHeight)
             fun find(label: String): View {
                 val nodes = ArrayList<View>()
                 bar.findViewsWithText(nodes, label, View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
                 return nodes.single { it.contentDescription == label }
             }
-            fun center(view: View): Int =
-                generateSequence(view) { it.parent as? View }.sumOf { it.left } + view.width / 2
-            val finance = find(if (module == WidgetModule.FINANCE) "Финансы, выбрано" else "Финансы")
-            val date = find(if (module == WidgetModule.TASKS) description else WidgetDates.bar(today, withWeekday = true))
-            val update = find("Обновление")
-            assertTrue(abs(center(finance) - 196 * density) <= 1) // #329: перед «Финансами» — домик и «Задачи»
-            assertTrue(abs(center(date) - 326 * density) <= 1)
-            assertTrue(abs(center(update) - 368 * density) <= 1)
-            val gaps = ArrayList<View>()
-            bar.findViewsWithText(gaps, "Открыть приложение", View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
-            // #95: на «Задачах» слева «+» 40 и микрофон 40 — левая полоса равна правой, вкладки по центру. #329: пять вкладок — полосы уже.
-            val left = if (module == WidgetModule.TASKS) 16 else 36
-            assertEquals(listOf((left * density).toInt(), (16 * density).toInt()), gaps.map { it.width })
-            assertTrue(gaps.all { gap ->
-                gap.height == height && generateSequence(gap) { it.parent as? View }.take(3).any { it.hasOnClickListeners() }
+            fun clickable(view: View) = generateSequence(view) { it.parent as? View }.take(3).any { it.hasOnClickListeners() }
+            val add = context.getString(when (module) {
+                WidgetModule.FINANCE -> R.string.finance_add
+                WidgetModule.HEALTH -> R.string.health_add
+                WidgetModule.NEWS -> R.string.news_refresh
+                else -> R.string.add_task
             })
-            val dateAction = generateSequence(date) { it.parent as? View }.take(3).any { it.hasOnClickListeners() }
-            assertEquals(module == WidgetModule.TASKS, dateAction)
-        }
-    }
-
-    @Test
-    @OptIn(ExperimentalGlanceRemoteViewsApi::class)
-    fun compactWidgetOnlyOpensAppFromAnAvailableGap() = runBlocking {
-        val model = WidgetModel(WidgetFilter.All, null, LocalDate.of(2026, 11, 21), emptyList())
-        val density = context.resources.displayMetrics.density
-        for (width in listOf(180, 240)) {
-            val bar = GlanceRemoteViews().compose(context, DpSize(width.dp, 110.dp)) {
-                CompositionLocalProvider(LocalWidgetColors provides TaskWidgetColors) {
-                    BottomBar(model, 1, imageButtons = true)
-                }
-            }.remoteViews.apply(context, FrameLayout(context))
-            val w = (width * density).toInt()
-            val h = (40 * density).toInt()
-            bar.measure(View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(h, View.MeasureSpec.EXACTLY))
-            bar.layout(0, 0, w, h)
-            val gaps = ArrayList<View>()
-            bar.findViewsWithText(gaps, "Открыть приложение", View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
-            // #329: пять вкладок по 31 dp — на 240 dp микрофон (44 + 4 + 40) уже не помещается, остаётся полоса 29 dp; на 180 dp полосы нет.
-            assertEquals(if (width == 180) emptyList<Int>() else listOf((29 * density).toInt()), gaps.map { it.width })
-            val mic = ArrayList<View>()
-            bar.findViewsWithText(mic, "Создать задачу голосом", View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
-            assertEquals(false, mic.isNotEmpty())
-            assertTrue(!bar.hasOnClickListeners())
+            listOf("Разделы", "Настройки", add).forEach { assertTrue("$module $it", clickable(find(it))) }
+            val plus = find(add)
+            val right = generateSequence(plus) { it.parent as? View }.sumOf { it.left } + plus.width
+            assertTrue("$module: капсула у правого края", width - right <= ((SizeTokens.WIDGET_EDGE + SizeTokens.NAV_PAD + 1) * density).toInt())
+            val date = find(if (module == WidgetModule.TASKS) description else WidgetDates.bar(today, withWeekday = true))
+            assertEquals(module == WidgetModule.TASKS, clickable(date))
         }
     }
 

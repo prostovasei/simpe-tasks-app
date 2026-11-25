@@ -1560,3 +1560,34 @@ README_MORE['ScreenHub'] = ('Хаб «Главная» (0.92).',
     'блок занимает свободное место и прокручивается внутри; пусто — «На сегодня и завтра задач нет» и «+ Задача». Внизу новости страницами 2 × 2 со свайпом: '
     'карточка `size-hub-news-card` (мин. высота) на `selected`, `radius-lg`, мета 10,5 sp `text-secondary`, заголовок 13 sp до трёх строк, непрочитанные Bold; '
     'точки страниц `size-hub-dot`. «+» на хабе — меню «Задача / Расход / Вес».')
+
+
+# ---------------------------------------------------------------- плавающая панель и выбор раздела (0.95, #336)
+
+def nav_capsule():
+    icon = lambda name: f'<span style="width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:#fff">{svg(name, 18)}</span>'
+    return ('<div style="display:inline-flex;align-items:center;gap:2px;padding:3px;border-radius:999px;background:#16171D;box-shadow:0 4px 14px rgb(0 0 0 / .2)">'
+            '<span style="display:flex;align-items:center;gap:3px;padding:0 4px 0 8px;color:#fff"><b style="font-size:16px">25</b>'
+            '<span style="display:grid;font-size:9px;line-height:1;font-weight:700;color:#A3A3A3"><span>ср</span><span>ноя</span></span></span>'
+            f'<span style="width:30px;height:30px;border-radius:50%;background:#2C2D33;display:grid;place-items:center;color:#fff">{svg("ic_nav_grid", 18)}</span>'
+            f'{icon("ic_nav_sliders")}'
+            f'<span style="width:30px;height:30px;border-radius:50%;background:#862CE0;display:grid;place-items:center;color:#fff">{svg("ic_nav_plus", 18)}</span></div>')
+
+
+def picker_tiles():
+    names = [('ic_nav_grid', 'Главная'), ('ic_widget_all', 'Предстоящее'), ('ic_tab_week', 'Неделя'), ('ic_tab_lists', 'Списки'),
+             ('ic_module_finance', 'Финансы'), ('ic_module_health', 'Здоровье'), ('ic_module_news', 'Новости'), ('ic_nav_sliders', 'Настройки')]
+    tile = lambda ic, t, on: (f'<div style="height:76px;border-radius:var(--radius-lg);background:{"var(--priority-high-bg)" if on else "var(--selected)"};'
+                              f'color:{"var(--priority-high-text)" if on else "var(--text-primary)"};display:grid;place-items:center;align-content:center;gap:4px;font-size:12px;font-weight:700">{svg(ic, 24)}{t}</div>')
+    return ('<div style="width:380px;padding:12px;border-radius:var(--radius-xl);background:var(--surface);display:grid;grid-template-columns:repeat(3,1fr);gap:8px">'
+            + ''.join(tile(ic, t, t == 'Неделя') for ic, t in names) + '</div>')
+
+
+PREVIEWS['NavCapsule'] = lambda: doc('Панель и поля', 360, 'Плавающая панель (0.95): дата, разделы, настройки, «+»; выбор раздела плитками',
+                                     f'<div style="display:grid;gap:16px;justify-items:end;width:404px">{picker_tiles()}{nav_capsule()}</div>')
+README_MORE['NavCapsule'] = ('Плавающая панель и выбор раздела (0.95).',
+    'Решения PM 25.11.2026 (#336, design/approved/336). Вместо нижней панели с вкладками — тёмная капсула (`NavBarTokens.background`) справа внизу, '
+    'отступ `size-nav-edge` (12): дата «25» 16 sp и «ср / ноя» 9 sp, хаб — сетка 2 × 2 на подложке `NavBarTokens.selected` (открывает выбор раздела), '
+    'настройки — ползунки, «+» — фиолетовый круг `NavBarTokens.plus`. Кнопки `size-nav-button` (30), поля `size-nav-pad` (3) — высота 36, значки `size-nav-icon` (18). '
+    'Выбор раздела — плитки снизу по три в ряд, `size-picker-tile` (76): Главная, Предстоящее, Неделя, Списки (в виджете — Входящие), Финансы, Здоровье, Новости, '
+    'Настройки; выбранный — `priority-high-bg` с фиолетовым. В виджете — та же капсула (фоны картинками), разделы — окном поверх рабочего стола.')

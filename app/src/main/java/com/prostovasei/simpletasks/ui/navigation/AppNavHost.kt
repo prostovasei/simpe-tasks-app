@@ -324,6 +324,7 @@ fun AppNavHost(
     }
     var lastTaskTab by rememberSaveable { mutableStateOf(NavPrefs.lastTask(context).name) }
     var taskPickerOpen by rememberSaveable { mutableStateOf(false) }
+    var sectionsOpen by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(currentTab) { currentTab?.let { lastTaskTab = it.name; NavPrefs.setLastTask(context, it) } }
 
     // Задачу удалили в шторке — под ней «Задача удалена · Отмена» (итерация 36); пока приложение не на экране, событие не доходит.
@@ -410,49 +411,54 @@ fun AppNavHost(
                         navController.popBackStack(ListsDestination, inclusive = false)
                     } else if (currentTab != tab) navController.openTab(tab)
                 }
-                val pages = listOf(
-                    BarPage("hub", R.drawable.ic_module_hub, R.string.module_hub, "module:HUB"),
-                    BarPage("tasks", task.icon, task.label, "tab:${task.name}"),
-                    BarPage("finance", R.drawable.ic_module_finance, R.string.module_finance, "module:FINANCE"),
-                    BarPage("health", R.drawable.ic_module_health, R.string.module_health, "module:HEALTH"),
-                    BarPage("news", R.drawable.ic_module_news, R.string.module_news, "module:NEWS"),
-                )
                 TaskCanvasTheme(enabled = inHub || inFinance || inHealth || inNews || active == "tasks" && task != Tab.LISTS) {
                     androidx.compose.foundation.layout.Box {
-                        AppBottomBar(pages, active, { key ->
-                            when {
-                                key == "tasks" && active == "tasks" -> taskPickerOpen = true
-                                key == "tasks" -> navController.openTab(task)
-                                key == active -> Unit
-                                key == "hub" -> navController.popBackStack(HubDestination, inclusive = false)
-                                key == "finance" -> navController.openRoot(FinanceDestination, restore = true)
-                                key == "health" -> navController.openRoot(HealthDestination, restore = true)
-                                key == "news" -> navController.openRoot(NewsDestination, restore = true)
-                            }
-                        }, onAdd = {
-                            when (active) {
-                                "hub" -> hubMenu = true
-                                "finance" -> finance.onIntent(FinanceIntent.Add)
-                                "health" -> health.onIntent(HealthIntent.Add)
-                                "news" -> { newsScope.launch { refreshNews() } }
-                                "tasks" -> navController.navigate(QuickAddDestination(today = task != Tab.LISTS))
-                            }
-                        }, addTag = when (active) {
-                            "finance" -> TAG_FINANCE_ADD
-                            "health" -> TAG_HEALTH_ADD
-                            "news" -> "news:refresh"
-                            else -> TAG_ADD_TASK
-                        }, addLabel = when (active) {
-                            "finance" -> R.string.finance_add
-                            "health" -> R.string.health_add
-                            "news" -> R.string.news_refresh
-                            else -> R.string.add_task
-                        }, module = AppModule.TASKS, onModule = {},
+                        // #336 (конструктор PM): вместо вкладок — плавающая капсула справа: дата, хаб (выбор раздела), настройки, «+».
+                        FloatingNavBar(
+                            today = java.time.LocalDate.now(),
+                            onHub = { sectionsOpen = true },
                             onSettings = { navController.navigate(AppSettingsDestination) { launchSingleTop = true } },
-                            inlineModules = true,
-                            refreshAction = inNews,
-                            longClickPage = "tasks".takeIf { active == "tasks" && task == Tab.WEEK },
-                            onPageLongClick = { weekFilterOpen = true })
+                            onAdd = {
+                                when (active) {
+                                    "hub" -> hubMenu = true
+                                    "finance" -> finance.onIntent(FinanceIntent.Add)
+                                    "health" -> health.onIntent(HealthIntent.Add)
+                                    "news" -> { newsScope.launch { refreshNews() } }
+                                    "tasks" -> navController.navigate(QuickAddDestination(today = task != Tab.LISTS))
+                                }
+                            }, addTag = when (active) {
+                                "finance" -> TAG_FINANCE_ADD
+                                "health" -> TAG_HEALTH_ADD
+                                "news" -> "news:refresh"
+                                else -> TAG_ADD_TASK
+                            }, addLabel = when (active) {
+                                "finance" -> R.string.finance_add
+                                "health" -> R.string.health_add
+                                "news" -> R.string.news_refresh
+                                else -> R.string.add_task
+                            },
+                            onHubLongClick = { weekFilterOpen = true }.takeIf { active == "tasks" && task == Tab.WEEK },
+                        )
+                        if (sectionsOpen) {
+                            TabPickerSheet(
+                                selected = if (active == "tasks") task.name else active,
+                                onPick = { key ->
+                                    sectionsOpen = false
+                                    when (key) {
+                                        active -> Unit
+                                        "hub" -> navController.popBackStack(HubDestination, inclusive = false)
+                                        "finance" -> navController.openRoot(FinanceDestination, restore = true)
+                                        "health" -> navController.openRoot(HealthDestination, restore = true)
+                                        "news" -> navController.openRoot(NewsDestination, restore = true)
+                                        "settings" -> navController.navigate(AppSettingsDestination) { launchSingleTop = true }
+                                        else -> Tab.entries.firstOrNull { it.name == key }?.let { tab ->
+                                            if (active == "tasks" && tab == task && tab != Tab.LISTS) Unit else pick(tab)
+                                        }
+                                    }
+                                },
+                                onDismiss = { sectionsOpen = false },
+                            )
+                        }
                         // #329: «+» на хабе — меню «Задача / Расход / Вес», окна открываются поверх хаба.
                         androidx.compose.material3.DropdownMenu(expanded = hubMenu, onDismissRequest = { hubMenu = false },
                             modifier = Modifier.testTag(TAG_HUB_MENU)) {

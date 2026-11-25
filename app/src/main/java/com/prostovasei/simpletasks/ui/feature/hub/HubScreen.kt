@@ -1,5 +1,7 @@
 package com.prostovasei.simpletasks.ui.feature.hub
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
 import com.prostovasei.simpletasks.ui.common.DayLabel
 import com.prostovasei.simpletasks.widget.WidgetDates
 import com.prostovasei.simpletasks.designsystem.components.OverdueHeader
@@ -125,11 +127,12 @@ internal fun HubScreen(
 ) {
     val spacing = AppTheme.spacing
     Column(Modifier.fillMaxSize().testTag(TAG_HUB)) {
+        // #336 (выбор PM): финансы, новости, задачи.
         HubFinance(finance, onFinance)
-        Box(Modifier.weight(1f).fillMaxWidth().padding(top = spacing.sm)) {
+        if (news.isNotEmpty()) HubNewsPager(news)
+        Box(Modifier.weight(1f).fillMaxWidth().padding(top = spacing.xs)) {
             if (state.isEmpty) HubNoTasks(onAddTask) else HubTasks(state, onIntent, onOpenTask)
         }
-        if (news.isNotEmpty()) HubNewsPager(news)
     }
 }
 
@@ -142,7 +145,7 @@ private fun HubFinance(state: FinanceState, onIntent: (FinanceIntent) -> Unit) {
     val model = remember(state.operations, today) { MonthSpending.of(state.operations.orEmpty(), month, today) }
     val budget = remember(state.budgets, state.categories, state.operations, today) { state.monthBudget(month) }
     Column(Modifier.fillMaxWidth().padding(horizontal = spacing.md).padding(top = spacing.sm).testTag(TAG_HUB_FINANCE)) {
-        LimitBar(model.total, monthLimit(context, budget), model.forecast, month, today) { onIntent(FinanceIntent.OpenBudget(month)) }
+        LimitBar(model.total, monthLimit(context, budget), model.forecast, month, today, daily = true) { onIntent(FinanceIntent.OpenBudget(month)) }
         state.accounts?.takeIf { it.isNotEmpty() }?.let { HubAccounts(it, state.total) }
     }
 }
@@ -151,11 +154,15 @@ private fun HubFinance(state: FinanceState, onIntent: (FinanceIntent) -> Unit) {
 private fun HubAccounts(accounts: List<Account>, total: Long) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
-    Row(Modifier.fillMaxWidth().padding(top = spacing.xs), horizontalArrangement = Arrangement.spacedBy(spacing.xs), verticalAlignment = Alignment.CenterVertically) {
-        Text("${financeThousands(total)} ₽", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = colors.textPrimary, maxLines = 1)
+    // #336 (выбор PM): плашки счетов крупнее — 14 sp и поля 12 × 8; не помещаются — листаются вбок.
+    Row(
+        Modifier.fillMaxWidth().padding(top = spacing.xs).horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(spacing.xs), verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text("${financeThousands(total)} ₽", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = colors.textPrimary, maxLines = 1)
         accounts.take(HUB_ACCOUNTS).forEach { account ->
             Text("${account.emojiShown} ${financeThousands(account.balance)}", Modifier.clip(CircleShape).background(FinanceShareColors.accountSurface)
-                .padding(horizontal = spacing.sm, vertical = spacing.xxs), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold,
+                .padding(horizontal = spacing.md, vertical = spacing.xs).testTag(TAG_HUB_ACCOUNT), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold,
                 color = colors.textPrimary, maxLines = 1)
         }
     }
@@ -271,6 +278,7 @@ private fun HubNewsPager(news: List<HubNews>) {
 private const val HUB_ACCOUNTS = 4
 
 const val TAG_HUB = "hub"
+const val TAG_HUB_ACCOUNT = "hub_account"
 const val TAG_HUB_FINANCE = "hub_finance"
 const val TAG_HUB_TASKS = "hub_tasks"
 const val TAG_HUB_EMPTY = "hub_empty"

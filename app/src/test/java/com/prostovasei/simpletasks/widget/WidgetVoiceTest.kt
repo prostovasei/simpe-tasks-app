@@ -29,31 +29,10 @@ class WidgetVoiceTest {
         onAllNodes(hasContentDescription(voice)).assertCountEquals(if (present) 1 else 0)
     }
 
-    @Test fun wideTasksBarHasMic() = bar(392, WidgetModule.TASKS, present = true)
+    // #336 (выбор PM): в капсуле только дата, «Разделы», «Настройки» и «+» — микрофона в панели виджета больше нет.
+    @Test fun wideTasksBarHasNoMic() = bar(392, WidgetModule.TASKS, present = false)
 
-    @Test fun compactTasksBarHasMic() = bar(320, WidgetModule.TASKS, present = true)
-
-    @Test fun narrowestTasksBarHidesMic() = bar(180, WidgetModule.TASKS, present = false)
-
-    // #329: с пятой вкладкой (домик) микрофон помещается с 255 dp (44 + 4 + 40 + 5 × 31 + 2 × 6).
-    @Test fun micAppearsFrom256() = bar(256, WidgetModule.TASKS, present = true)
-
-    @Test fun noMicAt240() = bar(240, WidgetModule.TASKS, present = false)
+    @Test fun narrowTasksBarHasNoMic() = bar(180, WidgetModule.TASKS, present = false)
 
     @Test fun financeHasNoMic() = bar(392, WidgetModule.FINANCE, present = false)
-
-    @Test fun healthHasNoMic() = bar(392, WidgetModule.HEALTH, present = false)
-
-    @Test fun newsHasNoMic() = bar(392, WidgetModule.NEWS, present = false)
-
-    @Test
-    fun voiceIntentOpensPopupLikePlus() {
-        val all = voiceIntent(context, WidgetFilter.All)
-        assertEquals(TaskPopupActivity::class.java.name, all.component?.className)
-        assertTrue(all.getBooleanExtra(MainActivity.EXTRA_VOICE, false))
-        assertTrue("Вид «Все» — на сегодня, как «+»", all.getBooleanExtra(MainActivity.EXTRA_QUICK_ADD_TODAY, false))
-        val inbox = voiceIntent(context, WidgetFilter.Inbox)
-        assertEquals(false, inbox.getBooleanExtra(MainActivity.EXTRA_QUICK_ADD_TODAY, true))
-        assertTrue("У каждого вида свой адрес", all.data != inbox.data)
-    }
 }

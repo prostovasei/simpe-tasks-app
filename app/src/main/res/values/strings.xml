@@ -863,6 +863,7 @@
     <string name="weigh_in_action">Записать</string>
     <string name="module_news">Новости</string>
     <string name="module_hub">Главная</string>
+    <string name="nav_sections">Разделы</string>
     <string name="hub_add_task">Задача</string>
     <string name="hub_add_expense">Расход</string>
     <string name="hub_add_weight">Вес</string>

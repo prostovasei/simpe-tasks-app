@@ -84,7 +84,7 @@ internal suspend fun hubFinance(context: Context, width: Int, height: Int): List
     val model = MonthSpending.of(operations, month, today)
     val budget = MonthBudget.of(BudgetRules.effective(repository.observeBudgets().first(), month, month),
         repository.observeCategories().first(), operations, month, today)
-    return listOf(rows.limitViews(model, monthLimit(context, budget), month, today), rows.accountRow(accounts.take(HUB_ACCOUNTS), HUB_ACCOUNTS))
+    return listOf(rows.limitViews(model, monthLimit(context, budget), month, today, daily = true), rows.accountRow(accounts.take(HUB_ACCOUNTS), HUB_ACCOUNTS, large = true))
 }
 
 @RequiresApi(Build.VERSION_CODES.S)

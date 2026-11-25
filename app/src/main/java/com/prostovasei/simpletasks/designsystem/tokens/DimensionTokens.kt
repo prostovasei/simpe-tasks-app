@@ -422,6 +422,19 @@ object SizeTokens {
      * Подпись дня и числа задач — 12 sp, полоса прогресса — 1 dp.
      */
     const val TASK_CHECK = 18
+
+    /**
+     * Плавающая панель (#336): капсула высотой 36 — кнопки 30 и поля 3, отступ от края экрана 12, значок 18, дата «25» 16 sp.
+     * Выбор раздела — плитки 3 в ряд высотой 76.
+     */
+    const val NAV_BUTTON = 30
+    const val NAV_PAD = 3
+    const val NAV_EDGE = 12
+    const val NAV_ICON = 18
+    const val NAV_DATE_SP = 16
+    const val NAV_DATE_SMALL_SP = 9
+    const val PICKER_TILE = 76
+    const val PICKER_ICON = 24
     const val TASK_CHECK_GAP = 10
     const val TASK_EMOJI = 16
     const val TASK_EMOJI_GAP = 8

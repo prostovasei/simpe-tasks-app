@@ -154,7 +154,8 @@ internal class FinanceRows(private val context: Context, private val width: Int,
      * Строка счетов. #317: лента виджета переиспользует строки и при обновлении доприменяет команды к уже показанной —
      * без очистки каждый `addView` добавлял ещё столько же счетов (у PM — 12 кружков без сумм вместо 4 счетов).
      */
-    internal fun accountRow(accounts: List<Account>, columns: Int) =
+    /** [large] (#336, хаб): плашки крупнее — 14 sp и поля 10 × 7. */
+    internal fun accountRow(accounts: List<Account>, columns: Int, large: Boolean = false) =
         RemoteViews(context.packageName, R.layout.widget_finance_accounts).apply {
             removeAllViews(R.id.widget_finance_accounts)
             repeat(columns) { index ->
@@ -163,6 +164,11 @@ internal class FinanceRows(private val context: Context, private val width: Int,
                     if (account == null) setViewVisibility(R.id.widget_finance_account, android.view.View.INVISIBLE)
                     else {
                         setTextViewText(R.id.widget_finance_account, "${account.emojiShown}  ${financeThousands(account.balance)}")
+                        if (large) {
+                            setTextViewTextSize(R.id.widget_finance_account, android.util.TypedValue.COMPLEX_UNIT_SP, ACCOUNT_LARGE_SP)
+                            val density = context.resources.displayMetrics.density
+                            setViewPadding(R.id.widget_finance_account, (10 * density).toInt(), (7 * density).toInt(), (10 * density).toInt(), (7 * density).toInt())
+                        }
                         setContentDescription(R.id.widget_finance_account, "${account.name}, ${Money.format(account.balance)}")
                     }
                 })
@@ -177,10 +183,11 @@ internal class FinanceRows(private val context: Context, private val width: Int,
         }
 
     /** Полоса лимита (#327, вариант Г): картинка полосы и строка «осталось · прогноз». */
-    internal fun limitViews(model: MonthSpending, limit: Long?, month: YearMonth, today: java.time.LocalDate): RemoteViews =
+    internal fun limitViews(model: MonthSpending, limit: Long?, month: YearMonth, today: java.time.LocalDate, daily: Boolean = false): RemoteViews =
         RemoteViews(context.packageName, R.layout.widget_finance_limit).apply {
             val pace = limit?.let { BudgetRules.pace(it, model.total, month, today) }
-            setImageViewBitmap(R.id.widget_finance_limit_bar, limitBar(model.total, limit, pace, BudgetRules.todayShare(month, today)))
+            setImageViewBitmap(R.id.widget_finance_limit_bar, limitBar(model.total, limit, pace, BudgetRules.todayShare(month, today),
+                if (daily) com.prostovasei.simpletasks.ui.feature.finance.DailyNotes.of(model.total, limit, month, today, limit?.let { (model.total.toFloat() / it).coerceIn(0f, 1f) } ?: 0f) else null))
             setContentDescription(R.id.widget_finance_limit_bar,
                 limit?.let { "Потрачено ${Money.format(model.total)} из ${Money.format(it)}" } ?: "Потрачено ${Money.format(model.total)}, бюджет не задан")
             setTextViewText(R.id.widget_finance_limit_status,
@@ -196,7 +203,7 @@ internal class FinanceRows(private val context: Context, private val width: Int,
         }
 
     /** Толстая полоса: внутри потрачено, отметка «сегодня», справа лимит. Рисуется в 2× (как график). */
-    private fun limitBar(spent: Long, limit: Long?, pace: BudgetPace?, todayShare: Float?): Bitmap {
+    private fun limitBar(spent: Long, limit: Long?, pace: BudgetPace?, todayShare: Float?, notes: com.prostovasei.simpletasks.ui.feature.finance.DailyNotes? = null): Bitmap {
         val scale = 2f
         val width = ((width.coerceIn(180, 440) - 12) * scale).toInt()
         val bar = SizeTokens.LIMIT_BAR * scale
@@ -234,6 +241,25 @@ internal class FinanceRows(private val context: Context, private val width: Int,
         val baseline = top + bar / 2 - (paint.descent() + paint.ascent()) / 2
         paint.color = (if (fill >= 0.3f) ColorTokens.onAccent.light else ColorTokens.textPrimary.light).toInt()
         canvas.drawText(compactAmount(spent), SizeTokens.BUDGET_BAR * 2 * scale, baseline, paint)
+        // #336: сумма в день прямо в полосе (хаб): «≈2 200/день» после потраченного, «4 300/день» — у правого края серой части.
+        notes?.spent?.let {
+            val x = SizeTokens.BUDGET_BAR * 2 * scale + paint.measureText(compactAmount(spent) + " ")
+            paint.typeface = android.graphics.Typeface.DEFAULT
+            canvas.drawText("· $it", x, baseline, paint)
+            paint.typeface = android.graphics.Typeface.DEFAULT_BOLD
+        }
+        notes?.left?.let {
+            paint.typeface = android.graphics.Typeface.DEFAULT
+            paint.textSize = 12 * scale
+            paint.color = ColorTokens.textSecondary.light.toInt()
+            val w = paint.measureText(it)
+            val x = right - w - SizeTokens.BUDGET_BAR * scale
+            paint.color = ColorTokens.accentSoft.light.toInt()
+            canvas.drawRect(x - 4 * scale, top + 2 * scale, x + w + 4 * scale, top + bar - 2 * scale, paint)
+            paint.color = ColorTokens.textSecondary.light.toInt()
+            canvas.drawText(it, x, baseline, paint)
+            paint.typeface = android.graphics.Typeface.DEFAULT_BOLD
+        }
         paint.textSize = 15 * scale
         paint.color = ColorTokens.textPrimary.light.toInt()
         canvas.drawText(limitText, width - paint.measureText(limitText), baseline, paint)
@@ -285,3 +311,5 @@ internal class FinanceRows(private val context: Context, private val width: Int,
         return bitmap
     }
 }
+
+private const val ACCOUNT_LARGE_SP = 14f
