@@ -1,0 +1,197 @@
+<title>Строка задачи #334 · макет 2</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Manrope:wght@500;700&display=swap">
+<style>
+/* Макет 2: строка уже выбрана (рекомендации макета 1); переключателями собираются кружок повтора, подпись дня и блок «Просрочено». 1:1. */
+:root {
+  --bg: #eceef2; --card: #ffffff; --fg: #1b1c1f; --muted: #6f737b; --faint: #b9bcc3;
+  --track: #e6e7ea; --late: #c62828; --pri: #6a3fb5; --chip: #f3f3f4; --rec: #2e7d32;
+  --font: Roboto, system-ui, sans-serif; --ui: Manrope, system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #111215; --card: #1c1d21; --fg: #eceef2; --muted: #9a9ea6; --faint: #5b5e65;
+  --track: #34363c; --late: #ef6b6b; --pri: #b18cf0; --chip: #2a2c31; --rec: #81c784; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #111215; --card: #1c1d21; --fg: #eceef2; --muted: #9a9ea6; --faint: #5b5e65;
+  --track: #34363c; --late: #ef6b6b; --pri: #b18cf0; --chip: #2a2c31; --rec: #81c784; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--fg); font-family: var(--ui); margin: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 40px }
+h1 { font-size: 22px; margin: 0 0 4px; text-wrap: balance }
+h2 { font-size: 17px; margin: 28px 0 4px }
+.lead { color: var(--muted); margin: 0 0 16px; max-width: 72ch; line-height: 1.45 }
+.pair { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start }
+.col { flex: 1 1 360px; min-width: 0; max-width: 412px }
+.widget { background: var(--card); border-radius: 24px; padding: 8px 0 12px; font-family: var(--font) }
+.overhead { display: flex; align-items: center; gap: 10px; color: var(--late); font-weight: 700; font-size: 16px; padding: 8px 14px 2px }
+.overhead svg { display: block }
+.day { display: flex; align-items: center; gap: 8px; padding: 12px 14px 2px 14px; color: var(--fg) }
+.day.late { color: var(--late) }
+.bar { flex: 1; height: 4px; border-radius: 2px; background: var(--track); position: relative; margin-left: 4px }
+.bar i { position: absolute; inset: 0 auto 0 0; background: var(--fg); border-radius: 2px }
+.cnt { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; margin-left: auto; font-weight: 500 }
+.row { display: flex; align-items: center; min-height: 46px; padding: 0 14px; font-size: 16px }
+.row .t { font-weight: 700; font-variant-numeric: tabular-nums; font-size: 13px; line-height: 1.25; white-space: nowrap; text-align: right; margin-left: 8px }
+.row .title { flex: 1; min-width: 0; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.row .emo { flex: none; text-align: center; line-height: 1; width: 18px; font-size: 16px; margin: 0 8px 0 10px }
+.row.pri .title, .row.pri .t { color: var(--pri) }
+.row.past .title, .row.past .t { color: var(--faint) } .row.past .emo, .row.past .bell { opacity: .45 }
+.row.late .t { color: var(--late) }
+.chk { flex: none; display: block } .bell { flex: none; display: block; color: var(--muted); margin-left: 8px }
+.controls { display: grid; gap: 10px; margin: 0 0 14px }
+.ctl { display: flex; flex-wrap: wrap; align-items: center; gap: 6px }
+.ctl > span { min-width: 130px; color: var(--muted); font-size: 13px }
+.seg { display: inline-flex; background: var(--chip); border-radius: 10px; padding: 3px; gap: 2px; flex-wrap: wrap }
+.seg button { font: 600 13px var(--ui); color: var(--fg); background: none; border: 0; border-radius: 8px; padding: 6px 10px; cursor: pointer }
+.seg button[aria-pressed="true"] { background: var(--card); box-shadow: 0 1px 2px rgb(0 0 0 / .15) }
+.seg button:focus-visible { outline: 2px solid var(--pri); outline-offset: 1px }
+.seg button .r { color: var(--rec); font-size: 11px; margin-left: 4px }
+.variants { display: flex; flex-wrap: wrap; gap: 14px }
+.variant { flex: 1 1 250px; min-width: 0; max-width: 412px }
+.variant .widget { padding: 4px 0 8px; border-radius: 16px }
+.vcap { font-size: 13px; font-weight: 700; margin: 0 0 6px } .vcap .r { color: var(--rec); font-weight: 600 }
+.note { color: var(--muted); font-size: 13px; max-width: 72ch; line-height: 1.45; margin-top: 18px }
+.icons { display: flex; flex-wrap: wrap; gap: 14px }
+.icon-card { flex: 1 1 200px; min-width: 0; background: var(--card); border-radius: 16px; padding: 12px 14px; font-family: var(--font) }
+.icon-card .big { display: flex; gap: 18px; align-items: center; margin: 6px 0 8px; color: var(--muted) }
+.icon-card p { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.4 }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important } }
+</style>
+
+<h1>Строка задачи · макет 2</h1>
+<p class="lead">Строку берём из рекомендаций: кружок 18 dp, эмодзи перед названием, колокольчик 16 dp, время у правого края, период в две строки. Переключатели собирают остальное: кружок повтора, подпись дня и блок «Просрочено». Ниже каждый вопрос показан отдельно. Три просроченные задачи — примеры, чтобы было видно блок.</p>
+
+<div class="pair">
+  <div class="col">
+    <div class="controls" id="controls"></div>
+  </div>
+  <div class="col">
+    <div class="widget" id="main"></div>
+  </div>
+</div>
+
+<h2>1. Кружок повтора</h2>
+<p class="lead">Сейчас он рисуется двумя способами. В «Предстоящем», «Неделе» и виджетах стрелки — залитые треугольники. В окне дня и на хабе — стрелки-«галочки» на кольце. Оставляем один рисунок везде.</p>
+<div class="icons" id="v-repeat-icons"></div>
+
+<h2>2. Подпись дня</h2>
+<p class="lead">Формат «вт 25 ноя Завтра»: день недели строчными, без запятой, дата и «Завтра» одним стилем, мельче, чем сейчас (сейчас дата 15 sp Bold, «Завтра» 13 sp).</p>
+<div class="variants" id="v-head"></div>
+
+<h2>3. Блок «Просрочено»</h2>
+<p class="lead">Просроченные задачи идут одним блоком без разбивки по дням. Вместо времени справа стоит день недели. Если задаче больше недели, вместо дня недели пишем дату, иначе «пн» прошлой и этой недели не различить.</p>
+<div class="variants" id="v-over"></div>
+
+<p class="note">Цвета не меняются. Блок «Просрочено» сворачивается кнопкой ⌄, переносится на сегодня кнопкой →|. Подпись дня одинаковая в «Предстоящем», окне дня, хабе и виджетах.</p>
+
+<script>
+const OVER = [
+  { title: 'Отчёт за октябрь', e: '💼', bell: 1, wd: 'вт', date: '17 ноя', t: '18:00', old: 1 },
+  { title: 'Позвонить в банк', e: '🗂️', wd: 'пн', date: '23 ноя', t: '12:00' },
+  { title: 'Claude', e: '💲', bell: 1, rep: 1, wd: 'вт', date: '24 ноя', t: '10:00' },
+];
+const TODAY = [
+  { t: '03:00', title: 'Футбол', e: '🗂️', bell: 1, done: 1, past: 1 },
+  { t: '10:00', title: 'ChatGPT', e: '💲', bell: 1, rep: 1, past: 1 },
+  { t: '14:00', end: '16:00', title: 'Оценка Займы', e: '💼', bell: 1, pri: 1 },
+  { t: '16:00', title: 'Пройти юр.тест', e: '💼', bell: 1, pri: 1 },
+  { t: '16:00', end: '17:30', title: 'Оценка', e: '💼', rep: 1 },
+  { t: '19:00', title: 'Икра', e: '🗂️', bell: 1 },
+];
+const TOMORROW = [
+  { t: '03:00', title: 'Футбол', e: '🗂️', bell: 1 },
+  { t: '11:00', title: 'Дейлик', e: '💼', rep: 1 },
+  { t: '14:30', title: 'Девопсы', e: '💼', rep: 1 },
+  { t: '16:30', end: '17:30', title: 'Приоритезация', e: '💼', rep: 1 },
+];
+const REC = { repeat: 'tri', size: 13, tone: 'bold', sep: 'none', over: 'wd' };
+const state = { ...REC };
+
+function color(x) { return x.pri ? 'var(--pri)' : (x.done || x.past ? 'var(--faint)' : 'var(--muted)') }
+function repeatIcon(kind, c, s) {
+  if (kind === 'tri') return `<svg class="chk" width="${s}" height="${s}" viewBox="0 0 14 14" aria-hidden="true"><path d="M0.8,6.2A6.25,6.25 0,0 1,13.2 6.2M13.2,7.8A6.25,6.25 0,0 1,0.8 7.8" stroke="${c}" stroke-width="1.5" fill="none"/><path d="M10.1,5.8L13.2,6.2L13.3,2.8ZM3.9,8.2L0.8,7.8L0.7,11.2Z" fill="${c}"/></svg>`;
+  if (kind === 'chev') return `<svg class="chk" width="${s}" height="${s}" viewBox="0 0 20 20" aria-hidden="true"><path d="M3.15,8.55A7,7 0,0 1,16.85 8.55M14.85,6.55L16.85,8.55L18.85,6.55M16.85,11.45A7,7 0,0 1,3.15 11.45M1.15,13.45L3.15,11.45L5.15,13.45" stroke="${c}" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  return `<svg class="chk" width="${s}" height="${s}" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="8" stroke="${c}" stroke-width="2" fill="none"/><path d="M12.2,9A3.2,3.2 0 1,1 9,5.8" stroke="${c}" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M8.3,4.2L10,5.8L8.3,7.4" stroke="${c}" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+}
+function check(x, o) {
+  const c = color(x), s = 18;
+  if (x.rep) return repeatIcon(o.repeat, c, s);
+  if (x.done) return `<svg class="chk" width="${s}" height="${s}" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="9" fill="${c}"/><path d="M5.4 9.4l2.5 2.5l4.9-5.4" stroke="var(--card)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  return `<svg class="chk" width="${s}" height="${s}" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="8" stroke="${c}" stroke-width="2" fill="none"/></svg>`;
+}
+const BELL = `<svg class="bell" width="16" height="16" viewBox="0 0 24 24" aria-label="напоминание"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z M10 20.5a2 2 0 0 0 4 0" stroke="currentColor" stroke-width="2" fill="none" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+function right(x, o, late) {
+  if (late) {
+    const label = o.over === 'wd' ? (x.old ? x.date : x.wd)
+      : o.over === 'wdtime' ? `${x.old ? x.date : x.wd}<br>${x.t}`
+      : x.date;
+    return `<span class="t">${label}</span>`;
+  }
+  if (!x.t) return '';
+  return `<span class="t">${x.end ? `${x.t}<br>${x.end}` : x.t}</span>`;
+}
+function row(x, o, late) {
+  const cls = ['row', x.pri && 'pri', (x.past || x.done) && 'past', late && 'late'].filter(Boolean).join(' ');
+  return `<div class="${cls}">${check(x, o)}<span class="emo">${x.e}</span><span class="title">${x.title}</span>${x.bell ? BELL : ''}${right(x, o, late)}</div>`;
+}
+function head(date, rel, o, extra, late) {
+  const w = o.tone === 'muted' ? 500 : 700;
+  const col = o.tone === 'muted' && !late ? 'var(--muted)' : 'inherit';
+  const sep = o.sep === 'dot' ? ' · ' : ' ';
+  const text = rel ? `${date}${sep}${rel}` : date;
+  return `<div class="day${late ? ' late' : ''}"><span style="font-size:${o.size}px;font-weight:${w};color:${col};white-space:nowrap">${text}</span>${extra}</div>`;
+}
+const FOLD = `<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6l6-6" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const MOVE = `<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h13M11 6l6 6l-6 6M21 5v14" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+function list(o, parts = ['over', 'today', 'tomorrow']) {
+  let h = '';
+  if (parts.includes('over')) h += `<div class="overhead">Просрочено · ${OVER.length} ${FOLD} ${MOVE}</div>` + OVER.map(x => row(x, o, true)).join('');
+  if (parts.includes('today')) h += head('ср 25 ноя', 'Сегодня', o, `<span class="bar"><i style="width:17%"></i></span><span class="cnt">1 из 6</span>`) + TODAY.map(x => row(x, o)).join('');
+  if (parts.includes('tomorrow')) h += head('чт 26 ноя', 'Завтра', o, `<span class="cnt">4</span>`) + TOMORROW.map(x => row(x, o)).join('');
+  if (parts.includes('later')) h += head('сб 28 ноя', '', o, `<span class="cnt">1</span>`) + row({ t: '12:00', title: 'Купить подарок', e: '🗂️' }, o);
+  return h;
+}
+const CTL = [
+  ['repeat', 'Кружок повтора', [['tri', 'Треугольники'], ['chev', 'Галочки'], ['inner', 'Кольцо + ↻']]],
+  ['size', 'Подпись дня', [[12, '12 sp'], [13, '13 sp'], [14, '14 sp']]],
+  ['tone', 'Стиль подписи', [['bold', 'Жирный, чёрный'], ['muted', 'Средний, серый']]],
+  ['sep', 'Между датой и «Сегодня»', [['none', 'пробел'], ['dot', '·']]],
+  ['over', 'Справа у просроченных', [['wd', 'день недели'], ['wdtime', 'день + время'], ['date', 'дата']]],
+];
+function renderControls() {
+  document.getElementById('controls').innerHTML = CTL.map(([k, label, opts]) =>
+    `<div class="ctl"><span>${label}</span><div class="seg" role="group" aria-label="${label}">${opts.map(([v, t]) =>
+      `<button type="button" id="c-${k}-${v}" data-k="${k}" data-v="${v}" aria-pressed="${state[k] == v}">${t}${REC[k] == v ? '<span class="r">реком.</span>' : ''}</button>`).join('')}</div></div>`).join('');
+}
+function render() { document.getElementById('main').innerHTML = list(state); renderControls(); }
+document.addEventListener('click', e => {
+  const b = e.target.closest('button[data-k]'); if (!b) return;
+  const k = b.dataset.k, v = b.dataset.v; state[k] = isNaN(+v) ? v : +v; render();
+});
+// варианты рядом
+const ICONS = [
+  ['tri', 'Стрелки-треугольники', 'Сейчас в «Предстоящем», «Неделе» и виджетах. Видно на любом размере.'],
+  ['chev', 'Стрелки-«галочки»', 'Сейчас в окне дня и на хабе. Тоньше, на 14–18 dp стрелки сливаются.'],
+  ['inner', 'Кольцо и ↻ внутри', 'Новый. Выглядит как обычный кружок выполнения, повтор обозначен знаком внутри.'],
+];
+document.getElementById('v-repeat-icons').innerHTML = ICONS.map(([k, t, d]) =>
+  `<div class="icon-card"><p class="vcap" style="margin:0">${t}${REC.repeat === k ? ' <span class="r">· рекомендую</span>' : ''}</p>
+   <div class="big">${repeatIcon(k, 'var(--muted)', 18)}${repeatIcon(k, 'var(--pri)', 18)}${repeatIcon(k, 'var(--faint)', 18)}${repeatIcon(k, 'var(--muted)', 32)}</div><p>${d}</p></div>`).join('');
+function variants(id, opts, parts) {
+  document.getElementById(id).innerHTML = opts.map(([patch, t, rec]) =>
+    `<div class="variant"><p class="vcap">${t}${rec ? ' <span class="r">· рекомендую</span>' : ''}</p><div class="widget">${list({ ...REC, ...patch }, parts)}</div></div>`).join('');
+}
+variants('v-head', [
+  [{ size: 13, tone: 'bold' }, '13 sp, жирный', true],
+  [{ size: 12, tone: 'bold' }, '12 sp, жирный'],
+  [{ size: 13, tone: 'muted' }, '13 sp, средний серый'],
+  [{ size: 13, tone: 'bold', sep: 'dot' }, '13 sp, через «·»'],
+], ['today', 'later']);
+variants('v-over', [
+  [{ over: 'wd' }, 'День недели (старше недели — дата)', true],
+  [{ over: 'wdtime' }, 'День недели и время'],
+  [{ over: 'date' }, 'Дата'],
+], ['over']);
+render();
+</script>
