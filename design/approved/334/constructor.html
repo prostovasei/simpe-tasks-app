@@ -1,0 +1,258 @@
+<title>Конструктор строки задачи</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Manrope:wght@500;600;700&display=swap">
+<style>
+/* Конструктор #334: живой список «Предстоящего» (1:1) и все переключатели. По умолчанию — решения PM; на телефоне список закреплён сверху. */
+:root {
+  --bg: #eceef2; --card: #ffffff; --fg: #1b1c1f; --muted: #6f737b; --faint: #b9bcc3;
+  --track: #e6e7ea; --late: #c62828; --pri: #6a3fb5; --chip: #f3f3f4; --rec: #2e7d32; --line: #dcdee3;
+  --font: Roboto, system-ui, sans-serif; --ui: Manrope, system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #111215; --card: #1c1d21; --fg: #eceef2; --muted: #9a9ea6; --faint: #5b5e65;
+  --track: #34363c; --late: #ef6b6b; --pri: #b18cf0; --chip: #2a2c31; --rec: #81c784; --line: #2f3137; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #111215; --card: #1c1d21; --fg: #eceef2; --muted: #9a9ea6; --faint: #5b5e65;
+  --track: #34363c; --late: #ef6b6b; --pri: #b18cf0; --chip: #2a2c31; --rec: #81c784; --line: #2f3137; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--fg); font-family: var(--ui); margin: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 16px 40px }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg) }
+h1 { font-size: 21px; margin: 0 0 4px; text-wrap: balance }
+.lead { color: var(--muted); margin: 0 0 14px; max-width: 72ch; line-height: 1.45; font-size: 14px }
+.layout { display: grid; grid-template-columns: minmax(0, 412px) minmax(0, 1fr); gap: 24px; align-items: start }
+.preview { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); max-height: calc(100vh - 24px); overflow: auto; border-radius: 24px }
+@media (max-width: 760px) {
+  .layout { grid-template-columns: minmax(0, 1fr) }
+  .preview { top: env(safe-area-inset-top, 0px); max-height: 46vh; z-index: 5; box-shadow: 0 6px 16px rgb(0 0 0 / .12) }
+}
+.widget { background: var(--card); border-radius: 24px; padding: 6px 0 12px; font-family: var(--font) }
+.head { display: flex; align-items: center; gap: 8px; padding: 12px 14px 2px }
+.head .txt { white-space: nowrap }
+.head .ic { display: flex; align-items: center; justify-content: center; min-width: 28px; height: 28px; color: inherit }
+.bar { flex: 1; border-radius: 2px; background: var(--track); position: relative; min-width: 40px }
+.bar i { position: absolute; inset: 0 auto 0 0; border-radius: 2px }
+.cnt { margin-left: auto; font-variant-numeric: tabular-nums; white-space: nowrap }
+.row { display: flex; align-items: center; min-height: 46px; padding: 0 14px; font-size: 16px }
+.row .t { font-variant-numeric: tabular-nums; line-height: 1.25; white-space: nowrap; text-align: right }
+.row .title { flex: 1; min-width: 0; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.row .emo { flex: none; text-align: center; line-height: 1 }
+.row.pri .title, .row.pri .t { color: var(--pri) }
+.row.past .title, .row.past .t { color: var(--faint) } .row.past .emo, .row.past .bell { opacity: .45 }
+.row.late .t { color: var(--late) }
+.chk, .bell { flex: none; display: block } .bell { color: var(--muted) }
+/* панель */
+.panel { display: grid; gap: 14px; min-width: 0 }
+fieldset { border: 0; margin: 0; padding: 12px 14px; background: var(--card); border-radius: 16px; display: grid; gap: 10px; min-width: 0 }
+legend { font-weight: 700; font-size: 15px; padding: 0; float: left; width: 100%; margin-bottom: 2px }
+.ctl { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px }
+.ctl > span { flex: 0 0 150px; color: var(--muted); font-size: 13px }
+.seg { display: inline-flex; background: var(--chip); border-radius: 10px; padding: 3px; gap: 2px; flex-wrap: wrap; min-width: 0 }
+.seg button { font: 600 13px var(--ui); color: var(--fg); background: none; border: 0; border-radius: 8px; padding: 6px 9px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px }
+.seg button[aria-pressed="true"] { background: var(--bg); box-shadow: inset 0 0 0 1.5px var(--fg) }
+.seg button:focus-visible { outline: 2px solid var(--pri); outline-offset: 1px }
+.seg button .pm { color: var(--rec); font-size: 10px }
+.top { display: flex; flex-wrap: wrap; gap: 8px; align-items: center }
+.btn { font: 600 13px var(--ui); border: 0; border-radius: 10px; padding: 8px 12px; cursor: pointer; background: var(--fg); color: var(--card) }
+.btn.ghost { background: var(--chip); color: var(--fg) }
+.btn:focus-visible { outline: 2px solid var(--pri); outline-offset: 2px }
+#summary { width: 100%; min-height: 96px; font: 12px/1.45 ui-monospace, Menlo, monospace; color: var(--fg); background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px; resize: vertical }
+.hint { color: var(--muted); font-size: 12px; margin: 0 }
+#copied { color: var(--rec); font-size: 12px }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important } }
+</style>
+
+<h1>Конструктор строки задачи</h1>
+<p class="lead">Список собран из твоих решений, они отмечены зелёным «PM». «PM?» — вариант, который я выбрал по смыслу твоих слов, проверь его. Переключатели меняют список сразу. Когда вид понравится, нажми «Скопировать выбор» и вставь текст в чат. Задачи взяты с твоего скриншота, две просроченные придуманы для примера.</p>
+
+<div class="layout">
+  <div class="preview"><div class="widget" id="main"></div></div>
+  <div class="panel">
+    <div class="top">
+      <button type="button" class="btn" id="copy">Скопировать выбор</button>
+      <button type="button" class="btn ghost" id="reset">Вернуть решения PM</button>
+      <button type="button" class="btn ghost" id="theme">Тема: системная</button>
+      <span id="copied" aria-live="polite"></span>
+    </div>
+    <div id="groups" class="panel"></div>
+    <label class="hint" for="summary">Выбор текстом (можно выделить и скопировать вручную):</label>
+    <textarea id="summary" readonly></textarea>
+  </div>
+</div>
+
+<script>
+const OVER = [
+  { title: 'Отчёт за октябрь', e: '💼', bell: 1, wd: 'вт', date: '17 ноя', t: '18:00', old: 1 },
+  { title: 'Позвонить в банк', e: '🗂️', wd: 'пн', date: '23 ноя', t: '12:00' },
+  { title: 'Claude', e: '💲', bell: 1, rep: 1, wd: 'вт', date: '24 ноя', t: '10:00' },
+];
+const DAYS = [
+  { wd: 'ср', date: '25 ноя', rel: 'Сегодня', today: 1, items: [
+    { t: '03:00', title: 'Футбол', e: '🗂️', bell: 1, done: 1, past: 1 },
+    { t: '10:00', title: 'ChatGPT', e: '💲', bell: 1, rep: 1, past: 1 },
+    { t: '14:00', end: '16:00', title: 'Оценка Займы', e: '💼', bell: 1, pri: 1 },
+    { t: '16:00', title: 'Пройти юр.тест', e: '💼', bell: 1, pri: 1 },
+    { t: '16:00', end: '17:30', title: 'Оценка', e: '💼', rep: 1 },
+    { t: '19:00', title: 'Икра', e: '🗂️', bell: 1 },
+  ] },
+  { wd: 'чт', date: '26 ноя', rel: 'Завтра', items: [
+    { t: '03:00', title: 'Футбол', e: '🗂️', bell: 1 },
+    { t: '11:00', title: 'Дейлик', e: '💼', rep: 1 },
+    { t: '14:30', title: 'Девопсы', e: '💼', rep: 1 },
+    { t: '16:30', end: '17:30', title: 'Приоритезация', e: '💼', rep: 1 },
+  ] },
+  { wd: 'сб', date: '28 ноя', rel: '', items: [{ title: 'Купить подарок', e: '🗂️' }] },
+];
+
+// Группы переключателей. Третье поле — решение PM (по нему «Вернуть решения PM»).
+const GROUPS = [
+  ['Строка задачи', [
+    ['circle', 'Кружок', [[14, '14'], [16, '16'], [18, '18'], [20, '20']], 18],
+    ['repeat', 'Кружок повтора', [['tri', 'Треугольники'], ['chev', '«Галочки»'], ['inner', 'Кольцо + ↻']], 'tri'],
+    ['emoji', 'Эмодзи списка', [['left', 'Перед названием'], ['right', 'Справа']], 'left'],
+    ['emojiSize', 'Размер эмодзи', [[16, '16'], [18, '18'], [20, '20']], 18],
+    ['bell', 'Колокольчик', [[14, '14'], [16, '16'], [18, '18'], [22, '22']], 16],
+    ['order', 'Порядок справа', [['bell-time', '🔔 · время'], ['time-bell', 'время · 🔔']], 'bell-time'],
+    ['period', 'Время периода', [['two', 'Две строки'], ['one', 'Одна строка']], 'two'],
+    ['timeStyle', 'Шрифт времени', [['b13', '13 жирный'], ['m13', '13 средний'], ['b12', '12 жирный']], 'b13'],
+  ]],
+  ['Подпись дня', [
+    ['hSize', 'Размер', [[12, '12'], [13, '13'], [14, '14']], 12],
+    ['hTone', 'Стиль', [['muted', 'Средний серый'], ['bold', 'Жирный чёрный']], 'muted'],
+    ['hSep', 'Между датой и «Сегодня»', [['dot', '·'], ['space', 'пробел']], 'dot'],
+    ['hCase', 'День недели', [['lower', 'вт'], ['upper', 'ВТ']], 'lower'],
+  ]],
+  ['Количество задач', [
+    ['cStyle', 'Стиль числа', [['head', 'Как подпись дня'], ['time', 'Как время справа']], 'head'],
+    ['cToday', 'У «Сегодня»', [['progress', 'Полоса + «1 из 6»'], ['text', 'Только «1 из 6»'], ['count', 'Просто «6»']], 'progress'],
+  ]],
+  ['Полоса прогресса', [
+    ['pH', 'Толщина', [[1, '1'], [2, '2'], [3, '3'], [4, '4 (сейчас)']], 2],
+    ['pFill', 'Заполнение', [['fg', 'Чёрное'], ['muted', 'Серое']], 'fg'],
+  ]],
+  ['Блок «Просрочено»', [
+    ['oColor', 'Цвет подписи', [['late', 'Красный'], ['muted', 'Серый, как дни']], 'late'],
+    ['oRight', 'Справа у задач', [['wd', 'День недели'], ['wdtime', 'День и время'], ['date', 'Дата']], 'wd'],
+    ['oOld', 'Старше недели', [['date', 'Дата «17 ноя»'], ['wd', 'Тоже день недели']], 'date'],
+    ['fold', 'Свернуть', [['thin', 'Тонкий ⌄'], ['bold', 'Жирный ⌄ (сейчас)'], ['none', 'Нажатие на подпись']], 'thin'],
+    ['move', 'Перенос на сегодня', [['thinbar', 'Тонкая →|'], ['down', '↓ к линии'], ['cal', 'Календарь'], ['text', 'Текст «на сегодня»'], ['old', 'Жирная →| (сейчас)']], 'thinbar'],
+  ]],
+];
+const PM = Object.fromEntries(GROUPS.flatMap(([, list]) => list.map(([k, , , v]) => [k, v])));
+// Решения последнего сообщения PM, где вариант выбран мной по смыслу (не прямой выбор): помечаем «?».
+const GUESS = new Set(['cStyle', 'pH', 'oColor', 'fold', 'move', 'oOld']);
+let state = { ...PM };
+try { const saved = JSON.parse(localStorage.getItem('c334') || 'null'); if (saved) state = { ...PM, ...saved } } catch (e) {}
+
+const C = x => x.pri ? 'var(--pri)' : (x.done || x.past ? 'var(--faint)' : 'var(--muted)');
+function repeatIcon(kind, c, s) {
+  if (kind === 'tri') return `<svg class="chk" width="${s}" height="${s}" viewBox="0 0 14 14" aria-hidden="true"><path d="M0.8,6.2A6.25,6.25 0,0 1,13.2 6.2M13.2,7.8A6.25,6.25 0,0 1,0.8 7.8" stroke="${c}" stroke-width="1.5" fill="none"/><path d="M10.1,5.8L13.2,6.2L13.3,2.8ZM3.9,8.2L0.8,7.8L0.7,11.2Z" fill="${c}"/></svg>`;
+  if (kind === 'chev') return `<svg class="chk" width="${s}" height="${s}" viewBox="0 0 20 20" aria-hidden="true"><path d="M3.15,8.55A7,7 0,0 1,16.85 8.55M14.85,6.55L16.85,8.55L18.85,6.55M16.85,11.45A7,7 0,0 1,3.15 11.45M1.15,13.45L3.15,11.45L5.15,13.45" stroke="${c}" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  return `<svg class="chk" width="${s}" height="${s}" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="8" stroke="${c}" stroke-width="2" fill="none"/><path d="M12.2,9A3.2,3.2 0 1,1 9,5.8" stroke="${c}" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M8.3,4.2L10,5.8L8.3,7.4" stroke="${c}" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+}
+function check(x, o) {
+  const c = C(x), s = o.circle, sw = s >= 18 ? 2 : 1.7;
+  if (x.rep) return repeatIcon(o.repeat, c, s);
+  if (x.done) return `<svg class="chk" width="${s}" height="${s}" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="9" fill="${c}"/><path d="M5.4 9.4l2.5 2.5l4.9-5.4" stroke="var(--card)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  return `<svg class="chk" width="${s}" height="${s}" viewBox="0 0 ${s} ${s}" aria-hidden="true"><circle cx="${s/2}" cy="${s/2}" r="${s/2 - 1}" stroke="${c}" stroke-width="${sw}" fill="none"/></svg>`;
+}
+const bell = s => `<svg class="bell" width="${s}" height="${s}" viewBox="0 0 24 24" aria-label="напоминание"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z M10 20.5a2 2 0 0 0 4 0" stroke="currentColor" stroke-width="2" fill="none" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+const TS = { b13: [13, 700], m13: [13, 500], b12: [12, 700] };
+function timeHtml(text, o) { const [sz, w] = TS[o.timeStyle]; return `<span class="t" style="font-size:${sz}px;font-weight:${w}">${text}</span>` }
+function rightText(x, o, late) {
+  if (late) {
+    const day = x.old && o.oOld === 'date' ? x.date : x.wd;
+    return o.oRight === 'wd' ? day : o.oRight === 'wdtime' ? `${day}<br>${x.t}` : x.date;
+  }
+  if (!x.t) return '';
+  return x.end ? (o.period === 'two' ? `${x.t}<br>${x.end}` : `${x.t}–${x.end}`) : x.t;
+}
+function row(x, o, late) {
+  const cls = ['row', x.pri && 'pri', (x.past || x.done) && 'past', late && 'late'].filter(Boolean).join(' ');
+  const emo = `<span class="emo" style="width:${o.emojiSize}px;font-size:${Math.round(o.emojiSize * .88)}px;margin:${o.emoji === 'left' ? '0 8px 0 0' : '0 0 0 8px'}">${x.e}</span>`;
+  const r = rightText(x, o, late);
+  const t = r ? `<span style="margin-left:8px;display:flex">${timeHtml(r, o)}</span>` : '';
+  const b = x.bell ? `<span style="margin-left:8px;display:flex">${bell(o.bell)}</span>` : '';
+  const right = o.order === 'bell-time' ? b + t : t + b;
+  return `<div class="${cls}"><span style="margin-right:10px;display:flex">${check(x, o)}</span>${o.emoji === 'left' ? emo : ''}<span class="title">${x.title}</span>${right}${o.emoji === 'right' ? emo : ''}</div>`;
+}
+function headStyle(o, late) {
+  const w = o.hTone === 'bold' ? 700 : 500;
+  const c = late ? (o.oColor === 'late' ? 'var(--late)' : (o.hTone === 'bold' ? 'var(--fg)' : 'var(--muted)')) : (o.hTone === 'bold' ? 'var(--fg)' : 'var(--muted)');
+  return `font-size:${o.hSize}px;font-weight:${w};color:${c}`;
+}
+function countHtml(text, o, late) {
+  if (o.cStyle === 'time') { const [sz, w] = TS[o.timeStyle]; return `<span class="cnt" style="font-size:${sz}px;font-weight:${w};color:${late && o.oColor === 'late' ? 'var(--late)' : 'var(--fg)'}">${text}</span>` }
+  return `<span class="cnt" style="${headStyle(o, late)}">${text}</span>`;
+}
+function iconFold(o) {
+  if (o.fold === 'none') return '';
+  const sw = o.fold === 'thin' ? 1.6 : 2.6, s = o.fold === 'thin' ? 16 : 20;
+  return `<span class="ic" aria-label="свернуть"><svg width="${s}" height="${s}" viewBox="0 0 24 24"><path d="M6 9l6 6l6-6" stroke="currentColor" stroke-width="${sw}" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
+}
+function iconMove(o) {
+  const svg = (d, s = 16, sw = 1.6) => `<span class="ic" aria-label="перенести на сегодня"><svg width="${s}" height="${s}" viewBox="0 0 24 24"><path d="${d}" stroke="currentColor" stroke-width="${sw}" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
+  switch (o.move) {
+    case 'thinbar': return svg('M4 12h12M12 7l5 5l-5 5M20 5v14');
+    case 'down': return svg('M12 4v11M7 10l5 5l5-5M5 20h14');
+    case 'cal': return svg('M5 6h14v13H5zM5 10h14M9 3v4M15 3v4M10 15h5M13 13l2 2l-2 2');
+    case 'text': return `<span class="ic" style="font-size:${Math.max(11, o.hSize - 1)}px;font-weight:600;padding:0 4px;border-radius:6px;background:var(--chip)">на сегодня</span>`;
+    default: return svg('M3 12h13M11 6l6 6l-6 6M21 5v14', 20, 2.4);
+  }
+}
+function headText(day, o) {
+  const wd = o.hCase === 'upper' ? day.wd.toUpperCase() : day.wd;
+  const sep = o.hSep === 'dot' ? ' · ' : ' ';
+  return day.rel ? `${wd} ${day.date}${sep}${day.rel}` : `${wd} ${day.date}`;
+}
+function list(o) {
+  let h = `<div class="head"><span class="txt" style="${headStyle(o, true)}">Просрочено</span>`
+    + `<span style="display:flex;align-items:center;color:${o.oColor === 'late' ? 'var(--late)' : 'var(--muted)'}">${iconFold(o)}${iconMove(o)}</span>`
+    + countHtml(String(OVER.length), o, true) + `</div>` + OVER.map(x => row(x, o, true)).join('');
+  for (const day of DAYS) {
+    const n = day.items.length, done = day.items.filter(x => x.done).length;
+    let extra;
+    if (day.today && o.cToday !== 'count') {
+      const bar = o.cToday === 'progress' ? `<span class="bar" style="height:${o.pH}px"><i style="width:${Math.round(done / n * 100)}%;background:${o.pFill === 'fg' ? 'var(--fg)' : 'var(--muted)'}"></i></span>` : '';
+      extra = bar + countHtml(`${done} из ${n}`, o, false);
+    } else extra = countHtml(String(n), o, false);
+    h += `<div class="head"><span class="txt" style="${headStyle(o, false)}">${headText(day, o)}</span>${extra}</div>` + day.items.map(x => row(x, o)).join('');
+  }
+  return h;
+}
+function renderGroups() {
+  document.getElementById('groups').innerHTML = GROUPS.map(([title, ctls]) =>
+    `<fieldset><legend>${title}</legend>${ctls.map(([k, label, opts]) =>
+      `<div class="ctl"><span id="l-${k}">${label}</span><div class="seg" role="group" aria-labelledby="l-${k}">${opts.map(([v, t]) =>
+        `<button type="button" id="c-${k}-${v}" data-k="${k}" data-v="${v}" aria-pressed="${state[k] == v}">${t}${PM[k] == v ? `<span class="pm">PM${GUESS.has(k) ? '?' : ''}</span>` : ''}</button>`).join('')}</div></div>`).join('')}</fieldset>`).join('');
+}
+function summary() {
+  return GROUPS.map(([title, ctls]) => `${title}: ` + ctls.map(([k, label, opts]) => `${label.toLowerCase()} — ${opts.find(([v]) => v == state[k])[1]}`).join('; ')).join('\n');
+}
+function render() {
+  document.getElementById('main').innerHTML = list(state);
+  renderGroups();
+  document.getElementById('summary').value = summary();
+  try { localStorage.setItem('c334', JSON.stringify(state)) } catch (e) {}
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('button[data-k]'); if (!b) return;
+  const k = b.dataset.k, v = b.dataset.v; state[k] = isNaN(+v) ? v : +v; render();
+});
+document.getElementById('reset').addEventListener('click', () => { state = { ...PM }; render() });
+document.getElementById('copy').addEventListener('click', () => {
+  const text = summary(), out = document.getElementById('copied');
+  const fallback = () => { const s = document.getElementById('summary'); s.focus(); s.select(); out.textContent = 'Текст выделен — скопируй вручную' };
+  try { navigator.clipboard.writeText(text).then(() => { out.textContent = 'Скопировано' }, fallback) } catch (e) { fallback() }
+});
+const THEMES = [['', 'системная'], ['light', 'светлая'], ['dark', 'тёмная']];
+let themeIndex = 0;
+document.getElementById('theme').addEventListener('click', e => {
+  themeIndex = (themeIndex + 1) % THEMES.length;
+  const [v, t] = THEMES[themeIndex];
+  if (v) document.documentElement.dataset.theme = v; else delete document.documentElement.dataset.theme;
+  e.currentTarget.textContent = `Тема: ${t}`;
+});
+render();
+</script>
