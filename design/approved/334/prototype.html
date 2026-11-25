@@ -1,0 +1,201 @@
+<title>Строка задачи #334</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Manrope:wght@500;700&display=swap">
+<style>
+/* Макет: слева «было», справа «стало» с переключателями; ниже — варианты каждого решения рядом. Масштаб 1:1 (dp = px). */
+:root {
+  --bg: #eceef2; --card: #ffffff; --fg: #1b1c1f; --muted: #6f737b; --faint: #b9bcc3;
+  --track: #e6e7ea; --late: #c62828; --pri: #6a3fb5; --accent: #1b1c1f; --chip: #f3f3f4; --rec: #2e7d32;
+  --font: Roboto, system-ui, sans-serif; --ui: Manrope, system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #111215; --card: #1c1d21; --fg: #eceef2; --muted: #9a9ea6; --faint: #5b5e65;
+  --track: #34363c; --late: #ef6b6b; --pri: #b18cf0; --accent: #eceef2; --chip: #2a2c31; --rec: #81c784; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #111215; --card: #1c1d21; --fg: #eceef2; --muted: #9a9ea6; --faint: #5b5e65;
+  --track: #34363c; --late: #ef6b6b; --pri: #b18cf0; --accent: #eceef2; --chip: #2a2c31; --rec: #81c784; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--fg); font-family: var(--ui); margin: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 40px }
+h1 { font-size: 22px; margin: 0 0 4px; text-wrap: balance }
+h2 { font-size: 17px; margin: 28px 0 4px }
+.lead { color: var(--muted); margin: 0 0 18px; max-width: 72ch; line-height: 1.45 }
+.pair { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start }
+.col { flex: 1 1 360px; min-width: 0; max-width: 412px }
+.cap { font-weight: 700; margin: 0 0 8px; display: flex; gap: 8px; align-items: baseline }
+.cap small { color: var(--muted); font-weight: 500 }
+.widget { background: var(--card); border-radius: 24px; padding: 10px 0 12px; font-family: var(--font) }
+/* строки */
+.day { display: flex; align-items: center; gap: 10px; padding: 12px 14px 4px 14px; font-size: 15px }
+.day b { font-weight: 700 } .day .lb { font-size: 13px; font-weight: 500 }
+.day.late { color: var(--late) } .bar { flex: 1; height: 4px; border-radius: 2px; background: var(--track); position: relative }
+.bar i { position: absolute; inset: 0 auto 0 0; background: var(--fg); border-radius: 2px }
+.cnt { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; margin-left: auto }
+.over { color: var(--late); font-weight: 700; font-size: 16px; padding: 4px 14px 2px }
+.row { display: flex; align-items: center; min-height: 46px; padding: 0 14px 0 14px; font-size: 16px; gap: 0 }
+.row .t { font-weight: 700; font-variant-numeric: tabular-nums; font-size: 13px; line-height: 1.25; color: var(--fg); white-space: nowrap }
+.row .title { flex: 1; min-width: 0; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.row .emo { flex: none; text-align: center; line-height: 1 }
+.row.pri .title, .row.pri .t { color: var(--pri) }
+.row.past { color: var(--faint) } .row.past .title, .row.past .t { color: var(--faint) } .row.past .emo, .row.past .bell { opacity: .45 }
+.row.late .t { color: var(--late) }
+.chk { flex: none; display: block } .bell { flex: none; display: block; color: var(--muted) }
+/* старая строка */
+.old .t { width: 38px; text-align: right; font-size: 13px }
+/* переключатели */
+.controls { display: grid; gap: 10px; margin: 0 0 14px }
+.ctl { display: flex; flex-wrap: wrap; align-items: center; gap: 6px }
+.ctl > span { min-width: 120px; color: var(--muted); font-size: 13px }
+.seg { display: inline-flex; background: var(--chip); border-radius: 10px; padding: 3px; gap: 2px; flex-wrap: wrap }
+.seg button { font: 600 13px var(--ui); color: var(--fg); background: none; border: 0; border-radius: 8px; padding: 6px 10px; cursor: pointer }
+.seg button[aria-pressed="true"] { background: var(--card); box-shadow: 0 1px 2px rgb(0 0 0 / .15) }
+.seg button:focus-visible { outline: 2px solid var(--pri); outline-offset: 1px }
+.seg button .r { color: var(--rec); font-size: 11px; margin-left: 4px }
+.variants { display: flex; flex-wrap: wrap; gap: 14px }
+.variant { flex: 1 1 250px; min-width: 0; max-width: 412px }
+.variant .widget { padding: 4px 0 6px; border-radius: 16px }
+.vcap { font-size: 13px; font-weight: 700; margin: 0 0 6px } .vcap .r { color: var(--rec); font-weight: 600 }
+.note { color: var(--muted); font-size: 13px; max-width: 72ch; line-height: 1.45; margin-top: 18px }
+table.anat { border-collapse: collapse; font-size: 13px; margin-top: 8px }
+table.anat td, table.anat th { padding: 4px 10px 4px 0; text-align: left; vertical-align: top }
+table.anat th { color: var(--muted); font-weight: 600 }
+.wrap { overflow-x: auto }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important } }
+</style>
+
+<h1>Строка задачи: время справа</h1>
+<p class="lead">#331 убрал линии; теперь меняем саму строку. Слева то, что сейчас на телефоне. Справа новая строка: кружок, эмодзи списка, название, колокольчик и время у правого края. Переключатели меняют правый макет. Ниже каждый вопрос показан отдельно, варианты стоят рядом. Масштаб 1:1, задачи взяты со скриншота.</p>
+
+<div class="pair">
+  <div class="col">
+    <p class="cap">Сейчас <small>0.93.0</small></p>
+    <div class="widget" id="old"></div>
+  </div>
+  <div class="col">
+    <p class="cap">Стало <small>собери вариант</small></p>
+    <div class="controls" id="controls"></div>
+    <div class="widget" id="new"></div>
+  </div>
+</div>
+
+<h2>1. Размер кружка</h2>
+<p class="lead">Сейчас кружок 14 dp. В «Неделе» и на хабе он такой же.</p>
+<div class="variants" id="v-circle"></div>
+
+<h2>2. Время у задачи с периодом</h2>
+<p class="lead">Справа у границы. Для «14:00–16:00» есть два варианта: две строки, как сейчас, или одна строка.</p>
+<div class="variants" id="v-period"></div>
+
+<h2>3. Порядок справа</h2>
+<p class="lead">Если время стоит у самого края, оно выравнивается в один столбец. Колокольчик тогда идёт перед временем.</p>
+<div class="variants" id="v-order"></div>
+
+<h2>4. Колокольчик</h2>
+<p class="lead">Сейчас колокольчик 22 dp. Уменьшаем его, чтобы он не спорил с эмодзи и временем.</p>
+<div class="variants" id="v-bell"></div>
+
+<h2>Устройство новой строки (рекомендация)</h2>
+<div class="wrap"><table class="anat">
+  <tr><th>Слева направо</th><th>Размер</th></tr>
+  <tr><td>Поле</td><td>14 dp, как у заголовков дней</td></tr>
+  <tr><td>Кружок выполнения</td><td>18 dp (было 14), область нажатия во всю высоту строки</td></tr>
+  <tr><td>Отступ</td><td>10 dp</td></tr>
+  <tr><td>Эмодзи списка</td><td>18 dp (раньше было справа), отступ до названия 8 dp</td></tr>
+  <tr><td>Название</td><td>16 sp, занимает всё свободное место, многоточие</td></tr>
+  <tr><td>Колокольчик</td><td>16 dp (было 22), отступ 8 dp</td></tr>
+  <tr><td>Время</td><td>13 sp Bold, по правому краю; у периода две строки; без времени — пусто</td></tr>
+</table></div>
+<p class="note">Где меняется: «Предстоящее», окно дня, хаб, «Входящие» и списки в приложении, виджеты «Все», «Входящие» и «Главная». Списки дней внутри виджета «Неделя» уже устроены так (эмодзи, название, время справа) и не меняются. Просроченные в «Входящих» показывают «Вчера» и время справа, в две строки. Цвета (фиолетовый приоритет, красная просрочка, бледные прошедшие) не меняются.</p>
+
+<script>
+const D = {
+  over: [{ t: '10:00', title: 'Claude', e: '💲', bell: 1, rep: 1, late: 1 }],
+  today: [
+    { t: '03:00', title: 'Футбол', e: '🗂️', bell: 1, done: 1, past: 1 },
+    { t: '10:00', title: 'ChatGPT', e: '💲', bell: 1, rep: 1, past: 1 },
+    { t: '14:00', end: '16:00', title: 'Оценка Займы', e: '💼', bell: 1, pri: 1 },
+    { t: '16:00', title: 'Пройти юр.тест', e: '💼', bell: 1, pri: 1 },
+    { t: '16:00', end: '17:30', title: 'Оценка', e: '💼', rep: 1 },
+    { t: '19:00', title: 'Икра', e: '🗂️', bell: 1 },
+  ],
+  tomorrow: [
+    { t: '03:00', title: 'Футбол', e: '🗂️', bell: 1 },
+    { t: '11:00', title: 'Дейлик', e: '💼', rep: 1 },
+    { t: '14:30', title: 'Девопсы', e: '💼', rep: 1 },
+    { t: '16:30', end: '17:30', title: 'Приоритезация', e: '💼', rep: 1 },
+    { title: 'Купить подарок', e: '🗂️' },
+  ],
+};
+const REC = { circle: 18, period: 'two', order: 'bell-time', bell: 16 };
+const state = { ...REC };
+
+function check(x, size) {
+  const c = x.pri ? 'var(--pri)' : (x.done || x.past ? 'var(--faint)' : 'var(--muted)');
+  const s = size, r = s / 2 - 1;
+  if (x.done) return `<svg class="chk" width="${s}" height="${s}" viewBox="0 0 ${s} ${s}" aria-hidden="true"><circle cx="${s/2}" cy="${s/2}" r="${s/2}" fill="${c}"/><path d="M${s*.3} ${s*.52} l${s*.14} ${s*.14} l${s*.27} -${s*.3}" stroke="var(--card)" stroke-width="${Math.max(1.6, s/9)}" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  if (x.rep) return `<svg class="chk" width="${s}" height="${s}" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 0 1-13.7 5.6M4 12a8 8 0 0 1 13.7-5.6" stroke="${c}" stroke-width="2.2" fill="none" stroke-linecap="round"/><path d="M17.7 2.6v3.8h-3.8M6.3 21.4v-3.8h3.8" stroke="${c}" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  return `<svg class="chk" width="${s}" height="${s}" viewBox="0 0 ${s} ${s}" aria-hidden="true"><circle cx="${s/2}" cy="${s/2}" r="${r}" stroke="${c}" stroke-width="${s >= 18 ? 2 : 1.7}" fill="none"/></svg>`;
+}
+function bell(size) {
+  return `<svg class="bell" width="${size}" height="${size}" viewBox="0 0 24 24" aria-label="напоминание"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z M10 20.5a2 2 0 0 0 4 0" stroke="currentColor" stroke-width="2" fill="none" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+}
+function time(x, o) {
+  if (!x.t) return '';
+  const t = x.end ? (o.period === 'two' ? `${x.t}<br>${x.end}` : `${x.t}–${x.end}`) : x.t;
+  return `<span class="t" style="text-align:right;margin-left:8px">${t}</span>`;
+}
+function newRow(x, o) {
+  const cls = ['row', x.pri && 'pri', (x.past || x.done) && 'past', x.late && 'late'].filter(Boolean).join(' ');
+  const b = x.bell ? `<span style="margin-left:8px;display:flex">${bell(o.bell)}</span>` : '';
+  const right = o.order === 'bell-time' ? b + time(x, o) : time(x, o) + b;
+  return `<div class="${cls}">${check(x, o.circle)}<span class="emo" style="margin-left:10px;margin-right:8px;font-size:${Math.round(o.circle * .9)}px;width:${o.circle}px">${x.e}</span><span class="title">${x.title}</span>${right}</div>`;
+}
+function oldRow(x) {
+  const cls = ['row', 'old', x.pri && 'pri', (x.past || x.done) && 'past', x.late && 'late'].filter(Boolean).join(' ');
+  const t = x.t ? (x.end ? `${x.t}<br>${x.end}` : x.t) : '';
+  return `<div class="${cls}"><span class="t">${t}</span><span style="margin:0 8px;display:flex">${check(x, 14)}</span><span class="title">${x.title}</span>${x.bell ? `<span style="margin-left:6px;display:flex">${bell(22)}</span>` : '<span style="width:28px"></span>'}<span class="emo" style="font-size:20px;width:30px;margin-left:6px">${x.e}</span></div>`;
+}
+function day(label, rel, n, late, prog) {
+  const bar = prog != null ? `<span class="bar"><i style="width:${prog}%"></i></span>` : '';
+  return `<div class="day${late ? ' late' : ''}"><b>${label}</b><span class="lb">${rel}</span>${bar}<span class="cnt">${n}</span></div>`;
+}
+function list(rowFn, o, short) {
+  let h = `<div class="over">Просрочено · 1</div>` + day('ВТ, 24 ноя', 'Вчера', '1', true) + D.over.map(x => rowFn(x, o)).join('')
+    + day('СР, 25 ноя', 'Сегодня', '1 из 6', false, 17) + D.today.map(x => rowFn(x, o)).join('');
+  if (!short) h += day('ЧТ, 26 ноя', 'Завтра', '5', false) + D.tomorrow.map(x => rowFn(x, o)).join('');
+  return h;
+}
+const CTL = [
+  ['circle', 'Кружок', [[16, '16 dp'], [18, '18 dp'], [20, '20 dp']]],
+  ['period', 'Период', [['two', 'Две строки'], ['one', 'Одна строка']]],
+  ['order', 'Справа', [['bell-time', '🔔 · время'], ['time-bell', 'время · 🔔']]],
+  ['bell', 'Колокольчик', [[14, '14 dp'], [16, '16 dp'], [18, '18 dp']]],
+];
+function renderControls() {
+  document.getElementById('controls').innerHTML = CTL.map(([k, label, opts]) =>
+    `<div class="ctl"><span>${label}</span><div class="seg" role="group" aria-label="${label}">${opts.map(([v, t]) =>
+      `<button type="button" id="c-${k}-${v}" data-k="${k}" data-v="${v}" aria-pressed="${state[k] == v}">${t}${REC[k] == v ? '<span class="r">реком.</span>' : ''}</button>`).join('')}</div></div>`).join('');
+}
+function render() {
+  document.getElementById('old').innerHTML = list(oldRow, null);
+  document.getElementById('new').innerHTML = list(newRow, state);
+  renderControls();
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('button[data-k]'); if (!b) return;
+  const k = b.dataset.k, v = b.dataset.v; state[k] = isNaN(+v) ? v : +v; render();
+});
+function variants(id, key, opts, rows) {
+  document.getElementById(id).innerHTML = opts.map(([v, t]) => {
+    const o = { ...REC, [key]: v };
+    return `<div class="variant"><p class="vcap">${t}${REC[key] == v ? ' <span class="r">· рекомендую</span>' : ''}</p><div class="widget">${rows.map(x => newRow(x, o)).join('')}</div></div>`;
+  }).join('');
+}
+const sample = [D.today[2], D.today[3], D.today[4], D.today[5]];
+variants('v-circle', 'circle', [[16, '16 dp'], [18, '18 dp'], [20, '20 dp']], sample);
+variants('v-period', 'period', [['two', 'Две строки'], ['one', 'Одна строка «14:00–16:00»']], [D.today[2], D.today[4], D.tomorrow[3]]);
+variants('v-order', 'order', [['bell-time', '🔔 · время (время у края)'], ['time-bell', 'время · 🔔']], [D.today[3], D.today[4], D.today[5], D.tomorrow[4]]);
+variants('v-bell', 'bell', [[14, '14 dp'], [16, '16 dp'], [18, '18 dp']], [D.today[3], D.today[5]]);
+render();
+</script>
