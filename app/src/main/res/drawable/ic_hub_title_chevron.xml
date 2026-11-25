@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- #338: «›» у заголовка раздела хаба (виджет). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="14dp" android:height="14dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M9.5,6.5l5.5,5.5l-5.5,5.5" android:strokeColor="#FF757575" android:strokeWidth="2.2" android:strokeLineCap="round" android:strokeLineJoin="round" />
+</vector>

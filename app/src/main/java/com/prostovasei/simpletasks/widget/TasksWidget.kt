@@ -498,79 +498,40 @@ fun widgetCheckColors(priority: Priority): WidgetCheckColors = when (priority) {
 @Composable
 internal fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boolean, module: WidgetModule = WidgetModule.TASKS) {
     val context = LocalContext.current
-    val white = ColorProvider(Color(NavBarTokens.icon.light))
-    val muted = ColorProvider(Color(NavBarTokens.muted.light))
     Row(
         modifier = GlanceModifier.fillMaxWidth().height(SizeTokens.WIDGET_BAR.dp).padding(end = SizeTokens.WIDGET_EDGE.dp),
         horizontalAlignment = Alignment.End,
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // #338 (конструктор PM): капсула 40 — разделы (четыре точки), настройки, микрофон, светло-фиолетовый «+» без круга (меню «что добавить»).
         Row(
             modifier = (if (imageButtons) GlanceModifier.background(ImageProvider(R.drawable.widget_nav_capsule))
             else GlanceModifier.background(Color(NavBarTokens.background.light)).cornerRadius(SizeTokens.NAV_BUTTON.dp))
                 .padding(SizeTokens.NAV_PAD.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            val todayText = WidgetDates.bar(model.today, withWeekday = true)
-            val (day, weekday, month) = WidgetDates.tile(model.today)
-            Row(
-                modifier = GlanceModifier.height(SizeTokens.NAV_BUTTON.dp).padding(start = SpacingTokens.XS.dp, end = SpacingTokens.XXS.dp)
-                    .then(if (module == WidgetModule.TASKS) GlanceModifier.clickable(actionSendBroadcast(WidgetActions.today(context, appWidgetId))) else GlanceModifier)
-                    .semantics { contentDescription = if (module == WidgetModule.TASKS) context.getString(R.string.widget_today_date, todayText) else todayText },
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(day, style = TextStyle(color = white, fontSize = SizeTokens.NAV_DATE_SP.sp, fontWeight = FontWeight.Bold), maxLines = 1)
-                Spacer(GlanceModifier.width(SizeTokens.HAIRLINE.dp * 3))
-                Column {
-                    Text(weekday.lowercase(), style = TextStyle(color = muted, fontSize = SizeTokens.NAV_DATE_SMALL_SP.sp, fontWeight = FontWeight.Bold), maxLines = 1)
-                    Text(month, style = TextStyle(color = muted, fontSize = SizeTokens.NAV_DATE_SMALL_SP.sp, fontWeight = FontWeight.Bold), maxLines = 1)
-                }
-            }
-            NavButton(R.drawable.ic_nav_grid, context.getString(R.string.nav_sections),
-                actionStartActivity(widgetSectionsIntent(context, appWidgetId)), if (imageButtons) R.drawable.widget_nav_hub else null, NavBarTokens.selected)
+            NavButton(R.drawable.ic_nav_grid, context.getString(R.string.nav_sections), actionStartActivity(widgetSectionsIntent(context, appWidgetId)))
             NavButton(R.drawable.ic_nav_sliders, context.getString(R.string.settings_title),
                 actionStartActivity(Intent(context, com.prostovasei.simpletasks.MainActivity::class.java)
                     .putExtra(com.prostovasei.simpletasks.MainActivity.EXTRA_OPEN_SETTINGS, true)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)), null, null)
-            val add = context.getString(when (module) {
-                WidgetModule.FINANCE -> R.string.finance_add
-                WidgetModule.HEALTH -> R.string.health_add
-                WidgetModule.NEWS -> R.string.news_refresh
-                WidgetModule.TASKS, WidgetModule.HUB -> R.string.add_task
-            })
-            NavButton(
-                if (module == WidgetModule.NEWS) R.drawable.ic_news_refresh else R.drawable.ic_nav_plus, add,
-                if (module == WidgetModule.NEWS) actionSendBroadcast(WidgetActions.refreshNews(context, appWidgetId)) else actionStartActivity(when (module) {
-                    WidgetModule.FINANCE -> widgetPopupIntent(context, appWidgetId, true)
-                    WidgetModule.HEALTH -> widgetPopupIntent(context, appWidgetId, false, health = true)
-                    WidgetModule.TASKS, WidgetModule.NEWS, WidgetModule.HUB -> quickAddIntent(context, model.filter)
-                }),
-                if (imageButtons) R.drawable.widget_nav_plus else null, NavBarTokens.plus,
-            )
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)))
+            NavButton(R.drawable.ic_nav_mic, context.getString(R.string.widget_voice),
+                actionStartActivity(voiceIntent(context, if (module == WidgetModule.TASKS) model.filter else WidgetFilter.All)))
+            NavButton(R.drawable.ic_nav_plus, context.getString(R.string.nav_add), actionStartActivity(widgetAddIntent(context, appWidgetId)),
+                tint = NavBarTokens.plus, iconSize = SizeTokens.NAV_PLUS_ICON)
         }
     }
 }
 
-/** Круглая кнопка капсулы 30 dp со значком 18; [image] — подложка картинкой (Android 12+), иначе цвет [fill] со скруглением Glance. */
+/** Кнопка капсулы 34 dp без подложки (#338): значок 20, у «+» — 26 светло-фиолетовым. */
 @Composable
-private fun NavButton(icon: Int, description: String, action: Action, image: Int?, fill: com.prostovasei.simpletasks.designsystem.tokens.ThemedColor?) {
+private fun NavButton(icon: Int, description: String, action: Action,
+                      tint: com.prostovasei.simpletasks.designsystem.tokens.ThemedColor = NavBarTokens.icon, iconSize: Int = SizeTokens.NAV_ICON) {
     Box(
-        modifier = GlanceModifier.size(SizeTokens.NAV_BUTTON.dp)
-            .then(when {
-                image != null -> GlanceModifier.background(ImageProvider(image))
-                fill != null -> GlanceModifier.background(Color(fill.light)).cornerRadius(SizeTokens.NAV_BUTTON.dp)
-                else -> GlanceModifier
-            })
-            .clickable(action)
-            .semantics { contentDescription = description },
+        modifier = GlanceModifier.size(SizeTokens.NAV_BUTTON.dp).clickable(action).semantics { contentDescription = description },
         contentAlignment = Alignment.Center,
     ) {
-        Image(
-            ImageProvider(icon),
-            contentDescription = null,
-            colorFilter = ColorFilter.tint(ColorProvider(Color(NavBarTokens.icon.light))),
-            modifier = GlanceModifier.size(SizeTokens.NAV_ICON.dp),
-        )
+        Image(ImageProvider(icon), contentDescription = null, colorFilter = ColorFilter.tint(ColorProvider(Color(tint.light))), modifier = GlanceModifier.size(iconSize.dp))
     }
 }
 

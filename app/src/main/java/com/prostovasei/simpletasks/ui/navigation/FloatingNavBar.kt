@@ -46,29 +46,23 @@ import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.designsystem.tokens.NavBarTokens
 import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
-import java.time.LocalDate
 
 /*
- * Плавающая панель (#336, конструктор PM 25.11.2026): тёмная капсула справа внизу — дата «25 ср/ноя», хаб (сетка 2 × 2, открывает
- * выбор раздела), настройки (ползунки) и фиолетовый «+». Вкладок в панели больше нет: разделы — в окне выбора плитками.
+ * Плавающая панель (#336, доработка #338 по конструктору PM 25.11.2026): тёмная капсула справа внизу высотой 40 — разделы (четыре точки,
+ * открывает выбор раздела), настройки (ползунки), микрофон (голосовой ввод) и светло-фиолетовый «+» без круга, который открывает
+ * меню «что добавить». Даты и подложек у кнопок нет.
  */
-
-private val WEEKDAYS = listOf("пн", "вт", "ср", "чт", "пт", "сб", "вс")
-private val MONTHS = listOf("янв", "фев", "мар", "апр", "мая", "июн", "июл", "авг", "сен", "окт", "ноя", "дек")
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun FloatingNavBar(
-    today: LocalDate,
     onHub: () -> Unit,
     onSettings: () -> Unit,
+    onVoice: () -> Unit,
     onAdd: () -> Unit,
-    addTag: String,
-    @StringRes addLabel: Int,
     modifier: Modifier = Modifier,
     onHubLongClick: (() -> Unit)? = null,
 ) {
-    val background = Color(NavBarTokens.background.light)
     val icon = Color(NavBarTokens.icon.light)
     Row(
         modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.navigationBars)
@@ -76,53 +70,41 @@ fun FloatingNavBar(
         horizontalArrangement = Arrangement.End,
     ) {
         Row(
-            Modifier.shadow(AppTheme.spacing.xs, CircleShape).clip(CircleShape).background(background)
+            Modifier.shadow(AppTheme.spacing.xs, CircleShape).clip(CircleShape).background(Color(NavBarTokens.background.light))
                 .padding(SizeTokens.NAV_PAD.dp).testTag(TAG_APP_BAR),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(AppTheme.sizes.hairline * 2),
         ) {
-            NavDate(today)
             val hubLabel = stringResource(R.string.nav_sections)
             Box(
-                Modifier.size(SizeTokens.NAV_BUTTON.dp).clip(CircleShape).background(Color(NavBarTokens.selected.light))
+                Modifier.size(SizeTokens.NAV_BUTTON.dp).clip(CircleShape)
                     .combinedClickable(role = Role.Button, onClick = onHub, onLongClick = onHubLongClick)
                     .semantics { contentDescription = hubLabel }.testTag(TAG_NAV_HUB),
                 contentAlignment = Alignment.Center,
             ) { Icon(painterResource(R.drawable.ic_nav_grid), null, tint = icon, modifier = Modifier.size(SizeTokens.NAV_ICON.dp)) }
-            val settings = stringResource(R.string.settings_title)
-            Box(
-                Modifier.size(SizeTokens.NAV_BUTTON.dp).clip(CircleShape).clickable(role = Role.Button, onClick = onSettings)
-                    .semantics { contentDescription = settings }.testTag(TAG_MODULE_SETTINGS),
-                contentAlignment = Alignment.Center,
-            ) { Icon(painterResource(R.drawable.ic_nav_sliders), null, tint = icon, modifier = Modifier.size(SizeTokens.NAV_ICON.dp)) }
-            val add = stringResource(addLabel)
-            Box(
-                Modifier.size(SizeTokens.NAV_BUTTON.dp).clip(CircleShape).background(Color(NavBarTokens.plus.light))
-                    .clickable(role = Role.Button, onClick = onAdd).semantics { contentDescription = add }.testTag(addTag),
-                contentAlignment = Alignment.Center,
-            ) { Icon(painterResource(R.drawable.ic_nav_plus), null, tint = icon, modifier = Modifier.size(SizeTokens.NAV_ICON.dp)) }
+            NavIcon(R.drawable.ic_nav_sliders, stringResource(R.string.settings_title), TAG_MODULE_SETTINGS, icon, SizeTokens.NAV_ICON, onSettings)
+            NavIcon(R.drawable.ic_nav_mic, stringResource(R.string.widget_voice), TAG_NAV_VOICE, icon, SizeTokens.NAV_ICON, onVoice)
+            NavIcon(R.drawable.ic_nav_plus, stringResource(R.string.nav_add), TAG_NAV_ADD, Color(NavBarTokens.plus.light), SizeTokens.NAV_PLUS_ICON, onAdd)
         }
     }
 }
 
-/** «25» крупно и «ср / ноя» столбиком — как дата в нижней строке виджета. */
 @Composable
-private fun NavDate(today: LocalDate) {
-    Row(
-        Modifier.height(SizeTokens.NAV_BUTTON.dp).padding(start = AppTheme.spacing.xs, end = AppTheme.spacing.xxs).testTag(TAG_NAV_DATE),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(AppTheme.sizes.hairline * 3),
-    ) {
-        Text(today.dayOfMonth.toString(), fontSize = SizeTokens.NAV_DATE_SP.sp, fontWeight = FontWeight.Bold, color = Color(NavBarTokens.icon.light))
-        Column {
-            val small = Modifier
-            Text(WEEKDAYS[today.dayOfWeek.value - 1], small, fontSize = SizeTokens.NAV_DATE_SMALL_SP.sp, lineHeight = SizeTokens.NAV_DATE_SMALL_SP.sp,
-                fontWeight = FontWeight.Bold, color = Color(NavBarTokens.muted.light))
-            Text(MONTHS[today.monthValue - 1], small, fontSize = SizeTokens.NAV_DATE_SMALL_SP.sp, lineHeight = SizeTokens.NAV_DATE_SMALL_SP.sp,
-                fontWeight = FontWeight.Bold, color = Color(NavBarTokens.muted.light))
-        }
-    }
+private fun NavIcon(@DrawableRes res: Int, label: String, tag: String, tint: Color, size: Int, onClick: () -> Unit) {
+    Box(
+        Modifier.size(SizeTokens.NAV_BUTTON.dp).clip(CircleShape).clickable(role = Role.Button, onClick = onClick)
+            .semantics { contentDescription = label }.testTag(tag),
+        contentAlignment = Alignment.Center,
+    ) { Icon(painterResource(res), null, tint = tint, modifier = Modifier.size(size.dp)) }
 }
+
+/** Меню «+» (#338): что добавить — плитками, как выбор раздела. На «Новостях» последней плиткой — «Обновить новости». */
+fun addEntries(news: Boolean): List<PickerEntry> = listOfNotNull(
+    PickerEntry(ADD_TASK, R.drawable.ic_module_tasks, R.string.hub_add_task, "add:$ADD_TASK"),
+    PickerEntry(ADD_EXPENSE, R.drawable.ic_module_finance, R.string.hub_add_expense, "add:$ADD_EXPENSE"),
+    PickerEntry(ADD_WEIGHT, R.drawable.ic_module_health, R.string.hub_add_weight, "add:$ADD_WEIGHT"),
+    PickerEntry(ADD_NEWS, R.drawable.ic_news_refresh, R.string.news_refresh, "add:$ADD_NEWS").takeIf { news },
+)
 
 /** Раздел в окне выбора: тег прежней вкладки панели (`module:HUB`, `tab:UPCOMING` …) — по нему переходят тесты. */
 data class PickerEntry(val key: String, @DrawableRes val icon: Int, @StringRes val label: Int, val tag: String)
@@ -186,6 +168,11 @@ fun TabPickerTiles(selected: String?, onPick: (String) -> Unit, modifier: Modifi
 
 private const val PICKER_COLUMNS = 3
 const val TAG_NAV_HUB = "nav_hub"
-const val TAG_NAV_DATE = "nav_date"
+const val TAG_NAV_VOICE = "nav_voice"
+const val TAG_NAV_ADD = "nav_add"
+const val ADD_TASK = "task"
+const val ADD_EXPENSE = "expense"
+const val ADD_WEIGHT = "weight"
+const val ADD_NEWS = "news"
 const val TAG_PICKER = "tab_picker"
 const val TAG_PICKER_SETTINGS = "picker:settings"

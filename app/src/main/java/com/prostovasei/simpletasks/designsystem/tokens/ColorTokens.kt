@@ -128,10 +128,9 @@ object WeekRowTokens {
 /** Плавающая панель (#336, выбор PM): тёмная капсула, подложка выбранного хаба, фиолетовый «+», значки и дата. */
 object NavBarTokens {
     val background = ThemedColor(light = 0xFF16171D, dark = 0xFF16171D)
-    val selected = ThemedColor(light = 0xFF2C2D33, dark = 0xFF2C2D33)
-    val plus = ThemedColor(light = 0xFF862CE0, dark = 0xFF862CE0)
+    /** #338: «+» без круга — светло-фиолетовый, контрастный на тёмной капсуле. */
+    val plus = ThemedColor(light = 0xFFC39BFF, dark = 0xFFC39BFF)
     val icon = ThemedColor(light = 0xFFFFFFFF, dark = 0xFFFFFFFF)
-    val muted = ThemedColor(light = 0xFFA3A3A3, dark = 0xFFA3A3A3)
 }
 
 object TaskRowTokens {

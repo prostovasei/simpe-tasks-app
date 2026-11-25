@@ -5,10 +5,10 @@ import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import com.github.takahirom.roborazzi.captureRoboImage
-import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.designsystem.theme.TaskCanvasTheme
 import org.junit.Assert.assertEquals
@@ -18,7 +18,6 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
-import java.time.LocalDate
 
 /** #336: плавающая капсула — дата, разделы, настройки, «+»; выбор раздела плитками. */
 @RunWith(RobolectricTestRunner::class)
@@ -37,22 +36,22 @@ class FloatingNavBarTest {
                     Column {
                         TabPickerTiles(selected = Tab.WEEK.name, onPick = { events += it })
                         FloatingNavBar(
-                            today = LocalDate.of(2026, 11, 25),
-                            onHub = { events += "hub" }, onSettings = { events += "settings" }, onAdd = { events += "add" },
-                            addTag = "add", addLabel = R.string.add_task,
+                            onHub = { events += "hub" }, onSettings = { events += "settings" }, onVoice = { events += "voice" }, onAdd = { events += "add" },
                         )
                     }
                 }
             }
         }
-        composeRule.onNodeWithTag(TAG_NAV_DATE).assertExists()
+        // #338: даты в капсуле нет; кнопки — разделы, настройки, микрофон, «+».
+        composeRule.onNodeWithText("25").assertDoesNotExist()
         composeRule.onNodeWithTag(TAG_NAV_HUB).performClick()
         composeRule.onNodeWithTag(TAG_MODULE_SETTINGS).performClick()
-        composeRule.onNodeWithTag("add").performClick()
+        composeRule.onNodeWithTag(TAG_NAV_VOICE).performClick()
+        composeRule.onNodeWithTag(TAG_NAV_ADD).performClick()
         composeRule.onNodeWithTag("tab:WEEK").assertIsSelected()
         composeRule.onNodeWithTag("module:FINANCE").performClick()
         composeRule.onNodeWithContentDescription("Настройки", useUnmergedTree = true)
-        assertEquals(listOf("hub", "settings", "add", "finance"), events)
+        assertEquals(listOf("hub", "settings", "voice", "add", "finance"), events)
         composeRule.onRoot().captureRoboImage("screenshots/nav_capsule_picker_light.png")
     }
 }

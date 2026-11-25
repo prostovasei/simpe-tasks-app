@@ -873,6 +873,7 @@
     <string name="hub_news_prev">Предыдущие новости</string>
     <string name="hub_news_next">Следующие новости</string>
     <string name="hub_news_page">Новости, страница %1$d из %2$d</string>
+    <string name="nav_add">Добавить</string>
     <string name="news_refresh">Обновить новости</string>
     <string name="news_failed">Не удалось обновить новости. Попробуйте ещё раз.</string>
     <string name="news_empty">Нет новостей за последние 24 часа</string>

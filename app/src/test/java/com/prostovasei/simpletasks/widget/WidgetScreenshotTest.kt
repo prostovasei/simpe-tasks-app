@@ -183,7 +183,7 @@ class WidgetScreenshotTest {
     fun bottomBarKeepsAllButtons() {
         val views = runBlocking { Preview(model).compose(context, size = DpSize(320.dp, 420.dp)) }
         val root = views.apply(context, FrameLayout(context))
-        listOf("Разделы", "Настройки", "Новая задача").forEach { label ->
+        listOf("Разделы", "Настройки", "Создать задачу голосом", "Добавить").forEach { label ->
             val found = ArrayList<View>()
             root.findViewsWithText(found, label, View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
             assertEquals(label, 1, found.size)

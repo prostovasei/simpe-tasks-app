@@ -173,7 +173,7 @@ object SizeTokens {
     // 0.46.0 (проверка PM): нижняя строка ниже — 40 вместо 48, кнопки 30–32 вместо 36–40.
     const val WIDGET_COMPACT_BAR_THRESHOLD = 232
     const val WIDGET_FINANCE_CHART_COMPACT = 60
-    const val WIDGET_BAR = 40
+    const val WIDGET_BAR = 48
 
     /** Кнопка «+» в нижней строке виджета (итерация 43: 64×40; 0.46.0 — 64×32; 0.57 — плитка, той же ширины плитка даты, высота — у всех плиток строки). */
     const val WIDGET_ADD_W = 64
@@ -427,12 +427,16 @@ object SizeTokens {
      * Плавающая панель (#336): капсула высотой 36 — кнопки 30 и поля 3, отступ от края экрана 12, значок 18, дата «25» 16 sp.
      * Выбор раздела — плитки 3 в ряд высотой 76.
      */
-    const val NAV_BUTTON = 30
+    const val NAV_BUTTON = 34
     const val NAV_PAD = 3
     const val NAV_EDGE = 12
-    const val NAV_ICON = 18
-    const val NAV_DATE_SP = 16
-    const val NAV_DATE_SMALL_SP = 9
+    /** #338: место под капсулой в конце списков, которые идут под неё: 40 + 12 + 8. */
+    const val NAV_BAR_SPACE = 60
+    const val NAV_ICON = 20
+    /** #338: «+» без круга — крупнее значков. */
+    const val NAV_PLUS_ICON = 26
+    /** #338: значки подписей полосы лимита в хабе. */
+    const val LIMIT_NOTE_ICON = 14
     const val PICKER_TILE = 76
     const val PICKER_ICON = 24
     const val TASK_CHECK_GAP = 10

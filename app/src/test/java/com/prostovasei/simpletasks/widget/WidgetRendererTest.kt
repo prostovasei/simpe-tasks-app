@@ -52,7 +52,7 @@ class WidgetRendererTest {
         val id = manager.createWidget(TasksWidgetReceiver::class.java, androidx.glance.appwidget.R.layout.glance_default_loading_layout)
         WidgetRenderer.render(context, id, "тест")
         val view = manager.getViewFor(id)
-        listOf("Разделы", "Настройки", "Новая задача").forEach {
+        listOf("Разделы", "Настройки", "Создать задачу голосом", "Добавить").forEach {
             assertTrue(it, view.hasDescription(it))
         }
         assertTrue(WidgetLog.read(context).contains("отрисовка $id: all"))
@@ -77,14 +77,14 @@ class WidgetRendererTest {
         WidgetActionReceiver.handle(context, WidgetActions.module(context, one, true))
         assertTrue(WidgetSelection.finance(context, one))
         assertTrue(!WidgetSelection.finance(context, two))
-        assertTrue(manager.getViewFor(one).hasDescription(context.getString(R.string.finance_add)))
+        assertTrue(manager.getViewFor(one).hasDescription("Добавить"))
         WidgetActionReceiver.handle(context, WidgetActions.module(context, one, WidgetModule.HEALTH))
         assertEquals(WidgetModule.HEALTH, WidgetSelection.module(context, one))
         assertEquals(WidgetModule.TASKS, WidgetSelection.module(context, two))
-        assertTrue(manager.getViewFor(one).hasDescription(context.getString(R.string.health_add)))
+        assertTrue(manager.getViewFor(one).hasDescription("Добавить"))
         WidgetActionReceiver.handle(context, WidgetActions.module(context, one, false))
         assertEquals(WidgetFilter.Inbox, WidgetSelection.get(context, one))
-        assertTrue(manager.getViewFor(one).hasDescription("Новая задача"))
+        assertTrue(manager.getViewFor(one).hasDescription("Добавить"))
     }
 
     @Test
@@ -141,8 +141,8 @@ class WidgetRendererTest {
         assertTrue("График заполняет высоту: ${plot.height()} из ${chart.height}", abs(plot.height() - chart.height) <= 3 * density)
         assertEquals(ImageView.ScaleType.FIT_CENTER, chart.scaleType)
 
-        // #336: капсула справа — «Разделы», «Настройки», «Добавить вес» по порядку слева направо.
-        val buttons = listOf("Разделы", "Настройки", context.getString(R.string.health_add))
+        // #338: капсула справа — «Разделы», «Настройки», микрофон, «Добавить» по порядку слева направо.
+        val buttons = listOf("Разделы", "Настройки", "Создать задачу голосом", "Добавить")
         val centers = buttons.map { label ->
             val matches = ArrayList<View>()
             panel.findViewsWithText(matches, label, View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
@@ -184,18 +184,15 @@ class WidgetRendererTest {
                 return nodes.single { it.contentDescription == label }
             }
             fun clickable(view: View) = generateSequence(view) { it.parent as? View }.take(3).any { it.hasOnClickListeners() }
-            val add = context.getString(when (module) {
-                WidgetModule.FINANCE -> R.string.finance_add
-                WidgetModule.HEALTH -> R.string.health_add
-                WidgetModule.NEWS -> R.string.news_refresh
-                else -> R.string.add_task
-            })
-            listOf("Разделы", "Настройки", add).forEach { assertTrue("$module $it", clickable(find(it))) }
+            val add = "Добавить"
+            listOf("Разделы", "Настройки", "Создать задачу голосом", add).forEach { assertTrue("$module $it", clickable(find(it))) }
             val plus = find(add)
             val right = generateSequence(plus) { it.parent as? View }.sumOf { it.left } + plus.width
             assertTrue("$module: капсула у правого края", width - right <= ((SizeTokens.WIDGET_EDGE + SizeTokens.NAV_PAD + 1) * density).toInt())
-            val date = find(if (module == WidgetModule.TASKS) description else WidgetDates.bar(today, withWeekday = true))
-            assertEquals(module == WidgetModule.TASKS, clickable(date))
+            // #338: даты в капсуле нет.
+            val dates = ArrayList<View>()
+            bar.findViewsWithText(dates, WidgetDates.bar(today, withWeekday = true), View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
+            assertEquals(0, dates.size)
         }
     }
 

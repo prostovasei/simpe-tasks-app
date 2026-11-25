@@ -85,7 +85,7 @@ class WidgetUiTest {
         // Нижняя строка (итерация 25): «Все», «Входящие», открыть приложение и «+»; даты и «⋯» нет.
         // Итерация 43: слева от «+» — капсула с галочкой значка приложения (открыть приложение), вместо кнопки обновления.
         // #336: капсула — «Разделы», «Настройки», «+»; вкладок и свободной полосы «Открыть приложение» нет.
-        listOf("Разделы", "Настройки", "Новая задача").forEach { onNode(hasContentDescription(it)).assertExists() }
+        listOf("Разделы", "Настройки", "Создать задачу голосом", "Добавить").forEach { onNode(hasContentDescription(it)).assertExists() }
         onAllNodes(hasContentDescription("Открыть приложение")).assertCountEquals(0)
         onAllNodes(hasContentDescription("Обновление приложения")).assertCountEquals(0)
         onNode(hasTextEqualTo("пт, 16 окт")).assertDoesNotExist()

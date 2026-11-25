@@ -15,7 +15,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
-/** #95 → #336: микрофона в панели виджета больше нет (капсула: дата, «Разделы», «Настройки», «+»); окно голосового ввода по адресу осталось. */
+/** #95 → #338: микрофон в капсуле виджета — открывает окно голосового ввода. */
 @RunWith(RobolectricTestRunner::class)
 class WidgetVoiceTest {
     private val context: Context = ApplicationProvider.getApplicationContext()
@@ -29,12 +29,12 @@ class WidgetVoiceTest {
         onAllNodes(hasContentDescription(voice)).assertCountEquals(if (present) 1 else 0)
     }
 
-    // #336 (выбор PM): в капсуле только дата, «Разделы», «Настройки» и «+» — микрофона в панели виджета больше нет.
-    @Test fun wideTasksBarHasNoMic() = bar(392, WidgetModule.TASKS, present = false)
+    // #338 (выбор PM): микрофон вернулся в капсулу — во всех разделах и на любой ширине.
+    @Test fun wideTasksBarHasMic() = bar(392, WidgetModule.TASKS, present = true)
 
-    @Test fun narrowTasksBarHasNoMic() = bar(180, WidgetModule.TASKS, present = false)
+    @Test fun narrowTasksBarHasMic() = bar(180, WidgetModule.TASKS, present = true)
 
-    @Test fun financeHasNoMic() = bar(392, WidgetModule.FINANCE, present = false)
+    @Test fun financeHasMic() = bar(392, WidgetModule.FINANCE, present = true)
 
     // Окно голосового ввода поверх рабочего стола осталось (адрес `simpletasks://voice/…`): кнопки в капсуле нет, путь проверяется отдельно.
     @Test

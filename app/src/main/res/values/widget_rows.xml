@@ -22,7 +22,9 @@
     <dimen name="widget_fold_icon">20dp</dimen>
     <dimen name="widget_tail">60dp</dimen>
     <dimen name="widget_edge">6dp</dimen>
-    <dimen name="widget_bar">40dp</dimen>
+    <dimen name="widget_bar">48dp</dimen>
+    <!-- #338: место под капсулой в конце списка хаба, который идёт под неё. -->
+    <dimen name="widget_bar_space">60dp</dimen>
     <dimen name="widget_list_edge">3dp</dimen>
     <dimen name="widget_day_gap">2dp</dimen>
     <dimen name="widget_hairline">1dp</dimen>
@@ -84,4 +86,19 @@
     <dimen name="widget_news_row_gap">18dp</dimen>
     <dimen name="widget_news_day_inset">5dp</dimen>
     <dimen name="widget_news_meta_gap">4dp</dimen>
+    <!-- #338: заголовок раздела виджета «Главная» — «Финансы ›» 13 sp полужирным, нажатие переключает виджет на раздел. -->
+    <style name="WidgetHubTitle">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:paddingStart">@dimen/widget_edge</item>
+        <item name="android:paddingEnd">8dp</item>
+        <item name="android:paddingTop">8dp</item>
+        <item name="android:paddingBottom">2dp</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/widget_flat_text_primary</item>
+        <item name="android:drawableEnd">@drawable/ic_hub_title_chevron</item>
+        <item name="android:drawablePadding">2dp</item>
+        <item name="android:gravity">center_vertical</item>
+    </style>
 </resources>

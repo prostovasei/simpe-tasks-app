@@ -165,7 +165,7 @@ class AppSmokeTest {
         // Первый запуск: счетов нет, нижняя панель — финансовая, «+» ведёт к созданию счёта.
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Начнём со счёта") }
         composeRule.onNodeWithTag(TAG_APP_BAR).assertExists()
-        composeRule.onNodeWithTag("finance_add").performClick()
+        add(ADD_EXPENSE)
         composeRule.onNodeWithTag("account_amount").performTextReplacement("42300")
         composeRule.onNodeWithTag("account_save").performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodes(hasContentDescription("Карта, 42\u00A0300\u00A0₽")).fetchSemanticsNodes().isNotEmpty() }
@@ -186,8 +186,8 @@ class AppSmokeTest {
         composeRule.onNodeWithContentDescription("Назад").performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists(TAG_APP_SETTINGS) }
         composeRule.onNodeWithContentDescription("Назад").performClick()
-        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists("finance_add") }
-        composeRule.onNodeWithTag("finance_add").performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists(TAG_NAV_ADD) }
+        add(ADD_EXPENSE)
         composeRule.onNodeWithTag("operation_amount").performTextReplacement("850")
         composeRule.onNodeWithContentDescription("Продукты").performClick()
         composeRule.onNodeWithTag("operation_save").performClick()
@@ -241,13 +241,13 @@ class AppSmokeTest {
         // Записей нет: нижняя панель — «Здоровья» (одна страница «Вес»), «+» открывает окно ввода с 70,0.
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists("health_empty") }
         composeRule.onNodeWithTag(TAG_APP_BAR).assertExists()
-        composeRule.onNodeWithTag("health_add").performClick()
+        add(ADD_WEIGHT)
         composeRule.onNodeWithTag("weight_window:confirm").performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists("health_hero") }
         composeRule.onNodeWithTag("health_weight").assertTextEquals("70,0")
 
         // Вторая запись на сегодня заменяет первую: в истории одна строка.
-        composeRule.onNodeWithTag("health_add").performClick()
+        add(ADD_WEIGHT)
         composeRule.onNodeWithTag("weight_comment").performTextReplacement("утром")
         composeRule.onNodeWithTag("weight_window:confirm").performClick()
         // Тестовый экран крошечный: история ниже края, лента её не компонует — прокручиваем к записи.
@@ -268,7 +268,7 @@ class AppSmokeTest {
 
         // Возврат в задачи и снова в «Здоровье»: запись на месте (лента — с начала, на крошечном экране её верх мог уйти за край).
         switchModule("TASKS")
-        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists(TAG_ADD_TASK) }
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists(TAG_NAV_ADD) }
         composeRule.onNodeWithTag("health_list").assertDoesNotExist()
         switchModule("HEALTH")
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists("health_list") }
@@ -280,10 +280,10 @@ class AppSmokeTest {
     fun settingsHidesBarAndBackReturnsToTheSameModule() {
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Всё сделано") }
         val tabs = listOf(
-            "TASKS" to TAG_ADD_TASK,
+            "TASKS" to TAG_NAV_ADD,
             "FINANCE" to "finance_empty",
             "HEALTH" to "health_empty",
-            "TASKS" to TAG_ADD_TASK,
+            "TASKS" to TAG_NAV_ADD,
         )
         for ((module, screen) in tabs) {
             if (module != "TASKS" || !composeRule.onAllNodesWithTagExists(screen)) switchModule(module)
@@ -304,6 +304,13 @@ class AppSmokeTest {
     }
 
     /** #336: разделы — в окне выбора, открывается значком хаба в плавающей панели. */
+    /** #338: «+» открывает меню «что добавить». */
+    private fun add(key: String) {
+        composeRule.onNodeWithTag(TAG_NAV_ADD).performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists("add:$key") }
+        composeRule.onNodeWithTag("add:$key").performClick()
+    }
+
     private fun pick(tag: String) {
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists(TAG_NAV_HUB) }
         composeRule.onNodeWithTag(TAG_NAV_HUB).performClick()
@@ -326,7 +333,7 @@ class AppSmokeTest {
     fun createTaskOpenItAndRename() {
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Всё сделано") }
         // «+» на «Все» → задача на сегодня.
-        composeRule.onNodeWithTag(TAG_ADD_TASK).performClick()
+        add(ADD_TASK)
         composeRule.onNodeWithTag(TAG_QUICK_TITLE).performTextReplacement("Купить продукты")
         composeRule.onNodeWithTag(TAG_QUICK_SAVE).performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_QUICK_TITLE).fetchSemanticsNodes().isEmpty() }
@@ -355,7 +362,7 @@ class AppSmokeTest {
     @Test
     fun deleteTaskShowsUndoAndUndoBringsItBack() {
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Всё сделано") }
-        composeRule.onNodeWithTag(TAG_ADD_TASK).performClick()
+        add(ADD_TASK)
         composeRule.onNodeWithTag(TAG_QUICK_TITLE).performTextReplacement("Лишняя задача")
         composeRule.onNodeWithTag(TAG_QUICK_SAVE).performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_QUICK_TITLE).fetchSemanticsNodes().isEmpty() }
@@ -405,7 +412,7 @@ class AppSmokeTest {
     fun bulkDeleteFromSelectionAndUndo() {
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Всё сделано") }
         listOf("Первая", "Вторая").forEach { title ->
-            composeRule.onNodeWithTag(TAG_ADD_TASK).performClick()
+            add(ADD_TASK)
             composeRule.onNodeWithTag(TAG_QUICK_TITLE).performTextReplacement(title)
             composeRule.onNodeWithTag(TAG_QUICK_SAVE).performClick()
             composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_QUICK_TITLE).fetchSemanticsNodes().isEmpty() }
@@ -433,7 +440,7 @@ class AppSmokeTest {
     @Test
     fun deletedTaskGoesToTrashAndComesBack() {
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Всё сделано") }
-        composeRule.onNodeWithTag(TAG_ADD_TASK).performClick()
+        add(ADD_TASK)
         composeRule.onNodeWithTag(TAG_QUICK_TITLE).performTextReplacement("В корзину")
         composeRule.onNodeWithTag(TAG_QUICK_SAVE).performClick()
         composeRule.waitUntil(5_000) {
@@ -481,20 +488,20 @@ class AppSmokeTest {
     @Test
     fun draftOfNewTaskComesBackOnNextPlus() {
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Всё сделано") }
-        composeRule.onNodeWithTag(TAG_ADD_TASK).performClick()
+        add(ADD_TASK)
         composeRule.onNodeWithTag(TAG_QUICK_TITLE).performTextReplacement("Купить билеты")
         // Нажатие на затемнение под карточкой закрывает её без сохранения (как «Назад»).
         composeRule.onNodeWithTag(TAG_QUICK_SCRIM).performTouchInput { click(Offset(centerX, bottom - 5f)) }
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_QUICK_TITLE).fetchSemanticsNodes().isEmpty() }
 
-        composeRule.onNodeWithTag(TAG_ADD_TASK).performClick()
+        add(ADD_TASK)
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_QUICK_TITLE).fetchSemanticsNodes().isNotEmpty() }
         composeRule.onNodeWithTag(TAG_QUICK_TITLE).assert(SemanticsMatcher.expectValue(SemanticsProperties.EditableText, AnnotatedString("Купить билеты")))
 
         // Сохранили — черновика больше нет.
         composeRule.onNodeWithTag(TAG_QUICK_SAVE).performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_QUICK_TITLE).fetchSemanticsNodes().isEmpty() }
-        composeRule.onNodeWithTag(TAG_ADD_TASK).performClick()
+        add(ADD_TASK)
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_QUICK_TITLE).fetchSemanticsNodes().isNotEmpty() }
         composeRule.onNodeWithTag(TAG_QUICK_TITLE).assert(SemanticsMatcher.expectValue(SemanticsProperties.EditableText, AnnotatedString("")))
     }
