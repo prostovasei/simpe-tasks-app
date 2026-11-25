@@ -45,6 +45,8 @@ import java.util.concurrent.Executor
         FinancePlaceEntity::class,
         WeightEntryEntity::class,
         FinanceBudgetEntity::class,
+        com.prostovasei.simpletasks.data.local.entity.HabitEntity::class,
+        com.prostovasei.simpletasks.data.local.entity.HabitCheckEntity::class,
     ],
     // 1 → 2 (итерация 14): колонка projects.icon. 2 → 3 (итерация 47): колонка projects.emoji и два приоритета ([V2to3]).
     // 3 → 4 (итерация 47, проверка PM): колонка tasks.is_repeat_done — выполненный раз повтора. Данные PM сохраняются автоматической миграцией Room.
@@ -57,9 +59,10 @@ import java.util.concurrent.Executor
     // 10 → 11 (раздел «Здоровье», #257): новая таблица weight_entries; остальные таблицы не меняются.
     // 11 → 12 (#192): колонка tasks.skipped_dates — отменённые по одной даты серии; существующие строки не меняются (NULL).
     // 12 → 13 (#327): новая таблица finance_budgets — бюджеты категорий по месяцам; остальные таблицы не меняются.
-    version = 13,
+    // 13 → 14 (#340): новые таблицы habits и habit_checks — привычки и отметки; остальные таблицы не меняются.
+    version = 14,
     exportSchema = true,
-    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3, spec = V2to3::class), AutoMigration(from = 3, to = 4), AutoMigration(from = 4, to = 5, spec = V4to5::class), AutoMigration(from = 5, to = 6), AutoMigration(from = 6, to = 7), AutoMigration(from = 7, to = 8), AutoMigration(from = 8, to = 9), AutoMigration(from = 9, to = 10, spec = V9to10::class), AutoMigration(from = 10, to = 11), AutoMigration(from = 11, to = 12), AutoMigration(from = 12, to = 13)],
+    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3, spec = V2to3::class), AutoMigration(from = 3, to = 4), AutoMigration(from = 4, to = 5, spec = V4to5::class), AutoMigration(from = 5, to = 6), AutoMigration(from = 6, to = 7), AutoMigration(from = 7, to = 8), AutoMigration(from = 8, to = 9), AutoMigration(from = 9, to = 10, spec = V9to10::class), AutoMigration(from = 10, to = 11), AutoMigration(from = 11, to = 12), AutoMigration(from = 12, to = 13), AutoMigration(from = 13, to = 14)],
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun projectGroupDao(): ProjectGroupDao
@@ -72,6 +75,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun financePlaceDao(): FinancePlaceDao
     abstract fun weightEntryDao(): WeightEntryDao
     abstract fun financeBudgetDao(): com.prostovasei.simpletasks.data.local.dao.FinanceBudgetDao
+    abstract fun habitDao(): com.prostovasei.simpletasks.data.local.dao.HabitDao
 
     companion object {
         const val NAME = "simple_tasks.db"
