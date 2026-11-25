@@ -1,0 +1,362 @@
+<title>Конструктор хаба и навбара</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+<style>
+/* Конструктор #336: хаб в приложении и виджете рядом (1:1), плавающий навбар справа, выбор вкладки; переключатели слева. */
+:root {
+  --page: #e9ebef; --pagefg: #16171d; --pagemuted: #62656e; --chip: #f3f3f4; --rec: #2e7d32; --line: #dcdee3;
+  --card: #ffffff; --title: #2e3036; --muted: #62656e; --done: #c4c5c8; --ring: #a9a9a9; --pri: #862ce0;
+  --late: #c62828; --track: #e8e8ea; --fill: #16171d; --soft: #f3f3f4; --black: #16171d; --onblack: #ffffff; --warn: #b26a00;
+  --font: Manrope, system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --page: #0f1013; --pagefg: #ececec; --pagemuted: #a3a3a3; --chip: #24262b; --rec: #81c784; --line: #2f3137; color-scheme: dark } }
+:root[data-theme="dark"] { --page: #0f1013; --pagefg: #ececec; --pagemuted: #a3a3a3; --chip: #24262b; --rec: #81c784; --line: #2f3137; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--page); color: var(--pagefg); font-family: var(--font); margin: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 16px 40px }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--page) }
+h1 { font-size: 21px; margin: 0 0 4px; text-wrap: balance }
+.lead { color: var(--pagemuted); margin: 0 0 14px; max-width: 80ch; line-height: 1.45; font-size: 14px }
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px; align-items: start }
+.previews { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); display: flex; gap: 20px; align-items: flex-start }
+.pv { display: grid; gap: 6px; justify-items: start }
+.pv b { font-size: 13px; color: var(--pagemuted); font-weight: 600 }
+@media (max-width: 1180px) {
+  .layout { grid-template-columns: minmax(0, 1fr) }
+  .previews { order: -1; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--page); padding-bottom: 8px; overflow-x: auto; max-width: 100% }
+  body.one .pv.hide { display: none }
+}
+@media (max-width: 760px) { .phone { zoom: .78 } .previews { max-height: 52vh; overflow: auto; box-shadow: 0 6px 12px -8px rgb(0 0 0 / .3) } }
+.panel { display: grid; gap: 12px; min-width: 0; align-content: start }
+fieldset { border: 0; margin: 0; padding: 12px 14px; background: var(--card); color: var(--title); border-radius: 16px; display: grid; gap: 10px; min-width: 0 }
+legend { font-weight: 700; font-size: 15px; padding: 0; float: left; width: 100% }
+.ctl { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px }
+.ctl > span { flex: 0 0 150px; color: var(--muted); font-size: 13px }
+.seg { display: inline-flex; background: #f3f3f4; border-radius: 10px; padding: 3px; gap: 2px; flex-wrap: wrap; min-width: 0 }
+.seg button { font: 600 13px var(--font); color: #16171d; background: none; border: 0; border-radius: 8px; padding: 6px 9px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px }
+.seg button[aria-pressed="true"] { background: #fff; box-shadow: inset 0 0 0 1.5px #16171d }
+.seg button:focus-visible { outline: 2px solid #862ce0; outline-offset: 1px }
+.seg .tag { font-size: 10px; font-weight: 700 } .seg .tag.pm { color: #2e7d32 } .seg .tag.rec { color: #6b32a8 }
+.seg svg { display: block }
+.top { display: flex; flex-wrap: wrap; gap: 8px; align-items: center }
+.btn { font: 600 13px var(--font); border: 0; border-radius: 10px; padding: 8px 12px; cursor: pointer; background: var(--pagefg); color: var(--page) }
+.btn.ghost { background: var(--chip); color: var(--pagefg) }
+.btn:focus-visible { outline: 2px solid #862ce0; outline-offset: 2px }
+#summary { width: 100%; min-height: 110px; font: 12px/1.45 ui-monospace, Menlo, monospace; color: var(--pagefg); background: var(--page); border: 1px solid var(--line); border-radius: 12px; padding: 10px; resize: vertical }
+.hint { color: var(--pagemuted); font-size: 12px; margin: 0; line-height: 1.45 }
+#copied { color: var(--rec); font-size: 12px }
+/* телефон */
+.phone { position: relative; width: 360px; height: 760px; border-radius: 30px; overflow: hidden; background: #fff; box-shadow: 0 0 0 1px rgb(0 0 0 / .08), 0 10px 30px rgb(0 0 0 / .12); color: var(--title); font-family: var(--font); flex: none }
+.status { height: 28px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; font-size: 12px; font-weight: 600 }
+.wall { background: linear-gradient(160deg, #5b2bc9 0%, #b03fb8 45%, #f2717e 100%) }
+.wall > .status { color: #fff }
+.screen { position: absolute; inset: 28px 0 0 0; display: flex; flex-direction: column; overflow: hidden }
+.wdg { position: absolute; left: 10px; right: 10px; top: 40px; height: 560px; background: #fff; border-radius: 24px; overflow: hidden; display: flex; flex-direction: column }
+.icons { position: absolute; left: 22px; right: 22px; bottom: 30px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px }
+.icons span { aspect-ratio: 1; border-radius: 18px; background: rgb(255 255 255 / .28) }
+/* финансы */
+.fin { padding: 10px 14px 0 }
+.limit { height: 26px; border-radius: 8px; background: var(--soft); position: relative; overflow: hidden; font-size: 12px; font-weight: 700 }
+.limit i { position: absolute; inset: 0 auto 0 0; width: 67.5%; background: var(--black) }
+.limit em { position: absolute; top: 3px; bottom: 3px; left: 83%; width: 2px; background: #62656e; outline: 1px solid #fff }
+.limit span { position: absolute; top: 5px }
+.sub { display: flex; justify-content: space-between; gap: 8px; padding-top: 5px; font-size: 11.5px; color: var(--muted); font-weight: 600; flex-wrap: wrap }
+.sub .ok { color: var(--muted) }
+.avg { font-size: 12px; font-weight: 700; color: var(--title); padding-top: 4px }
+.accs { display: flex; gap: 6px; padding-top: 8px; align-items: stretch }
+.acc-s { background: var(--soft); border-radius: 999px; padding: 4px 9px; font-size: 12px; font-weight: 700; white-space: nowrap }
+.acc-m { background: var(--soft); border-radius: 999px; padding: 7px 12px; font-size: 14px; font-weight: 700; white-space: nowrap }
+.acc-t { flex: 1; min-width: 0; background: var(--soft); border-radius: 12px; padding: 6px 8px; display: grid; gap: 1px }
+.acc-t small { font-size: 10.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.acc-t b { font-size: 15px }
+.acc-g { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding-top: 8px }
+.acc-g div { background: var(--soft); border-radius: 14px; padding: 8px 10px; display: grid; gap: 2px }
+.acc-g small { font-size: 11px; color: var(--muted) } .acc-g b { font-size: 16px }
+.total { font-size: 12px; font-weight: 700; align-self: center; padding-right: 2px; white-space: nowrap }
+/* новости */
+.news { padding: 10px 14px 0; flex: none }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px }
+.card { background: var(--soft); border-radius: 12px; padding: 7px 9px; min-height: 56px; font-size: 11.5px; line-height: 1.3 }
+.card small { display: block; color: var(--muted); font-size: 10px; margin-bottom: 2px }
+.card .n { color: var(--pri); font-weight: 700 }
+.dots { display: flex; justify-content: center; align-items: center; gap: 8px; font-size: 9px; letter-spacing: 3px; color: var(--muted); padding-top: 4px; height: 22px }
+.dots .arr { font-size: 15px; letter-spacing: 0; color: var(--title); padding: 0 6px }
+.chipbtn { font-size: 11px; letter-spacing: 0; font-weight: 700; color: var(--title); background: var(--soft); border-radius: 999px; padding: 3px 9px }
+.wide { background: var(--soft); border-radius: 14px; padding: 10px 12px; font-size: 13px; line-height: 1.3; min-height: 70px }
+.wide small { display: block; color: var(--muted); font-size: 10.5px; margin-bottom: 3px }
+.nrow { display: flex; gap: 8px; align-items: baseline; padding: 6px 0; border-bottom: 1px solid var(--track); font-size: 12px }
+.nrow small { color: var(--muted); font-size: 10.5px; flex: none; width: 34px }
+.stack { position: relative; height: 92px }
+.stack .wide { position: absolute; left: 0; right: 0; top: 0 }
+.stack .wide.b1 { transform: translate(8px, 8px) scale(.96); opacity: .7 }
+.stack .wide.b2 { transform: translate(16px, 16px) scale(.92); opacity: .45 }
+/* задачи */
+.tasks { flex: 1; min-height: 0; overflow: hidden; padding-top: 4px }
+.head { display: flex; align-items: center; gap: 8px; padding: 10px 14px 2px; font-size: 12px; font-weight: 500; color: var(--muted); white-space: nowrap }
+.head.late { color: var(--late) }
+.bar { flex: 1; height: 1px; background: var(--track); position: relative; min-width: 30px }
+.bar i { position: absolute; inset: 0 auto 0 0; background: var(--fill) }
+.cnt { margin-left: auto }
+.row { display: flex; align-items: center; min-height: 44px; padding: 0 14px; color: var(--title) }
+.row .title { flex: 1; min-width: 0; font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.row .t { font-size: 13px; font-weight: 500; white-space: nowrap; margin-left: 8px }
+.row .emo { flex: none; width: 16px; font-size: 13px; text-align: center; margin-right: 8px }
+.row .chk { flex: none; display: block; margin-right: 10px }
+.row .bell { flex: none; display: block; color: var(--muted); margin-left: 8px }
+.row.pri { color: var(--pri) } .row.late .t { color: var(--late) } .row.off { color: var(--done) } .row.off .emo, .row.off .bell { opacity: .45 }
+/* навбар */
+.nav { position: absolute; right: 12px; bottom: 14px; display: flex; gap: 8px; align-items: center; z-index: 3 }
+.nav.v { flex-direction: column-reverse }
+.cap { display: flex; align-items: center; gap: 2px; border-radius: 999px; padding: 4px }
+.cap.v { flex-direction: column-reverse }
+.ib { display: grid; place-items: center; border-radius: 999px; color: #16171d }
+.ib.on { background: #ececef }
+.st-white { background: #fff; box-shadow: 0 4px 16px rgb(0 0 0 / .16), 0 0 0 1px rgb(0 0 0 / .04) }
+.st-glass { background: rgb(255 255 255 / .72); backdrop-filter: blur(10px); box-shadow: 0 4px 14px rgb(0 0 0 / .12) }
+.st-dark { background: #16171d; color: #fff } .st-dark .ib { color: #fff } .st-dark .ib.on { background: #2c2d33 }
+.plus { display: grid; place-items: center; border-radius: 50% }
+.p-black { background: #16171d; color: #fff; box-shadow: 0 4px 14px rgb(0 0 0 / .22) }
+.p-outline { background: #fff; color: #16171d; box-shadow: inset 0 0 0 2px #16171d, 0 4px 14px rgb(0 0 0 / .12) }
+.p-accent { background: #862ce0; color: #fff; box-shadow: 0 4px 14px rgb(134 44 224 / .35) }
+/* выбор вкладки */
+.scrim { position: absolute; inset: 0; background: rgb(0 0 0 / .18); z-index: 2 }
+.pick { position: absolute; z-index: 4 }
+.menu { right: 12px; background: #fff; border-radius: 18px; padding: 6px; box-shadow: 0 10px 30px rgb(0 0 0 / .2); min-width: 190px }
+.menu div { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; font-size: 14px; font-weight: 600; color: #16171d }
+.menu div.on { background: #f1e8fa; color: #6b32a8 }
+.fan { right: 12px; display: grid; gap: 8px; justify-items: end }
+.fan div { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: #fff; text-shadow: 0 1px 3px rgb(0 0 0 / .4) }
+.fan span.c { width: 46px; height: 46px; border-radius: 50%; background: #fff; color: #16171d; display: grid; place-items: center; box-shadow: 0 4px 14px rgb(0 0 0 / .2) }
+.fan div.on span.c { background: #862ce0; color: #fff }
+.sheet { left: 10px; right: 10px; bottom: 10px; background: #fff; border-radius: 24px; padding: 14px; box-shadow: 0 -6px 30px rgb(0 0 0 / .18); display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px }
+.sheet div { background: #f3f3f4; border-radius: 16px; padding: 12px 8px; display: grid; justify-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: #16171d }
+.sheet div.on { background: #f1e8fa; color: #6b32a8 }
+.note { font-size: 12px; color: var(--pagemuted); max-width: 80ch; line-height: 1.45; margin: 4px 0 0 }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important } }
+</style>
+
+<h1>Конструктор хаба и навбара</h1>
+<p class="lead">Хаб в приложении и виджете стоят рядом, каждый переключатель меняет оба сразу. Метки: зелёная «PM» — так ты прямо попросил, фиолетовая «реком.» — моя рекомендация там, где выбор за тобой. «Выбор вкладки» показывает, что откроется по нажатию на значок хаба. Когда вид понравится, нажми «Скопировать выбор». Задачи взяты с твоего скриншота, суммы и новости придуманы для примера.</p>
+
+<div class="layout">
+  <div class="panel">
+    <div class="top">
+      <button type="button" class="btn" id="copy">Скопировать выбор</button>
+      <button type="button" class="btn ghost" id="reset">Рекомендации</button>
+      <button type="button" class="btn ghost" id="pickerBtn">Выбор вкладки: скрыт</button>
+      <button type="button" class="btn ghost" id="viewBtn">Показать: оба</button>
+      <span id="copied" aria-live="polite"></span>
+    </div>
+    <div id="groups" class="panel"></div>
+    <p class="hint">Без нижней панели «Предстоящее», «Неделя» и «Списки» открываются только через выбор вкладки. Поэтому их можно показать в нём отдельными строками или одной строкой «Задачи», которая откроет последний вид. Вкладки внутри «Финансов» («Аналитика», «Операции») остаются на своём экране.</p>
+    <p class="hint">В виджете нельзя показать всплывающее меню прямо поверх рабочего стола. Выбор вкладки там откроется маленьким окном («меню» и «плитки») или виджет перерисуется с раскрытой капсулой («капсула раскрывается»). «Стопка со свайпом» и «сами сменяются» — штатные виды списков Android для виджетов (StackView и AdapterViewFlipper), листаются без приложения.</p>
+    <label class="hint" for="summary">Выбор текстом:</label>
+    <textarea id="summary" readonly></textarea>
+  </div>
+  <div class="previews">
+    <div class="pv" id="pvApp"><b>Приложение</b><div class="phone" id="app"></div></div>
+    <div class="pv" id="pvW"><b>Виджет</b><div class="phone wall" id="widget"></div></div>
+  </div>
+</div>
+
+<script>
+const S = 2;
+const P = {
+  house: 'M4.5 10.2L12 4l7.5 6.2V19a1 1 0 0 1-1 1H15v-5.5H9V20H5.5a1 1 0 0 1-1-1z',
+  houseHeart: 'M4.5 10.2L12 4l7.5 6.2V19a1 1 0 0 1-1 1h-13a1 1 0 0 1-1-1z M12 16.2c-1.9-1.3-3-2.3-3-3.5a1.5 1.5 0 0 1 3-.5a1.5 1.5 0 0 1 3 .5c0 1.2-1.1 2.2-3 3.5z',
+  grid: 'M4 4h6.5v6.5H4z M13.5 4H20v6.5h-6.5z M4 13.5h6.5V20H4z M13.5 13.5H20V20h-6.5z',
+  tiles: 'M4 4h16v6.5H4z M4 13.5h6.5V20H4z M13.5 13.5H20V20h-6.5z',
+  layers: 'M12 4l8 4l-8 4l-8-4z M4 12.5l8 4l8-4 M4 16.5l8 4l8-4',
+  gear: 'M12 9a3 3 0 1 0 0 6a3 3 0 0 0 0-6z M12 2.5v3 M12 18.5v3 M2.5 12h3 M18.5 12h3 M5.3 5.3l2.1 2.1 M16.6 16.6l2.1 2.1 M5.3 18.7l2.1-2.1 M16.6 7.4l2.1-2.1',
+  sliders: 'M4 7h9 M17 7h3 M4 17h3 M11 17h9 M15 4.5v5 M9 14.5v5',
+  menu: 'M5 7h14 M5 12h14 M5 17h14',
+  user: 'M12 12a3.5 3.5 0 1 0 0-7a3.5 3.5 0 0 0 0 7z M5 20c.8-3.3 3.6-5 7-5s6.2 1.7 7 5',
+  plus: 'M12 5v14 M5 12h14',
+  tasks: 'M5 6h14v14H5z M5 10h14 M9 3v4 M15 3v4',
+  rub: 'M8 20V4h5a4 4 0 0 1 0 8H6 M6 16h9',
+  heart: 'M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z',
+  bolt: 'M13 3L5 14h6l-1 7l8-11h-6z',
+};
+const ico = (name, s = 22, sw = 2) => name === 'dots'
+  ? `<svg width="${s}" height="${s}" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5.5" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="18.5" r="1.8" fill="currentColor"/></svg>`
+  : name === 'dots9'
+  ? `<svg width="${s}" height="${s}" viewBox="0 0 24 24" aria-hidden="true">${[6, 12, 18].flatMap(y => [6, 12, 18].map(x => `<circle cx="${x}" cy="${y}" r="1.7" fill="currentColor"/>`)).join('')}</svg>`
+  : `<svg width="${s}" height="${s}" viewBox="0 0 24 24" aria-hidden="true"><path d="${P[name]}" stroke="currentColor" stroke-width="${sw}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>${name === 'sliders' ? '<circle cx="15" cy="7" r="2.2" fill="currentColor"/><circle cx="9" cy="17" r="2.2" fill="currentColor"/>' : ''}</svg>`;
+
+// [ключ, подпись, варианты [значение, текст], рекомендация, просьба PM (если прямо сказано)]
+const GROUPS = [
+  ['Навбар', [
+    ['nav', 'Вид панели', [['split', 'Капсула + круг «+»'], ['one', 'Одна капсула'], ['vertical', 'Столбик справа'], ['circles', 'Три круга']], 'split'],
+    ['side', 'Где «+»', [['plusRight', 'Справа, у большого пальца'], ['plusLeft', 'Слева']], 'plusRight'],
+    ['size', 'Размер кнопок', [[40, '40'], [44, '44'], [48, '48'], [52, '52']], 44],
+    ['style', 'Фон панели', [['white', 'Белый с тенью'], ['glass', 'Полупрозрачный'], ['dark', 'Тёмный']], 'white'],
+    ['plus', '«+»', [['black', 'Чёрный круг'], ['outline', 'Контур'], ['accent', 'Фиолетовый']], 'black', 'black'],
+  ]],
+  ['Значки', [
+    ['hubIcon', 'Хаб', [['house', 'house'], ['houseHeart', 'houseHeart'], ['grid', 'grid'], ['tiles', 'tiles'], ['dots9', 'dots9'], ['layers', 'layers']], 'tiles'],
+    ['setIcon', 'Настройки', [['gear', 'gear'], ['sliders', 'sliders'], ['dots', 'dots'], ['menu', 'menu'], ['user', 'user']], 'sliders'],
+  ]],
+  ['Выбор вкладки (нажатие на хаб)', [
+    ['picker', 'Вид', [['menu', 'Меню над кнопкой'], ['fan', 'Круги столбиком'], ['expand', 'Капсула раскрывается'], ['sheet', 'Плитки снизу']], 'menu'],
+    ['taskTabs', 'Задачи в выборе', [['three', '«Предстоящее», «Неделя», «Списки» отдельно'], ['one', 'Одна «Задачи» (последний вид)']], 'three'],
+  ]],
+  ['Хаб', [
+    ['order', 'Порядок блоков', [['news', 'Финансы · новости · задачи'], ['tasks', 'Финансы · задачи · новости (сейчас)']], 'news', 'news'],
+    ['avg', 'Средняя сумма в день', [['spent', 'Тратите в среднем'], ['left', 'Можно в день до конца месяца'], ['both', 'Обе'], ['none', 'Нет (сейчас)']], 'both'],
+    ['avgAt', 'Где показать', [['status', 'В строке под полосой'], ['line', 'Отдельной строкой'], ['chip', 'Плашкой рядом со счетами']], 'status'],
+    ['acc', 'Плашки счетов', [['s', 'Как сейчас'], ['m', 'Крупнее'], ['t', 'Плитки с названием'], ['g', 'Плитки 2 × 2']], 't'],
+    ['newsApp', 'Новости в приложении', [['pages', '2 × 2, свайп (сейчас)'], ['wide', 'Одна широкая, свайп'], ['list', 'Список из 4']], 'pages'],
+  ]],
+  ['Виджет', [
+    ['newsW', 'Листание новостей', [['arrows', 'Стрелки ‹ › (сейчас)'], ['stack', 'Стопка со свайпом'], ['auto', 'Сами сменяются'], ['chip', 'Кнопка «1 / 3 ›»'], ['list', 'Прокручиваемый список'], ['grid1', 'Одна страница 2 × 2, «Все новости»']], 'stack'],
+  ]],
+];
+const REC = Object.fromEntries(GROUPS.flatMap(([, l]) => l.map(([k, , , r]) => [k, r])));
+const PMK = Object.fromEntries(GROUPS.flatMap(([, l]) => l.filter(c => c[4] !== undefined).map(([k, , , , pm]) => [k, pm])));
+let state = { ...REC };
+try { const s = JSON.parse(localStorage.getItem('c336') || 'null'); if (s) state = { ...REC, ...s } } catch (e) {}
+let showPicker = false, view = 'both';
+
+// данные
+const tri = c => `<svg class="chk" width="18" height="18" viewBox="0 0 14 14" aria-hidden="true"><path d="M0.8,6.2A6.25,6.25 0,0 1,13.2 6.2M13.2,7.8A6.25,6.25 0,0 1,0.8 7.8" stroke="${c}" stroke-width="1.5" fill="none"/><path d="M10.1,5.8L13.2,6.2L13.3,2.8ZM3.9,8.2L0.8,7.8L0.7,11.2Z" fill="${c}"/></svg>`;
+const BELL = '<svg class="bell" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z M10 20.5a2 2 0 0 0 4 0" stroke="currentColor" stroke-width="2" fill="none" stroke-linejoin="round" stroke-linecap="round"/></svg>';
+function row(x, late) {
+  const c = x.pri ? 'var(--pri)' : (x.done || x.past) ? 'var(--done)' : 'var(--ring)';
+  const mark = x.rep ? tri(c) : x.done ? `<svg class="chk" width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="9" fill="${c}"/><path d="M5.4 9.4l2.5 2.5l4.9-5.4" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>` : `<svg class="chk" width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="8" stroke="${c}" stroke-width="2" fill="none"/></svg>`;
+  const cls = ['row', x.pri && 'pri', (x.done || x.past) && 'off', late && 'late'].filter(Boolean).join(' ');
+  return `<div class="${cls}">${mark}<span class="emo">${x.e}</span><span class="title">${x.title}</span>${x.bell ? BELL : ''}${x.r ? `<span class="t">${x.r}</span>` : ''}</div>`;
+}
+const OVER = [{ title: 'Claude', e: '💲', bell: 1, rep: 1, r: 'вт' }];
+const TODAY = [
+  { title: 'Футбол', e: '🗂️', bell: 1, done: 1, r: '03:00' }, { title: 'ChatGPT', e: '💲', bell: 1, rep: 1, past: 1, r: '10:00' },
+  { title: 'Оценка Займы', e: '💼', bell: 1, pri: 1, r: '14:00–16:00' }, { title: 'Пройти юр.тест', e: '💼', bell: 1, pri: 1, r: '16:00' },
+  { title: 'Оценка', e: '💼', rep: 1, r: '16:00–17:30' }, { title: 'Икра', e: '🗂️', bell: 1, r: '19:00' },
+];
+const TOM = [{ title: 'Футбол', e: '🗂️', bell: 1, r: '03:00' }, { title: 'Дейлик', e: '💼', rep: 1, r: '11:00' }, { title: 'Девопсы', e: '💼', rep: 1, r: '14:30' }];
+const NEWS = [['09:05 · Футбол', 'Бавария обыграла Боруссию в дерби', 1], ['08:40 · НБА', 'Дончич набрал трипл-дабл', 1], ['08:12 · Футбол', 'Расписание тура Бундеслиги'], ['07:55 · НБА', 'Вембаньяма — игрок недели']];
+const ACC = [['💳', 'Карта', '42 300', '42k'], ['👛', 'Наличные', '6 200', '6k'], ['🏦', 'Вклад', '80 000', '80k'], ['💰', 'Копилка', '12 000', '12k']];
+
+function tasks() {
+  return `<div class="tasks"><div class="head late"><span>Просрочено</span><span class="cnt">1</span></div>${OVER.map(x => row(x, true)).join('')}`
+    + `<div class="head"><span>ср 25 ноя · Сегодня</span><span class="bar"><i style="width:17%"></i></span><span>1 из 6</span></div>${TODAY.map(x => row(x)).join('')}`
+    + `<div class="head"><span>чт 26 ноя · Завтра</span><span class="cnt">3</span></div>${TOM.map(x => row(x)).join('')}</div>`;
+}
+function finance() {
+  const o = state;
+  const spent = 'в среднем 2 200 ₽ в день', left = 'можно 4 300 ₽ в день';
+  const avgText = o.avg === 'spent' ? spent : o.avg === 'left' ? left : o.avg === 'both' ? `${spent} · ${left.replace('можно ', 'можно ')}` : '';
+  let status = `<div class="sub"><span>осталось 26k ₽</span><span>прогноз 65k ₽</span></div>`;
+  if (o.avg !== 'none' && o.avgAt === 'status') status = `<div class="sub"><span>осталось 26k ₽</span><span style="color:var(--title)">${o.avg === 'both' ? '2 200 ₽/день · можно 4 300' : o.avg === 'spent' ? '≈ 2 200 ₽ в день' : 'можно 4 300 ₽ в день'}</span></div>`;
+  const line = o.avg !== 'none' && o.avgAt === 'line' ? `<div class="avg">${avgText}</div>` : '';
+  const chip = o.avg !== 'none' && o.avgAt === 'chip' ? `<span class="acc-s" style="background:#f1e8fa;color:#6b32a8">${o.avg === 'left' ? '4 300 ₽/день' : '2 200 ₽/день'}</span>` : '';
+  let accs;
+  if (o.acc === 's') accs = `<div class="accs"><span class="total">141k ₽</span>${ACC.slice(0, 3).map(a => `<span class="acc-s">${a[0]} ${a[3]}</span>`).join('')}${chip}</div>`;
+  else if (o.acc === 'm') accs = `<div class="accs" style="flex-wrap:wrap"><span class="total" style="font-size:14px">141k ₽</span>${ACC.slice(0, 3).map(a => `<span class="acc-m">${a[0]} ${a[3]}</span>`).join('')}${chip}</div>`;
+  else if (o.acc === 't') accs = `${chip ? `<div class="accs">${chip}</div>` : ''}<div class="accs">${ACC.map(a => `<div class="acc-t"><small>${a[0]} ${a[1]}</small><b>${a[3]}</b></div>`).join('')}</div>`;
+  else accs = `${chip ? `<div class="accs">${chip}</div>` : ''}<div class="acc-g">${ACC.map(a => `<div><small>${a[0]} ${a[1]}</small><b>${a[2]} ₽</b></div>`).join('')}</div>`;
+  return `<div class="fin"><div class="limit"><i></i><em></em><span style="left:10px;color:#fff">54k ₽</span><span style="right:10px">80k</span></div>${status}${line}${accs}</div>`;
+}
+const card = ([m, t, u]) => `<div class="card"><small>${m}${u ? ' · <span class="n">Новое</span>' : ''}</small><span style="font-weight:${u ? 700 : 500}">${t}</span></div>`;
+const wide = ([m, t, u], cls = '') => `<div class="wide ${cls}"><small>${m}${u ? ' · <span class="n">Новое</span>' : ''}</small><span style="font-weight:${u ? 700 : 600}">${t}</span></div>`;
+function newsApp() {
+  if (state.newsApp === 'wide') return `<div class="news">${wide(NEWS[0])}<div class="dots">● ○ ○ ○ ○</div></div>`;
+  if (state.newsApp === 'list') return `<div class="news">${NEWS.map(([m, t, u]) => `<div class="nrow"><small>${m.slice(0, 5)}</small><span style="font-weight:${u ? 700 : 500}">${t}</span></div>`).join('')}<div class="dots">● ○ ○</div></div>`;
+  return `<div class="news"><div class="grid">${NEWS.map(card).join('')}</div><div class="dots">● ○ ○</div></div>`;
+}
+function newsWidget() {
+  const g = `<div class="grid">${NEWS.map(card).join('')}</div>`;
+  switch (state.newsW) {
+    case 'stack': return `<div class="news"><div class="stack">${wide(NEWS[2], 'b2')}${wide(NEWS[1], 'b1')}${wide(NEWS[0])}</div><div class="dots" style="padding-top:12px">свайп вбок · 1 из 12</div></div>`;
+    case 'auto': return `<div class="news">${g}<div class="dots">● ○ ○ <span style="letter-spacing:0">· сменятся через 10 с</span></div></div>`;
+    case 'chip': return `<div class="news">${g}<div class="dots"><span class="chipbtn">1 / 3 ›</span></div></div>`;
+    case 'list': return `<div class="news" style="max-height:150px;overflow:hidden">${[...NEWS, ...NEWS].slice(0, 6).map(([m, t, u]) => `<div class="nrow"><small>${m.slice(0, 5)}</small><span style="font-weight:${u ? 700 : 500}">${t}</span></div>`).join('')}</div>`;
+    case 'grid1': return `<div class="news">${g}<div class="dots"><span class="chipbtn">Все новости ›</span></div></div>`;
+    default: return `<div class="news">${g}<div class="dots"><span class="arr">‹</span>● ○ ○<span class="arr">›</span></div></div>`;
+  }
+}
+function navbar() {
+  const o = state, s = o.size, i = Math.round(s * .48);
+  const btn = (name, on) => `<span class="ib${on ? ' on' : ''}" style="width:${s}px;height:${s}px">${ico(name, i)}</span>`;
+  const plus = `<span class="plus p-${o.plus}" style="width:${s + 8}px;height:${s + 8}px">${ico('plus', i + 2, 2.4)}</span>`;
+  const hub = btn(o.hubIcon, true), set = btn(o.setIcon, false);
+  const st = `st-${o.style}`;
+  if (o.nav === 'one') {
+    const inner = o.side === 'plusLeft' ? `${plus}${hub}${set}` : `${hub}${set}${plus}`;
+    return `<div class="nav"><div class="cap ${st}" style="gap:4px">${inner.replace(`width:${s + 8}px;height:${s + 8}px`, `width:${s}px;height:${s}px`)}</div></div>`;
+  }
+  if (o.nav === 'vertical') return `<div class="nav v">${plus}<div class="cap v ${st}">${hub}${set}</div></div>`;
+  if (o.nav === 'circles') {
+    const c = name => `<span class="plus ${st}" style="width:${s + 4}px;height:${s + 4}px;color:${o.style === 'dark' ? '#fff' : '#16171d'}">${ico(name, i)}</span>`;
+    const items = [c(o.setIcon), c(o.hubIcon), plus];
+    return `<div class="nav">${(o.side === 'plusLeft' ? items.reverse() : items).join('')}</div>`;
+  }
+  const cap = `<div class="cap ${st}">${hub}${set}</div>`;
+  return `<div class="nav">${o.side === 'plusLeft' ? plus + cap : cap + plus}</div>`;
+}
+const P2 = { upcoming: 'M5 6h14 M5 12h14 M5 18h9', week: 'M4 5h16v15H4z M4 10h16 M10 10v10 M15 10v10', lists: 'M8 6h12 M8 12h12 M8 18h12 M4 6h.01 M4 12h.01 M4 18h.01' };
+Object.assign(P, P2);
+const tabs0 = () => state.taskTabs === 'one'
+  ? [['house', 'Главная', true], ['tasks', 'Задачи'], ['rub', 'Финансы'], ['heart', 'Здоровье'], ['bolt', 'Новости']]
+  : [['house', 'Главная', true], ['upcoming', 'Предстоящее'], ['week', 'Неделя'], ['lists', 'Списки'], ['rub', 'Финансы'], ['heart', 'Здоровье'], ['bolt', 'Новости']];
+function picker() {
+  if (!showPicker) return '';
+  const o = state, bottom = 14 + o.size + 18;
+  const tabs = tabs0().map(([n, l, on]) => [n === 'house' ? o.hubIcon : n, l, on]);
+  switch (o.picker) {
+    case 'fan': return `<div class="scrim"></div><div class="pick fan" style="bottom:${bottom}px">${tabs.slice().reverse().map(([n, l, on]) => `<div class="${on ? 'on' : ''}">${l}<span class="c">${ico(n, 20)}</span></div>`).join('')}</div>`;
+    case 'expand': {
+      const s = o.size;
+      return `<div class="nav"><div class="cap st-${o.style}" style="gap:2px">${tabs.map(([n, , on]) => `<span class="ib${on ? ' on' : ''}" style="width:${s}px;height:${s}px">${ico(n, Math.round(s * .46))}</span>`).join('')}<span class="ib" style="width:${s}px;height:${s}px">${ico(o.setIcon, Math.round(s * .46))}</span></div></div>`;
+    }
+    case 'sheet': return `<div class="scrim"></div><div class="pick sheet">${tabs.map(([n, l, on]) => `<div class="${on ? 'on' : ''}">${ico(n, 22)}${l}</div>`).join('')}<div>${ico(o.setIcon, 22)}Настройки</div></div>`;
+    default: return `<div class="scrim"></div><div class="pick menu" style="bottom:${bottom}px">${tabs.map(([n, l, on]) => `<div class="${on ? 'on' : ''}">${ico(n, 20)}${l}</div>`).join('')}</div>`;
+  }
+}
+const status = '<div class="status"><span>14:51</span><span>▾ ▴ ▮ 97</span></div>';
+function blocks(newsHtml) {
+  return finance() + (state.order === 'news' ? newsHtml + tasks() : tasks() + newsHtml);
+}
+function render() {
+  const pk = picker();
+  const expanding = showPicker && state.picker === 'expand';
+  document.getElementById('app').innerHTML = status + `<div class="screen">${blocks(newsApp())}</div>` + (expanding ? '' : navbar()) + pk;
+  document.getElementById('widget').innerHTML = status + `<div class="wdg">${blocks(newsWidget())}${expanding ? '' : navbar()}${pk}</div><div class="icons">${'<span></span>'.repeat(4)}</div>`;
+  renderGroups();
+  document.getElementById('summary').value = summary();
+  try { localStorage.setItem('c336', JSON.stringify(state)) } catch (e) {}
+}
+const ICONIC = new Set(['hubIcon', 'setIcon']);
+function renderGroups() {
+  document.getElementById('groups').innerHTML = GROUPS.map(([title, ctls]) =>
+    `<fieldset><legend>${title}</legend>${ctls.map(([k, label, opts]) =>
+      `<div class="ctl"><span id="l-${k}">${label}</span><div class="seg" role="group" aria-labelledby="l-${k}">${opts.map(([v, t]) =>
+        `<button type="button" id="c-${k}-${v}" data-k="${k}" data-v="${v}" aria-pressed="${state[k] == v}" ${ICONIC.has(k) ? `aria-label="${t}"` : ''}>${ICONIC.has(k) ? ico(v, 20) : t}${PMK[k] == v ? '<span class="tag pm">PM</span>' : REC[k] == v ? '<span class="tag rec">реком.</span>' : ''}</button>`).join('')}</div></div>`).join('')}</fieldset>`).join('');
+}
+const NAMES = { house: 'домик', houseHeart: 'домик с сердцем', grid: 'сетка 2×2', tiles: 'плитки', dots9: 'девять точек', layers: 'слои', gear: 'шестерёнка', sliders: 'ползунки', dots: 'три точки', menu: 'три линии', user: 'профиль' };
+function summary() {
+  return GROUPS.map(([title, ctls]) => `${title}: ` + ctls.map(([k, label, opts]) => {
+    const t = opts.find(([v]) => v == state[k])[1];
+    return `${label.toLowerCase()} — ${NAMES[t] || t}`;
+  }).join('; ')).join('\n');
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('button[data-k]'); if (!b) return;
+  const v = b.dataset.v; state[b.dataset.k] = isNaN(+v) ? v : +v; render();
+});
+document.getElementById('reset').addEventListener('click', () => { state = { ...REC }; render() });
+document.getElementById('pickerBtn').addEventListener('click', e => { showPicker = !showPicker; e.currentTarget.textContent = `Выбор вкладки: ${showPicker ? 'открыт' : 'скрыт'}`; render() });
+document.getElementById('viewBtn').addEventListener('click', e => {
+  view = view === 'both' ? 'app' : view === 'app' ? 'widget' : 'both';
+  document.body.classList.toggle('one', view !== 'both');
+  document.getElementById('pvApp').classList.toggle('hide', view === 'widget');
+  document.getElementById('pvW').classList.toggle('hide', view === 'app');
+  e.currentTarget.textContent = `Показать: ${view === 'both' ? 'оба' : view === 'app' ? 'приложение' : 'виджет'}`;
+});
+document.getElementById('copy').addEventListener('click', () => {
+  const out = document.getElementById('copied');
+  const fallback = () => { const s = document.getElementById('summary'); s.focus(); s.select(); out.textContent = 'Текст выделен — скопируй вручную' };
+  try { navigator.clipboard.writeText(summary()).then(() => { out.textContent = 'Скопировано' }, fallback) } catch (e) { fallback() }
+});
+render();
+</script>
