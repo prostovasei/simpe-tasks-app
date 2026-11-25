@@ -1,5 +1,6 @@
 package com.prostovasei.simpletasks.ui.feature.week
 
+import androidx.compose.ui.unit.sp
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Animatable
@@ -403,6 +404,9 @@ private fun DayHeader(pager: PagerState, dateAt: (Int) -> LocalDate, today: Loca
     val spacing = AppTheme.spacing
     val sizes = AppTheme.sizes
     val current = pager.currentPage
+    val todayWord = stringResource(R.string.day_today)
+    val tomorrowWord = stringResource(R.string.day_tomorrow)
+    val yesterdayWord = stringResource(R.string.day_yesterday)
     Row(
         modifier.fillMaxWidth().padding(horizontal = spacing.sm, vertical = spacing.xxs),
         verticalAlignment = Alignment.CenterVertically,
@@ -411,11 +415,19 @@ private fun DayHeader(pager: PagerState, dateAt: (Int) -> LocalDate, today: Loca
         Box(Modifier.weight(1f).clipToBounds()) {
             for (page in current - 1..current + 1) {
                 val date = dateAt(page)
+                // #334: подпись дня как в ленте — «ср 25 ноя · Сегодня», 12 sp средним серым (прошедший день — красным).
                 Text(
-                    WidgetDates.dayHeader(date),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = if (today != null && date < today) colors.overdue else colors.textPrimary,
+                    WidgetDates.header(date, when {
+                        today == null -> null
+                        date == today -> todayWord
+                        date == today.plusDays(1) -> tomorrowWord
+                        date == today.minusDays(1) -> yesterdayWord
+                        else -> null
+                    }),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontSize = SizeTokens.DAY_HEAD_SP.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = if (today != null && date < today) colors.overdue else colors.textSecondary,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier

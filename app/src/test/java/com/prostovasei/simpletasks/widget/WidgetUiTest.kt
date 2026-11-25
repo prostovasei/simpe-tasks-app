@@ -90,7 +90,7 @@ class WidgetUiTest {
         onAllNodes(hasContentDescription("Обновление приложения")).assertCountEquals(0)
         onNode(hasTextEqualTo("пт, 16 окт")).assertDoesNotExist()
         // Итерация 43: у каждого дня справа число задач (у «Сегодня» вместо него прогресс «0 из 1»).
-        onNode(hasTextEqualTo("2")).assertExists()
+        // #334: вчерашний день — в блоке «Просрочено» без подписи и числа.
         onAllNodes(hasTextEqualTo("1")).assertCountEquals(2)
         onNode(hasTextEqualTo("0 из 1")).assertExists()
         // Подписи дней как в приложении: просроченные — по дням (итерация 27), «ЧТ, 15 окт» + «Вчера»,
@@ -99,14 +99,11 @@ class WidgetUiTest {
         onNode(hasTextEqualTo("Просрочено · 1")).assertExists()
         onNode(hasContentDescription("Свернуть просроченные")).assertExists()
         onNode(hasContentDescription("Перенести просроченные на сегодня")).assertExists()
-        onNode(hasTextEqualTo("ЧТ, 15 окт")).assertExists()
-        onNode(hasTextEqualTo("ПТ, 16 окт")).assertExists()
-        onNode(hasTextEqualTo("Сегодня")).assertExists()
-        onNode(hasTextEqualTo("СБ, 17 окт")).assertExists()
-        onNode(hasTextEqualTo("Завтра")).assertExists()
-        onNode(hasTextEqualTo("ПН, 19 окт")).assertExists()
-        // Слева время (итерация 20), у просроченной тоже (итерация 27); название без «↻» (повтор — значком).
-        onNode(hasTextEqualTo("Вчера")).assertExists()
+        onNode(hasTextEqualTo("чт 15 окт · Вчера")).assertDoesNotExist()
+        onNode(hasTextEqualTo("пт 16 окт · Сегодня")).assertExists()
+        onNode(hasTextEqualTo("сб 17 окт · Завтра")).assertExists()
+        onNode(hasTextEqualTo("пн 19 окт")).assertExists()
+        // Время у просроченной тоже (итерация 27); #334 — просроченные одним блоком, без подписи «Вчера».
         onNode(hasTextEqualTo("18:00")).assertExists()
         onAllNodes(hasTextEqualTo("08:00")).assertCountEquals(2)
         onAllNodes(hasTextEqualTo("Зарядка")).assertCountEquals(2)
@@ -124,9 +121,8 @@ class WidgetUiTest {
 
         onNode(hasTextEqualTo("Просрочено · 1")).assertExists()
         onNode(hasContentDescription("Развернуть просроченные")).assertExists()
-        onNode(hasTextEqualTo("ЧТ, 15 окт")).assertDoesNotExist()
         onNode(hasTextEqualTo("Отправить отчёт")).assertDoesNotExist()
-        onNode(hasTextEqualTo("ПТ, 16 окт")).assertExists()
+        onNode(hasTextEqualTo("пт 16 окт · Сегодня")).assertExists()
     }
 
     @Test

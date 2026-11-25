@@ -17,6 +17,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.sp
 import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -83,8 +86,8 @@ fun SectionHeader(text: String, modifier: Modifier = Modifier, color: Color = Ap
 
 /** Подзаголовок блока внутри секции («Весь день», «По времени»). */
 /**
- * Подпись дня в ленте (итерация 13, макет PM): «ПТ, 16 окт» и белая метка [relative] («Сегодня»).
- * [isOverdue] — прошедший день с невыполненными задачами: подпись красная.
+ * Подпись дня (#334, выбор PM): «пт 16 окт · Сегодня» одной строкой 12 sp средним серым; справа — число задач тем же стилем,
+ * у «Сегодня» — полоса 1 dp и «N из M». [isOverdue] — прошедший день: подпись красная.
  */
 @Composable
 fun DayHeader(
@@ -92,43 +95,33 @@ fun DayHeader(
     relative: String?,
     isOverdue: Boolean,
     modifier: Modifier = Modifier,
-    /** #331: как в виджете — число задач дня справа; null — без числа. */
+    /** Число задач дня справа; null — без числа. */
     count: Int? = null,
-    /** #331: у «Сегодня» вместо числа — полоса и «N из M» ([done] из [total]). */
+    /** У «Сегодня» вместо числа — полоса и «N из M» ([done] из [total]). */
     progress: Pair<Int, Int>? = null,
 ) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
-    val color = if (isOverdue) colors.overdue else colors.textPrimary
+    val color = if (isOverdue) colors.overdue else colors.textSecondary
+    val style = MaterialTheme.typography.labelSmall.copy(fontSize = SizeTokens.DAY_HEAD_SP.sp, fontWeight = FontWeight.Medium)
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(spacing.xs),
         modifier = modifier.fillMaxWidth().padding(start = spacing.sm, end = spacing.sm, top = spacing.sm, bottom = spacing.xxs),
     ) {
-        Text(text, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = color)
-        if (relative != null) {
-            Text(
-                relative,
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-                color = color,
-                modifier = Modifier
-                    .background(if (LocalTaskCanvas.current) Color.Transparent else colors.surface, AppTheme.shapes.small)
-                    .padding(horizontal = spacing.xs, vertical = AppTheme.sizes.hairline),
-            )
-        }
+        Text(relative?.let { "$text · $it" } ?: text, style = style, color = color, maxLines = 1)
         if (progress != null) {
             val (done, total) = progress
             Box(
-                Modifier.weight(1f).padding(start = spacing.xs).height(SizeTokens.WIDGET_PROGRESS.dp)
-                    .clip(AppTheme.shapes.small).background(colors.divider).testTag(TAG_DAY_PROGRESS),
+                Modifier.weight(1f).padding(start = spacing.xxs).height(SizeTokens.DAY_PROGRESS.dp)
+                    .background(colors.divider).testTag(TAG_DAY_PROGRESS),
             ) {
                 Box(Modifier.fillMaxHeight().fillMaxWidth(if (total == 0) 0f else done.toFloat() / total).background(colors.textPrimary))
             }
-            Text(stringResource(R.string.widget_progress, done, total), style = MaterialTheme.typography.labelSmall, color = colors.textSecondary, maxLines = 1)
+            Text(stringResource(R.string.widget_progress, done, total), style = style, color = colors.textSecondary, maxLines = 1)
         } else if (count != null) {
             Spacer(Modifier.weight(1f))
-            Text(count.toString(), style = MaterialTheme.typography.labelSmall, color = colors.textSecondary, modifier = Modifier.testTag(TAG_DAY_COUNT))
+            Text(count.toString(), style = style, color = colors.textSecondary, modifier = Modifier.testTag(TAG_DAY_COUNT))
         }
     }
 }
@@ -137,55 +130,57 @@ const val TAG_DAY_PROGRESS = "day_progress"
 const val TAG_DAY_COUNT = "day_count"
 
 /**
- * Подпись блока «Просрочено · N» со стрелкой «свернуть» и значком «перенести на сегодня» рядом (итерация 37).
- * [onMoveToday] = null — переносить нечего, значка нет.
+ * Подпись блока «Просрочено» (#334, выбор PM): красная, 12 sp, как подписи дней; нажатие на подпись сворачивает и разворачивает блок,
+ * тонкая стрелка →| рядом переносит всё на сегодня, число просроченных — справа. [onMoveToday] = null — переносить нечего.
  */
 @Composable
 fun OverdueHeader(
-    text: String,
-    collapsed: Boolean,
+    count: Int,
+    @Suppress("UNUSED_PARAMETER") collapsed: Boolean,
     foldDescription: String,
     moveDescription: String,
-    onToggle: () -> Unit,
+    /** null — блок не сворачивается (хаб). */
+    onToggle: (() -> Unit)?,
     onMoveToday: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
+    val style = MaterialTheme.typography.labelSmall.copy(fontSize = SizeTokens.DAY_HEAD_SP.sp, fontWeight = FontWeight.Medium)
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier.padding(start = spacing.sm, top = spacing.xs).testTag(TAG_OVERDUE_HEADER),
+        modifier = modifier.fillMaxWidth().padding(horizontal = spacing.sm).padding(top = spacing.xs).testTag(TAG_OVERDUE_HEADER),
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.clickable(onClickLabel = foldDescription, onClick = onToggle).padding(vertical = spacing.xs).testTag(TAG_OVERDUE_TOGGLE),
-        ) {
-            Text(text, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = colors.overdue)
-            Icon(
-                painterResource(if (collapsed) R.drawable.ic_fold_closed else R.drawable.ic_fold_open),
-                contentDescription = foldDescription,
-                tint = colors.overdue,
-                modifier = Modifier.padding(start = spacing.xxs).size(AppTheme.sizes.icon),
-            )
-        }
+        Text(
+            stringResource(R.string.overdue_title),
+            style = style,
+            color = colors.overdue,
+            modifier = Modifier
+                .then(if (onToggle != null) Modifier.clickable(onClickLabel = foldDescription, onClick = onToggle).semantics { stateDescription = foldDescription } else Modifier)
+                .padding(vertical = spacing.xs)
+                .testTag(TAG_OVERDUE_TOGGLE),
+        )
         if (onMoveToday != null) {
             Icon(
-                painterResource(R.drawable.ic_move_today),
+                painterResource(R.drawable.ic_move_today_thin),
                 contentDescription = moveDescription,
                 tint = colors.overdue,
                 modifier = Modifier
                     .clickable(onClickLabel = moveDescription, onClick = onMoveToday)
                     .padding(spacing.xs)
-                    .size(AppTheme.sizes.icon)
+                    .size(SizeTokens.TASK_CHECK.dp)
                     .testTag(TAG_OVERDUE_MOVE),
             )
         }
+        Spacer(Modifier.weight(1f))
+        if (count > 0) Text(count.toString(), style = style, color = colors.overdue, modifier = Modifier.testTag(TAG_OVERDUE_COUNT))
     }
 }
 
 const val TAG_OVERDUE_HEADER = "overdue_header"
 const val TAG_OVERDUE_TOGGLE = "overdue_toggle"
 const val TAG_OVERDUE_MOVE = "overdue_move"
+const val TAG_OVERDUE_COUNT = "overdue_count"
 
 @Composable
 fun BlockHeader(text: String, modifier: Modifier = Modifier) {

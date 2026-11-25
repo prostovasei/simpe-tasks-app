@@ -63,6 +63,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.performTextInput
 import com.prostovasei.simpletasks.designsystem.components.TAG_EMPTY_TASKS
+import com.prostovasei.simpletasks.designsystem.components.TAG_OVERDUE_COUNT
 import com.prostovasei.simpletasks.designsystem.components.TAG_OVERDUE_HEADER
 import com.prostovasei.simpletasks.designsystem.components.TAG_OVERDUE_MOVE
 import com.prostovasei.simpletasks.designsystem.components.TAG_OVERDUE_TOGGLE
@@ -169,34 +170,35 @@ class ScreensUiTest {
         today = LocalDate.of(2026, 10, 16),
     )
 
+    /** #334: кружок 18 → 10 → эмодзи 16 → 8 → название; у повтора знак того же размера; время у правого края. */
     @Test
-    fun upcomingHasEqualTwoDpGapsAndSharedNodeDiameter() {
+    fun upcomingRowHasCheckEmojiTitleAndTimeOnTheRight() {
         show { AllScreen(allState, { intents += it }) }
-        listOf("d1", "t1").forEach { id ->
+        listOf("d1" to "node", "t1" to "repeat").forEach { (id, mark) ->
             fun bounds(part: String) = composeRule.onNodeWithTag("task:$id:$part", useUnmergedTree = true).getUnclippedBoundsInRoot()
-            val time = bounds("time")
-            val node = bounds("node")
-            val content = bounds("content")
-            assertEquals(8.dp, node.left - time.right) // #331: 8 dp у кружка
-            assertEquals(8.dp, content.left - node.right)
-            assertEquals(14.dp, node.right - node.left)
-            assertEquals(14.dp, node.bottom - node.top)
+            val node = bounds(mark)
+            val title = bounds("title")
+            assertEquals(18.dp, node.right - node.left)
+            assertEquals(18.dp, node.bottom - node.top)
+            assertEquals(34.dp, title.left - node.right)
         }
+        val time = composeRule.onNodeWithTag("task:t1:time", useUnmergedTree = true).getUnclippedBoundsInRoot()
+        val title = composeRule.onNodeWithTag("task:t1:title", useUnmergedTree = true).getUnclippedBoundsInRoot()
+        assertTrue("время справа от названия", time.left > title.right)
+        composeRule.onNodeWithTag("task:d1:time", useUnmergedTree = true).assertDoesNotExist()
     }
 
     @Test
     fun allScreenShowsDaysAndTimes() {
         show { AllScreen(allState, { intents += it }) }
 
-        composeRule.onNodeWithText("ЧТ, 15 окт").assertExists()
-        composeRule.onNodeWithText("Вчера").assertExists()
-        composeRule.onNodeWithText("ПТ, 16 окт").assertExists()
-        composeRule.onNodeWithText("Сегодня").assertExists()
-        composeRule.onNodeWithText("СБ, 17 окт").assertExists()
-        composeRule.onNodeWithText("Завтра").assertExists()
-        composeRule.onNodeWithText("ВТ, 20 окт").assertExists()
-        composeRule.onAllNodesWithText("10:00").assertCountEquals(2)
-        composeRule.onAllNodesWithText("11:00").assertCountEquals(2)
+        // #334: просроченные — одним блоком без подписи дня, справа день недели; подписи дней «пт 16 окт · Сегодня»; период одной строкой.
+        composeRule.onNodeWithText("чт 15 окт · Вчера").assertDoesNotExist()
+        composeRule.onNodeWithText("чт").assertExists()
+        composeRule.onNodeWithText("пт 16 окт · Сегодня").assertExists()
+        composeRule.onNodeWithText("сб 17 окт · Завтра").assertExists()
+        composeRule.onNodeWithText("вт 20 окт").assertExists()
+        composeRule.onAllNodesWithText("10:00–11:00").assertCountEquals(2)
         composeRule.onNodeWithText("09:30").assertExists()
         composeRule.onNodeWithTag("task:t1:repeat", useUnmergedTree = true).assertExists()
     }
@@ -207,7 +209,8 @@ class ScreensUiTest {
         show { AllScreen(allState, { intents += it }) }
 
         composeRule.onNodeWithTag(TAG_OVERDUE_HEADER).assertExists()
-        composeRule.onNodeWithText("Просрочено · 1").assertExists()
+        composeRule.onNodeWithText("Просрочено").assertExists()
+        composeRule.onNodeWithTag(TAG_OVERDUE_COUNT, useUnmergedTree = true).assertTextEquals("1")
         composeRule.onNodeWithTag(TAG_OVERDUE_TOGGLE).performClick()
         composeRule.onNodeWithTag(TAG_OVERDUE_MOVE).performClick()
         assertEquals(listOf<Any>(TaskListIntent.ToggleOverdue, TaskListIntent.MoveOverdue), intents.toList())
@@ -393,9 +396,9 @@ class ScreensUiTest {
     fun collapsedOverdueHidesPastDaysButKeepsHeader() {
         show { AllScreen(allState.copy(overdueCollapsed = true), { intents += it }) }
 
-        composeRule.onNodeWithText("Просрочено · 1").assertExists()
-        composeRule.onNodeWithText("ЧТ, 15 окт").assertDoesNotExist()
-        composeRule.onNodeWithText("ПТ, 16 окт").assertExists()
+        composeRule.onNodeWithText("Просрочено").assertExists()
+        composeRule.onNodeWithText(allState.overdue.first().title).assertDoesNotExist()
+        composeRule.onNodeWithText("пт 16 окт · Сегодня").assertExists()
     }
 
     @Test
@@ -548,7 +551,8 @@ class ScreensUiTest {
             item("i3", "Отчёт за неделю", DueText(DayLabel.Yesterday, "11:00"), list = null, color = null, priority = Priority.NONE),
         )
         show { InboxScreen(InboxState(tasks = tasks, isLoading = false), { intents += it }) }
-        composeRule.onNodeWithText("Сегодня").assertExists()
+        // #334: справа — день и время, «сегодня 12:30» не обрезается и с крупным шрифтом.
+        composeRule.onNodeWithText("сегодня 12:30").assertIsDisplayed()
         composeRule.onRoot().captureRoboImage("screenshots/inbox_day_column_large_font.png")
     }
 

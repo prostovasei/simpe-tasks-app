@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Подпись дня (итерация 42): «ПТ, 16 ОКТ» + метка «Сегодня»; справа число задач дня (итерация 43), у сегодняшнего дня — прогресс «3 из 7». -->
+<!-- Подпись дня (итерация 42; #334 — «вт 25 ноя · Сегодня» одной строкой 12 sp средним серым): справа число задач дня (итерация 43), у сегодняшнего дня — прогресс «3 из 7». -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/title_root"
     android:layout_width="match_parent"
@@ -16,9 +16,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:maxLines="1"
-        android:textColor="@color/widget_flat_text_primary"
-        android:textSize="14sp"
-        android:textStyle="bold" />
+        android:textColor="@color/widget_flat_text_secondary"
+        android:textSize="12sp" android:fontFamily="@font/manrope_500" />
 
     <TextView
         android:id="@+id/title_chip"
@@ -40,7 +39,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:fontFamily="sans-serif-medium"
+        android:fontFamily="@font/manrope_500"
         android:gravity="end"
         android:maxLines="1"
         android:textColor="@color/widget_flat_text_secondary"
@@ -64,7 +63,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/widget_space_xs"
-        android:fontFamily="sans-serif-medium"
+        android:fontFamily="@font/manrope_500"
         android:maxLines="1"
         android:textColor="@color/widget_flat_text_secondary"
         android:textSize="12sp"

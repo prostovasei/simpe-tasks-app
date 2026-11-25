@@ -1,5 +1,7 @@
 package com.prostovasei.simpletasks.designsystem.theme
 
+import com.prostovasei.simpletasks.designsystem.tokens.TaskRowTokens
+
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
 import com.prostovasei.simpletasks.designsystem.tokens.ColorTokens
@@ -27,6 +29,10 @@ data class CheckRings(val high: Color, val highDone: Color)
 @Immutable
 data class WeekRowColors(val high: Color, val doneMark: Color)
 
+/** Строка задачи (#334): название, высокий приоритет, выполненные и прошедшие. */
+@Immutable
+data class TaskRowColors(val title: Color, val priority: Color, val done: Color)
+
 @Immutable
 data class AppColors(
     val background: Color,
@@ -52,6 +58,7 @@ data class AppColors(
     val voiceTide: List<Color>,
     val voiceCalm: List<Color>,
     val isDark: Boolean,
+    val taskRow: TaskRowColors = TaskRowColors(Color.Unspecified, Color.Unspecified, Color.Unspecified),
 )
 
 internal fun appColors(isDark: Boolean): AppColors {
@@ -91,5 +98,6 @@ internal fun appColors(isDark: Boolean): AppColors {
         voiceTide = ColorTokens.voiceTide.map { it.resolve() },
         voiceCalm = ColorTokens.voiceCalm.map { it.resolve() },
         isDark = isDark,
+        taskRow = TaskRowColors(TaskRowTokens.title.resolve(), TaskRowTokens.priority.resolve(), TaskRowTokens.done.resolve()),
     )
 }

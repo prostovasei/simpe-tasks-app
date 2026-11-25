@@ -77,35 +77,53 @@ fun AllScreen(
             ) {
                 // #241 (решение PM): заголовка «Предстоящее» над лентой больше нет — название страницы видно по значку в нижней панели.
                 val groups = state.dayGroups()
-                // «Просрочено · N» над первым прошедшим днём (итерация 37): стрелка сворачивает все прошедшие дни, значок — переносит на сегодня.
-                val overdueCount = groups.filter { it.isOverdue }.sumOf { group -> group.items.count { !it.showsDone } }
-                groups.forEach { group ->
-                    if (group.isOverdue && group == groups.first()) {
-                        item(key = "overdue-header") {
-                            OverdueHeader(
-                                text = if (overdueCount > 0) stringResource(R.string.overdue_count, overdueCount) else stringResource(R.string.overdue_title),
-                                collapsed = state.overdueCollapsed,
-                                foldDescription = stringResource(if (state.overdueCollapsed) R.string.overdue_fold_closed else R.string.overdue_fold_open),
-                                moveDescription = stringResource(R.string.overdue_move_today),
-                                onToggle = { onIntent(TaskListIntent.ToggleOverdue) },
-                                onMoveToday = { onIntent(TaskListIntent.MoveOverdue) }.takeIf { overdueCount > 0 },
-                                modifier = Modifier.animateItem(),
-                            )
-                        }
+                val today = state.today ?: java.time.LocalDate.now()
+                // #334 (решение PM): просроченные — одним блоком «Просрочено» без разбивки по дням; справа вместо времени — день недели.
+                // Нажатие на подпись сворачивает блок, тонкая →| переносит всё на сегодня, число — справа.
+                val (pastGroups, dayGroups) = groups.partition { it.isOverdue }
+                if (pastGroups.isNotEmpty()) {
+                    val overdueItems = pastGroups.flatMap { it.items }
+                    val overdueCount = overdueItems.count { !it.showsDone }
+                    item(key = "overdue-header") {
+                        OverdueHeader(
+                            count = overdueCount,
+                            collapsed = state.overdueCollapsed,
+                            foldDescription = stringResource(if (state.overdueCollapsed) R.string.overdue_fold_closed else R.string.overdue_fold_open),
+                            moveDescription = stringResource(R.string.overdue_move_today),
+                            onToggle = { onIntent(TaskListIntent.ToggleOverdue) },
+                            onMoveToday = { onIntent(TaskListIntent.MoveOverdue) }.takeIf { overdueCount > 0 },
+                            modifier = Modifier.animateItem(),
+                        )
                     }
-                    if (group.isOverdue && state.overdueCollapsed) return@forEach
+                    if (!state.overdueCollapsed) {
+                        timelineItems(
+                            items = overdueItems,
+                            keyPrefix = "overdue",
+                            days = days,
+                            nowMinute = null,
+                            isOverdue = { true },
+                            showList = true,
+                            onToggle = { onIntent(TaskListIntent.ToggleComplete(it.id, it.isRecurring, it.showsDone)) },
+                            onOpen = { onOpenTask(it.taskId) },
+                            dayLabels = true,
+                            selection = selection.takeIf { it.active }?.ids,
+                            onSelect = { selection.toggle(it.id) },
+                            today = today,
+                        )
+                    }
+                }
+                dayGroups.forEach { group ->
                     item(key = "day-${group.date}") {
                         DayHeader(
                             text = WidgetDates.header(group.date),
                             relative = group.relative?.let(days::day),
-                            isOverdue = group.isOverdue,
+                            isOverdue = false,
                             modifier = Modifier.animateItem(),
                             // #331: как в виджете — у «Сегодня» прогресс, у остальных дней число задач.
                             count = group.items.size,
                             progress = if (group.relative == DayLabel.Today && group.items.isNotEmpty()) group.items.count { it.isDone } to group.items.size else null,
                         )
                     }
-                    // Итерация 26: задачи — как в виджете (время | линия с кружком | плашка); «сейчас» — только у сегодня.
                     timelineItems(
                         items = group.items,
                         keyPrefix = "day-${group.date}",
@@ -117,6 +135,7 @@ fun AllScreen(
                         onOpen = { onOpenTask(it.taskId) },
                         selection = selection.takeIf { it.active }?.ids,
                         onSelect = { selection.toggle(it.id) },
+                        today = today,
                     )
                 }
             }

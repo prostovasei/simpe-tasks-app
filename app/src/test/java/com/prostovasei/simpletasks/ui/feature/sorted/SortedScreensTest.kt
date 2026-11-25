@@ -103,7 +103,7 @@ class SortedScreensTest {
         )
         assertEquals(listOf(today, today.plusDays(6)), state.groups.map { it.date })
         show(SortedKind.NoList, state)
-        composeRule.onNodeWithText("Сегодня").assertExists()
+        composeRule.onNodeWithText("Сегодня", substring = true).assertExists()
         composeRule.onNodeWithTag("task:later").assertExists()
     }
 

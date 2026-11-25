@@ -18,7 +18,7 @@
     <dimen name="widget_list_square">18dp</dimen>
     <dimen name="widget_list_glyph">14dp</dimen>
     <dimen name="widget_card_inset">3dp</dimen>
-    <dimen name="widget_progress">4dp</dimen>
+    <dimen name="widget_progress">1dp</dimen>
     <dimen name="widget_fold_icon">20dp</dimen>
     <dimen name="widget_tail">60dp</dimen>
     <dimen name="widget_edge">6dp</dimen>
@@ -37,6 +37,13 @@
     <dimen name="widget_week_content_gap">2dp</dimen>
     <!-- #331: отступ слева и справа от кружка в списках задач (TIMELINE_CHECK_GAP). -->
     <dimen name="widget_check_gap">8dp</dimen>
+    <!-- #334: строка задачи (TASK_* в SizeTokens). -->
+    <dimen name="widget_task_check">18dp</dimen>
+    <dimen name="widget_task_check_gap">10dp</dimen>
+    <dimen name="widget_task_emoji">16dp</dimen>
+    <dimen name="widget_task_emoji_gap">8dp</dimen>
+    <dimen name="widget_task_bell">14dp</dimen>
+    <dimen name="widget_task_right_gap">8dp</dimen>
     <dimen name="widget_week_edge">2dp</dimen>
     <dimen name="widget_week_check">14dp</dimen>
     <dimen name="widget_week_tick">9dp</dimen>

@@ -69,6 +69,12 @@ fun WidgetModel.lines(days: DayNames, withTail: Boolean = true): List<WidgetLine
                 // Прошедший день (итерация 27): красные подпись, время и кружки, раскладка — как у остальных дней.
                 val overdue = (block.day as? WidgetDay.On)?.date?.let { it < today } == true
                 val nowMinute = nowMinute.takeIf { block.day == WidgetDay.On(today) }
+                // #334 (решение PM): в «Все» просроченные — одним блоком под «Просрочено», без подписей дней.
+                if (overdue && filter == WidgetFilter.All) {
+                    return@flatMapIndexed WidgetTimeline.rows(block.items, overdue = false, nowMinute = null, days = days)
+                        .filterIsInstance<WidgetRow.Task>()
+                        .map { WidgetLine.Task(it, Line(top = false, bottom = false), overdue = true, day = block.day) }
+                }
                 val rows = WidgetTimeline.rows(block.items, overdue = false, nowMinute = nowMinute, days = days)
                 val progress = DayProgress.of(block.items).takeIf { block.day == WidgetDay.On(today) }
                 listOf(WidgetLine.Title(block.day, isFirst, progress, block.items.size)) + rows.mapIndexed { i, row ->

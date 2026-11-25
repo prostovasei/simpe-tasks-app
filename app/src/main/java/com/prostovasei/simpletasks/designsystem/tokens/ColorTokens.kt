@@ -121,6 +121,19 @@ object WeekRowTokens {
 }
 
 /** Согласованный вариант А, #247: только выбранные экраны задач и виджеты. */
+/**
+ * Строка задачи (#334, конструкторы PM 25.11.2026): название графитом, высокий приоритет — ярким фиолетовым,
+ * выполненные и прошедшие — «ещё светлее». Время справа — тем же цветом, у просроченных — [ColorTokens.overdue].
+ */
+object TaskRowTokens {
+    val title = ThemedColor(light = 0xFF2E3036, dark = 0xFFD6D6D8)
+    val priority = ThemedColor(light = 0xFF862CE0, dark = 0xFFC49BF2)
+    val done = ThemedColor(light = 0xFFC4C5C8, dark = 0xFF46484E)
+
+    /** Эмодзи списка и колокольчик у выполненной и прошедшей. */
+    const val FADED_ICON_ALPHA = 0.45f
+}
+
 object TaskCanvasTokens {
     /** Неделя, #249: высокий приоритет и его выполненное состояние. */
     val priority = PriorityTokens.high.content

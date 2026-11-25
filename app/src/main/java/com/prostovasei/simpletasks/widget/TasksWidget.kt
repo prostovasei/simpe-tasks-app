@@ -202,9 +202,9 @@ internal const val MAX_CHILDREN = 10
 @Composable
 private fun DayTitle(day: WidgetDay, today: LocalDate, isFirst: Boolean, progress: DayProgress? = null, count: Int? = null) {
     val title = widgetDayTitle(LocalContext.current, day, today)
-    val color = if (title.isPast) LocalWidgetColors.current.overdue else LocalWidgetColors.current.textPrimary
-    // Итерация 25 (вариант PM «А»): дата группы крупнее — 14 sp, метка «Сегодня» — 12 sp.
-    val style = TextStyle(color = color, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+    // #334: «вт 25 ноя · Сегодня» одной строкой 12 sp средним серым; прошедший день — красным.
+    val color = if (title.isPast) LocalWidgetColors.current.overdue else LocalWidgetColors.current.textSecondary
+    val style = TextStyle(color = color, fontSize = SizeTokens.DAY_HEAD_SP.sp, fontWeight = FontWeight.Medium)
     Row(
         modifier = GlanceModifier.fillMaxWidth().padding(
             start = SizeTokens.WIDGET_EDGE.dp,
@@ -213,18 +213,7 @@ private fun DayTitle(day: WidgetDay, today: LocalDate, isFirst: Boolean, progres
         ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(title.text, style = style, maxLines = 1)
-        if (title.relative != null) {
-            Spacer(GlanceModifier.width(SpacingTokens.XXS.dp))
-            Box(
-                GlanceModifier
-                    .then(if (LocalWidgetColors.current === TaskWidgetColors) GlanceModifier else GlanceModifier.background(LocalWidgetColors.current.surface))
-                    .cornerRadius(RadiusTokens.SM.dp)
-                    .padding(horizontal = SpacingTokens.XXS.dp, vertical = SizeTokens.HAIRLINE.dp),
-            ) {
-                Text(title.relative, style = style.copy(fontSize = 12.sp), maxLines = 1)
-            }
-        }
+        Text(title.relative?.let { "${title.text} · $it" } ?: title.text, style = style, maxLines = 1)
         if (progress != null) {
             DayProgressBar(progress)
         } else if (count != null) {
@@ -389,7 +378,7 @@ private fun Rail(row: WidgetRow.Task, line: Line) {
             LineSegment(line.top, GlanceModifier.defaultWeight())
             Box(GlanceModifier.size(nodeSize.dp), contentAlignment = Alignment.Center) {
                 Image(
-                    ImageProvider(if (compact) item.canvasNodeIcon(false) else if (repeat) R.drawable.ic_repeat_round else if (done) R.drawable.ic_widget_node_fill else R.drawable.ic_widget_node_ring),
+                    ImageProvider(if (compact) item.canvasNodeIcon(false) else if (repeat) R.drawable.ic_task_repeat_round else if (done) R.drawable.ic_widget_node_fill else R.drawable.ic_widget_node_ring),
                     contentDescription = label,
                     colorFilter = ColorFilter.tint(color),
                     modifier = GlanceModifier.size(nodeSize.dp),

@@ -6,6 +6,7 @@ import android.os.Build
 import com.prostovasei.simpletasks.ui.common.canvasNodeIcon
 import com.prostovasei.simpletasks.ui.common.canvasTextColor
 import com.prostovasei.simpletasks.designsystem.tokens.TaskCanvasTokens
+import com.prostovasei.simpletasks.designsystem.tokens.TaskRowTokens
 import android.text.SpannableString
 import android.text.Spanned
 import android.text.style.StrikethroughSpan
@@ -41,7 +42,7 @@ object WidgetRows {
     fun views(context: Context, line: WidgetLine, model: WidgetModel, liveClock: Boolean = true): RemoteViews = when (line) {
         is WidgetLine.Overdue -> overdue(context, line, model.filter == WidgetFilter.All)
         is WidgetLine.Title -> title(context, line, model)
-        is WidgetLine.Task -> task(context, line, model.filter)
+        is WidgetLine.Task -> task(context, line, model)
         is WidgetLine.Now -> now(context, line, liveClock, model.filter == WidgetFilter.All)
         WidgetLine.Tail -> RemoteViews(context.packageName, R.layout.widget_row_tail)
     }
@@ -49,14 +50,15 @@ object WidgetRows {
     private fun overdue(context: Context, line: WidgetLine.Overdue, flat: Boolean): RemoteViews =
         RemoteViews(context.packageName, if (flat) R.layout.widget_row_overdue_flat else R.layout.widget_row_overdue).apply {
             val entry = line.entry
-            val text = if (entry.count > 0) context.getString(R.string.overdue_count, entry.count) else context.getString(R.string.overdue_title)
+            // #334: «Просрочено» 12 sp, без стрелки сворачивания (сворачивает нажатие на подпись), число — справа.
             topPadding(context, R.id.overdue_root, line.isFirst)
-            setTextViewText(R.id.overdue_text, text)
-            setImageViewResource(R.id.overdue_fold, if (entry.collapsed) R.drawable.ic_fold_closed else R.drawable.ic_fold_open)
+            setTextViewText(R.id.overdue_text, context.getString(R.string.overdue_title))
             setContentDescription(
-                R.id.overdue_fold,
+                R.id.overdue_toggle,
                 context.getString(if (entry.collapsed) R.string.overdue_fold_closed else R.string.overdue_fold_open),
             )
+            visible(R.id.overdue_fold, false)
+            setTextViewText(R.id.overdue_count, if (entry.count > 0) entry.count.toString() else "")
             setOnClickFillInIntent(R.id.overdue_toggle, fillIn(WidgetClicks.TOGGLE_OVERDUE, null))
             visible(R.id.overdue_move, entry.count > 0)
             setOnClickFillInIntent(R.id.overdue_move, fillIn(if (entry.count > 0) WidgetClicks.MOVE_OVERDUE else WidgetClicks.NONE, null))
@@ -65,14 +67,12 @@ object WidgetRows {
     private fun title(context: Context, line: WidgetLine.Title, model: WidgetModel): RemoteViews =
         RemoteViews(context.packageName, if (model.filter == WidgetFilter.All) R.layout.widget_row_title_flat else R.layout.widget_row_title).apply {
             val title = widgetDayTitle(context, line.day, model.today)
-            // Прошедший день — красным.
-            val color = (if (title.isPast) ColorTokens.overdue else ColorTokens.textPrimary).forTaskCanvas(model.filter == WidgetFilter.All)
+            // #334: «вт 25 ноя · Сегодня» одной строкой 12 sp средним серым; прошедший день — красным.
+            val color = (if (title.isPast) ColorTokens.overdue else ColorTokens.textSecondary).forTaskCanvas(model.filter == WidgetFilter.All)
             topPadding(context, R.id.title_root, line.isFirst)
-            setTextViewText(R.id.title_text, title.text)
+            setTextViewText(R.id.title_text, title.relative?.let { "${title.text} · $it" } ?: title.text)
             color(R.id.title_text, "setTextColor", color)
-            visible(R.id.title_chip, title.relative != null)
-            setTextViewText(R.id.title_chip, title.relative.orEmpty())
-            color(R.id.title_chip, "setTextColor", color)
+            visible(R.id.title_chip, false)
             val progress = line.progress
             // Число задач дня; у «Сегодня» вместо него прогресс.
             visible(R.id.title_count, progress == null)
@@ -84,61 +84,43 @@ object WidgetRows {
         }
 
     /**
-     * Строка задачи. У выполненной своя разметка (*_done): залитый кружок с галочкой, «Снять отметку», бледные название,
-     * значки и квадратик — уже в ней. Так строки выполненных и невыполненных не перекрашиваются друг в друга, и в пакете
-     * нет этих значений у каждой строки.
+     * Строка задачи (#334): одна разметка [R.layout.widget_row_line] — кружок 18, эмодзи списка, название 14 sp полужирное, колокольчик 14,
+     * время 13 sp справа («14:00–16:00» одной строкой; у просроченной в блоке «Просрочено» — день недели или дата). Высокий приоритет —
+     * ярким фиолетовым, выполненные и прошедшие — «ещё светлее» ([TaskRowTokens]). Строка пишет свой вид целиком: лаунчер перекрашивает
+     * уже показанные строки других задач.
      */
-    private fun task(context: Context, line: WidgetLine.Task, filter: WidgetFilter): RemoteViews {
+    private fun task(context: Context, line: WidgetLine.Task, model: WidgetModel): RemoteViews {
         val row = line.row
         val item = row.item
         val done = item.showsDone
-        // Итерация 47: будущий повтор не тусклый — тусклая только прошедшая задача.
-        val faded = row.past
-        val flat = filter == WidgetFilter.All
-        val layout = when {
-            done -> if (flat) R.layout.widget_row_task_done_flat else R.layout.widget_row_task_done
-            else -> if (flat) R.layout.widget_row_task_flat else R.layout.widget_row_task
-        }
-        return RemoteViews(context.packageName, layout).apply {
-            val (textColor, textAlpha) = when {
-                flat -> item.canvasTextColor(faded) to 1f
-                done -> ColorTokens.textPrimary to DONE_ALPHA
-                faded -> ColorTokens.textSecondary to 1f
-                else -> ColorTokens.textPrimary to 1f
+        val muted = done || row.past
+        val flat = model.filter == WidgetFilter.All
+        return RemoteViews(context.packageName, R.layout.widget_row_line).apply {
+            val text = when {
+                muted -> TaskRowTokens.done
+                item.priority == Priority.HIGH -> TaskRowTokens.priority
+                else -> TaskRowTokens.title
             }
-            // Время: красное и мельче у прошедшего дня; конец периода — серым.
-            time(R.id.row_start, row.start, if (line.overdue && !flat) ColorTokens.overdue else textColor, if (line.overdue && !flat) 1f else textAlpha, line.overdue, flat)
-            time(R.id.row_end, row.end, if (flat) textColor else if (line.overdue) ColorTokens.overdue else ColorTokens.textSecondary, if (flat) textAlpha else 1f, line.overdue, flat)
-            visible(R.id.row_time_gap, row.end != null)
+            paint(R.id.row_title, "setTextColor", text, flat)
+            setTextViewText(R.id.row_title, item.title)
+            setOnClickFillInIntent(R.id.row_plaque, fillIn(WidgetClicks.OPEN, item.taskId))
 
-            // Шкала: линия вверх и вниз, кружок цвета приоритета (у прошедшей — серый). Итерация 47: у повторяющейся — знак повтора
-            // вместо кружка (у периода — вытянутый), выполненная высокого приоритета — тусклый фиолетовый.
-            setViewVisibility(R.id.row_line_top, View.INVISIBLE /* #331: без линии */)
-            setViewVisibility(R.id.row_line_bottom, View.INVISIBLE)
-            color(
-                R.id.row_node,
-                "setColorFilter",
-                when {
-                    flat && (done || item.priority == Priority.HIGH) -> item.canvasTextColor(faded)
-                    flat -> ColorTokens.inactive
-                    faded && !done -> ColorTokens.inactive
-                    done -> doneFill(item.priority)
-                    else -> ring(item.priority)
-                }.forTaskCanvas(flat),
-            )
-            // Проверка PM (0.47.0): у выполненной повторяющейся галочки нет — знак повтора остаётся тусклым. Рисунок и галочка
-            // пишутся у каждой строки: строки одного макета переиспользуются лаунчером.
+            // Кружок: у повторяющейся — знак повтора (стрелки-треугольники), у выполненной — заливка с галочкой.
+            val ring = when {
+                muted || item.priority == Priority.HIGH -> text
+                else -> ColorTokens.inactive
+            }
             setImageViewResource(
                 R.id.row_node,
                 when {
-                    flat -> item.canvasNodeIcon(false)
-                    item.isRecurring -> R.drawable.ic_repeat_round
-                    else -> if (done) R.drawable.ic_widget_node_fill else R.drawable.ic_widget_node_ring
+                    item.isRecurring -> R.drawable.ic_task_repeat_round
+                    done -> R.drawable.ic_widget_node_fill
+                    else -> R.drawable.ic_widget_node_ring
                 },
             )
-            if (done) visible(R.id.row_node_check, !item.isRecurring)
-            // У будущего повтора кружок ничего не отмечает (как раньше): пустое нажатие и без подписи.
-            if (!done) setContentDescription(R.id.row_node, if (item.isGhost) null else context.getString(R.string.widget_complete))
+            paint(R.id.row_node, "setColorFilter", ring, flat)
+            visible(R.id.row_node_check, done && !item.isRecurring)
+            setContentDescription(R.id.row_node, if (item.isGhost) null else context.getString(if (done) R.string.task_uncomplete else R.string.widget_complete))
             val check = when {
                 item.isGhost -> WidgetClicks.NONE
                 done -> WidgetClicks.UNCOMPLETE
@@ -146,38 +128,33 @@ object WidgetRows {
             }
             setOnClickFillInIntent(R.id.row_check, fillIn(check, item.id.takeUnless { item.isGhost }))
 
-            // Плашка: название (выполненная — зачёркнута), значки справа налево — список, колокольчик.
-            setTextViewText(
-                R.id.row_title,
-                if (done && !flat) SpannableString(item.title).apply { setSpan(StrikethroughSpan(), 0, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE) } else item.title,
-            )
-            if (!done || flat) color(R.id.row_title, "setTextColor", textColor.forTaskCanvas(flat))
-            setOnClickFillInIntent(R.id.row_plaque, fillIn(WidgetClicks.OPEN, item.taskId))
-            val masks = item.reminder?.let { ReminderIconMasks.of(it, (SizeTokens.WIDGET_REMINDER_ICON * context.resources.displayMetrics.density).roundToInt()) }
+            val iconAlpha = if (muted) TaskRowTokens.FADED_ICON_ALPHA else 1f
+            setTextViewText(R.id.row_emoji, item.listEmoji)
+            paint(R.id.row_emoji, "setTextColor", ColorTokens.textPrimary, flat, iconAlpha)
+            val masks = item.reminder?.let { ReminderIconMasks.of(it, (SizeTokens.TASK_BELL * context.resources.displayMetrics.density).roundToInt()) }
             visible(R.id.row_bell, masks != null)
             if (masks != null) {
                 setImageViewBitmap(R.id.row_bell_main, masks.bell)
+                paint(R.id.row_bell_main, "setColorFilter", ColorTokens.textSecondary, flat, iconAlpha)
                 visible(R.id.row_bell_early, masks.early != null)
                 masks.early?.let { setImageViewBitmap(R.id.row_bell_early, it) }
             }
-            // Эмодзи списка (итерация 47) вместо цветного квадратика со значком.
-            visible(R.id.row_emoji, true)
-            setTextViewText(R.id.row_emoji, item.listEmoji)
-            if (!flat) setViewLayoutWidth(R.id.row_time, maxOf(context.resources.getDimensionPixelSize(R.dimen.widget_time), canvasTimeWidthPx(context)).toFloat(), TypedValue.COMPLEX_UNIT_PX)
-            if (flat) {
-                setViewLayoutWidth(R.id.row_time, canvasTimeWidthPx(context).toFloat(), TypedValue.COMPLEX_UNIT_PX)
-                if (done) taskCanvasColor(R.id.row_emoji, "setTextColor", ColorTokens.textPrimary, TaskCanvasTokens.DONE_EMOJI_ALPHA)
+
+            val date = (line.day as? WidgetDay.On)?.date
+            val right = when {
+                line.overdue && date != null -> WidgetDates.overdueDay(date, model.today)
+                row.start == null -> null
+                else -> row.end?.let { "${row.start}–$it" } ?: row.start
             }
+            visible(R.id.row_time, right != null)
+            setTextViewText(R.id.row_time, right.orEmpty())
+            paint(R.id.row_time, "setTextColor", if (line.overdue && !done) ColorTokens.overdue else text, flat)
         }
     }
 
-    private fun RemoteViews.time(id: Int, text: String?, color: ThemedColor, alpha: Float, small: Boolean, flat: Boolean) {
-        visible(id, text != null)
-        if (text == null) return
-        setTextViewText(id, text)
-        color(id, "setTextColor", color.forTaskCanvas(flat), alpha)
-        setTextViewTextSize(id, TypedValue.COMPLEX_UNIT_SP, if (small && !flat) OVERDUE_TIME_SP else TIME_SP)
-    }
+    /** Цвет строки: на холсте «Все» — всегда светлый, в остальных лентах — по теме системы. */
+    private fun RemoteViews.paint(id: Int, method: String, color: ThemedColor, flat: Boolean, alpha: Float = 1f) =
+        if (flat) taskCanvasColor(id, method, color, alpha) else color(id, method, color, alpha)
 
     private fun now(context: Context, line: WidgetLine.Now, liveClock: Boolean, flat: Boolean): RemoteViews =
         RemoteViews(context.packageName, if (flat) R.layout.widget_row_now_flat else R.layout.widget_row_now).apply {

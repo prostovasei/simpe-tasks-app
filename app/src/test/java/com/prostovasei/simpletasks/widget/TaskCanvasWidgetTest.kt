@@ -37,14 +37,16 @@ class TaskCanvasWidgetTest {
     private fun model(filter: WidgetFilter) = WidgetModel(filter, null, today,
         listOf(WidgetDayBlock(WidgetDay.On(today), listOf(item()))))
 
+    /** #334: кружок 18 → 10 → эмодзи 16 → 8 → название; время справа одной строкой тем же цветом; без зачёркивания. */
     @Test
-    fun upcomingUsesTwoDpGapsForRegularRepeatAndPeriodWithMatchingTimeStyle() {
+    fun rowHasCheckEmojiTitleAndTimeOnTheRight() {
         val variants = listOf(
             item(), item().copy(isRecurring = true), item(Priority.HIGH),
             item(Priority.HIGH).copy(isDone = true), item().copy(isDone = true),
             item().copy(due = DueText(DayLabel.Today, "10:00–11:00")),
             item().copy(due = DueText(DayLabel.Today, "10:00–11:00"), isRecurring = true),
         )
+        val res = context.resources
         variants.forEach { task ->
             val all = model(WidgetFilter.All).copy(days = listOf(WidgetDayBlock(WidgetDay.On(today), listOf(task))))
             val line = all.lines(dayNames(context), withTail = false).filterIsInstance<WidgetLine.Task>().single()
@@ -52,36 +54,32 @@ class TaskCanvasWidgetTest {
             val root = views.apply(context, FrameLayout(context))
             root.measure(View.MeasureSpec.makeMeasureSpec(800, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(160, View.MeasureSpec.AT_MOST))
             root.layout(0, 0, root.measuredWidth, root.measuredHeight)
-            assertEquals(context.resources.getDimensionPixelSize(R.dimen.widget_row), root.measuredHeight)
+            assertEquals(res.getDimensionPixelSize(R.dimen.widget_row), root.measuredHeight)
             fun x(view: View): Int {
                 var result = view.left
                 var parent = view.parent
                 while (parent is View) { result += parent.left; parent = parent.parent }
                 return result
             }
-            val time = root.findViewById<View>(R.id.row_time)
+            val time = root.findViewById<TextView>(R.id.row_time)
             val node = root.findViewById<View>(R.id.row_node)
             val title = root.findViewById<TextView>(R.id.row_title)
-            val start = root.findViewById<TextView>(R.id.row_start)
-            val gap = context.resources.getDimensionPixelSize(R.dimen.widget_check_gap) // #331: 8 dp
-            assertEquals(gap, x(node) - x(time) - time.width)
-            assertEquals(gap, x(title) - x(node) - node.width)
-            assertEquals(context.resources.getDimensionPixelSize(R.dimen.widget_week_check), node.width)
-            assertEquals(title.currentTextColor, start.currentTextColor)
-            assertTrue(start.typeface.isBold && title.typeface.isBold)
-            assertTrue(start.width >= kotlin.math.ceil(start.paint.measureText("10:00")).toInt())
-            if (line.row.isPeriod) {
-                assertEquals(title.currentTextColor, root.findViewById<TextView>(R.id.row_end).currentTextColor)
-                assertEquals(node.width, node.height)
-            }
+            assertEquals(res.getDimensionPixelSize(R.dimen.widget_task_check), node.width)
+            assertEquals(node.width, node.height)
+            val emoji = res.getDimensionPixelSize(R.dimen.widget_task_check_gap) + res.getDimensionPixelSize(R.dimen.widget_task_emoji) +
+                res.getDimensionPixelSize(R.dimen.widget_task_emoji_gap)
+            assertEquals(emoji, x(title) - x(node) - node.width)
+            assertTrue("время справа", x(time) >= x(title) + title.width)
+            assertEquals(task.due?.time, time.text.toString())
+            assertEquals(title.currentTextColor, time.currentTextColor)
             assertTrue(title.text !is Spanned || (title.text as Spanned).getSpans(0, title.length(), StrikethroughSpan::class.java).isEmpty())
             views.reapply(context, root)
-            assertEquals(title.currentTextColor, start.currentTextColor)
+            assertEquals(title.currentTextColor, time.currentTextColor)
         }
     }
 
     @Test
-    fun periodAndOrdinaryReuseRoundLayoutWithoutStaleEndTime() {
+    fun periodAndOrdinaryReuseRowWithoutStaleTime() {
         listOf(WidgetFilter.All, WidgetFilter.Inbox).forEach { filter ->
             fun views(period: Boolean) = model(filter).let { model ->
                 val task = item().copy(due = DueText(DayLabel.Today, if (period) "10:00–11:00" else "10:00"))
@@ -90,14 +88,11 @@ class TaskCanvasWidgetTest {
             }
             val period = views(true)
             val root = period.apply(context, FrameLayout(context))
-            assertEquals(View.VISIBLE, root.findViewById<View>(R.id.row_end).visibility)
-            assertEquals("11:00", root.findViewById<TextView>(R.id.row_end).text.toString())
+            assertEquals("10:00–11:00", root.findViewById<TextView>(R.id.row_time).text.toString())
             views(false).reapply(context, root)
-            assertEquals(View.GONE, root.findViewById<View>(R.id.row_end).visibility)
-            assertEquals(View.GONE, root.findViewById<View>(R.id.row_time_gap).visibility)
+            assertEquals("10:00", root.findViewById<TextView>(R.id.row_time).text.toString())
             period.reapply(context, root)
-            assertEquals(View.VISIBLE, root.findViewById<View>(R.id.row_end).visibility)
-            assertEquals(View.VISIBLE, root.findViewById<View>(R.id.row_time_gap).visibility)
+            assertEquals("10:00–11:00", root.findViewById<TextView>(R.id.row_time).text.toString())
         }
     }
 
@@ -124,21 +119,22 @@ class TaskCanvasWidgetTest {
         assertEquals(bounds(R.drawable.ic_task_period_ring, 116), bounds(R.drawable.ic_task_period_repeat, 116))
     }
 
+    /** #334: одна разметка строки в «Все» и «Входящих»; на холсте «Все» — всегда светлые цвета ([TaskRowTokens]). */
     @Test
-    fun upcomingAndInboxKeepDistinctLayoutsAndReapplyKeepsFlatStyle() {
+    fun upcomingAndInboxShareRowAndReapplyKeepsCanvasColors() {
         val all = model(WidgetFilter.All)
         val line = all.lines(dayNames(context), withTail = false).filterIsInstance<WidgetLine.Task>().single()
         val flat = WidgetRows.views(context, line, all)
+        val inbox = WidgetRows.views(context, line, model(WidgetFilter.Inbox))
+        assertEquals(flat.layoutId, inbox.layoutId)
         var root = flat.apply(context, FrameLayout(context))
-        assertNull(root.findViewById<View>(R.id.row_plaque).background)
-        assertEquals(ColorTokens.textPrimary.light.toInt(), root.findViewById<TextView>(R.id.row_title).currentTextColor)
-        root = WidgetRows.views(context, line, model(WidgetFilter.Inbox)).apply(context, FrameLayout(context))
-        assertNotNull(root.findViewById<View>(R.id.row_plaque).background)
-        assertEquals(ColorTokens.textPrimary.dark.toInt(), root.findViewById<TextView>(R.id.row_title).currentTextColor)
+        assertEquals(com.prostovasei.simpletasks.designsystem.tokens.TaskRowTokens.title.light.toInt(), root.findViewById<TextView>(R.id.row_title).currentTextColor)
+        root = inbox.apply(context, FrameLayout(context))
+        val title = com.prostovasei.simpletasks.designsystem.tokens.TaskRowTokens.title
+        assertTrue(root.findViewById<TextView>(R.id.row_title).currentTextColor in setOf(title.light.toInt(), title.dark.toInt()))
         root = flat.apply(context, FrameLayout(context))
         flat.reapply(context, root)
-        assertNull(root.findViewById<View>(R.id.row_plaque).background)
-        assertEquals(ColorTokens.textPrimary.light.toInt(), root.findViewById<TextView>(R.id.row_title).currentTextColor)
+        assertEquals(title.light.toInt(), root.findViewById<TextView>(R.id.row_title).currentTextColor)
     }
 
     @Test

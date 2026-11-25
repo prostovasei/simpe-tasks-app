@@ -1,5 +1,9 @@
 package com.prostovasei.simpletasks.ui.feature.hub
 
+import com.prostovasei.simpletasks.ui.common.DayLabel
+import com.prostovasei.simpletasks.widget.WidgetDates
+import com.prostovasei.simpletasks.designsystem.components.OverdueHeader
+import com.prostovasei.simpletasks.designsystem.components.DayHeader
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -165,14 +169,27 @@ private fun HubTasks(state: HubState, onIntent: (TaskListIntent) -> Unit, onOpen
     val toggle: (TaskItem) -> Unit = { onIntent(TaskListIntent.ToggleComplete(it.id, it.isRecurring, it.showsDone)) }
     val open: (TaskItem) -> Unit = { onOpenTask(it.ghostOf ?: it.id) }
     val groups = listOf(
-        Triple(stringResource(R.string.hub_group_overdue), state.overdue, true),
-        Triple(stringResource(R.string.day_today), state.todayItems, false),
-        Triple(stringResource(R.string.day_tomorrow), state.tomorrowItems, false),
+        Triple(null, state.overdue, true),
+        Triple(today, state.todayItems, false),
+        Triple(today.plusDays(1), state.tomorrowItems, false),
     )
     LazyColumn(Modifier.fillMaxSize().testTag(TAG_HUB_TASKS)) {
-        groups.forEachIndexed { index, (label, items, late) ->
+        groups.forEachIndexed { index, (date, items, late) ->
             if (items.isEmpty()) return@forEachIndexed
-            item("hub-group-$index") { HubGroup(label, late) }
+            // #334: подписи как в «Предстоящем» — «Просрочено» красным с числом справа, дни 12 sp серым с полосой у «Сегодня».
+            item("hub-group-$index") {
+                if (date == null) {
+                    OverdueHeader(items.count { !it.showsDone }, collapsed = false, foldDescription = "", moveDescription = "", onToggle = null, onMoveToday = null)
+                } else {
+                    DayHeader(
+                        text = WidgetDates.header(date),
+                        relative = if (index == 1) days.day(DayLabel.Today) else days.day(DayLabel.Tomorrow),
+                        isOverdue = false,
+                        count = items.size,
+                        progress = if (index == 1) items.count { it.isDone } to items.size else null,
+                    )
+                }
+            }
             timelineItems(
                 items = items,
                 keyPrefix = "hub-$index",
@@ -184,16 +201,10 @@ private fun HubTasks(state: HubState, onIntent: (TaskListIntent) -> Unit, onOpen
                 onToggle = toggle,
                 onOpen = open,
                 dayLabels = late,
+                today = today,
             )
         }
     }
-}
-
-@Composable
-private fun HubGroup(label: String, late: Boolean) {
-    val colors = AppTheme.colors
-    Text(label, Modifier.fillMaxWidth().padding(start = (SizeTokens.WIDGET_TIME + SizeTokens.WIDGET_RAIL).dp + AppTheme.spacing.sm, top = AppTheme.spacing.xs),
-        style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = if (late) colors.overdue else colors.textSecondary)
 }
 
 @Composable
