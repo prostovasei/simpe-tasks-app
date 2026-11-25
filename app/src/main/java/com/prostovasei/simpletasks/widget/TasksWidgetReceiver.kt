@@ -128,7 +128,7 @@ class WidgetUpdater @Inject constructor(
     }
 
     private suspend fun refreshFinance() {
-        WidgetRenderer.widgetIds(context).filter { WidgetSelection.finance(context, it) }.forEach {
+        WidgetRenderer.widgetIds(context).filter { WidgetSelection.showsFinance(context, it) }.forEach {
             WidgetRenderer.render(context, it, "изменились финансы")
         }
     }

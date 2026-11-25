@@ -62,7 +62,7 @@ object WidgetRenderer {
     }
 
     internal suspend fun renderNewsWidgets(context: Context) {
-        widgetIds(context).filter { WidgetSelection.module(context, it) == WidgetModule.NEWS }
+        widgetIds(context).filter { WidgetSelection.module(context, it).let { m -> m == WidgetModule.NEWS || m == WidgetModule.HUB } }
             .forEach { render(context, it, "новости") }
     }
 
@@ -78,7 +78,8 @@ object WidgetRenderer {
             val filter = if (chosen == WidgetFilter.Week && Build.VERSION.SDK_INT < Build.VERSION_CODES.S) WidgetFilter.All else chosen
             val module = WidgetSelection.module(context, appWidgetId)
             val finance = module == WidgetModule.FINANCE
-            val model = if (module != WidgetModule.TASKS) WidgetModel(filter, null, context.widgetEntryPoint().time().today(), emptyList()) else context.widgetEntryPoint().observeModel(filter, WidgetSelection.weekPick(context, appWidgetId), WidgetSelection.weekFilter(context, appWidgetId)).first()
+            val model = if (module == WidgetModule.HUB) context.widgetEntryPoint().observeModel(WidgetFilter.All, WeekPick(null, null), WidgetSelection.weekFilter(context, appWidgetId)).first().forHub()
+                else if (module != WidgetModule.TASKS) WidgetModel(filter, null, context.widgetEntryPoint().time().today(), emptyList()) else context.widgetEntryPoint().observeModel(filter, WidgetSelection.weekPick(context, appWidgetId), WidgetSelection.weekFilter(context, appWidgetId)).first()
             val manager = AppWidgetManager.getInstance(context)
             val options = manager.getAppWidgetOptions(appWidgetId)
             // Прокручиваемая лента — только Android 12+: корень и строки — обычные элементы, Glance — нижняя панель поверх.
@@ -95,6 +96,7 @@ object WidgetRenderer {
             val views = when {
                 module == WidgetModule.HEALTH -> healthWidgetViews(context, model.today, glance, size)
                 module == WidgetModule.NEWS -> newsWidgetViews(context, appWidgetId, glance)
+                module == WidgetModule.HUB && scrollable -> hubWidgetViews(context, appWidgetId, model, glance, size)
                 finance -> financeWidgetViews(context, appWidgetId, glance, size)
                 scrollable -> widgetRootViews(context, appWidgetId, model, glance, size, scrollToToday = scrollToToday, scrollDays = scrollDays)
                 else -> glance
@@ -155,7 +157,8 @@ fun android.widget.RemoteViews.parcelBytes(): Int {
 }
 
 /** Выбранный в виджете список — свой у каждого виджета на рабочем столе. */
-internal enum class WidgetModule { TASKS, FINANCE, HEALTH, NEWS }
+/** #329: HUB — вкладка «Главная» (домик) в общем виджете. */
+internal enum class WidgetModule { TASKS, FINANCE, HEALTH, NEWS, HUB }
 
 object WidgetSelection {
     private const val PREFS = "widget_selection"
@@ -178,11 +181,21 @@ object WidgetSelection {
 
     fun finance(context: Context, id: Int) = module(context, id) == WidgetModule.FINANCE
 
+    /** #329: в виджете «Главная» полоса лимита и счета — обновлять вместе с финансами. */
+    internal fun showsFinance(context: Context, id: Int) = module(context, id).let { it == WidgetModule.FINANCE || it == WidgetModule.HUB }
+
+    /** #329: страница новостей виджета «Главная». */
+    internal fun hubPage(context: Context, id: Int): Int = prefs(context).getInt("hub_page_$id", 0)
+
+    internal fun setHubPage(context: Context, id: Int, page: Int) {
+        prefs(context).edit().putInt("hub_page_$id", page).commit()
+    }
+
     fun setFinance(context: Context, id: Int, finance: Boolean) =
         setModule(context, id, if (finance) WidgetModule.FINANCE else WidgetModule.TASKS)
 
     fun remove(context: Context, appWidgetId: Int) {
-        prefs(context).edit().remove("finance_$appWidgetId").remove("module_$appWidgetId").remove(key(appWidgetId)).remove(weekFilterKey(appWidgetId)).remove(weekKey(appWidgetId)).remove(monthKey(appWidgetId)).commit()
+        prefs(context).edit().remove("hub_page_$appWidgetId").remove("finance_$appWidgetId").remove("module_$appWidgetId").remove(key(appWidgetId)).remove(weekFilterKey(appWidgetId)).remove(weekKey(appWidgetId)).remove(monthKey(appWidgetId)).commit()
     }
 
     /** Выбор в виде «Неделя» (итерация 45): выбранная неделя и месяц мини-календаря этого виджета. */

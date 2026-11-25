@@ -34,6 +34,9 @@ internal object NewsWidgets {
         val manager = AppWidgetManager.getInstance(context)
         val ids = WidgetRenderer.widgetIds(context).filter { WidgetSelection.module(context, it) == WidgetModule.NEWS }.toIntArray()
         if (ids.isNotEmpty()) manager.notifyAppWidgetViewDataChanged(ids, R.id.widget_news_list)
+        // #329: в виджете «Главная» карточки — часть картинки виджета, их перерисовывает приёмник (страница не меняется).
+        WidgetRenderer.widgetIds(context).filter { WidgetSelection.module(context, it) == WidgetModule.HUB }
+            .forEach { context.sendBroadcast(WidgetActions.hubPage(context, it, 0)) }
     }
 }
 

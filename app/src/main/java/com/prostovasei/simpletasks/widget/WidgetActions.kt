@@ -1,5 +1,7 @@
 package com.prostovasei.simpletasks.widget
 
+import com.prostovasei.simpletasks.ui.feature.hub.hubNews
+
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -67,6 +69,14 @@ class WidgetActionReceiver : BroadcastReceiver() {
                         WidgetRenderer.refreshNews(context)
                     }
                 }
+                WidgetActions.HUB_PAGE -> {
+                    val id = intent.getIntExtra(WidgetActions.EXTRA_WIDGET_ID, -1)
+                    if (id !in WidgetRenderer.widgetIds(context) || WidgetSelection.module(context, id) != WidgetModule.HUB) return
+                    val delta = intent.getIntExtra("delta", 0)
+                    val pages = (hubNews(context).size + HUB_WIDGET_PAGE - 1) / HUB_WIDGET_PAGE
+                    if (delta != 0) WidgetSelection.setHubPage(context, id, hubPage(WidgetSelection.hubPage(context, id) + delta, pages))
+                    WidgetRenderer.render(context, id, "новости хаба")
+                }
                 WidgetActions.MODULE -> {
                     val id = intent.getIntExtra(WidgetActions.EXTRA_WIDGET_ID, -1)
                     if (id !in WidgetRenderer.widgetIds(context)) return
@@ -132,6 +142,7 @@ class WidgetActionReceiver : BroadcastReceiver() {
 object WidgetActions {
     const val REFRESH_NEWS = "com.prostovasei.simpletasks.widget.REFRESH_NEWS"
     const val MODULE = "com.prostovasei.simpletasks.widget.MODULE"
+    const val HUB_PAGE = "com.prostovasei.simpletasks.widget.HUB_PAGE"
     const val SWITCH = "com.prostovasei.simpletasks.widget.SWITCH"
     const val COMPLETE = "com.prostovasei.simpletasks.widget.COMPLETE"
     const val UNCOMPLETE = "com.prostovasei.simpletasks.widget.UNCOMPLETE"
@@ -153,6 +164,13 @@ object WidgetActions {
         .setData("simpletasks://widget/$id/module/${module.name}".toUri())
         .putExtra(EXTRA_WIDGET_ID, id)
         .putExtra("module", module.name)
+
+    /** #329: стрелки ‹ › новостей виджета «Главная»; [delta] = 0 — просто перерисовать. */
+    internal fun hubPage(context: Context, id: Int, delta: Int): Intent = Intent(context, WidgetActionReceiver::class.java)
+        .setAction(HUB_PAGE)
+        .setData("simpletasks://widget/$id/hub-page/$delta".toUri())
+        .putExtra(EXTRA_WIDGET_ID, id)
+        .putExtra("delta", delta)
 
     internal fun refreshNews(context: Context, id: Int) = Intent(context, WidgetActionReceiver::class.java)
         .setAction(REFRESH_NEWS)

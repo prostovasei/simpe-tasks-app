@@ -869,6 +869,8 @@
     <string name="hub_group_overdue">Просрочено</string>
     <string name="hub_no_tasks">На сегодня и завтра задач нет</string>
     <string name="hub_add_task_button">+ Задача</string>
+    <string name="hub_news_prev">Предыдущие новости</string>
+    <string name="hub_news_next">Следующие новости</string>
     <string name="hub_news_page">Новости, страница %1$d из %2$d</string>
     <string name="news_refresh">Обновить новости</string>
     <string name="news_failed">Не удалось обновить новости. Попробуйте ещё раз.</string>

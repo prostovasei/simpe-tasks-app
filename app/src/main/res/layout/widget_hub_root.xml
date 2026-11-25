@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Виджет «Главная» (#329, этап 2): сверху полоса лимита и счета, посередине прокручиваемый список задач
+  «Просрочено · Сегодня · Завтра», внизу новости 2 × 2 со стрелками ‹ › (свайпа вбок в виджетах нет), ниже — панель.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/widget_frame"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_task_root_bg"
+    android:clipToOutline="true"
+    tools:ignore="PrivateResource"
+    tools:targetApi="31">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginBottom="@dimen/widget_bar"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:id="@+id/widget_hub_finance"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="@dimen/widget_edge"
+            android:orientation="vertical" />
+
+        <ListView
+            android:id="@+id/widget_hub_list"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginStart="@dimen/widget_list_edge"
+            android:divider="@null"
+            android:dividerHeight="0dp"
+            android:fadingEdgeLength="0dp"
+            android:listSelector="@android:color/transparent"
+            android:requiresFadingEdge="none"
+            style="@style/Glance.AppWidget.List" />
+
+        <TextView
+            android:id="@+id/widget_hub_empty"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="@string/hub_no_tasks"
+            android:textColor="@color/widget_flat_text_secondary"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
+        <LinearLayout
+            android:id="@+id/widget_hub_news"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="@dimen/widget_edge"
+            android:paddingTop="6dp">
+
+            <LinearLayout android:id="@+id/widget_hub_news_row1" android:layout_width="match_parent"
+                android:layout_height="58dp" android:orientation="horizontal" />
+
+            <LinearLayout android:id="@+id/widget_hub_news_row2" android:layout_width="match_parent"
+                android:layout_height="58dp" android:layout_marginTop="6dp" android:orientation="horizontal" />
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="28dp"
+                android:gravity="center" android:orientation="horizontal">
+                <ImageView android:id="@+id/widget_hub_prev" android:layout_width="40dp" android:layout_height="28dp"
+                    android:scaleType="center" android:src="@drawable/ic_hub_prev"
+                    android:contentDescription="@string/hub_news_prev" />
+                <TextView android:id="@+id/widget_hub_dots" android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:letterSpacing="0.3"
+                    android:textColor="@color/widget_flat_text_secondary" android:textSize="10sp" />
+                <ImageView android:id="@+id/widget_hub_next" android:layout_width="40dp" android:layout_height="28dp"
+                    android:scaleType="center" android:src="@drawable/ic_hub_next"
+                    android:contentDescription="@string/hub_news_next" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+
+    <FrameLayout
+        android:id="@+id/widget_hub_bar"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/widget_bar"
+        android:layout_gravity="bottom" />
+</FrameLayout>
