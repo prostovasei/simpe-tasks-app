@@ -515,7 +515,9 @@ internal fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boole
     val tabsWidth = WidgetModule.entries.size * SizeTokens.WIDGET_TAB_CELL
     val fullBarWidth = 2 * (dateAndUpdate + SizeTokens.WIDGET_EDGE + SizeTokens.WIDGET_OPEN_GAP_MIN) + tabsWidth
     val compact = LocalSize.current.width < maxOf(SizeTokens.WIDGET_MODULE_BAR_THRESHOLD, fullBarWidth).dp
-    val compactTabsWidth = WidgetModule.entries.size * SizeTokens.WIDGET_MODULE_COMPACT_CELL
+    // #329: пять вкладок; на самом узком виджете ячейки сжимаются, чтобы все вкладки поместились рядом с «+».
+    val compactTabsWidth = minOf(WidgetModule.entries.size * SizeTokens.WIDGET_MODULE_COMPACT_CELL,
+        LocalSize.current.width.value.toInt() - SizeTokens.WIDGET_MODULE_COMPACT_ADD - 2 * SizeTokens.WIDGET_EDGE)
     val baseSide = if (compact) SizeTokens.WIDGET_MODULE_COMPACT_ADD else SizeTokens.WIDGET_ADD_W
     // #95: микрофон рядом с «+» только на вкладке «Задачи». Широкая панель — «+» сужается (М1); компактная — микрофон,
     // только если он помещается рядом с «+» и вкладками, иначе панель прежняя (К2).
@@ -546,12 +548,12 @@ internal fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boole
                         WidgetModule.FINANCE -> R.string.finance_add
                         WidgetModule.HEALTH -> R.string.health_add
                         WidgetModule.NEWS -> R.string.news_refresh
-                        WidgetModule.TASKS -> R.string.add_task
+                        WidgetModule.TASKS, WidgetModule.HUB -> R.string.add_task
                     }) }
                     .clickable(if (module == WidgetModule.NEWS) actionSendBroadcast(WidgetActions.refreshNews(context, appWidgetId)) else actionStartActivity(when (module) {
                         WidgetModule.FINANCE -> widgetPopupIntent(context, appWidgetId, true)
                         WidgetModule.HEALTH -> widgetPopupIntent(context, appWidgetId, false, health = true)
-                        WidgetModule.TASKS, WidgetModule.NEWS -> quickAddIntent(context, model.filter)
+                        WidgetModule.TASKS, WidgetModule.NEWS, WidgetModule.HUB -> quickAddIntent(context, model.filter)
                     })),
                 contentAlignment = Alignment.Center,
             ) {
@@ -608,6 +610,9 @@ internal fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boole
                 else -> R.string.widget_all
             }
             val tasksActive = module == WidgetModule.TASKS
+            // #329: домик «Главная» — первая вкладка.
+            SwitchTab(R.drawable.ic_module_hub, context.getString(R.string.module_hub), module == WidgetModule.HUB,
+                actionSendBroadcast(WidgetActions.module(context, appWidgetId, WidgetModule.HUB)))
             SwitchTab(taskIcon, "${context.getString(R.string.module_tasks)} · ${context.getString(taskLabel)}", tasksActive,
                 if (tasksActive) actionStartActivity(widgetPopupIntent(context, appWidgetId, false))
                 else actionSendBroadcast(WidgetActions.module(context, appWidgetId, WidgetModule.TASKS)))

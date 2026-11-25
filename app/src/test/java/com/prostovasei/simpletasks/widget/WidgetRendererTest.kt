@@ -189,14 +189,14 @@ class WidgetRendererTest {
             val finance = find(if (module == WidgetModule.FINANCE) "Финансы, выбрано" else "Финансы")
             val date = find(if (module == WidgetModule.TASKS) description else WidgetDates.bar(today, withWeekday = true))
             val update = find("Обновление")
-            assertTrue(abs(center(finance) - 178 * density) <= 1)
+            assertTrue(abs(center(finance) - 196 * density) <= 1) // #329: перед «Финансами» — домик и «Задачи»
             assertTrue(abs(center(date) - 326 * density) <= 1)
             assertTrue(abs(center(update) - 368 * density) <= 1)
             val gaps = ArrayList<View>()
             bar.findViewsWithText(gaps, "Открыть приложение", View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
-            // #95: на «Задачах» слева «+» 40 и микрофон 40 — левая полоса равна правой, вкладки по центру.
-            val left = if (module == WidgetModule.TASKS) 34 else 54
-            assertEquals(listOf((left * density).toInt(), (34 * density).toInt()), gaps.map { it.width })
+            // #95: на «Задачах» слева «+» 40 и микрофон 40 — левая полоса равна правой, вкладки по центру. #329: пять вкладок — полосы уже.
+            val left = if (module == WidgetModule.TASKS) 16 else 36
+            assertEquals(listOf((left * density).toInt(), (16 * density).toInt()), gaps.map { it.width })
             assertTrue(gaps.all { gap ->
                 gap.height == height && generateSequence(gap) { it.parent as? View }.take(3).any { it.hasOnClickListeners() }
             })
@@ -222,11 +222,11 @@ class WidgetRendererTest {
             bar.layout(0, 0, w, h)
             val gaps = ArrayList<View>()
             bar.findViewsWithText(gaps, "Открыть приложение", View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
-            // #95: на 240 dp рядом с «+» помещается микрофон (44 + 4 + 40), свободная полоса 16 dp; на 180 dp микрофона и полосы нет.
-            assertEquals(if (width == 180) emptyList<Int>() else listOf((16 * density).toInt()), gaps.map { it.width })
+            // #329: пять вкладок по 31 dp — на 240 dp микрофон (44 + 4 + 40) уже не помещается, остаётся полоса 29 dp; на 180 dp полосы нет.
+            assertEquals(if (width == 180) emptyList<Int>() else listOf((29 * density).toInt()), gaps.map { it.width })
             val mic = ArrayList<View>()
             bar.findViewsWithText(mic, "Создать задачу голосом", View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
-            assertEquals(width != 180, mic.isNotEmpty())
+            assertEquals(false, mic.isNotEmpty())
             assertTrue(!bar.hasOnClickListeners())
         }
     }

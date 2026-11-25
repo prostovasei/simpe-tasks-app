@@ -35,7 +35,10 @@ class WidgetVoiceTest {
 
     @Test fun narrowestTasksBarHidesMic() = bar(180, WidgetModule.TASKS, present = false)
 
-    @Test fun micAppearsFrom224() = bar(224, WidgetModule.TASKS, present = true)
+    // #329: с пятой вкладкой (домик) микрофон помещается с 255 dp (44 + 4 + 40 + 5 × 31 + 2 × 6).
+    @Test fun micAppearsFrom256() = bar(256, WidgetModule.TASKS, present = true)
+
+    @Test fun noMicAt240() = bar(240, WidgetModule.TASKS, present = false)
 
     @Test fun financeHasNoMic() = bar(392, WidgetModule.FINANCE, present = false)
 
