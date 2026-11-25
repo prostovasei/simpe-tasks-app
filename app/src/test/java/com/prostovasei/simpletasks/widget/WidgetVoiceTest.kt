@@ -15,7 +15,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
-/** #95: микрофон рядом с «+» — только на вкладке «Задачи»; на самом узком виджете не помещается и скрыт (К2). */
+/** #95 → #336: микрофона в панели виджета больше нет (капсула: дата, «Разделы», «Настройки», «+»); окно голосового ввода по адресу осталось. */
 @RunWith(RobolectricTestRunner::class)
 class WidgetVoiceTest {
     private val context: Context = ApplicationProvider.getApplicationContext()
@@ -35,4 +35,16 @@ class WidgetVoiceTest {
     @Test fun narrowTasksBarHasNoMic() = bar(180, WidgetModule.TASKS, present = false)
 
     @Test fun financeHasNoMic() = bar(392, WidgetModule.FINANCE, present = false)
+
+    // Окно голосового ввода поверх рабочего стола осталось (адрес `simpletasks://voice/…`): кнопки в капсуле нет, путь проверяется отдельно.
+    @Test
+    fun voiceIntentOpensPopupLikePlus() {
+        val all = voiceIntent(context, WidgetFilter.All)
+        assertEquals(TaskPopupActivity::class.java.name, all.component?.className)
+        assertTrue(all.getBooleanExtra(MainActivity.EXTRA_VOICE, false))
+        assertTrue("Вид «Все» — на сегодня, как «+»", all.getBooleanExtra(MainActivity.EXTRA_QUICK_ADD_TODAY, false))
+        val inbox = voiceIntent(context, WidgetFilter.Inbox)
+        assertEquals(false, inbox.getBooleanExtra(MainActivity.EXTRA_QUICK_ADD_TODAY, true))
+        assertTrue("У каждого вида свой адрес", all.data != inbox.data)
+    }
 }
