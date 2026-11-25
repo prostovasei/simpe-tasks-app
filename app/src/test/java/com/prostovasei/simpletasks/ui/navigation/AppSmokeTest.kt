@@ -12,9 +12,11 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import com.prostovasei.simpletasks.ui.feature.task.TAG_QUICK_SCRIM
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.click
@@ -127,7 +129,7 @@ class AppSmokeTest {
         composeRule.onNodeWithText("Обновление").assertDoesNotExist()
         composeRule.onNodeWithContentDescription("Назад").performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists(TAG_APP_SETTINGS) }
-        composeRule.onNodeWithTag(TAG_SETTINGS_APP).performClick()
+        composeRule.onNodeWithTag(TAG_SETTINGS_APP).performScrollTo().performClick() // #340: на маленьком экране пункт ниже строки «Привычки»
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists(TAG_APP_INFO) }
         composeRule.onNodeWithText("Обновление").assertExists()
         composeRule.onNodeWithContentDescription("Назад").performClick()
@@ -233,6 +235,28 @@ class AppSmokeTest {
     }
 
     /** Здоровье (#257): третий модуль — первая запись веса, вторая заменяет на ту же дату, настройки, возврат в задачи. */
+    /** #340: раздел «Привычки» — пустой экран, новая привычка через «+», отметка, карточка с серией, возврат в задачи. */
+    @Test
+    fun habitsCreateCheckAndOpenCard() {
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Всё сделано") }
+        switchModule("HABITS")
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists(com.prostovasei.simpletasks.ui.feature.habits.TAG_HABITS_EMPTY) }
+        add(ADD_HABIT)
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists(com.prostovasei.simpletasks.ui.feature.habits.TAG_HABIT_FORM) }
+        composeRule.onNodeWithTag(com.prostovasei.simpletasks.ui.feature.habits.TAG_HABIT_NAME).performTextReplacement("Зарядка")
+        composeRule.onNodeWithTag(com.prostovasei.simpletasks.ui.feature.habits.TAG_HABIT_SAVE).performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("0 из 1 сегодня") }
+        composeRule.onNodeWithContentDescription("Отметить «Зарядка»").performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("1 из 1 сегодня") }
+        composeRule.onNodeWithText("Зарядка").performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTagExists(com.prostovasei.simpletasks.ui.feature.habits.TAG_HABIT_CARD) }
+        // Серия и лучшая серия — по одному дню.
+        assertEquals(2, composeRule.onAllNodesWithText("1 дн.").fetchSemanticsNodes().size)
+        composeRule.onNodeWithTag("${com.prostovasei.simpletasks.ui.feature.habits.TAG_HABIT_CARD}:${com.prostovasei.simpletasks.ui.feature.finance.TAG_WINDOW_CLOSE}").performClick()
+        switchModule("TASKS")
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Всё сделано") }
+    }
+
     @Test
     fun switchToHealthRecordWeightAndComeBack() {
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Всё сделано") }

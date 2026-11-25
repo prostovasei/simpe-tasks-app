@@ -91,7 +91,16 @@ class WidgetHubTest {
                 CompositionLocalProvider(LocalWidgetColors provides TaskWidgetColors) { BottomBar(model, 1, true, WidgetModule.HUB) }
             }.remoteViews
         }
-        val root = hubViews(context, 1, model.forHub(), bar, finance, news).applyLikeLauncher(context)
+        // #340: плашки привычек на сегодня после финансов; сделанная — с «✓», не сегодняшняя — не показывается.
+        val habits = listOf(
+            com.prostovasei.simpletasks.domain.model.habits.Habit("h1", "Зарядка", "🏃", com.prostovasei.simpletasks.domain.model.habits.HabitSchedule.Daily, checks = setOf(today)),
+            com.prostovasei.simpletasks.domain.model.habits.Habit("h2", "Читать", "📚", com.prostovasei.simpletasks.domain.model.habits.HabitSchedule.Daily),
+            com.prostovasei.simpletasks.domain.model.habits.Habit("h3", "Растяжка", "🧘", com.prostovasei.simpletasks.domain.model.habits.HabitSchedule.Weekdays(0b0000001)),
+        )
+        val root = hubViews(context, 1, model.forHub(), bar, finance, news, habits, today).applyLikeLauncher(context)
+        val chips = root.descendants().filter { it.id == R.id.widget_hub_habit }.map { (it as TextView).text.toString() }.toList()
+        assertEquals(listOf("🏃 Зарядка ✓", "📚 Читать"), chips)
+        assertTrue(root.descendants().filter { it.id == R.id.widget_hub_habit }.all { it.hasOnClickListeners() })
         val list = root.descendants().filterIsInstance<ListView>().single()
         val texts = (0 until list.adapter.count).flatMap { list.adapter.getView(it, null, list).texts() }
         assertTrue(texts.toString(), "Оплатить интернет" in texts && "Стоматолог" in texts && "Через три дня" !in texts)
