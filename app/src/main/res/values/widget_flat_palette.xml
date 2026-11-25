@@ -12,4 +12,9 @@
     <color name="widget_flat_text_secondary">#FF62656E</color>
     <!-- #307: «Новое» у новой новости — PriorityTokens.high.content (светлая). -->
     <color name="widget_flat_new">#FF6B32A8</color>
+    <!-- #340: привычки — отметка и сделанная плашка (PriorityTokens.high.content / container, светлая), серия (ColorTokens.warning). -->
+    <color name="widget_habit_accent">#FF862CE0</color>
+    <color name="widget_habit_done_bg">#FFF1E8FA</color>
+    <color name="widget_habit_streak">#FFB26A00</color>
+    <color name="widget_habit_ring">#FFA9A9A9</color>
 </resources>

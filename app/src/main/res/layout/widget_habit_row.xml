@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- #340: строка привычки в виджете: эмодзи · название · серия · круг отметки. Нажатие на строку отмечает или снимает. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_habit_row"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:minHeight="52dp"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingStart="@dimen/widget_edge"
+    android:paddingEnd="@dimen/widget_edge">
+    <TextView android:id="@+id/widget_habit_emoji" android:layout_width="28dp" android:layout_height="wrap_content"
+        android:gravity="center" android:textSize="20sp" />
+    <TextView android:id="@+id/widget_habit_name" android:layout_width="0dp" android:layout_height="wrap_content"
+        android:layout_weight="1" android:paddingStart="10dp" android:paddingEnd="8dp" android:maxLines="1" android:ellipsize="end"
+        android:textColor="@color/widget_flat_text_primary" android:textSize="15sp" android:fontFamily="@font/manrope_600" />
+    <TextView android:id="@+id/widget_habit_streak" android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:paddingEnd="10dp" android:textColor="@color/widget_habit_streak" android:textSize="13sp" android:textStyle="bold" />
+    <ImageView android:id="@+id/widget_habit_check" android:layout_width="28dp" android:layout_height="28dp"
+        android:src="@drawable/widget_habit_check_off" android:contentDescription="@null" />
+</LinearLayout>

@@ -19,4 +19,7 @@ abstract class NotificationsModule {
 
     @Binds
     abstract fun bindWeighIn(impl: AndroidWeighInReminder): WeighInReminder
+
+    @Binds
+    abstract fun bindHabits(impl: AndroidHabitReminder): HabitReminder
 }

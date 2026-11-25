@@ -89,5 +89,11 @@ abstract class RepositoryModule {
     abstract fun bindHealthSettingsStore(impl: PrefsHealthSettingsStore): HealthSettingsStore
 
     @Binds
+    abstract fun bindHabitRepository(impl: com.prostovasei.simpletasks.data.repository.RoomHabitRepository): com.prostovasei.simpletasks.domain.repository.HabitRepository
+
+    @Binds
+    abstract fun bindHabitSettingsStore(impl: com.prostovasei.simpletasks.data.repository.PrefsHabitSettingsStore): com.prostovasei.simpletasks.domain.repository.HabitSettingsStore
+
+    @Binds
     abstract fun bindBackupRepository(impl: RoomBackupRepository): BackupRepository
 }

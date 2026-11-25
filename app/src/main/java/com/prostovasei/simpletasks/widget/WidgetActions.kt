@@ -69,6 +69,14 @@ class WidgetActionReceiver : BroadcastReceiver() {
                         WidgetRenderer.refreshNews(context)
                     }
                 }
+                WidgetActions.TOGGLE_HABIT -> {
+                    val habitId = intent.getStringExtra(WidgetActions.EXTRA_HABIT_ID) ?: return
+                    WidgetLog.add(context, "привычка: отметка")
+                    val entry = context.widgetEntryPoint()
+                    entry.habits().toggle(habitId, entry.time().today())
+                    WidgetRenderer.widgetIds(context).filter { WidgetSelection.module(context, it).let { m -> m == WidgetModule.HABITS || m == WidgetModule.HUB } }
+                        .forEach { WidgetRenderer.render(context, it, "привычка") }
+                }
                 WidgetActions.HUB_PAGE -> {
                     val id = intent.getIntExtra(WidgetActions.EXTRA_WIDGET_ID, -1)
                     if (id !in WidgetRenderer.widgetIds(context) || WidgetSelection.module(context, id) != WidgetModule.HUB) return
@@ -143,6 +151,9 @@ object WidgetActions {
     const val REFRESH_NEWS = "com.prostovasei.simpletasks.widget.REFRESH_NEWS"
     const val MODULE = "com.prostovasei.simpletasks.widget.MODULE"
     const val HUB_PAGE = "com.prostovasei.simpletasks.widget.HUB_PAGE"
+    /** #340: отметить или снять привычку на сегодня (виджет «Привычки» и плашки «Главной»). */
+    const val TOGGLE_HABIT = "com.prostovasei.simpletasks.widget.TOGGLE_HABIT"
+    const val EXTRA_HABIT_ID = "habit_id"
     const val SWITCH = "com.prostovasei.simpletasks.widget.SWITCH"
     const val COMPLETE = "com.prostovasei.simpletasks.widget.COMPLETE"
     const val UNCOMPLETE = "com.prostovasei.simpletasks.widget.UNCOMPLETE"
@@ -166,6 +177,12 @@ object WidgetActions {
         .putExtra("module", module.name)
 
     /** #329: стрелки ‹ › новостей виджета «Главная»; [delta] = 0 — просто перерисовать. */
+    internal fun toggleHabit(context: Context, id: Int, habitId: String): Intent = Intent(context, WidgetActionReceiver::class.java)
+        .setAction(TOGGLE_HABIT)
+        .setData("simpletasks://widget/$id/habit/$habitId".toUri())
+        .putExtra(EXTRA_WIDGET_ID, id)
+        .putExtra(EXTRA_HABIT_ID, habitId)
+
     internal fun hubPage(context: Context, id: Int, delta: Int): Intent = Intent(context, WidgetActionReceiver::class.java)
         .setAction(HUB_PAGE)
         .setData("simpletasks://widget/$id/hub-page/$delta".toUri())

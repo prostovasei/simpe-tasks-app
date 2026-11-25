@@ -94,6 +94,7 @@ class WidgetUpdater @Inject constructor(
     private val finance: com.prostovasei.simpletasks.domain.repository.FinanceRepository,
     private val health: com.prostovasei.simpletasks.domain.repository.HealthRepository,
     private val healthSettings: com.prostovasei.simpletasks.domain.repository.HealthSettingsStore,
+    private val habits: com.prostovasei.simpletasks.domain.repository.HabitRepository,
     private val dayTicker: DayTicker,
     private val overdueFold: OverdueFold,
     @param:ApplicationScope private val appScope: CoroutineScope,
@@ -105,6 +106,13 @@ class WidgetUpdater @Inject constructor(
                 WidgetRenderer.widgetIds(context).filter { WidgetSelection.module(context, it) == WidgetModule.HEALTH }.forEach {
                     WidgetRenderer.render(context, it, "изменился вес")
                 }
+            }
+        }
+        appScope.launch {
+            // #340: привычки — виджет «Привычки» и плашки «Главной».
+            habits.observeHabits().debounce(DEBOUNCE_MS).collect {
+                WidgetRenderer.widgetIds(context).filter { WidgetSelection.module(context, it).let { m -> m == WidgetModule.HABITS || m == WidgetModule.HUB } }
+                    .forEach { WidgetRenderer.render(context, it, "изменились привычки") }
             }
         }
         appScope.launch {

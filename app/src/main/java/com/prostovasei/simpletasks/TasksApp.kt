@@ -24,6 +24,8 @@ class TasksApp : Application() {
 
     @Inject lateinit var weighIn: WeighInReminder
 
+    @Inject lateinit var habitReminder: com.prostovasei.simpletasks.notifications.HabitReminder
+
     @Inject lateinit var budget: com.prostovasei.simpletasks.notifications.BudgetAlerts
 
     @Inject @ApplicationScope lateinit var appScope: CoroutineScope
@@ -34,6 +36,7 @@ class TasksApp : Application() {
         widgets.start()
         summary.schedule()
         weighIn.schedule()
+        habitReminder.schedule()
         budget.start()
         NewsChecks.schedule(this)
         // #312: скачанные раньше обновления (~19 МБ каждое) больше не нужны — установщик их уже скопировал.

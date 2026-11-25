@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Виджет «Привычки» (#340): сверху «N из M сегодня» (нажатие открывает раздел в приложении), ниже список привычек на сегодня —
+  нажатие на строку отмечает её прямо на рабочем столе; список идёт под капсулу.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_task_root_bg"
+    android:clipToOutline="true"
+    tools:targetApi="31">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/widget_habits_summary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="@dimen/widget_edge"
+            android:paddingEnd="@dimen/widget_edge"
+            android:paddingTop="@dimen/widget_edge"
+            android:paddingBottom="4dp"
+            android:textColor="@color/widget_flat_text_primary"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <ListView
+            android:id="@+id/widget_habits_list"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:paddingBottom="@dimen/widget_bar_space"
+            android:clipToPadding="false"
+            android:divider="@null"
+            android:dividerHeight="0dp"
+            android:listSelector="@android:color/transparent"
+            style="@style/Glance.AppWidget.List" />
+
+        <TextView
+            android:id="@+id/widget_habits_empty"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:paddingBottom="@dimen/widget_bar"
+            android:textColor="@color/widget_flat_text_secondary"
+            android:textSize="14sp"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <FrameLayout
+        android:id="@+id/widget_habits_bar"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/widget_bar"
+        android:layout_gravity="bottom" />
+</FrameLayout>

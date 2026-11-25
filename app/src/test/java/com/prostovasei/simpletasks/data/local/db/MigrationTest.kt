@@ -237,6 +237,37 @@ class MigrationTest {
         }
     }
 
+    /** Миграция 13 → 14 (#340): появляются пустые таблицы привычек и отметок; задачи, финансы и вес PM остаются как были. */
+    @Test
+    fun habitTablesAreAddedAndExistingDataIsKept() {
+        val file = context.getDatabasePath(AppDatabase.NAME).apply { parentFile?.mkdirs(); delete() }
+        createVersion(file, 13) { sql ->
+            sql.execSQL("INSERT INTO projects (id, name, sort_order, is_inbox, is_deleted, created_at, updated_at) VALUES ('p1', 'Дом', 0, 0, 0, 1, 1)")
+            sql.execSQL("INSERT INTO tasks (id, project_id, title, status, priority, is_all_day, sort_order, is_deleted, created_at, updated_at) VALUES ('t1', 'p1', 'Купить краску', 0, 0, 1, 0, 0, 1, 1)")
+            sql.execSQL("INSERT INTO finance_accounts (id, name, type, initial_balance, sort_order, created_at, updated_at) VALUES ('a1', 'Карта', 'card', 100000, 0, 1, 1)")
+            sql.execSQL("INSERT INTO finance_categories (id, name, kind, is_archived, sort_order, created_at, updated_at) VALUES ('c1', 'Продукты', 'expense', 0, 0, 1, 1)")
+            sql.execSQL("INSERT INTO finance_budgets (month, category_id, amount, updated_at) VALUES ('2026-11', 'c1', 3000000, 1)")
+            sql.execSQL("INSERT INTO weight_entries (id, date, tenths, comment, created_at, updated_at) VALUES ('w1', 20000, 824, NULL, 1, 1)")
+        }
+
+        val db = AppDatabase.build(context, FakeTimeProvider())
+        try {
+            assertEquals(emptyList<Any>(), runBlocking { db.habitDao().getHabits() })
+            runBlocking {
+                db.habitDao().upsertHabit(com.prostovasei.simpletasks.data.local.entity.HabitEntity("h1", "Зарядка", "🏃", "DAILY", 127, 0, 0, false, 1, 1))
+                db.habitDao().insertCheck(com.prostovasei.simpletasks.data.local.entity.HabitCheckEntity("h1", 20_000, 1))
+            }
+            assertEquals(1, runBlocking { db.habitDao().getChecks() }.size)
+            val title = db.openHelper.readableDatabase.query("SELECT title FROM tasks WHERE id = 't1'").use { it.moveToFirst(); it.getString(0) }
+            assertEquals("Купить краску", title)
+            assertEquals("Карта", runBlocking { db.financeAccountDao().observeAll().first() }.single().account.name)
+            assertEquals(listOf(3000000L), runBlocking { db.financeBudgetDao().getAll() }.map { it.amount })
+            assertEquals(listOf(824), runBlocking { db.weightEntryDao().getAll() }.map { it.tenths })
+        } finally {
+            db.close()
+        }
+    }
+
     private fun createVersion4(file: File) = createVersion(file, 4) { sql ->
         sql.execSQL("INSERT INTO project_groups (id, name, sort_order, is_deleted, created_at, updated_at) VALUES ('g1', '🏠Дом', 0, 0, 1, 1)")
         sql.execSQL("INSERT INTO project_groups (id, name, sort_order, is_deleted, created_at, updated_at) VALUES ('g2', 'Работа', 1, 0, 1, 1)")

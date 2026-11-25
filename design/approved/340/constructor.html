@@ -1,0 +1,289 @@
+<title>Конструктор привычек</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+<style>
+/* Конструктор #340: модуль «Привычки». Слева переключатели, справа приложение (экран на выбор) и виджет; превью — светлая тема приложения. */
+:root {
+  --page: #e9ebef; --pagefg: #16171d; --pagemuted: #62656e; --chip: #f3f3f4; --rec: #2e7d32; --line: #dcdee3;
+  --card: #ffffff; --title: #2e3036; --muted: #62656e; --done: #c4c5c8; --ring: #a9a9a9; --pri: #862ce0; --prisoft: #f1e8fa;
+  --late: #c62828; --track: #e8e8ea; --soft: #f3f3f4; --black: #16171d; --fire: #e8590c;
+  --font: Manrope, system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --page: #0f1013; --pagefg: #ececec; --pagemuted: #a3a3a3; --chip: #24262b; --rec: #81c784; --line: #2f3137; color-scheme: dark } }
+:root[data-theme="dark"] { --page: #0f1013; --pagefg: #ececec; --pagemuted: #a3a3a3; --chip: #24262b; --rec: #81c784; --line: #2f3137; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--page); color: var(--pagefg); font-family: var(--font); margin: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 16px 40px }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--page) }
+h1 { font-size: 21px; margin: 0 0 4px; text-wrap: balance }
+.lead { color: var(--pagemuted); margin: 0 0 14px; max-width: 80ch; line-height: 1.45; font-size: 14px }
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px; align-items: start }
+.previews { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); display: flex; gap: 20px; align-items: flex-start }
+.pv { display: grid; gap: 6px; justify-items: start }
+.pv b { font-size: 13px; color: var(--pagemuted); font-weight: 600 }
+@media (max-width: 1180px) {
+  .layout { grid-template-columns: minmax(0, 1fr) }
+  .previews { order: -1; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--page); padding-bottom: 8px; overflow-x: auto; max-width: 100% }
+}
+@media (max-width: 760px) { .phone { zoom: .78 } .previews { max-height: 52vh; overflow: auto; box-shadow: 0 6px 12px -8px rgb(0 0 0 / .3) } }
+.panel { display: grid; gap: 12px; min-width: 0; align-content: start }
+fieldset { border: 0; margin: 0; padding: 12px 14px; background: var(--card); color: var(--title); border-radius: 16px; display: grid; gap: 10px; min-width: 0 }
+legend { font-weight: 700; font-size: 15px; padding: 0; float: left; width: 100% }
+.ctl { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px }
+.ctl > span { flex: 0 0 160px; color: var(--muted); font-size: 13px }
+.seg { display: inline-flex; background: #f3f3f4; border-radius: 10px; padding: 3px; gap: 2px; flex-wrap: wrap; min-width: 0 }
+.seg button { font: 600 13px var(--font); color: #16171d; background: none; border: 0; border-radius: 8px; padding: 6px 9px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px }
+.seg button[aria-pressed="true"] { background: #fff; box-shadow: inset 0 0 0 1.5px #16171d }
+.seg button:focus-visible { outline: 2px solid #862ce0; outline-offset: 1px }
+.seg .tag { font-size: 10px; font-weight: 700; color: #6b32a8 }
+.top { display: flex; flex-wrap: wrap; gap: 8px; align-items: center }
+.btn { font: 600 13px var(--font); border: 0; border-radius: 10px; padding: 8px 12px; cursor: pointer; background: var(--pagefg); color: var(--page) }
+.btn.ghost { background: var(--chip); color: var(--pagefg) }
+.btn:focus-visible { outline: 2px solid #862ce0; outline-offset: 2px }
+#summary { width: 100%; min-height: 110px; font: 12px/1.45 ui-monospace, Menlo, monospace; color: var(--pagefg); background: var(--page); border: 1px solid var(--line); border-radius: 12px; padding: 10px; resize: vertical }
+.hint { color: var(--pagemuted); font-size: 12px; margin: 0; line-height: 1.45 }
+#copied { color: var(--rec); font-size: 12px }
+/* телефон */
+.phone { position: relative; width: 360px; height: 760px; border-radius: 30px; overflow: hidden; background: #fff; box-shadow: 0 0 0 1px rgb(0 0 0 / .08), 0 10px 30px rgb(0 0 0 / .12); color: var(--title); font-family: var(--font); flex: none }
+.status { height: 28px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; font-size: 12px; font-weight: 600; position: relative; z-index: 1 }
+.wall { background: linear-gradient(160deg, #5b2bc9 0%, #b03fb8 45%, #f2717e 100%) }
+.wall > .status { color: #fff }
+.screen { position: absolute; inset: 28px 0 0 0; display: flex; flex-direction: column; overflow: hidden; background: #fff }
+.wdg { position: absolute; left: 10px; right: 10px; top: 40px; height: 600px; background: #fff; border-radius: 24px; overflow: hidden; display: flex; flex-direction: column }
+.icons { position: absolute; left: 22px; right: 22px; bottom: 30px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px }
+.icons span { aspect-ratio: 1; border-radius: 18px; background: rgb(255 255 255 / .28) }
+/* привычки */
+.sum { padding: 14px 16px 6px; display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; color: var(--muted) }
+.sum b { color: var(--title); font-size: 18px; font-weight: 800 }
+.prog { flex: 1; height: 2px; background: var(--track); position: relative }
+.prog i { position: absolute; inset: 0 auto 0 0; background: var(--black) }
+.grp { padding: 14px 16px 2px; font-size: 12px; font-weight: 600; color: var(--muted) }
+.h { display: flex; align-items: center; gap: 10px; padding: 8px 16px; min-height: 56px }
+.h .emo { font-size: 20px; width: 26px; text-align: center; flex: none }
+.h .mid { flex: 1; min-width: 0; display: grid; gap: 4px }
+.h .name { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.h.off .name, .h.off .emo { opacity: .45 }
+.strip { display: flex; gap: 6px; align-items: center }
+.strip span { width: 8px; height: 8px; border-radius: 50%; display: block }
+.strip .d { background: var(--black) } .strip .r { box-shadow: inset 0 0 0 1.5px var(--ring) } .strip .n { background: var(--track) }
+.strip .t { outline: 2px solid var(--pri); outline-offset: 1.5px }
+.strip.days span { width: auto; height: auto; border-radius: 0; font-size: 10px; font-weight: 700; color: var(--muted); background: none; box-shadow: none; outline: 0 }
+.strip.days .d { color: var(--title) } .strip.days .t { color: var(--pri) }
+.streak { font-size: 13px; font-weight: 700; color: var(--fire); white-space: nowrap }
+.streak.gray { color: var(--muted) }
+.chk { flex: none; width: 28px; height: 28px; border-radius: 50%; box-shadow: inset 0 0 0 2px var(--ring); display: grid; place-items: center; color: #fff }
+.chk.on { background: var(--pri); box-shadow: none }
+.chk.sq { border-radius: 9px }
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 6px 12px }
+.tile { background: var(--soft); border-radius: 18px; padding: 12px; display: grid; gap: 6px; min-height: 104px }
+.tile.on { background: var(--prisoft) }
+.tile .top2 { display: flex; justify-content: space-between; align-items: center }
+.tile .name { font-size: 14px; font-weight: 700; line-height: 1.25 }
+/* карточка */
+.scrim { position: absolute; inset: 0; background: rgb(0 0 0 / .25); z-index: 4 }
+.sheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 5; background: #fff; border-radius: 24px 24px 0 0; padding: 18px 16px 22px; display: grid; gap: 14px }
+.sheet h2 { margin: 0; font-size: 19px; display: flex; align-items: center; gap: 8px }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px }
+.stats div { background: var(--soft); border-radius: 14px; padding: 10px; display: grid; gap: 2px }
+.stats small { font-size: 11px; color: var(--muted); font-weight: 600 } .stats b { font-size: 18px }
+.cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px 0; text-align: center; font-size: 12px; font-weight: 600 }
+.cal .w { color: var(--muted); font-size: 11px }
+.cal span { width: 30px; height: 30px; line-height: 30px; border-radius: 50%; margin: 0 auto; display: block }
+.cal .d { background: var(--pri); color: #fff } .cal .r { box-shadow: inset 0 0 0 1.5px var(--ring) } .cal .f { color: var(--done) } .cal .t { box-shadow: inset 0 0 0 2px var(--pri) }
+.calhead { display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 14px }
+.acts { display: flex; gap: 8px; flex-wrap: wrap }
+.acts span { background: var(--soft); border-radius: 999px; padding: 8px 12px; font-size: 13px; font-weight: 700 }
+.acts .pri { background: var(--black); color: #fff }
+.field { background: var(--soft); border-radius: 14px; padding: 12px; font-size: 15px; font-weight: 600 }
+.segm { display: flex; background: var(--soft); border-radius: 12px; padding: 3px }
+.segm span { flex: 1; text-align: center; padding: 8px 4px; font-size: 13px; font-weight: 700; border-radius: 10px; color: var(--muted) }
+.segm .on { background: #fff; color: var(--title); box-shadow: 0 1px 3px rgb(0 0 0 / .1) }
+.wk { display: flex; gap: 6px } .wk span { flex: 1; text-align: center; padding: 8px 0; border-radius: 10px; background: var(--soft); font-size: 12px; font-weight: 700 }
+.wk .on { background: var(--prisoft); color: var(--pri) }
+.emos { display: flex; gap: 6px; font-size: 20px } .emos span { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: var(--soft) }
+.emos .on { box-shadow: inset 0 0 0 2px var(--pri); background: var(--prisoft) }
+/* хаб */
+.ht { padding: 12px 14px 4px; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 2px }
+.ht i { color: var(--muted); font-style: normal }
+.limit { margin: 4px 14px 0; height: 26px; border-radius: 8px; background: var(--soft); position: relative; overflow: hidden; font-size: 12px; font-weight: 700 }
+.limit i { position: absolute; inset: 0 auto 0 0; width: 67.5%; background: var(--black) } .limit span { position: absolute; left: 10px; top: 5px; color: #fff }
+.chips { display: flex; gap: 6px; padding: 4px 14px; overflow: hidden }
+.chip2 { background: var(--soft); border-radius: 999px; padding: 7px 12px; font-size: 13px; font-weight: 700; white-space: nowrap; display: inline-flex; gap: 6px; align-items: center }
+.chip2.on { background: var(--prisoft); color: var(--pri) }
+.hrow { display: flex; align-items: center; gap: 10px; padding: 6px 14px; font-size: 14px; font-weight: 600 }
+.ring { display: flex; gap: 10px; padding: 6px 14px } .ring div { display: grid; justify-items: center; gap: 4px; font-size: 11px; font-weight: 600; color: var(--muted); width: 56px }
+.ring div span { width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; font-size: 20px; box-shadow: inset 0 0 0 2.5px var(--track) }
+.ring div.on span { box-shadow: inset 0 0 0 2.5px var(--pri) }
+.ghost { color: var(--muted); font-size: 12px; padding: 4px 14px }
+.nav { position: absolute; right: 12px; bottom: 14px; display: flex; align-items: center; gap: 2px; background: #16171d; border-radius: 999px; padding: 3px; z-index: 3; box-shadow: 0 6px 18px rgb(0 0 0 / .22) }
+.nav span { width: 34px; height: 34px; display: grid; place-items: center; color: #fff }
+.nav span.plus { color: #c39bff }
+.empty { flex: 1; display: grid; place-items: center; align-content: center; gap: 8px; text-align: center; padding: 0 40px }
+.empty b { font-size: 20px } .empty small { color: var(--muted); font-size: 14px }
+.empty .cta { background: var(--black); color: #fff; border-radius: 999px; padding: 10px 16px; font-weight: 700; font-size: 14px }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important } }
+</style>
+
+<h1>Конструктор привычек</h1>
+<p class="lead">Модуль «Привычки» (#340): ты поручил сделать всё без согласований, поэтому в приложение пойдут варианты с меткой «реком.». Конструктор останется: если утром захочешь другой вид, выбери варианты, нажми «Скопировать выбор» и пришли текст — переделаю следующей итерацией. Кнопки «Экран» переключают левое превью: модуль, карточку привычки, окно создания, хаб и пустой экран. Справа — виджет. Привычки и отметки придуманы для примера.</p>
+
+<div class="layout">
+  <div class="panel">
+    <div class="top">
+      <button type="button" class="btn" id="copy">Скопировать выбор</button>
+      <button type="button" class="btn ghost" id="reset">Рекомендации</button>
+      <span id="copied" aria-live="polite"></span>
+    </div>
+    <fieldset><legend>Экран</legend><div class="ctl"><div class="seg" role="group" aria-label="Экран" id="screens"></div></div></fieldset>
+    <div id="groups" class="panel"></div>
+    <p class="hint">Серия — сколько раз подряд привычка сделана по расписанию. Если сегодня ещё не отмечено, серия не обрывается до конца дня. Для «N раз в неделю» серия считается неделями: «🔥 3 нед.».</p>
+    <p class="hint">Отметить можно сегодня и любой прошедший день в календаре карточки. Сделанная сегодня привычка не исчезает и не бледнеет: круг становится фиолетовым с галочкой.</p>
+    <label class="hint" for="summary">Выбор текстом:</label>
+    <textarea id="summary" readonly></textarea>
+  </div>
+  <div class="previews">
+    <div class="pv"><b id="appTitle">Приложение</b><div class="phone" id="app"></div></div>
+    <div class="pv"><b>Виджет</b><div class="phone wall" id="widget"></div></div>
+  </div>
+</div>
+
+<script>
+const CHECK = '<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const NAV = '<div class="nav"><span>⁘</span><span>☰</span><span>🎙</span><span class="plus" style="font-size:24px;font-weight:300">+</span></div>';
+// [ключ, подпись, варианты, рекомендация]
+const GROUPS = [
+  ['Строка привычки', [
+    ['row', 'Вид', [['list', 'Строки (как задачи)'], ['tiles', 'Плитки 2 в ряд']], 'list'],
+    ['strip', 'Неделя под названием', [['dots', 'Точки пн–вс'], ['days', 'Буквы дней'], ['none', 'Нет']], 'dots'],
+    ['check', 'Отметка', [['circle', 'Круг 28'], ['square', 'Квадрат']], 'circle'],
+    ['streak', 'Серия', [['fire', '«🔥 12»'], ['text', '«12 дн.»']], 'fire'],
+    ['done', 'Сделанная сегодня', [['stay', 'Остаётся на месте'], ['down', 'Уходит вниз']], 'stay'],
+  ]],
+  ['Хаб и виджет', [
+    ['hub', 'Блок в хабе', [['chips', 'Плашки в ряд'], ['rings', 'Кружки с эмодзи'], ['rows', 'Строки']], 'chips'],
+    ['hubAt', 'Место в хабе', [['afterFin', 'После финансов'], ['afterNews', 'После новостей']], 'afterFin'],
+    ['wdg', 'Виджет «Привычки»', [['list', 'Список с отметкой'], ['tiles', 'Плитки']], 'list'],
+  ]],
+];
+const SCREENS = [['module', 'Модуль'], ['card', 'Карточка'], ['form', 'Окно создания'], ['hub', 'Хаб'], ['empty', 'Пусто']];
+const REC = Object.fromEntries(GROUPS.flatMap(([, l]) => l.map(([k, , , r]) => [k, r])));
+const KEY = 'c340a';
+let state = { ...REC }, screen = 'module';
+try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s) state = { ...REC, ...s } } catch (e) {}
+
+// данные: неделя пн–вс, сегодня — ср (индекс 2)
+const TODAY = 2;
+const HABITS = [
+  { e: '🏃', n: 'Зарядка', streak: 12, week: 'ddt..', done: true, due: true, days: [1,1,1,1,1,1,1] },
+  { e: '📚', n: 'Читать 20 минут', streak: 5, week: 'dr...', done: false, due: true, days: [1,1,1,1,1,1,1] },
+  { e: '💧', n: 'Без сладкого', streak: 3, week: 'ddr..', done: false, due: true, days: [1,1,1,1,1,1,1] },
+  { e: '🏀', n: 'Бросковая тренировка', streak: 2, unit: 'нед.', week: 'd.r..', done: false, due: true, days: [1,0,1,0,1,0,0] },
+  { e: '🧘', n: 'Растяжка', streak: 0, week: '.d...', done: false, due: false, days: [0,1,0,1,0,0,0] },
+];
+function strip(h) {
+  if (state.strip === 'none') return '';
+  const letters = ['П', 'В', 'С', 'Ч', 'П', 'С', 'В'];
+  const cells = h.days.map((on, i) => {
+    let c = i < TODAY ? (h.week[i] === 'd' ? 'd' : on ? 'r' : 'n') : i === TODAY ? (h.done ? 'd' : on ? 'r' : 'n') : (on ? 'r' : 'n');
+    if (i === TODAY) c += ' t';
+    return state.strip === 'days' ? `<span class="${c}">${letters[i]}</span>` : `<span class="${c}"></span>`;
+  }).join('');
+  return `<div class="strip ${state.strip === 'days' ? 'days' : ''}">${cells}</div>`;
+}
+const streakText = h => h.streak ? (state.streak === 'fire' ? `🔥 ${h.streak}${h.unit ? ' ' + h.unit : ''}` : `${h.streak} ${h.unit || 'дн.'}`) : '';
+const chk = on => `<span class="chk ${on ? 'on' : ''} ${state.check === 'square' ? 'sq' : ''}">${on ? CHECK : ''}</span>`;
+function hrow(h, off) {
+  return `<div class="h ${off ? 'off' : ''}"><span class="emo">${h.e}</span><div class="mid"><span class="name">${h.n}</span>${strip(h)}</div>`
+    + `<span class="streak ${state.streak === 'text' || off ? 'gray' : ''}">${streakText(h)}</span>${chk(h.done)}</div>`;
+}
+function tile(h, off) {
+  return `<div class="tile ${h.done ? 'on' : ''}" style="${off ? 'opacity:.55' : ''}"><div class="top2"><span style="font-size:22px">${h.e}</span>${chk(h.done)}</div>`
+    + `<span class="name">${h.n}</span><span class="streak ${state.streak === 'text' ? 'gray' : ''}">${streakText(h)}</span>${strip(h)}</div>`;
+}
+function list(compact) {
+  let due = HABITS.filter(h => h.due), off = HABITS.filter(h => !h.due);
+  if (state.done === 'down') due = [...due.filter(h => !h.done), ...due.filter(h => h.done)];
+  const done = due.filter(h => h.done).length;
+  const body = state.row === 'tiles'
+    ? `<div class="tiles">${due.map(h => tile(h)).join('')}</div><div class="grp">Не сегодня</div><div class="tiles">${off.map(h => tile(h, true)).join('')}</div>`
+    : `${due.map(h => hrow(h)).join('')}<div class="grp">Не сегодня</div>${off.map(h => hrow(h, true)).join('')}`;
+  return `<div class="sum"><span><b>${done}</b> из ${due.length} сегодня</span><span class="prog"><i style="width:${done / due.length * 100}%"></i></span></div>${body}`;
+}
+function card() {
+  const days = [];
+  for (let i = 0; i < 2; i++) days.push('<span></span>'); // ноябрь 2026 начинается с вс → смещение 6; упрощаем до 2 для примера
+  const done = new Set([3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]);
+  for (let d = 1; d <= 30; d++) {
+    const cls = d === 25 ? 'd t' : d > 25 ? 'f' : done.has(d) ? 'd' : 'r';
+    days.push(`<span class="${cls}">${d}</span>`);
+  }
+  return list() + `<div class="scrim"></div><div class="sheet"><h2>🏃 Зарядка</h2>`
+    + `<div class="stats"><div><small>Серия</small><b>${state.streak === 'fire' ? '🔥 ' : ''}12</b></div><div><small>Лучшая</small><b>21</b></div><div><small>За 30 дней</small><b>87%</b></div></div>`
+    + `<div class="calhead"><span>‹</span><span>Ноябрь 2026</span><span>›</span></div>`
+    + `<div class="cal">${['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'].map(w => `<span class="w">${w}</span>`).join('')}${days.join('')}</div>`
+    + `<div class="acts"><span class="pri">Изменить</span><span>Выше</span><span>Ниже</span><span>В архив</span></div></div>`;
+}
+function form() {
+  return list() + `<div class="scrim"></div><div class="sheet"><h2>Новая привычка</h2><div class="field">Читать 20 минут</div>`
+    + `<div class="emos"><span class="on">📚</span><span>🏃</span><span>💧</span><span>🧘</span><span>🏀</span><span style="font-size:13px;font-weight:700">Ещё</span></div>`
+    + `<div class="segm"><span>Каждый день</span><span class="on">По дням</span><span>N в неделю</span></div>`
+    + `<div class="wk"><span class="on">пн</span><span>вт</span><span class="on">ср</span><span>чт</span><span class="on">пт</span><span>сб</span><span>вс</span></div>`
+    + `<div class="acts"><span class="pri" style="flex:1;text-align:center">Сохранить</span></div></div>`;
+}
+function hubBlock() {
+  const due = HABITS.filter(h => h.due);
+  let b;
+  if (state.hub === 'rings') b = `<div class="ring">${due.map(h => `<div class="${h.done ? 'on' : ''}"><span>${h.e}</span>${h.n.split(' ')[0]}</div>`).join('')}</div>`;
+  else if (state.hub === 'rows') b = due.slice(0, 3).map(h => `<div class="hrow">${chk(h.done)}<span>${h.e} ${h.n}</span></div>`).join('');
+  else b = `<div class="chips">${due.map(h => `<span class="chip2 ${h.done ? 'on' : ''}">${h.e} ${h.n}${h.done ? ' ✓' : ''}</span>`).join('')}</div>`;
+  return `<div class="ht">Привычки <i>›</i></div>${b}`;
+}
+function hub(widget) {
+  const fin = `<div class="ht">Финансы <i>›</i></div><div class="limit"><i></i><span>54k ₽</span></div><div class="ghost">📅 2 200/день · 👛 26k · 4 300/день</div>`;
+  const news = `<div class="ht">Новости <i>›</i></div><div class="ghost">4 карточки новостей 2 × 2</div>`;
+  const tasks = `<div class="ht">Задачи <i>›</i></div><div class="hrow">${chk(false)}<span>💼 Созвон с командой</span></div><div class="hrow">${chk(false)}<span>🏠 Купить продукты</span></div>`;
+  return fin + (state.hubAt === 'afterFin' ? hubBlock() + news : news + hubBlock()) + tasks;
+}
+function widgetBody() {
+  const due = HABITS.filter(h => h.due), done = due.filter(h => h.done).length;
+  const head = `<div class="sum"><span><b>${done}</b> из ${due.length} сегодня</span><span class="prog"><i style="width:${done / due.length * 100}%"></i></span></div>`;
+  if (state.wdg === 'tiles') return head + `<div class="tiles">${due.map(h => tile(h)).join('')}</div>`;
+  return head + due.map(h => `<div class="h"><span class="emo">${h.e}</span><div class="mid"><span class="name">${h.n}</span></div><span class="streak">${streakText(h)}</span>${chk(h.done)}</div>`).join('');
+}
+const status = '<div class="status"><span>21:40</span><span>▾ ▴ ▮ 64</span></div>';
+function render() {
+  let body;
+  switch (screen) {
+    case 'card': body = card(); break;
+    case 'form': body = form(); break;
+    case 'hub': body = hub(); break;
+    case 'empty': body = `<div class="empty"><span style="font-size:44px">🌱</span><b>Привычек пока нет</b><small>Заведите первую — например, зарядку. Отмечайте каждый день и смотрите, как растёт серия.</small><span class="cta">+ Привычка</span></div>`; break;
+    default: body = list();
+  }
+  document.getElementById('app').innerHTML = status + `<div class="screen">${body}${screen === 'card' || screen === 'form' ? '' : NAV}</div>`;
+  document.getElementById('appTitle').textContent = 'Приложение · ' + SCREENS.find(s => s[0] === screen)[1];
+  document.getElementById('widget').innerHTML = status + `<div class="wdg">${widgetBody()}${NAV}</div><div class="icons">${'<span></span>'.repeat(4)}</div>`;
+  document.getElementById('screens').innerHTML = SCREENS.map(([k, t]) => `<button type="button" data-screen="${k}" aria-pressed="${screen === k}">${t}</button>`).join('');
+  document.getElementById('groups').innerHTML = GROUPS.map(([title, ctls]) => `<fieldset><legend>${title}</legend>${ctls.map(([k, label, opts]) =>
+    `<div class="ctl"><span id="l-${k}">${label}</span><div class="seg" role="group" aria-labelledby="l-${k}">${opts.map(([v, t]) =>
+      `<button type="button" id="c-${k}-${v}" data-k="${k}" data-v="${v}" aria-pressed="${state[k] === v}">${t}${REC[k] === v ? '<span class="tag">реком.</span>' : ''}</button>`).join('')}</div></div>`).join('')}</fieldset>`).join('');
+  document.getElementById('summary').value = summary();
+  try { localStorage.setItem(KEY, JSON.stringify(state)) } catch (e) {}
+}
+function summary() {
+  return GROUPS.map(([title, ctls]) => `${title}: ` + ctls.map(([k, label, opts]) => `${label.toLowerCase()} — ${opts.find(([v]) => v === state[k])[1]}`).join('; ')).join('\n');
+}
+document.addEventListener('click', e => {
+  const s = e.target.closest('button[data-screen]'); if (s) { screen = s.dataset.screen; render(); return }
+  const b = e.target.closest('button[data-k]'); if (!b) return;
+  state[b.dataset.k] = b.dataset.v; render();
+});
+document.getElementById('reset').addEventListener('click', () => { state = { ...REC }; render() });
+document.getElementById('copy').addEventListener('click', () => {
+  const out = document.getElementById('copied');
+  const fallback = () => { const s = document.getElementById('summary'); s.focus(); s.select(); out.textContent = 'Текст выделен — скопируй вручную' };
+  try { navigator.clipboard.writeText(summary()).then(() => { out.textContent = 'Скопировано' }, fallback) } catch (e) { fallback() }
+});
+render();
+</script>

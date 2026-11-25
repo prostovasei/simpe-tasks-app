@@ -41,12 +41,15 @@ internal fun hubPage(page: Int, pages: Int): Int = if (pages <= 0) 0 else Math.f
 internal suspend fun hubWidgetViews(context: Context, id: Int, model: WidgetModel, bar: RemoteViews, size: DpSize): RemoteViews {
     val width = size.width.value.takeIf { it.isFinite() }?.toInt() ?: 320
     val height = size.height.value.takeIf { it.isFinite() }?.toInt() ?: 640
-    return hubViews(context, id, model, bar, hubFinance(context, width, height), hubNews(context))
+    return hubViews(context, id, model, bar, hubFinance(context, width, height), hubNews(context), context.widgetEntryPoint().habits().observeHabits().first(), context.widgetEntryPoint().time().today())
 }
 
 /** Сборка без чтения данных — её проверяют тесты. */
 @RequiresApi(Build.VERSION_CODES.S)
-internal fun hubViews(context: Context, id: Int, model: WidgetModel, bar: RemoteViews?, finance: List<RemoteViews>, news: List<HubNews>): RemoteViews =
+internal fun hubViews(
+    context: Context, id: Int, model: WidgetModel, bar: RemoteViews?, finance: List<RemoteViews>, news: List<HubNews>,
+    habits: List<com.prostovasei.simpletasks.domain.model.habits.Habit> = emptyList(), today: java.time.LocalDate = model.today,
+): RemoteViews =
     RemoteViews(context.packageName, R.layout.widget_hub_root).apply {
         removeAllViews(R.id.widget_hub_finance)
         finance.forEach { addView(R.id.widget_hub_finance, it) }
@@ -67,6 +70,7 @@ internal fun hubViews(context: Context, id: Int, model: WidgetModel, bar: Remote
         ))
 
         hubNewsViews(this, context, id, news)
+        hubHabitViews(this, context, id, habits, today)
         // #338: заголовки разделов переключают виджет на раздел.
         listOf(R.id.widget_hub_title_finance to WidgetModule.FINANCE, R.id.widget_hub_title_news to WidgetModule.NEWS, R.id.widget_hub_title_tasks to WidgetModule.TASKS)
             .forEach { (view, module) ->

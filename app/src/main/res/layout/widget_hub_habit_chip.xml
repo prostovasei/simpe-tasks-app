@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- #340: плашка привычки в виджете «Главная»: «эмодзи название», нажатие отмечает. -->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_hub_habit"
+    android:layout_width="0dp"
+    android:layout_height="wrap_content"
+    android:layout_weight="1"
+    android:layout_marginEnd="6dp"
+    android:background="@drawable/widget_finance_account_bg"
+    android:ellipsize="end"
+    android:gravity="center"
+    android:maxLines="1"
+    android:paddingStart="10dp"
+    android:paddingTop="7dp"
+    android:paddingEnd="10dp"
+    android:paddingBottom="7dp"
+    android:textColor="@color/widget_flat_text_primary"
+    android:textSize="14sp"
+    android:textStyle="bold" />

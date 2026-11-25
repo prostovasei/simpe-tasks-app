@@ -1587,3 +1587,26 @@ README_MORE['NavCapsule'] = ('Плавающая панель и выбор ра
     'настройки — ползунки, микрофон — голосовой ввод, «+» — светло-фиолетовый `NavBarTokens.plus` без круга, `size-nav-plus-icon` (26), открывает меню «что добавить» '
     '(задача, расход, вес; в «Новостях» — обновить). Даты в панели нет. Выбор раздела и меню «+» — плитки снизу по три в ряд, `size-picker-tile` (76). '
     'В хабе списки идут под капсулу, в конце — `size-nav-bar-space` (60).')
+
+def habit_row(emoji, name, week, streak, done):
+    dots = ''.join(
+        f'<span style="width:8px;height:8px;border-radius:50%;display:inline-block;{s}"></span>' for s in [
+            'background:var(--text-primary)' if c == 'd' else 'box-shadow:inset 0 0 0 1.5px var(--inactive)' if c == 'r' else 'background:var(--divider)'
+            for c in week])
+    check = ('<span style="width:28px;height:28px;border-radius:50%;background:var(--priority-high-text);display:grid;place-items:center;color:#fff;font-weight:800">✓</span>'
+             if done else '<span style="width:28px;height:28px;border-radius:50%;box-shadow:inset 0 0 0 2px var(--inactive)"></span>')
+    return (f'<div style="display:flex;align-items:center;gap:10px;min-height:56px;padding:0 16px"><span style="font-size:20px;width:28px;text-align:center">{emoji}</span>'
+            f'<div style="flex:1;display:grid;gap:4px"><b style="font-size:15px;font-weight:600">{name}</b><span style="display:flex;gap:6px">{dots}</span></div>'
+            f'<b style="color:var(--warning);font-size:13px">{streak}</b>{check}</div>')
+
+
+PREVIEWS['HabitRow'] = lambda: doc('Строки и списки', 360, 'Строка привычки (0.97): эмодзи, точки недели, серия, круг отметки 28',
+                                   '<div style="width:400px;background:var(--surface);border-radius:var(--radius-xl);padding:8px 0">'
+                                   + habit_row('🏃', 'Зарядка', 'dddrrrr', '🔥 12', True) + habit_row('📚', 'Читать 20 минут', 'ddrrrrr', '🔥 5', False)
+                                   + habit_row('🏀', 'Бросковая тренировка', 'dnrnnnn', '🔥 1 нед.', False) + '</div>')
+README_MORE['HabitRow'] = ('Строка привычки (0.97).',
+    'Модуль «Привычки» (#340, design/approved/340). Эмодзи 20 sp (`size-habit-emoji-sp`), название 15 sp полужирным, под ним точки недели пн–вс '
+    '`size-habit-dot` (8) с промежутком `size-habit-dot-gap` (6): сделано — `text-primary`, день расписания — кольцо `inactive`, вне расписания — `divider`, '
+    'сегодня обведено `priority-high-text`. Справа серия «🔥 12» (`warning`; для «N в неделю» — «🔥 3 нед.») и круг отметки `size-habit-check` (28): '
+    'пустой — кольцо `inactive`, сделано — `priority-high-text` с галочкой. Строка `size-habit-row` (56); «Не сегодня» — полупрозрачная. '
+    'Карточка — окно с тремя числами и календарём месяца (`size-habit-cal-day` 34). В хабе — плашки «эмодзи название», сделанная — `priority-high-bg`.')
