@@ -1,0 +1,218 @@
+<title>Новая строка: экраны</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+<style>
+/* Галерея #334: итоговая строка (все решения PM) на каждом экране, где она есть, и в разных состояниях. Телефоны 360 × 760, 1:1. */
+:root {
+  --page: #e9ebef; --pagefg: #16171d; --pagemuted: #62656e; --chipbg: #f3f3f4;
+  /* холст задач */
+  --card: #ffffff; --title: #2e3036; --muted: #62656e; --done: #c4c5c8; --ring: #8a8d94; --pri: #862ce0;
+  --late: #c62828; --track: #e8e8ea; --fill: #16171d; --sel: #f1e8fa; --scrim: rgb(0 0 0 / .32); --soft: #f3f3f4; --black: #16171d; --onblack: #ffffff;
+  --font: Manrope, system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --page: #0f1013; --pagefg: #ececec; --pagemuted: #a3a3a3; --chipbg: #24262b; color-scheme: dark } }
+:root[data-theme="dark"] { --page: #0f1013; --pagefg: #ececec; --pagemuted: #a3a3a3; --chipbg: #24262b; color-scheme: dark }
+/* тёмная тема самого приложения — для сценария «Тёмная тема» */
+.dark { --card: #1c1d21; --title: #d6d6d8; --muted: #a3a3a3; --done: #46484e; --ring: #8b8f97; --pri: #c49bf2;
+  --late: #ef6b6b; --track: #34363c; --fill: #ececec; --sel: #2e2440; --soft: #2a2c31; --black: #ececec; --onblack: #16171d }
+* { box-sizing: border-box }
+body { background: var(--page); color: var(--pagefg); font-family: var(--font); margin: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 48px }
+h1 { font-size: 22px; margin: 0 0 4px; text-wrap: balance }
+h2 { font-size: 18px; margin: 32px 0 6px }
+.lead { color: var(--pagemuted); margin: 0 0 16px; max-width: 74ch; line-height: 1.45; font-size: 14px }
+.spec { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; padding: 0; list-style: none }
+.spec li { background: var(--chipbg); border-radius: 8px; padding: 4px 8px; font-size: 12px }
+.gallery { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start }
+figure { margin: 0; flex: 0 1 360px; min-width: 0; max-width: 360px }
+figcaption { font-size: 13px; color: var(--pagemuted); margin-top: 8px; line-height: 1.4 }
+figcaption b { color: var(--pagefg); display: block; font-size: 14px; margin-bottom: 2px }
+/* телефон */
+.phone { position: relative; width: 100%; max-width: 360px; height: 760px; border-radius: 30px; overflow: hidden; background: var(--card); box-shadow: 0 0 0 1px rgb(0 0 0 / .08), 0 10px 30px rgb(0 0 0 / .12); color: var(--title); font-family: var(--font) }
+.phone.short { height: auto; min-height: 0 }
+.status { height: 28px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; font-size: 12px; font-weight: 600; color: var(--title) }
+.wall { background: linear-gradient(160deg, #5b2bc9 0%, #b03fb8 45%, #f2717e 100%) }
+.wall .status { color: #fff }
+.scroll { position: absolute; inset: 28px 0 64px 0; overflow: hidden }
+.appbar { position: absolute; left: 0; right: 0; bottom: 0; height: 64px; display: flex; align-items: center; gap: 2px; padding: 0 12px; background: var(--card); border-top: 1px solid var(--track) }
+.appbar .add { width: 64px; height: 44px; border-radius: 16px; background: var(--black); color: var(--onblack); display: grid; place-items: center }
+.appbar .tab { flex: 1; display: grid; place-items: center; color: var(--ring) }
+.appbar .tab.on { color: var(--black) }
+/* виджет */
+.wdg { position: absolute; left: 10px; right: 10px; top: 44px; bottom: 210px; background: var(--card); border-radius: 22px; overflow: hidden }
+.wdg .list { position: absolute; inset: 6px 0 52px 0; overflow: hidden }
+.wbar { position: absolute; left: 0; right: 0; bottom: 0; height: 52px; display: flex; align-items: center; gap: 2px; padding: 0 8px; background: var(--card) }
+.wbar .add { width: 52px; height: 40px; border-radius: 14px; background: var(--black); color: var(--onblack); display: grid; place-items: center }
+.wbar .tab { flex: 1; display: grid; place-items: center; color: var(--ring) }
+.wbar .tab.on { color: var(--black) }
+.wbar .date { display: flex; align-items: baseline; gap: 3px; font-weight: 700; font-size: 22px; color: var(--black); padding: 0 6px }
+.wbar .date small { font-size: 9px; line-height: 1.05; font-weight: 600 }
+.icons { position: absolute; left: 22px; right: 22px; bottom: 30px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px }
+.icons span { aspect-ratio: 1; border-radius: 18px; background: rgb(255 255 255 / .28) }
+/* окно поверх */
+.scrim { position: absolute; inset: 0; background: var(--scrim) }
+.sheet { position: absolute; left: 12px; right: 12px; background: var(--card); border-radius: 24px; overflow: hidden; box-shadow: 0 12px 30px rgb(0 0 0 / .25) }
+.sheet .top { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 4px; font-size: 16px; font-weight: 700; color: var(--title) }
+.sheet .plus { width: 32px; height: 32px; border-radius: 10px; background: var(--black); color: var(--onblack); display: grid; place-items: center }
+.weekbg { position: absolute; inset: 28px 0 64px; padding: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px }
+.weekbg div { border-radius: 14px; background: var(--soft) }
+/* строки */
+.head { display: flex; align-items: center; gap: 8px; padding: 12px 14px 2px; font-size: 12px; font-weight: 500; color: var(--muted); white-space: nowrap }
+.head.late { color: var(--late) }
+.head .ic { display: flex }
+.bar { flex: 1; height: 1px; background: var(--track); position: relative; min-width: 30px }
+.bar i { position: absolute; inset: 0 auto 0 0; background: var(--fill) }
+.cnt { margin-left: auto; font-variant-numeric: tabular-nums }
+.row { display: flex; align-items: center; min-height: 46px; padding: 0 14px; color: var(--title) }
+.row .title { flex: 1; min-width: 0; font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.row .sub { display: block; font-size: 12px; font-weight: 500; color: var(--muted) }
+.row .t { font-size: 13px; font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; margin-left: 8px }
+.row .emo { flex: none; width: 16px; font-size: 14px; line-height: 1; text-align: center; margin-right: 8px }
+.row .chk { flex: none; display: block; margin-right: 10px }
+.row .bell { flex: none; display: block; color: var(--muted); margin-left: 8px }
+.row.pri { color: var(--pri) }
+.row.late .t { color: var(--late) }
+.row.off { color: var(--done) } .row.off .emo, .row.off .bell { opacity: .45 }
+.row.sel { background: var(--sel); box-shadow: inset 0 0 0 1.5px var(--pri); border-radius: 12px; margin: 2px 8px; padding: 0 6px }
+.empty { padding: 18px 14px; font-size: 13px; color: var(--muted) }
+.big { zoom: 1.3 }
+/* хаб */
+.limit { margin: 10px 14px 0; height: 26px; border-radius: 8px; background: var(--soft); position: relative; overflow: hidden; font-size: 12px; font-weight: 700 }
+.limit i { position: absolute; inset: 0 auto 0 0; width: 64%; background: var(--black) }
+.limit span { position: absolute; top: 5px }
+.limitsub { display: flex; justify-content: space-between; padding: 4px 14px 0; font-size: 11px; color: var(--muted); font-weight: 600 }
+.chips { display: flex; gap: 6px; padding: 8px 14px 0; font-size: 12px; font-weight: 700 }
+.chips span { background: var(--soft); border-radius: 999px; padding: 4px 9px }
+.news { position: absolute; left: 0; right: 0; bottom: 64px; padding: 6px 14px 4px; background: var(--card) }
+.news .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px }
+.news .card { background: var(--soft); border-radius: 12px; padding: 7px 9px; min-height: 58px; font-size: 11.5px; line-height: 1.3 }
+.news .card small { display: block; color: var(--muted); font-size: 10px; margin-bottom: 2px }
+.news .dots { text-align: center; font-size: 9px; letter-spacing: 3px; color: var(--muted); padding-top: 4px }
+.note { font-size: 12px; color: var(--pagemuted); max-width: 74ch; line-height: 1.45 }
+</style>
+
+<h1>Новая строка задачи на всех экранах</h1>
+<p class="lead">Итоговый вид по всем твоим решениям: строка, подпись дня, блок «Просрочено», шрифт. Ниже каждый экран, где есть такой список, и разные ситуации. Телефоны нарисованы 360 × 760 в масштабе 1:1. Задачи взяты с твоего скриншота, две просроченные и новости придуманы для примера.</p>
+<ul class="spec">
+  <li>Кружок 18, повтор — треугольники</li><li>Эмодзи 16 перед названием</li><li>Название 14 sp полужирное, графит</li>
+  <li>Приоритет — яркий фиолетовый</li><li>Выполненные и прошедшие — ещё светлее</li><li>🔔 14 · время 13 sp средний</li>
+  <li>Период одной строкой</li><li>Подпись дня 12 sp серым «вт 25 ноя · Сегодня»</li><li>Полоса 1 dp</li>
+  <li>«Просрочено» красным, справа день недели, сворачивается нажатием, перенос — тонкая →|</li>
+</ul>
+
+<h2>Приложение</h2>
+<div class="gallery" id="app"></div>
+
+<h2>Виджеты на рабочем столе</h2>
+<div class="gallery" id="widgets"></div>
+
+<h2>Ситуации</h2>
+<div class="gallery" id="cases"></div>
+
+<p class="note" style="margin-top:24px">Предложение, которое нужно проверить: в «Входящих» и списках задачи разных дней идут без подписей дней, поэтому справа вместе со временем стоит день: «завтра 10:00», «пт 27 ноя». Внутри ячеек сетки «Недели» строки мелкие и остаются как есть. Новый вид появляется, когда день открывается окном.</p>
+
+<script>
+const I = {
+  bell: '<svg class="bell" width="14" height="14" viewBox="0 0 24 24" aria-label="напоминание"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z M10 20.5a2 2 0 0 0 4 0" stroke="currentColor" stroke-width="2" fill="none" stroke-linejoin="round" stroke-linecap="round"/></svg>',
+  move: '<svg width="16" height="16" viewBox="0 0 24 24" aria-label="перенести на сегодня"><path d="M4 12h12M12 7l5 5l-5 5M20 5v14" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  plus: s => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>`,
+  home: '<svg width="22" height="22" viewBox="0 0 24 24"><path d="M4.5 10.2L12 4l7.5 6.2V19a1 1 0 0 1-1 1H15v-5.5H9V20H5.5a1 1 0 0 1-1-1z" stroke="currentColor" stroke-width="2" fill="none" stroke-linejoin="round"/></svg>',
+  cal: '<svg width="22" height="22" viewBox="0 0 24 24"><path d="M5 6h14v14H5zM5 10h14M9 3v4M15 3v4" stroke="currentColor" stroke-width="2" fill="none" stroke-linejoin="round" stroke-linecap="round"/></svg>',
+  rub: '<svg width="22" height="22" viewBox="0 0 24 24"><path d="M8 20V4h5a4 4 0 0 1 0 8H6M6 16h9" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  heart: '<svg width="22" height="22" viewBox="0 0 24 24"><path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z" stroke="currentColor" stroke-width="2" fill="none" stroke-linejoin="round"/></svg>',
+  bolt: '<svg width="22" height="22" viewBox="0 0 24 24"><path d="M13 3L5 14h6l-1 7l8-11h-6z" stroke="currentColor" stroke-width="2" fill="none" stroke-linejoin="round"/></svg>',
+  gear: '<svg width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" fill="none"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+  mic: '<svg width="20" height="20" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3" stroke="currentColor" stroke-width="2" fill="none"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>',
+  down: '<svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5l5-5M5 20h14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+};
+function tri(c) { return `<svg class="chk" width="18" height="18" viewBox="0 0 14 14" aria-hidden="true"><path d="M0.8,6.2A6.25,6.25 0,0 1,13.2 6.2M13.2,7.8A6.25,6.25 0,0 1,0.8 7.8" stroke="${c}" stroke-width="1.5" fill="none"/><path d="M10.1,5.8L13.2,6.2L13.3,2.8ZM3.9,8.2L0.8,7.8L0.7,11.2Z" fill="${c}"/></svg>` }
+function check(x) {
+  const c = x.pri ? 'var(--pri)' : (x.done || x.past) ? 'var(--done)' : 'var(--ring)';
+  if (x.rep) return tri(c);
+  if (x.done || x.sel) return `<svg class="chk" width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="9" fill="${x.sel ? 'var(--pri)' : c}"/><path d="M5.4 9.4l2.5 2.5l4.9-5.4" stroke="var(--card)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  return `<svg class="chk" width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="8" stroke="${c}" stroke-width="2" fill="none"/></svg>`;
+}
+function row(x, late) {
+  const cls = ['row', x.pri && 'pri', (x.done || x.past) && 'off', late && 'late', x.sel && 'sel'].filter(Boolean).join(' ');
+  const title = x.sub ? `<span class="title">${x.title}<span class="sub">${x.sub}</span></span>` : `<span class="title">${x.title}</span>`;
+  return `<div class="${cls}">${check(x)}<span class="emo">${x.e}</span>${title}${x.bell ? I.bell : ''}${x.r ? `<span class="t">${x.r}</span>` : ''}</div>`;
+}
+const head = (txt, extra = '') => `<div class="head"><span>${txt}</span>${extra}</div>`;
+const prog = (d, n) => `<span class="bar"><i style="width:${Math.round(d / n * 100)}%"></i></span><span class="cnt">${d} из ${n}</span>`;
+const cnt = n => `<span class="cnt">${n}</span>`;
+const overHead = (n, folded) => `<div class="head late"><span>Просрочено</span><span class="ic">${I.move}</span><span class="cnt">${n}</span></div>`;
+
+const OVER = [
+  { title: 'Отчёт за октябрь', e: '💼', bell: 1, r: '17 ноя' },
+  { title: 'Позвонить в банк', e: '🗂️', r: 'пн' },
+  { title: 'Claude', e: '💲', bell: 1, rep: 1, r: 'вт' },
+];
+const TODAY = [
+  { title: 'Футбол', e: '🗂️', bell: 1, done: 1, r: '03:00' },
+  { title: 'ChatGPT', e: '💲', bell: 1, rep: 1, past: 1, r: '10:00' },
+  { title: 'Оценка Займы', e: '💼', bell: 1, pri: 1, r: '14:00–16:00' },
+  { title: 'Пройти юр.тест', e: '💼', bell: 1, pri: 1, r: '16:00' },
+  { title: 'Оценка', e: '💼', rep: 1, r: '16:00–17:30' },
+  { title: 'Икра', e: '🗂️', bell: 1, r: '19:00' },
+];
+const TOMORROW = [
+  { title: 'Футбол', e: '🗂️', bell: 1, r: '03:00' },
+  { title: 'Дейлик', e: '💼', rep: 1, r: '11:00' },
+  { title: 'Девопсы', e: '💼', rep: 1, r: '14:30' },
+  { title: 'Приоритезация', e: '💼', rep: 1, r: '16:30–17:30' },
+  { title: 'Сдать деньги на корпоратив', e: '🗂️', bell: 1, r: '17:30' },
+];
+const upcoming = () => overHead(OVER.length) + OVER.map(x => row(x, true)).join('')
+  + head('ср 25 ноя · Сегодня', prog(1, 6)) + TODAY.map(x => row(x)).join('')
+  + head('чт 26 ноя · Завтра', cnt(5)) + TOMORROW.map(x => row(x)).join('')
+  + head('пт 27 ноя', cnt(1)) + row({ title: 'Higgsfield', e: '💲', bell: 1, rep: 1, r: '10:00' });
+const status = (t = '11:15') => `<div class="status"><span>${t}</span><span>▾ ▴ ▮ 31</span></div>`;
+const appBar = (on) => `<div class="appbar"><span class="add">${I.plus(22)}</span>${[['home', I.home], ['tasks', I.cal], ['fin', I.rub], ['health', I.heart], ['news', I.bolt]].map(([k, s]) => `<span class="tab${k === on ? ' on' : ''}">${s}</span>`).join('')}<span class="tab">${I.gear}</span></div>`;
+const wBar = (on, mic) => `<div class="wbar"><span class="add">${I.plus(20)}</span>${mic ? `<span class="tab" style="flex:0 0 40px">${I.mic}</span>` : ''}${[['home', I.home], ['tasks', I.cal], ['fin', I.rub], ['health', I.heart], ['news', I.bolt]].map(([k, s]) => `<span class="tab${k === on ? ' on' : ''}">${s}</span>`).join('')}<span class="date">25<small>ср<br>ноя</small></span><span class="tab" style="flex:0 0 30px">${I.down}</span></div>`;
+const fig = (inner, title, text, cls = '') => `<figure><div class="phone ${cls}">${inner}</div><figcaption><b>${title}</b>${text}</figcaption></figure>`;
+const news = () => `<div class="news"><div class="grid">${[['09:05 · Футбол · Новое', 'Бавария обыграла Боруссию в дерби', 1], ['08:40 · НБА · Новое', 'Дончич набрал трипл-дабл', 1], ['08:12 · Футбол', 'Расписание тура Бундеслиги'], ['07:55 · НБА', 'Вембаньяма — игрок недели']].map(([m, t, u]) => `<div class="card"><small>${m}</small><span style="font-weight:${u ? 700 : 500}">${t}</span></div>`).join('')}</div><div class="dots">● ○ ○</div></div>`;
+const hubTop = () => `<div class="limit"><i></i><span style="left:10px;color:var(--onblack)">54k ₽</span><span style="right:10px">80k</span></div><div class="limitsub"><span>осталось 26k ₽</span><span>прогноз 65k ₽</span></div><div class="chips"><span>💳 42k</span><span>👛 6k</span><span>🏦 80k</span></div>`;
+
+// приложение
+document.getElementById('app').innerHTML = [
+  fig(status() + `<div class="scroll">${upcoming()}</div>` + appBar('tasks'), '«Предстоящее»',
+    'Главный список. Просроченные одним блоком, дальше дни с подписью 12 sp, у «Сегодня» полоса 1 dp.'),
+  fig(status() + `<div class="weekbg">${'<div></div>'.repeat(8)}</div>` + appBar('tasks') + `<div class="scrim"></div>`
+    + `<div class="sheet" style="top:96px"><div class="top"><span style="font-size:13px;font-weight:500;color:var(--muted)">ср 25 ноя · Сегодня</span><span class="plus">${I.plus(18)}</span></div>`
+    + `<div style="padding:2px 0 4px">${head('', prog(1, 6)).replace('<span></span>', '')}</div>${TODAY.map(x => row(x)).join('')}<div style="height:10px"></div></div>`,
+    'Окно дня', 'Открывается из «Недели» и виджета. Строки те же, подпись дня вверху окна в том же стиле.'),
+  fig(status() + `<div class="scroll">${hubTop()}<div style="height:6px"></div>${overHead(OVER.length) + OVER.slice(1).map(x => row(x, true)).join('')}${head('ср 25 ноя · Сегодня', prog(1, 6))}${TODAY.slice(2).map(x => row(x)).join('')}</div>` + news() + appBar('home'),
+    'Хаб «Главная»', 'Тот же блок задач между финансами и новостями. Список прокручивается внутри.'),
+  fig(status() + `<div class="scroll"><div class="head" style="font-size:16px;font-weight:700;color:var(--title);padding-top:14px">📥 Входящие</div>`
+    + [{ title: 'Купить лампочки', e: '📥', r: '' }, { title: 'Записаться к врачу', e: '📥', bell: 1, r: 'сегодня 18:00' }, { title: 'Позвонить в банк', e: '📥', r: 'пн' }, { title: 'Подарок маме', e: '📥', r: 'завтра 10:00' }, { title: 'Продлить страховку', e: '📥', bell: 1, r: 'пт 27 ноя' }, { title: 'Идеи для отпуска', e: '📥', sub: 'Список · 3 из 8' }].map(x => row(x, x.r === 'пн')).join('')
+    + `</div>` + appBar('tasks'),
+    '«Входящие» и списки', 'Задачи разных дней идут без подписей дней, поэтому справа рядом со временем стоит день. Это предложение, проверь его.'),
+].join('');
+
+// виджеты
+document.getElementById('widgets').innerHTML = [
+  fig(status() + `<div class="wdg"><div class="list">${upcoming()}</div>${wBar('tasks', true)}</div><div class="icons">${'<span></span>'.repeat(8)}</div>`,
+    'Виджет «Все»', 'Как на твоём скриншоте: тот же список, что в приложении, панель внизу.', 'wall'),
+  fig(status() + `<div class="wdg"><div class="list">${hubTop()}${overHead(OVER.length) + OVER.slice(2).map(x => row(x, true)).join('')}${head('ср 25 ноя · Сегодня', prog(1, 6))}${TODAY.slice(2, 5).map(x => row(x)).join('')}</div>`
+    + `<div class="news" style="bottom:52px;padding-top:4px"><div class="grid">${[['09:05 · Футбол', 'Бавария обыграла Боруссию'], ['08:40 · НБА', 'Дончич: трипл-дабл']].map(([m, t]) => `<div class="card" style="min-height:48px"><small>${m}</small>${t}</div>`).join('')}</div><div class="dots">‹ ● ○ ○ ›</div></div>${wBar('home')}</div><div class="icons">${'<span></span>'.repeat(8)}</div>`,
+    'Виджет «Главная»', 'Финансы, блок задач и новости со стрелками ‹ ›.', 'wall'),
+  fig(status() + `<div class="icons" style="bottom:auto;top:60px">${'<span></span>'.repeat(8)}</div><div class="scrim"></div>`
+    + `<div class="sheet" style="top:180px"><div class="top"><span style="font-size:13px;font-weight:500;color:var(--muted)">чт 26 ноя · Завтра</span><span class="plus">${I.plus(18)}</span></div>${TOMORROW.map(x => row(x)).join('')}<div style="height:10px"></div></div>`,
+    'Окно дня поверх рабочего стола', 'Нажатие на день в виджете «Неделя». Ячейки сетки не меняются, новый вид — в окне.', 'wall'),
+].join('');
+
+// ситуации
+const card = (inner, title, text, extra = '') => `<figure><div class="phone short ${extra}" style="padding-bottom:10px">${inner}</div><figcaption><b>${title}</b>${text}</figcaption></figure>`;
+const allDone = TODAY.map(x => ({ ...x, done: !x.rep, past: x.rep, pri: 0 }));
+document.getElementById('cases').innerHTML = [
+  card(overHead(12), 'Просрочено свёрнуто', 'Нажатие на подпись «Просрочено» сворачивает блок, остаются число и →|. Повторное нажатие разворачивает.'),
+  card(head('ср 25 ноя · Сегодня', prog(6, 6)) + allDone.map(x => row(x)).join(''), 'Всё сделано за день', 'Полоса заполнена, «6 из 6». Выполненные остаются до конца дня совсем светлыми.'),
+  card(`<div class="head">сб 28 ноя</div><div class="empty">На этот день задач нет</div>`, 'Пустой день в окне', 'В ленте пустые дни не показываются, как сейчас. В окне пустого дня — прежняя надпись под новой подписью дня.'),
+  card(head('ср 25 ноя · Сегодня', prog(1, 6)) + [{ title: 'Подготовить презентацию для совета директоров по итогам квартала', e: '💼', bell: 1, pri: 1, r: '14:00–16:00' }, { title: 'Купить продукты: молоко, хлеб, яйца, сыр', e: '🗂️', sub: 'Список · 2 из 6' }, { title: 'Икра', e: '🗂️', bell: 1, r: '19:00' }].map(x => row(x)).join(''), 'Длинные названия и подзадачи', 'Название обрезается многоточием, время и колокольчик не сдвигаются. Подстрочка 12 sp серым.'),
+  card(`<div class="big">${head('ср 25 ноя · Сегодня', prog(1, 6)) + TODAY.slice(2, 6).map(x => row(x)).join('')}</div>`, 'Крупный системный шрифт (130 %)', 'Всё растёт пропорционально. Время периода в одну строку забирает место у названия, поэтому названия короче.'),
+  card(head('ср 25 ноя · Сегодня', prog(1, 6)) + TODAY.slice(2, 6).map((x, i) => row({ ...x, sel: i < 2 })).join(''), 'Режим выбора', 'Долгое нажатие: выбранные строки в рамке, кружок — фиолетовая галочка.'),
+  card(overHead(3) + OVER.map(x => row(x, true)).join('') + head('ср 25 ноя · Сегодня', prog(1, 6)) + TODAY.map(x => row(x)).join(''), 'Тёмная тема', 'Графит светлеет, приоритет становится светло-фиолетовым, выполненные — тёмно-серыми.', 'dark'),
+].join('');
+</script>

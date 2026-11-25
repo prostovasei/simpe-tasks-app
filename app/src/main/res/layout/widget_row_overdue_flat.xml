@@ -12,6 +12,7 @@
     android:gravity="center_vertical"
     android:orientation="horizontal"
     android:paddingStart="@dimen/widget_edge"
+    android:paddingEnd="@dimen/widget_list_edge"
     android:paddingTop="@dimen/widget_edge"
     android:paddingBottom="@dimen/widget_day_gap">
 
@@ -28,8 +29,8 @@
             android:layout_height="wrap_content"
             android:maxLines="1"
             android:textColor="@color/widget_flat_overdue"
-            android:textSize="14sp"
-            android:textStyle="bold" />
+            android:textSize="12sp"
+            android:fontFamily="@font/manrope_500" />
 
         <ImageView
             android:id="@+id/overdue_fold"
@@ -43,8 +44,20 @@
         android:id="@+id/overdue_move"
         android:layout_width="@dimen/widget_fold_icon"
         android:layout_height="@dimen/widget_fold_icon"
-        android:layout_marginStart="@dimen/widget_space_sm"
+        android:layout_marginStart="@dimen/widget_space_xs"
         android:contentDescription="@string/overdue_move_today"
-        android:src="@drawable/ic_move_today"
+        android:src="@drawable/ic_move_today_thin"
         android:tint="@color/widget_flat_overdue" />
+
+    <!-- #334: число просроченных — справа, стилем подписи. -->
+    <TextView
+        android:id="@+id/overdue_count"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:fontFamily="@font/manrope_500"
+        android:gravity="end"
+        android:maxLines="1"
+        android:textColor="@color/widget_flat_overdue"
+        android:textSize="12sp" />
 </LinearLayout>

@@ -1,0 +1,203 @@
+<title>Шрифт задачи #334</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Manrope:wght@400;500;600;700;800&display=swap">
+<style>
+/* Конструктор шрифта (#334): раскладка строки зафиксирована по выбору PM, меняются размер, жирность и цвет текста задачи. 1:1. */
+:root {
+  --bg: #eceef2; --card: #ffffff; --fg: #16171d; --muted: #62656e; --faint: #a2a2a5;
+  --track: #e8e8ea; --late: #c62828; --chip: #f3f3f4; --rec: #2e7d32; --line: #dcdee3;
+  --ui: Manrope, system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #111215; --card: #1c1d21; --fg: #ececec; --muted: #a3a3a3; --faint: #5b5e65;
+  --track: #34363c; --late: #ef6b6b; --chip: #2a2c31; --rec: #81c784; --line: #2f3137; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #111215; --card: #1c1d21; --fg: #ececec; --muted: #a3a3a3; --faint: #5b5e65;
+  --track: #34363c; --late: #ef6b6b; --chip: #2a2c31; --rec: #81c784; --line: #2f3137; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--fg); font-family: var(--ui); margin: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 16px 40px }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg) }
+h1 { font-size: 21px; margin: 0 0 4px; text-wrap: balance }
+.lead { color: var(--muted); margin: 0 0 14px; max-width: 72ch; line-height: 1.45; font-size: 14px }
+.layout { display: grid; grid-template-columns: minmax(0, 412px) minmax(0, 1fr); gap: 24px; align-items: start }
+.preview { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); max-height: calc(100vh - 24px); overflow: auto; border-radius: 24px }
+@media (max-width: 760px) {
+  .layout { grid-template-columns: minmax(0, 1fr) }
+  .preview { top: env(safe-area-inset-top, 0px); max-height: 46vh; z-index: 5; box-shadow: 0 6px 16px rgb(0 0 0 / .12) }
+}
+.widget { background: var(--card); border-radius: 24px; padding: 6px 0 12px }
+.head { display: flex; align-items: center; gap: 8px; padding: 12px 14px 2px; font-size: 12px; font-weight: 500; color: var(--muted) }
+.head.late { color: var(--late) }
+.bar { flex: 1; height: 1px; background: var(--track); position: relative; min-width: 40px }
+.bar i { position: absolute; inset: 0 auto 0 0; background: var(--fg) }
+.cnt { margin-left: auto; font-variant-numeric: tabular-nums }
+.row { display: flex; align-items: center; min-height: 46px; padding: 0 14px }
+.row .title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.row .t { font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; margin-left: 8px }
+.row .emo { flex: none; width: 16px; font-size: 14px; line-height: 1; text-align: center; margin-right: 8px }
+.row.past .emo, .row.past .bell { opacity: .45 }
+.chk, .bell { flex: none; display: block } .bell { color: var(--muted); margin-left: 8px }
+.panel { display: grid; gap: 14px; min-width: 0 }
+fieldset { border: 0; margin: 0; padding: 12px 14px; background: var(--card); border-radius: 16px; display: grid; gap: 10px; min-width: 0 }
+legend { font-weight: 700; font-size: 15px; padding: 0; float: left; width: 100%; margin-bottom: 2px }
+.ctl { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px }
+.ctl > span { flex: 0 0 130px; color: var(--muted); font-size: 13px }
+.seg { display: inline-flex; background: var(--chip); border-radius: 10px; padding: 3px; gap: 2px; flex-wrap: wrap; min-width: 0 }
+.seg button { font: 600 13px var(--ui); color: var(--fg); background: none; border: 0; border-radius: 8px; padding: 6px 9px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px }
+.seg button[aria-pressed="true"] { background: var(--bg); box-shadow: inset 0 0 0 1.5px var(--fg) }
+.seg button:focus-visible { outline: 2px solid #6b32a8; outline-offset: 1px }
+.seg .now { color: var(--muted); font-size: 10px }
+.sw { width: 12px; height: 12px; border-radius: 50%; display: inline-block; box-shadow: inset 0 0 0 1px rgb(0 0 0 / .15) }
+.top { display: flex; flex-wrap: wrap; gap: 8px; align-items: center }
+.btn { font: 600 13px var(--ui); border: 0; border-radius: 10px; padding: 8px 12px; cursor: pointer; background: var(--fg); color: var(--card) }
+.btn.ghost { background: var(--chip); color: var(--fg) }
+.btn:focus-visible { outline: 2px solid #6b32a8; outline-offset: 2px }
+#summary { width: 100%; min-height: 80px; font: 12px/1.45 ui-monospace, Menlo, monospace; color: var(--fg); background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px; resize: vertical }
+.hint { color: var(--muted); font-size: 12px; margin: 0; line-height: 1.45 }
+#copied { color: var(--rec); font-size: 12px }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important } }
+</style>
+
+<h1>Шрифт задачи</h1>
+<p class="lead">Раскладка строки зафиксирована по твоему выбору из конструктора. Здесь меняются только размер, жирность и цвет текста. Метка «сейчас» отмечает, как текст выглядит в приложении сегодня: название 14 sp Bold. В прошлых макетах я рисовал 16 sp Medium. Когда вид понравится, нажми «Скопировать выбор».</p>
+
+<div class="layout">
+  <div class="preview"><div class="widget" id="main"></div></div>
+  <div class="panel">
+    <div class="top">
+      <button type="button" class="btn" id="copy">Скопировать выбор</button>
+      <button type="button" class="btn ghost" id="reset">Как сейчас</button>
+      <button type="button" class="btn ghost" id="theme">Тема: системная</button>
+      <span id="copied" aria-live="polite"></span>
+    </div>
+    <div id="groups" class="panel"></div>
+    <p class="hint">Шрифт: в приложении Manrope. Виджет рисует рабочий стол системным шрифтом (Roboto); Manrope в виджете можно попробовать, но не на всех телефонах он подхватится.</p>
+    <label class="hint" for="summary">Выбор текстом:</label>
+    <textarea id="summary" readonly></textarea>
+  </div>
+</div>
+
+<script>
+const OVER = [
+  { title: 'Отчёт за октябрь', e: '💼', bell: 1, r: '17 ноя' },
+  { title: 'Позвонить в банк', e: '🗂️', r: 'пн' },
+  { title: 'Claude', e: '💲', bell: 1, rep: 1, r: 'вт' },
+];
+const DAYS = [
+  ['ср 25 ноя · Сегодня', true, [
+    { t: '03:00', title: 'Футбол', e: '🗂️', bell: 1, done: 1, past: 1 },
+    { t: '10:00', title: 'ChatGPT', e: '💲', bell: 1, rep: 1, past: 1 },
+    { t: '14:00–16:00', title: 'Оценка Займы', e: '💼', bell: 1, pri: 1 },
+    { t: '16:00', title: 'Пройти юр.тест', e: '💼', bell: 1, pri: 1 },
+    { t: '16:00–17:30', title: 'Оценка', e: '💼', rep: 1 },
+    { t: '19:00', title: 'Икра', e: '🗂️', bell: 1 },
+  ]],
+  ['чт 26 ноя · Завтра', false, [
+    { t: '03:00', title: 'Футбол', e: '🗂️', bell: 1 },
+    { t: '11:00', title: 'Дейлик', e: '💼', rep: 1 },
+    { t: '14:30', title: 'Девопсы', e: '💼', rep: 1 },
+    { t: '16:30–17:30', title: 'Приоритезация', e: '💼', rep: 1 },
+    { title: 'Сдать деньги на корпоратив', e: '🗂️', bell: 1 },
+  ]],
+];
+const COLORS = {
+  fg: ['#16171d', '#ececec', 'Чёрный'], graphite: ['#2e3036', '#d6d6d8', 'Графит'], grey: ['#4a4d55', '#bdbdc0', 'Тёмно-серый'],
+  muted: ['#62656e', '#a3a3a3', 'Серый'],
+  pri: ['#6b32a8', '#d4b8f5', 'Фиолетовый'], pri2: ['#862ce0', '#c49bf2', 'Яркий фиолетовый'],
+  done: ['#a2a2a5', '#5b5e65', 'Светло-серый'], doneLight: ['#c4c5c8', '#46484e', 'Ещё светлее'],
+};
+const dark = () => document.documentElement.dataset.theme === 'dark' || (!document.documentElement.dataset.theme && matchMedia('(prefers-color-scheme: dark)').matches);
+const col = k => COLORS[k][dark() ? 1 : 0];
+const sw = k => `<span class="sw" style="background:${col(k)}"></span>`;
+const GROUPS = [
+  ['Название задачи', [
+    ['tSize', 'Размер, sp', [[14, '14'], [15, '15'], [16, '16'], [17, '17']], 14],
+    ['tWeight', 'Жирность', [[400, 'Обычный'], [500, 'Средний'], [600, 'Полужирный'], [700, 'Жирный'], [800, 'Очень жирный']], 700],
+    ['tColor', 'Цвет', [['fg', 'Чёрный'], ['graphite', 'Графит'], ['grey', 'Тёмно-серый']], 'fg'],
+    ['family', 'Шрифт', [['Manrope', 'Manrope (приложение)'], ['Roboto', 'Roboto (виджет)']], 'Manrope'],
+  ]],
+  ['Высокий приоритет', [
+    ['pColor', 'Цвет названия', [['pri', 'Фиолетовый'], ['pri2', 'Яркий фиолетовый'], ['same', 'Как у обычной (фиолетовый только кружок)']], 'pri'],
+    ['pWeight', 'Жирность', [['same', 'Как у обычной'], ['bolder', 'На ступень жирнее']], 'same'],
+  ]],
+  ['Выполненные и прошедшие', [
+    ['dColor', 'Цвет', [['done', 'Светло-серый'], ['doneLight', 'Ещё светлее'], ['muted', 'Серый']], 'done'],
+    ['dWeight', 'Жирность', [['same', 'Как у обычной'], ['regular', 'Обычный']], 'same'],
+  ]],
+  ['Время справа', [
+    ['mSize', 'Размер, sp', [[12, '12'], [13, '13'], [14, '14']], 13],
+    ['mWeight', 'Жирность', [[400, 'Обычный'], [500, 'Средний'], [700, 'Жирный']], 500],
+    ['mColor', 'Цвет', [['title', 'Как название'], ['muted', 'Серый']], 'title'],
+  ]],
+];
+const NOW = Object.fromEntries(GROUPS.flatMap(([, l]) => l.map(([k, , , v]) => [k, v])));
+let state = { ...NOW };
+try { const s = JSON.parse(localStorage.getItem('f334') || 'null'); if (s) state = { ...NOW, ...s } } catch (e) {}
+
+function tri(c, s) { return `<svg class="chk" width="${s}" height="${s}" viewBox="0 0 14 14" aria-hidden="true"><path d="M0.8,6.2A6.25,6.25 0,0 1,13.2 6.2M13.2,7.8A6.25,6.25 0,0 1,0.8 7.8" stroke="${c}" stroke-width="1.5" fill="none"/><path d="M10.1,5.8L13.2,6.2L13.3,2.8ZM3.9,8.2L0.8,7.8L0.7,11.2Z" fill="${c}"/></svg>` }
+function check(x, c) {
+  if (x.rep) return tri(c, 18);
+  if (x.done) return `<svg class="chk" width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="9" fill="${c}"/><path d="M5.4 9.4l2.5 2.5l4.9-5.4" stroke="var(--card)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  return `<svg class="chk" width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="8" stroke="${c}" stroke-width="2" fill="none"/></svg>`;
+}
+const BELL = `<svg class="bell" width="14" height="14" viewBox="0 0 24 24" aria-label="напоминание"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z M10 20.5a2 2 0 0 0 4 0" stroke="currentColor" stroke-width="2" fill="none" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+function row(x, o, late) {
+  const muted = x.past || x.done;
+  let tc = col(o.tColor), tw = o.tWeight;
+  if (x.pri && o.pColor !== 'same') tc = col(o.pColor);
+  if (x.pri && o.pWeight === 'bolder') tw = Math.min(800, tw + 100);
+  if (muted) { tc = col(o.dColor); if (o.dWeight === 'regular') tw = 400 }
+  const ring = x.pri ? col('pri') : muted ? col('done') : col('muted');
+  const mc = late ? 'var(--late)' : muted ? col(o.dColor) : (o.mColor === 'title' ? tc : col('muted'));
+  const right = late ? x.r : x.t;
+  const fam = `${o.family}, system-ui, sans-serif`;
+  return `<div class="row${muted ? ' past' : ''}"><span style="margin-right:10px;display:flex">${check(x, ring)}</span><span class="emo">${x.e}</span>`
+    + `<span class="title" style="font-family:${fam};font-size:${o.tSize}px;font-weight:${tw};color:${tc}">${x.title}</span>${x.bell ? BELL : ''}`
+    + (right ? `<span class="t" style="font-family:${fam};font-size:${o.mSize}px;font-weight:${o.mWeight};color:${mc}">${right}</span>` : '') + `</div>`;
+}
+const MOVE = `<svg width="16" height="16" viewBox="0 0 24 24" aria-label="перенести на сегодня"><path d="M4 12h12M12 7l5 5l-5 5M20 5v14" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+function list(o) {
+  let h = `<div class="head late"><span>Просрочено</span>${MOVE}<span class="cnt">${OVER.length}</span></div>` + OVER.map(x => row(x, o, true)).join('');
+  for (const [label, today, items] of DAYS) {
+    const n = items.length, d = items.filter(x => x.done).length;
+    h += `<div class="head"><span>${label}</span>${today ? `<span class="bar"><i style="width:${Math.round(d / n * 100)}%"></i></span><span class="cnt">${d} из ${n}</span>` : `<span class="cnt">${n}</span>`}</div>` + items.map(x => row(x, o)).join('');
+  }
+  return h;
+}
+function renderGroups() {
+  document.getElementById('groups').innerHTML = GROUPS.map(([title, ctls]) =>
+    `<fieldset><legend>${title}</legend>${ctls.map(([k, label, opts]) =>
+      `<div class="ctl"><span id="l-${k}">${label}</span><div class="seg" role="group" aria-labelledby="l-${k}">${opts.map(([v, t]) =>
+        `<button type="button" id="c-${k}-${v}" data-k="${k}" data-v="${v}" aria-pressed="${state[k] == v}">${COLORS[v] ? sw(v) : ''}${t}${NOW[k] == v ? `<span class="now">${k[0] === 'm' ? 'выбрано' : 'сейчас'}</span>` : ''}</button>`).join('')}</div></div>`).join('')}</fieldset>`).join('');
+}
+function summary() {
+  return GROUPS.map(([title, ctls]) => `${title}: ` + ctls.map(([k, label, opts]) => `${label.toLowerCase()} — ${opts.find(([v]) => v == state[k])[1]}`).join('; ')).join('\n');
+}
+function render() {
+  document.getElementById('main').innerHTML = list(state);
+  renderGroups();
+  document.getElementById('summary').value = summary();
+  try { localStorage.setItem('f334', JSON.stringify(state)) } catch (e) {}
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('button[data-k]'); if (!b) return;
+  const v = b.dataset.v; state[b.dataset.k] = isNaN(+v) ? v : +v; render();
+});
+document.getElementById('reset').addEventListener('click', () => { state = { ...NOW }; render() });
+document.getElementById('copy').addEventListener('click', () => {
+  const out = document.getElementById('copied');
+  const fallback = () => { const s = document.getElementById('summary'); s.focus(); s.select(); out.textContent = 'Текст выделен — скопируй вручную' };
+  try { navigator.clipboard.writeText(summary()).then(() => { out.textContent = 'Скопировано' }, fallback) } catch (e) { fallback() }
+});
+const THEMES = [['', 'системная'], ['light', 'светлая'], ['dark', 'тёмная']];
+let ti = 0;
+document.getElementById('theme').addEventListener('click', e => {
+  ti = (ti + 1) % THEMES.length; const [v, t] = THEMES[ti];
+  if (v) document.documentElement.dataset.theme = v; else delete document.documentElement.dataset.theme;
+  e.currentTarget.textContent = `Тема: ${t}`; render();
+});
+try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render) } catch (e) {}
+render();
+</script>

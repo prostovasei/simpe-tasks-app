@@ -88,7 +88,7 @@ class WidgetListTest {
         val list = list()
         assertEquals(model.lines(dayNames(context)).size, list.adapter.count)
         val texts = list.rows().flatMap { it.texts() }
-        listOf("Отчёт", "Зарядка", "Созвон", "Зарядка завтра", "10:00", "11:00", "1 из 2").forEach {
+        listOf("Отчёт", "чт", "Зарядка", "Созвон", "Зарядка завтра", "10:00–11:00", "1 из 2", "пт 16 окт · Сегодня").forEach {
             assertTrue("нет «$it» в $texts", it in texts)
         }
     }
@@ -122,7 +122,8 @@ class WidgetListTest {
             } == true
         assertFalse(struck(title(model, "Зарядка")))
         assertFalse(struck(title(model, "Созвон")))
-        assertTrue(struck(title(model.copy(filter = WidgetFilter.Inbox), "Зарядка")))
+        // #334: одна строка во всех лентах — выполненная нигде не зачёркнута, только бледнеет.
+        assertFalse(struck(title(model.copy(filter = WidgetFilter.Inbox), "Зарядка")))
     }
 
     /**
@@ -147,7 +148,7 @@ class WidgetListTest {
             assertEquals(title.resources.getResourceEntryName(it), View.GONE, title.findViewById<View>(it).visibility)
         }
         rows.filter { it.findViewById<View>(R.id.row_plaque) != null }.forEach { row ->
-            listOf(R.id.row_start, R.id.row_bell).forEach {
+            listOf(R.id.row_time, R.id.row_bell).forEach {
                 assertEquals(row.resources.getResourceEntryName(it), View.GONE, row.findViewById<View>(it).visibility)
             }
         }
@@ -173,10 +174,10 @@ class WidgetListTest {
         val rows = list().rows()
         fun count(position: Int) = rows[position].findViewById<TextView>(R.id.title_count)
         val titles = rows.indices.filter { rows[it].findViewById<View>(R.id.title_root) != null }
-        // Вчера: 1, сегодня: 2 (с прогрессом, без числа), завтра: 1.
-        assertEquals(listOf("1", "2", "1"), titles.map { count(it).text.toString() })
-        assertEquals(listOf(View.VISIBLE, View.GONE, View.VISIBLE), titles.map { count(it).visibility })
-        assertEquals(View.VISIBLE, rows[titles[1]].findViewById<View>(R.id.title_progress_text).visibility)
+        // #334: вчерашний день — в блоке «Просрочено» без подписи; сегодня: 2 (с прогрессом, без числа), завтра: 1.
+        assertEquals(listOf("2", "1"), titles.map { count(it).text.toString() })
+        assertEquals(listOf(View.GONE, View.VISIBLE), titles.map { count(it).visibility })
+        assertEquals(View.VISIBLE, rows[titles[0]].findViewById<View>(R.id.title_progress_text).visibility)
     }
 
     /** Нижняя панель Glance лежит поверх ленты и тоже доходит до рабочего стола. */

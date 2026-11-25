@@ -82,7 +82,7 @@ fun DayScreen(
                             else -> days.day(label)
                         }
                         Text(
-                            WidgetDates.dayHeader(date) + relative?.let { " $it" }.orEmpty(),
+                            WidgetDates.header(date, relative),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = if (date < today) colors.overdue else colors.textPrimary,

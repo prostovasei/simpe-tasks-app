@@ -24,7 +24,7 @@ import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
 @Composable
 fun RepeatMark(color: Color, modifier: Modifier = Modifier, tall: Boolean = false) {
     if (!tall) {
-        Icon(painterResource(R.drawable.ic_repeat_round), null, tint = color, modifier = modifier)
+        Icon(painterResource(R.drawable.ic_task_repeat_round), null, tint = color, modifier = modifier)
         return
     }
     Canvas(modifier) {

@@ -55,6 +55,11 @@ import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
 import com.prostovasei.simpletasks.domain.model.Priority
 import com.prostovasei.simpletasks.widget.WidgetRow
 import com.prostovasei.simpletasks.widget.WidgetTimeline
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.unit.sp
+import java.time.LocalDate
+import com.prostovasei.simpletasks.designsystem.tokens.TaskRowTokens
+import com.prostovasei.simpletasks.widget.WidgetDates
 import kotlinx.coroutines.delay
 import java.time.LocalTime
 
@@ -64,15 +69,16 @@ import java.time.LocalTime
  */
 
 /**
- * Строки дня: задачи по шкале [WidgetTimeline] и отметка «сейчас» ([nowMinute], только у сегодняшнего дня).
- * [dayLabels] — слева день и время (во «Входящих» и списках, где дней нет в подписях).
+ * Строки дня: задачи по шкале [WidgetTimeline]. #331: линии «сейчас» нет ([nowMinute] лишь гасит прошедшие задачи сегодня).
+ * [dayLabels] — справа вместе со временем стоит день: в «Входящих», списках и блоке «Просрочено» (#334).
+ * [today] — от него считаются «сегодня», «завтра» и дни недели просроченных.
  */
 fun LazyListScope.timelineItems(
     items: List<TaskItem>,
     keyPrefix: String,
     days: DayNames,
     nowMinute: Int?,
-    showNowMarker: Boolean = true,
+    @Suppress("UNUSED_PARAMETER") showNowMarker: Boolean = true,
     isOverdue: (TaskItem) -> Boolean,
     showList: Boolean,
     onToggle: (TaskItem) -> Unit,
@@ -84,53 +90,31 @@ fun LazyListScope.timelineItems(
     onSelect: ((TaskItem) -> Unit)? = null,
     /** #314: появление строк по очереди (окно дня); null — строки появляются сразу. */
     rowMotion: (@Composable (index: Int, content: @Composable () -> Unit) -> Unit)? = null,
+    today: LocalDate = LocalDate.now(),
 ) {
-    val rows = WidgetTimeline.rows(items, overdue = dayLabels, nowMinute = nowMinute.takeUnless { dayLabels }, days = days).filter { showNowMarker || it != WidgetRow.Now }
+    val rows = WidgetTimeline.rows(items, overdue = dayLabels, nowMinute = nowMinute.takeUnless { dayLabels }, days = days)
+        .filterIsInstance<WidgetRow.Task>()
     // Ключ с днём: при переносе между днями Room обновляет списки не одновременно, и одна задача на миг бывает в двух днях сразу —
     // с одним лишь id это «Key was already used» и вылет.
-    itemsIndexed(rows, key = { _, row -> if (row is WidgetRow.Task) "$keyPrefix:${row.item.id}" else "$keyPrefix-now" }) { index, row ->
-        val item = this
-        if (rowMotion != null) rowMotion(index) { item.TimelineRow(row, index, rows.lastIndex, nowMinute, isOverdue, showList, onToggle, onOpen, dayLabels, selection, onSelect) }
-        else TimelineRow(row, index, rows.lastIndex, nowMinute, isOverdue, showList, onToggle, onOpen, dayLabels, selection, onSelect)
-    }
-}
-
-@Composable
-private fun LazyItemScope.TimelineRow(
-    row: WidgetRow,
-    index: Int,
-    last: Int,
-    nowMinute: Int?,
-    isOverdue: (TaskItem) -> Boolean,
-    showList: Boolean,
-    onToggle: (TaskItem) -> Unit,
-    onOpen: (TaskItem) -> Unit,
-    dayLabels: Boolean,
-    selection: Set<String>?,
-    onSelect: ((TaskItem) -> Unit)?,
-) {
-    val top = index > 0
-    val bottom = index < last
-    when (row) {
-        is WidgetRow.Task -> {
-            val item = row.item
-            // Будущий повтор выбрать нельзя: это не задача, а её будущий раз.
-            val selectable = onSelect != null && !item.isGhost
-            val selecting = selection != null
+    itemsIndexed(rows, key = { _, row -> "$keyPrefix:${row.item.id}" }) { index, row ->
+        val item = row.item
+        val selectable = onSelect != null && !item.isGhost
+        val selecting = selection != null
+        val content: @Composable () -> Unit = {
             TimelineTaskRow(
-                row, top, bottom, isOverdue(item), showList,
+                row, top = index > 0, bottom = index < rows.lastIndex, isOverdue = isOverdue(item), showList = showList,
                 onToggle = { if (selecting) { if (selectable) onSelect?.invoke(item) } else onToggle(item) },
                 onClick = { if (selecting) { if (selectable) onSelect?.invoke(item) } else onOpen(item) },
                 dayLabels = dayLabels,
                 selected = if (selecting && !item.isGhost) item.id in selection.orEmpty() else null,
                 onLongClick = if (selectable && !selecting) { { onSelect?.invoke(item) } } else null,
+                today = today,
             )
         }
-        WidgetRow.Now -> TimelineNowRow(nowMinute ?: 0, top, bottom)
+        if (rowMotion != null) rowMotion(index, content) else content()
     }
 }
 
-/** Минута дня сейчас, обновляется раз в минуту — для отметки «сейчас». */
 @Composable
 fun rememberNowMinute(): Int {
     var minute by remember { mutableIntStateOf(LocalTime.now().let { it.hour * MINUTES_PER_HOUR + it.minute }) }
@@ -144,148 +128,139 @@ fun rememberNowMinute(): Int {
     return minute
 }
 
+/** Что стоит справа (#334): время «14:00–16:00» одной строкой; у просроченной в «Просрочено» — день недели или дата; в списках — день и время. */
+@Composable
+fun taskRightLabel(row: WidgetRow.Task, isOverdue: Boolean, dayLabels: Boolean, today: LocalDate): String? {
+    val item = row.item
+    if (!dayLabels) return row.start?.let { start -> row.end?.let { "$start–$it" } ?: start }
+    val due = item.due ?: return null
+    val date = when (val day = due.day) {
+        DayLabel.Today -> today
+        DayLabel.Tomorrow -> today.plusDays(1)
+        DayLabel.Yesterday -> today.minusDays(1)
+        is DayLabel.Date -> day.date
+    }
+    if (isOverdue || date < today) return WidgetDates.overdueDay(date, today)
+    return WidgetDates.listDay(
+        date, due.time?.substringBefore("–"), today,
+        stringResource(R.string.day_today).lowercase(), stringResource(R.string.day_tomorrow).lowercase(),
+    )
+}
+
 /**
- * Строка задачи: время | линия с кружком | плашка. Период занимает обычную строку с кругом; оба времени остаются слева.
- * Выполненная (итерация 27) остаётся на месте до полуночи: кружок залит цветом приоритета с белой галочкой; #316 — без
- * зачёркивания, вся строка (время, кружок, плашка) полупрозрачная; переход «медленно тает» ([doneAlpha], [doneCheck]).
+ * Строка задачи (#334, конструкторы PM 25.11.2026): кружок 18 → эмодзи списка 16 → название 14 sp полужирное → колокольчик 14 → время
+ * 13 sp справа. Высокий приоритет — ярким фиолетовым, выполненные и прошедшие — «ещё светлее»; выполненная тает к этому цвету (#316).
+ * У повторяющейся вместо кружка — знак повтора (стрелки-треугольники, один рисунок везде). Линий шкалы нет (#331).
  */
 @Composable
 fun LazyItemScope.TimelineTaskRow(
     row: WidgetRow.Task,
-    top: Boolean,
-    bottom: Boolean,
+    @Suppress("UNUSED_PARAMETER") top: Boolean,
+    @Suppress("UNUSED_PARAMETER") bottom: Boolean,
     isOverdue: Boolean,
     showList: Boolean,
     onToggle: () -> Unit,
     onClick: () -> Unit,
     dayLabels: Boolean = false,
-    /** Режим выбора (итерация 40): null — выключен; true — строка выбрана (зелёная галочка в кружке, рамка на плашке). */
+    /** Режим выбора (итерация 40): null — выключен; true — строка выбрана (галочка в кружке, рамка на строке). */
     selected: Boolean? = null,
     onLongClick: (() -> Unit)? = null,
+    today: LocalDate = LocalDate.now(),
 ) {
-    if (LocalCompactTimeline.current) {
-        CompactTimelineTaskRow(row, top, bottom, onToggle, onClick, showList, selected, onLongClick)
-        return
-    }
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
     val item = row.item
     val testTag = "task:${item.id}"
     val done = doneCheck(item.showsDone)
-    val fade = doneAlpha(item.showsDone)
-    // Итерация 47 (решение PM): будущий повтор не тусклый — тусклая только прошедшая задача.
-    val faded = row.past
-    val baseHeight = SizeTokens.WIDGET_ROW
-    val height = (baseHeight + if (item.subtitle != null) SizeTokens.TRASH_ROW_EXTRA else 0).dp
+    // #316: выполненная «тает» — цвет плавно уходит к бледному.
+    val melt = ((1f - doneAlpha(item.showsDone)) / (1f - DONE_ALPHA)).coerceIn(0f, 1f)
+    val base = if (item.priority == Priority.HIGH) colors.taskRow.priority else colors.taskRow.title
+    val muted = row.past && !item.showsDone
+    val textColor = if (muted) colors.taskRow.done else lerp(base, colors.taskRow.done, melt)
+    val iconAlpha = if (muted) TaskRowTokens.FADED_ICON_ALPHA else 1f - melt * (1f - TaskRowTokens.FADED_ICON_ALPHA)
+    val right = taskRightLabel(row, isOverdue, dayLabels, today)
+    val height = (SizeTokens.WIDGET_ROW + if (item.subtitle != null) SizeTokens.TRASH_ROW_EXTRA else 0).dp
     Row(
         Modifier
             .animateItem()
             .fillMaxWidth()
             .height(height)
+            .padding(horizontal = spacing.xs)
+            .clip(AppTheme.shapes.medium)
+            .then(if (selected == true) Modifier.background(colors.selected).border(SizeTokens.CHECKBOX_STROKE.dp, colors.accent, AppTheme.shapes.medium) else Modifier)
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
             .padding(end = spacing.xs)
             .testTag(testTag),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(Modifier.alpha(fade)) { TimeColumn(row, isOverdue, faded, dayLabels) }
-        Rail(row, top, bottom, faded, done, testTag, onToggle, selected, fade)
-        Row(
-            Modifier
-                .weight(1f)
-                .fillMaxHeight()
-                .padding(vertical = SizeTokens.WIDGET_CARD_INSET.dp)
-                .alpha(fade)
-                .clip(AppTheme.shapes.medium)
-                .background(if (selected == true) colors.selected else if (LocalTaskCanvas.current) Color.Transparent else colors.surface)
-                .then(if (selected == true) Modifier.border(SizeTokens.CHECKBOX_STROKE.dp, colors.accent, AppTheme.shapes.medium) else Modifier)
-                .combinedClickable(onClick = onClick, onLongClick = onLongClick)
-                .padding(horizontal = spacing.sm),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(Modifier.weight(1f)) {
+        Check(item, textColor, done, testTag, onToggle, selected)
+        if (showList) {
+            Text(
+                item.listEmoji,
+                fontSize = SizeTokens.TASK_EMOJI_SP.sp,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                modifier = Modifier.width(SizeTokens.TASK_EMOJI.dp).alpha(iconAlpha),
+            )
+            Spacer(Modifier.width(SizeTokens.TASK_EMOJI_GAP.dp))
+        }
+        Column(Modifier.weight(1f)) {
+            Text(
+                item.title,
+                style = MaterialTheme.typography.bodyMedium,
+                fontSize = SizeTokens.TASK_TITLE_SP.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = textColor,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.testTag("$testTag:title"),
+            )
+            item.subtitle?.let {
                 Text(
-                    item.title,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = if (faded) colors.textSecondary else colors.textPrimary,
+                    it,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.textSecondary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.testTag("$testTag:subtitle"),
                 )
-                item.subtitle?.let {
-                    Text(
-                        it,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = colors.textSecondary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.testTag("$testTag:subtitle"),
-                    )
-                }
-            }
-            // Значки справа налево (итерация 27): список, колокольчик. Повтор с итерации 47 — знаком вместо кружка на шкале.
-            item.reminder?.let {
-                ReminderIcon(
-                    mark = it,
-                    size = SizeTokens.WIDGET_REMINDER_ICON.dp,
-                    tint = colors.textSecondary,
-                    earlyColor = colors.accent,
-                    modifier = Modifier.padding(start = spacing.xxs).testTag("$testTag:reminder"),
-                )
-            }
-            if (showList) {
-                Spacer(Modifier.width(spacing.xs))
-                ListBadge(item.listEmoji)
             }
         }
-    }
-}
-
-/** Колонка времени: по правому краю; у периода конец — серым под началом; у просроченной — красным. */
-@Composable
-private fun TimeColumn(row: WidgetRow.Task, isOverdue: Boolean, faded: Boolean, dayLabels: Boolean) {
-    val colors = AppTheme.colors
-    val color = when {
-        isOverdue -> colors.overdue
-        faded -> colors.textSecondary
-        else -> colors.textPrimary
-    }
-    val style = if (dayLabels) MaterialTheme.typography.labelSmall else MaterialTheme.typography.labelMedium
-    val measuredTime = rememberTextMeasurer().measure("00:00", style.copy(fontWeight = FontWeight.Bold))
-    val timeWidth = with(LocalDensity.current) { measuredTime.size.width.toDp() }
-    Column(
-        // С днём («Завтра», «16 окт») колонка шире и мельче — как у просроченных в виджете.
-        // Итерация 41: колонка дня растёт вместе с системным шрифтом — «Сегодня» помещается и с крупным шрифтом.
-        // Множитель шрифта, а не sp: Android 14 увеличивает крупные sp слабее мелкого текста, и колонка отставала бы от подписи.
-        Modifier.width(if (dayLabels) (SizeTokens.TIMELINE_DAY_COLUMN * LocalDensity.current.fontScale).dp else maxOf(SizeTokens.WIDGET_TIME.dp, timeWidth)).fillMaxHeight(),
-        horizontalAlignment = Alignment.End,
-        verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
-    ) {
-        row.start?.let { Text(it, style = style, fontWeight = FontWeight.Bold, color = color, maxLines = 1, softWrap = false, textAlign = TextAlign.End, modifier = Modifier.fillMaxWidth()) }
-        row.end?.let {
-            Text(it, style = style, fontWeight = FontWeight.Bold, color = if (isOverdue) colors.overdue else colors.textSecondary, maxLines = 1, softWrap = false, textAlign = TextAlign.End, modifier = Modifier.fillMaxWidth())
+        item.reminder?.let {
+            ReminderIcon(
+                mark = it,
+                size = SizeTokens.TASK_BELL.dp,
+                tint = colors.textSecondary,
+                earlyColor = colors.accent,
+                modifier = Modifier.padding(start = SizeTokens.TASK_RIGHT_GAP.dp).alpha(iconAlpha).testTag("$testTag:reminder"),
+            )
+        }
+        right?.let {
+            Text(
+                it,
+                style = MaterialTheme.typography.labelMedium,
+                fontSize = SizeTokens.TASK_TIME_SP.sp,
+                fontWeight = FontWeight.Medium,
+                color = if (isOverdue && !item.showsDone) colors.overdue else textColor,
+                maxLines = 1,
+                modifier = Modifier.padding(start = SizeTokens.TASK_RIGHT_GAP.dp).testTag("$testTag:time"),
+            )
         }
     }
 }
 
 /**
- * Линия шкалы с кружком приоритета (в том числе у периода); нажатие — «выполнено» или, у выполненной,
- * вернуть. [done] — доля перехода к выполненной: кольцо заливается цветом и появляется белая галочка. Итерация 47: у повторяющейся
- * задачи вместо кружка — знак повтора ([RepeatMark]: круглый, в том числе у периода), у выполненной он остаётся без галочки,
- * тусклым; выполненная задача высокого приоритета заливается тусклым фиолетовым.
+ * Кружок выполнения 18 dp; нажатие — «выполнено» или, у выполненной, вернуть. [done] — доля перехода: кольцо заливается и
+ * появляется белая галочка. У повторяющейся — знак повтора без галочки. В режиме выбора — галочка цвета акцента.
  */
 @Composable
-private fun Rail(row: WidgetRow.Task, top: Boolean, bottom: Boolean, faded: Boolean, done: Float, testTag: String, onToggle: () -> Unit, selected: Boolean? = null, fade: Float = 1f) {
+private fun Check(item: TaskItem, textColor: Color, done: Float, testTag: String, onToggle: () -> Unit, selected: Boolean?) {
     val colors = AppTheme.colors
-    val item = row.item
-    // Итерация 27.1 (вариант PM «А»): кружок всегда цвета приоритета, просрочка — красными подписью дня и временем.
     val ring = when {
-        faded && !item.showsDone -> colors.inactive
-        item.priority == Priority.HIGH -> colors.checkRings.high
-        else -> colors.inactive
+        selected == true -> colors.accent
+        item.priority == Priority.HIGH || item.showsDone -> textColor
+        else -> if (textColor == colors.taskRow.done) textColor else colors.inactive
     }
-    // #316: кружок заливается полным цветом приоритета, бледность даёт прозрачность всей задачи.
-    val fill = ring
-    // Проверка PM (0.47.0): у выполненной повторяющейся галочки нет — знак повтора остаётся, тусклым цветом выполненной.
-    val repeat = item.isRecurring && selected == null
-    val repeatColor = if (item.showsDone) fill else ring
     val label = stringResource(
         when {
             selected != null -> if (selected) R.string.select_unmark else R.string.select_mark
@@ -293,28 +268,21 @@ private fun Rail(row: WidgetRow.Task, top: Boolean, bottom: Boolean, faded: Bool
             else -> R.string.widget_complete
         },
     )
-    val tap = if (item.isGhost) {
-        Modifier
-    } else {
-        Modifier.clickable(onClick = onToggle).semantics { contentDescription = label }.testTag("$testTag:check")
-    }
-    Column(
-        Modifier.width(SizeTokens.WIDGET_RAIL.dp).fillMaxHeight().then(tap),
-        horizontalAlignment = Alignment.CenterHorizontally,
+    val tap = if (item.isGhost) Modifier else Modifier.clickable(onClick = onToggle).semantics { contentDescription = label }.testTag("$testTag:check")
+    Box(
+        Modifier.fillMaxHeight().then(tap).padding(start = AppTheme.spacing.xs, end = SizeTokens.TASK_CHECK_GAP.dp),
+        contentAlignment = Alignment.Center,
     ) {
-        Segment(top, Modifier.weight(1f))
-        if (repeat) {
-            RepeatMark(repeatColor, Modifier.size(SizeTokens.WIDGET_NODE.dp).alpha(fade).testTag("$testTag:repeat"))
+        val size = Modifier.size(SizeTokens.TASK_CHECK.dp)
+        if (item.isRecurring && selected == null) {
+            Icon(painterResource(R.drawable.ic_task_repeat_round), null, tint = ring, modifier = size.testTag("$testTag:repeat"))
         } else {
-            Node(if (selected == true) colors.accent else ring,
-                if (selected != null) (if (selected) 1f else 0f) else done,
-                Modifier.size(SizeTokens.WIDGET_NODE.dp).alpha(fade).testTag("$testTag:node"), fill)
+            Node(ring, if (selected != null) (if (selected) 1f else 0f) else done, size.testTag("$testTag:node"))
         }
-        Segment(bottom, Modifier.weight(1f))
     }
 }
 
-/** Кружок: кольцо цвета [ring]; при [done] → 1 заливается цветом [fill] (тусклый у высокого приоритета), по центру белая галочка. */
+/** Кружок: кольцо цвета [ring]; при [done] → 1 заливается цветом [fill], по центру белая галочка. */
 @Composable
 private fun Node(ring: Color, done: Float, modifier: Modifier, fill: Color = ring) {
     Box(modifier.border(SizeTokens.CHECKBOX_STROKE.dp, if (done >= 1f) fill else ring, CircleShape), contentAlignment = Alignment.Center) {
@@ -327,42 +295,6 @@ private fun Node(ring: Color, done: Float, modifier: Modifier, fill: Color = rin
                 modifier = Modifier.size(SizeTokens.NODE_CHECK.dp).alpha(done),
             )
         }
-    }
-}
-
-@Composable
-@Suppress("UNUSED_PARAMETER")
-private fun Segment(visible: Boolean, modifier: Modifier) {
-    // #331 (решение PM 25.11.2026): вертикальной линии между кружками нет — сегмент лишь держит кружок по центру строки.
-    Box(modifier.width(AppTheme.sizes.hairline))
-}
-
-/** Отметка «сейчас»: зелёное время слева, точка на линии и линия до правого края. */
-@Composable
-fun LazyItemScope.TimelineNowRow(nowMinute: Int, top: Boolean, bottom: Boolean) {
-    if (LocalCompactTimeline.current) { CompactTimelineNowRow(nowMinute, top, bottom); return }
-    val colors = AppTheme.colors
-    Row(
-        Modifier.animateItem().fillMaxWidth().height(SizeTokens.WIDGET_NOW_ROW.dp).padding(end = AppTheme.spacing.xs),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            "%02d:%02d".format(nowMinute / MINUTES_PER_HOUR, nowMinute % MINUTES_PER_HOUR),
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Bold,
-            color = colors.accent,
-            textAlign = TextAlign.End,
-            maxLines = 1,
-            modifier = Modifier.width(SizeTokens.WIDGET_TIME.dp),
-        )
-        Box(Modifier.width(SizeTokens.WIDGET_RAIL.dp).fillMaxHeight(), contentAlignment = Alignment.Center) {
-            Column(Modifier.fillMaxHeight(), horizontalAlignment = Alignment.CenterHorizontally) {
-                Segment(top, Modifier.weight(1f))
-                Segment(bottom, Modifier.weight(1f))
-            }
-            Box(Modifier.size(SizeTokens.WIDGET_NOW_DOT.dp).background(colors.accent, CircleShape))
-        }
-        Box(Modifier.weight(1f).height(AppTheme.sizes.hairline).background(colors.accent))
     }
 }
 

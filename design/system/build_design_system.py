@@ -31,6 +31,11 @@ dim_src = (TOKENS / 'DimensionTokens.kt').read_text()
 
 COLORS = {}  # имя -> (светлая, тёмная)
 main_src, week_src = color_src.split('object WeekRowTokens')
+# #334: строка задачи — название, высокий приоритет, выполненные и прошедшие (свой блок, не «Неделя»).
+task_src = color_src.split('object TaskRowTokens')[1].split('\nobject ')[0]
+week_src = week_src.replace(task_src, '')
+for m in re.finditer(r'val (\w+) = ThemedColor\(light = 0x(\w+), dark = 0x(\w+)\)', task_src):
+    COLORS['task-' + kebab(m[1])] = (hexcolor(m[2]), hexcolor(m[3]))
 for m in re.finditer(r'val (\w+) = ThemedColor\(light = 0x(\w+), dark = 0x(\w+)\)', main_src):
     COLORS[kebab(m[1])] = (hexcolor(m[2]), hexcolor(m[3]))
 # Строки «Недели» (0.46.0): фон по приоритету и серая отметка выполненной.
@@ -83,6 +88,9 @@ COLOR_USAGE = {
     'priority-none-bg': 'Обычный приоритет: фон.', 'priority-none-text': 'Текст на `priority-none-bg`.',
     'ring-high': 'Высокий приоритет: кружок, знак повтора, кнопка приоритета, шкала.',
     'ring-high-done': 'Заливка кружка выполненной задачи высокого приоритета — тусклый фиолетовый (решение PM, итерация 47).',
+    'task-title': 'Строка задачи (#334): название и время справа — графит.',
+    'task-priority': 'Строка задачи (#334): название, время и кружок высокого приоритета — яркий фиолетовый.',
+    'task-done': 'Строка задачи (#334): выполненные и прошедшие — «ещё светлее»; эмодзи и колокольчик у них 45 %.',
     'week-row-high': 'Вид «Неделя»: бледный фиолетовый фон строки задачи высокого приоритета; у обычной и выполненной — `surface`.',
     'week-row-done-mark': 'Вид «Неделя»: серый залитый кружок выполненной задачи без приоритета (текст выполненной — `inactive`, зачёркнут).',
     'ring-none': 'Кружок и знак повтора задачи без приоритета в виджете (в приложении — `inactive`).', 'ring-none-done': 'Заливка кружка выполненной задачи без приоритета в виджете.',
@@ -192,7 +200,7 @@ def build_tokens():
     color = []
     order = ['background', 'surface', 'text-primary', 'text-secondary', 'accent', 'on-accent', 'accent-soft', 'selected', 'inactive', 'divider',
              'overdue', 'danger', 'income', 'warning', 'goal', 'scrim', 'on-list-square']
-    order += [n for n in COLORS if n.startswith('ring-')] + [n for n in COLORS if n.startswith('priority-')] + [n for n in COLORS if n.startswith('week-row-')]
+    order += [n for n in COLORS if n.startswith('ring-')] + [n for n in COLORS if n.startswith('priority-')] + [n for n in COLORS if n.startswith('week-row-')] + [n for n in COLORS if n.startswith('task-')]
     for n in order:
         light, dark = COLORS[n]
         color.append({'name': n, 'value': {'light': light, 'dark': dark}, 'usage': COLOR_USAGE[n]})
@@ -437,16 +445,23 @@ def node(color, done=False, h=20, rep=False):
 
 
 def trow(time, color, title, done=False, over=False, period=None, rep=False, rem=None, lsq=True, end=None, top=True, bottom=True):
-    h = 46
-    tcol = 'var(--overdue)' if over else ('var(--text-secondary)' if done else 'var(--text-primary)')
-    t = f'<div style="width:38px;text-align:right;font-size:12px;line-height:16px;font-weight:700;color:{tcol};display:flex;flex-direction:column;justify-content:center">{time}' + (f'<span style="color:{"var(--overdue)" if over else "var(--text-secondary)"}">{end}</span>' if end else '') + '</div>'
-    # #331: без вертикальной линии и линии «сейчас»; кружок 20 и по 8 dp с боков (колонка 36).
-    rail = f'<div style="width:36px;display:flex;align-items:center;justify-content:center">{node(color, done, 20, rep)}</div>'
-    icons = f'<span style="margin-left:4px">{bell(22, rem)}</span>' if rem else ''
-    lsqh = f'<span class="list-sq" style="background:var(--inbox-list);margin-left:8px">{svg("ic_list_inbox", 12)}</span>' if lsq else ''
-    plaque = (f'<div style="flex:1;margin:3px 0;border-radius:var(--radius-md);background:var(--surface);display:flex;align-items:center;padding:0 12px;opacity:{.7 if done else 1}">'
-              f'<span style="flex:1;font-size:14px;font-weight:700;{"text-decoration:line-through;color:var(--text-secondary)" if done else ""}">{title}</span>{icons}{lsqh}</div>')
-    return f'<div style="display:flex;height:{h}px;padding-right:8px">{t}{rail}{plaque}</div>'
+    # #334 (конструкторы PM 25.11.2026): кружок 18 → эмодзи списка 16 → название 14 sp полужирное графитом → колокольчик 14 → время 13 sp справа.
+    hi = color in ('var(--ring-high)', 'var(--ring-medium)')
+    text = '#C4C5C8' if done else ('#862CE0' if hi else '#2E3036')
+    ring = text if (done or hi) else 'var(--inactive)'
+    if rep:
+        mark = f'<span style="color:{ring};display:flex">{svg("ic_task_repeat_round", 18)}</span>'
+    elif done:
+        mark = f'<span style="width:18px;height:18px;border-radius:9px;background:{ring};color:#fff;display:flex;align-items:center;justify-content:center">{CHECK.replace("<svg", "<svg width=11 height=11")}</span>'
+    else:
+        mark = f'<span style="width:18px;height:18px;border-radius:9px;border:2px solid {ring};box-sizing:border-box;display:block"></span>'
+    emoji = '<span style="width:16px;font-size:13px;text-align:center;margin:0 8px 0 10px;opacity:{0}">🏠</span>'.format(0.45 if done else 1) if lsq else '<span style="width:10px"></span>'
+    right = f'{time}–{end}' if end else time
+    tcol = 'var(--overdue)' if over else text
+    icons = f'<span style="margin-left:8px;display:flex;opacity:{0.45 if done else 1}">{bell(14, rem)}</span>' if rem else ''
+    return (f'<div style="display:flex;align-items:center;height:46px;padding:0 8px">{mark}{emoji}'
+            f'<span style="flex:1;font-size:14px;font-weight:600;color:{text};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{title}</span>{icons}'
+            f'<span style="margin-left:8px;font-size:13px;font-weight:500;color:{tcol}">{right}</span></div>')
 
 
 def preview_timeline_row():
@@ -457,7 +472,7 @@ def preview_timeline_row():
             + trow('14:00', 'var(--inactive)', 'Купить продукты')
             + trow('Вчера', 'var(--inactive)', 'Отчёт за неделю', over=True)
             + trow('09:00', 'var(--ring-high)', 'Зарядка', done=True, bottom=False) + '</div>')
-    return doc('Список и виджет', 460, 'Строка шкалы: время, кружок приоритета, плашка. Просрочка, выполнено, период', body)
+    return doc('Список и виджет', 460, 'Строка задачи #334: кружок, эмодзи, название, колокольчик, время справа. Просрочка, выполнено, период', body)
 
 
 def sheet_card(created, width=388, snooze=False):
@@ -714,11 +729,10 @@ TickTick хранит эмодзи в начале названия: импор�
     'CalendarDialog': ('Календарь на ближайшие 2 месяца: день выбирается нажатием, окно закрывается.',
                        '''Окно по центру (`SheetDialog` без «Готово»), единственная кнопка — «Закрыть». Два месяца: текущий и следующий, недели с понедельника.
 Прошедшие дни бледные и недоступны, сегодня в кольце, выбранный чёрный. Месяц нигде больше не открывается.'''),
-    'TimelineRow': ('Строка шкалы дня: время слева, кружок приоритета на линии, белая плашка с названием.',
-                    '''Высота `size-widget-row` (46), у периода та же высота (46). Колонка времени `size-widget-time` (38) справа выровнена, колонка линии `size-widget-rail` (26), кружок `size-widget-node` (20), контур `size-stroke`.
-Плашка — `surface`, радиус `radius-md`, щель сверху и снизу `size-widget-card-inset` (3), внутри `space-sm`. Название — `body-medium` Bold; справа колокольчик и эмодзи списка (знак повтора — вместо кружка слева).
-Период (#263): обычная строка 46 dp и круглый значок выполнения/повтора; начало и конец слева друг под другом. Просрочка: время и день красные (`overdue`), кружок `inactive`.
-Выполнена: кружок залит (высокий — тусклым `ring-high-done`) с белой галочкой, плашка 70%, название зачёркнуто. Тот же вид в приложении и в виджете.'''),
+    'TimelineRow': ('Строка задачи: кружок, эмодзи списка, название, колокольчик и время справа (#334).',
+                    '''Решение PM 25.11.2026 (конструкторы, design/approved/334). Высота `size-widget-row` (46). Слева направо: кружок `size-task-check` (18, у повтора — стрелки-треугольники `ic_task_repeat_round`), отступ `size-task-check-gap` (10), эмодзи списка `size-task-emoji` (16), отступ 8, название 14 sp полужирное (Manrope 600), колокольчик `size-task-bell` (14), отступ 8, время 13 sp средним — «14:00–16:00» одной строкой. Линий шкалы и отметки «сейчас» нет (#331).
+Цвета `TaskRowTokens`: название графитом (#2E3036), высокий приоритет — ярким фиолетовым (#862CE0), выполненные и прошедшие — «ещё светлее» (#C4C5C8), эмодзи и колокольчик у них — 45 %. Время — цветом названия; у просроченных — `overdue` и день недели («вт», старше недели — «17 ноя»). Выполненная не зачёркнута, а тает к бледному цвету. В «Входящих» и списках справа — день и время («сегодня 18:00», «завтра 10:00», «пт 27 ноя»).
+Подпись дня — «вт 25 ноя · Сегодня» 12 sp средним серым, число задач тем же стилем, у «Сегодня» полоса 1 dp и «N из M». «Просрочено» — красным тем же стилем, одним блоком без дней, нажатие сворачивает, тонкая →| переносит, число справа. Тот же вид в приложении и в виджете.'''),
 }
 
 

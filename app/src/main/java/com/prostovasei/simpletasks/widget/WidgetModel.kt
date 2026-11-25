@@ -173,8 +173,25 @@ object WidgetDates {
     fun tile(date: LocalDate): Triple<String, String, String> =
         Triple(date.dayOfMonth.toString(), WEEKDAYS[date.dayOfWeek.value - 1].uppercase(), MONTHS[date.monthValue - 1])
 
-    /** «ПТ, 16 окт» — подписи дней в ленте приложения (итерация 13). */
-    fun dayHeader(date: LocalDate): String = "${WEEKDAYS[date.dayOfWeek.value - 1].uppercase()} ${short(date)}"
+    /** #334: «пт 16 окт» — подпись дня в ленте, окне дня и виджете (строчными, без запятой и нуля). */
+    fun dayHeader(date: LocalDate): String = "${WEEKDAYS[date.dayOfWeek.value - 1]} ${date.dayOfMonth} ${MONTHS[date.monthValue - 1]}"
 
-    fun header(date: LocalDate): String = "${WEEKDAYS[date.dayOfWeek.value - 1].uppercase()}, ${short(date)}"
+    fun header(date: LocalDate): String = dayHeader(date)
+
+    /** #334: «пт 16 окт · Сегодня» — подпись с «Сегодня»/«Завтра»/«Вчера». */
+    fun header(date: LocalDate, relative: String?): String = relative?.let { "${dayHeader(date)} · $it" } ?: dayHeader(date)
+
+    /** #334: справа у просроченной — день недели («вт»); старше недели — дата («17 ноя»): «пн» этой и прошлой недели не различить. */
+    fun overdueDay(date: LocalDate, today: LocalDate): String =
+        if (date < today && date >= today.minusDays(WEEK_DAYS - 1L)) WEEKDAYS[date.dayOfWeek.value - 1] else "${date.dayOfMonth} ${MONTHS[date.monthValue - 1]}"
+
+    /** #334: справа в списках без подписей дней — «сегодня 18:00», «завтра 10:00», «пт 27 ноя»; прошедшие — как [overdueDay]. */
+    fun listDay(date: LocalDate, time: String?, today: LocalDate, todayWord: String, tomorrowWord: String): String = when {
+        date < today -> overdueDay(date, today)
+        date == today -> listOfNotNull(todayWord, time).joinToString(" ")
+        date == today.plusDays(1) -> listOfNotNull(tomorrowWord, time).joinToString(" ")
+        else -> dayHeader(date)
+    }
+
+    private const val WEEK_DAYS = 7
 }

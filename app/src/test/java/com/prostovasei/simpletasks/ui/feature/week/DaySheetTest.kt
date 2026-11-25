@@ -81,7 +81,7 @@ class DaySheetTest {
     @Test
     fun showsCompactDateWithoutRelativeLabelOrCount() {
         show()
-        composeRule.onNodeWithTag(TAG_DAY_SHEET_TITLE).assertTextEquals("СБ 07 ноя")
+        composeRule.onNodeWithTag(TAG_DAY_SHEET_TITLE).assertTextEquals("сб 7 ноя · Сегодня")
         composeRule.onNodeWithTag(TAG_DAY_SHEET_COUNT).assertDoesNotExist()
         composeRule.onNodeWithText("Сегодня").assertDoesNotExist()
         listOf("tg", "hookah", "football", "flowers").forEach { composeRule.onNodeWithTag("task:$it").assertExists() }
@@ -118,8 +118,8 @@ class DaySheetTest {
         assertEquals(regular.bottom - regular.top, period.bottom - period.top)
         val node = composeRule.onNodeWithTag("task:hookah:node", useUnmergedTree = true).getUnclippedBoundsInRoot()
         assertEquals(node.right - node.left, node.bottom - node.top)
-        composeRule.onNodeWithText("19:30", useUnmergedTree = true).assertExists()
-        composeRule.onNodeWithText("23:30", useUnmergedTree = true).assertExists()
+        composeRule.onNodeWithText("19:30–21:30", useUnmergedTree = true).assertExists() // #334: период одной строкой
+        composeRule.onNodeWithText("21:30–23:30", useUnmergedTree = true).assertExists()
         composeRule.onNodeWithText("23:38", useUnmergedTree = true).assertDoesNotExist()
     }
 
@@ -130,15 +130,21 @@ class DaySheetTest {
         composeRule.onNodeWithTag(TAG_DAY_SHEET_TITLE).assertIsDisplayed()
         composeRule.onNodeWithTag(TAG_DAY_SHEET_COUNT).assertDoesNotExist()
         composeRule.onNodeWithTag(TAG_DAY_SHEET_ADD).assertIsDisplayed()
-        composeRule.onNodeWithText("19:30", useUnmergedTree = true).assertIsDisplayed()
-        listOf("19:30", "23:30").forEach { time ->
+        composeRule.onNodeWithText("19:30–21:30", useUnmergedTree = true).assertIsDisplayed()
+        composeRule.onRoot().captureRoboImage("screenshots/day_sheet_small_large_font.png")
+        listOf("19:30–21:30", "21:30–23:30").forEach { time ->
             val results = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
             composeRule.onNodeWithText(time, useUnmergedTree = true).performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(results) }
-            org.junit.Assert.assertFalse("время $time: width=${results.single().didOverflowWidth}, height=${results.single().didOverflowHeight}, size=${results.single().size}, constraints=${results.single().layoutInput.constraints}", results.single().hasVisualOverflow)
+            // #334: время справа без колонки — проверяем, что оно в одну строку, без многоточия и целиком внутри окна.
+            val layout = results.single()
+            org.junit.Assert.assertEquals("время $time в одну строку", 1, layout.lineCount)
+            org.junit.Assert.assertFalse("время $time без многоточия", layout.isLineEllipsized(0))
+            val bounds = composeRule.onNodeWithText(time, useUnmergedTree = true).getUnclippedBoundsInRoot()
+            val sheet = composeRule.onNodeWithTag(TAG_DAY_SHEET).getUnclippedBoundsInRoot()
+            org.junit.Assert.assertTrue("время $time внутри окна", bounds.right <= sheet.right)
         }
 
-        composeRule.onNodeWithText("23:30", useUnmergedTree = true).assertIsDisplayed()
-        composeRule.onRoot().captureRoboImage("screenshots/day_sheet_small_large_font.png")
+        composeRule.onNodeWithText("21:30–23:30", useUnmergedTree = true).assertIsDisplayed()
     }
 
     @Test
@@ -158,7 +164,7 @@ class DaySheetTest {
     fun tomorrowHeaderHasOnlyDateAndPlusAddsOnThatDate() {
         val date = today.plusDays(1)
         show(state.copy(date = date))
-        composeRule.onNodeWithTag(TAG_DAY_SHEET_TITLE).assertTextEquals("ВС 08 ноя")
+        composeRule.onNodeWithTag(TAG_DAY_SHEET_TITLE).assertTextEquals("вс 8 ноя · Завтра")
         composeRule.onNodeWithText("Завтра").assertDoesNotExist()
         composeRule.onNodeWithTag(TAG_DAY_SHEET_ADD).performClick()
         assertEquals(listOf(date), added)
@@ -167,7 +173,7 @@ class DaySheetTest {
     @Test
     fun yesterdayHeaderHasOnlyDate() {
         show(state.copy(date = today.minusDays(1)))
-        composeRule.onNodeWithTag(TAG_DAY_SHEET_TITLE).assertTextEquals("ПТ 06 ноя")
+        composeRule.onNodeWithTag(TAG_DAY_SHEET_TITLE).assertTextEquals("пт 6 ноя · Вчера")
         composeRule.onNodeWithText("Вчера").assertDoesNotExist()
     }
 
@@ -176,15 +182,15 @@ class DaySheetTest {
         show()
         composeRule.onNodeWithTag(TAG_DAY_SHEET_PAGER).performTouchInput { swipeLeft() }
         composeRule.waitForIdle()
-        composeRule.onNodeWithTag(TAG_DAY_SHEET_TITLE).assertTextEquals("ВС 08 ноя")
+        composeRule.onNodeWithTag(TAG_DAY_SHEET_TITLE).assertTextEquals("вс 8 ноя · Завтра")
         composeRule.onNodeWithTag(TAG_DAY_SHEET_ADD).performClick()
         assertEquals(listOf(today.plusDays(1)), added)
         composeRule.onNodeWithTag(TAG_DAY_SHEET_TITLE).performTouchInput { swipeRight() }
         composeRule.waitForIdle()
-        composeRule.onNodeWithTag(TAG_DAY_SHEET_TITLE).assertTextEquals("СБ 07 ноя")
+        composeRule.onNodeWithTag(TAG_DAY_SHEET_TITLE).assertTextEquals("сб 7 ноя · Сегодня")
         composeRule.onNodeWithTag(TAG_DAY_SHEET_TITLE).performTouchInput { swipeRight() }
         composeRule.waitForIdle()
-        composeRule.onNodeWithTag(TAG_DAY_SHEET_TITLE).assertTextEquals("ПТ 06 ноя")
+        composeRule.onNodeWithTag(TAG_DAY_SHEET_TITLE).assertTextEquals("пт 6 ноя · Вчера")
     }
 
     @Test

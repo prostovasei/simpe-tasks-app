@@ -305,7 +305,7 @@ object SizeTokens {
     /** Меню «Отложить» над полоской: строка варианта. */
     const val POPUP_MENU_ROW = 48
     const val SHEET_REVEAL_BLUR = 8
-    const val WIDGET_PROGRESS = 4
+    const val WIDGET_PROGRESS = 1
 
     /**
      * #314, анимации окна дня, dp. [DAY_CASCADE_RISE] — откуда поднимается строка в каскаде; [DAY_BOUNCE] — подскок окна
@@ -416,6 +416,22 @@ object SizeTokens {
 
     /** Отступ слева и справа от кружка в списках задач на холсте (#331, решение PM 25.11.2026: 8 dp). */
     const val TIMELINE_CHECK_GAP = 8
+
+    /**
+     * Строка задачи (#334): кружок 18 → 10 → эмодзи списка 16 → 8 → название 14 sp полужирное → колокольчик 14 → 8 → время 13 sp.
+     * Подпись дня и числа задач — 12 sp, полоса прогресса — 1 dp.
+     */
+    const val TASK_CHECK = 18
+    const val TASK_CHECK_GAP = 10
+    const val TASK_EMOJI = 16
+    const val TASK_EMOJI_GAP = 8
+    const val TASK_BELL = 14
+    const val TASK_RIGHT_GAP = 8
+    const val TASK_TITLE_SP = 14
+    const val TASK_TIME_SP = 13
+    const val TASK_EMOJI_SP = 13
+    const val DAY_HEAD_SP = 12
+    const val DAY_PROGRESS = 1
     const val WIDGET_WEEK_TIME_TEXT = 10
     const val CANVAS_TIME_TEXT = 13
     const val WEEKVIEW_TASK = 22

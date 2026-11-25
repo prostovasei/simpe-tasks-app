@@ -326,7 +326,7 @@ class AppSmokeTest {
         composeRule.onNodeWithTag(TAG_QUICK_SAVE).performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTag(TAG_QUICK_TITLE).fetchSemanticsNodes().isEmpty() }
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Купить продукты") }
-        composeRule.onNodeWithText("Сегодня").assertExists()
+        composeRule.onNodeWithText("Сегодня", substring = true).assertExists()
 
         // Поиск находит новую задачу по части слова.
         pickTask("LISTS")
@@ -377,11 +377,11 @@ class AppSmokeTest {
         val past = entry.time().today().minusDays(3)
         val id = runBlocking { entry.tasks().createTask(NewTask(entry.projects().getInbox().id, "Просроченная", due = TaskDue.AllDay(past))) }
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Просроченная") }
-        composeRule.onNodeWithText("Просрочено · 1").assertExists()
+        composeRule.onNodeWithText("Просрочено").assertExists()
 
         composeRule.onNodeWithTag(TAG_OVERDUE_TOGGLE).performClick()
         composeRule.waitUntil(5_000) { !composeRule.onAllNodesWithTextExists("Просроченная") }
-        composeRule.onNodeWithText("Просрочено · 1").assertExists()
+        composeRule.onNodeWithText("Просрочено").assertExists()
         composeRule.onNodeWithTag(TAG_OVERDUE_TOGGLE).performClick()
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("Просроченная") }
 
