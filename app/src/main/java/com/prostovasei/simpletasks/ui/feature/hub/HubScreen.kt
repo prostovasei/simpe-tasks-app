@@ -94,6 +94,8 @@ fun HubRoute(
     onOpenTask: (String) -> Unit,
     onAddTask: () -> Unit,
     onOpenSection: (String) -> Unit = {},
+    habits: com.prostovasei.simpletasks.ui.feature.habits.HabitsState? = null,
+    onHabits: (com.prostovasei.simpletasks.ui.feature.habits.HabitsIntent) -> Unit = {},
     viewModel: HubViewModel = androidx.hilt.navigation.compose.hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -102,7 +104,7 @@ fun HubRoute(
     val read by NewsRead.revision.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) { WidgetRenderer.refreshNews(context.applicationContext) }
     val news = remember(newsState, read) { hubNews(context) }
-    HubScreen(state, viewModel::onIntent, finance, onFinance, news, onOpenTask, onAddTask, onOpenSection)
+    HubScreen(state, viewModel::onIntent, finance, onFinance, news, onOpenTask, onAddTask, onOpenSection, habits, onHabits)
     FinanceDialogs(finance, onFinance)
     health.form?.let { WeightDialog(health, it, onHealth) }
 }
@@ -128,12 +130,23 @@ internal fun HubScreen(
     onOpenTask: (String) -> Unit,
     onAddTask: () -> Unit,
     onOpenSection: (String) -> Unit = {},
+    habits: com.prostovasei.simpletasks.ui.feature.habits.HabitsState? = null,
+    onHabits: (com.prostovasei.simpletasks.ui.feature.habits.HabitsIntent) -> Unit = {},
 ) {
     val spacing = AppTheme.spacing
     Column(Modifier.fillMaxSize().testTag(TAG_HUB)) {
         // #336 (выбор PM): финансы, новости, задачи; #338 — у каждого раздела заголовок «Финансы ›», нажатие открывает раздел.
         HubSectionTitle(R.string.module_finance, HUB_FINANCE, onOpenSection, Modifier.padding(top = spacing.sm))
         HubFinance(finance, onFinance)
+        // #340: привычки на сегодня — плашками после финансов; нажатие отмечает.
+        habits?.let { h ->
+            val today = h.today
+            val due = h.active.filter { com.prostovasei.simpletasks.domain.model.habits.HabitMath.dueOn(it, today) }
+            if (due.isNotEmpty()) {
+                HubSectionTitle(R.string.module_habits, HUB_HABITS, onOpenSection, Modifier.padding(top = spacing.sm))
+                HubHabits(due, today) { onHabits(com.prostovasei.simpletasks.ui.feature.habits.HabitsIntent.Toggle(it, today)) }
+            }
+        }
         if (news.isNotEmpty()) {
             HubSectionTitle(R.string.module_news, HUB_NEWS_SECTION, onOpenSection, Modifier.padding(top = spacing.sm))
             HubNewsPager(news)
@@ -161,6 +174,34 @@ private fun HubSectionTitle(@androidx.annotation.StringRes label: Int, key: Stri
     }
 }
 
+/** Плашки привычек хаба (#340): «эмодзи название», сделанная — фиолетовая с ✓; ряд листается вбок. */
+@Composable
+private fun HubHabits(habits: List<com.prostovasei.simpletasks.domain.model.habits.Habit>, today: java.time.LocalDate, onToggle: (String) -> Unit) {
+    val colors = AppTheme.colors
+    val spacing = AppTheme.spacing
+    Row(
+        Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = spacing.md).testTag(TAG_HUB_HABITS),
+        horizontalArrangement = Arrangement.spacedBy(spacing.xs),
+    ) {
+        habits.forEach { habit ->
+            val done = habit.isDone(today)
+            val description = stringResource(if (done) R.string.habit_uncheck else R.string.habit_check, habit.name)
+            Text(
+                "${habit.emojiShown} ${habit.name}${if (done) " ✓" else ""}",
+                Modifier.clip(CircleShape).background(if (done) colors.priority.high.container else FinanceShareColors.accountSurface)
+                    .clickable(role = Role.Checkbox) { onToggle(habit.id) }
+                    .semantics { contentDescription = description }
+                    .padding(horizontal = spacing.md, vertical = spacing.xs).testTag("$TAG_HUB_HABIT:${habit.id}"),
+                style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold,
+                color = if (done) colors.priority.high.content else colors.textPrimary, maxLines = 1,
+            )
+        }
+    }
+}
+
+const val HUB_HABITS = "habits"
+const val TAG_HUB_HABITS = "hub_habits"
+const val TAG_HUB_HABIT = "hub_habit"
 const val HUB_FINANCE = "finance"
 const val HUB_NEWS_SECTION = "news"
 const val HUB_TASKS_SECTION = "tasks"

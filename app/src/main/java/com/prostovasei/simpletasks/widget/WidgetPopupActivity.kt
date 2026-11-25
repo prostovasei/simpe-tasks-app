@@ -51,6 +51,7 @@ internal val WIDGET_PICKER_ENTRIES: List<com.prostovasei.simpletasks.ui.navigati
     com.prostovasei.simpletasks.ui.navigation.PickerEntry("inbox", R.drawable.ic_widget_bar_inbox, R.string.inbox_list_name, "widget_pick:inbox"),
     com.prostovasei.simpletasks.ui.navigation.PickerEntry("FINANCE", R.drawable.ic_module_finance, R.string.module_finance, "widget_pick:FINANCE"),
     com.prostovasei.simpletasks.ui.navigation.PickerEntry("HEALTH", R.drawable.ic_module_health, R.string.module_health, "widget_pick:HEALTH"),
+    com.prostovasei.simpletasks.ui.navigation.PickerEntry("HABITS", R.drawable.ic_module_habits, R.string.module_habits, "widget_pick:HABITS"),
     com.prostovasei.simpletasks.ui.navigation.PickerEntry("NEWS", R.drawable.ic_module_news, R.string.module_news, "widget_pick:NEWS"),
     com.prostovasei.simpletasks.ui.navigation.PickerEntry("settings", R.drawable.ic_nav_sliders, R.string.settings_title, "widget_pick:settings"),
 )
@@ -97,12 +98,15 @@ class WidgetPopupActivity : ComponentActivity() {
                                 com.prostovasei.simpletasks.ui.navigation.ADD_EXPENSE -> startActivity(widgetPopupIntent(context, id, finance = true))
                                 com.prostovasei.simpletasks.ui.navigation.ADD_WEIGHT -> startActivity(widgetPopupIntent(context, id, finance = false, health = true))
                                 com.prostovasei.simpletasks.ui.navigation.ADD_NEWS -> sendBroadcast(WidgetActions.refreshNews(context, id))
+                                com.prostovasei.simpletasks.ui.navigation.ADD_HABIT -> startActivity(Intent(context, com.prostovasei.simpletasks.MainActivity::class.java)
+                                    .putExtra(com.prostovasei.simpletasks.MainActivity.EXTRA_ADD_HABIT, true)
+                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP))
                             }
                             finish()
                         },
                     )
                 } else if (intent.getBooleanExtra("sections", false)) {
-                    val entries = WIDGET_PICKER_ENTRIES.filter { it.key != "week" || Build.VERSION.SDK_INT >= Build.VERSION_CODES.S }
+                    val entries = WIDGET_PICKER_ENTRIES.filter { (it.key != "week" && it.key != "HABITS") || Build.VERSION.SDK_INT >= Build.VERSION_CODES.S }
                     com.prostovasei.simpletasks.ui.navigation.TabPickerSheet(
                         selected = widgetPickerSelected(WidgetSelection.module(this, id), WidgetSelection.get(this, id)),
                         entries = entries,

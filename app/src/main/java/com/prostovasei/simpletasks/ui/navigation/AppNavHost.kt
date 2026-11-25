@@ -245,7 +245,7 @@ fun AppNavHost(
     LaunchedEffect(openRoute) {
         openRoute ?: return@LaunchedEffect
         // Покупка из уведомления банка (#233) открывается ниже, когда готова модель финансов.
-        if (openRoute is OpenBankPurchase || openRoute is OpenBankQueue || openRoute is OpenBudget || openRoute is OpenHealthWeight || openRoute is OpenNews) return@LaunchedEffect
+        if (openRoute is OpenBankPurchase || openRoute is OpenBankQueue || openRoute is OpenBudget || openRoute is OpenHealthWeight || openRoute is OpenNews || openRoute is HabitsDestination || openRoute is OpenHabitAdd) return@LaunchedEffect
         navController.currentBackStackEntryFlow.first()
         navController.navigate(openRoute) { launchSingleTop = true }
         onRouteOpened()
@@ -268,6 +268,8 @@ fun AppNavHost(
     // «Здоровье» (#257) — отдельный модуль со своей панелью; экран белый плоский, как «Неделя» (макеты design/approved/257).
     val inHealth = destination?.hasRoute(HealthDestination::class) == true
     val inNews = destination?.hasRoute(NewsDestination::class) == true
+    // #340: «Привычки» — отдельный модуль, белый плоский экран, как «Здоровье».
+    val inHabits = destination?.hasRoute(HabitsDestination::class) == true
     val inHub = destination?.hasRoute(HubDestination::class) == true
     var addOpen by rememberSaveable { mutableStateOf(false) }
     val newsScope = rememberCoroutineScope()
@@ -276,13 +278,22 @@ fun AppNavHost(
     }
     LaunchedEffect(inNews) { if (inNews) newsScope.launch { refreshNews() } }
     // #296: нажатие на «N новых новостей» — вкладка «Новости»; вход во вкладку сам обновит ленту и снимет уведомление.
+    // #340: напоминание о привычках и раздел «Привычки» виджета открывают раздел.
+    val habitsModel = hiltViewModel<com.prostovasei.simpletasks.ui.feature.habits.HabitsViewModel>()
+    LaunchedEffect(openRoute) {
+        if (openRoute !is HabitsDestination && openRoute !is OpenHabitAdd) return@LaunchedEffect
+        navController.currentBackStackEntryFlow.first()
+        navController.openRoot(HabitsDestination, restore = true)
+        if (openRoute is OpenHabitAdd) habitsModel.onIntent(com.prostovasei.simpletasks.ui.feature.habits.HabitsIntent.Add)
+        onRouteOpened()
+    }
     LaunchedEffect(openRoute) {
         if (openRoute !is OpenNews) return@LaunchedEffect
         navController.currentBackStackEntryFlow.first()
         navController.openRoot(NewsDestination, restore = true)
         onRouteOpened()
     }
-    val taskCanvas = currentTab == Tab.UPCOMING || currentTab == Tab.WEEK || destination?.hasRoute(ProjectDestination::class) == true || inHealth || inNews || inHub
+    val taskCanvas = currentTab == Tab.UPCOMING || currentTab == Tab.WEEK || destination?.hasRoute(ProjectDestination::class) == true || inHealth || inNews || inHub || inHabits
     val lightBars = taskCanvas || !isSystemInDarkTheme()
     SideEffect {
         (context as? Activity)?.window?.let { window ->
@@ -313,6 +324,7 @@ fun AppNavHost(
         onRouteOpened()
     }
     val health = hiltViewModel<HealthViewModel>()
+    val habits = habitsModel
     // #257: нажатие на «Пора взвеситься» — раздел «Здоровье» с окном ввода веса.
     LaunchedEffect(openRoute) {
         if (openRoute !is OpenHealthWeight) return@LaunchedEffect
@@ -392,13 +404,14 @@ fun AppNavHost(
         containerColor = if (taskCanvas) Color(TaskCanvasTokens.background.light) else AppTheme.colors.background,
         snackbarHost = { UndoSnackbarHost(snackbar) },
         bottomBar = {
-            if (inHub || inFinance || inHealth || inNews || (!selectionMode.value && (destination == null || currentTab != null))) {
+            if (inHub || inFinance || inHealth || inNews || inHabits || (!selectionMode.value && (destination == null || currentTab != null))) {
                 val task = currentTab ?: Tab.valueOf(lastTaskTab)
                 val active = when {
                     inHub -> "hub"
                     inFinance -> "finance"
                     inHealth -> "health"
                     inNews -> "news"
+                    inHabits -> "habits"
                     else -> "tasks"
                 }
                 val pick: (Tab) -> Unit = { tab ->
@@ -411,7 +424,7 @@ fun AppNavHost(
                         navController.popBackStack(ListsDestination, inclusive = false)
                     } else if (currentTab != tab) navController.openTab(tab)
                 }
-                TaskCanvasTheme(enabled = inHub || inFinance || inHealth || inNews || active == "tasks" && task != Tab.LISTS) {
+                TaskCanvasTheme(enabled = inHub || inFinance || inHealth || inNews || inHabits || active == "tasks" && task != Tab.LISTS) {
                     androidx.compose.foundation.layout.Box {
                         // #336/#338 (конструктор PM): плавающая капсула справа — разделы, настройки, голос, «+» (меню «что добавить»).
                         FloatingNavBar(
@@ -431,6 +444,10 @@ fun AppNavHost(
                                         ADD_TASK -> navController.navigate(QuickAddDestination(today = !(active == "tasks" && task == Tab.LISTS)))
                                         ADD_EXPENSE -> finance.onIntent(FinanceIntent.Add)
                                         ADD_WEIGHT -> health.onIntent(HealthIntent.Add)
+                                        ADD_HABIT -> {
+                                            if (active != "habits" && active != "hub") navController.openRoot(HabitsDestination, restore = true)
+                                            habits.onIntent(com.prostovasei.simpletasks.ui.feature.habits.HabitsIntent.Add)
+                                        }
                                         ADD_NEWS -> newsScope.launch { refreshNews() }
                                     }
                                 },
@@ -448,6 +465,7 @@ fun AppNavHost(
                                         "finance" -> navController.openRoot(FinanceDestination, restore = true)
                                         "health" -> navController.openRoot(HealthDestination, restore = true)
                                         "news" -> navController.openRoot(NewsDestination, restore = true)
+                                        "habits" -> navController.openRoot(HabitsDestination, restore = true)
                                         "settings" -> navController.navigate(AppSettingsDestination) { launchSingleTop = true }
                                         else -> Tab.entries.firstOrNull { it.name == key }?.let { tab ->
                                             if (active == "tasks" && tab == task && tab != Tab.LISTS) Unit else pick(tab)
@@ -546,6 +564,7 @@ fun AppNavHost(
                     onFinance = { navController.navigate(FinanceSettingsDestination) { launchSingleTop = true } },
                     onHealth = { navController.navigate(HealthSettingsDestination) { launchSingleTop = true } },
                     onNews = { navController.navigate(NewsSettingsDestination) { launchSingleTop = true } },
+                    onHabits = { navController.navigate(HabitsSettingsDestination) { launchSingleTop = true } },
                     onApp = { navController.navigate(AppInfoDestination) { launchSingleTop = true } },
                 )
             }
@@ -554,6 +573,7 @@ fun AppNavHost(
             composable<HubDestination> {
                 val financeState by finance.state.collectAsStateWithLifecycle()
                 val healthState by health.state.collectAsStateWithLifecycle()
+                val habitsState by habits.state.collectAsStateWithLifecycle()
                 FinanceEffects(finance)
                 HubRoute(financeState, finance::onIntent, healthState, health::onIntent, onOpenTask = openTask,
                     onAddTask = { navController.navigate(QuickAddDestination(today = true)) },
@@ -561,14 +581,24 @@ fun AppNavHost(
                         when (key) {
                             com.prostovasei.simpletasks.ui.feature.hub.HUB_FINANCE -> navController.openRoot(FinanceDestination, restore = true)
                             com.prostovasei.simpletasks.ui.feature.hub.HUB_NEWS_SECTION -> navController.openRoot(NewsDestination, restore = true)
+                            com.prostovasei.simpletasks.ui.feature.hub.HUB_HABITS -> navController.openRoot(HabitsDestination, restore = true)
                             else -> navController.openTab(Tab.valueOf(lastTaskTab).takeIf { it != Tab.LISTS } ?: Tab.UPCOMING)
                         }
-                    })
+                    },
+                    habits = habitsState, onHabits = habits::onIntent)
+                // #340: «+ Привычка» с хаба открывает окно привычки прямо поверх хаба.
+                habitsState.form?.let { com.prostovasei.simpletasks.ui.feature.habits.HabitFormHost(habitsState, habits::onIntent) }
             }
             composable<FinanceDestination> {
                 FinanceRoute(finance, onOpenUnsorted = { navController.navigate(FinanceUnsortedDestination) { launchSingleTop = true } })
             }
             composable<HealthDestination> { HealthRoute(health, snackbar) }
+            composable<HabitsDestination> { com.prostovasei.simpletasks.ui.feature.habits.HabitsRoute(habits) }
+            composable<HabitsSettingsDestination> {
+                com.prostovasei.simpletasks.ui.feature.habits.HabitsSettingsRoute(habits, onBack = { navController.popBackStack() },
+                    onBackup = { navController.navigate(HabitsBackupDestination) { launchSingleTop = true } })
+            }
+            composable<HabitsBackupDestination> { com.prostovasei.simpletasks.ui.feature.habits.HabitsBackupRoute(habits, onBack = { navController.popBackStack() }) }
             composable<NewsDestination> { TaskCanvasTheme { NewsScreen() } }
             composable<NewsSettingsDestination> { NewsSettingsRoute(onBack = { navController.popBackStack() }) }
             composable<HealthSettingsDestination> {
@@ -630,6 +660,7 @@ private fun NavDestination.order(): Int = when {
     // Финансы — правее всего: модуль приходит справа и уходит вправо.
     hasRoute(FinanceDestination::class) -> 4
     hasRoute(HealthDestination::class) -> 5
+    hasRoute(HabitsDestination::class) -> 5
     hasRoute(NewsDestination::class) -> 6
     else -> 3
 }

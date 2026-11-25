@@ -150,6 +150,21 @@ data object HealthSettingsDestination
 @Serializable
 data object HealthBackupDestination
 
+/** Раздел «Привычки» (#340). */
+@Serializable
+data object HabitsDestination
+
+/** Страница «Привычки» единых настроек (#340): напоминание, архив, резервная копия. */
+@Serializable
+data object HabitsSettingsDestination
+
+/** Резервная копия «Привычек» (#340). */
+@Serializable
+data object HabitsBackupDestination
+
+/** Не экран: «+» → «Привычка» в виджете — раздел «Привычки» с окном новой привычки (#340). */
+data object OpenHabitAdd
+
 /** Не экран: нажатие на «Пора взвеситься» — раздел «Здоровье» с окном ввода веса (#257). */
 data object OpenHealthWeight
 

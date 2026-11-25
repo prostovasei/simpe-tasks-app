@@ -437,6 +437,14 @@ object SizeTokens {
     const val NAV_PLUS_ICON = 26
     /** #338: значки подписей полосы лимита в хабе. */
     const val LIMIT_NOTE_ICON = 14
+    /** #340: привычки — круг отметки, точки недели, день календаря, эмодзи строки, высота строки. */
+    const val HABIT_CHECK = 28
+    const val HABIT_DOT = 8
+    const val HABIT_DOT_GAP = 6
+    const val HABIT_CAL_DAY = 34
+    const val HABIT_EMOJI_SP = 20
+    const val HABIT_ROW = 56
+    const val HABIT_RING = 2
     const val PICKER_TILE = 76
     const val PICKER_ICON = 24
     const val TASK_CHECK_GAP = 10

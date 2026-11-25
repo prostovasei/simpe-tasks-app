@@ -97,6 +97,7 @@ object WidgetRenderer {
                 module == WidgetModule.HEALTH -> healthWidgetViews(context, model.today, glance, size)
                 module == WidgetModule.NEWS -> newsWidgetViews(context, appWidgetId, glance)
                 module == WidgetModule.HUB && scrollable -> hubWidgetViews(context, appWidgetId, model, glance, size)
+                module == WidgetModule.HABITS && scrollable -> habitsWidgetViews(context, appWidgetId, glance)
                 finance -> financeWidgetViews(context, appWidgetId, glance, size)
                 scrollable -> widgetRootViews(context, appWidgetId, model, glance, size, scrollToToday = scrollToToday, scrollDays = scrollDays)
                 else -> glance
@@ -158,7 +159,7 @@ fun android.widget.RemoteViews.parcelBytes(): Int {
 
 /** Выбранный в виджете список — свой у каждого виджета на рабочем столе. */
 /** #329: HUB — вкладка «Главная» (домик) в общем виджете. */
-internal enum class WidgetModule { TASKS, FINANCE, HEALTH, NEWS, HUB }
+internal enum class WidgetModule { TASKS, FINANCE, HEALTH, NEWS, HUB, HABITS }
 
 object WidgetSelection {
     private const val PREFS = "widget_selection"

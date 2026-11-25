@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- #340: сделанная привычка в виджете — фиолетовый круг с галочкой. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="oval">
+            <size android:width="28dp" android:height="28dp" />
+            <solid android:color="@color/widget_habit_accent" />
+        </shape>
+    </item>
+    <item android:drawable="@drawable/ic_widget_habit_tick" android:gravity="center" android:width="16dp" android:height="16dp" />
+</layer-list>

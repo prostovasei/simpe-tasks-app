@@ -2,6 +2,7 @@
 <!--
   Виджет «Главная» (#329, этап 2): сверху полоса лимита и счета, посередине новости 2 × 2 со стрелками ‹ ›
   (#336: новости над задачами), внизу прокручиваемый список задач «Просрочено · Сегодня · Завтра», поверх — панель справа.
+  #340: после финансов — «Привычки ›» и до трёх плашек на сегодня (нажатие отмечает).
   #338: у разделов заголовки «Финансы ›», «Новости ›», «Задачи ›» (нажатие переключает виджет на раздел); задачи идут до низа под панель.
 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -26,6 +27,18 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical" />
+
+        <TextView android:id="@+id/widget_hub_title_habits" style="@style/WidgetHubTitle" android:text="@string/module_habits" android:visibility="gone" />
+
+        <LinearLayout
+            android:id="@+id/widget_hub_habits"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingStart="@dimen/widget_edge"
+            android:paddingEnd="6dp"
+            android:paddingTop="2dp"
+            android:visibility="gone" />
 
         <TextView android:id="@+id/widget_hub_title_news" style="@style/WidgetHubTitle" android:text="@string/module_news" />
 

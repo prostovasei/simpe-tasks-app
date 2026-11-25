@@ -54,11 +54,11 @@ import com.prostovasei.simpletasks.widget.WidgetLog
  * Открывается из меню кнопки модуля в нижней панели одинаково из любого модуля; стрелка назад возвращает туда, откуда пришли.
  */
 @Composable
-fun AppSettingsRoute(onBack: () -> Unit, onTasks: () -> Unit, onFinance: () -> Unit, onHealth: () -> Unit, onNews: () -> Unit, onApp: () -> Unit) {
+fun AppSettingsRoute(onBack: () -> Unit, onTasks: () -> Unit, onFinance: () -> Unit, onHealth: () -> Unit, onNews: () -> Unit, onApp: () -> Unit, onHabits: () -> Unit = {}) {
     val context = LocalContext.current
     // Подпись пункта «Новости» перечитывается при каждом возврате на страницу: настройки могли измениться.
     val news = remember(context) { NewsAlertPrefs.settings(context) }
-    AppSettingsScreen(AppVersion.current, onBack, onTasks, onFinance, onHealth, onApp, onNews, news)
+    AppSettingsScreen(AppVersion.current, onBack, onTasks, onFinance, onHealth, onApp, onNews, news, onHabits)
 }
 
 @Composable
@@ -71,6 +71,7 @@ fun AppSettingsScreen(
     onApp: () -> Unit,
     onNews: () -> Unit = {},
     news: NewsAlertSettings = NewsAlertSettings(),
+    onHabits: () -> Unit = {},
 ) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
@@ -81,6 +82,7 @@ fun AppSettingsScreen(
                 SectionRow(R.drawable.ic_module_tasks, stringResource(R.string.settings_home_tasks), stringResource(R.string.settings_home_tasks_hint), TAG_SETTINGS_TASKS, onClick = onTasks)
                 SectionRow(R.drawable.ic_module_finance, stringResource(R.string.settings_home_finance), stringResource(R.string.settings_home_finance_hint), TAG_SETTINGS_FINANCE, onClick = onFinance)
                 SectionRow(R.drawable.ic_module_health, stringResource(R.string.settings_home_health), stringResource(R.string.settings_home_health_hint), TAG_SETTINGS_HEALTH, onClick = onHealth)
+                SectionRow(R.drawable.ic_module_habits, stringResource(R.string.settings_home_habits), stringResource(R.string.settings_home_habits_hint), TAG_SETTINGS_HABITS, onClick = onHabits)
                 SectionRow(R.drawable.ic_module_news, stringResource(R.string.settings_home_news), newsHint(news), TAG_SETTINGS_NEWS, onClick = onNews)
                 SectionRow(
                     R.drawable.ic_settings_app,
@@ -215,5 +217,6 @@ const val TAG_APP_INFO = "app_info"
 const val TAG_SETTINGS_TASKS = "settings_tasks"
 const val TAG_SETTINGS_FINANCE = "settings_finance"
 const val TAG_SETTINGS_HEALTH = "settings_health"
+const val TAG_SETTINGS_HABITS = "settings_habits"
 const val TAG_SETTINGS_NEWS = "settings_news"
 const val TAG_SETTINGS_APP = "settings_app"

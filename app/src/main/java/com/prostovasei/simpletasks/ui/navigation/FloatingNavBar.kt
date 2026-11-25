@@ -98,11 +98,12 @@ private fun NavIcon(@DrawableRes res: Int, label: String, tag: String, tint: Col
     ) { Icon(painterResource(res), null, tint = tint, modifier = Modifier.size(size.dp)) }
 }
 
-/** Меню «+» (#338): что добавить — плитками, как выбор раздела. На «Новостях» последней плиткой — «Обновить новости». */
+/** Меню «+» (#338, #340): задача, расход, вес, привычка — плитками, как выбор раздела. На «Новостях» последней плиткой — «Обновить новости». */
 fun addEntries(news: Boolean): List<PickerEntry> = listOfNotNull(
     PickerEntry(ADD_TASK, R.drawable.ic_module_tasks, R.string.hub_add_task, "add:$ADD_TASK"),
     PickerEntry(ADD_EXPENSE, R.drawable.ic_module_finance, R.string.hub_add_expense, "add:$ADD_EXPENSE"),
     PickerEntry(ADD_WEIGHT, R.drawable.ic_module_health, R.string.hub_add_weight, "add:$ADD_WEIGHT"),
+    PickerEntry(ADD_HABIT, R.drawable.ic_module_habits, R.string.habit_add, "add:$ADD_HABIT"),
     PickerEntry(ADD_NEWS, R.drawable.ic_news_refresh, R.string.news_refresh, "add:$ADD_NEWS").takeIf { news },
 )
 
@@ -117,6 +118,7 @@ val PICKER_ENTRIES: List<PickerEntry> = listOf(
     PickerEntry(Tab.LISTS.name, Tab.LISTS.icon, Tab.LISTS.label, "tab:${Tab.LISTS.name}"),
     PickerEntry("finance", R.drawable.ic_module_finance, R.string.module_finance, "module:FINANCE"),
     PickerEntry("health", R.drawable.ic_module_health, R.string.module_health, "module:HEALTH"),
+    PickerEntry("habits", R.drawable.ic_module_habits, R.string.module_habits, "module:HABITS"),
     PickerEntry("news", R.drawable.ic_module_news, R.string.module_news, "module:NEWS"),
     PickerEntry("settings", R.drawable.ic_nav_sliders, R.string.settings_title, TAG_PICKER_SETTINGS),
 )
@@ -173,6 +175,7 @@ const val TAG_NAV_ADD = "nav_add"
 const val ADD_TASK = "task"
 const val ADD_EXPENSE = "expense"
 const val ADD_WEIGHT = "weight"
+const val ADD_HABIT = "habit"
 const val ADD_NEWS = "news"
 const val TAG_PICKER = "tab_picker"
 const val TAG_PICKER_SETTINGS = "picker:settings"
