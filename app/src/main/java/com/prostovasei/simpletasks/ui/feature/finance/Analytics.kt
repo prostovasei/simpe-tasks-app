@@ -63,7 +63,7 @@ fun AnalyticsBlock(state: FinanceState, onIntent: (FinanceIntent) -> Unit) {
             Text(financeMonthLabel(state.month), Modifier.testTag(TAG_MONTH_TITLE), style = MaterialTheme.typography.labelLarge)
             MonthArrow(Icons.AutoMirrored.Filled.KeyboardArrowRight, stringResource(R.string.analytics_next_month), TAG_MONTH_NEXT, state.canGoNextMonth) { onIntent(FinanceIntent.ShiftMonth(1)) }
         }
-        LimitBar(model.total, limit, model.forecast, state.month, state.today, openBudget)
+        LimitBar(model.total, limit, model.forecast, state.month, state.today, onClick = openBudget)
         SpendingChart(model, state.month == YearMonth.from(state.today))
         if (model.total == 0L) {
             Text(stringResource(R.string.analytics_empty), Modifier.padding(vertical = spacing.sm).testTag(TAG_ANALYTICS_EMPTY))

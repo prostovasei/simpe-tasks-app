@@ -34,6 +34,11 @@ main_src, week_src = color_src.split('object WeekRowTokens')
 # #334: строка задачи — название, высокий приоритет, выполненные и прошедшие (свой блок, не «Неделя»).
 task_src = color_src.split('object TaskRowTokens')[1].split('\nobject ')[0]
 week_src = week_src.replace(task_src, '')
+# #336: плавающая панель — свой блок.
+nav_src = color_src.split('object NavBarTokens')[1].split('\nobject ')[0]
+week_src = week_src.replace(nav_src, '')
+for m in re.finditer(r'val (\w+) = ThemedColor\(light = 0x(\w+), dark = 0x(\w+)\)', nav_src):
+    COLORS['nav-' + kebab(m[1])] = (hexcolor(m[2]), hexcolor(m[3]))
 for m in re.finditer(r'val (\w+) = ThemedColor\(light = 0x(\w+), dark = 0x(\w+)\)', task_src):
     COLORS['task-' + kebab(m[1])] = (hexcolor(m[2]), hexcolor(m[3]))
 for m in re.finditer(r'val (\w+) = ThemedColor\(light = 0x(\w+), dark = 0x(\w+)\)', main_src):
@@ -88,6 +93,11 @@ COLOR_USAGE = {
     'priority-none-bg': 'Обычный приоритет: фон.', 'priority-none-text': 'Текст на `priority-none-bg`.',
     'ring-high': 'Высокий приоритет: кружок, знак повтора, кнопка приоритета, шкала.',
     'ring-high-done': 'Заливка кружка выполненной задачи высокого приоритета — тусклый фиолетовый (решение PM, итерация 47).',
+    'nav-background': 'Плавающая панель (#336): тёмная капсула справа внизу.',
+    'nav-selected': 'Плавающая панель: подложка значка «Разделы» (сетка 2 × 2).',
+    'nav-plus': 'Плавающая панель: фиолетовый круг «+».',
+    'nav-icon': 'Плавающая панель: значки и число даты.',
+    'nav-muted': 'Плавающая панель: «ср / ноя» под числом даты.',
     'task-title': 'Строка задачи (#334): название и время справа — графит.',
     'task-priority': 'Строка задачи (#334): название, время и кружок высокого приоритета — яркий фиолетовый.',
     'task-done': 'Строка задачи (#334): выполненные и прошедшие — «ещё светлее»; эмодзи и колокольчик у них 45 %.',
@@ -200,7 +210,7 @@ def build_tokens():
     color = []
     order = ['background', 'surface', 'text-primary', 'text-secondary', 'accent', 'on-accent', 'accent-soft', 'selected', 'inactive', 'divider',
              'overdue', 'danger', 'income', 'warning', 'goal', 'scrim', 'on-list-square']
-    order += [n for n in COLORS if n.startswith('ring-')] + [n for n in COLORS if n.startswith('priority-')] + [n for n in COLORS if n.startswith('week-row-')] + [n for n in COLORS if n.startswith('task-')]
+    order += [n for n in COLORS if n.startswith('ring-')] + [n for n in COLORS if n.startswith('priority-')] + [n for n in COLORS if n.startswith('week-row-')] + [n for n in COLORS if n.startswith('task-')] + [n for n in COLORS if n.startswith('nav-')]
     for n in order:
         light, dark = COLORS[n]
         color.append({'name': n, 'value': {'light': light, 'dark': dark}, 'usage': COLOR_USAGE[n]})

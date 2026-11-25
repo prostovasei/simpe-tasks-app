@@ -77,6 +77,8 @@ class MainActivity : ComponentActivity() {
                 checkNotNull(intent.getStringExtra(EXTRA_BUDGET_MONTH)), intent.getBooleanExtra(EXTRA_BUDGET_PREPARE, false),
             )
             intent.getBooleanExtra(EXTRA_OPEN_NEWS, false) -> com.prostovasei.simpletasks.ui.navigation.OpenNews
+            // #336: «Настройки» в панели виджета и в его окне выбора раздела.
+            intent.getBooleanExtra(EXTRA_OPEN_SETTINGS, false) -> com.prostovasei.simpletasks.ui.navigation.AppSettingsDestination
             intent.getBooleanExtra(EXTRA_QUICK_ADD, false) -> QuickAddDestination(
                 projectId = intent.getStringExtra(EXTRA_QUICK_ADD_PROJECT),
                 today = intent.getBooleanExtra(EXTRA_QUICK_ADD_TODAY, false),
@@ -95,6 +97,7 @@ class MainActivity : ComponentActivity() {
         const val EXTRA_BUDGET_MONTH = "budget_month"
         const val EXTRA_BUDGET_PREPARE = "budget_prepare"
         const val EXTRA_OPEN_NEWS = "open_news"
+        const val EXTRA_OPEN_SETTINGS = "open_settings"
         const val EXTRA_OPEN_DATE = "open_date"
         const val EXTRA_SNOOZE_TASK = "snooze_task_id"
         const val EXTRA_OPEN_DAY = "open_day"

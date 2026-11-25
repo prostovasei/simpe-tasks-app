@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- #336: тёмная капсула панели виджета (NavBarTokens.background). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="#FF16171D" />
+    <corners android:radius="999dp" />
+</shape>

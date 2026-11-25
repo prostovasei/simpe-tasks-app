@@ -115,7 +115,12 @@ internal fun BudgetProgress(fill: Float, color: Color, today: Float?, modifier: 
  * (или «перерасход») и прогноз. Нажатие открывает окно «Бюджет». Без лимита — серая полоса и «Задать бюджет».
  */
 @Composable
-internal fun LimitBar(spent: Long, limit: Long?, forecast: Long?, month: YearMonth, today: java.time.LocalDate, onClick: () -> Unit) {
+internal fun LimitBar(
+    spent: Long, limit: Long?, forecast: Long?, month: YearMonth, today: java.time.LocalDate,
+    /** #336: в хабе — сумма в день прямо в полосе: «≈2 200/день» рядом с потраченным, «4 300/день» — в серой части у лимита. */
+    daily: Boolean = false,
+    onClick: () -> Unit,
+) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
     val pace = limit?.let { BudgetRules.pace(it, spent, month, today) }
@@ -128,12 +133,19 @@ internal fun LimitBar(spent: Long, limit: Long?, forecast: Long?, month: YearMon
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(spacing.xs)) {
             BudgetProgress(fill, color, limit?.let { BudgetRules.todayShare(month, today) }, Modifier.weight(1f), SizeTokens.LIMIT_BAR) {
+                val notes = if (daily) DailyNotes.of(spent, limit, month, today, fill) else DailyNotes.NONE
                 Text(
-                    compactAmount(spent),
+                    notes.spent?.let { "${compactAmount(spent)} · $it" } ?: compactAmount(spent),
                     Modifier.align(Alignment.CenterStart).padding(horizontal = spacing.sm).testTag(TAG_ANALYTICS_TOTAL),
                     style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold,
-                    color = if (inside) colors.onAccent else colors.textPrimary,
+                    color = if (inside) colors.onAccent else colors.textPrimary, maxLines = 1,
                 )
+                notes.left?.let {
+                    Text(
+                        it, Modifier.align(Alignment.CenterEnd).padding(horizontal = spacing.sm).testTag(TAG_LIMIT_DAILY),
+                        style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Medium, color = colors.textSecondary, maxLines = 1,
+                    )
+                }
             }
             Text(limit?.let { compactAmount(it).removeSuffix(" ₽").removeSuffix(" ₽") } ?: "—",
                 style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = colors.textPrimary)
@@ -394,6 +406,39 @@ internal fun budgetHint(state: FinanceState, form: OperationForm, categoryName: 
 
 /** Внутри толстой полосы потраченное пишется белым, если заполнено не меньше этой доли; иначе — тёмным по серому. */
 private const val LIMIT_TEXT_INSIDE = 0.3f
+
+/**
+ * #336: сумма в день для полосы лимита хаба. [spent] — «≈2 200/день» (потрачено ÷ прошедшие дни месяца, с сегодняшним) — пишется в чёрной
+ * части, если она не короче [SPENT_NOTE_MIN]; [left] — «4 300/день» (остаток лимита ÷ оставшиеся дни с сегодняшним) — в серой части, если
+ * она не короче [LEFT_NOTE_MIN] и лимит не превышен. Суммы округлены до сотен рублей.
+ */
+internal data class DailyNotes(val spent: String?, val left: String?) {
+    companion object {
+        val NONE = DailyNotes(null, null)
+
+        fun of(spent: Long, limit: Long?, month: YearMonth, today: java.time.LocalDate, fill: Float): DailyNotes {
+            val current = YearMonth.from(today) == month
+            val passed = if (current) today.dayOfMonth else month.lengthOfMonth()
+            val spentNote = (spent / passed).takeIf { spent > 0 && fill >= SPENT_NOTE_MIN }?.let { "≈${perDay(it)}/день" }
+            val daysLeft = month.lengthOfMonth() - today.dayOfMonth + 1
+            val leftNote = limit?.takeIf { current && it > spent && 1f - fill >= LEFT_NOTE_MIN }?.let { "${perDay((it - spent) / daysLeft)}/день" }
+            return DailyNotes(spentNote, leftNote)
+        }
+
+        /** Копейки → рубли, округлённые до сотен: «2 200». */
+        fun perDay(kopecks: Long): String {
+            val rubles = (kopecks / KOPECKS + HUNDRED / 2) / HUNDRED * HUNDRED
+            return rubles.toString().reversed().chunked(3).joinToString("\u00A0").reversed()
+        }
+
+        private const val SPENT_NOTE_MIN = 0.55f
+        private const val LEFT_NOTE_MIN = 0.3f
+        private const val KOPECKS = 100L
+        private const val HUNDRED = 100L
+    }
+}
+
+const val TAG_LIMIT_DAILY = "limit_daily"
 
 const val TAG_LIMIT_BAR = "finance_limit_bar"
 const val TAG_LIMIT_STATUS = "finance_limit_status"

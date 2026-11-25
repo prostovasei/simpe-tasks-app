@@ -84,7 +84,7 @@ class WidgetHubTest {
         val rows = FinanceRows(context, 400, 760)
         val accounts = listOf(Account("a", "Карта", AccountType.entries.first(), "💳", 0, 4_200_000, Instant.EPOCH),
             Account("b", "Наличные", AccountType.entries.first(), "👛", 0, 600_000, Instant.EPOCH))
-        val finance = listOf(rows.limitViews(MonthSpending.of(ops, month, today), 8_000_000, month, today), rows.accountRow(accounts, 4))
+        val finance = listOf(rows.limitViews(MonthSpending.of(ops, month, today), 8_000_000, month, today, daily = true), rows.accountRow(accounts, 4, large = true))
         val size = DpSize(400.dp, 760.dp)
         val bar = runBlocking {
             GlanceRemoteViews().compose(context, size, appWidgetOptions = Bundle()) {

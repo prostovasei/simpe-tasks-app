@@ -1,5 +1,6 @@
 package com.prostovasei.simpletasks.widget
 
+import com.prostovasei.simpletasks.designsystem.tokens.NavBarTokens
 import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.Intent
@@ -46,6 +47,7 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextAlign
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
+import androidx.compose.ui.graphics.Color
 import com.prostovasei.simpletasks.MainActivity
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.TaskPopupActivity
@@ -489,153 +491,86 @@ fun widgetCheckColors(priority: Priority): WidgetCheckColors = when (priority) {
 }
 
 /**
- * Нижняя строка (итерация 57, решение PM, макет iteration57.py, доска «Итог 2»): слева «+» — чёрная плитка, по центру один белый блок
- * вкладок «Все» / «Входящие» / «Неделя» (выбранный вид — чёрный значок, остальные серые), справа плитка с датой «10 ВТ / ноя» той же
- * ширины, что «+» (нажатие — назад к сегодня). Галочки больше нет: всё свободное место строки открывает приложение. Без линии сверху.
- * Фоны плиток — картинками со скруглением (0.42.2: скругление Glance при первом показе не применялось).
+ * Нижняя панель виджета (#336, конструктор PM): тёмная капсула справа — дата «25 ср/ноя» (в «Задачах» — к сегодня), хаб (сетка 2 × 2,
+ * окно выбора раздела), настройки (ползунки, приложение на настройках) и фиолетовый «+» раздела. Вкладок в панели больше нет.
+ * [imageButtons] — фоны картинками (Android 12+, скругление Glance при первом показе не применялось).
  */
 @Composable
 internal fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boolean, module: WidgetModule = WidgetModule.TASKS) {
     val context = LocalContext.current
-    val openApp = context.getString(R.string.widget_open_app)
-    val fontScale = context.resources.configuration.fontScale.coerceAtLeast(1f)
-    val dateWidth = (SizeTokens.WIDGET_MODULE_DATE_W * fontScale).roundToInt()
-    val dateAndUpdate = dateWidth + SizeTokens.WIDGET_TAB_CELL
-    val tabsWidth = WidgetModule.entries.size * SizeTokens.WIDGET_TAB_CELL
-    val fullBarWidth = 2 * (dateAndUpdate + SizeTokens.WIDGET_EDGE + SizeTokens.WIDGET_OPEN_GAP_MIN) + tabsWidth
-    val compact = LocalSize.current.width < maxOf(SizeTokens.WIDGET_MODULE_BAR_THRESHOLD, fullBarWidth).dp
-    // #329: пять вкладок; на самом узком виджете ячейки сжимаются, чтобы все вкладки поместились рядом с «+».
-    val compactTabsWidth = minOf(WidgetModule.entries.size * SizeTokens.WIDGET_MODULE_COMPACT_CELL,
-        LocalSize.current.width.value.toInt() - SizeTokens.WIDGET_MODULE_COMPACT_ADD - 2 * SizeTokens.WIDGET_EDGE)
-    val baseSide = if (compact) SizeTokens.WIDGET_MODULE_COMPACT_ADD else SizeTokens.WIDGET_ADD_W
-    // #95: микрофон рядом с «+» только на вкладке «Задачи». Широкая панель — «+» сужается (М1); компактная — микрофон,
-    // только если он помещается рядом с «+» и вкладками, иначе панель прежняя (К2).
-    val voiceWidth = SizeTokens.WIDGET_VOICE_GAP + SizeTokens.WIDGET_VOICE_W
-    val voice = module == WidgetModule.TASKS &&
-        (!compact || LocalSize.current.width >= (baseSide + voiceWidth + compactTabsWidth + 2 * SizeTokens.WIDGET_EDGE).dp)
-    val side = if (voice && !compact) SizeTokens.WIDGET_VOICE_ADD_W else baseSide
-    val left = side + if (voice) voiceWidth else 0
-    val hasCompactGap = LocalSize.current.width > (left + compactTabsWidth + 2 * SizeTokens.WIDGET_EDGE).dp
-    val finance = module == WidgetModule.FINANCE
+    val white = ColorProvider(Color(NavBarTokens.icon.light))
+    val muted = ColorProvider(Color(NavBarTokens.muted.light))
     Row(
-        modifier = GlanceModifier
-            .fillMaxWidth()
-            .height(SizeTokens.WIDGET_BAR.dp)
-            .background(LocalWidgetColors.current.background)
-            .padding(horizontal = SizeTokens.WIDGET_EDGE.dp),
+        modifier = GlanceModifier.fillMaxWidth().height(SizeTokens.WIDGET_BAR.dp).padding(end = SizeTokens.WIDGET_EDGE.dp),
+        horizontalAlignment = Alignment.End,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(
-            modifier = (if (!compact || hasCompactGap) GlanceModifier.defaultWeight() else GlanceModifier.width(left.dp))
-                .height(SizeTokens.WIDGET_BAR.dp),
+            modifier = (if (imageButtons) GlanceModifier.background(ImageProvider(R.drawable.widget_nav_capsule))
+            else GlanceModifier.background(Color(NavBarTokens.background.light)).cornerRadius(SizeTokens.NAV_BUTTON.dp))
+                .padding(SizeTokens.NAV_PAD.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Box(
-                modifier = GlanceModifier
-                    .size(width = side.dp, height = SizeTokens.WIDGET_BAR.dp)
-                    .semantics { contentDescription = context.getString(when (module) {
-                        WidgetModule.FINANCE -> R.string.finance_add
-                        WidgetModule.HEALTH -> R.string.health_add
-                        WidgetModule.NEWS -> R.string.news_refresh
-                        WidgetModule.TASKS, WidgetModule.HUB -> R.string.add_task
-                    }) }
-                    .clickable(if (module == WidgetModule.NEWS) actionSendBroadcast(WidgetActions.refreshNews(context, appWidgetId)) else actionStartActivity(when (module) {
-                        WidgetModule.FINANCE -> widgetPopupIntent(context, appWidgetId, true)
-                        WidgetModule.HEALTH -> widgetPopupIntent(context, appWidgetId, false, health = true)
-                        WidgetModule.TASKS, WidgetModule.NEWS, WidgetModule.HUB -> quickAddIntent(context, model.filter)
-                    })),
-                contentAlignment = Alignment.Center,
-            ) {
-                Box(
-                    GlanceModifier.size(width = side.dp, height = SizeTokens.WIDGET_ADD_H.dp)
-                        .button(R.drawable.widget_task_bar_add, LocalWidgetColors.current.accent, RadiusTokens.LG, imageButtons),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Image(
-                        ImageProvider(if (module == WidgetModule.NEWS) R.drawable.ic_news_refresh else R.drawable.ic_widget_bar_add),
-                        contentDescription = null,
-                        colorFilter = ColorFilter.tint(LocalWidgetColors.current.onAccent),
-                        modifier = GlanceModifier.size(SizeTokens.WIDGET_TAB_ICON.dp),
-                    )
-                }
-            }
-            if (voice) {
-                Spacer(GlanceModifier.width(SizeTokens.WIDGET_VOICE_GAP.dp))
-                Box(
-                    modifier = GlanceModifier
-                        .size(width = SizeTokens.WIDGET_VOICE_W.dp, height = SizeTokens.WIDGET_BAR.dp)
-                        .semantics { contentDescription = context.getString(R.string.widget_voice) }
-                        .clickable(actionStartActivity(voiceIntent(context, model.filter))),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Box(
-                        GlanceModifier.size(width = SizeTokens.WIDGET_VOICE_W.dp, height = SizeTokens.WIDGET_ADD_H.dp)
-                            .button(R.drawable.widget_task_bar_mic, LocalWidgetColors.current.accentSoft, RadiusTokens.LG, imageButtons),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Image(
-                            ImageProvider(R.drawable.ic_widget_bar_mic),
-                            contentDescription = null,
-                            colorFilter = ColorFilter.tint(LocalWidgetColors.current.textPrimary),
-                            modifier = GlanceModifier.size(SizeTokens.WIDGET_TAB_ICON.dp),
-                        )
-                    }
-                }
-            }
-            if (!compact || hasCompactGap) WidgetOpenGap(openApp)
-        }
-        Row(
-            modifier = GlanceModifier.width((if (compact) compactTabsWidth else tabsWidth).dp).height(SizeTokens.WIDGET_BAR.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            val taskIcon = when (model.filter) {
-                WidgetFilter.Week -> R.drawable.ic_widget_bar_week
-                WidgetFilter.Inbox -> R.drawable.ic_widget_bar_inbox
-                else -> R.drawable.ic_widget_bar_all
-            }
-            val taskLabel = when (model.filter) {
-                WidgetFilter.Week -> R.string.tab_week
-                WidgetFilter.Inbox -> R.string.inbox_list_name
-                else -> R.string.widget_all
-            }
-            val tasksActive = module == WidgetModule.TASKS
-            // #329: домик «Главная» — первая вкладка.
-            SwitchTab(R.drawable.ic_module_hub, context.getString(R.string.module_hub), module == WidgetModule.HUB,
-                actionSendBroadcast(WidgetActions.module(context, appWidgetId, WidgetModule.HUB)))
-            SwitchTab(taskIcon, "${context.getString(R.string.module_tasks)} · ${context.getString(taskLabel)}", tasksActive,
-                if (tasksActive) actionStartActivity(widgetPopupIntent(context, appWidgetId, false))
-                else actionSendBroadcast(WidgetActions.module(context, appWidgetId, WidgetModule.TASKS)))
-            SwitchTab(R.drawable.ic_widget_bar_finance, context.getString(R.string.module_finance), finance,
-                actionSendBroadcast(WidgetActions.module(context, appWidgetId, WidgetModule.FINANCE)))
-            SwitchTab(R.drawable.ic_widget_bar_health, context.getString(R.string.module_health), module == WidgetModule.HEALTH,
-                actionSendBroadcast(WidgetActions.module(context, appWidgetId, WidgetModule.HEALTH)))
-            SwitchTab(R.drawable.ic_module_news, context.getString(R.string.module_news), module == WidgetModule.NEWS,
-                actionSendBroadcast(WidgetActions.module(context, appWidgetId, WidgetModule.NEWS)))
-        }
-        if (compact) return@Row
-        Row(GlanceModifier.defaultWeight().height(SizeTokens.WIDGET_BAR.dp), verticalAlignment = Alignment.CenterVertically) {
-            WidgetOpenGap(openApp)
             val todayText = WidgetDates.bar(model.today, withWeekday = true)
-            val description = if (module == WidgetModule.TASKS) context.getString(R.string.widget_today_date, todayText) else todayText
-            val colors = LocalWidgetColors.current
-            Box(
-                modifier = GlanceModifier.size(width = dateWidth.dp, height = SizeTokens.WIDGET_BAR.dp)
-                    .then(if (module == WidgetModule.TASKS) GlanceModifier.clickable(actionSendBroadcast(WidgetActions.today(context, appWidgetId))) else GlanceModifier),
-                contentAlignment = Alignment.Center,
+            val (day, weekday, month) = WidgetDates.tile(model.today)
+            Row(
+                modifier = GlanceModifier.height(SizeTokens.NAV_BUTTON.dp).padding(start = SpacingTokens.XS.dp, end = SpacingTokens.XXS.dp)
+                    .then(if (module == WidgetModule.TASKS) GlanceModifier.clickable(actionSendBroadcast(WidgetActions.today(context, appWidgetId))) else GlanceModifier)
+                    .semantics { contentDescription = if (module == WidgetModule.TASKS) context.getString(R.string.widget_today_date, todayText) else todayText },
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                val dateImage = widgetBarDate(model.today, dateWidth, fontScale,
-                    colors.textPrimary.getColor(context).toArgb(), colors.textSecondary.getColor(context).toArgb())
-                Image(
-                    provider = ImageProvider(dateImage),
-                    contentDescription = description,
-                    modifier = GlanceModifier.size(width = dateWidth.dp, height = (dateImage.height / 2f).dp),
-                )
+                Text(day, style = TextStyle(color = white, fontSize = SizeTokens.NAV_DATE_SP.sp, fontWeight = FontWeight.Bold), maxLines = 1)
+                Spacer(GlanceModifier.width(SizeTokens.HAIRLINE.dp * 3))
+                Column {
+                    Text(weekday.lowercase(), style = TextStyle(color = muted, fontSize = SizeTokens.NAV_DATE_SMALL_SP.sp, fontWeight = FontWeight.Bold), maxLines = 1)
+                    Text(month, style = TextStyle(color = muted, fontSize = SizeTokens.NAV_DATE_SMALL_SP.sp, fontWeight = FontWeight.Bold), maxLines = 1)
+                }
             }
-            Row(GlanceModifier.width(SizeTokens.WIDGET_TAB_CELL.dp)) {
-                BarIcon(R.drawable.ic_widget_bar_update, context.getString(R.string.update_title), colors.accent,
-                    actionStartActivity(Intent(context, com.prostovasei.simpletasks.UpdateActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)))
-            }
+            NavButton(R.drawable.ic_nav_grid, context.getString(R.string.nav_sections),
+                actionStartActivity(widgetSectionsIntent(context, appWidgetId)), if (imageButtons) R.drawable.widget_nav_hub else null, NavBarTokens.selected)
+            NavButton(R.drawable.ic_nav_sliders, context.getString(R.string.settings_title),
+                actionStartActivity(Intent(context, com.prostovasei.simpletasks.MainActivity::class.java)
+                    .putExtra(com.prostovasei.simpletasks.MainActivity.EXTRA_OPEN_SETTINGS, true)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)), null, null)
+            val add = context.getString(when (module) {
+                WidgetModule.FINANCE -> R.string.finance_add
+                WidgetModule.HEALTH -> R.string.health_add
+                WidgetModule.NEWS -> R.string.news_refresh
+                WidgetModule.TASKS, WidgetModule.HUB -> R.string.add_task
+            })
+            NavButton(
+                if (module == WidgetModule.NEWS) R.drawable.ic_news_refresh else R.drawable.ic_nav_plus, add,
+                if (module == WidgetModule.NEWS) actionSendBroadcast(WidgetActions.refreshNews(context, appWidgetId)) else actionStartActivity(when (module) {
+                    WidgetModule.FINANCE -> widgetPopupIntent(context, appWidgetId, true)
+                    WidgetModule.HEALTH -> widgetPopupIntent(context, appWidgetId, false, health = true)
+                    WidgetModule.TASKS, WidgetModule.NEWS, WidgetModule.HUB -> quickAddIntent(context, model.filter)
+                }),
+                if (imageButtons) R.drawable.widget_nav_plus else null, NavBarTokens.plus,
+            )
         }
+    }
+}
+
+/** Круглая кнопка капсулы 30 dp со значком 18; [image] — подложка картинкой (Android 12+), иначе цвет [fill] со скруглением Glance. */
+@Composable
+private fun NavButton(icon: Int, description: String, action: Action, image: Int?, fill: com.prostovasei.simpletasks.designsystem.tokens.ThemedColor?) {
+    Box(
+        modifier = GlanceModifier.size(SizeTokens.NAV_BUTTON.dp)
+            .then(when {
+                image != null -> GlanceModifier.background(ImageProvider(image))
+                fill != null -> GlanceModifier.background(Color(fill.light)).cornerRadius(SizeTokens.NAV_BUTTON.dp)
+                else -> GlanceModifier
+            })
+            .clickable(action)
+            .semantics { contentDescription = description },
+        contentAlignment = Alignment.Center,
+    ) {
+        Image(
+            ImageProvider(icon),
+            contentDescription = null,
+            colorFilter = ColorFilter.tint(ColorProvider(Color(NavBarTokens.icon.light))),
+            modifier = GlanceModifier.size(SizeTokens.NAV_ICON.dp),
+        )
     }
 }
 

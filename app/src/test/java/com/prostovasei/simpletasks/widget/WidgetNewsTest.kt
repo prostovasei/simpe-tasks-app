@@ -127,7 +127,7 @@ class WidgetNewsTest {
 
         val refresh = root.viewsWithDescription(context.getString(R.string.news_refresh)).single()
         assertTrue(generateSequence(refresh) { it.parent as? View }.take(3).any(View::hasOnClickListeners))
-        assertEquals(if (compact) 0 else 1, root.viewsWithDescription(context.getString(R.string.update_title)).size)
+        assertEquals(0, root.viewsWithDescription(context.getString(R.string.update_title)).size) // #336: в панели только дата, разделы, настройки и «+»
 
         val service = Robolectric.buildService(WidgetNewsService::class.java).create().get()
         val rows = service.onGetViewFactory(Intent())

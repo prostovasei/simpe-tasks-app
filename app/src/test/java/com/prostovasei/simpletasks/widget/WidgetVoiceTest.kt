@@ -15,7 +15,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
-/** #95: микрофон рядом с «+» — только на вкладке «Задачи»; на самом узком виджете не помещается и скрыт (К2). */
+/** #95 → #336: микрофона в панели виджета больше нет (капсула: дата, «Разделы», «Настройки», «+»); окно голосового ввода по адресу осталось. */
 @RunWith(RobolectricTestRunner::class)
 class WidgetVoiceTest {
     private val context: Context = ApplicationProvider.getApplicationContext()
@@ -29,23 +29,14 @@ class WidgetVoiceTest {
         onAllNodes(hasContentDescription(voice)).assertCountEquals(if (present) 1 else 0)
     }
 
-    @Test fun wideTasksBarHasMic() = bar(392, WidgetModule.TASKS, present = true)
+    // #336 (выбор PM): в капсуле только дата, «Разделы», «Настройки» и «+» — микрофона в панели виджета больше нет.
+    @Test fun wideTasksBarHasNoMic() = bar(392, WidgetModule.TASKS, present = false)
 
-    @Test fun compactTasksBarHasMic() = bar(320, WidgetModule.TASKS, present = true)
-
-    @Test fun narrowestTasksBarHidesMic() = bar(180, WidgetModule.TASKS, present = false)
-
-    // #329: с пятой вкладкой (домик) микрофон помещается с 255 dp (44 + 4 + 40 + 5 × 31 + 2 × 6).
-    @Test fun micAppearsFrom256() = bar(256, WidgetModule.TASKS, present = true)
-
-    @Test fun noMicAt240() = bar(240, WidgetModule.TASKS, present = false)
+    @Test fun narrowTasksBarHasNoMic() = bar(180, WidgetModule.TASKS, present = false)
 
     @Test fun financeHasNoMic() = bar(392, WidgetModule.FINANCE, present = false)
 
-    @Test fun healthHasNoMic() = bar(392, WidgetModule.HEALTH, present = false)
-
-    @Test fun newsHasNoMic() = bar(392, WidgetModule.NEWS, present = false)
-
+    // Окно голосового ввода поверх рабочего стола осталось (адрес `simpletasks://voice/…`): кнопки в капсуле нет, путь проверяется отдельно.
     @Test
     fun voiceIntentOpensPopupLikePlus() {
         val all = voiceIntent(context, WidgetFilter.All)

@@ -188,7 +188,7 @@ class WidgetWeekTest {
             val root = renderWidget(context, rich, DpSize(width.dp, 700.dp)).applyLikeLauncher(context)
             val found = ArrayList<View>()
             root.findViewsWithText(found, context.getString(R.string.widget_today_date, "пт, 30 окт"), View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
-            assertEquals(if (width == 400) 1 else 0, found.size)
+            assertEquals(1, found.size) // #336: дата есть в капсуле на любой ширине
             found.singleOrNull()?.let { date ->
                 assertTrue("дата нажимается", generateSequence(date) { it.parent as? View }.take(3).any { it.hasOnClickListeners() })
             }
@@ -348,16 +348,16 @@ class WidgetWeekTest {
         assertEquals(one, WidgetClicks.pending(context, 1, WidgetClicks.PICK_WEEK, "2026-10-26"))
     }
 
+    /** #336: вместо вкладок — «Разделы» (окно выбора) и «Настройки», оба нажимаются. */
     @Test
-    fun taskAndFinanceTabsAreClickable() {
+    fun sectionsAndSettingsAreClickable() {
         val root = renderWidget(context, rich, size).applyLikeLauncher(context)
-        val found = ArrayList<View>()
-        root.findViewsWithText(found, "Задачи · Неделя, выбрано", View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
-        assertEquals(1, found.size)
-        assertTrue(generateSequence(found.single()) { it.parent as? View }.take(3).any { it.hasOnClickListeners() })
-        val finance = ArrayList<View>()
-        root.findViewsWithText(finance, "Финансы", View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
-        assertEquals(1, finance.size)
+        listOf("Разделы", "Настройки").forEach { label ->
+            val found = ArrayList<View>()
+            root.findViewsWithText(found, label, View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION)
+            assertEquals(label, 1, found.size)
+            assertTrue(generateSequence(found.single()) { it.parent as? View }.take(3).any { it.hasOnClickListeners() })
+        }
     }
 
     @Test
