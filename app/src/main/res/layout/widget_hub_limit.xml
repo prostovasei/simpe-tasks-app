@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   Полоса лимита виджета «Главная» (#348, выбор PM): одна картинка — тонкая полоса и справа «факт/прогноз/план».
-  Отступ до счетов ≈10dp (6dp + поле картинки).
+  #350: счета над полосой — 4dp снизу у счетов + 6dp сверху у полосы = 10.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent" android:layout_height="wrap_content"
-    android:orientation="vertical" android:paddingHorizontal="@dimen/widget_edge" android:paddingTop="@dimen/widget_edge" android:paddingBottom="6dp">
+    android:orientation="vertical" android:paddingHorizontal="@dimen/widget_edge" android:paddingTop="@dimen/widget_edge">
     <ImageView android:id="@+id/widget_finance_limit_bar" android:layout_width="match_parent"
         android:layout_height="wrap_content" android:adjustViewBounds="true"
         android:scaleType="fitCenter" android:contentDescription="@null" />

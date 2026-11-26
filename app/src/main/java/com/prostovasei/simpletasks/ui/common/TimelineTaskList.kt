@@ -91,6 +91,8 @@ fun LazyListScope.timelineItems(
     /** #314: появление строк по очереди (окно дня); null — строки появляются сразу. */
     rowMotion: (@Composable (index: Int, content: @Composable () -> Unit) -> Unit)? = null,
     today: LocalDate = LocalDate.now(),
+    /** #350: внешнее поле строки; в хабе — XXS, чтобы кружок и время стояли в 12 dp от края, как остальные блоки. */
+    inset: androidx.compose.ui.unit.Dp? = null,
 ) {
     val rows = WidgetTimeline.rows(items, overdue = dayLabels, nowMinute = nowMinute.takeUnless { dayLabels }, days = days)
         .filterIsInstance<WidgetRow.Task>()
@@ -109,6 +111,7 @@ fun LazyListScope.timelineItems(
                 selected = if (selecting && !item.isGhost) item.id in selection.orEmpty() else null,
                 onLongClick = if (selectable && !selecting) { { onSelect?.invoke(item) } } else null,
                 today = today,
+                inset = inset,
             )
         }
         if (rowMotion != null) rowMotion(index, content) else content()
@@ -166,6 +169,7 @@ fun LazyItemScope.TimelineTaskRow(
     selected: Boolean? = null,
     onLongClick: (() -> Unit)? = null,
     today: LocalDate = LocalDate.now(),
+    inset: androidx.compose.ui.unit.Dp? = null,
 ) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
@@ -186,7 +190,7 @@ fun LazyItemScope.TimelineTaskRow(
             .animateItem()
             .fillMaxWidth()
             .height(height)
-            .padding(horizontal = spacing.xs)
+            .padding(horizontal = inset ?: spacing.xs)
             .clip(AppTheme.shapes.medium)
             .then(if (selected == true) Modifier.background(colors.selected).border(SizeTokens.CHECKBOX_STROKE.dp, colors.accent, AppTheme.shapes.medium) else Modifier)
             .combinedClickable(onClick = onClick, onLongClick = onLongClick)

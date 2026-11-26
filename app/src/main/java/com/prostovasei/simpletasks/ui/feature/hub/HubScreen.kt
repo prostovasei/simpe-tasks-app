@@ -1,5 +1,6 @@
 package com.prostovasei.simpletasks.ui.feature.hub
 
+import java.time.LocalDate
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.Spacer
@@ -186,7 +187,7 @@ private fun HubHabits(habits: List<com.prostovasei.simpletasks.domain.model.habi
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
     Row(
-        Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = spacing.md).testTag(TAG_HUB_HABITS),
+        Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = spacing.sm).testTag(TAG_HUB_HABITS),
         horizontalArrangement = Arrangement.spacedBy(spacing.xs),
     ) {
         habits.forEach { habit ->
@@ -221,22 +222,22 @@ private fun HubFinance(state: FinanceState, onIntent: (FinanceIntent) -> Unit) {
     val month = java.time.YearMonth.from(today)
     val model = remember(state.operations, today) { MonthSpending.of(state.operations.orEmpty(), month, today) }
     val budget = remember(state.budgets, state.categories, state.operations, today) { state.monthBudget(month) }
-    Column(Modifier.fillMaxWidth().padding(horizontal = spacing.md).testTag(TAG_HUB_FINANCE)) {
+    // #350 (выбор PM): счета над полосой, без общей суммы; отступ до полосы 10; поля 12, как у всех блоков хаба.
+    Column(Modifier.fillMaxWidth().padding(horizontal = spacing.sm).testTag(TAG_HUB_FINANCE)) {
+        state.accounts?.takeIf { it.isNotEmpty() }?.let { HubAccounts(it) }
         LimitBar(model.total, monthLimit(context, budget), model.forecast, month, today, daily = true) { onIntent(FinanceIntent.OpenBudget(month)) }
-        state.accounts?.takeIf { it.isNotEmpty() }?.let { HubAccounts(it, state.total) }
     }
 }
 
 @Composable
-private fun HubAccounts(accounts: List<Account>, total: Long) {
+private fun HubAccounts(accounts: List<Account>) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
     // #336 (выбор PM): плашки счетов крупнее — 14 sp и поля 12 × 8; не помещаются — листаются вбок.
     Row(
-        Modifier.fillMaxWidth().padding(top = (SizeTokens.HUB_FINANCE_GAP - SpacingTokens.XXS).dp).horizontalScroll(rememberScrollState()),
+        Modifier.fillMaxWidth().padding(bottom = (SizeTokens.HUB_FINANCE_GAP - SpacingTokens.XXS).dp).horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(spacing.xs), verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text("${financeThousands(total)} ₽", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = colors.textPrimary, maxLines = 1)
         accounts.take(HUB_ACCOUNTS).forEach { account ->
             Text("${account.emojiShown} ${financeThousands(account.balance)}", Modifier.clip(CircleShape).background(FinanceShareColors.accountSurface)
                 .padding(horizontal = spacing.md, vertical = spacing.xs).testTag(TAG_HUB_ACCOUNT), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold,
@@ -252,11 +253,9 @@ private fun HubTasks(state: HubState, onIntent: (TaskListIntent) -> Unit, onOpen
     val nowMinute = rememberNowMinute()
     val toggle: (TaskItem) -> Unit = { onIntent(TaskListIntent.ToggleComplete(it.id, it.isRecurring, it.showsDone)) }
     val open: (TaskItem) -> Unit = { onOpenTask(it.ghostOf ?: it.id) }
-    val groups = listOf(
-        Triple(null, state.overdue, true),
-        Triple(today, state.todayItems, false),
-        Triple(today.plusDays(1), state.tomorrowItems, false),
-    )
+    // #350 (выбор PM): неделя списком вниз; пустые дни скрыты.
+    val groups = listOf(Triple<LocalDate?, List<TaskItem>, Boolean>(null, state.overdue, true)) + state.days.map { (date, items) -> Triple(date, items, false) }
+    val edge = AppTheme.spacing.xxs
     // #338: список идёт под капсулу; снизу отступ в её высоту, чтобы последнюю задачу можно было поднять над панелью.
     LazyColumn(Modifier.fillMaxSize().testTag(TAG_HUB_TASKS), contentPadding = androidx.compose.foundation.layout.WindowInsets.navigationBars
         .asPaddingValues().let { androidx.compose.foundation.layout.PaddingValues(bottom = it.calculateBottomPadding() + SizeTokens.NAV_BAR_SPACE.dp) }) {
@@ -270,7 +269,7 @@ private fun HubTasks(state: HubState, onIntent: (TaskListIntent) -> Unit, onOpen
                 } else {
                     DayHeader(
                         text = WidgetDates.header(date),
-                        relative = if (index == 1) days.day(DayLabel.Today) else days.day(DayLabel.Tomorrow),
+                        relative = when (index) { 1 -> days.day(DayLabel.Today); 2 -> days.day(DayLabel.Tomorrow); else -> null },
                         isOverdue = false,
                         count = items.size,
                         progress = if (index == 1) items.count { it.isDone } to items.size else null,
@@ -290,6 +289,7 @@ private fun HubTasks(state: HubState, onIntent: (TaskListIntent) -> Unit, onOpen
                 onOpen = open,
                 dayLabels = late,
                 today = today,
+                inset = edge,
             )
         }
     }
@@ -323,8 +323,8 @@ private fun HubNewsPager(news: List<HubNews>) {
         val prev = stringResource(R.string.hub_news_prev)
         val next = stringResource(R.string.hub_news_next)
         Box(Modifier.fillMaxWidth()) {
-        HorizontalPager(pager, Modifier.fillMaxWidth(), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = spacing.md),
-            pageSpacing = spacing.md) { page ->
+        HorizontalPager(pager, Modifier.fillMaxWidth(), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = spacing.sm),
+            pageSpacing = spacing.sm) { page ->
             Column(verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
                 pages[page].chunked(2).forEach { pair ->
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(spacing.xs)) {
