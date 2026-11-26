@@ -517,8 +517,12 @@ internal fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boole
                     .putExtra(com.prostovasei.simpletasks.MainActivity.EXTRA_OPEN_HUB, true)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)))
             NavButton(R.drawable.ic_nav_grid, context.getString(R.string.nav_sections), actionStartActivity(widgetSectionsIntent(context, appWidgetId)))
-            if (hub) NavButton(R.drawable.ic_news_refresh, context.getString(R.string.widget_refresh),
-                actionSendBroadcast(WidgetActions.refreshNews(context, appWidgetId)))
+            // #354 (выбор PM): «Обновить приложение» — стрелка вверх в круге, красная точка при новой версии, нажатие сразу скачивает и ставит.
+            if (hub) NavButton(R.drawable.ic_nav_update, context.getString(R.string.widget_update_app),
+                actionStartActivity(Intent(context, com.prostovasei.simpletasks.UpdateActivity::class.java)
+                    .putExtra(com.prostovasei.simpletasks.UpdateActivity.EXTRA_AUTO, true)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)),
+                badge = UpdateBadge.available(context))
             else NavButton(R.drawable.ic_nav_sliders, context.getString(R.string.settings_title),
                 actionStartActivity(Intent(context, com.prostovasei.simpletasks.MainActivity::class.java)
                     .putExtra(com.prostovasei.simpletasks.MainActivity.EXTRA_OPEN_SETTINGS, true)
@@ -534,12 +538,15 @@ internal fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boole
 /** Кнопка капсулы 34 dp без подложки (#338): значок 20, у «+» — 26 светло-фиолетовым. */
 @Composable
 private fun NavButton(icon: Int, description: String, action: Action,
-                      tint: com.prostovasei.simpletasks.designsystem.tokens.ThemedColor = NavBarTokens.icon, iconSize: Int = SizeTokens.NAV_ICON) {
+                      tint: com.prostovasei.simpletasks.designsystem.tokens.ThemedColor = NavBarTokens.icon, iconSize: Int = SizeTokens.NAV_ICON, badge: Boolean = false) {
     Box(
         modifier = GlanceModifier.size(SizeTokens.NAV_BUTTON.dp).clickable(action).semantics { contentDescription = description },
         contentAlignment = Alignment.Center,
     ) {
         Image(ImageProvider(icon), contentDescription = null, colorFilter = ColorFilter.tint(ColorProvider(Color(tint.light))), modifier = GlanceModifier.size(iconSize.dp))
+        if (badge) Box(GlanceModifier.fillMaxSize().padding(SizeTokens.NAV_BADGE_INSET.dp), contentAlignment = Alignment.TopEnd) {
+            Image(ImageProvider(R.drawable.widget_nav_badge), contentDescription = null, modifier = GlanceModifier.size(SizeTokens.NAV_BADGE.dp))
+        }
     }
 }
 

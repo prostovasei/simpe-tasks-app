@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Simple Tasks</string>
+    <string name="app_name">Simple Hub</string>
 
     <string name="tab_inbox">Входящие</string>
     <string name="tab_all">Все</string>
@@ -351,7 +351,7 @@
     <string name="settings_clear_dialog_cancel">Отмена</string>
     <string name="settings_cleared">Все данные удалены</string>
 
-    <string name="showcase_title">Simple Tasks</string>
+    <string name="showcase_title">Simple Hub</string>
     <string name="showcase_subtitle">Итерация 01 · дизайн-токены</string>
     <string name="showcase_section_colors">Базовые цвета</string>
     <string name="showcase_section_priorities">Приоритеты</string>
@@ -444,7 +444,7 @@
     <string name="widget_complete">Выполнить</string>
     <string name="task_uncomplete">Снять отметку «выполнено»</string>
     <string name="widget_open_app">Открыть приложение</string>
-    <string name="widget_refresh">Обновить</string>
+    <string name="widget_update_app">Обновить приложение</string>
     <string name="widget_log_title">Журнал виджета</string>
     <string name="update_title">Обновление</string>
     <string name="update_check">Проверить обновление</string>
@@ -453,7 +453,7 @@
     <string name="update_available">Доступна версия %1$s (сборка %2$d)</string>
     <string name="update_install">Обновить</string>
     <string name="update_downloading">Скачиваю… %1$d%%</string>
-    <string name="update_needs_permission">Разрешите Simple Tasks устанавливать обновления — один раз, затем нажмите «Обновить»</string>
+    <string name="update_needs_permission">Разрешите Simple Hub устанавливать обновления — один раз, затем нажмите «Обновить»</string>
     <string name="update_grant">Разрешить</string>
     <string name="update_confirm">Подтвердите установку в окне Android</string>
     <string name="update_check_failed">Не удалось проверить. Проверьте интернет</string>
@@ -753,7 +753,7 @@
     <string name="bank_revoked">Доступ к уведомлениям отключён в настройках Android. Покупки не распознаются.</string>
     <string name="bank_steps">Что нужно</string>
     <string name="bank_access_title">1. Доступ к уведомлениям</string>
-    <string name="bank_access_hint">Системное окно Android: найти Simple Tasks и включить</string>
+    <string name="bank_access_hint">Системное окно Android: найти Simple Hub и включить</string>
     <string name="bank_access_give">Дать доступ</string>
     <string name="bank_access_ok">Есть</string>
     <string name="bank_account_title">2. Счёт для Яндекс Банка</string>

@@ -32,6 +32,9 @@
     <dimen name="widget_hub_list_end">9dp</dimen>
     <!-- #352: высота градиента внизу «Главной». -->
     <dimen name="widget_hub_fade">40dp</dimen>
+    <!-- #354: между разделами «Главной» 24; под новостями 18 + 6 сверху у подписи дня. -->
+    <dimen name="widget_hub_section">24dp</dimen>
+    <dimen name="widget_hub_section_tail">18dp</dimen>
     <dimen name="widget_day_gap">2dp</dimen>
     <dimen name="widget_hairline">1dp</dimen>
     <dimen name="widget_space_xxs">4dp</dimen>

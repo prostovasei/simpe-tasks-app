@@ -66,7 +66,25 @@ class UpdateDialogViewModelTest {
 
     private val updater = FakeUpdater()
 
-    private fun viewModel() = UpdateDialogViewModel(updater)
+    private fun viewModel(auto: Boolean = false) = UpdateDialogViewModel(
+        updater, androidx.lifecycle.SavedStateHandle(mapOf(com.prostovasei.simpletasks.UpdateActivity.EXTRA_AUTO to auto)),
+    )
+
+    /** #354: кнопка «Обновить приложение» в «Главной» — найденная версия сразу скачивается и передаётся установщику. */
+    @Test
+    fun autoModeDownloadsAndInstallsAtOnce() = runTest {
+        updater.available = newVersion
+        val vm = viewModel(auto = true)
+        assertEquals(UpdateDialogState.Installing(newVersion), vm.state.value)
+        assertEquals(apk, updater.committed)
+    }
+
+    @Test
+    fun autoModeWithoutUpdateShowsUpToDate() = runTest {
+        val vm = viewModel(auto = true)
+        assertEquals(UpdateDialogState.UpToDate, vm.state.value)
+        assertEquals(0, updater.downloads)
+    }
 
     @Test
     fun startsByCheckingAndShowsUpToDate() = runTest {

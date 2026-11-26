@@ -37,6 +37,7 @@ interface WidgetEntryPoint {
     fun time(): TimeProvider
     fun dayTicker(): DayTicker
     fun overdueFold(): OverdueFold
+    fun updater(): com.prostovasei.simpletasks.core.update.AppUpdater
 }
 
 fun Context.widgetEntryPoint(): WidgetEntryPoint = EntryPointAccessors.fromApplication(applicationContext, WidgetEntryPoint::class.java)
