@@ -24,7 +24,7 @@
 
 ## Выпуск 0.97.1 — #342
 
-[PR #343](https://github.com/prostovasei/simpe-tasks-app/pull/343), merge `15750fc218d97b19307ab9e98465f90b57876fbb`, APK build-561. CI PR зелёный с первой попытки, CI main — идёт. Прошедшая невыполненная за сегодня — красное время, не бледнеет; выполненная в «Предстоящем» и хабе исчезает, «N из M» её учитывает (ARCHITECTURE §4.123, SPEC §31, [прогон](testing-runs/0.97.1-local.md)). #342 закрыта; UP342-1–4 ждут PM.
+[PR #343](https://github.com/prostovasei/simpe-tasks-app/pull/343), merge `15750fc218d97b19307ab9e98465f90b57876fbb`, APK build-561. CI PR и main зелёные с первой попытки. Прошедшая невыполненная за сегодня — красное время, не бледнеет; выполненная в «Предстоящем» и хабе исчезает, «N из M» её учитывает (ARCHITECTURE §4.123, SPEC §31, [прогон](testing-runs/0.97.1-local.md)). #342 закрыта; UP342-1–4 ждут PM.
 
 ## Следующее
 
