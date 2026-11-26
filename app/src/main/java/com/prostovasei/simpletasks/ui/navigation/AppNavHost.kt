@@ -171,7 +171,7 @@ enum class Tab(val route: Any, val routeClass: KClass<*>, @param:StringRes val l
 }
 
 /** «Входящие» и «Поиск» (итерация 55) — экраны раздела «Списки»: панель видна, выбрана страница «Списки». Настройки (#241) — отдельные страницы без панели. */
-private val LISTS_CHILDREN: List<KClass<*>> = listOf(InboxDestination::class, SearchDestination::class)
+private val LISTS_CHILDREN: List<KClass<*>> = listOf(InboxDestination::class, SearchDestination::class, ProjectDestination::class)
 
 /** Страницы модуля «Задачи» в нижней панели (#241): все три всегда на виду; теги `tab:<имя>` прежние. */
 internal val TASK_PAGES: List<BarPage> = Tab.entries.map { BarPage(it.name, it.icon, it.label, "tab:${it.name}") }
@@ -256,6 +256,35 @@ fun AppNavHost(
     }
     val currentTab = Tab.entries.firstOrNull { destination.isOn(it) }
         ?: Tab.LISTS.takeIf { LISTS_CHILDREN.any { child -> destination?.hasRoute(child) == true } }
+    // #357: сортировка открытого экрана задач — «Предстоящее», «Входящие» или список; на других экранах кнопки ↑↓ нет.
+    val sortScope: com.prostovasei.simpletasks.domain.model.SortScope? = when {
+        destination?.hasRoute(AllDestination::class) == true -> com.prostovasei.simpletasks.domain.model.SortScope.Upcoming
+        destination?.hasRoute(InboxDestination::class) == true -> com.prostovasei.simpletasks.domain.model.SortScope.Inbox
+        destination?.hasRoute(ProjectDestination::class) == true -> (if (backStack?.destination?.isSheet() == true) navController.previousBackStackEntry else backStack)
+            ?.takeIf { it.destination.hasRoute(ProjectDestination::class) }?.toRoute<ProjectDestination>()?.projectId
+            ?.let { com.prostovasei.simpletasks.domain.model.SortScope.Project(it) }
+        else -> null
+    }
+    val sortModel: com.prostovasei.simpletasks.ui.common.TaskSortViewModel = hiltViewModel()
+    val currentSort by remember(sortScope) { sortScope?.let { sortModel.observe(it) } ?: kotlinx.coroutines.flow.flowOf(null) }
+        .collectAsStateWithLifecycle(initialValue = null)
+    val sortListName by remember(sortScope) { sortScope?.let { sortModel.listName(it) } ?: kotlinx.coroutines.flow.flowOf(null) }
+        .collectAsStateWithLifecycle(initialValue = null)
+    var sortOpen by remember { mutableStateOf(false) }
+    if (sortOpen && sortScope != null) {
+        currentSort?.let { sort ->
+            val subtitle = when (sortScope) {
+                com.prostovasei.simpletasks.domain.model.SortScope.Upcoming -> stringResource(R.string.sort_subtitle_upcoming)
+                com.prostovasei.simpletasks.domain.model.SortScope.Inbox -> stringResource(R.string.sort_subtitle_list, stringResource(R.string.inbox_title))
+                is com.prostovasei.simpletasks.domain.model.SortScope.Project -> stringResource(R.string.sort_subtitle_list, sortListName.orEmpty())
+            }
+            com.prostovasei.simpletasks.ui.common.SortSheet(
+                subtitle = subtitle, sort = sort, default = sortScope.default,
+                upcoming = sortScope == com.prostovasei.simpletasks.domain.model.SortScope.Upcoming,
+                onChange = { sortModel.set(sortScope, it) }, onDismiss = { sortOpen = false },
+            )
+        }
+    }
     val context = LocalContext.current
     // Страница, с которой открывается приложение: «Предстоящее» или «Неделя» — выбранная последней.
     var left by remember { mutableStateOf(NavPrefs.left(context)) }
@@ -439,6 +468,8 @@ fun AppNavHost(
                             onVoice = { context.startActivity(com.prostovasei.simpletasks.widget.voiceIntent(context, com.prostovasei.simpletasks.widget.WidgetFilter.All)) },
                             onAdd = { addOpen = true },
                             onHubLongClick = { weekFilterOpen = true }.takeIf { active == "tasks" && task == Tab.WEEK },
+                            onSort = { sortOpen = true }.takeIf { active == "tasks" && sortScope != null },
+                            sortChanged = sortScope != null && currentSort != null && currentSort != sortScope.default,
                         )
                         if (addOpen) {
                             TabPickerSheet(
@@ -447,7 +478,11 @@ fun AppNavHost(
                                 onPick = { key ->
                                     addOpen = false
                                     when (key) {
-                                        ADD_TASK -> navController.navigate(QuickAddDestination(today = !(active == "tasks" && task == Tab.LISTS)))
+                                        // #357: на экране списка «Задача» создаётся в этом списке (своей «+» у экрана больше нет).
+                                        ADD_TASK -> navController.navigate(QuickAddDestination(
+                                            projectId = (sortScope as? com.prostovasei.simpletasks.domain.model.SortScope.Project)?.id,
+                                            today = !(active == "tasks" && task == Tab.LISTS),
+                                        ))
                                         ADD_EXPENSE -> finance.onIntent(FinanceIntent.Add)
                                         ADD_WEIGHT -> health.onIntent(HealthIntent.Add)
                                         ADD_HABIT -> {

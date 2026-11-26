@@ -20,6 +20,17 @@ interface TaskListIntent {
 
     /** «Перенести просроченные на сегодня» (итерация 37). */
     data object MoveOverdue : TaskListIntent
+
+    /** #357: ручной порядок после перетаскивания — id активных задач по порядку. */
+    data class Reorder(val ids: List<String>) : TaskListIntent
+
+    /** #357: потянули задачу при не ручной сортировке — спросить или (галочка «Больше не спрашивать») переключить сразу. */
+    data object AskManualSort : TaskListIntent
+
+    /** #357: «Переключить» в окне ручной сортировки; [skipQuestion] — «Больше не спрашивать». */
+    data class SwitchToManual(val skipQuestion: Boolean) : TaskListIntent
+
+    data object DismissManualSort : TaskListIntent
 }
 
 interface TaskListEffect {

@@ -38,6 +38,7 @@ import com.prostovasei.simpletasks.ui.feature.settings.TAG_SETTINGS_APP
 import com.prostovasei.simpletasks.ui.feature.settings.TAG_SETTINGS_FINANCE
 import com.prostovasei.simpletasks.ui.feature.settings.TAG_SETTINGS_TASKS
 import com.prostovasei.simpletasks.ui.navigation.TAG_APP_BAR
+import com.prostovasei.simpletasks.ui.navigation.TAG_NAV_SORT
 import com.prostovasei.simpletasks.ui.navigation.TAG_NAV_HUB
 import com.prostovasei.simpletasks.ui.navigation.TAG_PICKER
 import com.prostovasei.simpletasks.ui.navigation.TAG_MODULE_SETTINGS
@@ -145,9 +146,10 @@ class AppSmokeTest {
         composeRule.onNodeWithTag(TAG_NAME_FIELD).performTextReplacement("Покупки")
         composeRule.onNodeWithText("Создать").performClick()
 
-        // Новый список открывается сразу, нижний бар скрыт.
+        // Новый список открывается сразу; #357 — с капсулой и кнопкой сортировки ↑↓ (своей «+» у экрана больше нет).
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithTextExists("В списке пусто") }
-        composeRule.onNodeWithTag(TAG_APP_BAR).assertDoesNotExist()
+        composeRule.onNodeWithTag(TAG_APP_BAR).assertExists()
+        composeRule.onNodeWithTag(TAG_NAV_SORT).assertExists()
 
         composeRule.onNodeWithContentDescription("Назад").performClick()
         // «Списки» прокручиваются: новый список — под системными строками, на тестовом экране ниже края.

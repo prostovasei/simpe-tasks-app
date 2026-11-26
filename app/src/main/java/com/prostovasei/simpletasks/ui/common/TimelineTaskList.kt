@@ -33,6 +33,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -93,6 +95,8 @@ fun LazyListScope.timelineItems(
     today: LocalDate = LocalDate.now(),
     /** #350: внешнее поле строки; в хабе — XXS, чтобы кружок и время стояли в 12 dp от края, как остальные блоки. */
     inset: androidx.compose.ui.unit.Dp? = null,
+    /** #357: перетаскивание строк этого блока; null — нельзя (долгое нажатие — только выбор). */
+    reorder: ReorderController? = null,
 ) {
     val rows = WidgetTimeline.rows(items, overdue = dayLabels, nowMinute = nowMinute.takeUnless { dayLabels }, days = days)
         .filterIsInstance<WidgetRow.Task>()
@@ -112,6 +116,7 @@ fun LazyListScope.timelineItems(
                 onLongClick = if (selectable && !selecting) { { onSelect?.invoke(item) } } else null,
                 today = today,
                 inset = inset,
+                reorder = reorder.takeIf { !selecting },
             )
         }
         if (rowMotion != null) rowMotion(index, content) else content()
@@ -170,6 +175,7 @@ fun LazyItemScope.TimelineTaskRow(
     onLongClick: (() -> Unit)? = null,
     today: LocalDate = LocalDate.now(),
     inset: androidx.compose.ui.unit.Dp? = null,
+    reorder: ReorderController? = null,
 ) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
@@ -185,15 +191,29 @@ fun LazyItemScope.TimelineTaskRow(
     val iconAlpha = 1f - melt * (1f - TaskRowTokens.FADED_ICON_ALPHA)
     val right = taskRightLabel(row, isOverdue, dayLabels, today)
     val height = (SizeTokens.WIDGET_ROW + if (item.subtitle != null) SizeTokens.TRASH_ROW_EXTRA else 0).dp
+    // #357: строка в руке — приподнята, с тенью, над соседями; её место не анимируется (иначе дёргается под пальцем).
+    val dragged = reorder != null && reorder.draggingId == item.id
+    val clickState = androidx.compose.runtime.rememberUpdatedState(onClick)
+    val longState = androidx.compose.runtime.rememberUpdatedState(onLongClick)
     Row(
         Modifier
-            .animateItem()
+            .then(if (dragged) Modifier.zIndex(1f).animateItem(placementSpec = null) else Modifier.animateItem())
             .fillMaxWidth()
             .height(height)
             .padding(horizontal = inset ?: spacing.xs)
+            .then(
+                if (dragged) Modifier.graphicsLayer {
+                    translationY = reorder.offset
+                    scaleX = DRAG_SCALE
+                    scaleY = DRAG_SCALE
+                    shadowElevation = SizeTokens.DRAG_ELEVATION.dp.toPx()
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(SizeTokens.DRAG_RADIUS.dp)
+                    clip = true
+                }.background(colors.background).testTag(TAG_DRAGGING) else Modifier,
+            )
             .clip(AppTheme.shapes.medium)
             .then(if (selected == true) Modifier.background(colors.selected).border(SizeTokens.CHECKBOX_STROKE.dp, colors.accent, AppTheme.shapes.medium) else Modifier)
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+            .then(if (reorder != null) Modifier.reorderGestures(item.id, reorder, clickState, longState) else Modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick))
             .padding(end = spacing.xs)
             .testTag(testTag),
         verticalAlignment = Alignment.CenterVertically,
@@ -308,3 +328,7 @@ private fun Node(ring: Color, done: Float, modifier: Modifier, fill: Color = rin
 private const val MINUTES_PER_HOUR = 60
 private const val SECONDS_PER_MINUTE = 60
 private const val MILLIS_PER_SECOND = 1000
+
+/** #357: строка в руке чуть крупнее. */
+private const val DRAG_SCALE = 1.02f
+const val TAG_DRAGGING = "task_dragging"

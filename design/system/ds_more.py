@@ -1610,3 +1610,30 @@ README_MORE['HabitRow'] = ('Строка привычки (0.97).',
     'сегодня обведено `priority-high-text`. Справа серия «🔥 12» (`warning`; для «N в неделю» — «🔥 3 нед.») и круг отметки `size-habit-check` (28): '
     'пустой — кольцо `inactive`, сделано — `priority-high-text` с галочкой. Строка `size-habit-row` (56); «Не сегодня» — полупрозрачная. '
     'Карточка — окно с тремя числами и календарём месяца (`size-habit-cal-day` 34). В хабе — плашки «эмодзи название», сделанная — `priority-high-bg`.')
+
+
+def sort_option(icon, label, hint, sel=False, std=False, chip=None):
+    color = 'var(--priority-high-text)' if sel else 'var(--text-primary)'
+    tag = '<span style="font-size:11px;color:var(--text-secondary);margin-left:6px">стандарт</span>' if std else ''
+    sub = '' if (sel and chip) else f'<div style="font-size:12px;color:var(--text-secondary)">{hint}</div>'
+    right = (f'<span style="background:var(--priority-high-bg);color:var(--priority-high-text);border-radius:999px;padding:4px 10px;'
+             f'font-size:12px;font-weight:700">{chip}</span>') if chip else ''
+    return (f'<div style="display:flex;align-items:center;gap:12px;height:56px;padding:0 16px">'
+            f'<span style="width:22px;color:{"var(--priority-high-text)" if sel else "var(--text-secondary)"}">{icon}</span>'
+            f'<div style="flex:1"><div style="font-size:15px;font-weight:600;color:{color}">{label}{tag}</div>{sub}</div>{right}</div>')
+
+
+PREVIEWS['SortSheet'] = lambda: doc('Окна и шторки', 420, 'Шторка «Сортировка» (0.103): варианты, ярлык направления, сброс',
+                                    '<div style="width:400px;background:var(--surface);border-radius:var(--radius-xl);padding:12px 0">'
+                                    '<div style="padding:0 16px;font-size:17px;font-weight:700;color:var(--text-primary)">Сортировка</div>'
+                                    '<div style="padding:0 16px 8px;font-size:12px;color:var(--text-secondary)">Работа · у каждого списка своя</div>'
+                                    + sort_option('📅', 'По сроку', 'сначала ранние', sel=True, std=True, chip='↑ сначала ранние')
+                                    + sort_option('⚑', 'По приоритету', 'сначала важные') + sort_option('≡', 'Вручную', 'нажми задачу и веди')
+                                    + sort_option('⊕', 'По дате создания', 'сначала новые')
+                                    + '<div style="padding:4px 16px;font-size:12px;color:var(--text-secondary)">Нажми выбранный вариант ещё раз — порядок развернётся.</div></div>')
+README_MORE['SortSheet'] = ('Шторка «Сортировка» (0.103).',
+    'Сортировка задач (#357, design/approved/357). Кнопка ↑↓ (`ic_nav_sort`) в капсуле после ⚙ — на экранах списка, «Входящих» и «Предстоящего»; '
+    'сортировка не стандартная — точка `size-nav-badge` цветом «+». Шторка: варианты строками `size-sort-row` (56) со значком `size-sort-icon` (22); '
+    'выбранный — `priority-high-text` с ярлыком направления на `priority-high-bg`, повторное нажатие разворачивает порядок; «Сбросить на стандарт» и «Готово». '
+    'На экране списка при «по сроку» — подписи дней («Просрочено», дни, «Без даты»), внизу «Выполнено · N ›». Строка в руке — тень `size-drag-elevation` (8), '
+    'скругление `size-drag-radius` (14), масштаб 1,02.')

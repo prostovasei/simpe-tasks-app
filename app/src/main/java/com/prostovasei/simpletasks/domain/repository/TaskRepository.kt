@@ -55,6 +55,9 @@ interface TaskRepository {
     /** Создаёт задачу вместе с пунктами чек-листа. Возвращает id задачи. */
     suspend fun createTask(task: NewTask): String
 
+    /** Ручной порядок (#357): задачи [ids] получают порядок по позиции в списке. */
+    suspend fun reorderTasks(ids: List<String>) {}
+
     /** Сохраняет редактируемые поля: список, название, описание, приоритет, срок и начало, повтор, напоминания, родителя, порядок. */
     suspend fun updateTask(task: Task)
 

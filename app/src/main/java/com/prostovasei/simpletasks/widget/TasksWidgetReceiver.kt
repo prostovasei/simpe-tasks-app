@@ -98,6 +98,7 @@ class WidgetUpdater @Inject constructor(
     private val dayTicker: DayTicker,
     private val overdueFold: OverdueFold,
     @param:ApplicationScope private val appScope: CoroutineScope,
+    private val sorts: com.prostovasei.simpletasks.domain.repository.TaskSortStore,
 ) {
     @OptIn(FlowPreview::class)
     fun start() {
@@ -124,7 +125,11 @@ class WidgetUpdater @Inject constructor(
         prefs.registerOnSharedPreferenceChangeListener(limitListener)
 
         appScope.launch {
-            combine(tasks.observeDataChanges(), dayTicker.today(), overdueFold.collapsed) { _, _, _ -> }.debounce(DEBOUNCE_MS).collect {
+            // #357: сортировка «Предстоящего» и «Входящих» меняет порядок в виджете.
+            combine(
+                tasks.observeDataChanges(), dayTicker.today(), overdueFold.collapsed,
+                sorts.observe(com.prostovasei.simpletasks.domain.model.SortScope.Upcoming), sorts.observe(com.prostovasei.simpletasks.domain.model.SortScope.Inbox),
+            ) { _, _, _, _, _ -> }.debounce(DEBOUNCE_MS).collect {
                 if (WidgetRenderer.widgetIds(context).isEmpty()) return@collect
                 WidgetRenderer.renderAll(context, "изменились задачи")
             }

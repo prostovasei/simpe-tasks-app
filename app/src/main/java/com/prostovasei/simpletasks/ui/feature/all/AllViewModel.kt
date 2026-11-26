@@ -33,6 +33,7 @@ class AllViewModel @Inject constructor(
     private val time: TimeProvider,
     private val fold: OverdueFold,
     private val moves: OverdueMoves,
+    private val sorts: com.prostovasei.simpletasks.domain.repository.TaskSortStore,
 ) : MviViewModel<AllState, TaskListIntent, TaskListEffect>(AllState()) {
 
     private val completion = CompletionTracker(viewModelScope, tasks, time)
@@ -47,11 +48,12 @@ class AllViewModel @Inject constructor(
                 val fresh = listOf(all.overdue, all.todayAllDay, all.todayTimed).map { section -> section.map { it.toItem(byId, day, zone, pending) } } +
                     listOf(upcomingWithRepeats(all.upcoming, everything, byId, day, zone, pending))
                 SectionsUpdate(day, pending, collapsed, fresh)
-            }.collect { (day, pending, collapsed, fresh) ->
+            }.combine(sorts.observe(com.prostovasei.simpletasks.domain.model.SortScope.Upcoming)) { update, sort -> update to sort }.collect { (update, sort) ->
+                val (day, pending, collapsed, fresh) = update
                 setState {
                     val merged = listOf(overdue, todayAllDay, todayTimed, upcoming)
                         .zip(fresh) { previous, current -> mergeWithPending(previous, current, pending) }
-                    copy(overdue = merged[0], todayAllDay = merged[1], todayTimed = merged[2], upcoming = merged[3], isLoading = false, today = day, overdueCollapsed = collapsed)
+                    copy(overdue = merged[0], todayAllDay = merged[1], todayTimed = merged[2], upcoming = merged[3], isLoading = false, today = day, overdueCollapsed = collapsed, daySort = sort)
                 }
             }
         }

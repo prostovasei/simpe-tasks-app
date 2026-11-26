@@ -1,5 +1,6 @@
 package com.prostovasei.simpletasks.ui.feature.project
 
+import com.prostovasei.simpletasks.domain.model.TaskSort
 import com.prostovasei.simpletasks.ui.common.TaskItem
 import com.prostovasei.simpletasks.ui.common.TaskListEffect
 import com.prostovasei.simpletasks.ui.common.TaskListIntent
@@ -15,6 +16,10 @@ data class ProjectState(
     val tasks: List<TaskItem> = emptyList(),
     val isLoading: Boolean = true,
     val dialog: ProjectDialog = ProjectDialog.None,
+    /** #357: сортировка списка, сегодняшний день (подписи дней) и окно «Переключить на ручную?». */
+    val sort: TaskSort = TaskSort.LIST_DEFAULT,
+    val today: java.time.LocalDate? = null,
+    val askManual: Boolean = false,
 )
 
 enum class ProjectDialog { None, Rename, Emoji, Delete }

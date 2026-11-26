@@ -36,6 +36,8 @@ data class TaskItem(
     val subtitle: String? = null,
     /** У будущего повтора — его начало или срок (итерация 49): окно задачи открывает именно этот раз. */
     val occurrence: TaskDue? = null,
+    /** Когда создана (мс) — сортировка «по дате создания» (#357). */
+    val createdAt: Long = 0L,
 ) {
     val isGhost: Boolean get() = ghostOf != null
 
@@ -63,6 +65,7 @@ fun Task.toItem(projects: Map<String, Project>, today: LocalDate, zone: ZoneId, 
         ghostOf = id.takeIf { ghostIndex != null },
         reminder = Reminders.mark(due, reminders),
         occurrence = (start ?: due).takeIf { ghostIndex != null },
+        createdAt = createdAt.toEpochMilli(),
     )
 }
 

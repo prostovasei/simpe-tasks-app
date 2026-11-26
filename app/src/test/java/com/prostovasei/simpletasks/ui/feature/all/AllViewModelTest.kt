@@ -63,7 +63,7 @@ class AllViewModelTest {
 
     private val moves = OverdueMoves(tasks, TestScope(dispatcher))
 
-    private fun viewModel() = AllViewModel(tasks, projects, DayTicker { day }, time, fold, moves)
+    private fun viewModel() = AllViewModel(tasks, projects, DayTicker { day }, time, fold, moves, com.prostovasei.simpletasks.testing.FakeTaskSortStore())
 
     @Test
     fun toggleOverdueFlipsCollapsedFlag() = runTest(dispatcher) {
@@ -269,7 +269,7 @@ class AllViewModelTest {
     @Test
     fun inboxShowsInboxAndUndatedTasks() = runTest(dispatcher) {
         tasks.tasks.value = tasks.tasks.value + task("work-undated", projectId = "work")
-        val vm = InboxViewModel(tasks, projects, DayTicker { day }, time)
+        val vm = InboxViewModel(tasks, projects, DayTicker { day }, time, com.prostovasei.simpletasks.testing.FakeTaskSortStore())
         runCurrent()
 
         // Итерация 52: только неразобранное — без даты и без списка.

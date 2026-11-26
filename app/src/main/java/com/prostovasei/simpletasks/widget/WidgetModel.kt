@@ -110,6 +110,11 @@ fun WidgetModel.entries(): List<WidgetEntry> {
     }
 }
 
+/** #357: задачи каждого дня — в порядке «Предстоящего». */
+fun WidgetModel.sortedDays(sort: com.prostovasei.simpletasks.domain.model.TaskSort): WidgetModel =
+    if (sort == com.prostovasei.simpletasks.domain.model.TaskSort.DAY_DEFAULT) this
+    else copy(days = days.map { block -> if (block.day is WidgetDay.On) block.copy(items = com.prostovasei.simpletasks.ui.common.DaySort.apply(block.items, sort)) else block })
+
 object WidgetModels {
     /**
      * «Все»: просроченные → сегодня → ещё 13 дней вместе с будущими повторами, по дням (итерация 42, решение PM: 14 дней;
