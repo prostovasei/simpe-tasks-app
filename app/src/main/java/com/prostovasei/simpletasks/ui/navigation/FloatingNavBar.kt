@@ -62,6 +62,9 @@ fun FloatingNavBar(
     onAdd: () -> Unit,
     modifier: Modifier = Modifier,
     onHubLongClick: (() -> Unit)? = null,
+    /** #357: сортировка экрана задач; null — кнопки нет. [sortChanged] — сиреневая точка «не стандарт». */
+    onSort: (() -> Unit)? = null,
+    sortChanged: Boolean = false,
 ) {
     val icon = Color(NavBarTokens.icon.light)
     Row(
@@ -83,6 +86,24 @@ fun FloatingNavBar(
                 contentAlignment = Alignment.Center,
             ) { Icon(painterResource(R.drawable.ic_nav_grid), null, tint = icon, modifier = Modifier.size(SizeTokens.NAV_ICON.dp)) }
             NavIcon(R.drawable.ic_nav_sliders, stringResource(R.string.settings_title), TAG_MODULE_SETTINGS, icon, SizeTokens.NAV_ICON, onSettings)
+            if (onSort != null) {
+                val label = stringResource(R.string.nav_sort)
+                val changed = stringResource(R.string.sort_changed)
+                Box(
+                    Modifier.size(SizeTokens.NAV_BUTTON.dp).clip(CircleShape).clickable(role = Role.Button, onClick = onSort)
+                        .semantics { contentDescription = if (sortChanged) "$label, $changed" else label }.testTag(TAG_NAV_SORT),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(painterResource(R.drawable.ic_nav_sort), null, tint = icon, modifier = Modifier.size(SizeTokens.NAV_ICON.dp))
+                    if (sortChanged) {
+                        Box(
+                            Modifier.align(Alignment.TopEnd).padding(SizeTokens.NAV_BADGE_INSET.dp).size(SizeTokens.NAV_BADGE.dp).clip(CircleShape)
+                                .background(Color(NavBarTokens.background.light)).padding(AppTheme.sizes.hairline).clip(CircleShape)
+                                .background(Color(NavBarTokens.plus.light)).testTag(TAG_NAV_SORT_DOT),
+                        )
+                    }
+                }
+            }
             NavIcon(R.drawable.ic_nav_mic, stringResource(R.string.widget_voice), TAG_NAV_VOICE, icon, SizeTokens.NAV_ICON, onVoice)
             NavIcon(R.drawable.ic_nav_plus, stringResource(R.string.nav_add), TAG_NAV_ADD, Color(NavBarTokens.plus.light), SizeTokens.NAV_PLUS_ICON, onAdd)
         }
@@ -172,6 +193,8 @@ private const val PICKER_COLUMNS = 3
 const val TAG_NAV_HUB = "nav_hub"
 const val TAG_NAV_VOICE = "nav_voice"
 const val TAG_NAV_ADD = "nav_add"
+const val TAG_NAV_SORT = "nav_sort"
+const val TAG_NAV_SORT_DOT = "nav_sort_dot"
 const val ADD_TASK = "task"
 const val ADD_EXPENSE = "expense"
 const val ADD_WEIGHT = "weight"

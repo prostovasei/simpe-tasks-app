@@ -1,6 +1,7 @@
 package com.prostovasei.simpletasks.ui.feature.all
 
 import com.prostovasei.simpletasks.ui.common.DayLabel
+import com.prostovasei.simpletasks.ui.common.DaySort
 import com.prostovasei.simpletasks.ui.common.TaskItem
 import java.time.LocalDate
 
@@ -35,14 +36,14 @@ fun AllState.dayGroups(): List<DayGroup> {
     val overdueIds = overdue.map { it.id }.toSet()
     val (overdueToday, overduePast) = overdue.partition { it.date() == today }
     val past = overduePast.groupBy { it.date() }.toSortedMap().map { (date, items) ->
-        DayGroup(date, relative(date), isOverdue = true, items = items, overdueIds = overdueIds)
+        DayGroup(date, relative(date), isOverdue = true, items = DaySort.apply(items, daySort), overdueIds = overdueIds)
     }
     val todayItems = overdueToday + todayAllDay + todayTimed
     val todayGroup = listOfNotNull(
-        todayItems.takeIf { it.isNotEmpty() }?.let { DayGroup(today, DayLabel.Today, isOverdue = false, items = it, overdueIds = overdueIds) },
+        todayItems.takeIf { it.isNotEmpty() }?.let { DayGroup(today, DayLabel.Today, isOverdue = false, items = DaySort.apply(it, daySort), overdueIds = overdueIds) },
     )
     val future = upcoming.groupBy { it.date() }.map { (date, items) ->
-        DayGroup(date, relative(date), isOverdue = false, items = items, overdueIds = overdueIds)
+        DayGroup(date, relative(date), isOverdue = false, items = DaySort.apply(items, daySort), overdueIds = overdueIds)
     }
     return past + todayGroup + future
 }

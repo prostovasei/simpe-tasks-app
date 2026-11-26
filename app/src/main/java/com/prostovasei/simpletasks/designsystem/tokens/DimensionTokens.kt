@@ -456,6 +456,12 @@ object SizeTokens {
     const val NAV_BADGE = 7
     const val NAV_BADGE_INSET = 6
     const val HUB_SECTION_GAP = 24
+    /** #357: строка задачи в руке — тень и скругление; точка «сортировка изменена» — как точка обновления. */
+    const val DRAG_ELEVATION = 8
+    const val DRAG_RADIUS = 14
+    /** #357: строка варианта в шторке сортировки и её значок. */
+    const val SORT_ROW = 56
+    const val SORT_ICON = 22
     const val PICKER_TILE = 76
     const val PICKER_ICON = 24
     const val TASK_CHECK_GAP = 10

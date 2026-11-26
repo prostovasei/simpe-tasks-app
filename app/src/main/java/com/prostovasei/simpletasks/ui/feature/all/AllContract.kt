@@ -14,6 +14,8 @@ data class AllState(
     val today: LocalDate? = null,
     /** Блок «Просрочено» свёрнут (итерация 37). */
     val overdueCollapsed: Boolean = false,
+    /** #357: порядок внутри дня (кнопка ↑↓); тот же — в хабе и виджете. */
+    val daySort: com.prostovasei.simpletasks.domain.model.TaskSort = com.prostovasei.simpletasks.domain.model.TaskSort.DAY_DEFAULT,
 ) {
     val isEmpty: Boolean get() = overdue.isEmpty() && todayAllDay.isEmpty() && todayTimed.isEmpty() && upcoming.isEmpty()
 }

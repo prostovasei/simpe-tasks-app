@@ -682,3 +682,19 @@ class FakeWeighInReminder : com.prostovasei.simpletasks.notifications.WeighInRem
         scheduled++
     }
 }
+
+/** Сортировки экранов в памяти (#357). */
+class FakeTaskSortStore : com.prostovasei.simpletasks.domain.repository.TaskSortStore {
+    private val state = kotlinx.coroutines.flow.MutableStateFlow<Map<String, com.prostovasei.simpletasks.domain.model.TaskSort>>(emptyMap())
+
+    override fun observe(scope: com.prostovasei.simpletasks.domain.model.SortScope) =
+        kotlinx.coroutines.flow.flow { state.collect { emit(it[scope.key] ?: scope.default) } }
+
+    override fun get(scope: com.prostovasei.simpletasks.domain.model.SortScope) = state.value[scope.key] ?: scope.default
+
+    override fun set(scope: com.prostovasei.simpletasks.domain.model.SortScope, sort: com.prostovasei.simpletasks.domain.model.TaskSort) {
+        state.value = state.value + (scope.key to sort)
+    }
+
+    override var skipManualQuestion: Boolean = false
+}

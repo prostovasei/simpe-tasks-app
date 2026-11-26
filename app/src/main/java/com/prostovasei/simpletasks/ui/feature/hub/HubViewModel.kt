@@ -42,6 +42,7 @@ class HubViewModel @Inject constructor(
     projects: ProjectRepository,
     dayTicker: DayTicker,
     private val time: TimeProvider,
+    private val sorts: com.prostovasei.simpletasks.domain.repository.TaskSortStore,
 ) : MviViewModel<HubState, TaskListIntent, TaskListEffect>(HubState()) {
 
     private val completion = CompletionTracker(viewModelScope, tasks, time)
@@ -71,6 +72,12 @@ class HubViewModel @Inject constructor(
                         isLoading = false,
                     )
                 }
+            }.combine(sorts.observe(com.prostovasei.simpletasks.domain.model.SortScope.Upcoming)) { fresh, sort ->
+                // #357: порядок внутри дня — как в «Предстоящем».
+                fresh.copy(
+                    overdue = com.prostovasei.simpletasks.ui.common.DaySort.byDay(fresh.overdue, sort),
+                    days = fresh.days.map { (date, items) -> date to com.prostovasei.simpletasks.ui.common.DaySort.apply(items, sort) },
+                )
             }.collect { fresh -> setState { fresh } }
         }
     }

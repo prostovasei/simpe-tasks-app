@@ -237,6 +237,13 @@ interface TaskDao {
     @Query("SELECT COALESCE(MAX(sort_order), -1) + 1 FROM tasks WHERE project_id = :projectId AND is_deleted = 0")
     suspend fun nextSortOrder(projectId: String): Int
 
+    /** #357: место в начале списка — для новой задачи при ручной сортировке. */
+    @Query("SELECT COALESCE(MIN(sort_order), 1) - 1 FROM tasks WHERE project_id = :projectId AND is_deleted = 0")
+    suspend fun topSortOrder(projectId: String): Int
+
+    @Query("UPDATE tasks SET sort_order = :sortOrder, updated_at = :now WHERE id = :id")
+    suspend fun setSortOrder(id: String, sortOrder: Int, now: Long): Int
+
     @Query(
         """
         UPDATE tasks SET project_id = :projectId, title = :title, content = :content, priority = :priority,

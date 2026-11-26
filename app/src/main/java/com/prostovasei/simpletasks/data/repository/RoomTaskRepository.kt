@@ -52,6 +52,8 @@ class RoomTaskRepository @Inject constructor(
     private val db: AppDatabase,
     private val time: TimeProvider,
     private val ids: IdGenerator,
+    /** #357: при ручной сортировке списка новая задача встаёт в начало. */
+    private val sorts: com.prostovasei.simpletasks.domain.repository.TaskSortStore? = null,
 ) : TaskRepository {
 
     private val taskDao = db.taskDao()
@@ -114,6 +116,18 @@ class RoomTaskRepository @Inject constructor(
             insertChecklist(id, task.checklist)
         }
         return id
+    }
+
+    override suspend fun reorderTasks(ids: List<String>) {
+        val now = nowMillis()
+        db.withTransaction { ids.forEachIndexed { index, id -> taskDao.setSortOrder(id, index, now) } }
+    }
+
+    private suspend fun isManual(projectId: String): Boolean {
+        val store = sorts ?: return false
+        val scope = if (projectDao.getById(projectId)?.isInbox == true) com.prostovasei.simpletasks.domain.model.SortScope.Inbox
+        else com.prostovasei.simpletasks.domain.model.SortScope.Project(projectId)
+        return store.get(scope).by == com.prostovasei.simpletasks.domain.model.SortBy.MANUAL
     }
 
     override suspend fun updateTask(task: Task) {
@@ -474,7 +488,7 @@ class RoomTaskRepository @Inject constructor(
             dueDate = due.dueDate,
             startDate = start.dueDate,
             isAllDay = due.isAllDay,
-            sortOrder = taskDao.nextSortOrder(task.projectId),
+            sortOrder = if (isManual(task.projectId)) taskDao.topSortOrder(task.projectId) else taskDao.nextSortOrder(task.projectId),
             rrule = task.rrule?.takeIf { task.due != null },
             reminders = task.reminders.takeIf { task.due != null && it.isNotEmpty() }?.joinToString("\n"),
             createdAt = now,

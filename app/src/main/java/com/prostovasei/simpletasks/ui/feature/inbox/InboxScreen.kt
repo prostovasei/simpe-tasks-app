@@ -23,7 +23,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.prostovasei.simpletasks.R
 import com.prostovasei.simpletasks.designsystem.components.ScreenTitle
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
-import com.prostovasei.simpletasks.ui.common.FlatTaskList
+import com.prostovasei.simpletasks.ui.common.SortedTaskList
 import com.prostovasei.simpletasks.ui.common.TaskListEffects
 import com.prostovasei.simpletasks.ui.common.TaskListIntent
 
@@ -59,8 +59,11 @@ fun InboxScreen(
                 color = AppTheme.colors.textSecondary,
                 modifier = Modifier.padding(horizontal = AppTheme.spacing.md).padding(bottom = AppTheme.spacing.xs).testTag(TAG_INBOX_HINT),
             )
-            FlatTaskList(
+            SortedTaskList(
                 tasks = state.tasks,
+                sort = state.sort,
+                today = state.today,
+                askManual = state.askManual,
                 isLoading = state.isLoading,
                 emptyText = stringResource(R.string.inbox_empty),
                 onIntent = onIntent,

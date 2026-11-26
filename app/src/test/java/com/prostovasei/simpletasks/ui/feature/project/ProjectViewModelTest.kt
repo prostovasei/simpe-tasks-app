@@ -41,12 +41,15 @@ class ProjectViewModelTest {
     @After
     fun tearDown() = Dispatchers.resetMain()
 
+    private val sorts = com.prostovasei.simpletasks.testing.FakeTaskSortStore()
+
     private fun viewModel(projectId: String = "work") = ProjectViewModel(
         SavedStateHandle(mapOf("projectId" to projectId)),
         tasks,
         projects,
         DayTicker { flowOf(LocalDate.of(2026, 10, 13)) },
         FakeTimeProvider(),
+        sorts,
     )
 
     @Test

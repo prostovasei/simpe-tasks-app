@@ -1767,6 +1767,19 @@ Compose и RemoteViews используют общие сокращения ме
 
 `VoiceSheet` ставит карточку как `TaskSheet`: `rememberKeyboardHeight` (запасные 40 % высоты), отступ снизу = max(клавиатура, ime, навигация) + 8 dp, высота `SizeTokens.VOICE_HEIGHT` = 212 dp. Внизу `Tide` — `Canvas` с тремя слоями-синусоидами на `VOICE_TIDE_PERCENT` высоты; цвета `ColorTokens.voiceTide` / `voiceCalm` смешиваются по анимированному признаку записи (0,6 с), подъём — громкость × `VOICE_TIDE_RISE`. Фаза волн — свои часы `tidePhase` на `withInfiniteAnimationFrameNanos`: на паузе волны замедляются вместе с переходом в серый и замирают на месте, после ⏺ продолжают с той же фазы (без рывка к началу); кадры идут только пока вода движется и при включённых анимациях системы. `withInfiniteAnimationFrameNanos`, а не `withFrameNanos` — иначе тесты Compose не дожидаются покоя. Карточка гасит нажатия через `pointerInput`, без `clickable` (не лишняя кнопка для TalkBack); ошибка — `liveRegion`, «●» озвучивается словами. Кнопки — `SheetButton` 50 dp (⏸/⏺ `ic_voice_pause`/`ic_voice_record`, галочка `ic_voice_check`); ошибка — `errorText` между ними, у `NO_PERMISSION` текст ведёт в настройки (`onSettings`). `blocking()` — нет доступа, недоступно, нет языка: ⏺ неактивна. Логика `VoiceRoute`/`VoiceState`/движка (#299, #302) не менялась. Старые токены микрофона (`VOICE_MIC`, `VOICE_GLOW`…) и строки подписей удалены.
 
+### 4.129. Сортировка задач (#357, 0.103.0)
+
+Домен: `TaskSort(by: SortBy, descending)`, `SortScope` (Upcoming, Inbox, Project(id)), `TaskSorter.sort` (по сроку — весь день раньше времени, ничьи по названию, без даты в конце;
+по приоритету, дате создания; вручную — `sortOrder`). Хранилище `TaskSortStore` → `PrefsTaskSortStore` (`task_sort`, ключ — экран; стандарт не хранится) и
+`skipManualQuestion`. `TaskRepository.reorderTasks(ids)` пишет `sort_order` по позиции; `RoomTaskRepository(sorts)` при ручной сортировке даёт новой задаче
+`topSortOrder` (MIN − 1). UI: `ProjectViewModel`/`InboxViewModel` сортируют задачи и держат `sort`, `today`, `askManual`; общий `ListSorting` (перенос с мгновенным
+порядком на экране, вопрос, переключение — нынешний порядок → `reorderTasks`). `SortedTaskList` + `sortedTasks()` (блоки OVERDUE/DAY/NO_DATE/FLAT и «Выполнено»)
+заменили `FlatTaskList` у списка и «Входящих». Перетаскивание: `ReorderController` + `Modifier.reorderGestures` (долгое нажатие: повёл — перенос/вопрос,
+отпустил — выбор), строка в руке — `zIndex`, `graphicsLayer` (тень `DRAG_ELEVATION`, масштаб), без анимации места. «Предстоящее»: `AllState.daySort` →
+`DaySort.apply` в `dayGroups()`; хаб — `DaySort.apply/byDay`; виджет — `WidgetModel.sortedDays`, «Входящие» — `TaskSorter`; `WidgetUpdater` перерисовывает при смене.
+Навигация: `ProjectDestination` в `LISTS_CHILDREN` (капсула на экране списка, своей «+» нет), `sortScope` открытого экрана, `TaskSortViewModel`, `SortSheet`,
+`FloatingNavBar(onSort, sortChanged)` с `TAG_NAV_SORT`/`TAG_NAV_SORT_DOT`. `TaskItem.createdAt`.
+
 ### 4.128. Simple Hub: иконка, обновление из «Главной», разделы (#354, 0.102.0)
 
 `app_name` = Simple Hub; `ic_launcher_foreground` — четыре плитки, `ic_launcher_monochrome` — для тематических иконок; фон `ic_launcher_background` #16171D. Панель «Главной»: `ic_nav_app` (плитки), `ic_nav_update` → `UpdateActivity` с `EXTRA_AUTO` — `UpdateDialogViewModel` (из `SavedStateHandle`) после проверки сам скачивает и вызывает `commit`. Точка — `UpdateBadge`: номер найденной сборки в настройках, проверка в `hubWidgetViews` не чаще раза в 6 ч (тайм-аут 8 с), `NavButton(badge)` рисует `widget_nav_badge`. Разделы: `HUB_SECTION_GAP` 24 (приложение), `widget_hub_section` 24 / `widget_hub_section_tail` 18 (виджет). Обработчик `REFRESH_NEWS` с #352 принимает и HUB, но кнопки больше нет.

@@ -38,6 +38,7 @@ interface WidgetEntryPoint {
     fun dayTicker(): DayTicker
     fun overdueFold(): OverdueFold
     fun updater(): com.prostovasei.simpletasks.core.update.AppUpdater
+    fun taskSorts(): com.prostovasei.simpletasks.domain.repository.TaskSortStore
 }
 
 fun Context.widgetEntryPoint(): WidgetEntryPoint = EntryPointAccessors.fromApplication(applicationContext, WidgetEntryPoint::class.java)
@@ -54,8 +55,13 @@ fun WidgetEntryPoint.observeModel(filter: WidgetFilter, pick: WeekPick = WeekPic
     val zone = time().zone()
     val tree = projects().observeProjectTree()
     val model = when (filter) {
-        WidgetFilter.All -> combine(tasks().observeAllScreen(today), tree) { all, t -> WidgetModels.all(all, t.projectsById(), today, zone) to t }
-        WidgetFilter.Inbox -> combine(tasks().observeInbox(today), tree) { list, t -> WidgetModels.list(filter, null, list, t.projectsById(), today, zone) to t }
+        // #357: порядок внутри дня — как в «Предстоящем», «Входящие» — по их сортировке.
+        WidgetFilter.All -> combine(tasks().observeAllScreen(today), tree, taskSorts().observe(com.prostovasei.simpletasks.domain.model.SortScope.Upcoming)) { all, t, sort ->
+            WidgetModels.all(all, t.projectsById(), today, zone).sortedDays(sort) to t
+        }
+        WidgetFilter.Inbox -> combine(tasks().observeInbox(today), tree, taskSorts().observe(com.prostovasei.simpletasks.domain.model.SortScope.Inbox)) { list, t, sort ->
+            WidgetModels.list(filter, null, com.prostovasei.simpletasks.domain.model.TaskSorter.sort(list, sort, zone), t.projectsById(), today, zone) to t
+        }
         WidgetFilter.Week -> {
             val start = pick.start ?: today.weekStart()
             combine(tasks().observeWeek(start), tree) { week, t ->

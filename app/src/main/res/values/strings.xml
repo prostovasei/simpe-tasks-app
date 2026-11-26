@@ -1007,4 +1007,34 @@
     <string name="settings_home_habits">Привычки</string>
     <string name="settings_home_habits_hint">Напоминание, архив, резервная копия</string>
     <string name="habits_widget_none_today">На сегодня привычек нет</string>
+    <!-- #357: сортировка задач -->
+    <string name="nav_sort">Сортировка</string>
+    <string name="sort_title">Сортировка</string>
+    <string name="sort_subtitle_list">%1$s · у каждого списка своя</string>
+    <string name="sort_subtitle_upcoming">Предстоящее · порядок внутри дня, так же в хабе и виджете</string>
+    <string name="sort_due">По сроку</string>
+    <string name="sort_time">По времени</string>
+    <string name="sort_priority">По приоритету</string>
+    <string name="sort_manual">Вручную</string>
+    <string name="sort_created">По дате создания</string>
+    <string name="sort_standard">стандарт</string>
+    <string name="sort_hint_due_asc">сначала ранние</string>
+    <string name="sort_hint_due_desc">сначала поздние</string>
+    <string name="sort_hint_time_asc">с утра к вечеру</string>
+    <string name="sort_hint_time_desc">с вечера к утру</string>
+    <string name="sort_hint_priority_desc">сначала важные</string>
+    <string name="sort_hint_priority_asc">сначала обычные</string>
+    <string name="sort_hint_created_desc">сначала новые</string>
+    <string name="sort_hint_created_asc">сначала старые</string>
+    <string name="sort_hint_manual">нажми задачу и веди</string>
+    <string name="sort_flip_note">Нажми выбранный вариант ещё раз — порядок развернётся.</string>
+    <string name="sort_reset">Сбросить на стандарт</string>
+    <string name="sort_ok">Готово</string>
+    <string name="sort_changed">сортировка изменена</string>
+    <string name="sort_no_date">Без даты</string>
+    <string name="sort_done_block">Выполнено</string>
+    <string name="sort_manual_title">Переключить на ручную сортировку?</string>
+    <string name="sort_manual_text">Сейчас список отсортирован «%1$s». Нынешний порядок станет ручным — задачи можно будет ставить куда угодно.</string>
+    <string name="sort_manual_skip">Больше не спрашивать</string>
+    <string name="sort_manual_switch">Переключить</string>
 </resources>

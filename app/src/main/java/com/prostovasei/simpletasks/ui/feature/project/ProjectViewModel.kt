@@ -28,12 +28,14 @@ class ProjectViewModel @Inject constructor(
     private val projects: ProjectRepository,
     dayTicker: DayTicker,
     private val time: TimeProvider,
+    sorts: com.prostovasei.simpletasks.domain.repository.TaskSortStore,
 ) : MviViewModel<ProjectState, TaskListIntent, TaskListEffect>(ProjectState()) {
 
     /** Аргумент маршрута ProjectDestination(projectId). */
     private val projectId: String = checkNotNull(savedStateHandle["projectId"]) { "Не передан projectId" }
     private val completion = CompletionTracker(viewModelScope, tasks, time)
     private var closed = false
+    private val sorting = com.prostovasei.simpletasks.ui.common.ListSorting(viewModelScope, tasks, sorts, com.prostovasei.simpletasks.domain.model.SortScope.Project(projectId))
 
     init {
         viewModelScope.launch {
@@ -41,16 +43,19 @@ class ProjectViewModel @Inject constructor(
                 projects.observeProject(projectId),
                 dayTicker.today().flatMapLatest { day -> tasks.observeProjectTasks(projectId, day).map { day to it } },
                 completion.pending,
-            ) { project, (day, list), pending ->
+                sorting.observe(),
+            ) { project, (day, list), pending, sort ->
                 if (project == null) return@combine null
                 val byId = mapOf(project.id to project)
-                Triple(project, pending, list.map { it.toItem(byId, day, time.zone(), pending) })
+                // #357: порядок по сортировке списка; подписи дней строит экран.
+                val sorted = com.prostovasei.simpletasks.domain.model.TaskSorter.sort(list, sort, time.zone())
+                ProjectUpdate(project, pending, sorted.map { it.toItem(byId, day, time.zone(), pending) }, sort, day)
             }.collect { data ->
                 if (data == null) {
                     close()
                     return@collect
                 }
-                val (project, pending, fresh) = data
+                val (project, pending, fresh, sort, day) = data
                 setState {
                     copy(
                         name = project.name,
@@ -60,6 +65,8 @@ class ProjectViewModel @Inject constructor(
                         isInbox = project.isInbox,
                         tasks = mergeWithPending(this.tasks, fresh, pending),
                         isLoading = false,
+                        sort = sort,
+                        today = day,
                     )
                 }
             }
@@ -67,6 +74,11 @@ class ProjectViewModel @Inject constructor(
     }
 
     override fun onIntent(intent: TaskListIntent) {
+        val sorted = sorting.handle(
+            intent, { currentState.tasks }, { currentState.sort }, { currentState.today },
+            setItems = { items -> setState { copy(tasks = items) } }, setAsk = { ask -> setState { copy(askManual = ask) } },
+        )
+        if (sorted) return
         when (intent) {
             is TaskListIntent.ToggleComplete -> completion.toggle(intent.taskId, intent.recurring, intent.done) { sendEffect(it) }
             is TaskListIntent.Undo -> completion.undo(intent.taskId)
@@ -96,3 +108,11 @@ class ProjectViewModel @Inject constructor(
         sendEffect(ProjectEffect.Close)
     }
 }
+
+private data class ProjectUpdate(
+    val project: com.prostovasei.simpletasks.domain.model.Project,
+    val pending: Set<String>,
+    val items: List<com.prostovasei.simpletasks.ui.common.TaskItem>,
+    val sort: com.prostovasei.simpletasks.domain.model.TaskSort,
+    val day: java.time.LocalDate,
+)

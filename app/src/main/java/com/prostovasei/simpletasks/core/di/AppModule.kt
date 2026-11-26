@@ -96,4 +96,7 @@ abstract class RepositoryModule {
 
     @Binds
     abstract fun bindBackupRepository(impl: RoomBackupRepository): BackupRepository
+
+    @Binds
+    abstract fun bindTaskSortStore(impl: com.prostovasei.simpletasks.data.repository.PrefsTaskSortStore): com.prostovasei.simpletasks.domain.repository.TaskSortStore
 }

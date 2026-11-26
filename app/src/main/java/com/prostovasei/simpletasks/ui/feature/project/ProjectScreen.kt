@@ -40,8 +40,7 @@ import com.prostovasei.simpletasks.designsystem.components.ConfirmDeleteDialog
 import com.prostovasei.simpletasks.designsystem.components.NameDialog
 import com.prostovasei.simpletasks.designsystem.theme.TaskCanvasTheme
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
-import com.prostovasei.simpletasks.ui.common.AddTaskButton
-import com.prostovasei.simpletasks.ui.common.FlatTaskList
+import com.prostovasei.simpletasks.ui.common.SortedTaskList
 import com.prostovasei.simpletasks.ui.common.TaskListEffects
 import com.prostovasei.simpletasks.ui.common.TaskListIntent
 
@@ -64,7 +63,7 @@ fun ProjectScreen(
     onIntent: (TaskListIntent) -> Unit,
     onBack: () -> Unit,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
-    onAddTask: () -> Unit = {},
+    @Suppress("UNUSED_PARAMETER") onAddTask: () -> Unit = {},
     onOpenTask: (String) -> Unit = {},
 ) {
     TaskCanvasTheme {
@@ -78,7 +77,7 @@ fun ProjectScreen(
             containerColor = colors.background,
             contentWindowInsets = WindowInsets(0),
             snackbarHost = { UndoSnackbarHost(snackbarHostState) },
-            floatingActionButton = { if (!selection.active) AddTaskButton(onAddTask) },
+            // #357: «+» — в капсуле (экран списка теперь с панелью, как «Входящие»).
         ) { padding ->
             SelectionFrame(selection, state.tasks.filterNot { it.isGhost }.map { Selectable(it.id, it.isDone, it.isRecurring, it.due != null) }, Modifier.padding(padding)) {
             Column(Modifier.fillMaxSize()) {
@@ -107,16 +106,17 @@ fun ProjectScreen(
                     )
                     if (!state.isInbox) ProjectMenu(onIntent)
                 }
-                FlatTaskList(
+                SortedTaskList(
                     tasks = state.tasks,
+                    sort = state.sort,
+                    today = state.today,
                     isLoading = state.isLoading,
                     emptyText = stringResource(R.string.project_empty),
                     onIntent = onIntent,
                     showList = false,
                     onOpenTask = onOpenTask,
-                    // «+» здесь плавает над списком в правом нижнем углу — стрелка над ним.
-                    emptyArrowLift = AppTheme.sizes.navBar + AppTheme.spacing.md,
                     selection = selection,
+                    askManual = state.askManual,
                 )
             }
             }
