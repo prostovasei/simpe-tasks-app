@@ -175,9 +175,10 @@ fun LazyItemScope.TimelineTaskRow(
     // #316: выполненная «тает» — цвет плавно уходит к бледному.
     val melt = ((1f - doneAlpha(item.showsDone)) / (1f - DONE_ALPHA)).coerceIn(0f, 1f)
     val base = if (item.priority == Priority.HIGH) colors.taskRow.priority else colors.taskRow.title
-    val muted = row.past && !item.showsDone
-    val textColor = if (muted) colors.taskRow.done else lerp(base, colors.taskRow.done, melt)
-    val iconAlpha = if (muted) TaskRowTokens.FADED_ICON_ALPHA else 1f - melt * (1f - TaskRowTokens.FADED_ICON_ALPHA)
+    // #342 (решение PM): прошедшая невыполненная за сегодня не бледнеет — у неё красное время.
+    val late = row.past && !item.showsDone
+    val textColor = lerp(base, colors.taskRow.done, melt)
+    val iconAlpha = 1f - melt * (1f - TaskRowTokens.FADED_ICON_ALPHA)
     val right = taskRightLabel(row, isOverdue, dayLabels, today)
     val height = (SizeTokens.WIDGET_ROW + if (item.subtitle != null) SizeTokens.TRASH_ROW_EXTRA else 0).dp
     Row(
@@ -241,7 +242,7 @@ fun LazyItemScope.TimelineTaskRow(
                 style = MaterialTheme.typography.labelMedium,
                 fontSize = SizeTokens.TASK_TIME_SP.sp,
                 fontWeight = FontWeight.Medium,
-                color = if (isOverdue && !item.showsDone) colors.overdue else textColor,
+                color = if ((isOverdue || late) && !item.showsDone) colors.overdue else textColor,
                 maxLines = 1,
                 modifier = Modifier.padding(start = SizeTokens.TASK_RIGHT_GAP.dp).testTag("$testTag:time"),
             )

@@ -124,8 +124,9 @@ fun AllScreen(
                             progress = if (group.relative == DayLabel.Today && group.items.isNotEmpty()) group.items.count { it.isDone } to group.items.size else null,
                         )
                     }
+                    // #342 (решение PM): выполненная тает и исчезает; «2 из 6» в заголовке считается по всем задачам дня.
                     timelineItems(
-                        items = group.items,
+                        items = group.items.filter { !it.isDone || it.isCompleting },
                         keyPrefix = "day-${group.date}",
                         days = days,
                         nowMinute = nowMinute.takeIf { group.relative == DayLabel.Today },

@@ -188,6 +188,23 @@ class ScreensUiTest {
         composeRule.onNodeWithTag("task:d1:time", useUnmergedTree = true).assertDoesNotExist()
     }
 
+    /** #342 (решение PM): выполненная за сегодня исчезает, прогресс «1 из 3» её учитывает. Красное время — в TaskCanvasWidgetTest. */
+    @Test
+    fun doneTodayDisappearsButCountsInProgress() {
+        val state = allState.copy(
+            todayAllDay = emptyList(),
+            todayTimed = listOf(
+                item("p1", "Утренний созвон", DueText(DayLabel.Today, "09:00")),
+                item("x1", "Зарядка", DueText(DayLabel.Today, "07:00")).copy(isDone = true),
+                item("f1", "Ужин", DueText(DayLabel.Today, "20:00")),
+            ),
+        )
+        show { AllScreen(state, { intents += it }) }
+        composeRule.onNodeWithTag("task:x1").assertDoesNotExist()
+        composeRule.onNodeWithTag("task:p1").assertExists()
+        composeRule.onNodeWithText("1 из 3").assertExists()
+    }
+
     @Test
     fun allScreenShowsDaysAndTimes() {
         show { AllScreen(allState, { intents += it }) }
