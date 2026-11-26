@@ -28,7 +28,7 @@
 
 ## Выпуск 0.97.2 — #344
 
-[PR #345](https://github.com/prostovasei/simpe-tasks-app/pull/345), merge `efa10614a793ae9e7255c7dc67cc86c5972b4de8`, APK build-566. CI PR зелёный с первой попытки. «Просрочено» без выполненных разов повторов; блок только из выполненных — без подписи ([прогон](testing-runs/0.97.2-local.md)). #344 закрыта; OD344-1 ждёт PM.
+[PR #345](https://github.com/prostovasei/simpe-tasks-app/pull/345), merge `efa10614a793ae9e7255c7dc67cc86c5972b4de8`, APK build-566. CI PR и main зелёные с первой попытки. «Просрочено» без выполненных разов повторов; блок только из выполненных — без подписи ([прогон](testing-runs/0.97.2-local.md)). #344 закрыта; OD344-1 ждёт PM.
 
 ## Следующее
 
