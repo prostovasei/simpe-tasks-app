@@ -448,6 +448,10 @@ object SizeTokens {
     /** #346: шаг штриховки прогноза и место под лимит у правого края полосы хаба. */
     const val LIMIT_HATCH = 6
     const val LIMIT_LABEL_RESERVE = 44
+    /** #348: полоса хаба — толщина, риска плана, отступ до счетов. */
+    const val HUB_LIMIT_BAR = 8
+    const val HUB_LIMIT_TICK = 2
+    const val HUB_FINANCE_GAP = 10
     const val PICKER_TILE = 76
     const val PICKER_ICON = 24
     const val TASK_CHECK_GAP = 10

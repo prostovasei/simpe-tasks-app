@@ -30,9 +30,9 @@
 
 [PR #345](https://github.com/prostovasei/simpe-tasks-app/pull/345), merge `efa10614a793ae9e7255c7dc67cc86c5972b4de8`, APK build-566. CI PR и main зелёные с первой попытки. «Просрочено» без выполненных разов повторов; блок только из выполненных — без подписи ([прогон](testing-runs/0.97.2-local.md)). #344 закрыта; OD344-1 ждёт PM.
 
-## В работе — #346, хаб без заголовков и прогноз в полосе (0.98.0)
+## Выпуск 0.98.0 — #346
 
-Исполнитель Claude Code, ветка `claude/hub-clean`. PM: конструктор, выбор, «пиши сразу код, делай проверку и выпуск». Код написан (ARCHITECTURE §4.124, SPEC §32, HC346). Проверка: 0.98.0, 1001 тест, [прогон](testing-runs/0.98.0-local.md); PR открыт.
+[PR #347](https://github.com/prostovasei/simpe-tasks-app/pull/347), merge `405691b4be07cbf54d156ef275b2c82ba1c5d8b9`, APK build-571. CI PR и main зелёные с первой попытки. Хаб без заголовков, новости листаются касанием по краям, прогноз штриховкой в полосе (ARCHITECTURE §4.124, SPEC §32, [прогон](testing-runs/0.98.0-local.md)). #346 закрыта; HC346-1–4 ждут PM.
 
 ## Следующее
 

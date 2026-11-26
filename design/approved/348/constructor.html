@@ -1,0 +1,170 @@
+<title>Финансы в хабе</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+<style>
+/* Конструктор #348: блок финансов хаба — полоса, цифры «факт/прогноз/план» справа, отступ до счетов. Все сценарии видны сразу. */
+:root {
+  --page: #e9ebef; --pagefg: #16171d; --pagemuted: #62656e; --chip: #f3f3f4; --rec: #2e7d32; --line: #dcdee3;
+  --card: #ffffff; --title: #2e3036; --muted: #8b8d94; --black: #16171d; --soft: #ececee; --late: #c62828; --warn: #b26a00; --pri: #862ce0;
+  --font: Manrope, system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --page: #0f1013; --pagefg: #ececec; --pagemuted: #a3a3a3; --chip: #24262b; --rec: #81c784; --line: #2f3137; color-scheme: dark } }
+:root[data-theme="dark"] { --page: #0f1013; --pagefg: #ececec; --pagemuted: #a3a3a3; --chip: #24262b; --rec: #81c784; --line: #2f3137; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--page); color: var(--pagefg); font-family: var(--font); margin: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 16px 40px }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--page) }
+h1 { font-size: 21px; margin: 0 0 4px } .lead { color: var(--pagemuted); margin: 0 0 14px; max-width: 80ch; line-height: 1.45; font-size: 14px }
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px; align-items: start }
+@media (max-width: 1100px) { .layout { grid-template-columns: minmax(0, 1fr) } .cards { order: -1 } }
+.panel { display: grid; gap: 12px; min-width: 0; align-content: start }
+fieldset { border: 0; margin: 0; padding: 12px 14px; background: var(--card); color: var(--title); border-radius: 16px; display: grid; gap: 10px; min-width: 0 }
+legend { font-weight: 700; font-size: 15px; padding: 0; float: left; width: 100% }
+.ctl { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px } .ctl > span { flex: 0 0 170px; color: #62656e; font-size: 13px }
+.seg { display: inline-flex; background: #f3f3f4; border-radius: 10px; padding: 3px; gap: 2px; flex-wrap: wrap; min-width: 0 }
+.seg button { font: 600 13px var(--font); color: #16171d; background: none; border: 0; border-radius: 8px; padding: 6px 9px; cursor: pointer; display: inline-flex; gap: 5px; align-items: center }
+.seg button[aria-pressed="true"] { background: #fff; box-shadow: inset 0 0 0 1.5px #16171d }
+.seg button:focus-visible, .btn:focus-visible { outline: 2px solid #862ce0; outline-offset: 1px }
+.seg .tag { font-size: 10px; font-weight: 700 } .seg .tag.pm { color: #2e7d32 } .seg .tag.rec { color: #6b32a8 }
+.top { display: flex; flex-wrap: wrap; gap: 8px; align-items: center }
+.btn { font: 600 13px var(--font); border: 0; border-radius: 10px; padding: 8px 12px; cursor: pointer; background: var(--pagefg); color: var(--page) }
+.btn.ghost { background: var(--chip); color: var(--pagefg) }
+#summary { width: 100%; min-height: 110px; font: 12px/1.45 ui-monospace, Menlo, monospace; color: var(--pagefg); background: var(--page); border: 1px solid var(--line); border-radius: 12px; padding: 10px }
+.hint { color: var(--pagemuted); font-size: 12px; margin: 0; line-height: 1.45 } #copied { color: var(--rec); font-size: 12px }
+.cards { display: grid; gap: 12px; width: 380px; max-width: 100% }
+.sc { background: #fff; border-radius: 22px; padding: 14px 0 12px; color: var(--title); box-shadow: 0 0 0 1px rgb(0 0 0 / .06) }
+.sc h3 { margin: 0 14px 10px; font-size: 12px; color: #8b8d94; font-weight: 700 }
+.fin { padding: 0 14px }
+.l1 { display: flex; align-items: center; gap: 10px }
+.stack { display: grid; gap: 4px }
+.bar { flex: 1; min-width: 0; border-radius: 999px; background: var(--soft); position: relative; overflow: hidden; font-weight: 700 }
+.bar .f { position: absolute; inset: 0 auto 0 0; border-radius: 999px }
+.bar .h { position: absolute; top: 0; bottom: 0; background: repeating-linear-gradient(135deg, rgb(98 101 110 / .45) 0 2px, transparent 2px 6px) }
+.bar .tick { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--black) }
+.bar .in { position: absolute; top: 50%; transform: translateY(-50%); left: 10px; color: #fff; font-size: 13px }
+.nums { white-space: nowrap; font-weight: 800; letter-spacing: -.2px }
+.nums .s { color: var(--muted); font-weight: 600 }
+.accs { display: flex; gap: 6px; align-items: center; flex-wrap: nowrap; overflow: hidden }
+.acc { background: #f3f3f4; border-radius: 999px; padding: 7px 12px; font-size: 14px; font-weight: 700; white-space: nowrap }
+.note { font-size: 11.5px; font-weight: 600; color: var(--muted); padding-top: 4px }
+</style>
+
+<h1>Финансы в хабе</h1>
+<p class="lead">Блок финансов хаба в пяти сценариях сразу: обычный месяц, прогноз сверх лимита, факт сверх лимита, начало месяца и месяц без бюджета. Справа от полосы — цифры «факт/прогноз/план»: факт чёрный, прогноз серый, план чёрный (твоё правило, метка «PM»). Остальное — варианты, «реком.» — моя рекомендация. Суммы условные.</p>
+
+<div class="layout">
+  <div class="panel">
+    <div class="top">
+      <button type="button" class="btn" id="copy">Скопировать выбор</button>
+      <button type="button" class="btn ghost" id="reset">Рекомендации</button>
+      <span id="copied" aria-live="polite"></span>
+    </div>
+    <div id="groups" class="panel"></div>
+    <p class="hint">Факт — потрачено с начала месяца. Прогноз — сколько будет потрачено к концу месяца при нынешнем темпе. План — лимит месяца (сумма бюджетов). Если бюджета нет, плана нет — остаются «факт/прогноз».</p>
+    <label class="hint" for="summary">Выбор текстом:</label>
+    <textarea id="summary" readonly></textarea>
+  </div>
+  <div class="cards" id="cards"></div>
+</div>
+
+<script>
+const GROUPS = [
+  ['Цифры справа', [
+    ['place', 'Где цифры', [['right', 'Справа от полосы'], ['above', 'Над полосой справа'], ['under', 'Под полосой справа']], 'right', 'right'],
+    ['fmt', 'Формат', [['k', '32/45/90k'], ['kk', '32k/45k/90k'], ['plain', '32/45/90'], ['rub', '32/45/90 тыс ₽']], 'k'],
+    ['sep', 'Разделитель', [['slash', '/'], ['thin', ' / с пробелами'], ['dot', ' · ']], 'slash'],
+    ['size', 'Размер', [[13, '13'], [15, '15'], [17, '17']], 15],
+    ['inside', 'Сумма внутри полосы', [['none', 'Убрать (цифры уже справа)'], ['fact', 'Оставить факт внутри']], 'none'],
+  ]],
+  ['Полоса', [
+    ['h', 'Толщина', [[8, '8 тонкая'], [14, '14'], [22, '22'], [28, '28 (сейчас)']], 14],
+    ['fc', 'Прогноз в полосе', [['hatch', 'Штриховка (сейчас)'], ['soft', 'Светлая заливка'], ['none', 'Без прогноза в полосе']], 'hatch'],
+    ['planMark', 'Отметка плана при превышении', [['tick', 'Чёрная риска на месте плана'], ['none', 'Нет']], 'tick'],
+  ]],
+  ['Сверх лимита', [
+    ['overFact', 'Факт больше плана', [['red', 'Факт красным, полоса красная'], ['redNum', 'Только цифра красная'], ['black', 'Как обычно']], 'red'],
+    ['overFc', 'Прогноз больше плана', [['red', 'Прогноз красным'], ['orange', 'Прогноз оранжевым'], ['grey', 'Серым, как обычно']], 'orange'],
+    ['overNote', 'Подпись', [['none', 'Без подписи'], ['diff', '«+14k сверх плана» под полосой']], 'none'],
+  ]],
+  ['Отступы', [
+    ['gap', 'От полосы до счетов', [[6, '6'], [10, '10'], [14, '14'], [18, '18']], 14],
+  ]],
+];
+const PMK = { place: 'right' };
+const REC = Object.fromEntries(GROUPS.flatMap(([, l]) => l.map(([k, , , r]) => [k, r])));
+const KEY = 'c348a';
+let state = { ...REC };
+try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s) state = { ...REC, ...s } } catch (e) {}
+
+const SCENARIOS = [
+  ['Обычный месяц: 26 ноября', 42, 48, 90],
+  ['Прогноз сверх лимита', 62, 104, 90],
+  ['Факт сверх лимита', 97, 112, 90],
+  ['Начало месяца: 3 число', 4, 39, 90],
+  ['Бюджет не задан', 42, 48, null],
+];
+function num(v) { return state.fmt === 'kk' || state.fmt === 'k' && false ? `${v}k` : `${v}` }
+function nums(fact, fc, plan) {
+  const o = state, sep = { slash: '/', thin: ' / ', dot: ' · ' }[o.sep];
+  const k = v => o.fmt === 'kk' ? `${v}k` : `${v}`;
+  const overF = plan && fact > plan, overP = plan && fc > plan;
+  const factColor = overF && o.overFact !== 'black' ? 'var(--late)' : 'var(--black)';
+  const fcColor = overP ? (o.overFc === 'red' ? 'var(--late)' : o.overFc === 'orange' ? 'var(--warn)' : 'var(--muted)') : 'var(--muted)';
+  const parts = [`<span style="color:${factColor}">${k(fact)}</span>`, `<span style="color:${fcColor}">${k(fc)}</span>`];
+  if (plan) parts.push(`<span style="color:var(--black)">${k(plan)}</span>`);
+  const tail = o.fmt === 'k' ? 'k' : o.fmt === 'rub' ? ' тыс ₽' : '';
+  return `<span class="nums" style="font-size:${o.size}px">${parts.join(`<span class="s">${sep}</span>`)}<span style="color:${plan ? 'var(--black)' : fcColor}">${tail}</span></span>`;
+}
+function bar(fact, fc, plan) {
+  const o = state, scale = Math.max(plan || fc, fact, fc);
+  const base = plan || fc;
+  const fPct = Math.min(fact / (plan ? Math.max(plan, fact) : base) * 100, 100);
+  const cPct = Math.min(fc / (plan ? Math.max(plan, fc) : fc) * 100, 100);
+  const overF = plan && fact > plan;
+  const fillColor = overF && o.overFact === 'red' ? 'var(--late)' : 'var(--black)';
+  let fcLayer = '';
+  if (o.fc === 'hatch' && cPct > fPct) fcLayer = `<i class="h" style="left:${fPct}%;width:${cPct - fPct}%"></i>`;
+  if (o.fc === 'soft' && cPct > fPct) fcLayer = `<i class="h" style="left:0;width:${cPct}%;background:#cfd0d5"></i>`;
+  const planPct = plan ? plan / Math.max(plan, fact, fc) * 100 : null;
+  const tick = plan && (fact > plan || fc > plan) && o.planMark === 'tick' ? `<i class="tick" style="left:calc(${planPct}% - 1px)"></i>` : '';
+  const inside = o.inside === 'fact' && o.h >= 22 ? `<span class="in">${fact}k</span>` : '';
+  // в масштабе превышения доли считаются от максимума
+  const fW = plan ? fact / Math.max(plan, fact, fc) * 100 : fact / fc * 100;
+  const cW = plan ? fc / Math.max(plan, fact, fc) * 100 : 100;
+  let layer = '';
+  if (o.fc === 'hatch' && cW > fW) layer = `<i class="h" style="left:${fW}%;width:${cW - fW}%"></i>`;
+  if (o.fc === 'soft' && cW > fW) layer = `<i class="h" style="left:0;width:${cW}%;background:#cfd0d5"></i>`;
+  return `<div class="bar" style="height:${o.h}px">${layer}<i class="f" style="width:${fW}%;background:${fillColor}"></i>${tick}${inside}</div>`;
+}
+function card([title, fact, fc, plan]) {
+  const o = state;
+  const n = nums(fact, fc, plan), b = bar(fact, fc, plan);
+  let top;
+  if (o.place === 'right') top = `<div class="l1">${b}${n}</div>`;
+  else if (o.place === 'above') top = `<div class="stack"><div style="text-align:right">${n}</div>${b}</div>`;
+  else top = `<div class="stack">${b}<div style="text-align:right">${n}</div></div>`;
+  const over = plan && Math.max(fact, fc) > plan;
+  const note = over && o.overNote === 'diff' ? `<div class="note" style="color:var(--late)">+${Math.max(fact, fc) - plan}k сверх плана${fact > plan ? '' : ' к концу месяца'}</div>` : '';
+  return `<div class="sc"><h3>${title}</h3><div class="fin">${top}${note}<div class="accs" style="margin-top:${o.gap}px"><span class="acc">💳 1k</span><span class="acc">📉 819k</span><span class="acc">💰 280k</span></div></div></div>`;
+}
+function render() {
+  document.getElementById('cards').innerHTML = SCENARIOS.map(card).join('');
+  document.getElementById('groups').innerHTML = GROUPS.map(([title, ctls]) => `<fieldset><legend>${title}</legend>${ctls.map(([k, label, opts]) =>
+    `<div class="ctl"><span id="l-${k}">${label}</span><div class="seg" role="group" aria-labelledby="l-${k}">${opts.map(([v, t]) =>
+      `<button type="button" data-k="${k}" data-v="${v}" aria-pressed="${state[k] == v}">${t}${PMK[k] == v ? '<span class="tag pm">PM</span>' : REC[k] == v ? '<span class="tag rec">реком.</span>' : ''}</button>`).join('')}</div></div>`).join('')}</fieldset>`).join('');
+  document.getElementById('summary').value = GROUPS.map(([title, ctls]) => `${title}: ` + ctls.map(([k, label, opts]) => `${label.toLowerCase()} — ${opts.find(([v]) => v == state[k])[1]}`).join('; ')).join('\n');
+  try { localStorage.setItem(KEY, JSON.stringify(state)) } catch (e) {}
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('button[data-k]'); if (!b) return;
+  const v = b.dataset.v; state[b.dataset.k] = isNaN(+v) ? v : +v; render();
+});
+document.getElementById('reset').addEventListener('click', () => { state = { ...REC }; render() });
+document.getElementById('copy').addEventListener('click', () => {
+  const out = document.getElementById('copied');
+  const fb = () => { const s = document.getElementById('summary'); s.focus(); s.select(); out.textContent = 'Текст выделен — скопируй вручную' };
+  try { navigator.clipboard.writeText(document.getElementById('summary').value).then(() => { out.textContent = 'Скопировано' }, fb) } catch (e) { fb() }
+});
+render();
+</script>

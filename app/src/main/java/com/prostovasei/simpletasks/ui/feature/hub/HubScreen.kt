@@ -55,6 +55,7 @@ import com.prostovasei.simpletasks.data.news.SportsNews
 import com.prostovasei.simpletasks.designsystem.theme.AppTheme
 import com.prostovasei.simpletasks.designsystem.tokens.FinanceShareColors
 import com.prostovasei.simpletasks.designsystem.tokens.SizeTokens
+import com.prostovasei.simpletasks.designsystem.tokens.SpacingTokens
 import com.prostovasei.simpletasks.domain.model.finance.Account
 import com.prostovasei.simpletasks.domain.model.finance.MonthSpending
 import com.prostovasei.simpletasks.domain.model.finance.financeThousands
@@ -232,7 +233,7 @@ private fun HubAccounts(accounts: List<Account>, total: Long) {
     val spacing = AppTheme.spacing
     // #336 (выбор PM): плашки счетов крупнее — 14 sp и поля 12 × 8; не помещаются — листаются вбок.
     Row(
-        Modifier.fillMaxWidth().padding(top = spacing.xs).horizontalScroll(rememberScrollState()),
+        Modifier.fillMaxWidth().padding(top = (SizeTokens.HUB_FINANCE_GAP - SpacingTokens.XXS).dp).horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(spacing.xs), verticalAlignment = Alignment.CenterVertically,
     ) {
         Text("${financeThousands(total)} ₽", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = colors.textPrimary, maxLines = 1)
