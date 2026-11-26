@@ -26,11 +26,13 @@ import javax.inject.Inject
 data class HubState(
     val today: LocalDate? = null,
     val overdue: List<TaskItem> = emptyList(),
-    val todayItems: List<TaskItem> = emptyList(),
-    val tomorrowItems: List<TaskItem> = emptyList(),
+    /** #350: ближайшая неделя — сегодня и ещё шесть дней, по порядку. */
+    val days: List<Pair<LocalDate, List<TaskItem>>> = emptyList(),
     val isLoading: Boolean = true,
 ) {
-    val isEmpty: Boolean get() = !isLoading && overdue.isEmpty() && todayItems.isEmpty() && tomorrowItems.isEmpty()
+    val todayItems: List<TaskItem> get() = days.getOrNull(0)?.second.orEmpty()
+    val tomorrowItems: List<TaskItem> get() = days.getOrNull(1)?.second.orEmpty()
+    val isEmpty: Boolean get() = !isLoading && overdue.isEmpty() && days.all { it.second.isEmpty() }
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -47,11 +49,11 @@ class HubViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             dayTicker.today().flatMapLatest { today ->
-                val tomorrow = today.plusDays(1)
+                val last = today.plusDays(HUB_DAYS - 1L)
                 combine(
                     tasks.observeAllScreen(today),
                     tasks.observeWeek(today.weekStart()),
-                    tasks.observeWeek(tomorrow.weekStart()),
+                    tasks.observeWeek(last.weekStart()),
                     projects.observeProjectTree(),
                     completion.pending,
                 ) { all, week, nextWeek, tree, pending ->
@@ -62,8 +64,10 @@ class HubViewModel @Inject constructor(
                     HubState(
                         today = today,
                         overdue = all.overdue.map { it.toItem(byId, today, zone, pending) },
-                        todayItems = day(today, week),
-                        tomorrowItems = day(tomorrow, nextWeek),
+                        days = (0 until HUB_DAYS).map { offset ->
+                            val date = today.plusDays(offset.toLong())
+                            date to day(date, if (date.weekStart() == today.weekStart()) week else nextWeek)
+                        },
                         isLoading = false,
                     )
                 }
@@ -79,3 +83,6 @@ class HubViewModel @Inject constructor(
         }
     }
 }
+
+/** #350: хаб показывает задачи на неделю вперёд (сегодня + 6 дней). */
+const val HUB_DAYS = 7

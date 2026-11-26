@@ -28,10 +28,10 @@ import java.time.YearMonth
 /** Новостей на странице и страниц в виджете: 12 новостей — три страницы. */
 internal const val HUB_WIDGET_PAGE = 4
 
-/** Модель задач хаба: просроченные, сегодня и завтра из ленты «Все» (без дней дальше завтра и без «без даты»). */
+/** Модель задач хаба: просроченные и неделя вперёд (#350) из ленты «Все», без «без даты». */
 internal fun WidgetModel.forHub(): WidgetModel {
-    val tomorrow = today.plusDays(1)
-    return copy(days = days.filter { block -> (block.day as? WidgetDay.On)?.date?.let { it <= tomorrow } == true })
+    val last = today.plusDays(com.prostovasei.simpletasks.ui.feature.hub.HUB_DAYS - 1L)
+    return copy(days = days.filter { block -> (block.day as? WidgetDay.On)?.date?.let { it <= last } == true })
 }
 
 /** Страница новостей виджета: [page] по кругу в пределах [pages]. */
@@ -94,7 +94,8 @@ internal suspend fun hubFinance(context: Context, width: Int, height: Int): List
     val model = MonthSpending.of(operations, month, today)
     val budget = MonthBudget.of(BudgetRules.effective(repository.observeBudgets().first(), month, month),
         repository.observeCategories().first(), operations, month, today)
-    return listOf(rows.limitViews(model, monthLimit(context, budget), month, today, daily = true), rows.accountRow(accounts.take(HUB_ACCOUNTS), HUB_ACCOUNTS, large = true))
+    // #350 (выбор PM): счета над полосой.
+    return listOf(rows.accountRow(accounts.take(HUB_ACCOUNTS), HUB_ACCOUNTS, large = true), rows.limitViews(model, monthLimit(context, budget), month, today, daily = true))
 }
 
 @RequiresApi(Build.VERSION_CODES.S)

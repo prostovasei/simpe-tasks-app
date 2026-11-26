@@ -26,6 +26,10 @@
     <!-- #338: место под капсулой в конце списка хаба, который идёт под неё. -->
     <dimen name="widget_bar_space">60dp</dimen>
     <dimen name="widget_list_edge">3dp</dimen>
+    <!-- #350: поля хаба — 12 у всех блоков; внутри строк уже 6 (полоса, строки задач) и 3 справа у строк. -->
+    <dimen name="widget_hub_edge">12dp</dimen>
+    <dimen name="widget_hub_inner">6dp</dimen>
+    <dimen name="widget_hub_list_end">9dp</dimen>
     <dimen name="widget_day_gap">2dp</dimen>
     <dimen name="widget_hairline">1dp</dimen>
     <dimen name="widget_space_xxs">4dp</dimen>

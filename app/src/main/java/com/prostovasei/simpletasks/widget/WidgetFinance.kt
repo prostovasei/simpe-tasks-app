@@ -171,6 +171,11 @@ internal class FinanceRows(private val context: Context, private val width: Int,
                             setTextViewTextSize(R.id.widget_finance_account, android.util.TypedValue.COMPLEX_UNIT_SP, ACCOUNT_LARGE_SP)
                             val density = context.resources.displayMetrics.density
                             setViewPadding(R.id.widget_finance_account, (10 * density).toInt(), (7 * density).toInt(), (10 * density).toInt(), (7 * density).toInt())
+                            // #350: крайние плашки — вровень с полосой (поле хаба 12), между плашками 6.
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                setViewLayoutMargin(R.id.widget_finance_account, RemoteViews.MARGIN_START, if (index == 0) 0f else 3f, android.util.TypedValue.COMPLEX_UNIT_DIP)
+                                setViewLayoutMargin(R.id.widget_finance_account, RemoteViews.MARGIN_END, if (index == columns - 1) 0f else 3f, android.util.TypedValue.COMPLEX_UNIT_DIP)
+                            }
                         }
                         setContentDescription(R.id.widget_finance_account, "${account.name}, ${Money.format(account.balance)}")
                     }

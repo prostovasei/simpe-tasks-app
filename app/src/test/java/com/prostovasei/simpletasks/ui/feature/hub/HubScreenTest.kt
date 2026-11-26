@@ -42,8 +42,12 @@ class HubScreenTest {
     private val tasks = HubState(
         today = today,
         overdue = listOf(item("o1", "Оплатить интернет", "12:00", DayLabel.Yesterday, Priority.HIGH)),
-        todayItems = listOf(item("t1", "Созвон с командой", "10:00"), item("t2", "Купить продукты", null)),
-        tomorrowItems = listOf(item("m1", "Стоматолог", "09:30", DayLabel.Tomorrow)),
+        days = listOf(
+            today to listOf(item("t1", "Созвон с командой", "10:00"), item("t2", "Купить продукты", null)),
+            today.plusDays(1) to listOf(item("m1", "Стоматолог", "09:30", DayLabel.Tomorrow)),
+            today.plusDays(2) to emptyList(),
+            today.plusDays(4) to listOf(item("w1", "Планёрка", "10:00", DayLabel.Date(today.plusDays(4), showYear = false))),
+        ),
         isLoading = false,
     )
     private val finance = FinanceState(

@@ -57,16 +57,18 @@ class WidgetHubTest {
             WidgetDayBlock(WidgetDay.On(today.minusDays(1)), listOf(item("late", "Оплатить интернет", DayLabel.Yesterday, "10:00"))),
             WidgetDayBlock(WidgetDay.On(today), listOf(item("a", "Созвон с командой", DayLabel.Today, "10:00"), item("b", "Купить продукты", DayLabel.Today, null))),
             WidgetDayBlock(WidgetDay.On(today.plusDays(1)), listOf(item("c", "Стоматолог", DayLabel.Tomorrow, "09:30"))),
-            WidgetDayBlock(WidgetDay.On(today.plusDays(3)), listOf(item("far", "Через три дня", DayLabel.Date(today.plusDays(3), false), null))),
+            WidgetDayBlock(WidgetDay.On(today.plusDays(3)), listOf(item("near", "Через три дня", DayLabel.Date(today.plusDays(3), false), null))),
+            WidgetDayBlock(WidgetDay.On(today.plusDays(7)), listOf(item("far", "Через неделю", DayLabel.Date(today.plusDays(7), false), null))),
         ),
     )
 
     private val news = (1..6).map { HubNews("https://example.com/$it", "09:0$it · Футбол", "Новость номер $it о матче", unread = it <= 2) }
 
     @Test
-    fun hubModelKeepsOverdueTodayAndTomorrowOnly() {
+    fun hubModelKeepsOverdueAndNextWeek() {
+        // #350: неделя вперёд (сегодня + 6 дней), дальше — нет.
         val days = model.forHub().days.map { (it.day as WidgetDay.On).date }
-        assertEquals(listOf(today.minusDays(1), today, today.plusDays(1)), days)
+        assertEquals(listOf(today.minusDays(1), today, today.plusDays(1), today.plusDays(3)), days)
     }
 
     @Test
@@ -84,7 +86,7 @@ class WidgetHubTest {
         val rows = FinanceRows(context, 400, 760)
         val accounts = listOf(Account("a", "Карта", AccountType.entries.first(), "💳", 0, 4_200_000, Instant.EPOCH),
             Account("b", "Наличные", AccountType.entries.first(), "👛", 0, 600_000, Instant.EPOCH))
-        val finance = listOf(rows.limitViews(MonthSpending.of(ops, month, today), 8_000_000, month, today, daily = true), rows.accountRow(accounts, 4, large = true))
+        val finance = listOf(rows.accountRow(accounts, 4, large = true), rows.limitViews(MonthSpending.of(ops, month, today), 8_000_000, month, today, daily = true))
         val size = DpSize(400.dp, 760.dp)
         val bar = runBlocking {
             GlanceRemoteViews().compose(context, size, appWidgetOptions = Bundle()) {
@@ -103,7 +105,7 @@ class WidgetHubTest {
         assertTrue(root.descendants().filter { it.id == R.id.widget_hub_habit }.all { it.hasOnClickListeners() })
         val list = root.descendants().filterIsInstance<ListView>().single()
         val texts = (0 until list.adapter.count).flatMap { list.adapter.getView(it, null, list).texts() }
-        assertTrue(texts.toString(), "Оплатить интернет" in texts && "Стоматолог" in texts && "Через три дня" !in texts)
+        assertTrue(texts.toString(), "Оплатить интернет" in texts && "Стоматолог" in texts && "Через три дня" in texts && "Через неделю" !in texts)
         val cards = root.descendants().filter { it.id == R.id.hub_card_title }.map { (it as TextView).text.toString() }.toList()
         assertEquals(news.take(4).map { it.title }, cards)
         // #346: точек и стрелок нет — невидимые края листают; заголовков разделов нет.

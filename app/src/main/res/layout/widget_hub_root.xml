@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   Виджет «Главная» (#329, этап 2): сверху полоса лимита и счета, посередине новости 2 × 2 со стрелками ‹ ›
-  (#336: новости над задачами), внизу прокручиваемый список задач «Просрочено · Сегодня · Завтра», поверх — панель справа.
+  (#336: новости над задачами; #350 — все блоки в 12dp от краёв, задачи на неделю), внизу прокручиваемый список задач «Просрочено · Сегодня · Завтра», поверх — панель справа.
   #346: заголовков разделов нет; новости листаются касанием по краям.
   #340: после финансов — «Привычки ›» и до трёх плашек на сегодня (нажатие отмечает).
   #338: у разделов заголовки «Финансы ›», «Новости ›», «Задачи ›» (нажатие переключает виджет на раздел); задачи идут до низа под панель.
@@ -27,6 +27,7 @@
             android:id="@+id/widget_hub_finance"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:paddingHorizontal="@dimen/widget_hub_inner"
             android:orientation="vertical" />
 
         <TextView android:id="@+id/widget_hub_title_habits" style="@style/WidgetHubTitle" android:text="@string/module_habits" android:visibility="gone" />
@@ -36,8 +37,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:paddingStart="@dimen/widget_edge"
-            android:paddingEnd="6dp"
+            android:paddingStart="@dimen/widget_hub_edge"
+            android:paddingEnd="@dimen/widget_hub_edge"
             android:paddingTop="12dp"
             android:visibility="gone" />
 
@@ -48,7 +49,7 @@
             android:id="@+id/widget_hub_news"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingHorizontal="@dimen/widget_edge"
+            android:paddingHorizontal="@dimen/widget_hub_edge"
             android:paddingTop="12dp"
             android:paddingBottom="8dp">
 
@@ -75,7 +76,8 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
-            android:layout_marginStart="@dimen/widget_list_edge"
+            android:layout_marginStart="@dimen/widget_hub_inner"
+            android:layout_marginEnd="@dimen/widget_hub_list_end"
             android:paddingBottom="@dimen/widget_bar_space"
             android:clipToPadding="false"
             android:divider="@null"
