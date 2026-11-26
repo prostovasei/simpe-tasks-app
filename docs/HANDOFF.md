@@ -32,7 +32,7 @@
 
 ## Выпуск 0.98.0 — #346
 
-[PR #347](https://github.com/prostovasei/simpe-tasks-app/pull/347), merge `405691b4be07cbf54d156ef275b2c82ba1c5d8b9`, APK build-571. CI PR зелёный с первой попытки. Хаб без заголовков, новости листаются касанием по краям, прогноз штриховкой в полосе (ARCHITECTURE §4.124, SPEC §32, [прогон](testing-runs/0.98.0-local.md)). #346 закрыта; HC346-1–4 ждут PM.
+[PR #347](https://github.com/prostovasei/simpe-tasks-app/pull/347), merge `405691b4be07cbf54d156ef275b2c82ba1c5d8b9`, APK build-571. CI PR и main зелёные с первой попытки. Хаб без заголовков, новости листаются касанием по краям, прогноз штриховкой в полосе (ARCHITECTURE §4.124, SPEC §32, [прогон](testing-runs/0.98.0-local.md)). #346 закрыта; HC346-1–4 ждут PM.
 
 ## Следующее
 
