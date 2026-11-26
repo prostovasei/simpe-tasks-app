@@ -30,7 +30,7 @@
 
 Исполнитель Claude Code, ветка `claude/overdue-done` (от `claude/release-0971`). Ошибка 0.97.1: выполненные разы повторов оставались в
 «Просрочено» («Предстоящее», виджет), в хабе — пустая подпись. Исправлено: `AllScreen`, `HubTasks`, `WidgetModel.entries`, `WidgetModel.lines`;
-тесты `ScreensUiTest.doneOverdueRepeatsAreHiddenWithTheirHeader`, `WidgetListTest.doneOnlyPastDayHidesOverdueBlock`. 1001 тест зелёный. Проверка и выпуск — по командам PM.
+тесты `ScreensUiTest.doneOverdueRepeatsAreHiddenWithTheirHeader`, `WidgetListTest.doneOnlyPastDayHidesOverdueBlock`. 1001 тест зелёный. «Проверка+выпуск»: 0.97.2, [прогон](testing-runs/0.97.2-local.md), PR открыт.
 
 ## Следующее
 
