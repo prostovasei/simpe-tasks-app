@@ -1,5 +1,9 @@
 package com.prostovasei.simpletasks.ui.feature.hub
 
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Spacer
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.horizontalScroll
 import com.prostovasei.simpletasks.ui.common.DayLabel
@@ -136,22 +140,23 @@ internal fun HubScreen(
     val spacing = AppTheme.spacing
     Column(Modifier.fillMaxSize().testTag(TAG_HUB)) {
         // #336 (выбор PM): финансы, новости, задачи; #338 — у каждого раздела заголовок «Финансы ›», нажатие открывает раздел.
-        HubSectionTitle(R.string.module_finance, HUB_FINANCE, onOpenSection, Modifier.padding(top = spacing.sm))
+        // #346 (выбор PM): заголовков разделов нет — между разделами отступ.
+        Spacer(Modifier.height(spacing.sm))
         HubFinance(finance, onFinance)
         // #340: привычки на сегодня — плашками после финансов; нажатие отмечает.
         habits?.let { h ->
             val today = h.today
             val due = h.active.filter { com.prostovasei.simpletasks.domain.model.habits.HabitMath.dueOn(it, today) }
             if (due.isNotEmpty()) {
-                HubSectionTitle(R.string.module_habits, HUB_HABITS, onOpenSection, Modifier.padding(top = spacing.sm))
+                Spacer(Modifier.height(spacing.md))
                 HubHabits(due, today) { onHabits(com.prostovasei.simpletasks.ui.feature.habits.HabitsIntent.Toggle(it, today)) }
             }
         }
         if (news.isNotEmpty()) {
-            HubSectionTitle(R.string.module_news, HUB_NEWS_SECTION, onOpenSection, Modifier.padding(top = spacing.sm))
+            Spacer(Modifier.height(spacing.xs))
             HubNewsPager(news)
         }
-        HubSectionTitle(R.string.module_tasks, HUB_TASKS_SECTION, onOpenSection, Modifier.padding(top = spacing.sm))
+        Spacer(Modifier.height(spacing.xs))
         Box(Modifier.weight(1f).fillMaxWidth()) {
             if (state.isEmpty) HubNoTasks(onAddTask) else HubTasks(state, onIntent, onOpenTask)
         }
@@ -312,6 +317,11 @@ private fun HubNewsPager(news: List<HubNews>) {
     val accentNew = colorResource(R.color.widget_flat_new)
     val newMark = stringResource(R.string.news_new_mark)
     Column(Modifier.fillMaxWidth().padding(top = spacing.sm, bottom = spacing.xs).testTag(TAG_HUB_NEWS)) {
+        // #346 (выбор PM): стрелок и точек нет; касание у левого или правого края (18 % ширины) листает страницу, свайп тоже работает.
+        val scope = androidx.compose.runtime.rememberCoroutineScope()
+        val prev = stringResource(R.string.hub_news_prev)
+        val next = stringResource(R.string.hub_news_next)
+        Box(Modifier.fillMaxWidth()) {
         HorizontalPager(pager, Modifier.fillMaxWidth(), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = spacing.md),
             pageSpacing = spacing.md) { page ->
             Column(verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
@@ -338,12 +348,22 @@ private fun HubNewsPager(news: List<HubNews>) {
                 }
             }
         }
-        if (pages.size > 1) {
-            val label = stringResource(R.string.hub_news_page, pager.currentPage + 1, pages.size)
-            Row(Modifier.fillMaxWidth().padding(top = spacing.xs).semantics { contentDescription = label }, horizontalArrangement = Arrangement.Center) {
-                repeat(pages.size) { index ->
-                    Box(Modifier.padding(horizontal = spacing.xxs).size(SizeTokens.HUB_DOT.dp).clip(CircleShape)
-                        .background(if (index == pager.currentPage) colors.textPrimary else colors.selected))
+            if (pages.size > 1) {
+                Row(Modifier.matchParentSize()) {
+                    listOf(-1 to prev, 0 to "", 1 to next).forEach { (delta, label) ->
+                        if (delta == 0) {
+                            Spacer(Modifier.weight(1f - 2 * HUB_NEWS_EDGE))
+                        } else {
+                            Box(
+                                Modifier.weight(HUB_NEWS_EDGE).fillMaxHeight()
+                                    .clickable(interactionSource = null, indication = null, role = Role.Button) {
+                                        scope.launch { pager.animateScrollToPage((pager.currentPage + delta).mod(pages.size)) }
+                                    }
+                                    .semantics { contentDescription = label }
+                                    .testTag(if (delta < 0) TAG_HUB_NEWS_PREV else TAG_HUB_NEWS_NEXT),
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -351,6 +371,9 @@ private fun HubNewsPager(news: List<HubNews>) {
 }
 
 private const val HUB_ACCOUNTS = 4
+private const val HUB_NEWS_EDGE = 0.18f
+const val TAG_HUB_NEWS_PREV = "hub_news_prev"
+const val TAG_HUB_NEWS_NEXT = "hub_news_next"
 
 const val TAG_HUB = "hub"
 const val TAG_HUB_ACCOUNT = "hub_account"
