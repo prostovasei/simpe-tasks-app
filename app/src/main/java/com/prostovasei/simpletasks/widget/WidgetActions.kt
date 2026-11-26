@@ -65,8 +65,11 @@ class WidgetActionReceiver : BroadcastReceiver() {
             when (intent.action) {
                 WidgetActions.REFRESH_NEWS -> {
                     val id = intent.getIntExtra(WidgetActions.EXTRA_WIDGET_ID, -1)
-                    if (id in WidgetRenderer.widgetIds(context) && WidgetSelection.module(context, id) == WidgetModule.NEWS) {
+                    val module = WidgetSelection.module(context, id)
+                    if (id in WidgetRenderer.widgetIds(context) && (module == WidgetModule.NEWS || module == WidgetModule.HUB)) {
+                        // #352: «Обновить» в «Главной» — новости из сети и перерисовка (финансы и задачи читаются заново).
                         WidgetRenderer.refreshNews(context)
+                        if (module == WidgetModule.HUB) WidgetRenderer.render(context, id, "обновить")
                     }
                 }
                 WidgetActions.TOGGLE_HABIT -> {

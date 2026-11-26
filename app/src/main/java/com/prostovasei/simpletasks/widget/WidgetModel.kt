@@ -98,7 +98,8 @@ fun WidgetModel.entries(): List<WidgetEntry> {
     val shown = days.filter { it.items.isNotEmpty() }
     // #344: в «Все» прошедшие дни только из выполненных (разы повторов) не показываются вовсе — ни задач, ни «Просрочено».
     val doneOnly = if (filter == WidgetFilter.All) pastDays.filter { block -> block.items.all { it.isDone } }.toSet() else emptySet()
-    val visible = shown.filter { it !in doneOnly }
+    // #352: в «Все» и любой другой день, где всё выполнено, без подписи — выполненные там не показываются (#342).
+    val visible = shown.filter { it !in doneOnly && !(filter == WidgetFilter.All && it.items.all { item -> item.isDone }) }
     val past = pastDays.takeIf { filter == WidgetFilter.All }.orEmpty().filter { it !in doneOnly }
     if (past.isEmpty()) return visible.map { WidgetEntry.Day(it) }
     return visible.flatMap { block ->

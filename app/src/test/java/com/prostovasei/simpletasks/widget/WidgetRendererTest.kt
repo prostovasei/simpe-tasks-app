@@ -185,7 +185,10 @@ class WidgetRendererTest {
             }
             fun clickable(view: View) = generateSequence(view) { it.parent as? View }.take(3).any { it.hasOnClickListeners() }
             val add = "Добавить"
-            listOf("Разделы", "Настройки", "Создать задачу голосом", add).forEach { assertTrue("$module $it", clickable(find(it))) }
+            // #352: в «Главной» — «Открыть приложение» и «Обновить» вместо «Настроек».
+            val labels = if (module == WidgetModule.HUB) listOf("Открыть приложение", "Разделы", "Обновить", "Создать задачу голосом", add)
+            else listOf("Разделы", "Настройки", "Создать задачу голосом", add)
+            labels.forEach { assertTrue("$module $it", clickable(find(it))) }
             val plus = find(add)
             val right = generateSequence(plus) { it.parent as? View }.sumOf { it.left } + plus.width
             assertTrue("$module: капсула у правого края", width - right <= ((SizeTokens.WIDGET_EDGE + SizeTokens.NAV_PAD + 1) * density).toInt())

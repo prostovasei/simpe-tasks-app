@@ -510,8 +510,16 @@ internal fun BottomBar(model: WidgetModel, appWidgetId: Int, imageButtons: Boole
                 .padding(SizeTokens.NAV_PAD.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            // #352 (выбор PM): в «Главной» первой — значок приложения (хаб приложения), вместо настроек — «Обновить».
+            val hub = module == WidgetModule.HUB
+            if (hub) NavButton(R.drawable.ic_nav_app, context.getString(R.string.widget_open_app),
+                actionStartActivity(Intent(context, com.prostovasei.simpletasks.MainActivity::class.java)
+                    .putExtra(com.prostovasei.simpletasks.MainActivity.EXTRA_OPEN_HUB, true)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)))
             NavButton(R.drawable.ic_nav_grid, context.getString(R.string.nav_sections), actionStartActivity(widgetSectionsIntent(context, appWidgetId)))
-            NavButton(R.drawable.ic_nav_sliders, context.getString(R.string.settings_title),
+            if (hub) NavButton(R.drawable.ic_news_refresh, context.getString(R.string.widget_refresh),
+                actionSendBroadcast(WidgetActions.refreshNews(context, appWidgetId)))
+            else NavButton(R.drawable.ic_nav_sliders, context.getString(R.string.settings_title),
                 actionStartActivity(Intent(context, com.prostovasei.simpletasks.MainActivity::class.java)
                     .putExtra(com.prostovasei.simpletasks.MainActivity.EXTRA_OPEN_SETTINGS, true)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)))
