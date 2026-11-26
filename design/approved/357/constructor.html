@@ -1,0 +1,497 @@
+<title>Сортировка задач</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+<style>
+/* Конструктор #357: сортировка задач — кнопка ↑↓ в капсуле, окно выбора, блоки «Без даты» и «Выполнено», перетаскивание. */
+:root{--page:#e9ebef;--pagefg:#16171d;--pagemuted:#62656e;--chip:#f3f3f4;--line:#dcdee3;--card:#fff;--title:#2e3036;--muted:#8b8d94;--black:#16171d;--pri:#862ce0;--late:#c62828;--done:#c4c5c8;--lilac:#c39bff;--sel:#f4effd;--font:Manrope,system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--page:#0f1013;--pagefg:#ececec;--pagemuted:#a3a3a3;--chip:#24262b;--line:#2f3137;color-scheme:dark}}
+:root[data-theme="dark"]{--page:#0f1013;--pagefg:#ececec;--pagemuted:#a3a3a3;--chip:#24262b;--line:#2f3137;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--page);color:var(--pagefg);font-family:var(--font);margin:0;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 40px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--page)}
+h1{font-size:21px;margin:0 0 4px}.lead{color:var(--pagemuted);margin:0 0 14px;max-width:82ch;line-height:1.45;font-size:14px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:24px;align-items:start}
+@media (max-width:1080px){.layout{grid-template-columns:minmax(0,1fr)}.side{order:-1;justify-self:center}}
+.panel{display:grid;gap:12px;min-width:0;align-content:start}
+fieldset{border:0;margin:0;padding:12px 14px;background:var(--card);color:var(--title);border-radius:16px;display:grid;gap:10px;min-width:0}
+legend{font-weight:700;font-size:15px;padding:0;float:left;width:100%}
+.ctl{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px}.ctl>span{flex:0 0 180px;color:#62656e;font-size:13px}
+.seg{display:inline-flex;background:#f3f3f4;border-radius:10px;padding:3px;gap:2px;flex-wrap:wrap;min-width:0}
+.seg button{font:600 13px var(--font);color:#16171d;background:none;border:0;border-radius:8px;padding:6px 9px;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+.seg button[aria-pressed="true"]{background:#fff;box-shadow:inset 0 0 0 1.5px #16171d}
+.seg button:focus-visible,.btn:focus-visible,.tabs button:focus-visible{outline:2px solid #862ce0;outline-offset:1px}
+.seg .ic{width:22px;height:22px;display:grid;place-items:center;background:#16171d;color:#fff;border-radius:7px}.seg .ic svg{width:16px;height:16px}
+.tag{font-size:10px;font-weight:700;color:#6b32a8}
+.top{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{font:600 13px var(--font);border:0;border-radius:10px;padding:8px 12px;cursor:pointer;background:var(--pagefg);color:var(--page)}
+.btn.ghost{background:var(--chip);color:var(--pagefg)}
+#summary{width:100%;min-height:150px;font:12px/1.45 ui-monospace,Menlo,monospace;color:var(--pagefg);background:var(--page);border:1px solid var(--line);border-radius:12px;padding:10px}
+.hint{color:var(--pagemuted);font-size:12.5px;margin:0;line-height:1.5}#copied{color:#2e7d32;font-size:12px}
+.try{background:var(--card);color:var(--title);border-radius:16px;padding:12px 14px;font-size:13px;line-height:1.5}.try b{font-weight:700}.try ol{margin:6px 0 0;padding-left:20px}
+/* телефон */
+.side{display:grid;gap:10px;justify-items:center}
+.tabs{display:flex;gap:4px;background:var(--chip);border-radius:12px;padding:3px;flex-wrap:wrap;justify-content:center;max-width:380px}
+.tabs button{font:600 12.5px var(--font);border:0;background:none;color:var(--pagefg);border-radius:9px;padding:7px 10px;cursor:pointer}
+.tabs button[aria-pressed="true"]{background:var(--card);box-shadow:0 0 0 1.5px var(--pagefg) inset}
+.phone{width:380px;max-width:100%;background:#d9dbe0;border-radius:30px;padding:8px}
+.w{background:#fff;border-radius:24px;color:var(--title);height:720px;overflow:hidden;position:relative;user-select:none;-webkit-user-select:none}
+.scroll{position:absolute;inset:0;overflow:auto;padding:0 0 80px;overscroll-behavior:contain}
+.hdr{display:flex;align-items:center;gap:12px;padding:16px 14px 6px;font-size:22px;font-weight:700}.hdr .back,.hdr .more{font-size:20px;color:#2e3036;width:24px;text-align:center}.hdr .more{margin-left:auto}
+.row{display:flex;align-items:center;gap:12px;height:46px;padding:0 16px;font-size:15px;background:#fff;position:relative;touch-action:pan-y}
+.row .c{width:18px;height:18px;border-radius:50%;border:1.7px solid #a2a4ab;flex:none}
+.row.hi .c{border:2px solid var(--pri)}.row.hi .n{color:var(--pri)}
+.row .e{font-size:15px}
+.row .n{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .r{font-size:13.5px;color:#2e3036}.row .r.late{color:var(--late)}.row.hi .r:not(.late){color:var(--pri)}
+.row.done .c{background:var(--done);border-color:var(--done)}.row.done .n{color:var(--done)}
+.row.pressed{background:var(--sel)}
+.row.dragging{z-index:5;transition:none!important}
+.row.lift.dragging{box-shadow:0 10px 24px rgb(22 23 29/.22);border-radius:14px;transform-origin:center}
+.row.outline.dragging{box-shadow:inset 0 0 0 2px var(--pri);border-radius:14px;background:var(--sel)}
+.row.shift{transition:transform .15s ease}
+.dh{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12.5px;font-weight:600;padding:14px 16px 4px}.dh .ln{flex:1;height:1px;background:#e6e7ea}.dh.late{color:var(--late)}
+.dh.click{cursor:pointer}.dh .chev{transition:transform .15s;display:inline-block}.dh.open .chev{transform:rotate(90deg)}
+.pill{margin:12px 16px 4px;display:inline-flex;border:0;background:#f3f3f4;color:#62656e;border-radius:999px;padding:7px 12px;font:600 12.5px var(--font);cursor:pointer}
+.ph{margin:12px 12px 0;border-radius:14px;background:#f3f3f4;color:#9a9ca3;font-size:12px;font-weight:600;display:grid;place-items:center}
+.nav{position:absolute;right:10px;bottom:12px;background:#16171d;border-radius:999px;height:40px;display:flex;align-items:center;padding:0 3px;gap:0;z-index:6}
+.nav button{width:34px;height:34px;display:grid;place-items:center;color:#fff;background:none;border:0;padding:0;cursor:pointer;position:relative;border-radius:999px}
+.nav svg{width:20px;height:20px}.nav .plus{color:var(--lilac)}.nav .plus svg{width:26px;height:26px}
+.nav .dot{position:absolute;top:5px;right:5px;width:7px;height:7px;border-radius:50%;box-shadow:0 0 0 1.5px #16171d}
+.nav button.on{background:rgb(255 255 255/.12)}
+.scrim{position:absolute;inset:0;background:rgb(22 23 29/.32);z-index:8}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:24px 24px 0 0;z-index:9;padding:8px 0 14px;box-shadow:0 -6px 24px rgb(0 0 0/.12)}
+.sheet .grab{width:36px;height:4px;border-radius:2px;background:#d6d7db;margin:2px auto 10px}
+.sheet h3{margin:0 18px 2px;font-size:17px}.sheet .sub{margin:0 18px 8px;color:var(--muted);font-size:12.5px;font-weight:600}
+.menu{position:absolute;right:10px;bottom:60px;width:262px;background:#fff;border-radius:18px;z-index:9;padding:6px 0;box-shadow:0 10px 30px rgb(22 23 29/.25)}
+.opt{display:flex;align-items:center;gap:12px;width:100%;border:0;background:none;padding:0 18px;height:50px;font:600 15px var(--font);color:#2e3036;cursor:pointer;text-align:left}
+.menu .opt{height:44px;padding:0 14px;font-size:14px}
+.opt .oi{width:22px;height:22px;color:#62656e;flex:none}.opt .oi svg{width:22px;height:22px}
+.opt .ol{flex:1;display:grid}.opt .ol small{color:var(--muted);font-size:11.5px;font-weight:600}
+.opt.sel{color:var(--pri)}.opt.sel .oi{color:var(--pri)}
+.opt .std{font-size:10.5px;color:#9a9ca3;font-weight:700;margin-left:6px}
+.dirchip{border:0;background:var(--sel);color:var(--pri);border-radius:999px;padding:6px 10px;font:700 12.5px var(--font);cursor:pointer;white-space:nowrap}
+.segdir{display:flex;gap:6px;margin:10px 18px 0}.segdir button{flex:1;border:0;background:#f3f3f4;border-radius:12px;padding:10px 6px;font:600 13px var(--font);color:#2e3036;cursor:pointer}
+.segdir button[aria-pressed="true"]{background:#16171d;color:#fff}
+.sheetfoot{display:flex;justify-content:space-between;align-items:center;margin:12px 18px 0;gap:8px}
+.sheetfoot .reset{border:0;background:none;color:var(--pri);font:700 13.5px var(--font);cursor:pointer;padding:6px 0}
+.sheetfoot .reset:disabled{color:#c4c5c8;cursor:default}
+.sheetfoot .ok{border:0;background:#16171d;color:#fff;border-radius:12px;padding:9px 18px;font:700 13.5px var(--font);cursor:pointer}
+.sheet .note{margin:8px 18px 0;color:var(--muted);font-size:12px;line-height:1.4}
+.dlg{position:absolute;left:24px;right:24px;top:50%;transform:translateY(-50%);background:#fff;border-radius:22px;z-index:9;padding:20px 20px 14px;box-shadow:0 12px 40px rgb(0 0 0/.25)}
+.dlg h3{margin:0 0 8px;font-size:18px}.dlg p{margin:0 0 12px;color:#62656e;font-size:13.5px;line-height:1.45}
+.dlg label{display:flex;gap:8px;align-items:center;font-size:13.5px;margin-bottom:12px;cursor:pointer}
+.dlg .acts{display:flex;justify-content:flex-end;gap:6px}.dlg .acts button{border:0;background:none;font:700 14px var(--font);color:var(--pri);padding:8px 12px;border-radius:10px;cursor:pointer}
+.dlg .acts .main{background:#16171d;color:#fff}
+.toast{position:absolute;left:50%;bottom:64px;transform:translate(-50%,10px);background:#16171d;color:#fff;font-size:12.5px;font-weight:600;padding:9px 14px;border-radius:999px;opacity:0;transition:.2s;pointer-events:none;z-index:10;white-space:nowrap}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.cap{font-size:12px;color:var(--pagemuted);text-align:center;max-width:380px;line-height:1.4}
+</style>
+
+<h1>Сортировка задач</h1>
+<p class="lead">Живой макет по твоим ответам (#357). Справа экран приложения: кнопка <b>↑↓</b> в капсуле открывает выбор сортировки, задачи переставляются по-настоящему. Зажми задачу и потяни — увидишь окно «Переключить на ручную?» или само перетаскивание. Слева — варианты оформления; «реком.» — моя рекомендация.</p>
+
+<div class="layout">
+  <div class="panel">
+    <div class="try"><b>Что попробовать</b><ol>
+      <li>Нажми ↑↓ → «По приоритету», потом нажми выбранный вариант ещё раз — порядок развернётся. На кнопке появится точка.</li>
+      <li>Зажми задачу (полсекунды) и потяни — спросит про ручную сортировку. Согласись и перетащи.</li>
+      <li>При «Вручную» нажми «+» — новая задача встанет в начало.</li>
+      <li>Переключи экран на «Входящие» — у него своя сортировка; «Предстоящее» — без «Вручную»; «Хаб» — без кнопки ↑↓, порядок как в «Предстоящем».</li>
+    </ol></div>
+    <div class="top">
+      <button type="button" class="btn" id="copy">Скопировать выбор</button>
+      <button type="button" class="btn ghost" id="reset">Рекомендации</button>
+      <span id="copied" aria-live="polite"></span>
+    </div>
+    <div id="groups" class="panel"></div>
+    <p class="hint">Уже решено тобой и не меняется здесь: варианты «по сроку / по приоритету / вручную / по дате создания», стрелка направления, одинаковый срок — по названию, «Без даты» отдельным блоком, «Выполнено» свёрнуто внизу, у каждого списка своя сортировка, новая задача при «Вручную» — в начало, в «Предстоящем» нет «Вручную», в хабе и виджете кнопки нет. Моё предложение для «Предстоящего»: «по времени (как сейчас) / по приоритету / по дате создания». При «По приоритету» внутри одного приоритета — по сроку, затем по названию.</p>
+    <label class="hint" for="summary">Выбор текстом:</label>
+    <textarea id="summary" readonly></textarea>
+  </div>
+  <div class="side">
+    <div class="tabs" id="tabs" role="group" aria-label="Экран"></div>
+    <div class="phone"><div class="w" id="w"><div class="scroll" id="scroll"></div><div class="nav" id="nav"></div><div id="layer"></div><div class="toast" id="toast" role="status"></div></div></div>
+    <p class="cap">Сортировка запоминается у каждого экрана отдельно — переключай экраны сверху.</p>
+  </div>
+</div>
+
+<script>
+/* ---------- значки ---------- */
+const S = 'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"';
+const SORT_IC = {
+  pair: `<svg viewBox="0 0 24 24" ${S}><path d="M8 19V5M4.5 8.5 8 5l3.5 3.5M16 5v14M12.5 15.5 16 19l3.5-3.5"/></svg>`,
+  single: `<svg viewBox="0 0 24 24" ${S}><path d="M12 3.5v17M8 7.5l4-4 4 4M8 16.5l4 4 4-4"/></svg>`,
+  lines: `<svg viewBox="0 0 24 24" ${S}><path d="M7 19V5M3.5 8.5 7 5l3.5 3.5M13 7h8M13 12h6M13 17h4"/></svg>`,
+};
+const NAV = {
+  dots: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="7.5" cy="7.5" r="2.6"/><circle cx="16.5" cy="7.5" r="2.6"/><circle cx="7.5" cy="16.5" r="2.6"/><circle cx="16.5" cy="16.5" r="2.6"/></svg>',
+  sliders: `<svg viewBox="0 0 24 24" ${S}><path d="M4 8h16M4 16h16"/><circle cx="15" cy="8" r="2.2" fill="#16171d"/><circle cx="9" cy="16" r="2.2" fill="#16171d"/></svg>`,
+  mic: `<svg viewBox="0 0 24 24" ${S}><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>`,
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+};
+const OPT_IC = {
+  due: `<svg viewBox="0 0 24 24" ${S}><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M8 3v4M16 3v4M4 10h16"/></svg>`,
+  time: `<svg viewBox="0 0 24 24" ${S}><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>`,
+  priority: `<svg viewBox="0 0 24 24" ${S}><path d="M6 21V4M6 4h11l-2 4 2 4H6"/></svg>`,
+  manual: `<svg viewBox="0 0 24 24" ${S}><path d="M5 8h14M5 12h14M5 16h14"/></svg>`,
+  created: `<svg viewBox="0 0 24 24" ${S}><circle cx="12" cy="12" r="8"/><path d="M12 8v8M8 12h8"/></svg>`,
+};
+const OPTS = {
+  list: [['due', 'По сроку'], ['priority', 'По приоритету'], ['manual', 'Вручную'], ['created', 'По дате создания']],
+  upcoming: [['time', 'По времени'], ['priority', 'По приоритету'], ['created', 'По дате создания']],
+};
+const DEF_DIR = { due: 'asc', time: 'asc', priority: 'desc', created: 'desc', manual: null };
+const HINT = {
+  due: { asc: 'сначала ранние', desc: 'сначала поздние' },
+  time: { asc: 'с утра к вечеру', desc: 'с вечера к утру' },
+  priority: { desc: 'сначала важные', asc: 'сначала обычные' },
+  created: { desc: 'сначала новые', asc: 'сначала старые' },
+  manual: { null: 'нажми задачу и веди' },
+};
+const STD = { work: { by: 'due', dir: 'asc' }, inbox: { by: 'due', dir: 'asc' }, upcoming: { by: 'time', dir: 'asc' } };
+
+/* ---------- варианты оформления ---------- */
+const GROUPS = [
+  ['Кнопка ↑↓ в капсуле', [
+    ['icon', 'Значок', [['pair', `<i class="ic">${SORT_IC.pair}</i>Две стрелки`], ['single', `<i class="ic">${SORT_IC.single}</i>Одна двойная`], ['lines', `<i class="ic">${SORT_IC.lines}</i>Стрелка и строки`]], 'pair'],
+    ['place', 'Место в капсуле', [['afterSettings', '⠿ ⚙ ↑↓ 🎤 +'], ['first', '↑↓ ⠿ ⚙ 🎤 +'], ['beforePlus', '⠿ ⚙ 🎤 ↑↓ +']], 'afterSettings'],
+    ['dot', 'Точка «не стандарт»', [['lilac', 'Сиреневая'], ['red', 'Красная'], ['white', 'Белая']], 'lilac'],
+  ]],
+  ['Окно выбора', [
+    ['form', 'Вид', [['sheet', 'Шторка снизу'], ['menu', 'Меню над капсулой']], 'sheet'],
+    ['dir', 'Направление ↑↓', [['again', 'Нажать выбранный ещё раз (+ значок у пункта)'], ['toggle', 'Переключатель внизу окна']], 'again'],
+  ]],
+  ['Список', [
+    ['view', 'При «По сроку»', [['flat', 'Сплошной список, дата справа'], ['days', 'С подписями дней']], 'flat'],
+    ['nodate', 'Блок «Без даты»', [['header', 'Подпись, всегда открыт'], ['fold', 'Сворачивается ›']], 'header'],
+    ['done', 'Блок «Выполнено»', [['row', 'Строка «Выполнено · 2 ›»'], ['pill', 'Кнопка «Показать выполненные (2)»']], 'row'],
+  ]],
+  ['Перетаскивание', [
+    ['drag', 'Задача в руке', [['lift', 'Приподнята, с тенью'], ['outline', 'Сиреневая рамка']], 'lift'],
+    ['ask', 'Окно «Переключить на ручную?»', [['remember', 'С галочкой «Больше не спрашивать»'], ['plain', 'Без галочки']], 'remember'],
+  ]],
+];
+const REC = Object.fromEntries(GROUPS.flatMap(([, l]) => l.map(([k, , , r]) => [k, r])));
+const KEY = 'c357a';
+let V = { ...REC };
+try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s) V = { ...REC, ...s } } catch (e) {}
+
+/* ---------- данные (сегодня — пт 27 ноя) ---------- */
+const TODAY = new Date(2026, 10, 27);
+const WD = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'], MON = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+const dayOf = o => new Date(TODAY.getFullYear(), TODAY.getMonth(), TODAY.getDate() + o);
+const dateText = o => { const d = dayOf(o); return `${WD[d.getDay()]} ${d.getDate()} ${MON[d.getMonth()]}` };
+const DATA = {
+  work: [
+    { id: 'w1', t: 'Подготовить презентацию', pr: 1, due: 1, cr: -7 },
+    { id: 'w2', t: 'Разобрать почту', pr: 0, due: null, cr: -2 },
+    { id: 'w3', t: 'Отправить отчёт', pr: 0, due: -1, cr: -9 },
+    { id: 'w4', t: 'Созвон с командой', pr: 0, due: 0, time: '10:00', cr: -5 },
+    { id: 'w5', t: 'Запланировать отпуск', pr: 1, due: 6, cr: -12 },
+    { id: 'w6', t: 'Обновить резюме', pr: 1, due: null, cr: -17 },
+    { id: 'w7', t: 'Купить билеты', pr: 0, due: 0, cr: -1 },
+    { id: 'w8', t: 'Ревью квартала', pr: 0, due: 4, time: '12:00', cr: -3 },
+    { id: 'w9', t: 'Сдать отчёт за октябрь', done: true, cr: -30 },
+    { id: 'w10', t: 'Оплатить сервис', done: true, cr: -20 },
+  ],
+  inbox: [
+    { id: 'i1', t: 'Заказать одежду', pr: 0, due: 0, cr: -4 },
+    { id: 'i2', t: 'Позвонить маме', pr: 1, due: 0, time: '19:00', cr: -1 },
+    { id: 'i3', t: 'Идея для подкаста', pr: 0, due: null, cr: -6 },
+    { id: 'i4', t: 'Записаться к врачу', pr: 0, due: 2, time: '09:30', cr: -8 },
+    { id: 'i5', t: 'Купить подарок', pr: 0, due: null, cr: 0 },
+    { id: 'i6', t: 'Вернуть книгу', done: true, cr: -11 },
+  ],
+  home: [
+    { id: 'h1', t: 'Оплатить интернет', pr: 1, due: -2, cr: -10 },
+    { id: 'h2', t: 'Цветы', pr: 0, due: 0, time: '15:00', cr: -14 },
+    { id: 'h3', t: 'Бритьё', pr: 0, due: 1, time: '08:00', cr: -14 },
+  ],
+};
+const EMOJI = { work: '💼', inbox: '📥', home: '🏠' };
+const SCREENS = [['work', '💼 Работа'], ['inbox', '📥 Входящие'], ['upcoming', 'Предстоящее'], ['hub', 'Хаб']];
+let screen = 'work';
+const sorts = { work: { ...STD.work }, inbox: { ...STD.inbox }, upcoming: { ...STD.upcoming } };
+const order = { work: null, inbox: null };
+const ui = { doneOpen: {}, nodateOpen: { work: true, inbox: true }, layer: null, noAsk: false, added: 0 };
+
+/* ---------- сортировка ---------- */
+const coll = new Intl.Collator('ru');
+const byName = (a, b) => coll.compare(a.t, b.t);
+const num = (a, b) => a === b ? 0 : a < b ? -1 : 1;
+const mins = x => x.time ? +x.time.slice(0, 2) * 60 + +x.time.slice(3) + 1 : 0;
+const dueKey = x => x.due == null ? Infinity : x.due * 10000 + mins(x);
+function sortItems(items, s, scr) {
+  const a = [...items], k = s.dir === 'desc' ? -1 : 1;
+  if (s.by === 'manual') {
+    const ids = order[scr] || [];
+    return a.sort((p, q) => { const i = ids.indexOf(p.id), j = ids.indexOf(q.id); return num(i < 0 ? 1e9 : i, j < 0 ? 1e9 : j) || byName(p, q) });
+  }
+  if (s.by === 'due') return a.sort((p, q) => k * num(dueKey(p), dueKey(q)) || byName(p, q));
+  if (s.by === 'time') return a.sort((p, q) => k * num(mins(p), mins(q)) || byName(p, q));
+  if (s.by === 'priority') return a.sort((p, q) => k * num(p.pr, q.pr) || num(dueKey(p), dueKey(q)) || byName(p, q));
+  if (s.by === 'created') return a.sort((p, q) => k * num(p.cr, q.cr) || byName(p, q));
+  return a;
+}
+const isStd = scr => sorts[scr].by === STD[scr].by && sorts[scr].dir === STD[scr].dir;
+function displayedActive(scr) {
+  const s = sorts[scr], act = DATA[scr].filter(x => !x.done);
+  if (s.by === 'due') return [...sortItems(act.filter(x => x.due != null), s, scr), ...act.filter(x => x.due == null).sort(byName)];
+  return sortItems(act, s, scr);
+}
+
+/* ---------- строки ---------- */
+function rightLabel(x, mode) {
+  if (x.due == null) return '';
+  if (x.due < 0) return `<span class="r late">${mode === 'list' ? (x.due === -1 ? 'вчера' : dateText(x.due)) : WD[dayOf(x.due).getDay()]}</span>`;
+  if (mode === 'day') return `<span class="r">${x.time || ''}</span>`;
+  const d = x.due === 0 ? 'сегодня' : x.due === 1 ? 'завтра' : dateText(x.due);
+  return `<span class="r">${d}${x.time ? ' ' + x.time : ''}</span>`;
+}
+function row(x, mode, emoji) {
+  const cls = ['row', x.done ? 'done' : 'act', x.pr && !x.done ? 'hi' : '', V.drag].join(' ');
+  return `<div class="${cls}" data-id="${x.id}"><span class="c"></span>${emoji ? `<span class="e">${emoji}</span>` : ''}<span class="n">${x.t}</span>${x.done ? '' : rightLabel(x, mode)}</div>`;
+}
+const dayHeader = (o, count, late) => late ? `<div class="dh late"><span>Просрочено</span><span class="ln" style="background:none"></span><span>${count}</span></div>`
+  : `<div class="dh"><span>${dateText(o)}${o === 0 ? ' · Сегодня' : o === 1 ? ' · Завтра' : ''}</span><span class="ln"${o === 0 ? '' : ' style="background:none"'}></span><span>${count}</span></div>`;
+
+function listBody(scr) {
+  const s = sorts[scr], items = DATA[scr], act = items.filter(x => !x.done), done = items.filter(x => x.done);
+  let h = '';
+  if (s.by === 'due') {
+    const dated = sortItems(act.filter(x => x.due != null), s, scr), und = act.filter(x => x.due == null).sort(byName);
+    if (V.view === 'days') {
+      let i = 0;
+      while (i < dated.length) {
+        const late = dated[i].due < 0, grp = dated.filter(x => late ? x.due < 0 : x.due === dated[i].due);
+        h += dayHeader(dated[i].due, grp.length, late) + grp.map(x => row(x, 'day')).join('');
+        i += grp.length;
+      }
+    } else h += dated.map(x => row(x, 'list')).join('');
+    if (und.length) {
+      const open = V.nodate === 'header' || ui.nodateOpen[scr];
+      h += `<div class="dh ${V.nodate === 'fold' ? 'click' : ''} ${open ? 'open' : ''}" ${V.nodate === 'fold' ? 'data-act="nodate" role="button" tabindex="0"' : ''}><span>Без даты${V.nodate === 'fold' ? ' <span class="chev">›</span>' : ''}</span><span class="ln" style="background:none"></span><span>${und.length}</span></div>`;
+      if (open) h += und.map(x => row(x, 'list')).join('');
+    }
+  } else h += sortItems(act, s, scr).map(x => row(x, 'list')).join('');
+  if (done.length) {
+    const open = ui.doneOpen[scr];
+    h += V.done === 'row'
+      ? `<div class="dh click ${open ? 'open' : ''}" data-act="done" role="button" tabindex="0"><span>Выполнено <span class="chev">›</span></span><span class="ln" style="background:none"></span><span>${done.length}</span></div>`
+      : `<button type="button" class="pill" data-act="done">${open ? 'Скрыть выполненные' : `Показать выполненные (${done.length})`}</button>`;
+    if (open) h += done.map(x => row(x, 'list')).join('');
+  }
+  return h;
+}
+function upcomingBody(hub) {
+  const all = ['work', 'inbox', 'home'].flatMap(k => DATA[k].filter(x => !x.done && x.due != null).map(x => ({ ...x, e: EMOJI[k] })));
+  const s = sorts.upcoming;
+  let h = '';
+  const late = sortItems(all.filter(x => x.due < 0), { by: 'due', dir: 'asc' });
+  if (late.length) h += dayHeader(0, late.length, true) + late.map(x => row(x, 'day', x.e)).join('');
+  for (let o = 0; o <= 6; o++) {
+    const day = all.filter(x => x.due === o);
+    if (!day.length) continue;
+    h += dayHeader(o, o === 0 ? `0 из ${day.length}` : day.length) + sortItems(day, s, 'upcoming').map(x => row(x, 'day', x.e)).join('');
+  }
+  if (hub) h = `<div class="ph" style="height:72px;margin-top:14px">Финансы: счета и полоса</div><div class="ph" style="height:128px">Новости 2 × 2</div><div style="height:12px"></div>` + h;
+  return h;
+}
+function header(scr) {
+  if (scr === 'work') return `<div class="hdr"><span class="back">←</span><span>💼</span><span>Работа</span><span class="more">⋮</span></div>`;
+  if (scr === 'inbox') return `<div class="hdr"><span>📥</span><span>Входящие</span><span class="more">⋮</span></div>`;
+  return '<div style="height:10px"></div>';
+}
+
+/* ---------- капсула ---------- */
+function nav() {
+  const hasSort = screen !== 'hub';
+  const dotColor = { lilac: '#c39bff', red: '#ff5a5f', white: '#ffffff' }[V.dot];
+  const sortBtn = hasSort ? `<button type="button" data-act="sort" aria-label="Сортировка" class="${ui.layer === 'sort' ? 'on' : ''}">${SORT_IC[V.icon]}${isStd(screen) ? '' : `<i class="dot" style="background:${dotColor}"></i>`}</button>` : '';
+  const b = { dots: `<button type="button" data-act="sections" aria-label="Разделы">${NAV.dots}</button>`, set: `<button type="button" data-act="settings" aria-label="Настройки">${NAV.sliders}</button>`, mic: `<button type="button" data-act="mic" aria-label="Голосом">${NAV.mic}</button>`, plus: `<button type="button" class="plus" data-act="add" aria-label="Добавить">${NAV.plus}</button>` };
+  const seq = { afterSettings: [b.dots, b.set, sortBtn, b.mic, b.plus], first: [sortBtn, b.dots, b.set, b.mic, b.plus], beforePlus: [b.dots, b.set, b.mic, sortBtn, b.plus] }[V.place];
+  return seq.join('');
+}
+
+/* ---------- окно сортировки ---------- */
+function sortLayer() {
+  const scr = screen, s = sorts[scr], opts = scr === 'upcoming' ? OPTS.upcoming : OPTS.list;
+  const optRows = opts.map(([k, label]) => {
+    const sel = s.by === k, std = STD[scr].by === k;
+    const hint = sel ? HINT[k][String(s.dir)] : HINT[k][String(DEF_DIR[k])];
+    const chip = sel && k !== 'manual' && V.dir === 'again' ? `<span class="dirchip" data-act="flip">${s.dir === 'asc' ? '↑' : '↓'} ${HINT[k][s.dir]}</span>` : '';
+    return `<button type="button" class="opt ${sel ? 'sel' : ''}" data-opt="${k}" aria-pressed="${sel}"><span class="oi">${OPT_IC[k]}</span><span class="ol"><span>${label}${std ? '<span class="std">стандарт</span>' : ''}</span>${V.dir === 'toggle' || !sel || k === 'manual' ? `<small>${hint}</small>` : ''}</span>${chip}</button>`;
+  }).join('');
+  const seg = V.dir === 'toggle' && s.by !== 'manual'
+    ? `<div class="segdir" role="group" aria-label="Направление"><button type="button" data-dir="asc" aria-pressed="${s.dir === 'asc'}">↑ ${HINT[s.by].asc}</button><button type="button" data-dir="desc" aria-pressed="${s.dir === 'desc'}">↓ ${HINT[s.by].desc}</button></div>` : '';
+  const note = V.dir === 'again' && s.by !== 'manual' ? '<p class="note">Нажми выбранный вариант ещё раз — порядок развернётся.</p>' : '';
+  const sub = scr === 'upcoming' ? 'Предстоящее · порядок внутри дня, так же в хабе и виджете' : `${scr === 'work' ? 'Работа' : 'Входящие'} · у каждого списка своя`;
+  if (V.form === 'menu') return `<div class="scrim" data-act="close" style="background:transparent"></div><div class="menu" role="dialog" aria-label="Сортировка">${optRows}${seg}${note}</div>`;
+  return `<div class="scrim" data-act="close"></div><div class="sheet" role="dialog" aria-label="Сортировка"><div class="grab"></div><h3>Сортировка</h3><p class="sub">${sub}</p>${optRows}${seg}${note}
+    <div class="sheetfoot"><button type="button" class="reset" data-act="std" ${isStd(scr) ? 'disabled' : ''}>Сбросить на стандарт</button><button type="button" class="ok" data-act="close">Готово</button></div></div>`;
+}
+function askLayer() {
+  return `<div class="scrim" data-act="close"></div><div class="dlg" role="dialog" aria-label="Ручная сортировка"><h3>Переключить на ручную сортировку?</h3>
+    <p>Сейчас список отсортирован «${(OPTS.list.find(([k]) => k === sorts[screen].by) || [, ''])[1].toLowerCase()}». Нынешний порядок станет ручным — задачи можно будет ставить куда угодно.</p>
+    ${V.ask === 'remember' ? '<label><input type="checkbox" id="noask"> Больше не спрашивать</label>' : ''}
+    <div class="acts"><button type="button" data-act="close">Отмена</button><button type="button" class="main" data-act="tomanual">Переключить</button></div></div>`;
+}
+
+/* ---------- отрисовка ---------- */
+function render() {
+  const sc = document.getElementById('scroll'), keep = sc.scrollTop;
+  const body = screen === 'upcoming' ? upcomingBody(false) : screen === 'hub' ? upcomingBody(true) : listBody(screen);
+  sc.innerHTML = header(screen) + body;
+  sc.scrollTop = keep;
+  document.getElementById('nav').innerHTML = nav();
+  document.getElementById('layer').innerHTML = ui.layer === 'sort' ? sortLayer() : ui.layer === 'ask' ? askLayer() : '';
+  document.getElementById('tabs').innerHTML = SCREENS.map(([k, l]) => `<button type="button" data-screen="${k}" aria-pressed="${k === screen}">${l}</button>`).join('');
+  sc.querySelectorAll('.row').forEach(r => r.addEventListener('pointerdown', onDown));
+  renderPanel();
+}
+function renderPanel() {
+  document.getElementById('groups').innerHTML = GROUPS.map(([title, ctls]) => `<fieldset><legend>${title}</legend>${ctls.map(([k, l, opts]) =>
+    `<div class="ctl"><span id="l-${k}">${l}</span><div class="seg" role="group" aria-labelledby="l-${k}">${opts.map(([v, t]) =>
+      `<button type="button" data-k="${k}" data-v="${v}" aria-pressed="${V[k] === v}">${t}${REC[k] === v ? '<span class="tag">реком.</span>' : ''}</button>`).join('')}</div></div>`).join('')}</fieldset>`).join('');
+  document.getElementById('summary').value = GROUPS.map(([title, ctls]) => `${title}: ` + ctls.map(([k, l, opts]) =>
+    `${l.toLowerCase()} — ${opts.find(([v]) => v === V[k])[1].replace(/<i.*?<\/i>/, '')}`).join('; ')).join('\n');
+  try { localStorage.setItem(KEY, JSON.stringify(V)) } catch (e) {}
+}
+let toastTimer;
+function toast(t) {
+  const el = document.getElementById('toast'); el.textContent = t; el.classList.add('on');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('on'), 1800);
+}
+
+/* ---------- нажатия ---------- */
+function choose(k) {
+  const s = sorts[screen];
+  if (s.by === k) { if (k !== 'manual' && V.dir === 'again') s.dir = s.dir === 'asc' ? 'desc' : 'asc'; }
+  else {
+    if (k === 'manual' && !order[screen]) order[screen] = displayedActive(screen).map(x => x.id);
+    s.by = k; s.dir = DEF_DIR[k];
+  }
+}
+function toManual() {
+  order[screen] = displayedActive(screen).map(x => x.id);
+  sorts[screen] = { by: 'manual', dir: null };
+}
+document.addEventListener('click', e => {
+  const t = e.target;
+  const panelBtn = t.closest('button[data-k]');
+  if (panelBtn) { V[panelBtn.dataset.k] = panelBtn.dataset.v; render(); return }
+  const tab = t.closest('[data-screen]');
+  if (tab) { screen = tab.dataset.screen; ui.layer = null; render(); return }
+  if (!t.closest('#w')) return;
+  const opt = t.closest('[data-opt]'), dir = t.closest('[data-dir]'), act = t.closest('[data-act]');
+  if (t.closest('[data-act="flip"]')) { const s = sorts[screen]; s.dir = s.dir === 'asc' ? 'desc' : 'asc'; render(); return }
+  if (opt) { choose(opt.dataset.opt); render(); return }
+  if (dir) { sorts[screen].dir = dir.dataset.dir; render(); return }
+  if (!act) return;
+  switch (act.dataset.act) {
+    case 'sort': ui.layer = ui.layer === 'sort' ? null : 'sort'; break;
+    case 'close': ui.layer = null; break;
+    case 'std': sorts[screen] = { ...STD[screen] }; break;
+    case 'done': ui.doneOpen[screen] = !ui.doneOpen[screen]; break;
+    case 'nodate': ui.nodateOpen[screen] = !ui.nodateOpen[screen]; break;
+    case 'tomanual': {
+      if (document.getElementById('noask')?.checked) ui.noAsk = true;
+      toManual(); ui.layer = null; toast('Сортировка: вручную — теперь можно тянуть'); break;
+    }
+    case 'add': {
+      if (screen === 'upcoming' || screen === 'hub') { toast('Меню «что добавить» — как сейчас'); return }
+      ui.added++;
+      const x = { id: `n${ui.added}`, t: `Новая задача ${ui.added}`, pr: 0, due: null, cr: 1 + ui.added };
+      DATA[screen].push(x);
+      if (order[screen]) order[screen].unshift(x.id);
+      toast(sorts[screen].by === 'manual' ? 'Вручную: новая задача — в начало' : 'Новая задача встала по сортировке');
+      break;
+    }
+    case 'sections': toast('Разделы — как сейчас'); return;
+    case 'settings': toast('Настройки — остаются на месте'); return;
+    case 'mic': toast('Голосовой ввод — как сейчас'); return;
+    default: return;
+  }
+  render();
+});
+document.addEventListener('keydown', e => {
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.dh[data-act]')) { e.preventDefault(); e.target.click() }
+  if (e.key === 'Escape' && ui.layer) { ui.layer = null; render() }
+});
+
+/* ---------- долгое нажатие и перетаскивание ---------- */
+let press = null;
+const draggable = () => (screen === 'work' || screen === 'inbox');
+function onDown(e) {
+  if (e.button !== 0 || ui.layer) return;
+  const rowEl = e.currentTarget;
+  if (rowEl.classList.contains('done')) return;
+  press = { row: rowEl, id: rowEl.dataset.id, x: e.clientX, y: e.clientY, long: false, started: false };
+  press.timer = setTimeout(() => { if (!press) return; press.long = true; rowEl.classList.add('pressed'); navigator.vibrate?.(10) }, 420);
+  try { rowEl.setPointerCapture(e.pointerId) } catch (_) {}
+  rowEl.addEventListener('pointermove', onMove);
+  rowEl.addEventListener('pointerup', onUp);
+  rowEl.addEventListener('pointercancel', cleanup);
+}
+function onMove(e) {
+  if (!press) return;
+  const dx = e.clientX - press.x, dy = e.clientY - press.y;
+  if (!press.long) { if (Math.hypot(dx, dy) > 8) cleanup(); return }
+  if (!press.started) {
+    if (Math.hypot(dx, dy) < 6) return;
+    if (!draggable()) { cleanup(); toast('В «Предстоящем» ручной сортировки нет'); return }
+    if (sorts[screen].by !== 'manual') {
+      cleanup();
+      if (ui.noAsk) { toManual(); render(); toast('Сортировка: вручную'); return }
+      ui.layer = 'ask'; render(); return;
+    }
+    startDrag();
+  }
+  dragMove(dy);
+}
+function startDrag() {
+  const rows = [...document.querySelectorAll('#scroll .row.act')];
+  press.rows = rows; press.idx = rows.indexOf(press.row); press.h = press.row.offsetHeight; press.target = press.idx; press.started = true;
+  press.row.classList.add('dragging');
+  rows.forEach(r => r !== press.row && r.classList.add('shift'));
+}
+function dragMove(dy) {
+  const { rows, idx, h } = press;
+  const target = Math.max(0, Math.min(rows.length - 1, idx + Math.round(dy / h)));
+  press.target = target;
+  press.row.style.transform = `translateY(${dy}px)${V.drag === 'lift' ? ' scale(1.02)' : ''}`;
+  rows.forEach((r, i) => { if (r === press.row) return; const sh = idx < i && i <= target ? -h : target <= i && i < idx ? h : 0; r.style.transform = sh ? `translateY(${sh}px)` : '' });
+}
+function onUp() {
+  if (!press) return;
+  if (press.started) {
+    const ids = press.rows.map(r => r.dataset.id), [moved] = ids.splice(press.idx, 1);
+    ids.splice(press.target, 0, moved);
+    order[screen] = ids;
+    cleanup(); render(); return;
+  }
+  if (press.long) { cleanup(); toast('Отпустил — режим выбора задач, как сейчас'); return }
+  cleanup();
+}
+function cleanup() {
+  if (!press) return;
+  clearTimeout(press.timer);
+  const r = press.row;
+  r.classList.remove('pressed', 'dragging');
+  r.removeEventListener('pointermove', onMove); r.removeEventListener('pointerup', onUp); r.removeEventListener('pointercancel', cleanup);
+  (press.rows || []).forEach(x => { x.style.transform = ''; x.classList.remove('shift') });
+  r.style.transform = '';
+  press = null;
+}
+document.getElementById('scroll').addEventListener('touchmove', e => { if (press && press.long) e.preventDefault() }, { passive: false });
+
+/* ---------- панель ---------- */
+document.getElementById('reset').addEventListener('click', () => { V = { ...REC }; render() });
+document.getElementById('copy').addEventListener('click', () => {
+  const out = document.getElementById('copied');
+  const fb = () => { const s = document.getElementById('summary'); s.focus(); s.select(); out.textContent = 'Текст выделен — скопируй вручную' };
+  try { navigator.clipboard.writeText(document.getElementById('summary').value).then(() => { out.textContent = 'Скопировано' }, fb) } catch (e) { fb() }
+});
+render();
+</script>
