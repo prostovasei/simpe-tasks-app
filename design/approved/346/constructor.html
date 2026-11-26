@@ -1,0 +1,179 @@
+<title>Конструктор хаба 3</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+<style>
+/* Конструктор #346: хаб без заголовков, прогноз внутри полосы, новости листаются касанием по краям. Превью — светлая тема приложения. */
+:root {
+  --page: #e9ebef; --pagefg: #16171d; --pagemuted: #62656e; --chip: #f3f3f4; --rec: #2e7d32; --line: #dcdee3;
+  --card: #ffffff; --title: #2e3036; --muted: #62656e; --ring: #a9a9a9; --pri: #862ce0; --late: #c62828;
+  --track: #e8e8ea; --soft: #f3f3f4; --black: #16171d; --warn: #b26a00; --zone: rgb(134 44 224 / .14);
+  --font: Manrope, system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --page: #0f1013; --pagefg: #ececec; --pagemuted: #a3a3a3; --chip: #24262b; --rec: #81c784; --line: #2f3137; color-scheme: dark } }
+:root[data-theme="dark"] { --page: #0f1013; --pagefg: #ececec; --pagemuted: #a3a3a3; --chip: #24262b; --rec: #81c784; --line: #2f3137; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--page); color: var(--pagefg); font-family: var(--font); margin: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 16px 40px }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--page) }
+h1 { font-size: 21px; margin: 0 0 4px }
+.lead { color: var(--pagemuted); margin: 0 0 14px; max-width: 80ch; line-height: 1.45; font-size: 14px }
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px; align-items: start }
+.previews { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); display: flex; gap: 20px; align-items: flex-start }
+.pv { display: grid; gap: 6px; justify-items: start } .pv b { font-size: 13px; color: var(--pagemuted); font-weight: 600 }
+@media (max-width: 1180px) { .layout { grid-template-columns: minmax(0, 1fr) } .previews { order: -1; position: static; overflow-x: auto; max-width: 100% } }
+@media (max-width: 760px) { .phone { zoom: .78 } }
+.panel { display: grid; gap: 12px; min-width: 0; align-content: start }
+fieldset { border: 0; margin: 0; padding: 12px 14px; background: var(--card); color: var(--title); border-radius: 16px; display: grid; gap: 10px; min-width: 0 }
+legend { font-weight: 700; font-size: 15px; padding: 0; float: left; width: 100% }
+.ctl { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px } .ctl > span { flex: 0 0 170px; color: var(--muted); font-size: 13px }
+.seg { display: inline-flex; background: #f3f3f4; border-radius: 10px; padding: 3px; gap: 2px; flex-wrap: wrap; min-width: 0 }
+.seg button { font: 600 13px var(--font); color: #16171d; background: none; border: 0; border-radius: 8px; padding: 6px 9px; cursor: pointer; display: inline-flex; gap: 5px; align-items: center }
+.seg button[aria-pressed="true"] { background: #fff; box-shadow: inset 0 0 0 1.5px #16171d }
+.seg button:focus-visible, .btn:focus-visible { outline: 2px solid #862ce0; outline-offset: 1px }
+.seg .tag { font-size: 10px; font-weight: 700 } .seg .tag.pm { color: #2e7d32 } .seg .tag.rec { color: #6b32a8 }
+.top { display: flex; flex-wrap: wrap; gap: 8px; align-items: center }
+.btn { font: 600 13px var(--font); border: 0; border-radius: 10px; padding: 8px 12px; cursor: pointer; background: var(--pagefg); color: var(--page) }
+.btn.ghost { background: var(--chip); color: var(--pagefg) }
+#summary { width: 100%; min-height: 110px; font: 12px/1.45 ui-monospace, Menlo, monospace; color: var(--pagefg); background: var(--page); border: 1px solid var(--line); border-radius: 12px; padding: 10px }
+.hint { color: var(--pagemuted); font-size: 12px; margin: 0; line-height: 1.45 } #copied { color: var(--rec); font-size: 12px }
+.phone { position: relative; width: 360px; height: 720px; border-radius: 30px; overflow: hidden; background: #fff; box-shadow: 0 0 0 1px rgb(0 0 0 / .08), 0 10px 30px rgb(0 0 0 / .12); color: var(--title); flex: none }
+.status { height: 28px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; font-size: 12px; font-weight: 600 }
+.wall { background: linear-gradient(160deg, #5b2bc9 0%, #b03fb8 45%, #f2717e 100%) } .wall > .status { color: #fff }
+.screen { position: absolute; inset: 28px 0 0 0; display: flex; flex-direction: column; overflow: hidden; background: #fff }
+.wdg { position: absolute; left: 10px; right: 10px; top: 40px; height: 600px; background: #fff; border-radius: 24px; overflow: hidden; display: flex; flex-direction: column }
+.body { display: flex; flex-direction: column; padding-top: 12px }
+.ttl { padding: 8px 14px 4px; font-size: 13px; font-weight: 700 } .ttl i { color: var(--muted); font-style: normal }
+.fin { padding: 0 14px }
+.l1 { display: flex; align-items: center; gap: 8px }
+.bar { flex: 1; height: 28px; border-radius: 9px; background: var(--soft); position: relative; overflow: hidden; font-size: 12px; font-weight: 700 }
+.bar .f { position: absolute; inset: 0 auto 0 0; background: var(--black) }
+.bar .p { position: absolute; inset: 0 auto 0 0 }
+.bar .today { position: absolute; top: 3px; bottom: 3px; width: 2px; background: #62656e; outline: 1px solid #fff }
+.bar .lim { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--late) }
+.bar span { position: absolute; top: 6px; white-space: nowrap; z-index: 2 }
+.goal { font-size: 15px; font-weight: 800 }
+.accs { display: flex; gap: 6px; padding-top: 10px; align-items: center }
+.acc { background: var(--soft); border-radius: 999px; padding: 7px 12px; font-size: 14px; font-weight: 700; white-space: nowrap }
+.total { font-size: 14px; font-weight: 800 }
+.news { padding: 0 14px; position: relative }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px }
+.card { background: var(--soft); border-radius: 12px; padding: 7px 9px; min-height: 58px; font-size: 11.5px; line-height: 1.3 }
+.card small { display: block; color: var(--muted); font-size: 10px; margin-bottom: 2px } .card .n { color: var(--pri); font-weight: 700 }
+.zone { position: absolute; top: 0; bottom: 0; z-index: 3; display: grid; place-items: center; color: var(--pri); font-size: 18px; font-weight: 800 }
+.zone.l { left: 0 } .zone.r { right: 0 }
+.dots { display: flex; justify-content: center; gap: 6px; padding-top: 6px } .dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--track) } .dots i.on { background: var(--black) }
+.head { display: flex; align-items: center; gap: 8px; padding: 10px 14px 2px; font-size: 12px; color: var(--muted); white-space: nowrap }
+.head.late { color: var(--late) } .head .b { flex: 1; height: 1px; background: var(--track) } .head .cnt { margin-left: auto }
+.row { display: flex; align-items: center; min-height: 42px; padding: 0 14px; font-size: 14px; font-weight: 600; gap: 8px }
+.row .c { width: 18px; height: 18px; border-radius: 50%; box-shadow: inset 0 0 0 2px var(--ring); flex: none }
+.row .t { margin-left: auto; font-size: 13px; font-weight: 500 } .row .t.red { color: var(--late) }
+.nav { position: absolute; right: 12px; bottom: 14px; display: flex; gap: 2px; background: #16171d; border-radius: 999px; padding: 3px; z-index: 4 }
+.nav span { width: 34px; height: 34px; display: grid; place-items: center; color: #fff; font-size: 14px } .nav .plus { color: #c39bff; font-size: 22px }
+.icons { position: absolute; left: 22px; right: 22px; bottom: 26px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px }
+.icons span { aspect-ratio: 1; border-radius: 18px; background: rgb(255 255 255 / .28) }
+</style>
+
+<h1>Конструктор хаба 3</h1>
+<p class="lead">Хаб без заголовков разделов, полоса лимита без лишних подписей, новости листаются касанием по краю блока. Приложение и виджет рядом, переключатели меняют оба. Метка «PM» — твоё прямое решение, «реком.» — моя рекомендация. Кнопка «Показать зоны касания» подсвечивает невидимые области листания (в приложении их не видно). Суммы и задачи придуманы для примера.</p>
+
+<div class="layout">
+  <div class="panel">
+    <div class="top">
+      <button type="button" class="btn" id="copy">Скопировать выбор</button>
+      <button type="button" class="btn ghost" id="reset">Рекомендации</button>
+      <button type="button" class="btn ghost" id="zonesBtn">Показать зоны касания</button>
+      <span id="copied" aria-live="polite"></span>
+    </div>
+    <div id="groups" class="panel"></div>
+    <p class="hint">Прогноз — сумма, которую ты потратишь к концу месяца при нынешнем темпе. Внутри полосы его показывает вторая, более светлая заливка до точки прогноза, а сумма прогноза стоит у её конца. Если прогноз больше лимита, заливка доходит до края, а цифра краснеет.</p>
+    <p class="hint">Касание по краю: левый край блока новостей листает назад, правый — вперёд, остальное открывает новость, как сейчас. В приложении остаётся и свайп. Зоны лежат поверх карточек: чем шире зона, тем меньше места, где карточку можно открыть, — поэтому рекомендую узкую.</p>
+    <label class="hint" for="summary">Выбор текстом:</label>
+    <textarea id="summary" readonly></textarea>
+  </div>
+  <div class="previews">
+    <div class="pv"><b>Приложение</b><div class="phone" id="app"></div></div>
+    <div class="pv"><b>Виджет</b><div class="phone wall" id="widget"></div></div>
+  </div>
+</div>
+
+<script>
+const GROUPS = [
+  ['Хаб', [
+    ['titles', 'Заголовки разделов', [['none', 'Убрать'], ['now', 'Как сейчас']], 'none', 'none'],
+    ['gap', 'Разделитель вместо заголовков', [['space', 'Просто отступ'], ['line', 'Тонкая линия']], 'space'],
+  ]],
+  ['Полоса лимита', [
+    ['fc', 'Прогноз в полосе', [['shade', 'Светлая заливка до прогноза'], ['hatch', 'Штриховка'], ['mark', 'Только отметка']], 'shade'],
+    ['fcText', 'Сумма прогноза', [['end', 'У конца заливки прогноза'], ['right', 'У правого края полосы']], 'end'],
+    ['limit', 'Лимит 90k', [['out', 'Справа от полосы (сейчас)'], ['in', 'Внутри, у правого края']], 'out'],
+    ['scenario', 'Пример', [['ok', 'Прогноз в пределах лимита'], ['over', 'Прогноз больше лимита']], 'ok'],
+  ]],
+  ['Новости', [
+    ['zone', 'Зона касания у края', [[18, '18% ширины'], [25, '25%'], [33, 'Треть']], 18],
+    ['dots', 'Точки страниц', [['keep', 'Оставить'], ['none', 'Убрать']], 'keep'],
+  ]],
+];
+const PMK = { titles: 'none' };
+const REC = Object.fromEntries(GROUPS.flatMap(([, l]) => l.map(([k, , , r]) => [k, r])));
+const KEY = 'c346a';
+let state = { ...REC }, zones = false;
+try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s) state = { ...REC, ...s } } catch (e) {}
+
+function bar() {
+  const o = state, spent = 46.7, over = o.scenario === 'over';
+  const fcPct = over ? 100 : 81, fcSum = over ? '104k' : '73k';
+  const fcColor = over ? 'var(--late)' : 'var(--muted)';
+  let fc = '';
+  if (o.fc === 'shade') fc = `<i class="p" style="width:${fcPct}%;background:#c9cad0"></i>`;
+  if (o.fc === 'hatch') fc = `<i class="p" style="width:${fcPct}%;background:repeating-linear-gradient(135deg,#c9cad0 0 4px,transparent 4px 8px)"></i>`;
+  if (o.fc === 'mark') fc = `<i class="p" style="left:${Math.min(fcPct, 99)}%;width:2px;background:${over ? 'var(--late)' : '#62656e'}"></i>`;
+  const fcLabel = o.fcText === 'end' && !over && o.fc !== 'mark'
+    ? `<span style="left:calc(${fcPct}% - 34px);color:${fcColor}">${fcSum}</span>`
+    : `<span style="right:${o.limit === 'in' ? 44 : 8}px;color:${fcColor}">${fcSum}</span>`;
+  const limIn = o.limit === 'in' ? `<span style="right:8px;color:var(--title)">90k</span>` : '';
+  return `<div class="l1"><div class="bar">${fc}<i class="f" style="width:${spent}%"></i><i class="today" style="left:83%"></i>`
+    + `<span style="left:10px;color:#fff">42k</span>${fcLabel}${limIn}</div>${o.limit === 'out' ? '<span class="goal">90k</span>' : ''}</div>`;
+}
+const accs = `<div class="accs"><span class="total">1100k</span><span class="acc">💳 1k</span><span class="acc">📉 819k</span><span class="acc">💰 280k</span></div>`;
+const NEWS = [['13:10 · Футбол', 'Поражения «Баварии» и «Локомотива»', 1], ['13:05 · Хоккей', 'Канцеров с дублем — 1-я звезда', 1], ['12:52 · Баскетбол', 'НБА. Кубок. Трипл-дабл Джеймса', 0], ['12:45 · Хоккей', 'НХЛ. «Вашингтон» забил 7 голов', 0]];
+function news() {
+  const w = state.zone;
+  const z = zones ? `<div class="zone l" style="width:${w}%;background:var(--zone)">‹</div><div class="zone r" style="width:${w}%;background:var(--zone)">›</div>` : '';
+  const dots = state.dots === 'keep' ? '<div class="dots"><i class="on"></i><i></i><i></i></div>' : '';
+  return `<div class="news"><div class="grid">${NEWS.map(([m, t, u]) => `<div class="card"><small>${m}${u ? ' · <span class="n">Новое</span>' : ''}</small><b style="font-weight:${u ? 700 : 500}">${t}</b></div>`).join('')}</div>${z}${dots}</div>`;
+}
+const tasks = `<div class="head"><span>чт 26 ноя · Сегодня</span><span class="b"></span><span>2 из 6</span></div>`
+  + `<div class="row"><span class="c"></span>🗂️ Заказать одежду<span class="t red">12:00</span></div>`
+  + `<div class="row"><span class="c"></span>💼 Девопсы<span class="t">14:30</span></div>`
+  + `<div class="row"><span class="c" style="box-shadow:inset 0 0 0 2px var(--pri)"></span><span style="color:var(--pri)">🗂️ Сдать деньги на корпоратив</span><span class="t" style="color:var(--pri)">17:30</span></div>`
+  + `<div class="head"><span>пт 27 ноя · Завтра</span><span class="cnt">9</span></div><div class="row"><span class="c"></span>💲 Higgsfield<span class="t">10:00</span></div>`;
+function hub() {
+  const t = name => state.titles === 'now' ? `<div class="ttl">${name} <i>›</i></div>` : '';
+  const sep = state.titles === 'none' ? (state.gap === 'line' ? '<div style="height:1px;background:var(--track);margin:14px 14px 4px"></div>' : '<div style="height:16px"></div>') : '';
+  return `<div class="body">${t('Финансы')}<div class="fin">${bar()}${accs}</div>${sep}${t('Новости')}${news()}${sep}${t('Задачи')}${tasks}</div>`;
+}
+const NAV = '<div class="nav"><span>⁘</span><span>☰</span><span>🎙</span><span class="plus">+</span></div>';
+const status = '<div class="status"><span>13:12</span><span>▾ ▴ ▮ 30</span></div>';
+function render() {
+  document.getElementById('app').innerHTML = status + `<div class="screen">${hub()}${NAV}</div>`;
+  document.getElementById('widget').innerHTML = status + `<div class="wdg">${hub()}${NAV}</div><div class="icons">${'<span></span>'.repeat(4)}</div>`;
+  document.getElementById('groups').innerHTML = GROUPS.map(([title, ctls]) => `<fieldset><legend>${title}</legend>${ctls.map(([k, label, opts]) =>
+    `<div class="ctl"><span id="l-${k}">${label}</span><div class="seg" role="group" aria-labelledby="l-${k}">${opts.map(([v, t]) =>
+      `<button type="button" data-k="${k}" data-v="${v}" aria-pressed="${state[k] == v}">${t}${PMK[k] == v ? '<span class="tag pm">PM</span>' : REC[k] == v ? '<span class="tag rec">реком.</span>' : ''}</button>`).join('')}</div></div>`).join('')}</fieldset>`).join('');
+  document.getElementById('summary').value = GROUPS.map(([title, ctls]) => `${title}: ` + ctls.filter(([k]) => k !== 'scenario').map(([k, label, opts]) => `${label.toLowerCase()} — ${opts.find(([v]) => v == state[k])[1]}`).join('; ')).join('\n');
+  try { localStorage.setItem(KEY, JSON.stringify(state)) } catch (e) {}
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('button[data-k]'); if (!b) return;
+  const v = b.dataset.v; state[b.dataset.k] = isNaN(+v) ? v : +v; render();
+});
+document.getElementById('reset').addEventListener('click', () => { state = { ...REC }; render() });
+document.getElementById('zonesBtn').addEventListener('click', e => { zones = !zones; e.currentTarget.textContent = zones ? 'Скрыть зоны касания' : 'Показать зоны касания'; render() });
+document.getElementById('copy').addEventListener('click', () => {
+  const out = document.getElementById('copied');
+  const fb = () => { const s = document.getElementById('summary'); s.focus(); s.select(); out.textContent = 'Текст выделен — скопируй вручную' };
+  try { navigator.clipboard.writeText(document.getElementById('summary').value).then(() => { out.textContent = 'Скопировано' }, fb) } catch (e) { fb() }
+});
+render();
+</script>
