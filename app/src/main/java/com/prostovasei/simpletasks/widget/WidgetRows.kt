@@ -93,7 +93,8 @@ object WidgetRows {
         val row = line.row
         val item = row.item
         val done = item.showsDone
-        val muted = done || row.past
+        // #342: прошедшая невыполненная не бледнеет — красное время.
+        val muted = done
         val flat = model.filter == WidgetFilter.All
         return RemoteViews(context.packageName, R.layout.widget_row_line).apply {
             val text = when {
@@ -148,7 +149,7 @@ object WidgetRows {
             }
             visible(R.id.row_time, right != null)
             setTextViewText(R.id.row_time, right.orEmpty())
-            paint(R.id.row_time, "setTextColor", if (line.overdue && !done) ColorTokens.overdue else text, flat)
+            paint(R.id.row_time, "setTextColor", if ((line.overdue || row.past) && !done) ColorTokens.overdue else text, flat)
         }
     }
 

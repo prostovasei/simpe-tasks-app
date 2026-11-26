@@ -48,7 +48,8 @@ class TaskCanvasWidgetTest {
         )
         val res = context.resources
         variants.forEach { task ->
-            val all = model(WidgetFilter.All).copy(days = listOf(WidgetDayBlock(WidgetDay.On(today), listOf(task))))
+            // #342: выполненные в «Предстоящем» не показываются — их строку проверяем во «Входящих».
+            val all = model(if (task.isDone) WidgetFilter.Inbox else WidgetFilter.All).copy(days = listOf(WidgetDayBlock(WidgetDay.On(today), listOf(task))))
             val line = all.lines(dayNames(context), withTail = false).filterIsInstance<WidgetLine.Task>().single()
             val views = WidgetRows.views(context, line, all)
             val root = views.apply(context, FrameLayout(context))
@@ -117,6 +118,18 @@ class TaskCanvasWidgetTest {
         assertTrue("ширина: $circle / $repeat", kotlin.math.abs(circle.width() - repeat.width()) <= 1)
         assertTrue("высота: $circle / $repeat", kotlin.math.abs(circle.height() - repeat.height()) <= 1)
         assertEquals(bounds(R.drawable.ic_task_period_ring, 116), bounds(R.drawable.ic_task_period_repeat, 116))
+    }
+
+    /** #342 (решение PM): прошедшая невыполненная за сегодня — красное время, название обычного цвета (не бледное). */
+    @Test
+    fun pastUndoneTodayHasRedTimeAndNormalTitle() {
+        val task = item().copy(due = DueText(DayLabel.Today, "09:00"))
+        val all = model(WidgetFilter.All).copy(days = listOf(WidgetDayBlock(WidgetDay.On(today), listOf(task))), nowMinute = 12 * 60)
+        val line = all.lines(dayNames(context), withTail = false).filterIsInstance<WidgetLine.Task>().single()
+        assertTrue(line.row.past)
+        val root = WidgetRows.views(context, line, all).apply(context, FrameLayout(context))
+        assertEquals(com.prostovasei.simpletasks.designsystem.tokens.ColorTokens.overdue.light.toInt(), root.findViewById<TextView>(R.id.row_time).currentTextColor)
+        assertEquals(com.prostovasei.simpletasks.designsystem.tokens.TaskRowTokens.title.light.toInt(), root.findViewById<TextView>(R.id.row_title).currentTextColor)
     }
 
     /** #334: одна разметка строки в «Все» и «Входящих»; на холсте «Все» — всегда светлые цвета ([TaskRowTokens]). */

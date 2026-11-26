@@ -88,21 +88,23 @@ class WidgetListTest {
         val list = list()
         assertEquals(model.lines(dayNames(context)).size, list.adapter.count)
         val texts = list.rows().flatMap { it.texts() }
-        listOf("Отчёт", "чт", "Зарядка", "Созвон", "Зарядка завтра", "10:00–11:00", "1 из 2", "пт 16 окт · Сегодня").forEach {
+        listOf("Отчёт", "чт", "Созвон", "Зарядка завтра", "10:00–11:00", "1 из 2", "пт 16 окт · Сегодня").forEach {
             assertTrue("нет «$it» в $texts", it in texts)
         }
+        // #342 (решение PM): выполненная за сегодня в «Предстоящем» исчезает, а «1 из 2» считает и её.
+        assertFalse("Зарядка" in texts)
     }
 
     @Test
     fun tasksHaveBothClickZones() {
         val rows = list().rows().filter { it.findViewById<View>(R.id.row_plaque) != null }
-        assertEquals(4, rows.size)
+        assertEquals(3, rows.size) // #342: выполненная «Зарядка» не показывается
         rows.forEach { row ->
             assertTrue("плашка открывает задачу", row.findViewById<View>(R.id.row_plaque).hasOnClickListeners())
         }
         // У будущего повтора кружок ничего не отмечает (пустое нажатие) и без подписи «Выполнить».
         val labels = rows.map { it.findViewById<View>(R.id.row_node).contentDescription?.toString() }
-        assertEquals(listOf("Выполнить", "Снять отметку «выполнено»", "Выполнить", null), labels)
+        assertEquals(listOf("Выполнить", "Выполнить", null), labels)
     }
 
     @Test
@@ -120,8 +122,8 @@ class WidgetListTest {
             (view.text as? android.text.Spanned)?.let {
                 it.getSpans(0, it.length, android.text.style.StrikethroughSpan::class.java).isNotEmpty()
             } == true
-        assertFalse(struck(title(model, "Зарядка")))
         assertFalse(struck(title(model, "Созвон")))
+        assertTrue(list(model).rows().mapNotNull { it.findViewById<TextView?>(R.id.row_title) }.none { it.text.toString() == "Зарядка" })
         // #334: одна строка во всех лентах — выполненная нигде не зачёркнута, только бледнеет.
         assertFalse(struck(title(model.copy(filter = WidgetFilter.Inbox), "Зарядка")))
     }
@@ -157,7 +159,8 @@ class WidgetListTest {
     /** Баг на телефоне PM: «вернуть» выполненную — кружок снова пустой, без галочки, с подписью «Выполнить». */
     @Test
     fun uncompletedTaskLosesCheck() {
-        fun day(done: Boolean) = model.copy(days = listOf(WidgetDayBlock(WidgetDay.On(today), listOf(item("x", "Xgg", DayLabel.Today, null, done = done)))))
+        // #342: в «Предстоящем» выполненных нет — проверяем на «Входящих», где они остаются.
+        fun day(done: Boolean) = model.copy(filter = WidgetFilter.Inbox, days = listOf(WidgetDayBlock(WidgetDay.On(today), listOf(item("x", "Xgg", DayLabel.Today, null, done = done)))))
         val doneRow = list(day(true)).rows().first { it.findViewById<View>(R.id.row_plaque) != null }
         assertEquals(View.VISIBLE, doneRow.findViewById<View>(R.id.row_node_check).visibility)
         val next = list(day(false))

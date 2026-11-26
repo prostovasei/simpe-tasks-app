@@ -75,7 +75,9 @@ fun WidgetModel.lines(days: DayNames, withTail: Boolean = true): List<WidgetLine
                         .filterIsInstance<WidgetRow.Task>()
                         .map { WidgetLine.Task(it, Line(top = false, bottom = false), overdue = true, day = block.day) }
                 }
-                val rows = WidgetTimeline.rows(block.items, overdue = false, nowMinute = nowMinute, days = days)
+                // #342 (решение PM): в «Предстоящем» выполненные исчезают; число и прогресс дня считаются по всем задачам.
+                val shown = if (filter == WidgetFilter.All) block.items.filterNot { it.isDone } else block.items
+                val rows = WidgetTimeline.rows(shown, overdue = false, nowMinute = nowMinute, days = days)
                 val progress = DayProgress.of(block.items).takeIf { block.day == WidgetDay.On(today) }
                 listOf(WidgetLine.Title(block.day, isFirst, progress, block.items.size)) + rows.mapIndexed { i, row ->
                     val line = Line(top = i > 0, bottom = i < rows.lastIndex)

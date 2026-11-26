@@ -270,8 +270,9 @@ private fun HubTasks(state: HubState, onIntent: (TaskListIntent) -> Unit, onOpen
                     )
                 }
             }
+            // #342: как в «Предстоящем» — выполненные исчезают, прогресс «N из M» — по всем.
             timelineItems(
-                items = items,
+                items = items.filter { !it.isDone || it.isCompleting },
                 keyPrefix = "hub-$index",
                 days = days,
                 nowMinute = if (index == 1) nowMinute else null,
