@@ -1,0 +1,181 @@
+<title>Иконка и обновление</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+<style>
+/* Конструктор #354: кнопка обновления приложения, отступы между разделами, иконка и название приложения. */
+:root{--page:#e9ebef;--pagefg:#16171d;--pagemuted:#62656e;--chip:#f3f3f4;--line:#dcdee3;--card:#fff;--title:#2e3036;--muted:#8b8d94;--black:#16171d;--soft:#ececee;--lilac:#c39bff;--font:Manrope,system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--page:#0f1013;--pagefg:#ececec;--pagemuted:#a3a3a3;--chip:#24262b;--line:#2f3137;color-scheme:dark}}
+:root[data-theme="dark"]{--page:#0f1013;--pagefg:#ececec;--pagemuted:#a3a3a3;--chip:#24262b;--line:#2f3137;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--page);color:var(--pagefg);font-family:var(--font);margin:0;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 40px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--page)}
+h1{font-size:21px;margin:0 0 4px}.lead{color:var(--pagemuted);margin:0 0 14px;max-width:80ch;line-height:1.45;font-size:14px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:24px;align-items:start}
+@media (max-width:1050px){.layout{grid-template-columns:minmax(0,1fr)}.phone{order:-1;justify-self:center}}
+.panel{display:grid;gap:12px;min-width:0;align-content:start}
+fieldset{border:0;margin:0;padding:12px 14px;background:var(--card);color:var(--title);border-radius:16px;display:grid;gap:10px;min-width:0}
+legend{font-weight:700;font-size:15px;padding:0;float:left;width:100%}
+.ctl{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px}.ctl>span{flex:0 0 170px;color:#62656e;font-size:13px}
+.seg{display:inline-flex;background:#f3f3f4;border-radius:10px;padding:3px;gap:2px;flex-wrap:wrap;min-width:0}
+.seg button{font:600 13px var(--font);color:#16171d;background:none;border:0;border-radius:8px;padding:6px 9px;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+.seg button[aria-pressed="true"]{background:#fff;box-shadow:inset 0 0 0 1.5px #16171d}
+.seg button:focus-visible,.btn:focus-visible{outline:2px solid #862ce0;outline-offset:1px}
+.seg .ic{width:18px;height:18px;display:grid;place-items:center;background:#16171d;color:#fff;border-radius:6px;padding:2px}.seg .ic svg{width:14px;height:14px}
+.seg .ap{width:30px;height:30px;border-radius:8px;overflow:hidden;display:block}.seg .ap svg{width:30px;height:30px;display:block}
+.tag{font-size:10px;font-weight:700;color:#6b32a8}
+.top{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{font:600 13px var(--font);border:0;border-radius:10px;padding:8px 12px;cursor:pointer;background:var(--pagefg);color:var(--page)}
+.btn.ghost{background:var(--chip);color:var(--pagefg)}
+#summary{width:100%;min-height:120px;font:12px/1.45 ui-monospace,Menlo,monospace;color:var(--pagefg);background:var(--page);border:1px solid var(--line);border-radius:12px;padding:10px}
+.hint{color:var(--pagemuted);font-size:12px;margin:0;line-height:1.45}#copied{color:#2e7d32;font-size:12px}
+.phone{width:380px;max-width:100%;background:linear-gradient(#6a2bc4,#c63e86 70%,#f07a5a);border-radius:28px;padding:16px 8px 20px}
+.w{background:#fff;border-radius:24px;color:var(--title);height:560px;overflow:hidden;position:relative}
+.scroll{position:absolute;inset:0;overflow:auto;padding:12px 12px 70px}
+.accs{display:flex;gap:6px}.acc{flex:1;background:#f3f3f4;border-radius:999px;padding:8px 10px;font-weight:700;font-size:14px;white-space:nowrap}
+.l1{display:flex;align-items:center;gap:10px;margin-top:10px}
+.bar{flex:1;height:8px;border-radius:999px;background:var(--soft);position:relative;overflow:hidden}
+.bar i{position:absolute;inset:0 auto 0 0;width:47%;border-radius:999px;background:var(--black)}
+.bar b{position:absolute;top:0;bottom:0;left:47%;width:4%;background:repeating-linear-gradient(135deg,rgb(98 101 110/.45) 0 2px,transparent 2px 6px)}
+.nums{font-weight:800;font-size:13px}.nums s{text-decoration:none;color:var(--muted)}
+.news{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.nc{background:#f3f3f4;border-radius:16px;padding:9px 11px;font-size:12px;line-height:1.3;min-height:62px}.nc small{color:var(--muted);display:block;font-size:10.5px;margin-bottom:2px}
+.sep{height:1px;background:#e3e4e8}
+.dh{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px;font-weight:600;padding:0 0 2px}.dh .ln{flex:1;height:1px;background:#e3e4e8}
+.t{display:flex;align-items:center;gap:10px;height:42px;font-size:14.5px}
+.t .c{width:18px;height:18px;border-radius:50%;border:1.6px solid #9a9ca3;flex:none}.t .n{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.t .tm{font-size:13.5px}
+.fade{position:absolute;left:0;right:0;bottom:0;height:40px;background:linear-gradient(rgb(255 255 255/0),#fff);pointer-events:none}
+.nav{position:absolute;right:10px;bottom:10px;background:#16171d;border-radius:999px;height:40px;display:flex;align-items:center;padding:0 6px;gap:2px}
+.nav span{width:34px;height:34px;display:grid;place-items:center;color:#fff;position:relative}.nav svg{width:20px;height:20px}
+.nav .plus{color:var(--lilac)}.nav .plus svg{width:24px;height:24px}
+.nav .badge{position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:#ff5a5f;box-shadow:0 0 0 1.5px #16171d}
+.home{display:grid;grid-template-columns:repeat(4,1fr);gap:14px 8px;margin-top:18px;justify-items:center}
+.app{display:grid;gap:5px;justify-items:center;color:#fff;font-size:11.5px;font-weight:600;text-align:center;width:76px}
+.app .i{width:62px;height:62px;border-radius:18px;overflow:hidden;box-shadow:0 2px 8px rgb(0 0 0/.25)}.app .i svg{width:62px;height:62px;display:block}
+.app .dummy{background:rgb(255 255 255/.25)}
+.app.me .i{outline:2px solid #fff;outline-offset:3px}
+</style>
+
+<h1>Обновление, отступы, иконка и название</h1>
+<p class="lead">Справа — виджет «Главная» и рабочий стол с новой иконкой и подписью. Кнопка в панели теперь открывает <b>обновление приложения</b>: проверяет новую версию и предлагает установить. Красная точка — есть новая версия. «реком.» — моя рекомендация.</p>
+
+<div class="layout">
+  <div class="panel">
+    <div class="top">
+      <button type="button" class="btn" id="copy">Скопировать выбор</button>
+      <button type="button" class="btn ghost" id="reset">Рекомендации</button>
+      <span id="copied" aria-live="polite"></span>
+    </div>
+    <div id="groups" class="panel"></div>
+    <p class="hint">Новая иконка меняет и значок приложения в панели виджета (первая кнопка) — он повторяет её рисунок. Название меняется у ярлыка на рабочем столе и в списке приложений; адрес пакета и данные остаются прежними, обновление ставится поверх.</p>
+    <label class="hint" for="summary">Выбор текстом:</label>
+    <textarea id="summary" readonly></textarea>
+  </div>
+  <div class="phone"><div class="w" id="w"></div><div class="home" id="home"></div></div>
+</div>
+
+<script>
+const S = 'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"';
+const UPD = {
+  down: `<svg viewBox="0 0 24 24" ${S}><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>`,
+  upCircle: `<svg viewBox="0 0 24 24" ${S}><circle cx="12" cy="12" r="8.5"/><path d="M12 16V8M8.5 11.5 12 8l3.5 3.5"/></svg>`,
+  downCircle: `<svg viewBox="0 0 24 24" ${S}><circle cx="12" cy="12" r="8.5"/><path d="M12 8v8M8.5 12.5 12 16l3.5-3.5"/></svg>`,
+  cloud: `<svg viewBox="0 0 24 24" ${S}><path d="M7 18a4 4 0 0 1-.6-8 6 6 0 0 1 11.4 1.5A3.3 3.3 0 0 1 17 18"/><path d="M12 11v8M9.5 16.5 12 19l2.5-2.5"/></svg>`,
+  box: `<svg viewBox="0 0 24 24" ${S}><path d="M4 8.5 12 4l8 4.5v7L12 20l-8-4.5z"/><path d="M12 9v6M9.5 12.5 12 15l2.5-2.5"/></svg>`,
+  rocket: `<svg viewBox="0 0 24 24" ${S}><path d="M12 3c3 2 4.5 5 4.5 9l-2 3h-5l-2-3c0-4 1.5-7 4.5-9z"/><circle cx="12" cy="9.5" r="1.6"/><path d="M9.5 18.5 12 21l2.5-2.5"/></svg>`,
+};
+const NAV = {
+  dots: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="8" cy="8" r="2.2"/><circle cx="16" cy="8" r="2.2"/><circle cx="8" cy="16" r="2.2"/><circle cx="16" cy="16" r="2.2"/></svg>',
+  mic: `<svg viewBox="0 0 24 24" ${S}><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>`,
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+};
+// Иконки приложения: [фон, рисунок 108×108, значок панели 24×24]
+const BG = { violet: ['#7b2fd0', '#a35cf0'], black: ['#16171d', '#2b2d36'], sunset: ['#6a2bc4', '#e0507a'], white: ['#ffffff', '#f1ecfb'] };
+const APP = {
+  tiles: ['Четыре плитки: задачи, деньги, новости, привычки',
+    c => `<rect x="28" y="28" width="23" height="23" rx="7" fill="${c[0]}"/><rect x="57" y="28" width="23" height="23" rx="7" fill="${c[1]}"/><rect x="28" y="57" width="23" height="23" rx="7" fill="${c[1]}"/><rect x="57" y="57" width="23" height="23" rx="7" fill="${c[0]}"/><path d="M34 40l4 4 7-8" stroke="${c[2]}" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+    `<svg viewBox="0 0 24 24" ${S}><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg>`],
+  orbit: ['Ядро и спутники: всё вокруг одного центра',
+    c => `<circle cx="54" cy="54" r="11" fill="${c[0]}"/><circle cx="54" cy="54" r="24" stroke="${c[1]}" stroke-width="3" fill="none"/><circle cx="54" cy="30" r="6" fill="${c[1]}"/><circle cx="78" cy="54" r="6" fill="${c[1]}"/><circle cx="54" cy="78" r="6" fill="${c[1]}"/><circle cx="30" cy="54" r="6" fill="${c[1]}"/>`,
+    `<svg viewBox="0 0 24 24" ${S}><circle cx="12" cy="12" r="2.5"/><circle cx="12" cy="12" r="7"/><circle cx="12" cy="5" r="1.2" fill="currentColor"/><circle cx="19" cy="12" r="1.2" fill="currentColor"/></svg>`],
+  layers: ['Слои: разделы стопкой в одном',
+    c => `<path d="M54 30 82 44 54 58 26 44z" fill="${c[0]}"/><path d="M30 54 54 66 78 54" stroke="${c[1]}" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M30 65 54 77 78 65" stroke="${c[1]}" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+    `<svg viewBox="0 0 24 24" ${S}><path d="M12 4 20 8.5 12 13 4 8.5z"/><path d="M5 12.5 12 16.5 19 12.5M5 16 12 20 19 16"/></svg>`],
+  pie: ['Круг из четырёх долей с галочкой',
+    c => `<path d="M54 54V28a26 26 0 0 1 26 26z" fill="${c[0]}"/><path d="M54 54h26a26 26 0 0 1-26 26z" fill="${c[1]}"/><path d="M54 54v26a26 26 0 0 1-26-26z" fill="${c[0]}"/><path d="M54 54H28a26 26 0 0 1 26-26z" fill="${c[1]}"/><circle cx="54" cy="54" r="11" fill="${c[3]}"/><path d="M49 54l4 4 7-8" stroke="${c[2]}" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+    `<svg viewBox="0 0 24 24" ${S}><circle cx="12" cy="12" r="8"/><path d="M12 4v16M4 12h16"/></svg>`],
+  check: ['Галочка в рамке (как сейчас, обновлённая)',
+    c => `<rect x="29" y="29" width="50" height="50" rx="15" stroke="${c[0]}" stroke-width="5" fill="none"/><path d="M42 55l8 8 16-18" stroke="${c[0]}" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="76" cy="32" r="7" fill="${c[1]}"/>`,
+    `<svg viewBox="0 0 24 24" ${S}><circle cx="12" cy="12" r="8"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg>`],
+  one: ['Цифра «1» из точек-разделов',
+    c => `<path d="M48 36l9-6v48" stroke="${c[0]}" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="34" cy="74" r="5" fill="${c[1]}"/><circle cx="74" cy="74" r="5" fill="${c[1]}"/><circle cx="74" cy="40" r="5" fill="${c[1]}"/>`,
+    `<svg viewBox="0 0 24 24" ${S}><path d="M10.5 7 13 5v14"/></svg>`],
+};
+function appSvg(kind, bg, size) {
+  const [a, b] = BG[bg];
+  const light = bg === 'white';
+  const c = light ? ['#7b2fd0', '#c39bff', '#ffffff', '#7b2fd0'] : ['#ffffff', bg === 'black' ? '#c39bff' : 'rgb(255 255 255/.55)', bg === 'black' ? '#16171d' : '#7b2fd0', '#ffffff'];
+  if (kind === 'check' && !light) c[1] = '#c39bff';
+  return `<svg viewBox="0 0 108 108" width="${size}" height="${size}"><defs><linearGradient id="g${kind}${bg}${size}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient></defs><rect width="108" height="108" fill="url(#g${kind}${bg}${size})"/>${APP[kind][1](c)}</svg>`;
+}
+const NAMES = [['vsyo', 'Всё'], ['hub', 'Хаб'], ['odno', 'Одно'], ['den', 'День'], ['svodka', 'Сводка'], ['pult', 'Пульт'], ['daily', 'Daily'], ['simple', 'Simple Hub']];
+const GROUPS = [
+  ['Кнопка обновления приложения', [
+    ['upd', 'Значок', Object.keys(UPD).map(k => [k, `<i class="ic">${UPD[k]}</i>${{ down: 'Стрелка вниз', upCircle: 'Стрелка вверх в круге', downCircle: 'Стрелка вниз в круге', cloud: 'Облако', box: 'Коробка', rocket: 'Ракета' }[k]}`]), 'upCircle'],
+    ['badge', 'Есть новая версия', [['dot', 'Красная точка'], ['color', 'Значок сиреневый'], ['none', 'Без отметки']], 'dot'],
+    ['act', 'Нажатие', [['window', 'Окно «Обновление» в приложении'], ['direct', 'Сразу скачать и установить']], 'window'],
+  ]],
+  ['Отступы между разделами', [
+    ['gap', 'Между разделами', [[12, '12 (сейчас)'], [20, '20'], [24, '24'], [32, '32']], 24],
+    ['sep', 'Разделитель', [['none', 'Только отступ'], ['line', 'Тонкая линия'], ['card', 'Каждый раздел — светлая карточка']], 'none'],
+  ]],
+  ['Иконка приложения', [
+    ['icon', 'Рисунок', Object.keys(APP).map(k => [k, `<i class="ap">${appSvg(k, 'violet', 30)}</i>`]), 'tiles'],
+    ['bg', 'Фон', [['violet', 'Фиолетовый'], ['sunset', 'Фиолетово-розовый'], ['black', 'Чёрный'], ['white', 'Белый']], 'violet'],
+  ]],
+  ['Название', [
+    ['name', 'Название', NAMES, 'den'],
+  ]],
+];
+const REC = Object.fromEntries(GROUPS.flatMap(([, l]) => l.map(([k, , , r]) => [k, r])));
+const KEY = 'c354a';
+let state = { ...REC };
+try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s) state = { ...REC, ...s } } catch (e) {}
+function section(html, first) {
+  const o = state;
+  const top = first ? '' : (o.sep === 'line' ? `<div style="margin:${o.gap / 2}px 0" class="sep"></div>` : `<div style="height:${o.gap}px"></div>`);
+  const body = o.sep === 'card' ? `<div style="background:#f8f8fa;border-radius:18px;padding:10px">${html}</div>` : html;
+  return top + body;
+}
+function render() {
+  const o = state;
+  const appIcon = APP[o.icon][2];
+  const upd = `<span style="${o.badge === 'color' ? 'color:var(--lilac)' : ''}">${UPD[o.upd]}${o.badge === 'dot' ? '<i class="badge"></i>' : ''}</span>`;
+  const fin = `<div class="accs"><span class="acc">💳 1k</span><span class="acc">📉 819k</span><span class="acc">💰 280k</span><span class="acc">💳 0k</span></div><div class="l1"><div class="bar"><b></b><i></i></div><span class="nums">42<s>/46/</s>90</span></div>`;
+  const news = `<div class="news">${[['00:46 · Футбол', 'Лига Европы. «Милан» в гостях'], ['00:36 · Хоккей', 'Сенат Чехии проголосовал'], ['00:10 · Футбол', 'Керимов о Турции'], ['23:52 · Хоккей', 'КХЛ. «Спартак» против ЦСКА']].map(([s, t]) => `<div class="nc"><small>${s}</small>${t}</div>`).join('')}</div>`;
+  const tasks = `<div class="dh"><span>пт 27 ноя · Сегодня</span><span class="ln"></span><span>0 из 11</span></div>${[['🗂️', 'Заказать одежду', ''], ['💲', 'Higgsfield', '10:00'], ['🗂️', 'Сдать деньги на корпоратив', '12:00'], ['💼', 'Запланировать отпуск', '14:00'], ['🔁', 'Финансы', '14:30'], ['🔁', 'Цветы', '15:00']].map(([e, n, t]) => `<div class="t"><span class="c"></span><span>${e}</span><span class="n">${n}</span><span class="tm">${t}</span></div>`).join('')}`;
+  document.getElementById('w').innerHTML = `<div class="scroll">${section(fin, true)}${section(news)}${section(tasks)}</div><div class="fade"></div>
+    <div class="nav"><span>${appIcon}</span><span>${NAV.dots}</span>${upd}<span>${NAV.mic}</span><span class="plus">${NAV.plus}</span></div>`;
+  const name = NAMES.find(([k]) => k === o.name)[1];
+  document.getElementById('home').innerHTML = `<div class="app me"><div class="i">${appSvg(o.icon, o.bg, 62)}</div>${name}</div>` + ['Telegram', 'Камера', 'Карты', 'Музыка', 'Почта', 'Банк', 'Погода'].map(n => `<div class="app"><div class="i dummy"></div>${n}</div>`).join('');
+  document.getElementById('groups').innerHTML = GROUPS.map(([title, ctls]) => `<fieldset><legend>${title}</legend>${ctls.map(([k, l, opts]) =>
+    `<div class="ctl"><span id="l-${k}">${l}</span><div class="seg" role="group" aria-labelledby="l-${k}">${opts.map(([v, t]) =>
+      `<button type="button" data-k="${k}" data-v="${v}" aria-pressed="${state[k] == v}" title="${k === 'icon' ? APP[v][0] : ''}">${t}${REC[k] == v ? '<span class="tag">реком.</span>' : ''}</button>`).join('')}</div></div>`).join('')}</fieldset>`).join('');
+  document.getElementById('summary').value = GROUPS.map(([title, ctls]) => `${title}: ` + ctls.map(([k, l, opts]) => {
+    const label = k === 'icon' ? APP[state[k]][0] : opts.find(([v]) => v == state[k])[1].replace(/<i.*?<\/i>/, '');
+    return `${l.toLowerCase()} — ${label}`;
+  }).join('; ')).join('\n');
+  try { localStorage.setItem(KEY, JSON.stringify(state)) } catch (e) {}
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('button[data-k]'); if (!b) return;
+  const v = b.dataset.v; state[b.dataset.k] = isNaN(+v) ? v : +v; render();
+});
+document.getElementById('reset').addEventListener('click', () => { state = { ...REC }; render() });
+document.getElementById('copy').addEventListener('click', () => {
+  const out = document.getElementById('copied');
+  const fb = () => { const s = document.getElementById('summary'); s.focus(); s.select(); out.textContent = 'Текст выделен — скопируй вручную' };
+  try { navigator.clipboard.writeText(document.getElementById('summary').value).then(() => { out.textContent = 'Скопировано' }, fb) } catch (e) { fb() }
+});
+render();
+</script>
