@@ -77,7 +77,7 @@ legend{font-weight:700;font-size:15px;padding:0;float:left;width:100%}
 </style>
 
 <h1>Новый хаб</h1>
-<p class="lead">Справа — хаб по твоему запросу: <b>2 карточки финансов</b> (остаток одного счёта и потрачено за месяц), <b>2 последние новости</b> и <b>5 ближайших задач</b>. Сверху над телефоном — сценарии: перерасход, просроченные, пустые состояния. Нажми карточку счёта — увидишь выбор счёта. «реком.» — моя рекомендация. Внизу слева — то, что легко упустить.</p>
+<p class="lead">Справа — хаб по твоему запросу: <b>2 карточки финансов</b> (остаток одного счёта и потрачено за месяц), <b>2 последние новости</b> и <b>5 ближайших задач</b>. <b>Уже настроено по твоему выбору</b> (метка «PM»); внизу — новая группа: кнопка «Показать все новости», листание задач, просроченные плашкой и в списке. Сверху над телефоном — сценарии: перерасход, просроченные, пустые состояния. Нажми карточку счёта — увидишь выбор счёта. «реком.» — моя рекомендация. Внизу слева — то, что легко упустить.</p>
 
 <div class="layout">
   <div class="panel">
@@ -150,8 +150,17 @@ const GROUPS = [
     ['tDone', 'Выполнил задачу', [['next', 'Исчезает, подтягивается следующая'], ['stay', 'Тает до конца дня']], 'next'],
   ]],
 ];
-const REC = Object.fromEntries(GROUPS.flatMap(([, l]) => l.map(([k, , , r]) => [k, r])));
-const KEY = 'c359a';
+GROUPS.push(['Новое после твоего выбора', [
+  ['nAll', '«Показать все новости»', [['pill', 'Кнопка во всю ширину'], ['link', 'Ссылка под новостями'], ['row', 'Третьей строкой, как новость']], 'pill'],
+  ['tScroll', 'Как листать задачи', [['inner', 'Блок листается внутри (видно 5)'], ['pages', 'Страницы по 5 (‹ 1/3 ›)'], ['expand', 'Кнопка «Ещё 5»']], 'inner'],
+  ['lateList', 'Просроченные в списке', [['top', 'Плашка + всегда в начале списка'], ['fold', 'Плашка раскрывает их в начале'], ['bottom', 'Плашка + в конце списка']], 'top'],
+  ['lateMove', '«На сегодня» в плашке', [['yes', 'Да, кнопка →|'], ['no', 'Нет']], 'yes'],
+  ['accDots', 'Точки счетов на карточке', [['yes', 'Да — видно, что счетов несколько'], ['no', 'Нет']], 'yes'],
+]]);
+const PM = { view: 'app', order: 'ftn', titles: 'none', gap: 24, habits: 'chips', widget: 'same', fLayout: 'wide', fStyle: 'grey', fmt: 'kk', acc: 'name',
+  accPick: 'cycle', spent: 'compare', over: 'red', fTap: 'budget', nLayout: 'rows', nLines: 2, nMeta: 'none', nPage: 'edges', count: 5, late: 'line', tView: 'right', tMore: 'more', tDone: 'next' };
+const REC = { ...Object.fromEntries(GROUPS.flatMap(([, l]) => l.map(([k, , , r]) => [k, r]))), ...PM };
+const KEY = 'c359b';
 let V = { ...REC };
 try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s) V = { ...REC, ...s } } catch (e) {}
 
@@ -165,7 +174,9 @@ const dtext = o => { const d = dayOf(o); return `${WD[d.getDay()]} ${d.getDate()
 const TASKS = [
   ['🗂️', 'Заказать одежду', 0, ''], ['💲', 'Higgsfield', 0, '10:00'], ['🗂️', 'Сдать деньги на корпоратив', 0, '12:00', 1], ['💼', 'Запланировать отпуск', 0, '14:00', 1],
   ['🔁', 'Финансы', 0, '14:30'], ['🔁', 'Цветы', 0, '15:00'], ['🔁', 'Бритьё', 1, '08:00'], ['💼', 'Пройти юр. тест', 1, '16:30'], ['💼', 'Ревью квартала', 3, '12:00'],
+  ['🏠', 'Забрать посылку', 3, '18:00'], ['💼', 'Планёрка', 4, '10:00'], ['🔁', 'Финансы', 5, '14:30'], ['🗂️', 'Купить подарок', 6, ''],
 ];
+let page = 0, lateOpen = false;
 const LATE = [['💼', 'Отправить отчёт', -2, ''], ['🏠', 'Оплатить интернет', -1, '', 1], ['🗂️', 'Вернуть книгу', -3, ''], ['💼', 'Счёт клиенту', -1, ''], ['🏠', 'Записаться к врачу', -4, ''], ['🗂️', 'Купить фильтр', -2, '']];
 const NEWS = [['00:46 · Футбол · Новое', 'Лига Европы. «Милан» в гостях у «Олимпиакоса», «Порту» сыграет с «Ромой»'], ['00:36 · Хоккей · Новое', 'Сенат Чехии проголосовал против матчей и турниров с участием россиян']];
 
@@ -181,7 +192,7 @@ function finance() {
   const over = plan && sp.s > plan;
   const style = V.fStyle === 'white' ? 'white' : '';
   const accLabel = V.acc === 'emoji' ? `${e}` : `${e} ${n}`;
-  const accCard = `<div class="fc ${style}" data-act="acc" role="button" tabindex="0"><div class="k">${accLabel}${V.acc === 'total' ? '' : ' <span style="margin-left:auto">⌄</span>'}</div><div class="v">${money(bal)}</div>${V.acc === 'total' ? '<div class="s">4 счёта</div>' : '<div class="s">остаток на счёте</div>'}</div>`;
+  const accCard = `<div class="fc ${style}" data-act="acc" role="button" tabindex="0"><div class="k">${accLabel}${V.acc === 'total' ? '' : ' <span style="margin-left:auto">⌄</span>'}</div><div class="v">${money(bal)}</div>${V.acc === 'total' ? '<div class="s">4 счёта</div>' : `<div class="s">остаток на счёте</div>${V.accDots === 'yes' ? `<div style="display:flex;gap:4px;margin-top:8px">${ACCOUNTS.map((_, i) => `<i style="width:5px;height:5px;border-radius:50%;background:${i === account ? 'var(--black)' : '#cfd0d5'}"></i>`).join('')}</div>` : ''}`}</div>`;
   let sub = '', bar = '';
   if (V.spent === 'plan') {
     if (plan) {
@@ -195,7 +206,7 @@ function finance() {
   const badge = over && V.over === 'badge' ? `<span style="margin-left:auto;background:#fdecec;color:var(--late);border-radius:999px;padding:1px 7px;font-size:11px">+${money(sp.s - plan)} сверх</span>` : '';
   const red = over && V.over === 'red' ? 'color:var(--late)' : '';
   const spentCard = `<div class="fc ${V.fStyle === 'accent' ? 'lilac' : style}" data-act="spent" role="button" tabindex="0"><div class="k">Потрачено в ноябре${badge}</div><div class="v" style="${red}">${money(sp.s)}</div>${sub}${bar}</div>`;
-  const cols = V.fLayout === 'row' ? '1fr 1fr' : V.fLayout === 'wide' ? '0.8fr 1.2fr' : '1fr';
+  const cols = V.fLayout === 'row' ? 'minmax(0,1fr) minmax(0,1fr)' : V.fLayout === 'wide' ? 'minmax(0,.75fr) minmax(0,1.25fr)' : '1fr';
   return `<div class="cards" style="grid-template-columns:${cols}">${accCard}${spentCard}</div>`;
 }
 function habits() {
@@ -209,8 +220,11 @@ function news() {
   const clamp = `-webkit-line-clamp:${V.nLines}`;
   const cards = NEWS.map(([m, t]) => `<div class="nc ${V.nLayout === 'list' ? 'line' : ''} ${V.nLayout === 'rows' ? 'big' : ''}">${meta(m)}<div class="nt" style="${clamp}">${t}</div></div>`).join('');
   const cols = V.nLayout === 'two' ? '1fr 1fr' : '1fr';
-  const more = V.nPage === 'more' ? `<button class="more" data-act="news">Все новости ›</button>` : V.nPage === 'edges' ? '<div class="s" style="font-size:11px;color:var(--muted);text-align:center;margin-top:4px">касание по краям — следующие</div>' : '';
-  return `<div class="news" style="grid-template-columns:${cols}">${cards}</div>${more}`;
+  const edges = V.nPage === 'edges' ? '<div style="font-size:10.5px;color:var(--muted);text-align:center;margin-top:4px">касание по краям — следующие две</div>' : '';
+  const all = V.nAll === 'pill' ? '<button class="more" data-act="news" style="display:block;width:100%;background:#f3f3f4;border-radius:12px;color:#2e3036;text-align:center;margin-top:6px">Показать все новости</button>'
+    : V.nAll === 'link' ? '<button class="more" data-act="news">Показать все новости ›</button>'
+    : '<div class="nc" data-act="news" role="button" tabindex="0" style="margin-top:6px;font-weight:700;color:var(--pri);cursor:pointer">Показать все новости ›</div>';
+  return `<div class="news" style="grid-template-columns:${cols}">${cards}</div>${edges}${all}`;
 }
 function trow(t, labelDay) {
   const [e, n, d, time, hi] = t;
@@ -220,25 +234,39 @@ function trow(t, labelDay) {
 }
 function tasks() {
   if (scen === 'empty') return `<div class="empty">На неделю задач нет<br><button class="more" style="margin:4px auto 0" data-act="add">+ Добавить задачу</button></div>`;
-  const late = scen === 'late' ? LATE : LATE.slice(0, 1);
-  let list = [], h = '';
-  if (V.late === 'in') list = [...late, ...TASKS].slice(0, V.count);
-  else list = TASKS.slice(0, V.count);
-  if (V.late === 'line') h += `<div class="ovl" data-act="late">Просрочено · ${late.length} <span style="margin-left:auto">›</span></div>`;
-  if (V.tView === 'heads') {
-    let last = null;
-    list.forEach(t => {
+  const late = scen === 'late' ? LATE : LATE.slice(0, 2);
+  const move = V.lateMove === 'yes' ? '<span data-act="move" title="Перенести на сегодня" style="padding:0 6px;font-size:15px">→|</span>' : '';
+  let h = '';
+  if (V.late === 'line' || V.late === 'in') {
+    h += `<div class="ovl" data-act="late">Просрочено · ${late.length}${move}<span style="margin-left:auto;display:inline-block;transform:rotate(${V.lateList === 'fold' && lateOpen ? 90 : 0}deg)">›</span></div>`;
+  }
+  const showLate = V.late !== 'off' && (V.lateList !== 'fold' || lateOpen);
+  let list = V.lateList === 'bottom' ? [...TASKS, ...(showLate ? late : [])] : [...(showLate ? late : []), ...TASKS];
+  const rows = arr => {
+    if (V.tView === 'right') return arr.map(t => trow(t, true)).join('');
+    let last = null, out = '';
+    arr.forEach(t => {
       const g = t[2] < 0 ? 'late' : t[2];
       if (g !== last) {
-        h += g === 'late' ? `<div class="dh late"><span>Просрочено</span><span class="ln" style="background:none"></span><span>${list.filter(x => x[2] < 0).length}</span></div>`
-          : `<div class="dh"><span>${dtext(g)}${g === 0 ? ' · Сегодня' : g === 1 ? ' · Завтра' : ''}</span><span class="ln"${g === 0 ? '' : ' style="background:none"'}></span><span>${list.filter(x => x[2] === g).length}</span></div>`;
+        out += g === 'late' ? `<div class="dh late"><span>Просрочено</span></div>` : `<div class="dh"><span>${dtext(g)}${g === 0 ? ' · Сегодня' : g === 1 ? ' · Завтра' : ''}</span><span class="ln"${g === 0 ? '' : ' style="background:none"'}></span></div>`;
         last = g;
       }
-      h += trow(t, false);
+      out += trow(t, false);
     });
-  } else h += list.map(t => trow(t, true)).join('');
-  const rest = TASKS.length + late.length - list.length;
-  if (V.tMore === 'more' && rest > 0) h += `<button class="more" data-act="upcoming">Ещё ${rest} в «Предстоящем» ›</button>`;
+    return out;
+  };
+  const tail = V.tMore === 'more' ? `<button class="more" data-act="upcoming">Все задачи в «Предстоящем» ›</button>` : '';
+  if (V.tScroll === 'inner') {
+    h += `<div style="height:${V.count * 42}px;overflow:auto;position:relative;border-bottom:1px solid #eceef1" aria-label="Задачи, листаются">${rows(list)}${tail}</div>`;
+    h += '<div style="font-size:10.5px;color:var(--muted);text-align:center;margin-top:4px">список листается внутри блока</div>';
+  } else if (V.tScroll === 'pages') {
+    const pages = Math.ceil(list.length / V.count); page = Math.min(page, pages - 1);
+    h += rows(list.slice(page * V.count, (page + 1) * V.count));
+    h += `<div style="display:flex;align-items:center;justify-content:center;gap:14px;font-size:12px;font-weight:700;color:var(--muted);margin-top:6px"><button class="more" data-act="prev" aria-label="Назад">‹</button>${page + 1} / ${pages}<button class="more" data-act="next" aria-label="Вперёд">›</button></div>`;
+  } else {
+    h += rows(list.slice(0, V.count + page * 5));
+    h += list.length > V.count + page * 5 ? '<button class="more" data-act="more5">Ещё 5</button>' : tail;
+  }
   return h;
 }
 function titled(name, html) {
@@ -262,7 +290,7 @@ function render() {
   document.getElementById('scen').innerHTML = SCEN.map(([k, l]) => `<button type="button" data-scen="${k}" aria-pressed="${k === scen}">${l}</button>`).join('');
   document.getElementById('groups').innerHTML = GROUPS.map(([title, ctls]) => `<fieldset><legend>${title}</legend>${ctls.map(([k, l, opts]) =>
     `<div class="ctl"><span id="l-${k}">${l}</span><div class="seg" role="group" aria-labelledby="l-${k}">${opts.map(([v, t]) =>
-      `<button type="button" data-k="${k}" data-v="${v}" aria-pressed="${V[k] == v}">${t}${REC[k] == v ? '<span class="tag">реком.</span>' : ''}</button>`).join('')}</div></div>`).join('')}</fieldset>`).join('');
+      `<button type="button" data-k="${k}" data-v="${v}" aria-pressed="${V[k] == v}">${t}${PM[k] != null ? (PM[k] == v ? '<span class="tag" style="color:#2e7d32">PM</span>' : '') : REC[k] == v ? '<span class="tag">реком.</span>' : ''}</button>`).join('')}</div></div>`).join('')}</fieldset>`).join('');
   document.getElementById('summary').value = GROUPS.map(([title, ctls]) => `${title}: ` + ctls.map(([k, l, opts]) => `${l.toLowerCase()} — ${opts.find(([v]) => v == V[k])[1]}`).join('; ')).join('\n');
   try { localStorage.setItem(KEY, JSON.stringify(V)) } catch (e) {}
 }
@@ -271,7 +299,7 @@ function toast(t) { const el = document.getElementById('toast'); if (!el) return
 const TAP = { budget: 'Открылось окно «Бюджет»', ops: 'Открылись операции ноября', analytics: 'Открылась аналитика' };
 document.addEventListener('click', e => {
   const b = e.target.closest('button[data-k]');
-  if (b) { const v = b.dataset.v; V[b.dataset.k] = isNaN(+v) ? v : +v; pickOpen = false; render(); return }
+  if (b) { const v = b.dataset.v; V[b.dataset.k] = isNaN(+v) ? v : +v; pickOpen = false; page = 0; render(); return }
   const s = e.target.closest('[data-scen]');
   if (s) { scen = s.dataset.scen; pickOpen = false; render(); return }
   const a = e.target.closest('[data-acc]');
@@ -286,7 +314,11 @@ document.addEventListener('click', e => {
       if (V.accPick === 'longList') { toast('Нажатие — операции счёта; долгое — выбор счёта'); setTimeout(() => { pickOpen = true; render() }, 700); return }
       toast('Счёт выбирается в настройках финансов'); return;
     case 'spent': toast(TAP[V.fTap]); return;
-    case 'late': toast('Открылось «Предстоящее» на просроченных'); return;
+    case 'late': if (V.lateList === 'fold') { lateOpen = !lateOpen; render() } else toast('Открылось «Предстоящее» на просроченных'); return;
+    case 'move': e.stopPropagation(); toast('Просроченные перенесены на сегодня'); return;
+    case 'prev': page = Math.max(0, page - 1); render(); return;
+    case 'next': page = page + 1; render(); return;
+    case 'more5': page++; render(); return;
     case 'upcoming': toast('Открылось «Предстоящее»'); return;
     case 'news': toast('Открылся раздел «Новости»'); return;
     case 'habits': toast('Открылись «Привычки»'); return;
