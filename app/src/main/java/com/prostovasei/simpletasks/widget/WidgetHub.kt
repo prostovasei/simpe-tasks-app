@@ -106,7 +106,6 @@ private fun hubNewsViews(views: RemoteViews, context: Context, id: Int, news: Li
         return
     }
     views.setViewVisibility(R.id.widget_hub_news, View.VISIBLE)
-    views.setViewVisibility(R.id.widget_hub_title_news, View.VISIBLE)
     val page = hubPage(WidgetSelection.hubPage(context, id), pages)
     val shown = news.drop(page * HUB_WIDGET_PAGE).take(HUB_WIDGET_PAGE)
     listOf(R.id.widget_hub_news_row1, R.id.widget_hub_news_row2).forEachIndexed { row, rowId ->
@@ -133,9 +132,8 @@ private fun hubNewsViews(views: RemoteViews, context: Context, id: Int, news: Li
             views.addView(rowId, card)
         }
     }
-    views.setTextViewText(R.id.widget_hub_dots, (0 until pages).joinToString(" ") { if (it == page) "●" else "○" })
-    views.setContentDescription(R.id.widget_hub_dots, context.getString(R.string.hub_news_page, page + 1, pages))
-    val arrows = if (pages > 1) View.VISIBLE else View.INVISIBLE
+    // #346: края листают только когда страниц больше одной; иначе они скрыты и не перехватывают нажатия.
+    val arrows = if (pages > 1) View.VISIBLE else View.GONE
     views.setViewVisibility(R.id.widget_hub_prev, arrows)
     views.setViewVisibility(R.id.widget_hub_next, arrows)
     views.setOnClickPendingIntent(R.id.widget_hub_prev, hubPageIntent(context, id, -1))

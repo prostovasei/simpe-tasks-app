@@ -445,6 +445,9 @@ object SizeTokens {
     const val HABIT_EMOJI_SP = 20
     const val HABIT_ROW = 56
     const val HABIT_RING = 2
+    /** #346: шаг штриховки прогноза и место под лимит у правого края полосы хаба. */
+    const val LIMIT_HATCH = 6
+    const val LIMIT_LABEL_RESERVE = 44
     const val PICKER_TILE = 76
     const val PICKER_ICON = 24
     const val TASK_CHECK_GAP = 10

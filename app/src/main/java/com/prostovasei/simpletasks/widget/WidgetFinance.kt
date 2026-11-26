@@ -182,38 +182,94 @@ internal class FinanceRows(private val context: Context, private val width: Int,
             setViewVisibility(R.id.widget_finance_right_column, android.view.View.GONE)
         }
 
-    /** Полоса лимита (#327, вариант Г): картинка полосы и строка «осталось · прогноз»; [daily] — раскладка хаба (#338). */
-    internal fun limitViews(model: MonthSpending, limit: Long?, month: YearMonth, today: java.time.LocalDate, daily: Boolean = false): RemoteViews =
-        RemoteViews(context.packageName, if (daily) R.layout.widget_hub_limit else R.layout.widget_finance_limit).apply {
+    /** Полоса лимита (#327, вариант Г): картинка полосы и строка «осталось · прогноз»; [daily] — полоса хаба (#346). */
+    internal fun limitViews(model: MonthSpending, limit: Long?, month: YearMonth, today: java.time.LocalDate, daily: Boolean = false): RemoteViews {
+        if (daily) return RemoteViews(context.packageName, R.layout.widget_hub_limit).apply {
+            val pace = limit?.let { BudgetRules.pace(it, model.total, month, today) }
+            setImageViewBitmap(R.id.widget_finance_limit_bar, hubLimitBar(model.total, limit, pace, model.forecast))
+            setContentDescription(R.id.widget_finance_limit_bar, listOfNotNull(
+                limit?.let { "Потрачено ${Money.format(model.total)} из ${Money.format(it)}" } ?: "Потрачено ${Money.format(model.total)}, бюджет не задан",
+                model.forecast?.let { "прогноз ${Money.format(it)}" },
+            ).joinToString(", "))
+        }
+        return RemoteViews(context.packageName, R.layout.widget_finance_limit).apply {
             val pace = limit?.let { BudgetRules.pace(it, model.total, month, today) }
             setImageViewBitmap(R.id.widget_finance_limit_bar, limitBar(model.total, limit, pace, BudgetRules.todayShare(month, today)))
             setContentDescription(R.id.widget_finance_limit_bar,
                 limit?.let { "Потрачено ${Money.format(model.total)} из ${Money.format(it)}" } ?: "Потрачено ${Money.format(model.total)}, бюджет не задан")
-            val notes = if (daily) com.prostovasei.simpletasks.ui.feature.finance.DailyNotes.of(model.total, limit, month, today) else null
-            val leftNote = daily && limit != null && pace != null && pace != BudgetPace.OVER && pace != BudgetPace.DONE
-            setTextViewText(R.id.widget_finance_limit_status, when {
-                limit == null || pace == null -> "Бюджет не задан"
-                leftNote -> listOfNotNull(financeThousands(limit - model.total), notes?.left).joinToString(" · ")
-                else -> paceText(pace, limit, model.total, ::compactAmount)
-            })
+            setTextViewText(R.id.widget_finance_limit_status,
+                if (limit == null || pace == null) "Бюджет не задан" else paceText(pace, limit, model.total, ::compactAmount))
             val status = when (pace) {
                 BudgetPace.AHEAD -> ColorTokens.warning.light
                 BudgetPace.OVER -> ColorTokens.danger.light
                 else -> ColorTokens.textSecondary.light
             }
             setTextColor(R.id.widget_finance_limit_status, status.toInt())
-            if (daily) {
-                setViewVisibility(R.id.widget_finance_left_icon, if (leftNote) android.view.View.VISIBLE else android.view.View.GONE)
-                setInt(R.id.widget_finance_left_icon, "setColorFilter", status.toInt())
-                setTextViewText(R.id.widget_finance_daily, notes?.spent.orEmpty())
-                if (notes?.spent == null) setViewVisibility(R.id.widget_finance_daily_group, android.view.View.INVISIBLE)
-                setTextViewText(R.id.widget_finance_estimate, model.forecast?.let { financeThousands(it) }.orEmpty())
-                if (model.forecast == null) setViewVisibility(R.id.widget_finance_estimate_group, android.view.View.GONE)
-            } else {
-                setTextViewText(R.id.widget_finance_estimate, model.forecast?.let { "прогноз ${compactAmount(it)}" }.orEmpty())
-                if (model.forecast == null) setViewVisibility(R.id.widget_finance_estimate_group, android.view.View.INVISIBLE)
-            }
+            setTextViewText(R.id.widget_finance_estimate, model.forecast?.let { "прогноз ${compactAmount(it)}" }.orEmpty())
+            if (model.forecast == null) setViewVisibility(R.id.widget_finance_estimate_group, android.view.View.INVISIBLE)
         }
+    }
+
+    /**
+     * Полоса хаба (#346, как в приложении): трек на всю ширину, штриховка от потраченного до прогноза, заливка потраченного;
+     * слева «42k», у конца штриховки — прогноз (больше лимита — красный у лимита), справа внутри — лимит. Рисуется в 2×.
+     */
+    private fun hubLimitBar(spent: Long, limit: Long?, pace: BudgetPace?, forecast: Long?): Bitmap {
+        val scale = 2f
+        val width = ((width.coerceIn(180, 440) - 12) * scale).toInt()
+        val height = (SizeTokens.LIMIT_BAR * scale).toInt()
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        bitmap.density = android.util.DisplayMetrics.DENSITY_XHIGH
+        val canvas = Canvas(bitmap)
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+        val radius = height / 2f
+        val clip = android.graphics.Path().apply { addRoundRect(0f, 0f, width.toFloat(), height.toFloat(), radius, radius, android.graphics.Path.Direction.CW) }
+        canvas.clipPath(clip)
+        paint.color = ColorTokens.accentSoft.light.toInt()
+        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
+        val fill = if (limit == null) 0f else (spent.toFloat() / limit).coerceIn(0f, 1f)
+        val share = if (limit == null || forecast == null) null else (forecast.toFloat() / limit).coerceAtLeast(fill)
+        share?.let {
+            val end = it.coerceAtMost(1f) * width
+            paint.color = ColorTokens.textSecondary.light.toInt()
+            paint.alpha = (255 * 0.4f).toInt()
+            paint.strokeWidth = SizeTokens.LIMIT_HATCH * scale / 3
+            canvas.save()
+            canvas.clipRect(fill * width, 0f, end, height.toFloat())
+            var x = fill * width - height
+            while (x < end) { canvas.drawLine(x, height.toFloat(), x + height, 0f, paint); x += SizeTokens.LIMIT_HATCH * scale }
+            canvas.restore()
+            paint.alpha = 255
+        }
+        if (fill > 0f) {
+            paint.color = when (pace) {
+                BudgetPace.AHEAD -> ColorTokens.warning.light
+                BudgetPace.OVER -> ColorTokens.danger.light
+                else -> ColorTokens.textPrimary.light
+            }.toInt()
+            canvas.drawRoundRect(0f, 0f, maxOf(width * fill, height.toFloat()), height.toFloat(), radius, radius, paint)
+        }
+        paint.typeface = android.graphics.Typeface.DEFAULT_BOLD
+        paint.textSize = 13 * scale
+        val baseline = height / 2f - (paint.descent() + paint.ascent()) / 2
+        val pad = SizeTokens.BUDGET_BAR * 2 * scale
+        paint.color = (if (fill >= 0.3f) ColorTokens.onAccent.light else ColorTokens.textPrimary.light).toInt()
+        canvas.drawText(financeThousands(spent), pad, baseline, paint)
+        val limitText = limit?.let(::financeThousands) ?: "—"
+        paint.color = ColorTokens.textPrimary.light.toInt()
+        val limitX = width - pad - paint.measureText(limitText)
+        canvas.drawText(limitText, limitX, baseline, paint)
+        if (share != null && forecast != null) {
+            val text = financeThousands(forecast)
+            paint.textSize = 12 * scale
+            val w = paint.measureText(text)
+            val over = share > 1f
+            val right = if (over) limitX - pad / 2 else minOf(share * width - pad / 2, limitX - pad / 2)
+            paint.color = (if (over) ColorTokens.danger.light else ColorTokens.textSecondary.light).toInt()
+            canvas.drawText(text, right - w, baseline, paint)
+        }
+        return bitmap
+    }
 
     /** Толстая полоса: внутри потрачено, отметка «сегодня», справа лимит. Рисуется в 2× (как график). */
     private fun limitBar(spent: Long, limit: Long?, pace: BudgetPace?, todayShare: Float?): Bitmap {

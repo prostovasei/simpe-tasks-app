@@ -71,7 +71,7 @@ private fun habitRow(context: Context, habit: Habit, today: LocalDate): RemoteVi
 internal fun hubHabitViews(views: RemoteViews, context: Context, id: Int, habits: List<Habit>, today: LocalDate) {
     val due = habits.dueToday(today).take(HUB_HABITS)
     val visibility = if (due.isEmpty()) View.GONE else View.VISIBLE
-    views.setViewVisibility(R.id.widget_hub_title_habits, visibility)
+    views.setViewVisibility(R.id.widget_hub_title_habits, View.GONE) // #346: заголовков разделов нет
     views.setViewVisibility(R.id.widget_hub_habits, visibility)
     views.removeAllViews(R.id.widget_hub_habits)
     views.setOnClickPendingIntent(R.id.widget_hub_title_habits, PendingIntent.getBroadcast(context, id, WidgetActions.module(context, id, WidgetModule.HABITS),

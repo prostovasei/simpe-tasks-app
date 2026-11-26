@@ -106,7 +106,10 @@ class WidgetHubTest {
         assertTrue(texts.toString(), "Оплатить интернет" in texts && "Стоматолог" in texts && "Через три дня" !in texts)
         val cards = root.descendants().filter { it.id == R.id.hub_card_title }.map { (it as TextView).text.toString() }.toList()
         assertEquals(news.take(4).map { it.title }, cards)
-        assertEquals("● ○", root.findViewById<TextView>(R.id.widget_hub_dots).text.toString())
+        // #346: точек и стрелок нет — невидимые края листают; заголовков разделов нет.
+        listOf(R.id.widget_hub_prev, R.id.widget_hub_next).forEach { assertTrue(root.findViewById<View>(it).hasOnClickListeners()) }
+        listOf(R.id.widget_hub_title_finance, R.id.widget_hub_title_news, R.id.widget_hub_title_tasks, R.id.widget_hub_title_habits)
+            .forEach { assertEquals(View.GONE, root.findViewById<View>(it).visibility) }
 
         val density = context.resources.displayMetrics.density
         val width = (400 * density).toInt()
