@@ -113,7 +113,8 @@ fun AllScreen(
                         )
                     }
                 }
-                dayGroups.forEach { group ->
+                // #352: день, где всё выполнено, без подписи — как в виджете.
+                dayGroups.filter { g -> g.items.any { !it.isDone || it.isCompleting } }.forEach { group ->
                     item(key = "day-${group.date}") {
                         DayHeader(
                             text = WidgetDates.header(group.date),

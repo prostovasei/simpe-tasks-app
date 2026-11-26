@@ -76,6 +76,8 @@ class MainActivity : ComponentActivity() {
             intent.getStringExtra(EXTRA_BUDGET_MONTH) != null -> com.prostovasei.simpletasks.ui.navigation.OpenBudget(
                 checkNotNull(intent.getStringExtra(EXTRA_BUDGET_MONTH)), intent.getBooleanExtra(EXTRA_BUDGET_PREPARE, false),
             )
+            // #352: значок приложения в панели виджета «Главная» — хаб приложения.
+            intent.getBooleanExtra(EXTRA_OPEN_HUB, false) -> com.prostovasei.simpletasks.ui.navigation.HubDestination
             intent.getBooleanExtra(EXTRA_OPEN_NEWS, false) -> com.prostovasei.simpletasks.ui.navigation.OpenNews
             // #340: напоминание о привычках и раздел «Привычки» в виджете.
             intent.getBooleanExtra(EXTRA_ADD_HABIT, false) -> com.prostovasei.simpletasks.ui.navigation.OpenHabitAdd
@@ -103,6 +105,7 @@ class MainActivity : ComponentActivity() {
         const val EXTRA_OPEN_HABITS = "open_habits"
         const val EXTRA_ADD_HABIT = "add_habit"
         const val EXTRA_OPEN_SETTINGS = "open_settings"
+        const val EXTRA_OPEN_HUB = "open_hub"
         const val EXTRA_OPEN_DATE = "open_date"
         const val EXTRA_SNOOZE_TASK = "snooze_task_id"
         const val EXTRA_OPEN_DAY = "open_day"

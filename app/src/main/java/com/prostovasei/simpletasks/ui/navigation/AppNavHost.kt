@@ -245,7 +245,7 @@ fun AppNavHost(
     LaunchedEffect(openRoute) {
         openRoute ?: return@LaunchedEffect
         // Покупка из уведомления банка (#233) открывается ниже, когда готова модель финансов.
-        if (openRoute is OpenBankPurchase || openRoute is OpenBankQueue || openRoute is OpenBudget || openRoute is OpenHealthWeight || openRoute is OpenNews || openRoute is HabitsDestination || openRoute is OpenHabitAdd) return@LaunchedEffect
+        if (openRoute is OpenBankPurchase || openRoute is OpenBankQueue || openRoute is OpenBudget || openRoute is OpenHealthWeight || openRoute is OpenNews || openRoute is HabitsDestination || openRoute is OpenHabitAdd || openRoute is HubDestination) return@LaunchedEffect
         navController.currentBackStackEntryFlow.first()
         navController.navigate(openRoute) { launchSingleTop = true }
         onRouteOpened()
@@ -285,6 +285,12 @@ fun AppNavHost(
         navController.currentBackStackEntryFlow.first()
         navController.openRoot(HabitsDestination, restore = true)
         if (openRoute is OpenHabitAdd) habitsModel.onIntent(com.prostovasei.simpletasks.ui.feature.habits.HabitsIntent.Add)
+        onRouteOpened()
+    }
+    LaunchedEffect(openRoute) {
+        if (openRoute !is HubDestination) return@LaunchedEffect
+        navController.currentBackStackEntryFlow.first()
+        navController.openRoot(HubDestination, restore = false)
         onRouteOpened()
     }
     LaunchedEffect(openRoute) {

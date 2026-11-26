@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   Виджет «Главная» (#329, этап 2): сверху полоса лимита и счета, посередине новости 2 × 2 со стрелками ‹ ›
-  (#336: новости над задачами; #350 — все блоки в 12dp от краёв, задачи на неделю), внизу прокручиваемый список задач «Просрочено · Сегодня · Завтра», поверх — панель справа.
+  (#336: новости над задачами; #350 — все блоки в 12dp от краёв, задачи на неделю; #352 — сверху 12, снизу градиент), внизу прокручиваемый список задач «Просрочено · Сегодня · Завтра», поверх — панель справа.
   #346: заголовков разделов нет; новости листаются касанием по краям.
   #340: после финансов — «Привычки ›» и до трёх плашек на сегодня (нажатие отмечает).
   #338: у разделов заголовки «Финансы ›», «Новости ›», «Задачи ›» (нажатие переключает виджет на раздел); задачи идут до низа под панель.
@@ -19,6 +19,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:paddingTop="@dimen/widget_hub_edge"
         android:orientation="vertical">
 
         <TextView android:id="@+id/widget_hub_title_finance" style="@style/WidgetHubTitle" android:visibility="gone" android:text="@string/module_finance" />
@@ -99,6 +100,14 @@
             android:visibility="gone" />
 
     </LinearLayout>
+
+    <!-- #352 (выбор PM): градиент 40 снизу — список уходит под панель плавно. -->
+    <FrameLayout
+        android:id="@+id/widget_hub_fade"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/widget_hub_fade"
+        android:layout_gravity="bottom"
+        android:background="@drawable/widget_hub_fade" />
 
     <FrameLayout
         android:id="@+id/widget_hub_bar"

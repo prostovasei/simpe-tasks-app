@@ -444,6 +444,7 @@
     <string name="widget_complete">Выполнить</string>
     <string name="task_uncomplete">Снять отметку «выполнено»</string>
     <string name="widget_open_app">Открыть приложение</string>
+    <string name="widget_refresh">Обновить</string>
     <string name="widget_log_title">Журнал виджета</string>
     <string name="update_title">Обновление</string>
     <string name="update_check">Проверить обновление</string>
