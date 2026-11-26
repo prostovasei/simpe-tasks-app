@@ -26,11 +26,9 @@
 
 [PR #343](https://github.com/prostovasei/simpe-tasks-app/pull/343), merge `15750fc218d97b19307ab9e98465f90b57876fbb`, APK build-561. CI PR и main зелёные с первой попытки. Прошедшая невыполненная за сегодня — красное время, не бледнеет; выполненная в «Предстоящем» и хабе исчезает, «N из M» её учитывает (ARCHITECTURE §4.123, SPEC §31, [прогон](testing-runs/0.97.1-local.md)). #342 закрыта; UP342-1–4 ждут PM.
 
-## В работе — #344, «Просрочено» без выполненных (0.97.2)
+## Выпуск 0.97.2 — #344
 
-Исполнитель Claude Code, ветка `claude/overdue-done` (от `claude/release-0971`). Ошибка 0.97.1: выполненные разы повторов оставались в
-«Просрочено» («Предстоящее», виджет), в хабе — пустая подпись. Исправлено: `AllScreen`, `HubTasks`, `WidgetModel.entries`, `WidgetModel.lines`;
-тесты `ScreensUiTest.doneOverdueRepeatsAreHiddenWithTheirHeader`, `WidgetListTest.doneOnlyPastDayHidesOverdueBlock`. 1001 тест зелёный. «Проверка+выпуск»: 0.97.2, [прогон](testing-runs/0.97.2-local.md), PR открыт.
+[PR #345](https://github.com/prostovasei/simpe-tasks-app/pull/345), merge `efa10614a793ae9e7255c7dc67cc86c5972b4de8`, APK build-566. CI PR зелёный с первой попытки. «Просрочено» без выполненных разов повторов; блок только из выполненных — без подписи ([прогон](testing-runs/0.97.2-local.md)). #344 закрыта; OD344-1 ждёт PM.
 
 ## Следующее
 
