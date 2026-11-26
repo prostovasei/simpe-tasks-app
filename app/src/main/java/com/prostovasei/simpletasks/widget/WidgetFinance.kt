@@ -1,5 +1,8 @@
 package com.prostovasei.simpletasks.widget
 
+import com.prostovasei.simpletasks.designsystem.tokens.SpacingTokens
+import com.prostovasei.simpletasks.ui.feature.finance.financeNumber
+import com.prostovasei.simpletasks.ui.feature.finance.HubBarScale
 import android.app.PendingIntent
 import android.content.Context
 import android.os.Build
@@ -211,63 +214,61 @@ internal class FinanceRows(private val context: Context, private val width: Int,
     }
 
     /**
-     * Полоса хаба (#346, как в приложении): трек на всю ширину, штриховка от потраченного до прогноза, заливка потраченного;
-     * слева «42k», у конца штриховки — прогноз (больше лимита — красный у лимита), справа внутри — лимит. Рисуется в 2×.
+     * Полоса хаба (#348, как в приложении): тонкая полоса со штриховкой до прогноза и риской превышенного плана,
+     * справа «факт/прогноз/план» 13 sp. Рисуется в 2×; высота картинки — по строке цифр, полоса по центру.
      */
-    private fun hubLimitBar(spent: Long, limit: Long?, pace: BudgetPace?, forecast: Long?): Bitmap {
+    private fun hubLimitBar(spent: Long, limit: Long?, @Suppress("UNUSED_PARAMETER") pace: BudgetPace?, forecast: Long?): Bitmap {
         val scale = 2f
         val width = ((width.coerceIn(180, 440) - 12) * scale).toInt()
-        val height = (SizeTokens.LIMIT_BAR * scale).toInt()
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+        paint.typeface = android.graphics.Typeface.DEFAULT_BOLD
+        paint.textSize = 13 * scale
+        val height = ((paint.descent() - paint.ascent()) + 2 * scale).toInt()
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         bitmap.density = android.util.DisplayMetrics.DENSITY_XHIGH
         val canvas = Canvas(bitmap)
-        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-        val radius = height / 2f
-        val clip = android.graphics.Path().apply { addRoundRect(0f, 0f, width.toFloat(), height.toFloat(), radius, radius, android.graphics.Path.Direction.CW) }
-        canvas.clipPath(clip)
+        val bars = HubBarScale.of(spent, limit, forecast)
+        val black = ColorTokens.textPrimary.light.toInt()
+        val grey = ColorTokens.textSecondary.light.toInt()
+        val factColor = if (bars.factOver) ColorTokens.danger.light.toInt() else black
+        val parts = buildList {
+            add(financeNumber(spent) to factColor)
+            if (forecast != null) { add("/" to grey); add(financeNumber(forecast) to if (bars.forecastOver) ColorTokens.warning.light.toInt() else grey) }
+            if (limit != null) { add("/" to grey); add(financeNumber(limit) to black) }
+        }
+        val textWidth = parts.sumOf { paint.measureText(it.first).toDouble() }.toFloat()
+        val baseline = height / 2f - (paint.descent() + paint.ascent()) / 2
+        var tx = width - textWidth
+        parts.forEach { (text, color) -> paint.color = color; canvas.drawText(text, tx, baseline, paint); tx += paint.measureText(text) }
+        val barW = width - textWidth - SpacingTokens.SM * scale
+        val bar = SizeTokens.HUB_LIMIT_BAR * scale
+        val top = (height - bar) / 2
+        val radius = bar / 2
+        canvas.save()
+        canvas.clipPath(android.graphics.Path().apply { addRoundRect(0f, top, barW, top + bar, radius, radius, android.graphics.Path.Direction.CW) })
         paint.color = ColorTokens.accentSoft.light.toInt()
-        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
-        val fill = if (limit == null) 0f else (spent.toFloat() / limit).coerceIn(0f, 1f)
-        val share = if (limit == null || forecast == null) null else (forecast.toFloat() / limit).coerceAtLeast(fill)
-        share?.let {
-            val end = it.coerceAtMost(1f) * width
-            paint.color = ColorTokens.textSecondary.light.toInt()
+        canvas.drawRect(0f, top, barW, top + bar, paint)
+        if (bars.forecast > bars.fact) {
+            paint.color = grey
             paint.alpha = (255 * 0.4f).toInt()
             paint.strokeWidth = SizeTokens.LIMIT_HATCH * scale / 3
             canvas.save()
-            canvas.clipRect(fill * width, 0f, end, height.toFloat())
-            var x = fill * width - height
-            while (x < end) { canvas.drawLine(x, height.toFloat(), x + height, 0f, paint); x += SizeTokens.LIMIT_HATCH * scale }
+            canvas.clipRect(bars.fact * barW, top, bars.forecast * barW, top + bar)
+            var x = bars.fact * barW - bar
+            while (x < bars.forecast * barW) { canvas.drawLine(x, top + bar, x + bar, top, paint); x += SizeTokens.LIMIT_HATCH * scale }
             canvas.restore()
             paint.alpha = 255
         }
-        if (fill > 0f) {
-            paint.color = when (pace) {
-                BudgetPace.AHEAD -> ColorTokens.warning.light
-                BudgetPace.OVER -> ColorTokens.danger.light
-                else -> ColorTokens.textPrimary.light
-            }.toInt()
-            canvas.drawRoundRect(0f, 0f, maxOf(width * fill, height.toFloat()), height.toFloat(), radius, radius, paint)
+        if (bars.fact > 0f) {
+            paint.color = factColor
+            canvas.drawRoundRect(0f, top, maxOf(barW * bars.fact, bar), top + bar, radius, radius, paint)
         }
-        paint.typeface = android.graphics.Typeface.DEFAULT_BOLD
-        paint.textSize = 13 * scale
-        val baseline = height / 2f - (paint.descent() + paint.ascent()) / 2
-        val pad = SizeTokens.BUDGET_BAR * 2 * scale
-        paint.color = (if (fill >= 0.3f) ColorTokens.onAccent.light else ColorTokens.textPrimary.light).toInt()
-        canvas.drawText(financeThousands(spent), pad, baseline, paint)
-        val limitText = limit?.let(::financeThousands) ?: "—"
-        paint.color = ColorTokens.textPrimary.light.toInt()
-        val limitX = width - pad - paint.measureText(limitText)
-        canvas.drawText(limitText, limitX, baseline, paint)
-        if (share != null && forecast != null) {
-            val text = financeThousands(forecast)
-            paint.textSize = 12 * scale
-            val w = paint.measureText(text)
-            val over = share > 1f
-            val right = if (over) limitX - pad / 2 else minOf(share * width - pad / 2, limitX - pad / 2)
-            paint.color = (if (over) ColorTokens.danger.light else ColorTokens.textSecondary.light).toInt()
-            canvas.drawText(text, right - w, baseline, paint)
+        bars.plan?.let { plan ->
+            paint.color = black
+            val half = SizeTokens.HUB_LIMIT_TICK * scale / 2
+            canvas.drawRect(plan * barW - half, top, plan * barW + half, top + bar, paint)
         }
+        canvas.restore()
         return bitmap
     }
 

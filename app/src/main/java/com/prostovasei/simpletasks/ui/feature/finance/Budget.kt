@@ -1,5 +1,6 @@
 package com.prostovasei.simpletasks.ui.feature.finance
 
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -185,60 +186,79 @@ internal fun LimitBar(
 }
 
 /**
- * Полоса лимита хаба (#346, выбор PM): внутри слева потрачено без «₽», штриховка от потраченного до прогноза и сумма прогноза
- * у её конца, лимит — у правого края. Отметки «сегодня» и строки под полосой нет. Прогноз больше лимита — штриховка до края,
- * сумма красная у лимита.
+ * Полоса лимита хаба (#348, выбор PM): тонкая полоса со штриховкой до прогноза, справа «факт/прогноз/план» 13 sp —
+ * факт и план чёрные, прогноз серый. План превышен — шкала до максимума и чёрная риска на месте плана; факт больше плана —
+ * факт и заливка красные, прогноз больше плана — прогноз оранжевый. Без бюджета — «факт/прогноз».
  */
 @Composable
-private fun HubLimitBar(spent: Long, limit: Long?, forecast: Long?, color: Color, inside: Boolean, onClick: () -> Unit) {
+private fun HubLimitBar(spent: Long, limit: Long?, forecast: Long?, @Suppress("UNUSED_PARAMETER") color: Color, @Suppress("UNUSED_PARAMETER") inside: Boolean, onClick: () -> Unit) {
     val colors = AppTheme.colors
     val spacing = AppTheme.spacing
     val hatch = colors.textSecondary.copy(alpha = HATCH_ALPHA)
-    val fill = if (limit == null) 0f else (spent.toFloat() / limit).coerceIn(0f, 1f)
-    val forecastShare = if (limit == null || forecast == null) null else (forecast.toFloat() / limit).coerceAtLeast(fill)
-    val over = forecastShare != null && forecastShare > 1f
-    BoxWithConstraints(
-        Modifier.fillMaxWidth().padding(vertical = spacing.xxs).height(SizeTokens.LIMIT_BAR.dp).clip(CircleShape).background(colors.accentSoft)
-            .clickable(role = Role.Button, onClick = onClick).testTag(TAG_LIMIT_BAR),
-    ) {
-        val width = maxWidth
-        forecastShare?.let { share ->
-            val end = share.coerceAtMost(1f)
-            Box(
-                Modifier.offset(x = width * fill).width(width * (end - fill)).fillMaxHeight().testTag(TAG_LIMIT_FORECAST_FILL)
-                    .drawBehind {
-                        val step = SizeTokens.LIMIT_HATCH.dp.toPx()
-                        var x = -size.height
-                        while (x < size.width) {
-                            drawLine(hatch, androidx.compose.ui.geometry.Offset(x, size.height), androidx.compose.ui.geometry.Offset(x + size.height, 0f), strokeWidth = step / 3)
-                            x += step
-                        }
-                    },
-            )
+    val scale = HubBarScale.of(spent, limit, forecast)
+    val factColor = if (scale.factOver) colors.danger else colors.textPrimary
+    val numbers = androidx.compose.ui.text.buildAnnotatedString {
+        withStyle(androidx.compose.ui.text.SpanStyle(color = factColor)) { append(financeNumber(spent)) }
+        if (forecast != null) {
+            withStyle(androidx.compose.ui.text.SpanStyle(color = colors.textSecondary)) { append("/") }
+            withStyle(androidx.compose.ui.text.SpanStyle(color = if (scale.forecastOver) colors.warning else colors.textSecondary)) { append(financeNumber(forecast)) }
         }
-        Box(Modifier.fillMaxHeight().fillMaxWidth(fill).clip(CircleShape).background(color))
+        if (limit != null) {
+            withStyle(androidx.compose.ui.text.SpanStyle(color = colors.textSecondary)) { append("/") }
+            withStyle(androidx.compose.ui.text.SpanStyle(color = colors.textPrimary)) { append(financeNumber(limit)) }
+        }
+    }
+    Row(
+        Modifier.fillMaxWidth().clip(AppTheme.shapes.large).clickable(role = Role.Button, onClick = onClick).padding(vertical = spacing.xxs)
+            .testTag(TAG_LIMIT_BAR),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(spacing.sm),
+    ) {
+        BoxWithConstraints(Modifier.weight(1f).height(SizeTokens.HUB_LIMIT_BAR.dp).clip(CircleShape).background(colors.accentSoft)) {
+            val width = maxWidth
+            if (scale.forecast > scale.fact) {
+                Box(
+                    Modifier.offset(x = width * scale.fact).width(width * (scale.forecast - scale.fact)).fillMaxHeight().testTag(TAG_LIMIT_FORECAST_FILL)
+                        .drawBehind {
+                            val step = SizeTokens.LIMIT_HATCH.dp.toPx()
+                            var x = -size.height
+                            while (x < size.width) {
+                                drawLine(hatch, androidx.compose.ui.geometry.Offset(x, size.height), androidx.compose.ui.geometry.Offset(x + size.height, 0f), strokeWidth = step / 3)
+                                x += step
+                            }
+                        },
+                )
+            }
+            if (scale.fact > 0f) Box(Modifier.fillMaxHeight().fillMaxWidth(scale.fact).clip(CircleShape).background(factColor))
+            scale.plan?.let { plan ->
+                Box(Modifier.offset(x = width * plan - (SizeTokens.HUB_LIMIT_TICK / 2f).dp).width(SizeTokens.HUB_LIMIT_TICK.dp).fillMaxHeight()
+                    .background(colors.textPrimary).testTag(TAG_LIMIT_GOAL))
+            }
+        }
         Text(
-            financeThousands(spent), Modifier.align(Alignment.CenterStart).padding(horizontal = spacing.sm).testTag(TAG_ANALYTICS_TOTAL),
-            style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = if (inside) colors.onAccent else colors.textPrimary, maxLines = 1,
+            numbers, Modifier.testTag(TAG_LIMIT_FORECAST), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, maxLines = 1,
         )
-        val limitText = limit?.let(::financeThousands) ?: "—"
-        Text(limitText, Modifier.align(Alignment.CenterEnd).padding(horizontal = spacing.sm).testTag(TAG_LIMIT_GOAL),
-            style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = colors.textPrimary, maxLines = 1)
-        if (forecast != null && forecastShare != null) {
-            val text = financeThousands(forecast)
-            // Сумма прогноза — у конца штриховки, но не заходит на лимит справа; при превышении лимита — красная у лимита.
-            val reserve = SizeTokens.LIMIT_LABEL_RESERVE.dp
-            val endX = if (over) width - reserve else (width * forecastShare).coerceAtMost(width - reserve)
-            Text(
-                text,
-                Modifier.align(Alignment.CenterStart).width(endX).padding(end = spacing.xs).testTag(TAG_LIMIT_FORECAST),
-                style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, maxLines = 1,
-                textAlign = androidx.compose.ui.text.style.TextAlign.End,
-                color = if (over) colors.danger else colors.textSecondary,
+    }
+}
+
+/** #348: доли полосы хаба — шкала до максимума из плана, факта и прогноза; [plan] — место риски, только если план превышен. */
+internal data class HubBarScale(val fact: Float, val forecast: Float, val plan: Float?, val factOver: Boolean, val forecastOver: Boolean) {
+    companion object {
+        fun of(spent: Long, limit: Long?, forecast: Long?): HubBarScale {
+            val max = maxOf(limit ?: 0L, spent, forecast ?: 0L).coerceAtLeast(1L).toFloat()
+            val factOver = limit != null && spent > limit
+            val forecastOver = limit != null && forecast != null && forecast > limit
+            return HubBarScale(
+                fact = spent / max,
+                forecast = ((forecast ?: spent) / max).coerceAtLeast(spent / max),
+                plan = if (limit != null && (factOver || forecastOver)) limit / max else null,
+                factOver = factOver, forecastOver = forecastOver,
             )
         }
     }
 }
+
+/** #348: число в тысячах без «k» и «₽» — «42», «104». */
+internal fun financeNumber(amount: Long): String = financeThousands(amount).removeSuffix("k")
 
 /** Подпись хаба (#338): значок и сумма серым 12 sp — «прогноз», «в среднем в день», «осталось» в одном стиле. */
 @Composable
