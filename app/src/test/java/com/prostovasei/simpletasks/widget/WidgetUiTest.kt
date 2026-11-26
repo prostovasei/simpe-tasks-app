@@ -109,8 +109,9 @@ class WidgetUiTest {
         onAllNodes(hasTextEqualTo("Зарядка")).assertCountEquals(2)
         // Кружки-галочки на шкале только у настоящих задач: у будущего повтора нажатия нет; у выполненной — «снять отметку».
         onAllNodes(hasContentDescription("Выполнить")).assertCountEquals(3)
-        onAllNodes(hasContentDescription("Снять отметку «выполнено»")).assertCountEquals(1)
-        onNode(hasTextEqualTo("Оплатить свет")).assertExists()
+        // #344: выполненная «Оплатить свет» в «Просрочено» не показывается.
+        onAllNodes(hasContentDescription("Снять отметку «выполнено»")).assertCountEquals(0)
+        onAllNodes(hasTextEqualTo("Оплатить свет")).assertCountEquals(0)
     }
 
     @Test

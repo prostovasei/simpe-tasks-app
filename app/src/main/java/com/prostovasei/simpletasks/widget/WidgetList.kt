@@ -71,7 +71,7 @@ fun WidgetModel.lines(days: DayNames, withTail: Boolean = true): List<WidgetLine
                 val nowMinute = nowMinute.takeIf { block.day == WidgetDay.On(today) }
                 // #334 (решение PM): в «Все» просроченные — одним блоком под «Просрочено», без подписей дней.
                 if (overdue && filter == WidgetFilter.All) {
-                    return@flatMapIndexed WidgetTimeline.rows(block.items, overdue = false, nowMinute = null, days = days)
+                    return@flatMapIndexed WidgetTimeline.rows(block.items.filterNot { it.isDone }, overdue = false, nowMinute = null, days = days)
                         .filterIsInstance<WidgetRow.Task>()
                         .map { WidgetLine.Task(it, Line(top = false, bottom = false), overdue = true, day = block.day) }
                 }
