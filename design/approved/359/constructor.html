@@ -1,0 +1,304 @@
+<title>Новый хаб</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+<style>
+/* Конструктор #359: хаб — 5 ближайших задач, 2 новости, 2 карточки финансов; сценарии и «что можно упустить». */
+:root{--page:#e9ebef;--pagefg:#16171d;--pagemuted:#62656e;--chip:#f3f3f4;--line:#dcdee3;--card:#fff;--title:#2e3036;--muted:#8b8d94;--black:#16171d;--soft:#ececee;--pri:#862ce0;--late:#c62828;--warn:#b26a00;--lilac:#c39bff;--sel:#f4effd;--font:Manrope,system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--page:#0f1013;--pagefg:#ececec;--pagemuted:#a3a3a3;--chip:#24262b;--line:#2f3137;color-scheme:dark}}
+:root[data-theme="dark"]{--page:#0f1013;--pagefg:#ececec;--pagemuted:#a3a3a3;--chip:#24262b;--line:#2f3137;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--page);color:var(--pagefg);font-family:var(--font);margin:0;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 40px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--page)}
+h1{font-size:21px;margin:0 0 4px}.lead{color:var(--pagemuted);margin:0 0 14px;max-width:84ch;line-height:1.45;font-size:14px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:24px;align-items:start}
+@media (max-width:1100px){.layout{grid-template-columns:minmax(0,1fr)}.side{order:-1;justify-self:center}}
+.panel{display:grid;gap:12px;min-width:0;align-content:start}
+fieldset{border:0;margin:0;padding:12px 14px;background:var(--card);color:var(--title);border-radius:16px;display:grid;gap:10px;min-width:0}
+legend{font-weight:700;font-size:15px;padding:0;float:left;width:100%}
+.ctl{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px}.ctl>span{flex:0 0 190px;color:#62656e;font-size:13px}
+.seg{display:inline-flex;background:#f3f3f4;border-radius:10px;padding:3px;gap:2px;flex-wrap:wrap;min-width:0}
+.seg button{font:600 13px var(--font);color:#16171d;background:none;border:0;border-radius:8px;padding:6px 9px;cursor:pointer;display:inline-flex;gap:5px;align-items:center}
+.seg button[aria-pressed="true"]{background:#fff;box-shadow:inset 0 0 0 1.5px #16171d}
+.seg button:focus-visible,.btn:focus-visible,.tabs button:focus-visible{outline:2px solid #862ce0;outline-offset:1px}
+.tag{font-size:10px;font-weight:700;color:#6b32a8}
+.top{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{font:600 13px var(--font);border:0;border-radius:10px;padding:8px 12px;cursor:pointer;background:var(--pagefg);color:var(--page)}
+.btn.ghost{background:var(--chip);color:var(--pagefg)}
+#summary{width:100%;min-height:190px;font:12px/1.45 ui-monospace,Menlo,monospace;color:var(--pagefg);background:var(--page);border:1px solid var(--line);border-radius:12px;padding:10px}
+.hint{color:var(--pagemuted);font-size:12.5px;margin:0;line-height:1.5}#copied{color:#2e7d32;font-size:12px}
+.miss{background:var(--card);color:var(--title);border-radius:16px;padding:12px 14px;font-size:13px;line-height:1.5;border-left:4px solid #b26a00}
+.miss b{font-weight:700}.miss ul{margin:6px 0 0;padding-left:18px}.miss li{margin:3px 0}
+/* телефон */
+.side{display:grid;gap:10px;justify-items:center}
+.tabs{display:flex;gap:4px;background:var(--chip);border-radius:12px;padding:3px;flex-wrap:wrap;justify-content:center;max-width:390px}
+.tabs button{font:600 12px var(--font);border:0;background:none;color:var(--pagefg);border-radius:9px;padding:6px 9px;cursor:pointer}
+.tabs button[aria-pressed="true"]{background:var(--card);box-shadow:0 0 0 1.5px var(--pagefg) inset}
+.phone{width:380px;max-width:100%;border-radius:30px;padding:10px 8px;background:linear-gradient(#6a2bc4,#c63e86 70%,#f07a5a)}
+.phone.app{background:#d9dbe0}
+.w{background:#fff;border-radius:24px;color:var(--title);height:720px;overflow:hidden;position:relative}
+.scroll{position:absolute;inset:0;overflow:auto;padding:12px 12px 74px}
+.cards{display:grid;gap:8px}
+.fc{background:#f3f3f4;border-radius:18px;padding:12px 14px;min-width:0;cursor:pointer;position:relative}
+.fc.white{background:#fff;box-shadow:inset 0 0 0 1.5px #e6e7ea}
+.fc.lilac{background:var(--sel)}
+.fc .k{font-size:12px;font-weight:600;color:var(--muted);display:flex;gap:6px;align-items:center;white-space:nowrap;overflow:hidden}
+.fc .v{font-size:22px;font-weight:800;margin-top:4px;letter-spacing:-.3px;white-space:nowrap}
+.fc .s{font-size:12px;font-weight:600;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fc .bar{height:6px;border-radius:999px;background:#e2e3e7;margin-top:8px;position:relative;overflow:hidden}
+.fc .bar i{position:absolute;inset:0 auto 0 0;border-radius:999px;background:var(--black)}
+.fc .bar b{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(135deg,rgb(98 101 110/.45) 0 2px,transparent 2px 5px)}
+.fc .chev{position:absolute;right:12px;top:12px;color:var(--muted);font-size:13px}
+.habits{display:flex;gap:6px;overflow:hidden}.hab{flex:1;background:#f3f3f4;border-radius:999px;padding:8px 10px;font-size:13px;font-weight:700;text-align:center;white-space:nowrap}
+.hab.on{background:var(--sel);color:var(--pri)}
+.news{display:grid;gap:6px}
+.nc{background:#f3f3f4;border-radius:16px;padding:9px 11px;font-size:12.5px;line-height:1.3;min-width:0}
+.nc small{color:var(--muted);display:block;font-size:10.5px;margin-bottom:2px}.nc .nt{display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden}
+.nc.big{padding:12px}.nc.big .nt{font-size:14px;font-weight:700}
+.nc.line{background:none;padding:6px 2px;border-bottom:1px solid #eceef1;border-radius:0}
+.dh{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px;font-weight:600;padding:10px 0 2px}.dh .ln{flex:1;height:1px;background:#e6e7ea}.dh.late{color:var(--late)}
+.t{display:flex;align-items:center;gap:10px;height:42px;font-size:14.5px}
+.t .c{width:18px;height:18px;border-radius:50%;border:1.6px solid #a2a4ab;flex:none}.t.hi .c{border:2px solid var(--pri)}.t.hi .n{color:var(--pri)}
+.t .n{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.t .r{font-size:13px}.t .r.late{color:var(--late)}
+.more{display:block;border:0;background:none;color:var(--pri);font:700 13px var(--font);padding:8px 0;cursor:pointer}
+.ovl{display:flex;align-items:center;gap:8px;background:#fdecec;color:var(--late);border-radius:12px;padding:8px 12px;font-size:13px;font-weight:700;margin-bottom:4px;cursor:pointer}
+.empty{color:var(--muted);font-size:13px;text-align:center;padding:16px 0}
+.sec{font-size:12px;font-weight:700;color:var(--muted);margin:0 0 6px;display:flex;justify-content:space-between}
+.fade{position:absolute;left:0;right:0;bottom:0;height:40px;background:linear-gradient(rgb(255 255 255/0),#fff);pointer-events:none}
+.nav{position:absolute;right:10px;bottom:12px;background:#16171d;border-radius:999px;height:40px;display:flex;align-items:center;padding:0 4px;z-index:3}
+.nav span{width:34px;height:34px;display:grid;place-items:center;color:#fff}.nav svg{width:20px;height:20px}.nav .plus{color:var(--lilac)}.nav .plus svg{width:26px;height:26px}
+.pick{position:absolute;left:12px;right:12px;top:80px;background:#fff;border-radius:18px;box-shadow:0 12px 32px rgb(0 0 0/.25);z-index:5;padding:6px 0}
+.pick button{display:flex;width:100%;border:0;background:none;padding:10px 14px;font:600 14px var(--font);color:#2e3036;gap:10px;cursor:pointer}
+.pick button span:last-child{margin-left:auto;color:var(--muted)}
+.pick button.on{color:var(--pri)}
+.toast{position:absolute;left:50%;bottom:64px;transform:translate(-50%,10px);background:#16171d;color:#fff;font-size:12px;font-weight:600;padding:8px 12px;border-radius:999px;opacity:0;transition:.2s;pointer-events:none;z-index:6;white-space:nowrap}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.cap{font-size:12px;color:var(--pagemuted);text-align:center;max-width:380px;line-height:1.4}
+</style>
+
+<h1>Новый хаб</h1>
+<p class="lead">Справа — хаб по твоему запросу: <b>2 карточки финансов</b> (остаток одного счёта и потрачено за месяц), <b>2 последние новости</b> и <b>5 ближайших задач</b>. Сверху над телефоном — сценарии: перерасход, просроченные, пустые состояния. Нажми карточку счёта — увидишь выбор счёта. «реком.» — моя рекомендация. Внизу слева — то, что легко упустить.</p>
+
+<div class="layout">
+  <div class="panel">
+    <div class="miss"><b>Что легко упустить — проверь каждый пункт</b><ul>
+      <li><b>Полоса лимита «факт/прогноз/план»</b> исчезает — её смысл можно перенести в карточку «Потрачено» (вариант «из плана с полосой»).</li>
+      <li><b>Просроченные</b>: войдут ли они в 5 задач? Если просрочено 6 — ближайших дел не будет видно. Есть вариант «строка Просрочено · N ›».</li>
+      <li><b>Привычки</b> сейчас в хабе плашками — оставить, сжать или убрать?</li>
+      <li><b>Все счета</b>: карточкой может быть не один счёт, а сумма всех («Всего»).</li>
+      <li><b>Как выбрать счёт</b> и что делает нажатие на карточки и новости.</li>
+      <li><b>Пустые состояния</b>: нет задач, нет бюджета, нет счетов, новости не загрузились.</li>
+      <li><b>Виджет «Главная»</b> — так же или оставить как есть.</li>
+      <li><b>Хаб без прокрутки</b>: 5 задач + 2 новости + 2 карточки помещаются на экран — список задач можно не прокручивать.</li>
+    </ul></div>
+    <div class="top">
+      <button type="button" class="btn" id="copy">Скопировать выбор</button>
+      <button type="button" class="btn ghost" id="reset">Рекомендации</button>
+      <span id="copied" aria-live="polite"></span>
+    </div>
+    <div id="groups" class="panel"></div>
+    <label class="hint" for="summary">Выбор текстом:</label>
+    <textarea id="summary" readonly></textarea>
+  </div>
+  <div class="side">
+    <div class="tabs" id="scen" role="group" aria-label="Сценарий"></div>
+    <div class="phone" id="phone"><div class="w" id="w"></div></div>
+    <p class="cap" id="cap"></p>
+  </div>
+</div>
+
+<script>
+const S = 'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"';
+const NAV = {
+  dots: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="7.5" cy="7.5" r="2.6"/><circle cx="16.5" cy="7.5" r="2.6"/><circle cx="7.5" cy="16.5" r="2.6"/><circle cx="16.5" cy="16.5" r="2.6"/></svg>',
+  set: `<svg viewBox="0 0 24 24" ${S}><path d="M4 8h16M4 16h16"/><circle cx="15" cy="8" r="2.2" fill="#16171d"/><circle cx="9" cy="16" r="2.2" fill="#16171d"/></svg>`,
+  app: `<svg viewBox="0 0 24 24" ${S}><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg>`,
+  upd: `<svg viewBox="0 0 24 24" ${S}><circle cx="12" cy="12" r="8.5"/><path d="M12 16V8M8.5 11.5 12 8l3.5 3.5"/></svg>`,
+  mic: `<svg viewBox="0 0 24 24" ${S}><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>`,
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+};
+const GROUPS = [
+  ['Общий вид', [
+    ['view', 'Где смотрим', [['app', 'Хаб в приложении'], ['widget', 'Виджет «Главная»']], 'app'],
+    ['order', 'Порядок блоков', [['fnt', 'Финансы → Новости → Задачи'], ['ftn', 'Финансы → Задачи → Новости'], ['tfn', 'Задачи → Финансы → Новости'], ['tnf', 'Задачи → Новости → Финансы']], 'ftn'],
+    ['titles', 'Подписи блоков', [['none', 'Нет (как сейчас)'], ['small', 'Мелкие «Финансы · Новости · Задачи»']], 'none'],
+    ['gap', 'Между блоками', [[16, '16'], [24, '24 (сейчас)']], 24],
+    ['habits', 'Привычки', [['chips', 'Плашки, как сейчас'], ['line', 'Одной строкой «2 из 3 ›»'], ['off', 'Убрать из хаба']], 'chips'],
+    ['widget', 'Виджет «Главная»', [['same', 'Так же'], ['keep', 'Оставить как есть']], 'same'],
+  ]],
+  ['Финансы: 2 карточки', [
+    ['fLayout', 'Раскладка', [['row', 'Рядом 50/50'], ['wide', 'Счёт узкий, траты широкие'], ['stack', 'Друг под другом']], 'row'],
+    ['fStyle', 'Вид карточек', [['grey', 'Серые, как новости'], ['white', 'Белые с рамкой'], ['accent', 'Траты — сиреневая']], 'grey'],
+    ['fmt', 'Сумма', [['full', '42 300 ₽'], ['k', '42,3k'], ['kk', '42k']], 'full'],
+    ['acc', 'Карточка счёта', [['name', 'Эмодзи + название + сумма'], ['emoji', 'Эмодзи + сумма'], ['total', 'Всего на всех счетах']], 'name'],
+    ['accPick', 'Как выбрать счёт', [['tapList', 'Нажатие → список счетов'], ['longList', 'Долгое нажатие → список'], ['cycle', 'Нажатие листает счета по кругу'], ['settings', 'В настройках финансов']], 'longList'],
+    ['spent', 'Карточка «Потрачено»', [['only', 'Только сумма'], ['plan', 'Из плана + полоса'], ['forecast', 'Сумма + прогноз'], ['compare', 'Сумма + к прошлому месяцу']], 'plan'],
+    ['over', 'Перерасход', [['red', 'Сумма красная'], ['badge', 'Ярлык «+7k сверх»'], ['none', 'Никак']], 'red'],
+    ['fTap', 'Нажатие на «Потрачено»', [['budget', 'Окно «Бюджет»'], ['ops', 'Операции месяца'], ['analytics', 'Аналитика']], 'budget'],
+  ]],
+  ['Новости: 2 последние', [
+    ['nLayout', 'Раскладка', [['two', 'Две карточки рядом'], ['rows', 'Две строки во всю ширину'], ['list', 'Списком без плашек']], 'two'],
+    ['nLines', 'Строк заголовка', [[2, '2'], [3, '3']], 2],
+    ['nMeta', 'Над заголовком', [['full', 'Время · спорт · Новое'], ['time', 'Только время'], ['none', 'Ничего']], 'full'],
+    ['nPage', 'Листание', [['none', 'Нет — только 2 последние'], ['edges', 'Касание по краям, как сейчас'], ['more', 'Ссылка «Все новости ›»']], 'more'],
+  ]],
+  ['Задачи: 5 ближайших', [
+    ['count', 'Сколько', [[3, '3'], [5, '5'], [7, '7']], 5],
+    ['late', 'Просроченные', [['in', 'Входят в 5, сверху'], ['line', 'Строка «Просрочено · N ›» + 5 ближайших'], ['off', 'Не показывать']], 'line'],
+    ['tView', 'Как показать дни', [['heads', 'Подписи дней, как в «Предстоящем»'], ['right', 'День справа в строке']], 'heads'],
+    ['tMore', 'Ниже 5 задач', [['more', '«Ещё 12 в Предстоящем ›»'], ['none', 'Ничего']], 'more'],
+    ['tDone', 'Выполнил задачу', [['next', 'Исчезает, подтягивается следующая'], ['stay', 'Тает до конца дня']], 'next'],
+  ]],
+];
+const REC = Object.fromEntries(GROUPS.flatMap(([, l]) => l.map(([k, , , r]) => [k, r])));
+const KEY = 'c359a';
+let V = { ...REC };
+try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s) V = { ...REC, ...s } } catch (e) {}
+
+const SCEN = [['normal', 'Обычный день'], ['over', 'Перерасход'], ['late', '6 просроченных'], ['empty', 'Нет задач'], ['nobudget', 'Без бюджета'], ['nonews', 'Новости не загрузились']];
+let scen = 'normal', account = 1, pickOpen = false;
+const ACCOUNTS = [['💳', 'Карта', 1000], ['📉', 'Инвест', 819000], ['💰', 'Наличные', 280000], ['💳', 'Кредитка', 0]];
+const WD = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'], MON = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+const TODAY = new Date(2026, 10, 27);
+const dayOf = o => new Date(2026, 10, 27 + o);
+const dtext = o => { const d = dayOf(o); return `${WD[d.getDay()]} ${d.getDate()} ${MON[d.getMonth()]}` };
+const TASKS = [
+  ['🗂️', 'Заказать одежду', 0, ''], ['💲', 'Higgsfield', 0, '10:00'], ['🗂️', 'Сдать деньги на корпоратив', 0, '12:00', 1], ['💼', 'Запланировать отпуск', 0, '14:00', 1],
+  ['🔁', 'Финансы', 0, '14:30'], ['🔁', 'Цветы', 0, '15:00'], ['🔁', 'Бритьё', 1, '08:00'], ['💼', 'Пройти юр. тест', 1, '16:30'], ['💼', 'Ревью квартала', 3, '12:00'],
+];
+const LATE = [['💼', 'Отправить отчёт', -2, ''], ['🏠', 'Оплатить интернет', -1, '', 1], ['🗂️', 'Вернуть книгу', -3, ''], ['💼', 'Счёт клиенту', -1, ''], ['🏠', 'Записаться к врачу', -4, ''], ['🗂️', 'Купить фильтр', -2, '']];
+const NEWS = [['00:46 · Футбол · Новое', 'Лига Европы. «Милан» в гостях у «Олимпиакоса», «Порту» сыграет с «Ромой»'], ['00:36 · Хоккей · Новое', 'Сенат Чехии проголосовал против матчей и турниров с участием россиян']];
+
+function money(v) {
+  if (V.fmt === 'full') return v.toLocaleString('ru-RU').replace(/,/g, ' ') + ' ₽';
+  const k = v / 1000;
+  return V.fmt === 'k' ? (Math.round(k * 10) / 10).toString().replace('.', ',') + 'k' : Math.round(k) + 'k';
+}
+function finance() {
+  const sp = scen === 'over' ? { s: 97000, f: 112000 } : { s: 42300, f: 46000 };
+  const plan = scen === 'nobudget' ? null : 90000;
+  const [e, n, bal] = V.acc === 'total' ? ['💼', 'Всего', ACCOUNTS.reduce((a, x) => a + x[2], 0)] : ACCOUNTS[account];
+  const over = plan && sp.s > plan;
+  const style = V.fStyle === 'white' ? 'white' : '';
+  const accLabel = V.acc === 'emoji' ? `${e}` : `${e} ${n}`;
+  const accCard = `<div class="fc ${style}" data-act="acc" role="button" tabindex="0"><div class="k">${accLabel}${V.acc === 'total' ? '' : ' <span style="margin-left:auto">⌄</span>'}</div><div class="v">${money(bal)}</div>${V.acc === 'total' ? '<div class="s">4 счёта</div>' : '<div class="s">остаток на счёте</div>'}</div>`;
+  let sub = '', bar = '';
+  if (V.spent === 'plan') {
+    if (plan) {
+      sub = `<div class="s">из ${money(plan)}</div>`;
+      const max = Math.max(plan, sp.f), fw = sp.s / max * 100, cw = sp.f / max * 100;
+      bar = `<div class="bar"><b style="left:${fw}%;width:${cw - fw}%"></b><i style="width:${fw}%;background:${over && V.over === 'red' ? 'var(--late)' : 'var(--black)'}"></i>${sp.f > plan || over ? `<i style="left:${plan / max * 100}%;width:2px;background:var(--black)"></i>` : ''}</div><div class="s" style="font-size:11px;margin-top:4px;${sp.f > plan ? 'color:var(--warn)' : ''}">прогноз ${money(sp.f)}</div>`;
+    } else sub = '<div class="s" style="color:var(--pri)">Задать бюджет ›</div>';
+  }
+  if (V.spent === 'forecast') sub = `<div class="s">прогноз ${money(sp.f)}</div>`;
+  if (V.spent === 'compare') sub = `<div class="s">${scen === 'over' ? '+89%' : '−17%'} к октябрю</div>`;
+  const badge = over && V.over === 'badge' ? `<span style="margin-left:auto;background:#fdecec;color:var(--late);border-radius:999px;padding:1px 7px;font-size:11px">+${money(sp.s - plan)} сверх</span>` : '';
+  const red = over && V.over === 'red' ? 'color:var(--late)' : '';
+  const spentCard = `<div class="fc ${V.fStyle === 'accent' ? 'lilac' : style}" data-act="spent" role="button" tabindex="0"><div class="k">Потрачено в ноябре${badge}</div><div class="v" style="${red}">${money(sp.s)}</div>${sub}${bar}</div>`;
+  const cols = V.fLayout === 'row' ? '1fr 1fr' : V.fLayout === 'wide' ? '0.8fr 1.2fr' : '1fr';
+  return `<div class="cards" style="grid-template-columns:${cols}">${accCard}${spentCard}</div>`;
+}
+function habits() {
+  if (V.habits === 'off') return '';
+  if (V.habits === 'line') return `<div class="ovl" style="background:#f3f3f4;color:#2e3036" data-act="habits">🏃 Привычки сегодня: 1 из 2 <span style="margin-left:auto">›</span></div>`;
+  return `<div class="habits"><span class="hab on">🏃 Зарядка ✓</span><span class="hab">📚 Читать</span></div>`;
+}
+function news() {
+  if (scen === 'nonews') return `<div class="nc" style="text-align:center;color:var(--muted)">Новости не загрузились · <b style="color:var(--pri)">Обновить</b></div>`;
+  const meta = m => V.nMeta === 'none' ? '' : `<small>${V.nMeta === 'time' ? m.split(' · ')[0] : m}</small>`;
+  const clamp = `-webkit-line-clamp:${V.nLines}`;
+  const cards = NEWS.map(([m, t]) => `<div class="nc ${V.nLayout === 'list' ? 'line' : ''} ${V.nLayout === 'rows' ? 'big' : ''}">${meta(m)}<div class="nt" style="${clamp}">${t}</div></div>`).join('');
+  const cols = V.nLayout === 'two' ? '1fr 1fr' : '1fr';
+  const more = V.nPage === 'more' ? `<button class="more" data-act="news">Все новости ›</button>` : V.nPage === 'edges' ? '<div class="s" style="font-size:11px;color:var(--muted);text-align:center;margin-top:4px">касание по краям — следующие</div>' : '';
+  return `<div class="news" style="grid-template-columns:${cols}">${cards}</div>${more}`;
+}
+function trow(t, labelDay) {
+  const [e, n, d, time, hi] = t;
+  const late = d < 0;
+  const r = labelDay ? (late ? WD[dayOf(d).getDay()] : d === 0 ? (time || 'сегодня') : d === 1 ? `завтра${time ? ' ' + time : ''}` : `${dtext(d)}${time ? ' ' + time : ''}`) : (late ? WD[dayOf(d).getDay()] : time);
+  return `<div class="t ${hi ? 'hi' : ''}"><span class="c"></span><span>${e}</span><span class="n">${n}</span><span class="r ${late ? 'late' : ''}">${r || ''}</span></div>`;
+}
+function tasks() {
+  if (scen === 'empty') return `<div class="empty">На неделю задач нет<br><button class="more" style="margin:4px auto 0" data-act="add">+ Добавить задачу</button></div>`;
+  const late = scen === 'late' ? LATE : LATE.slice(0, 1);
+  let list = [], h = '';
+  if (V.late === 'in') list = [...late, ...TASKS].slice(0, V.count);
+  else list = TASKS.slice(0, V.count);
+  if (V.late === 'line') h += `<div class="ovl" data-act="late">Просрочено · ${late.length} <span style="margin-left:auto">›</span></div>`;
+  if (V.tView === 'heads') {
+    let last = null;
+    list.forEach(t => {
+      const g = t[2] < 0 ? 'late' : t[2];
+      if (g !== last) {
+        h += g === 'late' ? `<div class="dh late"><span>Просрочено</span><span class="ln" style="background:none"></span><span>${list.filter(x => x[2] < 0).length}</span></div>`
+          : `<div class="dh"><span>${dtext(g)}${g === 0 ? ' · Сегодня' : g === 1 ? ' · Завтра' : ''}</span><span class="ln"${g === 0 ? '' : ' style="background:none"'}></span><span>${list.filter(x => x[2] === g).length}</span></div>`;
+        last = g;
+      }
+      h += trow(t, false);
+    });
+  } else h += list.map(t => trow(t, true)).join('');
+  const rest = TASKS.length + late.length - list.length;
+  if (V.tMore === 'more' && rest > 0) h += `<button class="more" data-act="upcoming">Ещё ${rest} в «Предстоящем» ›</button>`;
+  return h;
+}
+function titled(name, html) {
+  if (!html) return '';
+  return (V.titles === 'small' ? `<div class="sec"><span>${name}</span><span>›</span></div>` : '') + html;
+}
+function render() {
+  const blocks = {
+    f: titled('Финансы', finance() + (habits() ? `<div style="height:${V.gap / 2}px"></div>${habits()}` : '')),
+    n: titled('Новости', news()),
+    t: titled('Задачи', tasks()),
+  };
+  const body = V.order.split('').map(k => blocks[k]).filter(Boolean).join(`<div style="height:${V.gap}px"></div>`);
+  const widget = V.view === 'widget';
+  const navHtml = widget ? `<span>${NAV.app}</span><span>${NAV.dots}</span><span>${NAV.upd}</span><span>${NAV.mic}</span><span class="plus">${NAV.plus}</span>`
+    : `<span>${NAV.dots}</span><span>${NAV.set}</span><span>${NAV.mic}</span><span class="plus">${NAV.plus}</span>`;
+  const picker = pickOpen ? `<div class="pick" role="dialog" aria-label="Счёт">${ACCOUNTS.map(([e, n, b], i) => `<button type="button" data-acc="${i}" class="${i === account ? 'on' : ''}"><span>${e}</span><span>${n}</span><span>${money(b)}</span></button>`).join('')}</div>` : '';
+  document.getElementById('w').innerHTML = `<div class="scroll">${widget && V.widget === 'keep' ? '<div class="empty">Виджет остаётся прежним (0.103)</div>' : body}</div>${widget ? '<div class="fade"></div>' : ''}<div class="nav">${navHtml}</div>${picker}<div class="toast" id="toast"></div>`;
+  document.getElementById('phone').className = 'phone' + (widget ? '' : ' app');
+  document.getElementById('cap').textContent = widget ? 'Виджет «Главная» на рабочем столе' : 'Хаб в приложении';
+  document.getElementById('scen').innerHTML = SCEN.map(([k, l]) => `<button type="button" data-scen="${k}" aria-pressed="${k === scen}">${l}</button>`).join('');
+  document.getElementById('groups').innerHTML = GROUPS.map(([title, ctls]) => `<fieldset><legend>${title}</legend>${ctls.map(([k, l, opts]) =>
+    `<div class="ctl"><span id="l-${k}">${l}</span><div class="seg" role="group" aria-labelledby="l-${k}">${opts.map(([v, t]) =>
+      `<button type="button" data-k="${k}" data-v="${v}" aria-pressed="${V[k] == v}">${t}${REC[k] == v ? '<span class="tag">реком.</span>' : ''}</button>`).join('')}</div></div>`).join('')}</fieldset>`).join('');
+  document.getElementById('summary').value = GROUPS.map(([title, ctls]) => `${title}: ` + ctls.map(([k, l, opts]) => `${l.toLowerCase()} — ${opts.find(([v]) => v == V[k])[1]}`).join('; ')).join('\n');
+  try { localStorage.setItem(KEY, JSON.stringify(V)) } catch (e) {}
+}
+let tt;
+function toast(t) { const el = document.getElementById('toast'); if (!el) return; el.textContent = t; el.classList.add('on'); clearTimeout(tt); tt = setTimeout(() => el.classList.remove('on'), 1800) }
+const TAP = { budget: 'Открылось окно «Бюджет»', ops: 'Открылись операции ноября', analytics: 'Открылась аналитика' };
+document.addEventListener('click', e => {
+  const b = e.target.closest('button[data-k]');
+  if (b) { const v = b.dataset.v; V[b.dataset.k] = isNaN(+v) ? v : +v; pickOpen = false; render(); return }
+  const s = e.target.closest('[data-scen]');
+  if (s) { scen = s.dataset.scen; pickOpen = false; render(); return }
+  const a = e.target.closest('[data-acc]');
+  if (a) { account = +a.dataset.acc; pickOpen = false; render(); toast('Счёт выбран — запомнится'); return }
+  const act = e.target.closest('[data-act]');
+  if (!act) { if (pickOpen) { pickOpen = false; render() } return }
+  switch (act.dataset.act) {
+    case 'acc':
+      if (V.acc === 'total') { toast('Открылся раздел «Финансы»'); return }
+      if (V.accPick === 'tapList') { pickOpen = true; render(); return }
+      if (V.accPick === 'cycle') { account = (account + 1) % ACCOUNTS.length; render(); return }
+      if (V.accPick === 'longList') { toast('Нажатие — операции счёта; долгое — выбор счёта'); setTimeout(() => { pickOpen = true; render() }, 700); return }
+      toast('Счёт выбирается в настройках финансов'); return;
+    case 'spent': toast(TAP[V.fTap]); return;
+    case 'late': toast('Открылось «Предстоящее» на просроченных'); return;
+    case 'upcoming': toast('Открылось «Предстоящее»'); return;
+    case 'news': toast('Открылся раздел «Новости»'); return;
+    case 'habits': toast('Открылись «Привычки»'); return;
+    case 'add': toast('Новая задача'); return;
+  }
+});
+document.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-act][tabindex]')) { e.preventDefault(); e.target.click() } });
+document.getElementById('reset').addEventListener('click', () => { V = { ...REC }; render() });
+document.getElementById('copy').addEventListener('click', () => {
+  const out = document.getElementById('copied');
+  const fb = () => { const s = document.getElementById('summary'); s.focus(); s.select(); out.textContent = 'Текст выделен — скопируй вручную' };
+  try { navigator.clipboard.writeText(document.getElementById('summary').value).then(() => { out.textContent = 'Скопировано' }, fb) } catch (e) { fb() }
+});
+render();
+</script>
