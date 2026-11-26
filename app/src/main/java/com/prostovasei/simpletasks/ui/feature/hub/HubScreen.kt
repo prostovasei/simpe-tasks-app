@@ -150,15 +150,16 @@ internal fun HubScreen(
             val today = h.today
             val due = h.active.filter { com.prostovasei.simpletasks.domain.model.habits.HabitMath.dueOn(it, today) }
             if (due.isNotEmpty()) {
-                Spacer(Modifier.height(spacing.md))
+                Spacer(Modifier.height(SizeTokens.HUB_SECTION_GAP.dp))
                 HubHabits(due, today) { onHabits(com.prostovasei.simpletasks.ui.feature.habits.HabitsIntent.Toggle(it, today)) }
             }
         }
+        // #354 (выбор PM): между разделами 24 — разделы не сливаются; у задач 12 из них — верхнее поле подписи дня.
         if (news.isNotEmpty()) {
-            Spacer(Modifier.height(spacing.xs))
+            Spacer(Modifier.height(SizeTokens.HUB_SECTION_GAP.dp))
             HubNewsPager(news)
         }
-        Spacer(Modifier.height(spacing.xs))
+        Spacer(Modifier.height((SizeTokens.HUB_SECTION_GAP - SpacingTokens.SM).dp))
         Box(Modifier.weight(1f).fillMaxWidth()) {
             if (state.isEmpty) HubNoTasks(onAddTask) else HubTasks(state, onIntent, onOpenTask)
         }
@@ -318,7 +319,7 @@ private fun HubNewsPager(news: List<HubNews>) {
     val pager = rememberPagerState { pages.size }
     val accentNew = colorResource(R.color.widget_flat_new)
     val newMark = stringResource(R.string.news_new_mark)
-    Column(Modifier.fillMaxWidth().padding(top = spacing.sm, bottom = spacing.xs).testTag(TAG_HUB_NEWS)) {
+    Column(Modifier.fillMaxWidth().testTag(TAG_HUB_NEWS)) {
         // #346 (выбор PM): стрелок и точек нет; касание у левого или правого края (18 % ширины) листает страницу, свайп тоже работает.
         val scope = androidx.compose.runtime.rememberCoroutineScope()
         val prev = stringResource(R.string.hub_news_prev)

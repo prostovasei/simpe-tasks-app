@@ -50,11 +50,17 @@ sealed interface UpdateDialogEffect {
 }
 
 @HiltViewModel
-class UpdateDialogViewModel @Inject constructor(private val updater: AppUpdater) :
+class UpdateDialogViewModel @Inject constructor(
+    private val updater: AppUpdater,
+    savedState: androidx.lifecycle.SavedStateHandle,
+) :
     MviViewModel<UpdateDialogState, UpdateDialogIntent, UpdateDialogEffect>(UpdateDialogState.Checking) {
 
     private var job: Job? = null
     private var installing: UpdateDialogState.Ready? = null
+
+    /** #354: открыто кнопкой «Обновить приложение» — найденная версия сразу скачивается и передаётся установщику. */
+    private val auto: Boolean = savedState.get<Boolean>(com.prostovasei.simpletasks.UpdateActivity.EXTRA_AUTO) == true
 
     init {
         check()
@@ -94,6 +100,7 @@ class UpdateDialogViewModel @Inject constructor(private val updater: AppUpdater)
                 UpdateDialogState.CheckFailed
             }
             setState { result }
+            if (auto && result is UpdateDialogState.Available) download(result.update)
         }
     }
 
@@ -109,6 +116,7 @@ class UpdateDialogViewModel @Inject constructor(private val updater: AppUpdater)
                 UpdateDialogState.DownloadFailed(update)
             }
             setState { result }
+            if (auto && result is UpdateDialogState.Ready) install(result)
         }
     }
 

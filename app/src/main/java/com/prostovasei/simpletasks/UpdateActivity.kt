@@ -21,4 +21,9 @@ class UpdateActivity : ComponentActivity() {
             AppTheme { UpdateDialogRoute(onClose = ::finish) }
         }
     }
+
+    companion object {
+        /** #354: кнопка «Обновить приложение» в «Главной» — новая версия скачивается и ставится сразу, без «Загрузить». */
+        const val EXTRA_AUTO = "update_auto"
+    }
 }

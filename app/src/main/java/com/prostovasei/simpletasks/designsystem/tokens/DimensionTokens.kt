@@ -452,6 +452,10 @@ object SizeTokens {
     const val HUB_LIMIT_BAR = 8
     const val HUB_LIMIT_TICK = 2
     const val HUB_FINANCE_GAP = 10
+    /** #354: красная точка «есть новая версия» на кнопке панели и её отступ от края кнопки; промежуток между разделами хаба. */
+    const val NAV_BADGE = 7
+    const val NAV_BADGE_INSET = 6
+    const val HUB_SECTION_GAP = 24
     const val PICKER_TILE = 76
     const val PICKER_ICON = 24
     const val TASK_CHECK_GAP = 10

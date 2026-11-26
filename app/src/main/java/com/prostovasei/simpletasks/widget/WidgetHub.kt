@@ -41,6 +41,7 @@ internal fun hubPage(page: Int, pages: Int): Int = if (pages <= 0) 0 else Math.f
 internal suspend fun hubWidgetViews(context: Context, id: Int, model: WidgetModel, bar: RemoteViews, size: DpSize): RemoteViews {
     val width = size.width.value.takeIf { it.isFinite() }?.toInt() ?: 320
     val height = size.height.value.takeIf { it.isFinite() }?.toInt() ?: 640
+    UpdateBadge.refreshIfStale(context, context.widgetEntryPoint().updater())
     return hubViews(context, id, model, bar, hubFinance(context, width, height), hubNews(context), context.widgetEntryPoint().habits().observeHabits().first(), context.widgetEntryPoint().time().today())
 }
 

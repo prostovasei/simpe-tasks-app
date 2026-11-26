@@ -186,7 +186,7 @@ class WidgetRendererTest {
             fun clickable(view: View) = generateSequence(view) { it.parent as? View }.take(3).any { it.hasOnClickListeners() }
             val add = "Добавить"
             // #352: в «Главной» — «Открыть приложение» и «Обновить» вместо «Настроек».
-            val labels = if (module == WidgetModule.HUB) listOf("Открыть приложение", "Разделы", "Обновить", "Создать задачу голосом", add)
+            val labels = if (module == WidgetModule.HUB) listOf("Открыть приложение", "Разделы", "Обновить приложение", "Создать задачу голосом", add)
             else listOf("Разделы", "Настройки", "Создать задачу голосом", add)
             labels.forEach { assertTrue("$module $it", clickable(find(it))) }
             val plus = find(add)
