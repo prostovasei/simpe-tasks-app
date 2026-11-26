@@ -81,8 +81,9 @@ fun AllScreen(
                 // #334 (решение PM): просроченные — одним блоком «Просрочено» без разбивки по дням; справа вместо времени — день недели.
                 // Нажатие на подпись сворачивает блок, тонкая →| переносит всё на сегодня, число — справа.
                 val (pastGroups, dayGroups) = groups.partition { it.isOverdue }
-                if (pastGroups.isNotEmpty()) {
-                    val overdueItems = pastGroups.flatMap { it.items }
+                // #344: выполненные (в т. ч. разы повторов) в «Просрочено» не показываются; пустой блок — без подписи.
+                val overdueItems = pastGroups.flatMap { it.items }.filter { !it.isDone || it.isCompleting }
+                if (overdueItems.isNotEmpty()) {
                     val overdueCount = overdueItems.count { !it.showsDone }
                     item(key = "overdue-header") {
                         OverdueHeader(

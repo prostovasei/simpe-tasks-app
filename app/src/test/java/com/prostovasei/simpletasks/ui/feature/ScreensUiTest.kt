@@ -205,6 +205,15 @@ class ScreensUiTest {
         composeRule.onNodeWithText("1 из 3").assertExists()
     }
 
+    /** #344: выполненные разы повторов в «Просрочено» не показываются; блок только из них — без подписи. */
+    @Test
+    fun doneOverdueRepeatsAreHiddenWithTheirHeader() {
+        val state = allState.copy(overdue = listOf(item("r1", "Claude", DueText(DayLabel.Yesterday, null), recurring = true).copy(isDone = true)))
+        show { AllScreen(state, { intents += it }) }
+        composeRule.onNodeWithTag("task:r1").assertDoesNotExist()
+        composeRule.onNodeWithText("Просрочено").assertDoesNotExist()
+    }
+
     @Test
     fun allScreenShowsDaysAndTimes() {
         show { AllScreen(allState, { intents += it }) }

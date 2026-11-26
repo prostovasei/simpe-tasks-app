@@ -96,9 +96,12 @@ sealed interface WidgetEntry {
 /** Дни ленты; в «Все» над первым прошедшим днём — «Просрочено», свёрнутое скрывает прошедшие дни. */
 fun WidgetModel.entries(): List<WidgetEntry> {
     val shown = days.filter { it.items.isNotEmpty() }
-    val past = pastDays.takeIf { filter == WidgetFilter.All }.orEmpty()
-    if (past.isEmpty()) return shown.map { WidgetEntry.Day(it) }
-    return shown.flatMap { block ->
+    // #344: в «Все» прошедшие дни только из выполненных (разы повторов) не показываются вовсе — ни задач, ни «Просрочено».
+    val doneOnly = if (filter == WidgetFilter.All) pastDays.filter { block -> block.items.all { it.isDone } }.toSet() else emptySet()
+    val visible = shown.filter { it !in doneOnly }
+    val past = pastDays.takeIf { filter == WidgetFilter.All }.orEmpty().filter { it !in doneOnly }
+    if (past.isEmpty()) return visible.map { WidgetEntry.Day(it) }
+    return visible.flatMap { block ->
         buildList {
             if (block == past.first()) add(WidgetEntry.Overdue(overdueCount, overdueCollapsed))
             if (!(overdueCollapsed && block in past)) add(WidgetEntry.Day(block))

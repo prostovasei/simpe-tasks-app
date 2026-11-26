@@ -95,6 +95,18 @@ class WidgetListTest {
         assertFalse("Зарядка" in texts)
     }
 
+    /** #344: в «Все» прошедший день только из выполненных (разы повторов) не показывается — ни задач, ни «Просрочено». */
+    @Test
+    fun doneOnlyPastDayHidesOverdueBlock() {
+        val shown = model.copy(days = listOf(
+            WidgetDayBlock(WidgetDay.On(today.minusDays(1)), listOf(item("r", "Claude", DayLabel.Yesterday, null, done = true))),
+            WidgetDayBlock(WidgetDay.On(today), listOf(item("t", "Созвон", DayLabel.Today, "10:00"))),
+        ))
+        val lines = shown.lines(dayNames(context))
+        assertTrue(lines.none { it is WidgetLine.Overdue })
+        assertTrue(lines.filterIsInstance<WidgetLine.Task>().none { it.row.item.id == "r" })
+    }
+
     @Test
     fun tasksHaveBothClickZones() {
         val rows = list().rows().filter { it.findViewById<View>(R.id.row_plaque) != null }

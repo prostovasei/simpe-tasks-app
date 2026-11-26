@@ -255,7 +255,8 @@ private fun HubTasks(state: HubState, onIntent: (TaskListIntent) -> Unit, onOpen
     LazyColumn(Modifier.fillMaxSize().testTag(TAG_HUB_TASKS), contentPadding = androidx.compose.foundation.layout.WindowInsets.navigationBars
         .asPaddingValues().let { androidx.compose.foundation.layout.PaddingValues(bottom = it.calculateBottomPadding() + SizeTokens.NAV_BAR_SPACE.dp) }) {
         groups.forEachIndexed { index, (date, items, late) ->
-            if (items.isEmpty()) return@forEachIndexed
+            // #344: «Просрочено» только из выполненных — без подписи.
+            if (items.isEmpty() || (late && items.none { !it.isDone || it.isCompleting })) return@forEachIndexed
             // #334: подписи как в «Предстоящем» — «Просрочено» красным с числом справа, дни 12 sp серым с полосой у «Сегодня».
             item("hub-group-$index") {
                 if (date == null) {
