@@ -1,0 +1,158 @@
+<title>Редизайн хаба</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+<style>
+/* Конструктор #350: счета над полосой, задачи на неделю, единые боковые отступы. */
+:root { --page:#e9ebef; --pagefg:#16171d; --pagemuted:#62656e; --chip:#f3f3f4; --line:#dcdee3;
+  --card:#fff; --title:#2e3036; --muted:#8b8d94; --black:#16171d; --soft:#ececee; --late:#c62828; --pri:#862ce0; --font:Manrope,system-ui,sans-serif }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --page:#0f1013; --pagefg:#ececec; --pagemuted:#a3a3a3; --chip:#24262b; --line:#2f3137; color-scheme:dark } }
+:root[data-theme="dark"]{ --page:#0f1013; --pagefg:#ececec; --pagemuted:#a3a3a3; --chip:#24262b; --line:#2f3137; color-scheme:dark }
+*{box-sizing:border-box}
+body{background:var(--page);color:var(--pagefg);font-family:var(--font);margin:0;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 40px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--page)}
+h1{font-size:21px;margin:0 0 4px}.lead{color:var(--pagemuted);margin:0 0 14px;max-width:80ch;line-height:1.45;font-size:14px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:24px;align-items:start}
+@media (max-width:1050px){.layout{grid-template-columns:minmax(0,1fr)}.phone{order:-1;justify-self:center}}
+.panel{display:grid;gap:12px;min-width:0;align-content:start}
+fieldset{border:0;margin:0;padding:12px 14px;background:var(--card);color:var(--title);border-radius:16px;display:grid;gap:10px;min-width:0}
+legend{font-weight:700;font-size:15px;padding:0;float:left;width:100%}
+.ctl{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px}.ctl>span{flex:0 0 170px;color:#62656e;font-size:13px}
+.seg{display:inline-flex;background:#f3f3f4;border-radius:10px;padding:3px;gap:2px;flex-wrap:wrap;min-width:0}
+.seg button{font:600 13px var(--font);color:#16171d;background:none;border:0;border-radius:8px;padding:6px 9px;cursor:pointer;display:inline-flex;gap:5px;align-items:center}
+.seg button[aria-pressed="true"]{background:#fff;box-shadow:inset 0 0 0 1.5px #16171d}
+.seg button:focus-visible,.btn:focus-visible{outline:2px solid #862ce0;outline-offset:1px}
+.tag{font-size:10px;font-weight:700;color:#6b32a8}
+.top{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{font:600 13px var(--font);border:0;border-radius:10px;padding:8px 12px;cursor:pointer;background:var(--pagefg);color:var(--page)}
+.btn.ghost{background:var(--chip);color:var(--pagefg)}
+#summary{width:100%;min-height:110px;font:12px/1.45 ui-monospace,Menlo,monospace;color:var(--pagefg);background:var(--page);border:1px solid var(--line);border-radius:12px;padding:10px}
+.hint{color:var(--pagemuted);font-size:12px;margin:0;line-height:1.45}#copied{color:#2e7d32;font-size:12px}
+/* телефон */
+.phone{width:380px;max-width:100%;background:linear-gradient(#7b2fd0,#d9467a);border-radius:28px;padding:14px 8px}
+.w{background:#fff;border-radius:24px;color:var(--title);height:720px;overflow:hidden;position:relative;display:flex;flex-direction:column}
+.scroll{overflow:auto;flex:1;padding-top:var(--e);padding-bottom:70px}
+.pad{padding-inline:var(--e)}
+.accs{display:flex;gap:6px;overflow:hidden}
+.acc{background:#f3f3f4;border-radius:999px;padding:var(--ap);font-weight:700;white-space:nowrap;flex:1;min-width:0;display:flex;gap:6px;align-items:center;justify-content:center}
+.accs.text .acc{background:none;padding:0;flex:0 0 auto;justify-content:flex-start}
+.l1{display:flex;align-items:center;gap:10px}
+.bar{flex:1;height:8px;border-radius:999px;background:var(--soft);position:relative;overflow:hidden}
+.bar i{position:absolute;inset:0 auto 0 0;border-radius:999px;background:var(--black)}
+.bar b{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(135deg,rgb(98 101 110/.45) 0 2px,transparent 2px 6px)}
+.nums{font-weight:800;font-size:13px;white-space:nowrap}.nums s{text-decoration:none;color:var(--muted)}
+.news{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.nc{background:#f3f3f4;border-radius:16px;padding:10px 12px;font-size:12.5px;line-height:1.3;min-height:68px}.nc small{color:var(--muted);display:block;font-size:11px;margin-bottom:2px}
+.dh{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px;font-weight:600;padding-top:14px;padding-bottom:4px}
+.dh .ln{flex:1;height:1px;background:#e3e4e8}
+.t{display:flex;align-items:center;gap:10px;height:44px;font-size:14.5px}
+.t .c{width:18px;height:18px;border-radius:50%;border:1.6px solid #9a9ca3;flex:none}
+.t .n{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.t .tm{color:#2e3036;font-size:13.5px}
+.strip{display:flex;gap:4px;padding-top:12px}
+.strip button{flex:1;min-width:0;border:0;background:#f3f3f4;border-radius:12px;padding:6px 0;font:600 11px var(--font);color:var(--muted);cursor:pointer;display:grid;gap:1px}
+.strip button b{font-size:14px;color:var(--title)}
+.strip button[aria-pressed="true"]{background:var(--black);color:#cfd0d5}.strip button[aria-pressed="true"] b{color:#fff}
+.strip button .dot{width:4px;height:4px;border-radius:50%;background:var(--pri);margin:0 auto}
+.pager{display:flex;align-items:center;gap:8px;padding-top:14px;padding-bottom:4px;font-size:12px;font-weight:700;color:var(--muted)}
+.pager button{border:0;background:#f3f3f4;border-radius:999px;width:28px;height:28px;cursor:pointer;font:700 14px var(--font);color:var(--title)}
+.pager span{flex:1;text-align:center}
+.more{display:block;width:100%;border:0;background:none;color:var(--pri);font:700 13px var(--font);padding:10px 0;text-align:left;cursor:pointer}
+.nav{position:absolute;right:12px;bottom:12px;background:#16171d;border-radius:999px;height:40px;width:150px}
+.lab{color:#fff;font-size:12px;font-weight:700;text-align:center;margin-bottom:8px}
+.guide{position:absolute;top:0;bottom:0;width:0;border-left:1px dashed rgb(134 44 224/.55);pointer-events:none}
+</style>
+
+<h1>Редизайн хаба</h1>
+<p class="lead">Три изменения: счета над полосой, задачи на неделю вперёд и одинаковые боковые отступы у всех блоков. Справа — живой виджет: по дням можно переключаться. Пунктир показывает боковые отступы. «реком.» — моя рекомендация.</p>
+
+<div class="layout">
+  <div class="panel">
+    <div class="top">
+      <button type="button" class="btn" id="copy">Скопировать выбор</button>
+      <button type="button" class="btn ghost" id="reset">Рекомендации</button>
+      <span id="copied" aria-live="polite"></span>
+    </div>
+    <div id="groups" class="panel"></div>
+    <p class="hint">В виджете Android нельзя листать вбок свайпом — только нажатием. Поэтому «полоса дней» и «листание по дням» в виджете работают нажатием (дни, стрелки), а в приложении ещё и свайпом. «Неделя списком» прокручивается вниз и в виджете, и в приложении.</p>
+    <label class="hint" for="summary">Выбор текстом:</label>
+    <textarea id="summary" readonly></textarea>
+  </div>
+  <div class="phone"><div class="lab">Виджет «Главная» (и экран хаба)</div><div class="w" id="w"></div></div>
+</div>
+
+<script>
+const GROUPS = [
+  ['Финансы', [
+    ['acc', 'Вид счетов', [['pill', 'Плашки (как сейчас)'], ['small', 'Плашки ниже, 13 sp'], ['text', 'Без плашек, строкой']], 'small'],
+    ['accGap', 'Счета → полоса', [[6, '6'], [10, '10'], [14, '14']], 10],
+    ['total', 'Общая сумма', [['none', 'Нет'], ['first', 'Первой в строке счетов']], 'none'],
+  ]],
+  ['Задачи на неделю', [
+    ['week', 'Как листать', [['list', 'Неделя списком (вниз)'], ['strip', 'Полоса дней сверху'], ['pager', 'По дням стрелками ‹ ›'], ['more', 'Сегодня+завтра и «Ещё 5 дней»']], 'list'],
+    ['empty', 'Пустые дни', [['hide', 'Скрывать'], ['show', 'Показывать «Задач нет»']], 'hide'],
+  ]],
+  ['Отступы', [
+    ['edge', 'Слева и справа', [[12, '12'], [16, '16'], [20, '20']], 16],
+    ['news', 'Новости', [['grid', 'Карточки 2 × 2'], ['one', '2 карточки в ряд, 1 ряд']], 'grid'],
+  ]],
+];
+const REC = Object.fromEntries(GROUPS.flatMap(([, l]) => l.map(([k, , , r]) => [k, r])));
+const KEY = 'c350a';
+let state = { ...REC }, day = 0;
+try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s) state = { ...REC, ...s } } catch (e) {}
+const DAYS = [
+  ['чт', 26, 'Сегодня', [['🗂️', 'Заказать одежду', ''], ['💼', 'Приоритезация', '16:30'], ['🗂️', 'Сдать деньги на корпоратив', '17:30']]],
+  ['пт', 27, 'Завтра', [['💲', 'Higgsfield', '10:00'], ['💼', 'Запланировать отпуск', '14:00'], ['🔁', 'Финансы', '14:30'], ['🔁', 'Цветы', '15:00']]],
+  ['сб', 28, '', [['🔁', 'Бритьё', '11:00']]],
+  ['вс', 29, '', []],
+  ['пн', 30, '', [['💼', 'Планёрка', '10:00'], ['🗂️', 'Запланировать командировку', '16:00']]],
+  ['вт', 1, '', [['🔁', 'Финансы', '14:30']]],
+  ['ср', 2, '', [['💼', 'Ревью квартала', '12:00']]],
+];
+const label = d => `${d[0]} ${d[1]} ${d[1] < 10 ? 'дек' : 'ноя'}${d[2] ? ' · ' + d[2] : ''}`;
+const tasks = d => d[3].length ? d[3].map(([e, n, t]) => `<div class="t"><span class="c"></span><span>${e}</span><span class="n">${n}</span><span class="tm">${t}</span></div>`).join('')
+  : (state.empty === 'show' ? `<div class="t" style="color:var(--muted)">Задач нет</div>` : '');
+const block = d => (d[3].length || state.empty === 'show') ? `<div class="dh"><span>${label(d)}</span><span class="ln"></span><span>${d[3].length}</span></div>${tasks(d)}` : '';
+function render() {
+  const o = state;
+  const accs = [['💳', '1k'], ['📉', '819k'], ['💰', '280k'], ['💳', '0k']];
+  const ap = o.acc === 'pill' ? '9px 10px;font-size:15px' : '6px 8px;font-size:13px';
+  const total = o.total === 'first' ? `<span class="acc" style="background:none;flex:0 0 auto;padding-left:0">1,1M ₽</span>` : '';
+  let week = '';
+  if (o.week === 'list') week = DAYS.map(block).join('');
+  if (o.week === 'more') week = DAYS.slice(0, 2).map(block).join('') + `<button class="more" data-more>Ещё 5 дней ›</button>`;
+  if (o.week === 'strip') week = `<div class="strip">${DAYS.map((d, i) => `<button data-day="${i}" aria-pressed="${i === day}">${d[0]}<b>${d[1]}</b>${d[3].length ? '<i class="dot"></i>' : ''}</button>`).join('')}</div>${block(DAYS[day]) || '<div class="t" style="color:var(--muted)">Задач нет</div>'}`;
+  if (o.week === 'pager') week = `<div class="pager"><button data-step="-1" aria-label="Назад">‹</button><span>${label(DAYS[day])} · ${DAYS[day][3].length}</span><button data-step="1" aria-label="Вперёд">›</button></div>${tasks(DAYS[day]) || '<div class="t" style="color:var(--muted)">Задач нет</div>'}`;
+  const news = [['15:30', 'Ассист Алиссона, дубль Исака и бриллиант Вирца'], ['15:02 · Хоккей', 'Фонбет Чемпионат КХЛ. «Амур» сыграет с «Ак Барсом»'], ['15:01 · Футбол', 'Яма помогла забить Бруну'], ['14:03 · Лыжи', 'Кубок России. Ардашев победил']]
+    .slice(0, o.news === 'grid' ? 4 : 2).map(([s, t]) => `<div class="nc"><small>${s}</small>${t}</div>`).join('');
+  const w = document.getElementById('w');
+  w.style.setProperty('--e', o.edge + 'px'); w.style.setProperty('--ap', ap);
+  w.innerHTML = `<div class="scroll"><div class="pad">
+    <div class="accs ${o.acc === 'text' ? 'text' : ''}" style="${o.acc === 'text' ? 'gap:14px;font-size:14px' : ''}">${total}${accs.map(([e, v]) => `<span class="acc">${e} ${v}</span>`).join('')}</div>
+    <div class="l1" style="margin-top:${o.accGap}px"><div class="bar"><b style="left:47%;width:6%"></b><i style="width:47%"></i></div><span class="nums">42<s>/48/</s>90</span></div>
+    <div class="news" style="margin-top:14px">${news}</div>
+    ${week}</div></div><div class="nav"></div>
+    <div class="guide" style="left:${o.edge}px"></div><div class="guide" style="right:${o.edge}px"></div>`;
+  document.getElementById('groups').innerHTML = GROUPS.map(([title, ctls]) => `<fieldset><legend>${title}</legend>${ctls.map(([k, l, opts]) =>
+    `<div class="ctl"><span id="l-${k}">${l}</span><div class="seg" role="group" aria-labelledby="l-${k}">${opts.map(([v, t]) =>
+      `<button type="button" data-k="${k}" data-v="${v}" aria-pressed="${state[k] == v}">${t}${REC[k] == v ? '<span class="tag">реком.</span>' : ''}</button>`).join('')}</div></div>`).join('')}</fieldset>`).join('');
+  document.getElementById('summary').value = GROUPS.map(([title, ctls]) => `${title}: ` + ctls.map(([k, l, opts]) => `${l.toLowerCase()} — ${opts.find(([v]) => v == state[k])[1]}`).join('; ')).join('\n');
+  try { localStorage.setItem(KEY, JSON.stringify(state)) } catch (e) {}
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.k) { const v = b.dataset.v; state[b.dataset.k] = isNaN(+v) ? v : +v; day = 0 }
+  else if (b.dataset.day) day = +b.dataset.day;
+  else if (b.dataset.step) day = (day + +b.dataset.step + 7) % 7;
+  else if (b.hasAttribute('data-more')) { state.week = 'list' }
+  else return;
+  render();
+});
+document.getElementById('reset').addEventListener('click', () => { state = { ...REC }; day = 0; render() });
+document.getElementById('copy').addEventListener('click', () => {
+  const out = document.getElementById('copied');
+  const fb = () => { const s = document.getElementById('summary'); s.focus(); s.select(); out.textContent = 'Текст выделен — скопируй вручную' };
+  try { navigator.clipboard.writeText(document.getElementById('summary').value).then(() => { out.textContent = 'Скопировано' }, fb) } catch (e) { fb() }
+});
+render();
+</script>
