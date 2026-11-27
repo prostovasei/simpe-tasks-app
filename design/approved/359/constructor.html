@@ -79,7 +79,7 @@ legend{font-weight:700;font-size:15px;padding:0;float:left;width:100%}
 </style>
 
 <h1>Новый хаб</h1>
-<p class="lead">Справа — хаб по твоему запросу: <b>2 карточки финансов</b> (остаток одного счёта и потрачено за месяц), <b>2 последние новости</b> и <b>5 ближайших задач</b>. <b>Уже настроено по твоему выбору и правкам</b> (метка «PM»): без остатка и точек у счёта, «−17%» в строке с суммой, без плашки «Просрочено» и подсказок, задачи внизу, привычки иконками. Внизу слева — «Шаг 3»: как компактно показать «Все новости», как листать задачи внизу и как выглядят привычки-иконки. Сверху над телефоном — сценарии: перерасход, просроченные, пустые состояния. Нажми карточку счёта — увидишь выбор счёта. «реком.» — моя рекомендация. Внизу слева — то, что легко упустить.</p>
+<p class="lead">Справа — хаб по твоему запросу: <b>2 карточки финансов</b> (остаток одного счёта и потрачено за месяц), <b>2 последние новости</b> и <b>5 ближайших задач</b>. <b>Уже настроено по твоему выбору и правкам</b> (метка «PM»): без остатка и точек у счёта, «−17%» в строке с суммой, без плашки «Просрочено» и подсказок, задачи внизу, привычки иконками. Шаг 4: 3 новости, плашки «Все новости ›» и «Все задачи ›», привычки кружками на всю ширину — пустые места и последний кружок «›» (открывает раздел). Переключатель «Привычек на сегодня» внизу слева показывает 0, 3 и 9. Сверху над телефоном — сценарии: перерасход, просроченные, пустые состояния. Нажми карточку счёта — увидишь выбор счёта. «реком.» — моя рекомендация. Внизу слева — то, что легко упустить.</p>
 
 <div class="layout">
   <div class="panel">
@@ -152,16 +152,23 @@ const GROUPS = [
     ['tDone', 'Выполнил задачу', [['next', 'Исчезает, подтягивается следующая'], ['stay', 'Тает до конца дня']], 'next'],
   ]],
 ];
-GROUPS.push(['Шаг 3: варианты для твоих правок', [
-  ['nAll', 'Все новости — компактно', [['link', 'Мелкая ссылка «Все новости ›» справа'], ['icon', 'Кружок ⋯ в углу второй новости'], ['lastPage', 'Последняя страница листания — «Все новости ›»']], 'link'],
-  ['tScroll', 'Задачи внизу', [['fill', 'До низа экрана, листаются'], ['inner', 'Ровно 5 строк, листаются внутри'], ['pages', 'Страницы по 5 (‹ 1/3 ›)'], ['expand', 'Кнопка «Ещё 5»']], 'fill'],
-  ['habIcon', 'Привычка-иконка', [['ring', 'Сделано — сиреневый круг'], ['check', 'Сделано — значок ✓ сбоку'], ['fade', 'Не сделано — бледная']], 'ring'],
-  ['habSize', 'Размер иконки', [[36, '36'], [44, '44']], 36],
+GROUPS.push(['Шаг 4: по твоим правкам', [
+  ['nCount', 'Сколько новостей', [[2, '2'], [3, '3']], 3],
+  ['nAll', '«Все новости ›»', [['pill', 'Небольшая плашка со стрелкой'], ['link', 'Мелкая ссылка справа'], ['lastPage', 'Последняя страница листания']], 'pill'],
+  ['pillAlign', 'Плашки «Все …» стоят', [['left', 'Слева'], ['center', 'По центру'], ['wide', 'Во всю ширину']], 'left'],
+  ['tScroll', 'Задачи внизу', [['fill', 'До низа экрана, листаются'], ['inner', 'Ровно 5 строк, листаются внутри'], ['expand', 'Кнопка «Ещё 5»']], 'fill'],
+  ['tAll', '«Все задачи ›»', [['pinned', 'Закреплена внизу слева, рядом с капсулой'], ['end', 'В конце списка задач']], 'pinned'],
+  ['habIcon', 'Сделанная привычка', [['ring', 'Сиреневый круг'], ['check', 'Значок ✓ сбоку'], ['fade', 'Несделанные бледные']], 'ring'],
+  ['habSize', 'Размер кружка', [[36, '36'], [44, '44']], 36],
+  ['habEmpty', 'Пустые места', [['dashed', 'Пунктирный пустой кружок'], ['plus', 'Кружок «+» — новая привычка'], ['ghost', 'Бледные примеры 🌱 💧 📖']], 'dashed'],
+  ['habArrow', 'Последний кружок «›»', [['grey', 'Серый, как остальные'], ['lilac', 'Сиреневый']], 'grey'],
+  ['habDemo', 'Привычек на сегодня (пример)', [[0, '0'], [3, '3'], [9, '9']], 3],
 ]]);
-const PM = { view: 'app', order: 'fnt', titles: 'none', gap: 24, habits: 'icons', widget: 'same', fLayout: 'wide', fStyle: 'grey', fmt: 'kk', acc: 'name',
+const PM = { nCount: 3, nAll: 'pill', view: 'app', order: 'fnt', titles: 'none', gap: 24, habits: 'icons', widget: 'same', fLayout: 'wide', fStyle: 'grey', fmt: 'kk', acc: 'name',
   accPick: 'cycle', spent: 'compare', over: 'red', fTap: 'budget', nLayout: 'rows', nLines: 2, nMeta: 'none', nPage: 'edges', count: 5, late: 'in', tView: 'right', tMore: 'more', tDone: 'next' };
 const REC = { ...Object.fromEntries(GROUPS.flatMap(([, l]) => l.map(([k, , , r]) => [k, r]))), ...PM };
-const KEY = 'c359c';
+const DEMO = new Set(['habDemo']);
+const KEY = 'c359d';
 let V = { ...REC };
 try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s) V = { ...REC, ...s } } catch (e) {}
 
@@ -179,7 +186,8 @@ const TASKS = [
 ];
 let page = 0, lateOpen = false;
 const LATE = [['💼', 'Отправить отчёт', -2, ''], ['🏠', 'Оплатить интернет', -1, '', 1], ['🗂️', 'Вернуть книгу', -3, ''], ['💼', 'Счёт клиенту', -1, ''], ['🏠', 'Записаться к врачу', -4, ''], ['🗂️', 'Купить фильтр', -2, '']];
-const NEWS = [['00:46 · Футбол · Новое', 'Лига Европы. «Милан» в гостях у «Олимпиакоса», «Порту» сыграет с «Ромой»'], ['00:36 · Хоккей · Новое', 'Сенат Чехии проголосовал против матчей и турниров с участием россиян']];
+const NEWS = [['00:46 · Футбол · Новое', 'Лига Европы. «Милан» в гостях у «Олимпиакоса», «Порту» сыграет с «Ромой»'], ['00:36 · Хоккей · Новое', 'Сенат Чехии проголосовал против матчей и турниров с участием россиян'], ['00:10 · Футбол · Новое', 'Керимов о Турции: «Краснодар», «Зенит» и «Спартак» — главные кандидаты']];
+const HABITS = [['🏃', 'Зарядка', 1], ['📚', 'Читать', 0], ['💧', 'Вода', 1], ['🧘', 'Растяжка', 0], ['🦷', 'Зубная нить', 0], ['🚶', '10 000 шагов', 0], ['💊', 'Витамины', 1], ['🛌', 'Сон до 23:00', 0], ['🇬🇧', 'Английский', 0]];
 
 function money(v) {
   if (V.fmt === 'full') return v.toLocaleString('ru-RU').replace(/,/g, ' ') + ' ₽';
@@ -214,25 +222,41 @@ function habits() {
   if (V.habits === 'off') return '';
   if (V.habits === 'line') return `<div class="ovl" style="background:#f3f3f4;color:#2e3036" data-act="habits">🏃 Привычки сегодня: 1 из 2 <span style="margin-left:auto">›</span></div>`;
   if (V.habits === 'icons') {
-    const z = V.habSize;
-    const icon = (e, done, label) => {
-      const ring = done && V.habIcon !== 'fade' ? (V.habIcon === 'ring' ? 'background:var(--sel);box-shadow:inset 0 0 0 2px var(--pri)' : 'background:#f3f3f4') : 'background:#f3f3f4';
+    const z = V.habSize, gap = 8, width = 340;
+    const slots = Math.max(2, Math.floor((width + gap) / (z + gap)));
+    const shown = HABITS.slice(0, V.habDemo).slice(0, slots - 1);
+    const circle = (inner, style, label, act) => `<span title="${label}" ${act ? `data-act="${act}" role="button"` : ''} style="justify-self:center;position:relative;width:${z}px;height:${z}px;border-radius:50%;display:grid;place-items:center;font-size:${Math.round(z * .5)}px;${style}">${inner}</span>`;
+    const cells = shown.map(([e, n, done]) => {
+      const ring = done && V.habIcon === 'ring' ? 'background:var(--sel);box-shadow:inset 0 0 0 2px var(--pri)' : 'background:#f3f3f4';
       const op = !done && V.habIcon === 'fade' ? 'opacity:.45;' : '';
       const tick = done && V.habIcon === 'check' ? '<i style="position:absolute;right:-2px;bottom:-2px;width:16px;height:16px;border-radius:50%;background:var(--pri);color:#fff;font-size:10px;display:grid;place-items:center;font-style:normal">✓</i>' : '';
-      return `<span title="${label}" role="button" style="position:relative;width:${z}px;height:${z}px;border-radius:50%;display:grid;place-items:center;font-size:${Math.round(z * .5)}px;${ring};${op}">${e}${tick}</span>`;
-    };
-    return `<div style="display:flex;gap:8px">${icon('🏃', true, 'Зарядка — сделано')}${icon('📚', false, 'Читать')}${icon('💧', false, 'Вода')}</div>`;
+      return circle(e + tick, ring + ';' + op, n + (done ? ' — сделано' : ''), 'habit');
+    });
+    const ghosts = ['🌱', '💧', '📖', '🏋️', '🍎', '🧠', '🎯', '🎸'];
+    for (let i = cells.length; i < slots - 1; i++) {
+      if (V.habEmpty === 'dashed') cells.push(circle('', 'background:transparent;border:1.5px dashed #c4c5cb;box-sizing:border-box', 'Пусто', ''));
+      else if (V.habEmpty === 'plus') cells.push(circle('<span style="font-size:18px;color:#9a9ca3;font-weight:600">+</span>', 'background:#f8f8fa;border:1.5px dashed #c4c5cb;box-sizing:border-box', 'Новая привычка', 'addHabit'));
+      else cells.push(circle(ghosts[i % ghosts.length], 'background:#f8f8fa;opacity:.35;filter:grayscale(1)', 'Пример', ''));
+    }
+    cells.push(circle('<span style="font-size:18px;font-weight:800">›</span>', V.habArrow === 'lilac' ? 'background:var(--sel);color:var(--pri)' : 'background:#f3f3f4;color:#62656e', 'Все привычки', 'habits'));
+    return `<div style="display:grid;grid-template-columns:repeat(${slots},1fr)">${cells.join('')}</div>`;
   }
   return `<div class="habits"><span class="hab on">🏃 Зарядка ✓</span><span class="hab">📚 Читать</span></div>`;
+}
+function allPill(label, act, extra = '') {
+  const w = V.pillAlign === 'wide' ? 'display:flex;width:100%;justify-content:center' : 'display:inline-flex';
+  const box = V.pillAlign === 'center' ? 'text-align:center' : '';
+  return `<div style="${box};margin-top:8px;${extra}"><button type="button" data-act="${act}" style="${w};align-items:center;gap:6px;border:0;background:#f3f3f4;border-radius:999px;padding:7px 14px;font:700 12.5px var(--font);color:#2e3036;cursor:pointer">${label} <span style="color:#9a9ca3">›</span></button></div>`;
 }
 function news() {
   if (scen === 'nonews') return `<div class="nc" style="text-align:center;color:var(--muted)">Новости не загрузились · <b style="color:var(--pri)">Обновить</b></div>`;
   const meta = m => V.nMeta === 'none' ? '' : `<small>${V.nMeta === 'time' ? m.split(' · ')[0] : m}</small>`;
   const clamp = `-webkit-line-clamp:${V.nLines}`;
-  const cards = NEWS.map(([m, t]) => `<div class="nc ${V.nLayout === 'list' ? 'line' : ''} ${V.nLayout === 'rows' ? 'big' : ''}">${meta(m)}<div class="nt" style="${clamp}">${t}</div></div>`).join('');
+  const cards = NEWS.slice(0, V.nCount).map(([m, t]) => `<div class="nc ${V.nLayout === 'list' ? 'line' : ''} ${V.nLayout === 'rows' ? 'big' : ''}">${meta(m)}<div class="nt" style="${clamp}">${t}</div></div>`).join('');
   const cols = V.nLayout === 'two' ? '1fr 1fr' : '1fr';
   let all = '';
   if (V.nAll === 'link') all = '<div style="text-align:right"><button class="more" data-act="news" style="font-size:12px;padding:6px 0 0">Все новости ›</button></div>';
+  if (V.nAll === 'pill') all = allPill('Все новости', 'news');
   let list = cards;
   if (V.nAll === 'icon') list = list.replace(/<\/div><\/div>$/, '</div><span data-act="news" role="button" title="Все новости" style="position:absolute;right:8px;bottom:8px;width:24px;height:24px;border-radius:50%;background:#fff;display:grid;place-items:center;font-weight:800;color:#62656e;cursor:pointer">⋯</span></div>').replace(/(<div class="nc[^"]*")(?![\s\S]*<div class="nc)/, '$1 style="position:relative"');
   if (V.nAll === 'lastPage') all = '<div style="font-size:11px;color:var(--muted);text-align:center;margin-top:4px">‹ ● ● ○ — на последней странице: «Все новости ›»</div>';
@@ -266,7 +290,7 @@ function tasks() {
     });
     return out;
   };
-  const tail = V.tMore === 'more' ? `<button class="more" data-act="upcoming">Все задачи в «Предстоящем» ›</button>` : '';
+  const tail = V.tAll === 'end' || V.tScroll !== 'fill' ? allPill('Все задачи', 'upcoming') : '';
   if (V.tScroll === 'fill') {
     h += `<div class="fill" aria-label="Задачи, листаются">${rows(list)}${tail}<div style="height:64px"></div></div>`;
   } else if (V.tScroll === 'inner') {
@@ -297,13 +321,14 @@ function render() {
   const navHtml = widget ? `<span>${NAV.app}</span><span>${NAV.dots}</span><span>${NAV.upd}</span><span>${NAV.mic}</span><span class="plus">${NAV.plus}</span>`
     : `<span>${NAV.dots}</span><span>${NAV.set}</span><span>${NAV.mic}</span><span class="plus">${NAV.plus}</span>`;
   const picker = pickOpen ? `<div class="pick" role="dialog" aria-label="Счёт">${ACCOUNTS.map(([e, n, b], i) => `<button type="button" data-acc="${i}" class="${i === account ? 'on' : ''}"><span>${e}</span><span>${n}</span><span>${money(b)}</span></button>`).join('')}</div>` : '';
-  document.getElementById('w').innerHTML = `<div class="scroll${fill ? ' flex' : ''}">${widget && V.widget === 'keep' ? '<div class="empty">Виджет остаётся прежним (0.103)</div>' : body}</div>${widget ? '<div class="fade"></div>' : ''}<div class="nav">${navHtml}</div>${picker}<div class="toast" id="toast"></div>`;
+  const pinned = fill && V.tAll === 'pinned' && !(widget && V.widget === 'keep') ? `<div style="position:absolute;left:0;right:0;bottom:0;height:64px;background:linear-gradient(rgb(255 255 255/0),#fff 45%);z-index:2;pointer-events:none"></div><div style="position:absolute;left:12px;bottom:12px;z-index:3">${allPill('Все задачи', 'upcoming', 'margin:0')}</div>` : '';
+  document.getElementById('w').innerHTML = pinned + `<div class="scroll${fill ? ' flex' : ''}">${widget && V.widget === 'keep' ? '<div class="empty">Виджет остаётся прежним (0.103)</div>' : body}</div>${widget ? '<div class="fade"></div>' : ''}<div class="nav">${navHtml}</div>${picker}<div class="toast" id="toast"></div>`;
   document.getElementById('phone').className = 'phone' + (widget ? '' : ' app');
   document.getElementById('cap').textContent = widget ? 'Виджет «Главная» на рабочем столе' : 'Хаб в приложении';
   document.getElementById('scen').innerHTML = SCEN.map(([k, l]) => `<button type="button" data-scen="${k}" aria-pressed="${k === scen}">${l}</button>`).join('');
   document.getElementById('groups').innerHTML = GROUPS.map(([title, ctls]) => `<fieldset><legend>${title}</legend>${ctls.map(([k, l, opts]) =>
     `<div class="ctl"><span id="l-${k}">${l}</span><div class="seg" role="group" aria-labelledby="l-${k}">${opts.map(([v, t]) =>
-      `<button type="button" data-k="${k}" data-v="${v}" aria-pressed="${V[k] == v}">${t}${PM[k] != null ? (PM[k] == v ? '<span class="tag" style="color:#2e7d32">PM</span>' : '') : REC[k] == v ? '<span class="tag">реком.</span>' : ''}</button>`).join('')}</div></div>`).join('')}</fieldset>`).join('');
+      `<button type="button" data-k="${k}" data-v="${v}" aria-pressed="${V[k] == v}">${t}${DEMO.has(k) ? '' : PM[k] != null ? (PM[k] == v ? '<span class="tag" style="color:#2e7d32">PM</span>' : '') : REC[k] == v ? '<span class="tag">реком.</span>' : ''}</button>`).join('')}</div></div>`).join('')}</fieldset>`).join('');
   document.getElementById('summary').value = GROUPS.map(([title, ctls]) => `${title}: ` + ctls.map(([k, l, opts]) => `${l.toLowerCase()} — ${opts.find(([v]) => v == V[k])[1]}`).join('; ')).join('\n');
   try { localStorage.setItem(KEY, JSON.stringify(V)) } catch (e) {}
 }
@@ -334,7 +359,9 @@ document.addEventListener('click', e => {
     case 'more5': page++; render(); return;
     case 'upcoming': toast('Открылось «Предстоящее»'); return;
     case 'news': toast('Открылся раздел «Новости»'); return;
-    case 'habits': toast('Открылись «Привычки»'); return;
+    case 'habits': toast('Открылся раздел «Привычки»'); return;
+    case 'habit': toast('Привычка отмечена'); return;
+    case 'addHabit': toast('Новая привычка'); return;
     case 'add': toast('Новая задача'); return;
   }
 });
