@@ -1,0 +1,247 @@
+<title>Виджеты разделов</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+<style>
+/* Конструктор #359: четыре отдельных виджета рабочего стола — Финансы, Привычки, Новости, Задачи. */
+:root{--page:#e9ebef;--pagefg:#16171d;--pagemuted:#62656e;--chip:#f3f3f4;--line:#dcdee3;--card:#fff;--title:#2e3036;--muted:#8b8d94;--black:#16171d;--pri:#862ce0;--late:#c62828;--lilac:#c39bff;--sel:#f4effd;--font:Manrope,system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--page:#0f1013;--pagefg:#ececec;--pagemuted:#a3a3a3;--chip:#24262b;--line:#2f3137;color-scheme:dark}}
+:root[data-theme="dark"]{--page:#0f1013;--pagefg:#ececec;--pagemuted:#a3a3a3;--chip:#24262b;--line:#2f3137;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--page);color:var(--pagefg);font-family:var(--font);margin:0;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 40px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--page)}
+h1{font-size:21px;margin:0 0 4px}.lead{color:var(--pagemuted);margin:0 0 14px;max-width:84ch;line-height:1.45;font-size:14px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:24px;align-items:start}
+@media (max-width:1100px){.layout{grid-template-columns:minmax(0,1fr)}.side{order:-1;justify-self:center}}
+.panel{display:grid;gap:12px;min-width:0;align-content:start}
+fieldset{border:0;margin:0;padding:12px 14px;background:var(--card);color:var(--title);border-radius:16px;display:grid;gap:10px;min-width:0}
+legend{font-weight:700;font-size:15px;padding:0;float:left;width:100%}
+.ctl{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px}.ctl>span{flex:0 0 190px;color:#62656e;font-size:13px}
+.seg{display:inline-flex;background:#f3f3f4;border-radius:10px;padding:3px;gap:2px;flex-wrap:wrap;min-width:0}
+.seg button{font:600 13px var(--font);color:#16171d;background:none;border:0;border-radius:8px;padding:6px 9px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:#fff;box-shadow:inset 0 0 0 1.5px #16171d}
+.seg button:focus-visible,.btn:focus-visible,.tabs button:focus-visible{outline:2px solid #862ce0;outline-offset:1px}
+.tag{font-size:10px;font-weight:700;color:#6b32a8;margin-left:4px}.tag.pm{color:#2e7d32}
+.top{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{font:600 13px var(--font);border:0;border-radius:10px;padding:8px 12px;cursor:pointer;background:var(--pagefg);color:var(--page)}
+.btn.ghost{background:var(--chip);color:var(--pagefg)}
+#summary{width:100%;min-height:150px;font:12px/1.45 ui-monospace,Menlo,monospace;color:var(--pagefg);background:var(--page);border:1px solid var(--line);border-radius:12px;padding:10px}
+.hint{color:var(--pagemuted);font-size:12.5px;margin:0;line-height:1.5}#copied{color:#2e7d32;font-size:12px}
+.fixed{background:var(--card);color:var(--title);border-radius:16px;padding:12px 14px;font-size:13px;line-height:1.5}.fixed ul{margin:6px 0 0;padding-left:18px}
+/* рабочий стол */
+.side{display:grid;gap:10px;justify-items:center}
+.tabs{display:flex;gap:4px;background:var(--chip);border-radius:12px;padding:3px;flex-wrap:wrap;justify-content:center;max-width:390px}
+.tabs button{font:600 12px var(--font);border:0;background:none;color:var(--pagefg);border-radius:9px;padding:6px 9px;cursor:pointer}
+.tabs button[aria-pressed="true"]{background:var(--card);box-shadow:0 0 0 1.5px var(--pagefg) inset}
+.phone{width:380px;max-width:100%;border-radius:32px;padding:10px 0 14px;background:linear-gradient(170deg,#5b2bc0,#b8418f 55%,#f08a5d);position:relative;color:#2e3036}
+.status{display:flex;justify-content:space-between;color:#fff;font-size:13px;font-weight:700;padding:4px 22px 10px}
+.grid{position:relative;padding:0 12px}
+.cellgrid{position:absolute;inset:0 12px;display:grid;grid-template-columns:repeat(4,1fr);gap:var(--rg) 8px;pointer-events:none}
+.cellgrid i{border:1px dashed rgb(255 255 255/.35);border-radius:10px}
+.wg{position:relative;overflow:hidden;margin-bottom:var(--rg);border-radius:var(--r);background:var(--wbg);box-shadow:0 2px 10px rgb(0 0 0/.12)}
+.wname{position:absolute;top:-1px;left:10px;font-size:10px;font-weight:700;color:#fff;transform:translateY(-100%);padding-bottom:2px}
+.fin{display:grid;height:100%}.fin>div{padding:12px 14px;min-width:0;display:flex;flex-direction:column;justify-content:center;cursor:pointer}
+.fin .k{font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.fin .v{font-size:22px;font-weight:800;letter-spacing:-.3px;white-space:nowrap}
+.fin .v small{font-size:12.5px;font-weight:600;color:var(--muted);letter-spacing:0}
+.fin.halves>div+div{border-left:1px solid #eceef1}
+.fin.tiles{gap:8px;padding:8px}.fin.tiles>div{background:#f3f3f4;border-radius:14px;padding:8px 12px}
+.hab{display:grid;align-items:center;height:100%;padding:0 10px}
+.hab span{justify-self:center;border-radius:50%;display:grid;place-items:center;position:relative;cursor:pointer}
+.whead{display:flex;align-items:center;gap:6px;padding:10px 12px 4px;font-size:13px;font-weight:800}
+.whead .sp{flex:1}.whead button{border:0;background:none;font:700 12.5px var(--font);color:var(--muted);cursor:pointer;padding:2px 4px}
+.whead .ic{width:26px;height:26px;border-radius:50%;background:#f3f3f4;color:#2e3036;display:grid;place-items:center;padding:0}.whead .ic.plus{background:var(--sel);color:var(--pri)}
+.whead svg{width:16px;height:16px}
+.nrow{padding:7px 12px;border-bottom:1px solid #eceef1;font-size:13px;font-weight:700;line-height:1.3}.nrow>div{display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden}
+.nrow:last-of-type{border-bottom:0}
+.pill{display:inline-flex;gap:6px;border:0;background:#f3f3f4;border-radius:999px;padding:6px 12px;font:700 12px var(--font);color:#2e3036;cursor:pointer;margin:6px 12px 10px}
+.tlist{overflow:auto}
+.t{display:flex;align-items:center;gap:10px;height:40px;padding:0 12px;font-size:14px}
+.t .c{width:18px;height:18px;border-radius:50%;border:1.6px solid #a2a4ab;flex:none}.t.hi .c{border:2px solid var(--pri)}.t.hi .n{color:var(--pri)}
+.t .n{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.t .r{font-size:12.5px}.t .r.late{color:var(--late)}
+.mini{position:absolute;right:8px;bottom:8px;background:#16171d;border-radius:999px;display:flex;padding:3px;gap:2px}
+.mini span{width:32px;height:32px;display:grid;place-items:center;color:#fff}.mini svg{width:18px;height:18px}.mini .plus{color:var(--lilac)}
+.over{position:absolute;inset:auto 0 0 0;height:22px;background:linear-gradient(rgb(255 255 255/0),var(--wbg));pointer-events:none}
+.dock{display:flex;justify-content:space-around;padding:6px 18px 0}.dock i{width:52px;height:52px;border-radius:16px;background:rgb(255 255 255/.28)}
+.warn{color:#fff;background:rgb(0 0 0/.35);border-radius:12px;font-size:12px;font-weight:600;padding:6px 10px;margin:0 12px 8px;text-align:center}
+.toast{position:absolute;left:50%;bottom:90px;transform:translate(-50%,10px);background:#16171d;color:#fff;font-size:12px;font-weight:600;padding:8px 12px;border-radius:999px;opacity:0;transition:.2s;pointer-events:none;z-index:6;white-space:nowrap}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.cap{font-size:12px;color:var(--pagemuted);text-align:center;max-width:380px;line-height:1.4}
+</style>
+
+<h1>Виджеты разделов</h1>
+<p class="lead">Четыре отдельных виджета на рабочем столе: <b>Финансы, Привычки, Новости, Задачи</b>. Справа — рабочий стол с сеткой лаунчера (пунктир). Высоту ряда задаёт лаунчер телефона, поэтому её можно переключить. Над телефоном — сценарии. «PM» — уже решено тобой, «реком.» — моя рекомендация.</p>
+
+<div class="layout">
+  <div class="panel">
+    <div class="fixed"><b>Уже решено в прошлых шагах — переносится как есть</b><ul>
+      <li>Финансы: счёт «📉 Инвест 819k» (нажатие листает счета) и «Потрачено 42k −17% к октябрю» (красная при перерасходе, нажатие — «Бюджет»).</li>
+      <li>Привычки: кружки на всю ширину, пустые заглушки, последний «›» — раздел.</li>
+      <li>Новости: 3 последние, без подписи над заголовком, касание по краям листает, «Все новости ›».</li>
+      <li>Задачи: просроченные первыми, день справа, список листается, «Все задачи ›», выполненная исчезает.</li>
+      <li>Общий виджет остаётся — тот, что уже стоит, не меняется.</li>
+    </ul></div>
+    <div class="top">
+      <button type="button" class="btn" id="copy">Скопировать выбор</button>
+      <button type="button" class="btn ghost" id="reset">Рекомендации</button>
+      <span id="copied" aria-live="polite"></span>
+    </div>
+    <div id="groups" class="panel"></div>
+    <label class="hint" for="summary">Выбор текстом:</label>
+    <textarea id="summary" readonly></textarea>
+  </div>
+  <div class="side">
+    <div class="tabs" id="scen" role="group" aria-label="Сценарий"></div>
+    <div class="phone" id="phone"></div>
+    <p class="cap" id="cap"></p>
+  </div>
+</div>
+
+<script>
+const S = 'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"';
+const IC = {
+  mic: `<svg viewBox="0 0 24 24" ${S}><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>`,
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+};
+const GROUPS = [
+  ['Общее', [
+    ['cellH', 'Высота ряда лаунчера (пример)', [[90, '90'], [100, '100'], [110, '110']], 100],
+    ['showGrid', 'Сетка рабочего стола', [['yes', 'Показать'], ['no', 'Скрыть']], 'yes'],
+    ['radius', 'Скругление виджетов', [[16, '16'], [20, '20'], [24, '24']], 20],
+    ['bg', 'Фон виджетов', [['white', 'Белый'], ['glass', 'Белый полупрозрачный'], ['grey', 'Светло-серый']], 'white'],
+    ['names', 'Названия над виджетами', [['no', 'Нет'], ['yes', 'Да (как подписи лаунчера)']], 'no'],
+  ]],
+  ['Финансы', [
+    ['fRows', 'Высота', [[1, '1 ряд'], [2, '2 ряда']], 1],
+    ['fLayout', 'Внутри', [['halves', 'Две половины с разделителем'], ['tiles', 'Две серые плитки']], 'halves'],
+    ['fSplit', 'Доли', [['even', 'Поровну'], ['wide', 'Счёт узкий, траты широкие']], 'wide'],
+  ]],
+  ['Привычки', [
+    ['hSize', 'Кружок', [[36, '36'], [44, '44']], 36],
+    ['hDone', 'Сделанная', [['ring', 'Сиреневый круг'], ['check', 'Значок ✓ сбоку']], 'ring'],
+    ['hEmpty', 'Пустые места', [['dashed', 'Пунктирный кружок'], ['plus', 'Кружок «+» — новая привычка'], ['ghost', 'Бледные примеры']], 'dashed'],
+    ['hArrow', 'Последний «›»', [['grey', 'Серый'], ['lilac', 'Сиреневый']], 'grey'],
+  ]],
+  ['Новости', [
+    ['nRows', 'Высота', [[2, '2 ряда'], [3, '3 ряда']], 2],
+    ['nCount', 'Сколько новостей', [[2, '2'], [3, '3']], 3],
+    ['nLines', 'Строк заголовка', [[1, '1'], [2, '2']], 2],
+    ['nAll', '«Все новости»', [['head', 'В шапке «Новости · Все ›»'], ['pill', 'Плашкой внизу']], 'head'],
+  ]],
+  ['Задачи', [
+    ['tRows', 'Высота', [[2, '2 ряда'], [3, '3 ряда'], [4, '4 ряда']], 2],
+    ['tHead', 'Шапка', [['full', '«Задачи · Все ›» + 🎤 и «+»'], ['plain', 'Только «Задачи · Все ›»'], ['none', 'Без шапки']], 'full'],
+    ['tCaps', 'Кнопки 🎤 и «+»', [['head', 'В шапке'], ['mini', 'Мини-капсула внизу справа'], ['none', 'Нет']], 'head'],
+  ]],
+];
+const PM = {};
+const REC = Object.fromEntries(GROUPS.flatMap(([, l]) => l.map(([k, , , r]) => [k, r])));
+const DEMO = new Set(['cellH', 'showGrid']);
+const KEY = 'c359w';
+let V = { ...REC };
+try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s) V = { ...REC, ...s } } catch (e) {}
+const SCEN = [['normal', 'Обычный день'], ['over', 'Перерасход'], ['late', '6 просроченных'], ['nohab', 'Привычек нет'], ['nonews', 'Новости не загрузились'], ['empty', 'Нет задач']];
+let scen = 'normal', account = 1;
+const ACCOUNTS = [['💳', 'Карта', 1000], ['📉', 'Инвест', 819000], ['💰', 'Наличные', 280000], ['💳', 'Кредитка', 0]];
+const HABITS = [['🏃', 1], ['📚', 0], ['💧', 1]];
+const NEWS = ['Лига Европы. «Милан» в гостях у «Олимпиакоса», «Порту» сыграет с «Ромой»', 'Сенат Чехии проголосовал против матчей и турниров с участием россиян', 'Керимов о Турции: «Краснодар», «Зенит» и «Спартак» — главные кандидаты'];
+const WD = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
+const dayOf = o => new Date(2026, 10, 27 + o);
+const TASKS = [['💼', 'Отправить отчёт', -2, ''], ['🏠', 'Оплатить интернет', -1, '', 1], ['🗂️', 'Заказать одежду', 0, ''], ['💲', 'Higgsfield', 0, '10:00'], ['🗂️', 'Сдать деньги на корпоратив', 0, '12:00', 1],
+  ['💼', 'Запланировать отпуск', 0, '14:00', 1], ['🔁', 'Финансы', 0, '14:30'], ['🔁', 'Цветы', 0, '15:00'], ['🔁', 'Бритьё', 1, '08:00'], ['💼', 'Пройти юр. тест', 1, '16:30']];
+const LATE6 = [['🗂️', 'Вернуть книгу', -3, ''], ['💼', 'Счёт клиенту', -1, ''], ['🏠', 'Записаться к врачу', -4, ''], ['🗂️', 'Купить фильтр', -2, '']];
+const k = v => Math.round(v / 1000) + 'k';
+const H = rows => rows * V.cellH + (rows - 1) * 8;
+
+function wrap(name, rows, inner, extra = '') {
+  return `<div class="wg" style="height:${H(rows)}px;${extra}">${V.names === 'yes' ? '' : ''}${inner}</div>`;
+}
+function finance() {
+  const [e, n, bal] = ACCOUNTS[account];
+  const sp = scen === 'over' ? 97000 : 42300;
+  const cmp = scen === 'over' ? '+89% к октябрю' : '−17% к октябрю';
+  const cols = V.fSplit === 'wide' ? 'minmax(0,.75fr) minmax(0,1.25fr)' : '1fr 1fr';
+  const big = V.fRows === 2;
+  return wrap('Финансы', V.fRows, `<div class="fin ${V.fLayout}" style="grid-template-columns:${cols}">
+    <div data-act="acc" role="button" tabindex="0"><div class="k">${e} ${n}</div><div class="v" style="${big ? 'font-size:26px' : ''}">${k(bal)}</div>${big ? '<div class="k" style="margin-top:4px">нажми — следующий счёт</div>' : ''}</div>
+    <div data-act="spent" role="button" tabindex="0"><div class="k">Потрачено в ноябре</div><div class="v" style="${big ? 'font-size:26px' : ''}"><span style="${scen === 'over' ? 'color:var(--late)' : ''}">${k(sp)}</span> <small>${cmp}</small></div>${big ? '<div class="k" style="margin-top:4px">из 90k · прогноз 46k</div>' : ''}</div>
+  </div>`);
+}
+function habits() {
+  const z = V.hSize, list = scen === 'nohab' ? [] : HABITS;
+  const width = 356 - 20, slots = Math.max(2, Math.floor((width + 8) / (z + 8)));
+  const c = (inner, style, act, label) => `<span ${act ? `data-act="${act}" role="button"` : ''} title="${label}" style="width:${z}px;height:${z}px;font-size:${Math.round(z * .5)}px;${style}">${inner}</span>`;
+  const cells = list.slice(0, slots - 1).map(([e, done]) => c(e + (done && V.hDone === 'check' ? '<i style="position:absolute;right:-2px;bottom:-2px;width:16px;height:16px;border-radius:50%;background:var(--pri);color:#fff;font-size:10px;display:grid;place-items:center;font-style:normal">✓</i>' : ''),
+    done && V.hDone === 'ring' ? 'background:var(--sel);box-shadow:inset 0 0 0 2px var(--pri)' : 'background:#f3f3f4', 'habit', 'Привычка'));
+  const ghosts = ['🌱', '💧', '📖', '🏋️', '🍎', '🧠'];
+  for (let i = cells.length; i < slots - 1; i++) {
+    cells.push(V.hEmpty === 'dashed' ? c('', 'border:1.5px dashed #c4c5cb', '', 'Пусто')
+      : V.hEmpty === 'plus' ? c('<b style="font-size:17px;color:#9a9ca3">+</b>', 'border:1.5px dashed #c4c5cb;background:#f8f8fa', 'addHabit', 'Новая привычка')
+      : c(ghosts[i % ghosts.length], 'background:#f8f8fa;opacity:.35;filter:grayscale(1)', '', 'Пример'));
+  }
+  cells.push(c('<b style="font-size:18px">›</b>', V.hArrow === 'lilac' ? 'background:var(--sel);color:var(--pri)' : 'background:#f3f3f4;color:#62656e', 'habits', 'Все привычки'));
+  return wrap('Привычки', 1, `<div class="hab" style="grid-template-columns:repeat(${slots},1fr)">${cells.join('')}</div>`);
+}
+function news() {
+  const head = V.nAll === 'head' ? '<div class="whead">Новости<span class="sp"></span><button type="button" data-act="news">Все ›</button></div>' : '';
+  const body = scen === 'nonews' ? '<div class="nrow" style="color:var(--muted);font-weight:600;text-align:center">Новости не загрузились · <b style="color:var(--pri)">Обновить</b></div>'
+    : NEWS.slice(0, V.nCount).map(t => `<div class="nrow"><div style="-webkit-line-clamp:${V.nLines}">${t}</div></div>`).join('');
+  const foot = V.nAll === 'pill' ? '<button type="button" class="pill" data-act="news">Все новости ›</button>' : '';
+  return wrap('Новости', V.nRows, `${head}<div data-act="newsEdge" style="position:relative">${body}</div>${foot}<div class="over"></div>`);
+}
+function trow([e, n, d, time, hi]) {
+  const late = d < 0, r = late ? WD[dayOf(d).getDay()] : d === 0 ? (time || 'сегодня') : `завтра${time ? ' ' + time : ''}`;
+  return `<div class="t ${hi ? 'hi' : ''}"><span class="c"></span><span>${e}</span><span class="n">${n}</span><span class="r ${late ? 'late' : ''}">${r}</span></div>`;
+}
+function tasks() {
+  const btns = V.tCaps === 'head' ? `<button type="button" class="ic" data-act="mic" aria-label="Голосом">${IC.mic}</button><button type="button" class="ic plus" data-act="add" aria-label="Новая задача">${IC.plus}</button>` : '';
+  const head = V.tHead === 'none' ? '' : `<div class="whead">Задачи<span class="sp"></span><button type="button" data-act="upcoming">Все ›</button>${V.tHead === 'full' ? btns : ''}</div>`;
+  const list = scen === 'empty' ? '<div class="t" style="color:var(--muted);justify-content:center">На неделю задач нет</div>'
+    : (scen === 'late' ? [...LATE6, ...TASKS] : TASKS).map(trow).join('');
+  const mini = V.tCaps === 'mini' ? `<div class="mini"><span>${IC.mic}</span><span class="plus">${IC.plus}</span></div>` : '';
+  const headH = V.tHead === 'none' ? 0 : 40;
+  return wrap('Задачи', V.tRows, `${head}<div class="tlist" style="height:${H(V.tRows) - headH}px">${list}<div style="height:${V.tCaps === 'mini' ? 44 : 6}px"></div></div>${mini}<div class="over"></div>`);
+}
+function render() {
+  const rows = V.fRows + 1 + V.nRows + V.tRows;
+  const bg = V.bg === 'glass' ? 'rgb(255 255 255/.86)' : V.bg === 'grey' ? '#f1f2f4' : '#fff';
+  const phone = document.getElementById('phone');
+  phone.style.setProperty('--r', V.radius + 'px');
+  phone.style.setProperty('--wbg', bg);
+  phone.style.setProperty('--rg', '8px');
+  const label = (t, h) => V.names === 'yes' ? `<div style="color:#fff;font-size:11px;font-weight:700;text-align:center;margin:-4px 0 6px">${t}</div>` + h : h;
+  const grid = V.showGrid === 'yes' ? `<div class="cellgrid" style="grid-template-rows:repeat(${rows},${V.cellH}px)">${'<i></i>'.repeat(rows * 4)}</div>` : '';
+  phone.innerHTML = `<div class="status"><span>15:05</span><span>●●● 31</span></div>
+    ${rows > 6 ? `<div class="warn">${rows} рядов — на большинстве телефонов помещается 5–6: часть уйдёт на второй экран</div>` : ''}
+    <div class="grid">${grid}${label('Финансы', finance())}${label('Привычки', habits())}${label('Новости', news())}${label('Задачи', tasks())}</div>
+    <div class="dock"><i></i><i></i><i></i><i></i></div><div class="toast" id="toast"></div>`;
+  document.getElementById('cap').textContent = `Рабочий стол: финансы ${V.fRows} · привычки 1 · новости ${V.nRows} · задачи ${V.tRows} = ${rows} рядов`;
+  document.getElementById('scen').innerHTML = SCEN.map(([key, l]) => `<button type="button" data-scen="${key}" aria-pressed="${key === scen}">${l}</button>`).join('');
+  document.getElementById('groups').innerHTML = GROUPS.map(([title, ctls]) => `<fieldset><legend>${title}</legend>${ctls.map(([key, l, opts]) =>
+    `<div class="ctl"><span id="l-${key}">${l}</span><div class="seg" role="group" aria-labelledby="l-${key}">${opts.map(([v, t]) =>
+      `<button type="button" data-k="${key}" data-v="${v}" aria-pressed="${V[key] == v}">${t}${DEMO.has(key) ? '' : REC[key] == v ? '<span class="tag">реком.</span>' : ''}</button>`).join('')}</div></div>`).join('')}</fieldset>`).join('');
+  document.getElementById('summary').value = GROUPS.map(([title, ctls]) => `${title}: ` + ctls.filter(([key]) => !DEMO.has(key)).map(([key, l, opts]) => `${l.toLowerCase()} — ${opts.find(([v]) => v == V[key])[1]}`).join('; ')).join('\n');
+  try { localStorage.setItem(KEY, JSON.stringify(V)) } catch (e) {}
+}
+let tt;
+function toast(t) { const el = document.getElementById('toast'); if (!el) return; el.textContent = t; el.classList.add('on'); clearTimeout(tt); tt = setTimeout(() => el.classList.remove('on'), 1700) }
+const TOASTS = { spent: 'Открылось окно «Бюджет»', habit: 'Привычка отмечена', addHabit: 'Новая привычка', habits: 'Открылся раздел «Привычки»', news: 'Открылся раздел «Новости»',
+  newsEdge: 'Касание по краю — следующие новости, по середине — новость', upcoming: 'Открылось «Предстоящее»', mic: 'Голосовой ввод', add: 'Новая задача' };
+document.addEventListener('click', e => {
+  const b = e.target.closest('button[data-k]');
+  if (b) { const v = b.dataset.v; V[b.dataset.k] = isNaN(+v) ? v : +v; render(); return }
+  const s = e.target.closest('[data-scen]');
+  if (s) { scen = s.dataset.scen; render(); return }
+  const a = e.target.closest('[data-act]');
+  if (!a) return;
+  if (a.dataset.act === 'acc') { account = (account + 1) % ACCOUNTS.length; render(); toast('Следующий счёт'); return }
+  toast(TOASTS[a.dataset.act] || '');
+});
+document.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-act][tabindex]')) { e.preventDefault(); e.target.click() } });
+document.getElementById('reset').addEventListener('click', () => { V = { ...REC }; render() });
+document.getElementById('copy').addEventListener('click', () => {
+  const out = document.getElementById('copied');
+  const fb = () => { const s = document.getElementById('summary'); s.focus(); s.select(); out.textContent = 'Текст выделен — скопируй вручную' };
+  try { navigator.clipboard.writeText(document.getElementById('summary').value).then(() => { out.textContent = 'Скопировано' }, fb) } catch (e) { fb() }
+});
+render();
+</script>
