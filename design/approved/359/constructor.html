@@ -75,11 +75,18 @@ legend{font-weight:700;font-size:15px;padding:0;float:left;width:100%}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 .scroll.flex{display:flex;flex-direction:column;overflow:hidden;padding-bottom:0}.scroll.flex>*{flex:none}
 .scroll.flex>.tblock{flex:1;min-height:0;display:flex;flex-direction:column}.tblock .fill{flex:1;min-height:0;overflow:auto}
+.w.cards{background:transparent}.w.cards .scroll{display:flex;flex-direction:column;overflow:hidden;padding:8px}
+.sc{background:var(--cardbg,#fff);padding:12px;flex:none;min-width:0}.sc.tk{flex:1;min-height:0;display:flex;flex-direction:column;padding-bottom:0}
+.sc .fill{flex:1;min-height:0;overflow:auto}
+.chd{display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:700;color:#2e3036;margin:-2px 0 6px}
+.chd button{border:0;background:none;color:var(--muted);font:700 12.5px var(--font);cursor:pointer}
+.sc .nc.line{padding:8px 0;border-radius:0;background:none;border-bottom:1px solid #eceef1}.sc .nc.line:last-child{border-bottom:0}
+.cards.split{column-gap:0}.cards.split>.fc{background:none;padding:2px 12px 2px 0;border-radius:0}.cards.split>.fc+.fc{border-left:1px solid #eceef1;padding-left:14px}
 .cap{font-size:12px;color:var(--pagemuted);text-align:center;max-width:380px;line-height:1.4}
 </style>
 
 <h1>Новый хаб</h1>
-<p class="lead">Справа — хаб по твоему запросу: <b>2 карточки финансов</b> (остаток одного счёта и потрачено за месяц), <b>2 последние новости</b> и <b>5 ближайших задач</b>. <b>Уже настроено по твоему выбору и правкам</b> (метка «PM»): без остатка и точек у счёта, «−17%» в строке с суммой, без плашки «Просрочено» и подсказок, задачи внизу, привычки иконками. Шаг 4: 3 новости, плашки «Все новости ›» и «Все задачи ›», привычки кружками на всю ширину — пустые места и последний кружок «›» (открывает раздел). Переключатель «Привычек на сегодня» внизу слева показывает 0, 3 и 9. Сверху над телефоном — сценарии: перерасход, просроченные, пустые состояния. Нажми карточку счёта — увидишь выбор счёта. «реком.» — моя рекомендация. Внизу слева — то, что легко упустить.</p>
+<p class="lead">Справа — хаб по твоему запросу: <b>2 карточки финансов</b> (остаток одного счёта и потрачено за месяц), <b>2 последние новости</b> и <b>5 ближайших задач</b>. <b>Уже настроено по твоему выбору и правкам</b> (метка «PM»): без остатка и точек у счёта, «−17%» в строке с суммой, без плашки «Просрочено» и подсказок, задачи внизу, привычки иконками. <b>Шаг 5 (новое, сверху слева): виджет «Главная» — каждый раздел своей плашкой</b>: финансы, привычки, новости, задачи; между плашками видны обои. Шаг 4: 3 новости, «Все новости ›» и «Все задачи ›», привычки кружками на всю ширину с заглушками и «›» в конце. Сверху над телефоном — сценарии: перерасход, просроченные, пустые состояния. Нажми карточку счёта — увидишь выбор счёта. «реком.» — моя рекомендация. Внизу слева — то, что легко упустить.</p>
 
 <div class="layout">
   <div class="panel">
@@ -164,11 +171,22 @@ GROUPS.push(['Шаг 4: по твоим правкам', [
   ['habArrow', 'Последний кружок «›»', [['grey', 'Серый, как остальные'], ['lilac', 'Сиреневый']], 'grey'],
   ['habDemo', 'Привычек на сегодня (пример)', [[0, '0'], [3, '3'], [9, '9']], 3],
 ]]);
-const PM = { nCount: 3, nAll: 'pill', view: 'app', order: 'fnt', titles: 'none', gap: 24, habits: 'icons', widget: 'same', fLayout: 'wide', fStyle: 'grey', fmt: 'kk', acc: 'name',
+GROUPS.unshift(['Шаг 5: каждый раздел — своя плашка', [
+  ['shell', 'Вид хаба', [['cards', 'Отдельные плашки по разделам'], ['flat', 'Одна общая подложка (как было)']], 'cards'],
+  ['bgBehind', 'Между плашками', [['wall', 'Обои рабочего стола'], ['grey', 'Светло-серый фон'], ['white', 'Белый фон, плашки серые']], 'wall'],
+  ['cardGap', 'Промежуток между плашками', [[6, '6'], [8, '8'], [12, '12']], 8],
+  ['cardR', 'Скругление плашек', [[16, '16'], [20, '20'], [24, '24']], 20],
+  ['cardHead', '«Все …» у плашки', [['title', 'В шапке плашки: «Новости · Все ›»'], ['footer', 'Плашкой «Все … ›» внизу'], ['none', 'Нет — нажатие на плашку']], 'footer'],
+  ['finIn', 'Плашка финансов', [['split', 'Одна плашка, две половины'], ['two', 'Одна плашка, внутри две плитки'], ['separate', 'Две отдельные плашки рядом']], 'separate'],
+  ['newsIn', 'Новости внутри плашки', [['rows', 'Строки с разделителями'], ['tiles', 'Серые плитки, как раньше']], 'rows'],
+  ['capsule', 'Капсула', [['over', 'Поверх плашки задач'], ['below', 'Отдельно, под плашками']], 'over'],
+  ['appToo', 'Хаб в приложении', [['same', 'Так же — плашками'], ['flat', 'Без плашек, как сейчас']], 'same'],
+]]);
+const PM = { shell: 'cards', nCount: 3, nAll: 'pill', view: 'widget', order: 'fnt', titles: 'none', gap: 24, habits: 'icons', widget: 'same', fLayout: 'wide', fStyle: 'grey', fmt: 'kk', acc: 'name',
   accPick: 'cycle', spent: 'compare', over: 'red', fTap: 'budget', nLayout: 'rows', nLines: 2, nMeta: 'none', nPage: 'edges', count: 5, late: 'in', tView: 'right', tMore: 'more', tDone: 'next' };
 const REC = { ...Object.fromEntries(GROUPS.flatMap(([, l]) => l.map(([k, , , r]) => [k, r]))), ...PM };
 const DEMO = new Set(['habDemo']);
-const KEY = 'c359d';
+const KEY = 'c359e';
 let V = { ...REC };
 try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s) V = { ...REC, ...s } } catch (e) {}
 
@@ -252,11 +270,13 @@ function news() {
   if (scen === 'nonews') return `<div class="nc" style="text-align:center;color:var(--muted)">Новости не загрузились · <b style="color:var(--pri)">Обновить</b></div>`;
   const meta = m => V.nMeta === 'none' ? '' : `<small>${V.nMeta === 'time' ? m.split(' · ')[0] : m}</small>`;
   const clamp = `-webkit-line-clamp:${V.nLines}`;
-  const cards = NEWS.slice(0, V.nCount).map(([m, t]) => `<div class="nc ${V.nLayout === 'list' ? 'line' : ''} ${V.nLayout === 'rows' ? 'big' : ''}">${meta(m)}<div class="nt" style="${clamp}">${t}</div></div>`).join('');
+  const rowsIn = CARDS && V.newsIn === 'rows';
+  const cards = NEWS.slice(0, V.nCount).map(([m, t]) => `<div class="nc ${V.nLayout === 'list' || rowsIn ? 'line' : ''} ${V.nLayout === 'rows' ? 'big' : ''}">${meta(m)}<div class="nt" style="${clamp}">${t}</div></div>`).join('');
   const cols = V.nLayout === 'two' ? '1fr 1fr' : '1fr';
   let all = '';
   if (V.nAll === 'link') all = '<div style="text-align:right"><button class="more" data-act="news" style="font-size:12px;padding:6px 0 0">Все новости ›</button></div>';
   if (V.nAll === 'pill') all = allPill('Все новости', 'news');
+  if (CARDS) all = V.cardHead === 'footer' ? allPill('Все новости', 'news') : '';
   let list = cards;
   if (V.nAll === 'icon') list = list.replace(/<\/div><\/div>$/, '</div><span data-act="news" role="button" title="Все новости" style="position:absolute;right:8px;bottom:8px;width:24px;height:24px;border-radius:50%;background:#fff;display:grid;place-items:center;font-weight:800;color:#62656e;cursor:pointer">⋯</span></div>').replace(/(<div class="nc[^"]*")(?![\s\S]*<div class="nc)/, '$1 style="position:relative"');
   if (V.nAll === 'lastPage') all = '<div style="font-size:11px;color:var(--muted);text-align:center;margin-top:4px">‹ ● ● ○ — на последней странице: «Все новости ›»</div>';
@@ -290,7 +310,7 @@ function tasks() {
     });
     return out;
   };
-  const tail = V.tAll === 'end' || V.tScroll !== 'fill' ? allPill('Все задачи', 'upcoming') : '';
+  const tail = CARDS ? '' : V.tAll === 'end' || V.tScroll !== 'fill' ? allPill('Все задачи', 'upcoming') : '';
   if (V.tScroll === 'fill') {
     h += `<div class="fill" aria-label="Задачи, листаются">${rows(list)}${tail}<div style="height:64px"></div></div>`;
   } else if (V.tScroll === 'inner') {
@@ -309,7 +329,45 @@ function titled(name, html) {
   if (!html) return '';
   return (V.titles === 'small' ? `<div class="sec"><span>${name}</span><span>›</span></div>` : '') + html;
 }
+let CARDS = false;
+function renderCards(widget) {
+  const head = (title, act) => V.cardHead === 'title' ? `<div class="chd"><span>${title}</span><button type="button" data-act="${act}">Все ›</button></div>` : '';
+  const sc = (inner, cls = '', act = '') => `<div class="sc ${cls}" style="border-radius:${V.cardR}px" ${V.cardHead === 'none' && act ? `data-act="${act}" role="button"` : ''}>${inner}</div>`;
+  let fin = finance();
+  if (V.finIn === 'separate') fin = fin.replace(/class="fc /g, `style="border-radius:${V.cardR}px;background:var(--cardbg,#fff)" class="fc `).replace(/grid-template-columns:/, `column-gap:${V.cardGap}px;grid-template-columns:`);
+  else if (V.finIn === 'split') fin = sc(fin.replace('class="cards"', 'class="cards split"'));
+  else fin = sc(fin);
+  const hab = V.habits === 'off' ? '' : sc(habits(), '', 'habits');
+  const nw = sc(head('Новости', 'news') + news(), '', 'news');
+  const tTasks = tasks();
+  const foot = V.cardHead === 'footer' && scen !== 'empty' ? `<div style="flex:none;padding:6px 0 12px">${allPill('Все задачи', 'upcoming', 'margin:0')}</div>` : '<div style="height:12px;flex:none"></div>';
+  const tk = `<div class="sc tk" style="border-radius:${V.cardR}px">${head('Задачи', 'upcoming')}${tTasks.replace('<div style="height:64px"></div>', V.capsule === 'over' && V.cardHead !== 'footer' ? '<div style="height:52px"></div>' : '')}${foot}</div>`;
+  const order = V.order.split('').map(k => ({ f: fin + (hab ? `<div style="height:${V.cardGap}px;flex:none"></div>${hab}` : ''), n: nw, t: tk }[k]));
+  return order.join(`<div style="height:${V.cardGap}px;flex:none"></div>`) + (V.capsule === 'below' ? '<div style="height:52px;flex:none"></div>' : '');
+}
 function render() {
+  const widgetView = V.view === 'widget';
+  CARDS = V.shell === 'cards' && (widgetView || V.appToo === 'same');
+  if (CARDS) {
+    const saved = V.tScroll; V.tScroll = 'fill';
+    const body = renderCards(widgetView);
+    V.tScroll = saved;
+    const navHtml = widgetView ? `<span>${NAV.app}</span><span>${NAV.dots}</span><span>${NAV.upd}</span><span>${NAV.mic}</span><span class="plus">${NAV.plus}</span>`
+      : `<span>${NAV.dots}</span><span>${NAV.set}</span><span>${NAV.mic}</span><span class="plus">${NAV.plus}</span>`;
+    const picker = pickOpen ? `<div class="pick" role="dialog" aria-label="Счёт">${ACCOUNTS.map(([e, n, b], i) => `<button type="button" data-acc="${i}" class="${i === account ? 'on' : ''}"><span>${e}</span><span>${n}</span><span>${money(b)}</span></button>`).join('')}</div>` : '';
+    const w = document.getElementById('w');
+    const bg = widgetView && V.bgBehind === 'wall' ? 'transparent' : V.bgBehind === 'white' ? '#fff' : '#eceef2';
+    w.className = 'w cards';
+    w.style.background = bg;
+    w.style.setProperty('--cardbg', V.bgBehind === 'white' ? '#f5f5f7' : '#fff');
+    w.innerHTML = `<div class="scroll">${body}</div><div class="nav" style="${V.capsule === 'below' ? 'bottom:8px' : 'bottom:20px;right:18px'}">${navHtml}</div>${picker}<div class="toast" id="toast"></div>`;
+    document.getElementById('phone').className = 'phone' + (widgetView ? '' : ' app');
+    document.getElementById('cap').textContent = widgetView ? 'Виджет «Главная» на рабочем столе — плашки по разделам' : 'Хаб в приложении — плашки по разделам';
+    renderPanel();
+    return;
+  }
+  document.getElementById('w').className = 'w';
+  document.getElementById('w').style.background = '';
   const blocks = {
     f: titled('Финансы', finance() + (habits() ? `<div style="height:${V.gap / 2}px"></div>${habits()}` : '')),
     n: titled('Новости', news()),
@@ -325,6 +383,9 @@ function render() {
   document.getElementById('w').innerHTML = pinned + `<div class="scroll${fill ? ' flex' : ''}">${widget && V.widget === 'keep' ? '<div class="empty">Виджет остаётся прежним (0.103)</div>' : body}</div>${widget ? '<div class="fade"></div>' : ''}<div class="nav">${navHtml}</div>${picker}<div class="toast" id="toast"></div>`;
   document.getElementById('phone').className = 'phone' + (widget ? '' : ' app');
   document.getElementById('cap').textContent = widget ? 'Виджет «Главная» на рабочем столе' : 'Хаб в приложении';
+  renderPanel();
+}
+function renderPanel() {
   document.getElementById('scen').innerHTML = SCEN.map(([k, l]) => `<button type="button" data-scen="${k}" aria-pressed="${k === scen}">${l}</button>`).join('');
   document.getElementById('groups').innerHTML = GROUPS.map(([title, ctls]) => `<fieldset><legend>${title}</legend>${ctls.map(([k, l, opts]) =>
     `<div class="ctl"><span id="l-${k}">${l}</span><div class="seg" role="group" aria-labelledby="l-${k}">${opts.map(([v, t]) =>
