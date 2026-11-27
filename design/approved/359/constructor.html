@@ -73,11 +73,13 @@ legend{font-weight:700;font-size:15px;padding:0;float:left;width:100%}
 .pick button.on{color:var(--pri)}
 .toast{position:absolute;left:50%;bottom:64px;transform:translate(-50%,10px);background:#16171d;color:#fff;font-size:12px;font-weight:600;padding:8px 12px;border-radius:999px;opacity:0;transition:.2s;pointer-events:none;z-index:6;white-space:nowrap}
 .toast.on{opacity:1;transform:translate(-50%,0)}
+.scroll.flex{display:flex;flex-direction:column;overflow:hidden;padding-bottom:0}.scroll.flex>*{flex:none}
+.scroll.flex>.tblock{flex:1;min-height:0;display:flex;flex-direction:column}.tblock .fill{flex:1;min-height:0;overflow:auto}
 .cap{font-size:12px;color:var(--pagemuted);text-align:center;max-width:380px;line-height:1.4}
 </style>
 
 <h1>Новый хаб</h1>
-<p class="lead">Справа — хаб по твоему запросу: <b>2 карточки финансов</b> (остаток одного счёта и потрачено за месяц), <b>2 последние новости</b> и <b>5 ближайших задач</b>. <b>Уже настроено по твоему выбору</b> (метка «PM»); внизу — новая группа: кнопка «Показать все новости», листание задач, просроченные плашкой и в списке. Сверху над телефоном — сценарии: перерасход, просроченные, пустые состояния. Нажми карточку счёта — увидишь выбор счёта. «реком.» — моя рекомендация. Внизу слева — то, что легко упустить.</p>
+<p class="lead">Справа — хаб по твоему запросу: <b>2 карточки финансов</b> (остаток одного счёта и потрачено за месяц), <b>2 последние новости</b> и <b>5 ближайших задач</b>. <b>Уже настроено по твоему выбору и правкам</b> (метка «PM»): без остатка и точек у счёта, «−17%» в строке с суммой, без плашки «Просрочено» и подсказок, задачи внизу, привычки иконками. Внизу слева — «Шаг 3»: как компактно показать «Все новости», как листать задачи внизу и как выглядят привычки-иконки. Сверху над телефоном — сценарии: перерасход, просроченные, пустые состояния. Нажми карточку счёта — увидишь выбор счёта. «реком.» — моя рекомендация. Внизу слева — то, что легко упустить.</p>
 
 <div class="layout">
   <div class="panel">
@@ -123,7 +125,7 @@ const GROUPS = [
     ['order', 'Порядок блоков', [['fnt', 'Финансы → Новости → Задачи'], ['ftn', 'Финансы → Задачи → Новости'], ['tfn', 'Задачи → Финансы → Новости'], ['tnf', 'Задачи → Новости → Финансы']], 'ftn'],
     ['titles', 'Подписи блоков', [['none', 'Нет (как сейчас)'], ['small', 'Мелкие «Финансы · Новости · Задачи»']], 'none'],
     ['gap', 'Между блоками', [[16, '16'], [24, '24 (сейчас)']], 24],
-    ['habits', 'Привычки', [['chips', 'Плашки, как сейчас'], ['line', 'Одной строкой «2 из 3 ›»'], ['off', 'Убрать из хаба']], 'chips'],
+    ['habits', 'Привычки', [['icons', 'Только иконки'], ['chips', 'Плашки, как сейчас'], ['line', 'Одной строкой «2 из 3 ›»'], ['off', 'Убрать из хаба']], 'chips'],
     ['widget', 'Виджет «Главная»', [['same', 'Так же'], ['keep', 'Оставить как есть']], 'same'],
   ]],
   ['Финансы: 2 карточки', [
@@ -144,23 +146,22 @@ const GROUPS = [
   ]],
   ['Задачи: 5 ближайших', [
     ['count', 'Сколько', [[3, '3'], [5, '5'], [7, '7']], 5],
-    ['late', 'Просроченные', [['in', 'Входят в 5, сверху'], ['line', 'Строка «Просрочено · N ›» + 5 ближайших'], ['off', 'Не показывать']], 'line'],
+    ['late', 'Просроченные', [['in', 'В начале списка, без плашки'], ['line', 'Плашка «Просрочено · N ›» + в списке'], ['off', 'Не показывать']], 'line'],
     ['tView', 'Как показать дни', [['heads', 'Подписи дней, как в «Предстоящем»'], ['right', 'День справа в строке']], 'heads'],
     ['tMore', 'Ниже 5 задач', [['more', '«Ещё 12 в Предстоящем ›»'], ['none', 'Ничего']], 'more'],
     ['tDone', 'Выполнил задачу', [['next', 'Исчезает, подтягивается следующая'], ['stay', 'Тает до конца дня']], 'next'],
   ]],
 ];
-GROUPS.push(['Новое после твоего выбора', [
-  ['nAll', '«Показать все новости»', [['pill', 'Кнопка во всю ширину'], ['link', 'Ссылка под новостями'], ['row', 'Третьей строкой, как новость']], 'pill'],
-  ['tScroll', 'Как листать задачи', [['inner', 'Блок листается внутри (видно 5)'], ['pages', 'Страницы по 5 (‹ 1/3 ›)'], ['expand', 'Кнопка «Ещё 5»']], 'inner'],
-  ['lateList', 'Просроченные в списке', [['top', 'Плашка + всегда в начале списка'], ['fold', 'Плашка раскрывает их в начале'], ['bottom', 'Плашка + в конце списка']], 'top'],
-  ['lateMove', '«На сегодня» в плашке', [['yes', 'Да, кнопка →|'], ['no', 'Нет']], 'yes'],
-  ['accDots', 'Точки счетов на карточке', [['yes', 'Да — видно, что счетов несколько'], ['no', 'Нет']], 'yes'],
+GROUPS.push(['Шаг 3: варианты для твоих правок', [
+  ['nAll', 'Все новости — компактно', [['link', 'Мелкая ссылка «Все новости ›» справа'], ['icon', 'Кружок ⋯ в углу второй новости'], ['lastPage', 'Последняя страница листания — «Все новости ›»']], 'link'],
+  ['tScroll', 'Задачи внизу', [['fill', 'До низа экрана, листаются'], ['inner', 'Ровно 5 строк, листаются внутри'], ['pages', 'Страницы по 5 (‹ 1/3 ›)'], ['expand', 'Кнопка «Ещё 5»']], 'fill'],
+  ['habIcon', 'Привычка-иконка', [['ring', 'Сделано — сиреневый круг'], ['check', 'Сделано — значок ✓ сбоку'], ['fade', 'Не сделано — бледная']], 'ring'],
+  ['habSize', 'Размер иконки', [[36, '36'], [44, '44']], 36],
 ]]);
-const PM = { view: 'app', order: 'ftn', titles: 'none', gap: 24, habits: 'chips', widget: 'same', fLayout: 'wide', fStyle: 'grey', fmt: 'kk', acc: 'name',
-  accPick: 'cycle', spent: 'compare', over: 'red', fTap: 'budget', nLayout: 'rows', nLines: 2, nMeta: 'none', nPage: 'edges', count: 5, late: 'line', tView: 'right', tMore: 'more', tDone: 'next' };
+const PM = { view: 'app', order: 'fnt', titles: 'none', gap: 24, habits: 'icons', widget: 'same', fLayout: 'wide', fStyle: 'grey', fmt: 'kk', acc: 'name',
+  accPick: 'cycle', spent: 'compare', over: 'red', fTap: 'budget', nLayout: 'rows', nLines: 2, nMeta: 'none', nPage: 'edges', count: 5, late: 'in', tView: 'right', tMore: 'more', tDone: 'next' };
 const REC = { ...Object.fromEntries(GROUPS.flatMap(([, l]) => l.map(([k, , , r]) => [k, r]))), ...PM };
-const KEY = 'c359b';
+const KEY = 'c359c';
 let V = { ...REC };
 try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s) V = { ...REC, ...s } } catch (e) {}
 
@@ -192,7 +193,7 @@ function finance() {
   const over = plan && sp.s > plan;
   const style = V.fStyle === 'white' ? 'white' : '';
   const accLabel = V.acc === 'emoji' ? `${e}` : `${e} ${n}`;
-  const accCard = `<div class="fc ${style}" data-act="acc" role="button" tabindex="0"><div class="k">${accLabel}${V.acc === 'total' ? '' : ' <span style="margin-left:auto">⌄</span>'}</div><div class="v">${money(bal)}</div>${V.acc === 'total' ? '<div class="s">4 счёта</div>' : `<div class="s">остаток на счёте</div>${V.accDots === 'yes' ? `<div style="display:flex;gap:4px;margin-top:8px">${ACCOUNTS.map((_, i) => `<i style="width:5px;height:5px;border-radius:50%;background:${i === account ? 'var(--black)' : '#cfd0d5'}"></i>`).join('')}</div>` : ''}`}</div>`;
+  const accCard = `<div class="fc ${style}" data-act="acc" role="button" tabindex="0"><div class="k">${accLabel}${V.acc === 'total' ? '' : ' <span style="margin-left:auto">⌄</span>'}</div><div class="v">${money(bal)}</div></div>`;
   let sub = '', bar = '';
   if (V.spent === 'plan') {
     if (plan) {
@@ -202,16 +203,26 @@ function finance() {
     } else sub = '<div class="s" style="color:var(--pri)">Задать бюджет ›</div>';
   }
   if (V.spent === 'forecast') sub = `<div class="s">прогноз ${money(sp.f)}</div>`;
-  if (V.spent === 'compare') sub = `<div class="s">${scen === 'over' ? '+89%' : '−17%'} к октябрю</div>`;
+  const inline = V.spent === 'compare' ? ` <span style="font-size:13px;font-weight:600;color:var(--muted);letter-spacing:0">${scen === 'over' ? '+89%' : '−17%'} к октябрю</span>` : '';
   const badge = over && V.over === 'badge' ? `<span style="margin-left:auto;background:#fdecec;color:var(--late);border-radius:999px;padding:1px 7px;font-size:11px">+${money(sp.s - plan)} сверх</span>` : '';
   const red = over && V.over === 'red' ? 'color:var(--late)' : '';
-  const spentCard = `<div class="fc ${V.fStyle === 'accent' ? 'lilac' : style}" data-act="spent" role="button" tabindex="0"><div class="k">Потрачено в ноябре${badge}</div><div class="v" style="${red}">${money(sp.s)}</div>${sub}${bar}</div>`;
+  const spentCard = `<div class="fc ${V.fStyle === 'accent' ? 'lilac' : style}" data-act="spent" role="button" tabindex="0"><div class="k">Потрачено в ноябре${badge}</div><div class="v"><span style="${red}">${money(sp.s)}</span>${inline}</div>${sub}${bar}</div>`;
   const cols = V.fLayout === 'row' ? 'minmax(0,1fr) minmax(0,1fr)' : V.fLayout === 'wide' ? 'minmax(0,.75fr) minmax(0,1.25fr)' : '1fr';
   return `<div class="cards" style="grid-template-columns:${cols}">${accCard}${spentCard}</div>`;
 }
 function habits() {
   if (V.habits === 'off') return '';
   if (V.habits === 'line') return `<div class="ovl" style="background:#f3f3f4;color:#2e3036" data-act="habits">🏃 Привычки сегодня: 1 из 2 <span style="margin-left:auto">›</span></div>`;
+  if (V.habits === 'icons') {
+    const z = V.habSize;
+    const icon = (e, done, label) => {
+      const ring = done && V.habIcon !== 'fade' ? (V.habIcon === 'ring' ? 'background:var(--sel);box-shadow:inset 0 0 0 2px var(--pri)' : 'background:#f3f3f4') : 'background:#f3f3f4';
+      const op = !done && V.habIcon === 'fade' ? 'opacity:.45;' : '';
+      const tick = done && V.habIcon === 'check' ? '<i style="position:absolute;right:-2px;bottom:-2px;width:16px;height:16px;border-radius:50%;background:var(--pri);color:#fff;font-size:10px;display:grid;place-items:center;font-style:normal">✓</i>' : '';
+      return `<span title="${label}" role="button" style="position:relative;width:${z}px;height:${z}px;border-radius:50%;display:grid;place-items:center;font-size:${Math.round(z * .5)}px;${ring};${op}">${e}${tick}</span>`;
+    };
+    return `<div style="display:flex;gap:8px">${icon('🏃', true, 'Зарядка — сделано')}${icon('📚', false, 'Читать')}${icon('💧', false, 'Вода')}</div>`;
+  }
   return `<div class="habits"><span class="hab on">🏃 Зарядка ✓</span><span class="hab">📚 Читать</span></div>`;
 }
 function news() {
@@ -220,11 +231,12 @@ function news() {
   const clamp = `-webkit-line-clamp:${V.nLines}`;
   const cards = NEWS.map(([m, t]) => `<div class="nc ${V.nLayout === 'list' ? 'line' : ''} ${V.nLayout === 'rows' ? 'big' : ''}">${meta(m)}<div class="nt" style="${clamp}">${t}</div></div>`).join('');
   const cols = V.nLayout === 'two' ? '1fr 1fr' : '1fr';
-  const edges = V.nPage === 'edges' ? '<div style="font-size:10.5px;color:var(--muted);text-align:center;margin-top:4px">касание по краям — следующие две</div>' : '';
-  const all = V.nAll === 'pill' ? '<button class="more" data-act="news" style="display:block;width:100%;background:#f3f3f4;border-radius:12px;color:#2e3036;text-align:center;margin-top:6px">Показать все новости</button>'
-    : V.nAll === 'link' ? '<button class="more" data-act="news">Показать все новости ›</button>'
-    : '<div class="nc" data-act="news" role="button" tabindex="0" style="margin-top:6px;font-weight:700;color:var(--pri);cursor:pointer">Показать все новости ›</div>';
-  return `<div class="news" style="grid-template-columns:${cols}">${cards}</div>${edges}${all}`;
+  let all = '';
+  if (V.nAll === 'link') all = '<div style="text-align:right"><button class="more" data-act="news" style="font-size:12px;padding:6px 0 0">Все новости ›</button></div>';
+  let list = cards;
+  if (V.nAll === 'icon') list = list.replace(/<\/div><\/div>$/, '</div><span data-act="news" role="button" title="Все новости" style="position:absolute;right:8px;bottom:8px;width:24px;height:24px;border-radius:50%;background:#fff;display:grid;place-items:center;font-weight:800;color:#62656e;cursor:pointer">⋯</span></div>').replace(/(<div class="nc[^"]*")(?![\s\S]*<div class="nc)/, '$1 style="position:relative"');
+  if (V.nAll === 'lastPage') all = '<div style="font-size:11px;color:var(--muted);text-align:center;margin-top:4px">‹ ● ● ○ — на последней странице: «Все новости ›»</div>';
+  return `<div class="news" style="grid-template-columns:${cols}">${list}</div>${all}`;
 }
 function trow(t, labelDay) {
   const [e, n, d, time, hi] = t;
@@ -235,13 +247,12 @@ function trow(t, labelDay) {
 function tasks() {
   if (scen === 'empty') return `<div class="empty">На неделю задач нет<br><button class="more" style="margin:4px auto 0" data-act="add">+ Добавить задачу</button></div>`;
   const late = scen === 'late' ? LATE : LATE.slice(0, 2);
-  const move = V.lateMove === 'yes' ? '<span data-act="move" title="Перенести на сегодня" style="padding:0 6px;font-size:15px">→|</span>' : '';
+  const move = V.late === 'line' ? '<span data-act="move" title="Перенести на сегодня" style="padding:0 6px;font-size:15px">→|</span>' : '';
   let h = '';
-  if (V.late === 'line' || V.late === 'in') {
-    h += `<div class="ovl" data-act="late">Просрочено · ${late.length}${move}<span style="margin-left:auto;display:inline-block;transform:rotate(${V.lateList === 'fold' && lateOpen ? 90 : 0}deg)">›</span></div>`;
+  if (V.late === 'line') {
+    h += `<div class="ovl" data-act="late">Просрочено · ${late.length}${move}<span style="margin-left:auto;display:inline-block;transform:rotate(0deg)">›</span></div>`;
   }
-  const showLate = V.late !== 'off' && (V.lateList !== 'fold' || lateOpen);
-  let list = V.lateList === 'bottom' ? [...TASKS, ...(showLate ? late : [])] : [...(showLate ? late : []), ...TASKS];
+  const list = [...(V.late !== 'off' ? late : []), ...TASKS];
   const rows = arr => {
     if (V.tView === 'right') return arr.map(t => trow(t, true)).join('');
     let last = null, out = '';
@@ -256,9 +267,10 @@ function tasks() {
     return out;
   };
   const tail = V.tMore === 'more' ? `<button class="more" data-act="upcoming">Все задачи в «Предстоящем» ›</button>` : '';
-  if (V.tScroll === 'inner') {
-    h += `<div style="height:${V.count * 42}px;overflow:auto;position:relative;border-bottom:1px solid #eceef1" aria-label="Задачи, листаются">${rows(list)}${tail}</div>`;
-    h += '<div style="font-size:10.5px;color:var(--muted);text-align:center;margin-top:4px">список листается внутри блока</div>';
+  if (V.tScroll === 'fill') {
+    h += `<div class="fill" aria-label="Задачи, листаются">${rows(list)}${tail}<div style="height:64px"></div></div>`;
+  } else if (V.tScroll === 'inner') {
+    h += `<div style="height:${V.count * 42}px;overflow:auto;position:relative" aria-label="Задачи, листаются">${rows(list)}${tail}</div>`;
   } else if (V.tScroll === 'pages') {
     const pages = Math.ceil(list.length / V.count); page = Math.min(page, pages - 1);
     h += rows(list.slice(page * V.count, (page + 1) * V.count));
@@ -279,12 +291,13 @@ function render() {
     n: titled('Новости', news()),
     t: titled('Задачи', tasks()),
   };
-  const body = V.order.split('').map(k => blocks[k]).filter(Boolean).join(`<div style="height:${V.gap}px"></div>`);
+  const fill = V.tScroll === 'fill' && V.order.endsWith('t') && scen !== 'empty';
+  const body = V.order.split('').map(k => k === 't' && fill ? `<div class="tblock">${blocks[k]}</div>` : blocks[k]).filter(Boolean).join(`<div style="height:${V.gap}px;flex:none"></div>`);
   const widget = V.view === 'widget';
   const navHtml = widget ? `<span>${NAV.app}</span><span>${NAV.dots}</span><span>${NAV.upd}</span><span>${NAV.mic}</span><span class="plus">${NAV.plus}</span>`
     : `<span>${NAV.dots}</span><span>${NAV.set}</span><span>${NAV.mic}</span><span class="plus">${NAV.plus}</span>`;
   const picker = pickOpen ? `<div class="pick" role="dialog" aria-label="Счёт">${ACCOUNTS.map(([e, n, b], i) => `<button type="button" data-acc="${i}" class="${i === account ? 'on' : ''}"><span>${e}</span><span>${n}</span><span>${money(b)}</span></button>`).join('')}</div>` : '';
-  document.getElementById('w').innerHTML = `<div class="scroll">${widget && V.widget === 'keep' ? '<div class="empty">Виджет остаётся прежним (0.103)</div>' : body}</div>${widget ? '<div class="fade"></div>' : ''}<div class="nav">${navHtml}</div>${picker}<div class="toast" id="toast"></div>`;
+  document.getElementById('w').innerHTML = `<div class="scroll${fill ? ' flex' : ''}">${widget && V.widget === 'keep' ? '<div class="empty">Виджет остаётся прежним (0.103)</div>' : body}</div>${widget ? '<div class="fade"></div>' : ''}<div class="nav">${navHtml}</div>${picker}<div class="toast" id="toast"></div>`;
   document.getElementById('phone').className = 'phone' + (widget ? '' : ' app');
   document.getElementById('cap').textContent = widget ? 'Виджет «Главная» на рабочем столе' : 'Хаб в приложении';
   document.getElementById('scen').innerHTML = SCEN.map(([k, l]) => `<button type="button" data-scen="${k}" aria-pressed="${k === scen}">${l}</button>`).join('');
@@ -314,7 +327,7 @@ document.addEventListener('click', e => {
       if (V.accPick === 'longList') { toast('Нажатие — операции счёта; долгое — выбор счёта'); setTimeout(() => { pickOpen = true; render() }, 700); return }
       toast('Счёт выбирается в настройках финансов'); return;
     case 'spent': toast(TAP[V.fTap]); return;
-    case 'late': if (V.lateList === 'fold') { lateOpen = !lateOpen; render() } else toast('Открылось «Предстоящее» на просроченных'); return;
+    case 'late': toast('Открылось «Предстоящее» на просроченных'); return;
     case 'move': e.stopPropagation(); toast('Просроченные перенесены на сегодня'); return;
     case 'prev': page = Math.max(0, page - 1); render(); return;
     case 'next': page = page + 1; render(); return;
